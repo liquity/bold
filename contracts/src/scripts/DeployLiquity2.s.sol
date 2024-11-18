@@ -44,7 +44,7 @@ import "forge-std/console2.sol";
 import {IRateProvider, IWeightedPool, IWeightedPoolFactory} from "./Interfaces/Balancer/IWeightedPool.sol";
 import {IVault} from "./Interfaces/Balancer/IVault.sol";
 
-import {DeployGovernance} from "./DeployGovernance.s.sol";
+import {DeployGovernance, ICurveStableswapNG} from "./DeployGovernance.s.sol";
 
 contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats, MetadataDeployment {
     using Strings for *;
@@ -146,6 +146,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ICollateralRegistry collateralRegistry;
         IBoldToken boldToken;
         ERC20Faucet usdc;
+        ICurveStableswapNGPool usdcCurvePool;
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
     }
@@ -229,7 +230,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // );
         }
 
-        string memory governanceManifest = deployGovernance(deployer, SALT, deployed.boldToken, deployed.usdc);
+        (address governanceAddress, string memory governanceManifest) = deployGovernance(deployer, SALT, deployed.boldToken, deployed.usdc, ICurveStableswapNG(address(deployed.usdcCurvePool)));
+        assert(governanceAddress == computeGovernanceAddress(deployer, SALT));
 
         vm.stopBroadcast();
 
@@ -364,7 +366,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         // USDC and USDC-BOLD pool
         r.usdc = new ERC20Faucet("USDC", "USDC", 0, type(uint256).max);
-        ICurveStableswapNGPool usdcCurvePool = _deployCurveBoldUsdcPool(r.boldToken, r.usdc);
+        r.usdcCurvePool = _deployCurveBoldUsdcPool(r.boldToken, r.usdc);
 
         r.contractsArray = new LiquityContractsTestnet[](vars.numCollaterals);
         vars.collaterals = new ERC20Faucet[](vars.numCollaterals);
@@ -404,7 +406,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 r.collateralRegistry,
                 _WETH,
                 r.usdc,
-                usdcCurvePool,
+                r.usdcCurvePool,
                 vars.addressesRegistries[vars.i],
                 address(vars.troveManagers[vars.i]),
                 r.hintHelpers,
@@ -603,7 +605,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             "USDC-BOLD",
             "USDCBOLD",
             coins,
-            4000, // A
+            200, // A
             1000000, // fee
             20000000000, // _offpeg_fee_multiplier
             865, // _ma_exp_time

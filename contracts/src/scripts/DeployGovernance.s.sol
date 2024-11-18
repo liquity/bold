@@ -67,8 +67,10 @@ contract DeployGovernance is Script, Deployers {
     ICurveStableswapNG private curvePool;
     ILiquidityGauge private gauge;
 
-    function deployGovernance(address _deployer, bytes32 _salt, IERC20 _boldToken, IERC20 _usdc) internal returns (string memory) {
+    function deployGovernance(address _deployer, bytes32 _salt, IERC20 _boldToken, IERC20 _usdc, ICurveStableswapNG _curvePool) internal returns (address, string memory) {
         deployEnvironment(_boldToken, _usdc);
+
+        curvePool = _curvePool;
 
         (address governanceAddress, IGovernance.Configuration memory governanceConfiguration) =
             computeGovernanceAddressAndConfig(_deployer, _salt);
@@ -96,7 +98,7 @@ contract DeployGovernance is Script, Deployers {
 
         governance.registerInitialInitiatives(initialInitiatives);
 
-        return _getManifestJson();
+        return (governanceAddress, _getManifestJson());
     }
 
     function computeGovernanceAddress(address _deployer, bytes32 _salt) internal view returns (address) {
@@ -185,29 +187,13 @@ contract DeployGovernance is Script, Deployers {
     }
 
     function deployCurveV2GaugeRewards(IGovernance _governance) private {
-        address[] memory _coins = new address[](2);
-        _coins[0] = address(boldToken);
-        _coins[1] = address(usdc);
-        uint8[] memory _asset_types = new uint8[](2);
-        _asset_types[0] = 0;
-        _asset_types[1] = 0;
-        bytes4[] memory _method_ids = new bytes4[](2);
-        _method_ids[0] = 0x0;
-        _method_ids[1] = 0x0;
-        address[] memory _oracles = new address[](2);
-        _oracles[0] = address(0x0);
-        _oracles[1] = address(0x0);
-
-        curvePool = ICurveStableswapNG(
-            curveFactory.deploy_plain_pool(
-                "BOLD-USDC", "BOLDUSDC", _coins, 200, 1000000, 50000000000, 866, 0, _asset_types, _method_ids, _oracles
-            )
-        );
-
         gauge = ILiquidityGauge(curveFactory.deploy_gauge(address(curvePool)));
 
         curveV2GaugeRewards =
             new CurveV2GaugeRewards(address(_governance), address(boldToken), address(lqty), address(gauge), DURATION);
+
+        // add BOLD as reward token
+        gauge.add_reward(address(boldToken), address(curveV2GaugeRewards));
 
         initialInitiatives.push(address(curveV2GaugeRewards));
     }
