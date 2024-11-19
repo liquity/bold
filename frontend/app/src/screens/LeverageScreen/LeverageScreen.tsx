@@ -26,6 +26,7 @@ import { fmtnum } from "@/src/formatting";
 import { getOpenLeveragedTroveParams } from "@/src/liquity-leverage";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { getCollIndexFromSymbol } from "@/src/liquity-utils";
+import { useDebouncedQueryKey } from "@/src/react-utils";
 import { useAccount, useBalance, useWagmiConfig } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -412,25 +413,24 @@ export function useCheckLeverageSlippage({
   const WethContract = getProtocolContract("WETH");
   const ExchangeHelpersContract = getProtocolContract("ExchangeHelpers");
 
+  const debouncedQueryKey = useDebouncedQueryKey([
+    "openLeveragedTroveParams",
+    collIndex,
+    String(!initialDeposit || initialDeposit[0]),
+    leverageFactor,
+    ownerIndex,
+  ], 100);
+
   const openLeveragedTroveParams = useQuery({
-    queryKey: [
-      "openLeveragedTroveParams",
-      loan.collIndex,
-      String(!initialDeposit || initialDeposit[0]),
-      leverageFactor,
-      ownerIndex,
-    ],
-    queryFn: async () => {
-      if (!initialDeposit) {
-        return null;
-      }
-      return getOpenLeveragedTroveParams(
+    queryKey: debouncedQueryKey,
+    queryFn: () => (
+      initialDeposit && getOpenLeveragedTroveParams(
         collIndex,
         initialDeposit[0],
         leverageFactor,
         wagmiConfig,
-      );
-    },
+      )
+    ),
     enabled: Boolean(
       initialDeposit
         && dn.gt(initialDeposit, 0)

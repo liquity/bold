@@ -19,7 +19,7 @@ import {
 } from "@/src/constants";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
-import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
+import { dnum18, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
@@ -45,7 +45,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { maxUint256 } from "viem";
 
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
