@@ -257,9 +257,9 @@ export function PanelUpdateBorrowPosition({
                   label="BOLD"
                 />
               }
-              error={!debtChange.isFocused && isBelowMinDebt
-                ? `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`
-                : undefined}
+              drawer={!debtChange.isFocused && isBelowMinDebt
+                ? { mode: "error", message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+                : null}
               label={{
                 start: debtMode === "remove"
                   ? "Decrease loan"

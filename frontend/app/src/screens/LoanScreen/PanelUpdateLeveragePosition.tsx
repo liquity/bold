@@ -11,7 +11,7 @@ import { Value } from "@/src/comps/Value/Value";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { ETH_MAX_RESERVE } from "@/src/constants";
-import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
+import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLiquidationPriceFromLeverage, getLoanDetails } from "@/src/liquity-math";
