@@ -193,13 +193,13 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
               />
             </div>,
             upfrontFeeData.data?.upfrontFee
-            && dn.gt(upfrontFeeData.data?.upfrontFee, 0n)
+            && dn.gt(upfrontFeeData.data.upfrontFee, 0n)
             && (
               <Amount
                 key="end"
                 fallback="…"
                 prefix="Incl. "
-                value={upfrontFeeData.data?.upfrontFee}
+                value={upfrontFeeData.data.upfrontFee}
                 suffix=" BOLD upfront fee"
               />
             ),

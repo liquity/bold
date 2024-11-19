@@ -1,5 +1,6 @@
 import type { CollateralToken } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
+import type { ComponentPropsWithoutRef } from "react";
 
 import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALLOWED } from "@/src/constants";
 import content from "@/src/content";
@@ -24,21 +25,27 @@ export function LeverageField({
   collToken,
   debt,
   deposit,
+  drawer,
   highRiskLeverageFactor,
   leverageFactor,
   liquidationPriceField,
   liquidationRisk,
   maxLeverageFactorAllowed,
   mediumRiskLeverageFactor,
+  onDrawerClose,
   sliderProps,
 }: ReturnType<typeof useLeverageField> & {
   disabled?: boolean;
+  drawer?: ComponentPropsWithoutRef<typeof InputField>["drawer"];
+  onDrawerClose?: ComponentPropsWithoutRef<typeof InputField>["onDrawerClose"];
 }) {
   const isDepositNegative = !deposit || dn.lt(deposit, 0);
   return (
     <InputField
       secondarySpacing={16}
       disabled={isDepositNegative}
+      drawer={drawer}
+      onDrawerClose={onDrawerClose}
       contextual={
         <div
           style={{

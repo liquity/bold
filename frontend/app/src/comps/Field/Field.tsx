@@ -3,11 +3,14 @@ import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
 import content from "@/src/content";
+import { jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { fmtnum } from "@/src/formatting";
 import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, InfoTooltip, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
+import { memo } from "react";
 
 type FooterRow = {
   start?: ReactNode;
@@ -69,6 +72,7 @@ export function Field({
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "flex-start",
+                gap: 16,
               })}
             >
               <div
@@ -173,7 +177,7 @@ function FooterInfoWarnLevel({
   );
 }
 
-export function FooterInfoLiquidationRisk({
+export const FooterInfoLiquidationRisk = memo(function FooterInfoLiquidationRisk({
   riskLevel,
 }: {
   riskLevel: RiskLevel | null;
@@ -190,9 +194,9 @@ export function FooterInfoLiquidationRisk({
       level={riskLevel}
     />
   );
-}
+});
 
-export function FooterInfoRedemptionRisk({
+export const FooterInfoRedemptionRisk = memo(function FooterInfoRedemptionRisk({
   riskLevel,
 }: {
   riskLevel: RiskLevel | null;
@@ -215,66 +219,68 @@ export function FooterInfoRedemptionRisk({
       level={riskLevel}
     />
   );
-}
+});
 
-export function FooterInfoLoanToValue({
-  ltvRatio,
-  maxLtvRatio,
-}: {
-  ltvRatio: Dnum | null;
-  maxLtvRatio: Dnum;
-}) {
-  const formatOptions = { digits: 2, trailingZeros: true };
-  const higherThanMax = ltvRatio && dn.gt(ltvRatio, maxLtvRatio);
-  return (
-    <Field.FooterInfo
-      label="LTV"
-      value={
-        <HFlex gap={4}>
-          {ltvRatio
-            ? (
-              <span
-                className={css({
-                  fontVariantNumeric: "tabular-nums",
-                })}
-              >
-                {higherThanMax && ">"}
-                {dn.format(
-                  dn.mul(higherThanMax ? maxLtvRatio : ltvRatio, 100),
-                  formatOptions,
-                )}
-                {"%"}
-              </span>
-            )
-            : "−"}
-          <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.loanLtv)} />
-        </HFlex>
-      }
-    />
-  );
-}
+export const FooterInfoLoanToValue = memo(
+  function FooterInfoLoanToValue({
+    ltvRatio,
+    maxLtvRatio,
+  }: {
+    ltvRatio: Dnum | null;
+    maxLtvRatio: Dnum;
+  }) {
+    const higherThanMax = ltvRatio && dn.gt(ltvRatio, maxLtvRatio);
+    return (
+      <Field.FooterInfo
+        label="LTV"
+        value={
+          <HFlex gap={4}>
+            {ltvRatio
+              ? (
+                <span
+                  className={css({
+                    fontVariantNumeric: "tabular-nums",
+                  })}
+                >
+                  {higherThanMax && ">"}
+                  {fmtnum(higherThanMax ? maxLtvRatio : ltvRatio, "2z", 100)}
+                  {"%"}
+                </span>
+              )
+              : "−"}
+            <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.loanLtv)} />
+          </HFlex>
+        }
+      />
+    );
+  },
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+);
 
-export function FooterInfoLiquidationPrice({
-  liquidationPrice,
-}: {
-  liquidationPrice: Dnum | null;
-}) {
-  return (
-    <Field.FooterInfo
-      label="Liquidation price"
-      value={
-        <HFlex gap={4}>
-          {liquidationPrice
-            ? `$${dn.format(liquidationPrice, { digits: 2, trailingZeros: true })}`
-            : "−"}
-          <InfoTooltip
-            {...infoTooltipProps(content.generalInfotooltips.loanLiquidationPrice)}
-          />
-        </HFlex>
-      }
-    />
-  );
-}
+export const FooterInfoLiquidationPrice = memo(
+  function FooterInfoLiquidationPrice({
+    liquidationPrice,
+  }: {
+    liquidationPrice: Dnum | null;
+  }) {
+    return (
+      <Field.FooterInfo
+        label="Liquidation price"
+        value={
+          <HFlex gap={4}>
+            {liquidationPrice
+              ? `$${fmtnum(liquidationPrice)}`
+              : "−"}
+            <InfoTooltip
+              {...infoTooltipProps(content.generalInfotooltips.loanLiquidationPrice)}
+            />
+          </HFlex>
+        }
+      />
+    );
+  },
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+);
 
 export function FooterInfoRiskLabel({
   label,
@@ -293,51 +299,57 @@ export function FooterInfoRiskLabel({
     : label;
 }
 
-export function FooterInfoCollPrice({
-  collName,
-  collPriceUsd,
-}: {
-  collName: string;
-  collPriceUsd: Dnum;
-}) {
-  return (
-    <Field.FooterInfo
-      label={`${collName} Price`}
-      value={
-        <HFlex gap={4}>
-          <span
-            className={css({
-              fontVariantNumeric: "tabular-nums",
-            })}
-          >
-            ${dn.format(collPriceUsd, { digits: 2, trailingZeros: true })}
-          </span>
-          <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.ethPrice)} />
-        </HFlex>
-      }
-    />
-  );
-}
+export const FooterInfoCollPrice = memo(
+  function FooterInfoCollPrice({
+    collName,
+    collPriceUsd,
+  }: {
+    collName: string;
+    collPriceUsd: Dnum;
+  }) {
+    return (
+      <Field.FooterInfo
+        label={`${collName} Price`}
+        value={
+          <HFlex gap={4}>
+            <span
+              className={css({
+                fontVariantNumeric: "tabular-nums",
+              })}
+            >
+              ${fmtnum(collPriceUsd)}
+            </span>
+            <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.ethPrice)} />
+          </HFlex>
+        }
+      />
+    );
+  },
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+);
 
-export function FooterInfoMaxLtv({
-  maxLtv,
-}: {
-  maxLtv: Dnum;
-}) {
-  return (
-    <Field.FooterInfo
-      label="Max LTV"
-      value={
-        <HFlex gap={4}>
-          <div>
-            {dn.format(dn.mul(maxLtv, 100), { digits: 2, trailingZeros: true })}%
-          </div>
-          <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.loanMaxLtv)} />
-        </HFlex>
-      }
-    />
-  );
-}
+export const FooterInfoMaxLtv = memo(
+  function FooterInfoMaxLtv({
+    maxLtv,
+  }: {
+    maxLtv: Dnum;
+  }) {
+    return (
+      <Field.FooterInfo
+        label="Max LTV"
+        value={
+          <HFlex gap={4}>
+            <div>
+              {fmtnum(maxLtv, "2z", 100)}%
+            </div>
+            <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.loanMaxLtv)} />
+          </HFlex>
+        }
+      />
+    );
+  },
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+);
 
 Field.FooterInfo = FooterInfo;
 Field.FooterInfoLiquidationPrice = FooterInfoLiquidationPrice;

@@ -103,11 +103,9 @@ export function getCollToken(collIndex: CollIndex | null): CollateralToken | nul
   return collToken;
 }
 
-export function useCollIndexFromSymbol(symbol: CollateralSymbol | null): CollIndex | null {
+export function getCollIndexFromSymbol(symbol: CollateralSymbol | null): CollIndex | null {
+  if (symbol === null) return null;
   const { collaterals } = getContracts();
-  if (symbol === null) {
-    return null;
-  }
   const collIndex = collaterals.findIndex((coll) => coll.symbol === symbol);
   return isCollIndex(collIndex) ? collIndex : null;
 }

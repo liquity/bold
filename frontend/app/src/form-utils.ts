@@ -124,10 +124,14 @@ export function useInputFieldValue(
     defaultValue = "",
     onChange,
     onFocusChange,
+    parse = parseInputFloat,
+    validate = (parsed, value) => ({ parsed, value }),
   }: {
     defaultValue?: string;
     onChange?: (data: InputFieldUpdateData) => void;
     onFocusChange?: (data: InputFieldUpdateData) => void;
+    parse?: (value: string) => Dnum | null;
+    validate?: (parsed: Dnum | null, value: string) => { parsed: Dnum | null; value: string };
   } = {},
 ) {
   const [{ value, focused, parsed }, set] = useState<{
@@ -137,14 +141,19 @@ export function useInputFieldValue(
   }>({
     value: defaultValue,
     focused: false,
-    parsed: parseInputFloat(defaultValue),
+    parsed: parse(defaultValue),
   });
 
   const ref = useRef<HTMLInputElement>(null);
 
   return useMemo(() => {
     const setValue = (value: string) => {
-      const parsed = parseInputFloat(value);
+      let parsed = parse(value);
+
+      const result = validate(parsed, value);
+      parsed = result.parsed;
+      value = result.value;
+
       set((s) => ({ ...s, parsed, value }));
       onChange?.({ focused, parsed, value });
     };

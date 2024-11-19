@@ -83,8 +83,9 @@ export const colors = {
 
   // Brand colors
   "brand:blue": "#405AE5",
-  "brand:green": "#63D77D",
+  "brand:lightBlue": "#6D8AED",
   "brand:darkBlue": "#121B44",
+  "brand:green": "#63D77D",
   "brand:golden": "#F5D93A",
   "brand:cyan": "#95CBF3",
   "brand:coral": "#FB7C59",
@@ -166,6 +167,7 @@ export const lightTheme = {
     brandDarkBlue: "brand:darkBlue",
     brandDarkBlueContent: "white",
     brandDarkBlueContentAlt: "gray:50",
+    brandLightBlue: "brand:lightBlue",
     brandGolden: "brand:golden",
     brandGoldenContent: "yellow:950",
     brandGoldenContentAlt: "yellow:800",

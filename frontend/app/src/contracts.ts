@@ -5,6 +5,7 @@ import { ActivePool } from "@/src/abi/ActivePool";
 import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { DefaultPool } from "@/src/abi/DefaultPool";
+import { ExchangeHelpers } from "@/src/abi/ExchangeHelpers";
 import { Governance } from "@/src/abi/Governance";
 import { HintHelpers } from "@/src/abi/HintHelpers";
 import { LeverageLSTZapper } from "@/src/abi/LeverageLSTZapper";
@@ -21,6 +22,7 @@ import {
   COLLATERAL_CONTRACTS,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
+  CONTRACT_EXCHANGE_HELPERS,
   CONTRACT_HINT_HELPERS,
   CONTRACT_LQTY_STAKING,
   CONTRACT_LQTY_TOKEN,
@@ -32,6 +34,7 @@ import { erc20Abi, zeroAddress } from "viem";
 const protocolAbis = {
   BoldToken: erc20Abi,
   CollateralRegistry,
+  ExchangeHelpers,
   Governance,
   HintHelpers,
   LqtyStaking,
@@ -101,6 +104,7 @@ const CONTRACTS: Contracts = {
   BoldToken: { abi: abis.BoldToken, address: CONTRACT_BOLD_TOKEN },
   CollateralRegistry: { abi: abis.CollateralRegistry, address: CONTRACT_COLLATERAL_REGISTRY },
   Governance: { abi: abis.Governance, address: zeroAddress },
+  ExchangeHelpers: { abi: abis.ExchangeHelpers, address: CONTRACT_EXCHANGE_HELPERS },
   HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
   LqtyStaking: { abi: abis.LqtyStaking, address: CONTRACT_LQTY_STAKING },
   LqtyToken: { abi: abis.LqtyToken, address: CONTRACT_LQTY_TOKEN },

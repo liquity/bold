@@ -5,7 +5,7 @@ import { css, cx } from "../../styled-system/css";
 
 export type TextButtonProps = {
   label: ReactNode;
-  size?: "medium" | "large";
+  size?: "small" | "medium" | "large";
 };
 
 export const TextButton = forwardRef<
@@ -55,7 +55,11 @@ export function useTextButtonStyles(size: TextButtonProps["size"] = "medium") {
   });
 
   const style = {
-    fontSize: size === "large" ? 24 : 16,
+    fontSize: size === "large"
+      ? 24
+      : size === "small"
+      ? 14
+      : 16,
   };
 
   return {
