@@ -214,25 +214,28 @@ export function LeverageScreen() {
               </>
             ),
             end: (
-              <HFlex>
-                <span
-                  className={css({
-                    color: "contentAlt",
-                  })}
-                >
-                  Exposure
-                </span>
-                <span
-                  className={css({
-                    fontVariantNumeric: "tabular-nums",
-                  })}
-                >
-                  {(leverageField.deposit && dn.gt(leverageField.deposit, 0))
-                    ? `${fmtnum(leverageField.deposit, "2z")} ${collToken.name}`
-                    : "−"}
-                </span>
-                <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.exposure)} />
-              </HFlex>
+              <Field.FooterInfo
+                label="Exposure"
+                value={
+                  <HFlex gap={8}>
+                    <div
+                      className={css({
+                        flexShrink: 1,
+                        display: "flex",
+                        fontVariantNumeric: "tabular-nums",
+                      })}
+                    >
+                      <Amount
+                        value={leverageField.deposit && dn.gt(leverageField.deposit, 0) ? leverageField.deposit : null}
+                        format="2z"
+                        fallback="−"
+                        suffix={` ${collToken.name}`}
+                      />
+                    </div>
+                    <InfoTooltip {...infoTooltipProps(content.leverageScreen.infoTooltips.exposure)} />
+                  </HFlex>
+                }
+              />
             ),
           }}
         />

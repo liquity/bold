@@ -159,9 +159,11 @@ const InputField = forwardRef<HTMLInputElement, {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: 16,
             fontSize: 16,
             fontWeight: 500,
             color: "contentAlt",
+            whiteSpace: "nowrap",
           })}
           style={{
             height: labelHeight + labelSpacing,

@@ -13,12 +13,13 @@ import {
   ETH_MAX_RESERVE,
   INTEREST_RATE_DEFAULT,
   MAX_ANNUAL_INTEREST_RATE,
+  MAX_COLLATERAL_DEPOSITS,
   MIN_ANNUAL_INTEREST_RATE,
   MIN_DEBT,
 } from "@/src/constants";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
-import { dnum18, dnumMax } from "@/src/dnum-utils";
+import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
@@ -44,7 +45,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { maxUint256 } from "viem";
 
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
@@ -78,7 +79,17 @@ export function BorrowScreen() {
 
   const collateral = collaterals[collIndex];
 
-  const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`);
+  const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
+  const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`, {
+    validate: (parsed, value) => {
+      const isAboveMax = maxCollDeposit && parsed && dn.gt(parsed, maxCollDeposit);
+      return {
+        parsed: isAboveMax ? maxCollDeposit : parsed,
+        value: isAboveMax ? dn.toString(maxCollDeposit) : value,
+      };
+    },
+  });
+
   const debt = useInputFieldValue((value) => `${fmtnum(value)} BOLD`);
 
   const [interestRate, setInterestRate] = useState(dn.div(dn.from(INTEREST_RATE_DEFAULT, 18), 100));
@@ -96,10 +107,6 @@ export function BorrowScreen() {
   const collBalance = balances[collateral.symbol];
 
   const troveCount = useTrovesCount(account.address ?? null, collIndex);
-
-  if (!collPrice) {
-    return null;
-  }
 
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
@@ -127,7 +134,7 @@ export function BorrowScreen() {
         }
       }
 
-      const ltv = debt && loanDetails.deposit && getLtv(
+      const ltv = debt && loanDetails.deposit && collPrice && getLtv(
         loanDetails.deposit,
         debt,
         collPrice,
@@ -217,7 +224,7 @@ export function BorrowScreen() {
               placeholder="0.00"
               secondary={{
                 start: `$${
-                  deposit.parsed
+                  deposit.parsed && collPrice
                     ? fmtnum(dn.mul(collPrice, deposit.parsed), "2z")
                     : "0.00"
                 }`,
@@ -234,7 +241,7 @@ export function BorrowScreen() {
             />
           }
           footer={{
-            start: (
+            start: collPrice && (
               <Field.FooterInfoCollPrice
                 collPriceUsd={collPrice}
                 collName={collateral.name}
