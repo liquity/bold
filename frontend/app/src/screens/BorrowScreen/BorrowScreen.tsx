@@ -265,9 +265,10 @@ export function BorrowScreen() {
                   label="BOLD"
                 />
               }
-              error={!debt.isFocused && isBelowMinDebt
-                ? `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`
-                : undefined}
+              drawer={debt.isFocused || !isBelowMinDebt ? null : {
+                mode: "error",
+                message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
+              }}
               label="Loan"
               placeholder="0.00"
               secondary={{

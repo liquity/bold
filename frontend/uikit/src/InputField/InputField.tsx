@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 import { a, useSpring, useTransition } from "@react-spring/web";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { forwardRef, useId, useRef } from "react";
 import { css, cx } from "../../styled-system/css";
 import { IconCross } from "../icons";
@@ -13,11 +13,18 @@ const diffSpringConfig = {
   friction: 120,
 };
 
+type Drawer = {
+  mode: "error" | "loading" | "success";
+  message: ReactNode;
+  autoClose?: number;
+};
+
 const InputField = forwardRef<HTMLInputElement, {
   contextual?: ReactNode;
   difference?: ReactNode;
   disabled?: boolean;
-  error?: null | ReactNode;
+  drawer?: null | Drawer;
+  onDrawerClose?: () => void;
   label?:
     | ReactNode
     | { end: ReactNode; start?: ReactNode }
@@ -41,7 +48,8 @@ const InputField = forwardRef<HTMLInputElement, {
   contextual,
   difference,
   disabled = false,
-  error,
+  drawer,
+  onDrawerClose,
   label,
   labelHeight = 12,
   labelSpacing = 12,
@@ -125,13 +133,15 @@ const InputField = forwardRef<HTMLInputElement, {
 
   const showValueUnfocused = valueUnfocused && !focused;
 
-  const errorTransition = useTransition(error, {
-    keys: (error) => String(Boolean(error)),
-    from: { opacity: 0, marginTop: -40 },
-    enter: { opacity: 1, marginTop: 0 },
-    leave: { opacity: 0, marginTop: -40 },
-    config: diffSpringConfig,
-  });
+  useEffect(() => {
+    if (typeof drawer?.autoClose !== "number" || !onDrawerClose) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      onDrawerClose();
+    }, drawer.autoClose);
+    return () => clearTimeout(timer);
+  }, [drawer?.autoClose, drawer?.mode]);
 
   return (
     <div
@@ -366,43 +376,87 @@ const InputField = forwardRef<HTMLInputElement, {
           }}
         />
       </div>
-      {errorTransition((style, error) => (
-        <div
-          className={css({
-            position: "relative",
-            zIndex: 1,
-            marginTop: -8,
-          })}
-        >
-          <a.div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              padding: "8px 16px 0",
-              height: 48,
-              fontSize: 14,
-              color: "negativeSurfaceContent",
-              background: "negativeSurface",
-              border: "1px solid token(colors.negativeSurfaceBorder)",
-              borderRadius: "0 0 8px 8px",
-            })}
-            style={{
-              marginTop: style.marginTop,
-            }}
-          >
-            <a.div
-              style={{
-                opacity: style.opacity.to([0, 0.8, 1], [0, 0, 1]),
-              }}
-            >
-              {error}
-            </a.div>
-          </a.div>
-        </div>
-      ))}
+      <Drawer drawer={drawer} />
     </div>
   );
 });
+
+function Drawer({
+  drawer,
+}: {
+  drawer?: null | Drawer;
+}) {
+  const transition = useTransition(drawer, {
+    keys: (drawer) => String(Boolean(drawer)),
+    from: {
+      contentOpacity: 0,
+      marginTop: -40,
+    },
+    enter: {
+      contentOpacity: 1,
+      marginTop: 0,
+    },
+    leave: {
+      contentOpacity: 0,
+      marginTop: -40,
+    },
+    config: diffSpringConfig,
+  });
+
+  const modeSpring = useSpring({
+    to: drawer?.mode === "error"
+      ? {
+        color: "#82301A",
+        background: "#FEF5F2",
+        border: "#FFE7E1",
+      }
+      : {
+        color: "#2C231E",
+        background: "#FAF9F7",
+        border: "#EFECE5",
+      },
+    config: diffSpringConfig,
+  });
+
+  return transition(({ marginTop, contentOpacity }, drawer) =>
+    drawer && (
+      <div
+        className={css({
+          position: "relative",
+          zIndex: 1,
+          marginTop: -8,
+        })}
+      >
+        <a.div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            padding: "8px 16px 0",
+            height: 48,
+            fontSize: 14,
+            borderWidth: 1,
+            borderStyle: "solid",
+            borderRadius: "0 0 8px 8px",
+          })}
+          style={{
+            marginTop,
+            color: modeSpring.color,
+            background: modeSpring.background,
+            borderColor: modeSpring.border,
+          }}
+        >
+          <a.div
+            style={{
+              opacity: contentOpacity.to([0, 0.8, 1], [0, 0, 1]),
+            }}
+          >
+            {drawer.message}
+          </a.div>
+        </a.div>
+      </div>
+    )
+  );
+}
 
 export function InputFieldBadge({
   label,
