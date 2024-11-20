@@ -12,6 +12,7 @@ import "../Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Factory.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
 import "../Zappers/Modules/Exchanges/HybridCurveUniV3Exchange.sol";
+import "../Zappers/Modules/Exchanges/HybridCurveUniV3ExchangeHelpers.sol";
 import "../Zappers/Interfaces/IFlashLoanProvider.sol";
 import "../Zappers/Modules/FlashLoans/Balancer/vault/IVault.sol";
 
@@ -42,6 +43,8 @@ contract ZapperLeverageMainnet is DevTestSetup {
     ILeverageZapper[] leverageZapperCurveArray;
     ILeverageZapper[] leverageZapperUniV3Array;
     ILeverageZapper[] leverageZapperHybridArray;
+
+    HybridCurveUniV3ExchangeHelpers hybridCurveUniV3ExchangeHelpers;
 
     ICurveStableswapNGPool usdcCurvePool;
 
@@ -163,6 +166,18 @@ contract ZapperLeverageMainnet is DevTestSetup {
                 vm.stopPrank();
             }
         }
+
+        // exchange helpers
+        hybridCurveUniV3ExchangeHelpers = new HybridCurveUniV3ExchangeHelpers(
+            USDC,
+            WETH,
+            usdcCurvePool,
+            USDC_INDEX, // USDC Curve pool index
+            BOLD_TOKEN_INDEX, // BOLD Curve pool index
+            UNIV3_FEE_USDC_WETH,
+            UNIV3_FEE_WETH_COLL,
+            uniV3Quoter
+        );
     }
 
     function fundCurveV2Pools(
@@ -1779,5 +1794,42 @@ contract ZapperLeverageMainnet is DevTestSetup {
         boldAmountToSwap = Math.min(boldAmountToSwap * 101 / 100, _maxBoldAmount); // TODO
 
         return boldAmountToSwap;
+    }
+
+    // Helpers
+    function testHybridExchangeHelpers() public {
+        for (uint256 i = 0; i < 3; i++) {
+            (uint256 price,) = contractsArray[i].priceFeed.fetchPrice();
+            //console2.log(i, "branch");
+            //console2.log(price, "price");
+            //console2.log(price, "amount");
+            _testHybridExchangeHelpers(price, contractsArray[i].collToken, 1 ether, 1e16); // 1% slippage
+            //console2.log(price * 1e3, "amount");
+            _testHybridExchangeHelpers(price * 1e3, contractsArray[i].collToken, 1 ether, 1e16); // 1% slippage
+            //console2.log(price * 1e6, "amount");
+            _testHybridExchangeHelpers(price * 1e6, contractsArray[i].collToken, 1 ether, 1e16); // 1% slippage
+        }
+    }
+
+    function _testHybridExchangeHelpers(
+        uint256 _boldAmount,
+        IERC20 _collToken,
+        uint256 _desiredCollAmount,
+        uint256 _acceptedSlippage
+    ) internal {
+        (uint256 collAmount, uint256 slippage) =
+            hybridCurveUniV3ExchangeHelpers.getCollFromBold(_boldAmount, _collToken, _desiredCollAmount);
+        //console2.log(collAmount, "collAmount");
+        //console2.log(slippage, "slippage");
+        assertGe(collAmount, (DECIMAL_PRECISION - slippage) * _desiredCollAmount / DECIMAL_PRECISION);
+        assertLe(slippage, _acceptedSlippage);
+    }
+
+    function testHybridExchangeHelpersNoDeviation() public {
+        (uint256 price,) = contractsArray[0].priceFeed.fetchPrice();
+        (uint256 collAmount, uint256 slippage) =
+            hybridCurveUniV3ExchangeHelpers.getCollFromBold(price, contractsArray[0].collToken, 0);
+        assertGt(collAmount, 0);
+        assertEq(slippage, 0);
     }
 }
