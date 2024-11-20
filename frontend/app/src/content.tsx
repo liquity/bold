@@ -342,12 +342,12 @@ export default {
       <>
         <span>Stake</span>
         {lqtyIcon} <span>LQTY & get</span>
-        {lusdEthIcons} <span>LUSD + ETH</span>
+         <span>voting power</span>
       </>
     ),
     subheading: (
       <>
-        Staking LQTY tokens, you earn a share of borrowing and redemption fees in the Liquity V1 protocol.
+        By staking LQTY you can vote on incentives for Liquity V2, while still earning Liquity V1 fees.
       </>
     ),
     learnMore: ["https://docs.liquity.org/faq/staking", "Learn more"],
