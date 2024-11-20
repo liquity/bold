@@ -72,7 +72,7 @@ contract HybridCurveUniV3ExchangeHelpers is IExchangeHelpers {
         uniV3Quoter = _uniV3Quoter;
     }
 
-    function getCollFromBold(uint256 _boldAmount, IERC20 _collToken, uint256 _desiredCollAmount) external /* view */ returns (uint256, uint256) {
+    function getCollFromBold(uint256 _boldAmount, IERC20 _collToken, uint256 _desiredCollAmount) external /* view */ returns (uint256 collAmount, uint256 deviation) {
         // BOLD -> USDC
         uint256 curveUsdcAmount = curvePool.get_dy(int128(BOLD_TOKEN_INDEX), int128(USDC_INDEX), _boldAmount);
 
@@ -84,10 +84,12 @@ contract HybridCurveUniV3ExchangeHelpers is IExchangeHelpers {
             path = abi.encodePacked(USDC, feeUsdcWeth, WETH, feeWethColl, _collToken);
         }
 
-        (uint256 collAmount,,,) = uniV3Quoter.quoteExactInput(path, curveUsdcAmount);
+        (collAmount,,,) = uniV3Quoter.quoteExactInput(path, curveUsdcAmount);
 
-        uint256 slippage = collAmount > _desiredCollAmount ? 0: DECIMAL_PRECISION - collAmount * DECIMAL_PRECISION / _desiredCollAmount;
+        if (_desiredCollAmount > 0 && collAmount <= _desiredCollAmount) {
+            deviation = DECIMAL_PRECISION - collAmount * DECIMAL_PRECISION / _desiredCollAmount;
+        }
 
-        return (collAmount, slippage);
+        return (collAmount, deviation);
     }
 }

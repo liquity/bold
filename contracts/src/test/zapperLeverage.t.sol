@@ -1818,4 +1818,12 @@ contract ZapperLeverageMainnet is DevTestSetup {
         assertGe(collAmount, (DECIMAL_PRECISION - slippage) * _desiredCollAmount / DECIMAL_PRECISION);
         assertLe(slippage, _acceptedSlippage);
     }
+
+    function testHybridExchangeHelpersNoDeviation() public {
+        (uint256 price,) = contractsArray[0].priceFeed.fetchPrice();
+        (uint256 collAmount, uint256 slippage) =
+            hybridCurveUniV3ExchangeHelpers.getCollFromBold(price, contractsArray[0].collToken, 0);
+        assertGt(collAmount, 0);
+        assertEq(slippage, 0);
+    }
 }
