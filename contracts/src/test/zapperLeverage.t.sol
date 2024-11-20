@@ -1811,8 +1811,14 @@ contract ZapperLeverageMainnet is DevTestSetup {
         }
     }
 
-    function _testHybridExchangeHelpers(uint256 _boldAmount, IERC20 _collToken, uint256 _desiredCollAmount, uint256 _acceptedSlippage) internal {
-        (uint256 collAmount, uint256 slippage) = hybridCurveUniV3ExchangeHelpers.getCollFromBold(_boldAmount, _collToken, _desiredCollAmount);
+    function _testHybridExchangeHelpers(
+        uint256 _boldAmount,
+        IERC20 _collToken,
+        uint256 _desiredCollAmount,
+        uint256 _acceptedSlippage
+    ) internal {
+        (uint256 collAmount, uint256 slippage) =
+            hybridCurveUniV3ExchangeHelpers.getCollFromBold(_boldAmount, _collToken, _desiredCollAmount);
         //console2.log(collAmount, "collAmount");
         //console2.log(slippage, "slippage");
         assertGe(collAmount, (DECIMAL_PRECISION - slippage) * _desiredCollAmount / DECIMAL_PRECISION);

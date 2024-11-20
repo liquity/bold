@@ -72,7 +72,10 @@ contract HybridCurveUniV3ExchangeHelpers is IExchangeHelpers {
         uniV3Quoter = _uniV3Quoter;
     }
 
-    function getCollFromBold(uint256 _boldAmount, IERC20 _collToken, uint256 _desiredCollAmount) external /* view */ returns (uint256 collAmount, uint256 deviation) {
+    function getCollFromBold(uint256 _boldAmount, IERC20 _collToken, uint256 _desiredCollAmount)
+        external /* view */
+        returns (uint256 collAmount, uint256 deviation)
+    {
         // BOLD -> USDC
         uint256 curveUsdcAmount = curvePool.get_dy(int128(BOLD_TOKEN_INDEX), int128(USDC_INDEX), _boldAmount);
 
