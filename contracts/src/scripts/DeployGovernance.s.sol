@@ -73,7 +73,7 @@ contract DeployGovernance is Script, Deployers {
         curvePool = _curvePool;
 
         (address governanceAddress, IGovernance.Configuration memory governanceConfiguration) =
-            computeGovernanceAddressAndConfig(_deployer, _salt);
+            computeGovernanceAddressAndConfig(_deployer, _salt, initialInitiatives);
 
         governance = new Governance{salt: _salt}(
             address(lqty),
@@ -101,12 +101,29 @@ contract DeployGovernance is Script, Deployers {
         return (governanceAddress, _getManifestJson());
     }
 
-    function computeGovernanceAddress(address _deployer, bytes32 _salt) internal view returns (address) {
-        (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt);
+    function computeGovernanceAddressWithNoInitiatives(
+        address _deployer,
+        bytes32 _salt
+    ) internal view returns (address) {
+        address[] memory initialInitiatives;
+        (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt, initialInitiatives);
         return governanceAddress;
     }
 
-    function computeGovernanceAddressAndConfig(address _deployer, bytes32 _salt)
+    function computeGovernanceAddress(
+        address _deployer,
+        bytes32 _salt,
+        address[] memory _initialInitiatives
+    ) internal view returns (address) {
+        (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt, _initialInitiatives);
+        return governanceAddress;
+    }
+
+    function computeGovernanceAddressAndConfig(
+        address _deployer,
+        bytes32 _salt,
+        address[] memory _initialInitiatives
+    )
         internal
         view
         returns (address, IGovernance.Configuration memory)
@@ -134,9 +151,10 @@ contract DeployGovernance is Script, Deployers {
                 address(boldToken),
                 governanceConfiguration,
                 _deployer,
-                initialInitiatives
+                _initialInitiatives
             )
         );
+
         address governanceAddress = vm.computeCreate2Address(_salt, keccak256(bytecode));
 
         return (governanceAddress, governanceConfiguration);

@@ -231,7 +231,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
 
         (address governanceAddress, string memory governanceManifest) = deployGovernance(deployer, SALT, deployed.boldToken, deployed.usdc, ICurveStableswapNG(address(deployed.usdcCurvePool)));
-        assert(governanceAddress == computeGovernanceAddress(deployer, SALT));
+        address computedGovernanceAddress = computeGovernanceAddressWithNoInitiatives(deployer, SALT);
+        assert(governanceAddress == computedGovernanceAddress);
 
         vm.stopBroadcast();
 
@@ -463,7 +464,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
         contracts.priceFeed = new PriceFeedTestnet();
-        contracts.interestRouter = IInterestRouter(computeGovernanceAddress(deployer, SALT));
+        contracts.interestRouter = IInterestRouter(computeGovernanceAddressWithNoInitiatives(deployer, SALT));
         addresses.borrowerOperations = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry)))
         );
