@@ -508,7 +508,7 @@ rule debt_adjust_effects (method f) filtered {
 // in case the divideNoRemainder causes performance problems that are too
 // severe. Here we assume the number of total 
 ghost uint256 share_debt_scalar;
-function num_shares_num_debt_assumption(
+function num_shares_num_debt_assumption_(
     TroveManager.LatestBatchData batchData,
     address batchAddress) returns bool {
     return (share_debt_scalar == 1 ||
@@ -574,7 +574,7 @@ rule withdraw_debt_change {
         batchDataBefore, troveDataBefore);
 
     // Overly conservative but to avoid performance issues
-    require num_shares_num_debt_assumption(batchDataBefore,
+    require num_shares_num_debt_assumption_(batchDataBefore,
         batchAddress);
 
     withdrawBold(e, troveId, boldAmount, maxUpfrontFee);
@@ -646,7 +646,7 @@ rule repay_debt_change {
 
 
     // Overly conservative but to avoid performance issues
-    require num_shares_num_debt_assumption(batchDataBefore,
+    require num_shares_num_debt_assumption_(batchDataBefore,
         batchAddress);
 
     repayBold(e, troveId, boldAmount);
