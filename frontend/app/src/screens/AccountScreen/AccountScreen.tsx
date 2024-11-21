@@ -8,9 +8,17 @@ import { Positions } from "@/src/comps/Positions/Positions";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
-import { useBalance } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
-import { Button, IconAccount, isCollateralSymbol, shortenAddress, TokenIcon, VFlex } from "@liquity2/uikit";
+import {
+  addressesEqual,
+  Button,
+  IconAccount,
+  isCollateralSymbol,
+  shortenAddress,
+  TokenIcon,
+  VFlex,
+} from "@liquity2/uikit";
 import { blo } from "blo";
 import Image from "next/image";
 import { useWriteContract } from "wagmi";
@@ -20,6 +28,7 @@ export function AccountScreen({
 }: {
   address: Address;
 }) {
+  const account = useAccount();
   const collSymbols = getContracts().collaterals.map((coll) => coll.symbol);
   return (
     <Screen>
@@ -104,7 +113,7 @@ export function AccountScreen({
               <Balance
                 address={address}
                 tokenSymbol="LQTY"
-                tapButton
+                tapButton={account.address && addressesEqual(address, account.address)}
               />
             </GridItem>
             {collSymbols.map((symbol) => (
@@ -115,7 +124,7 @@ export function AccountScreen({
                 <Balance
                   address={address}
                   tokenSymbol={symbol}
-                  tapButton={symbol !== "ETH"}
+                  tapButton={symbol !== "ETH" && account.address && addressesEqual(address, account.address)}
                 />
               </GridItem>
             ))}

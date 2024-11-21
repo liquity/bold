@@ -5,7 +5,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import content from "@/src/content";
-import { useCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
+import { getCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, isCollateralSymbol, Tabs } from "@liquity2/uikit";
@@ -29,7 +29,7 @@ export function EarnPoolScreen() {
 
   const collateralSymbol = String(params.pool).toUpperCase();
   const isCollSymbolOk = isCollateralSymbol(collateralSymbol);
-  const collIndex = useCollIndexFromSymbol(isCollSymbolOk ? collateralSymbol : null);
+  const collIndex = getCollIndexFromSymbol(isCollSymbolOk ? collateralSymbol : null);
 
   const earnPosition = useEarnPosition(collIndex, account.address ?? null);
   const earnPool = useEarnPool(collIndex);
@@ -74,8 +74,8 @@ export function EarnPoolScreen() {
           {loadingState === "success"
             ? (
               <EarnPositionSummary
-                address={account.address}
-                collSymbol={collateralSymbol}
+                earnPosition={earnPosition.data}
+                collIndex={collIndex}
               />
             )
             : (

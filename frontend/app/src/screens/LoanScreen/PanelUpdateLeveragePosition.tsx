@@ -45,7 +45,6 @@ export function PanelUpdateLeveragePosition({
   const txFlow = useTransactionFlow();
 
   const collToken = getCollToken(loan.collIndex);
-
   if (!collToken) {
     throw new Error("collToken not found");
   }
@@ -124,7 +123,10 @@ export function PanelUpdateLeveragePosition({
 
   const collMax = depositMode === "remove" ? initialLoanDetails.depositPreLeverage : (
     collBalance.data
-      ? dn.sub(collBalance.data, ETH_MAX_RESERVE)
+      ? dn.sub(
+        collBalance.data,
+        collToken?.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
+      )
       : dnum18(0)
   );
 
@@ -207,13 +209,11 @@ export function PanelUpdateLeveragePosition({
                     ? "$" + fmtnum(dn.mul(depositChange.parsed, collPrice))
                     : "$0.00"
                 ),
-                end: (
+                end: collMax && dn.gt(collMax, 0) && (
                   <TextButton
                     label={`Max ${fmtnum(collMax, 2)} ${collToken.name}`}
                     onClick={() => {
-                      if (collMax) {
-                        depositChange.setValue(dn.toString(collMax));
-                      }
+                      depositChange.setValue(dn.toString(collMax));
                     }}
                   />
                 ),

@@ -1,34 +1,10 @@
 # Liquity V2
 
 ## Table of Contents
-
 1. [Significant Changes in Liquity v2](#significant-changes-in-liquity-v2)
-   - [Multi-collateral System](#multi-collateral-system)
-   - [Collateral Choices](#collateral-choices)
-   - [User-set Interest Rates](#user-set-interest-rates)
-   - [Yield from Interest Paid to SP and LPs](#yield-from-interest-paid-to-sp-and-lps)
-   - [Redemption Routing](#redemption-routing)
-   - [Redemption Ordering](#redemption-ordering)
-   - [Unredeemable Troves](#unredeemable-troves)
-   - [Troves Represented by NFTs](#troves-represented-by-nfts)
-   - [Individual Delegation](#individual-delegation)
-   - [Batch Delegation](#batch-delegation)
-   - [Collateral Branch Shutdown](#collateral-branch-shutdown)
-   - [Removal of Recovery Mode](#removal-of-recovery-mode)
-   - [Liquidation Penalties](#liquidation-penalties)
-   - [Gas Compensation](#gas-compensation)
-   - [More Flexibility for SP Reward Claiming](#more-flexibility-for-sp-reward-claiming)
 
 2. [What Remains the Same in v2 from v1](#what-remains-the-same-in-v2-from-v1)
-   - [Core Redemption Mechanism](#core-redemption-mechanism)
-   - [Redemption Fee Mechanics](#redemption-fee-mechanics)
-   - [Ordered Troves](#ordered-troves)
-   - [Liquidation Mechanisms](#liquidation-mechanisms)
-   - [Similar Smart Contract Architecture](#similar-smart-contract-architecture)
-   - [Stability Pool Algorithm](#stability-pool-algorithm)
-   - [Individual Overcollateralization](#individual-overcollateralization)
-   - [Aggregate Overcollateralization](#aggregate-overcollateralization)
-
+  
 3. [Liquity v2 Overview](#liquity-v2-overview)
 
 4. [Multicollateral Architecture Overview](#multicollateral-architecture-overview)
@@ -52,55 +28,65 @@
    - [Interest on Trove Debt](#interest-on-trove-debt)
    - [Applying a Trove’s Interest](#applying-a-troves-interest)
    - [Interest Rate Scheme Implementation](#interest-rate-scheme-implementation)
-   - [Aggregate vs Individual Recorded Debts](#aggregate-vs-individual-recorded-debts)
+   - [Core Debt Invariant](#core-debt-invariant)
    - [Redemption Evasion Mitigation](#redemption-evasion-mitigation)
    - [Upfront Borrowing Fees](#upfront-borrowing-fees)
    - [Premature Adjustment Fees](#premature-adjustment-fees)
+   - [Batches and Premature Adjustment Fees](#batches-and-premature-adjustment-fees)
 
-9. [BOLD Redemptions](#bold-redemptions)
+9. [Supplying Hints to Trove Operations](#supplying-hints-to-trove-operations)
 
-10. [Redemption Routing](#redemption-routing)
+10. [Example OpenTrove Transaction with Hints](#example-opentrove-transaction-with-hints)
 
-11. [Redemptions at Branch Level](#redemptions-at-branch-level)
+11. [BOLD Redemptions](#bold-redemptions)
+
+12. [Redemption Routing](#redemption-routing)
+
+13. [Redemptions at Branch Level](#redemptions-at-branch-level)
    - [Redemption Fees](#redemption-fees)
    - [Fee Schedule](#fee-schedule)
    - [Redemption Fee During Bootstrapping Period](#redemption-fee-during-bootstrapping-period)
 
-12. [Unredeemable Troves](#unredeemable-troves)
+14. [Unredeemable Troves](#unredeemable-troves)
 
-13. [Stability Pool Implementation](#stability-pool-implementation)
+15. [Stability Pool Implementation](#stability-pool-implementation)
    - [How Deposits and ETH Gains are Calculated](#how-deposits-and-eth-gains-are-calculated)
    - [Collateral Gains from Liquidations and the Product-Sum Algorithm](#collateral-gains-from-liquidations-and-the-product-sum-algorithm)
    - [BOLD Yield Gains](#bold-yield-gains)
-   - [Liquidation and the Stability Pool](#liquidation-and-the-stability-pool)
 
-14. [Liquidation Logic](#liquidation-logic)
+16. [Liquidation and the Stability Pool](#liquidation-and-the-stability-pool)
 
-15. [Liquidation Penalties and Borrowers’ Collateral Surplus](#liquidation-penalties-and-borrowers-collateral-surplus)
+17. [Liquidation Logic](#liquidation-logic)
+
+18. [Liquidation Penalties and Borrowers’ Collateral Surplus](#liquidation-penalties-and-borrowers-collateral-surplus)
    - [Claiming Collateral Surpluses](#claiming-collateral-surpluses)
 
-16. [Liquidation Gas Compensation](#liquidation-gas-compensation)
+19. [Liquidation Gas Compensation](#liquidation-gas-compensation)
 
-17. [Redistributions](#redistributions)
+20. [Redistributions](#redistributions)
    - [Corrected Stake Solution](#corrected-stake-solution)
 
-18. [Critical Collateral Ratio (CCR) Restrictions](#critical-collateral-ratio-ccr-restrictions)
+21. [Critical Collateral Ratio (CCR) Restrictions](#critical-collateral-ratio-ccr-restrictions)
 
-19. [Delegation](#delegation)
+22. [Delegation](#delegation)
    - [Add and Remove Managers](#add-and-remove-managers)
    - [Individual Interest Delegates](#individual-interest-delegates)
    - [Batch Interest Managers](#batch-interest-managers)
    - [Batch Management Implementation](#batch-management-implementation)
 
-20. [Collateral Branch Shutdown](#collateral-branch-shutdown)
+23. [Collateral Branch Shutdown](#collateral-branch-shutdown)
    - [Shutdown Logic](#shutdown-logic)
    - [Urgent Redemptions](#urgent-redemptions)
 
-21. [Collateral Choices in Liquity v2](#collateral-choices-in-liquity-v2)
+24. [Collateral Choices in Liquity v2](#collateral-choices-in-liquity-v2)
 
-22. [Oracles in Liquity v2](#oracles-in-liquity-v2)
+25. [Oracles in Liquity v2](#oracles-in-liquity-v2)
+   - [Terminology](#terminology)
+   - [Choice of Oracles and Price Calculations](#choice-of-oracles-and-price-calculations)
+   - [PriceFeed Deployment](#pricefeed-deployment)
+   - [Fetching the Price](#fetching-the-price)
 
-23. [Known Issues and Mitigations](#known-issues-and-mitigations)
+26. [Known Issues and Mitigations](#known-issues-and-mitigations)
    - [1 - Oracle Price Frontrunning](#1---oracle-price-frontrunning)
    - [2 - Bypassing Redemption Routing Logic via Temporary SP Deposits](#2---bypassing-redemption-routing-logic-via-temporary-sp-deposits)
    - [3 - Path-dependent Redemptions: Lower Fee when Chunking](#3---path-dependent-redemptions-lower-fee-when-chunking)
@@ -117,11 +103,12 @@
    - [14 - Stability Pool Claiming and Compounding Yield Can Be Used to Gain a Slightly Higher Rate of Rewards](#14---stability-pool-claiming-and-compounding-yield-can-be-used-to-gain-a-slightly-higher-rate-of-rewards)
    - [15 - Urgent Redemptions Premium Can Worsen the ICR](#15---urgent-redemptions-premium-can-worsen-the-icr)
 
-24. [Requirements](#requirements)
+27. [Requirements](#requirements)
 
-25. [Setup](#setup)
+28. [Setup](#setup)
 
-26. [How to Develop](#how-to-develop)
+29. [How to Develop](#how-to-develop)
+
 
 
 
@@ -291,20 +278,29 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _upperHint,
         uint256 _lowerHint,
         uint256 _annualInterestRate,
-        uint256 _maxUpfrontFee
-    )`: creates a Trove for the caller that is not part of a batch. Transfers `_collAmount` from the caller to the system, mints `_boldAmount` of BOLD to their address. Mints the Trove NFT to their address. The `ETH_GAS_COMPENSATION` of 0.0375 WETH is transferred from the caller to the GasPool. Opening a Trove must result in the Trove’s ICR > MCR, and also the system’s TCR > CCR. An `upfrontFee` is charged, based on the system’s _average_ interest rate, the BOLD debt drawn and the `UPFRONT_INTEREST_PERIOD`. The borrower chooses a `_maxUpfrontFee` that he/she is willing to accept in case of a fee slippage, i.e. when the system’s average interest rate increases and in turn increases the fee they’d pay.
+        uint256 _maxUpfrontFee,
+        address _addManager,
+        address _removeManager,
+        address _receiver
+    )`: creates a Trove for the caller that is not part of a batch. Transfers `_collAmount` from the caller to the system, mints `_boldAmount` of BOLD to their address. Mints the Trove NFT to their address. The `ETH_GAS_COMPENSATION` of 0.0375 WETH is transferred from the caller to the GasPool. Opening a Trove must result in the Trove’s ICR > MCR, and also the system’s TCR > CCR. An `upfrontFee` is charged, based on the system’s _average_ interest rate, the BOLD debt drawn and the `UPFRONT_INTEREST_PERIOD`. The borrower chooses a `_maxUpfrontFee` that he/she is willing to accept in case of a fee slippage, i.e. when the system’s average interest rate increases and in turn increases the fee they’d pay. The optional `_addManager` permits that address to improve the collateral ratio of the Trove - i.e. to add collateral or to repay debt. The optional `_removeManager` is permitted to reduce the collateral ratio of the Trove, that is to remove collateral or draw new debt, and also to close it. The `_receiver` is the address the `_removeManager` can send funds to.
 
 
-- `openTroveAndJoinInterestBatchManager(
-        address _owner,
-        uint256 _ownerIndex,
-        uint256 _collAmount,
-        uint256 _boldAmount,
-        uint256 _upperHint,
-        uint256 _lowerHint,
-        address _interestBatchManager,
-        uint256 _maxUpfrontFee
-    )`: creates a Trove for the caller and adds it to the chosen `_interestBatchManager`’s batch. Transfers `_collAmount` from the caller to the system and mints `_boldAmount` of BOLD to their address.  Mints the Trove NFT to their address. The `ETH_GAS_COMPENSATION` of 0.0375 WETH is transferred from the caller to the GasPool. Opening a batch Trove must result in the Trove’s ICR >= MCR, and also the system’s TCR >= CCR. An `upfrontFee` is charged, based on the system’s _average_ interest rate, the BOLD debt drawn and the `UPFRONT_INTEREST_PERIOD`. The fee is added to the Trove’s debt. The borrower chooses a `_maxUpfrontFee` that he/she is willing to accept in case of a fee slippage, i.e. when the system’s average interest rate increases and in turn increases the fee they’d pay.
+- `openTroveAndJoinInterestBatchManager(OpenTroveAndJoinInterestBatchManagerParams calldata _params )`: creates a Trove for the caller and adds it to the chosen `_interestBatchManager`’s batch. Transfers `_collAmount` from the caller to the system and mints `_boldAmount` of BOLD to their address.  Mints the Trove NFT to their address. The `ETH_GAS_COMPENSATION` of 0.0375 WETH is transferred from the caller to the GasPool. Opening a batch Trove must result in the Trove’s ICR >= MCR, and also the system’s TCR >= CCR. An `upfrontFee` is charged, based on the system’s _average_ interest rate, the BOLD debt drawn and the `UPFRONT_INTEREST_PERIOD`. The fee is added to the Trove’s debt. The borrower chooses a `_maxUpfrontFee` that he/she is willing to accept in case of a fee slippage, i.e. when the system’s average interest rate increases and in turn increases the fee they’d pay.
+
+The function takes the following param struct as input:
+- `struct OpenTroveAndJoinInterestBatchManagerParams {
+        address owner;
+        uint256 ownerIndex;
+        uint256 collAmount;
+        uint256 boldAmount;
+        uint256 upperHint;
+        uint256 lowerHint;
+        address interestBatchManager;
+        uint256 maxUpfrontFee;
+        address addManager;
+        address removeManager;
+        address receiver;
+    }`
 
 - `addColl(uint256 _troveId, uint256 _collAmount)`: Transfers the `_collAmount` from the user to the system, and adds the received collateral to the caller's active Trove.
 
@@ -326,7 +322,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
     )`:  enables a borrower to simultaneously change both their collateral and debt, subject to the resulting `ICR >= MCR` and the adjustment [CCR constraints](#critical-collateral-ratio-ccr-restrictions). If the adjustment incorporates a `debtIncrease`, then an `upfrontFee` is charged as per `withdrawBold`.
 
 
-- `adjustUnredeemableTrove(
+- `adjustZombieTrove(
         uint256 _troveId,
         uint256 _collChange,
         bool _isCollIncrease,
@@ -365,8 +361,9 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
         uint256 _newAnnualInterestRate,
         uint256 _upperHint,
         uint256 _lowerHint,
-        uint256 _maxUpfrontFee
-    )`: the Trove owner sets an individual delegate who will have permission to update the interest rate for that Trove in range `[ _minInterestRate,  _maxInterestRate]`.  Removes the Trove from a batch if it was in one. 
+        uint256 _maxUpfrontFee,
+        uint256 _minInterestRateChangePeriod
+    )`: the Trove owner sets an individual delegate who will have permission to update the interest rate for that Trove in range `[ _minInterestRate,  _maxInterestRate]`.  Removes the Trove from a batch if it was in one. The `_minInterestRateChangePeriod` determines the minimum period that must pass between the delegates's interest rate adjustments.
 
 - `removeInterestIndividualDelegate(uint256 _troveId):` the Trove owner revokes individual delegate’s permission to change the given Trove’s interest rate. 
 
@@ -406,9 +403,6 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
     )`: revokes the batch manager’s permission to manage the caller’s Trove. Sets a new owner-chosen annual interest rate, and removes it from the batch. Since this action very likely changes the Trove’s interest rate, it’s subject to a premature adjustment fee as per regular adjustments.
 
 ### TroveManager
-
-- `liquidate(uint256 _troveId)`: attempts to liquidate the specified Trove. Executes successfully if the Trove meets the conditions for liquidation, i.e. ICR < MCR. Permissionless.
-
 
 - `batchLiquidateTroves(uint256[] calldata _troveArray)`: Accepts a custom list of Troves IDs as an argument. Steps through the provided list and attempts to liquidate every Trove, until it reaches the end or it runs out of gas. A Trove is liquidated only if it meets the conditions for liquidation, i.e. ICR < MCR. Troves with ICR >= MCR are skipped in the loop. Permissionless.
 
@@ -583,6 +577,60 @@ No upfront fee is charged, unless the interest rate is changed in the same trans
 
 ##### Switching batches
 As the function to switch batches is just a wrapper that calls the functions for leaving and joining a batch, this means that switching batches always incurs in upfront fee now (unless user doesn’t use the wrapper and waits for 1 week between leaving and joining).
+
+## Supplying Hints to Trove operations
+
+Troves in Liquity are recorded in a sorted doubly linked list, sorted by their annual interest, from high to low.
+
+All interest rate adjustments need to either insert or reinsert the Trove to the SortedTroves list. To reduce the computational complexity (and gas cost) of the insertion to the linked list, two ‘hints’ may be provided.
+
+A hint is the address of a Trove with a position in the sorted list close to the correct insert position.
+
+All Trove operations take two ‘hint’ arguments: a `_lowerHint` referring to the nextId and an `_upperHin`t referring to the prevId of the two adjacent nodes in the linked list that are (or would become) the neighbors of the given Trove. Taking both direct neighbors as hints has the advantage of being much more resilient to situations where a neighbor gets moved or removed before the caller's transaction is processed: the transaction would only fail if both neighboring Troves are affected during the pendency of the transaction.
+
+The better the ‘hint’ is, the shorter the list traversal, and the cheaper the gas cost of the function call. `SortedList.findInsertPosition(uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId)` that is called by the Trove operation firsts check if prevId is still existent and valid (larger interest rate than the provided `_annualInterestRate`) and then descends the list starting from `_prevId`. If the check fails, the function further checks if `_nextId` is still existent and valid (smaller interest rate than the provided `_annualInterestRate`) and then ascends list starting from `_nextId`.
+
+The `HintHelpers.getApproxHint(...)` function can be used to generate a useful hint pointing to a Trove relatively close to the target position, which can then be passed as an argument to the desired Trove operation or to SortedTroves.findInsertPosition(...) to get its two direct neighbors as ‘exact‘ hints (based on the current state of the system).
+
+`getApproxHint(uint256 _collIndex, uint256 _interestRate, uint256 _numTrials, uint256 _inputRandomSeed)` randomly selects`_ numTrials` amount of Troves for a given branch, and returns the one with the closest position in the list to where a Trove with an annual _interestRate should be inserted. It can be shown mathematically that for `numTrials = k * sqrt(n)`, the function's gas cost is with very high probability worst case O(sqrt(n)) if k >= 10. For scalability reasons, the function also takes a random seed `_inputRandomSeed` to make sure that calls with different seeds may lead to different results, allowing for better approximations through multiple consecutive runs.
+
+#### Trove operation without a hint
+
+1. User performs Trove operation in their browser
+2. Call the Trove operation with _lowerHint = _upperHint = userAddress
+
+Gas cost will be worst case O(n), where n is the size of the SortedTroves list.
+
+#### Trove operation with hints
+
+1. User performs Trove operation in their browser
+2. Front end calls HintHelpers.getApproxHint(...), passing it the annual interest rate Returns an address close to the correct insert position
+3. Call SortedTroves.findInsertPosition(uint256 _annualInterestRate, address _prevId, address _nextId), passing it the same approximate hint via both _prevId and _nextId and the new _annualInterestRate.
+4. Pass the ‘exact‘ hint in the form of the two direct neighbors, i.e. `_nextId` as `_lowerHint` and `_prevId` as `_upperHint`, to the Trove operation function call. (Note that the hint may become slightly inexact due to pending transactions that are processed first, though this is gracefully handled by the system that can ascend or descend the list as needed to find the right position.)
+
+Gas cost of steps 1-2 will be free, and step 5 will be O(1).
+
+Hints allow cheaper Trove operations for the user, at the expense of a slightly longer time to completion, due to the need to await the result of the two read calls in steps 1 and 2 - which may be sent as JSON-RPC requests to a node provider such as Infura, unless the frontend operator is running a full Ethereum node.
+
+### Example openTrove transaction with hints
+```
+  const BOLDAmount = toBN(toWei('2500')) // borrower wants to withdraw 2500 BOLD
+  const colll = toBN(toWei('5')) // borrower wants to lock 5 collateral tokens
+  const interestRate = toBn(toWei(‘7’) // Borrower wants a 7% annual interest rate
+  
+  // Get an approximate address hint from the deployed HintHelper contract. Use (15 * number of troves) trials 
+  // to get an approx. hint that is close to the right position.
+  let numTroves = await sortedTroves.getSize()
+  let numTrials = numTroves.mul(toBN('15'))
+  let { 0: approxHint } = await hintHelpers.getApproxHint(interestRate, numTrials, 42)  // random seed of 42
+
+  // Use the approximate hint to get the exact upper and lower hints from the deployed SortedTroves contract
+  let { 0: upperHint, 1: lowerHint } = await sortedTroves.findInsertPosition(interestRate, approxHint, approxHint)
+
+  // Finally, call openTrove with the exact upperHint and lowerHint
+  const maxFee = '5'.concat('0'.repeat(16)) // Slippage protection: 5%
+  await borrowerOperations.openTrove({otherParams}, upperHint, upperHint)
+```
 
 
 ## BOLD Redemptions

@@ -1,6 +1,5 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
-import { getBuiltGraphSDK } from "@/.graphclient";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
@@ -9,6 +8,7 @@ import { getCollToken, getPrefixedTroveId, usePredictOpenTroveUpfrontFee } from 
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
+import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
 import { isTroveId } from "@/src/types";
 import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
 import { ADDRESS_ZERO, COLLATERALS as KNOWN_COLLATERALS, shortenAddress } from "@liquity2/uikit";
@@ -345,10 +345,8 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
       lastStep.txReceiptData,
     );
 
-    const graph = getBuiltGraphSDK();
-
     while (true) {
-      const { trove } = await graph.TroveById({ id: prefixedTroveId });
+      const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
       if (trove !== null) return;
     }
   },

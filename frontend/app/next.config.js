@@ -1,3 +1,4 @@
+import bundleAnalyzer from "@next/bundle-analyzer";
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
@@ -7,8 +8,12 @@ const commitHash = execSync("git log --pretty=format:\"%h\" -n1")
 
 const pkg = JSON.parse(readFileSync("./package.json", "utf-8"));
 
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
+
 /** @type {import('next').NextConfig} */
-export default {
+export default withBundleAnalyzer({
   output: "export",
   reactStrictMode: false,
   images: { unoptimized: true },
@@ -24,4 +29,4 @@ export default {
   eslint: {
     ignoreDuringBuilds: true,
   },
-};
+});

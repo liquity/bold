@@ -11,7 +11,7 @@ import { css } from "@/styled-system/css";
 import { StrongCard } from "@liquity2/uikit";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { match, P } from "ts-pattern";
 import { NewPositionCard } from "./NewPositionCard";
 import { PositionCardEarn } from "./PositionCardEarn";
@@ -60,6 +60,20 @@ export function Positions({
     : isPositionsPending
     ? "loading"
     : "actions";
+
+  // preloading for 1 second, prevents flickering
+  // since the account doesn’t reconnect instantly
+  const [preLoading, setPreLoading] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPreLoading(false);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (preLoading) {
+    mode = "loading";
+  }
 
   return (
     <PositionsGroup
@@ -147,21 +161,25 @@ function PositionsGroup({
   const positionTransitions = useTransition(cards, {
     keys: ([index]) => `${mode}${index}`,
     from: {
+      display: "none",
       opacity: 0,
-      transform: "scale3d(0.97, 0.97, 1)",
+      transform: "scale(0.9)",
     },
     enter: {
+      display: "grid",
       opacity: 1,
-      transform: "scale3d(1, 1, 1)",
+      transform: "scale(1)",
     },
     leave: {
       display: "none",
+      opacity: 0,
+      transform: "scale(1)",
       immediate: true,
     },
     config: {
-      mass: 2,
-      tension: 1800,
-      friction: 80,
+      mass: 1,
+      tension: 1600,
+      friction: 120,
     },
   });
 

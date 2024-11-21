@@ -30,6 +30,7 @@ import "../Zappers/WETHZapper.sol";
 import "../Zappers/GasCompZapper.sol";
 import "../Zappers/LeverageLSTZapper.sol";
 import "../Zappers/LeverageWETHZapper.sol";
+import "../Zappers/Modules/Exchanges/HybridCurveUniV3ExchangeHelpers.sol";
 import {BalancerFlashLoan} from "../Zappers/Modules/FlashLoans/BalancerFlashLoan.sol";
 import "../Zappers/Modules/Exchanges/Curve/ICurveStableswapNGFactory.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
@@ -148,6 +149,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ERC20Faucet usdc;
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
+        IExchangeHelpers exchangeHelpers;
     }
 
     function run() external {
@@ -414,6 +416,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
 
         r.boldToken.setCollateralRegistry(address(r.collateralRegistry));
+
+        // exchange helpers
+        r.exchangeHelpers = new HybridCurveUniV3ExchangeHelpers(
+            r.usdc,
+            _WETH,
+            usdcCurvePool,
+            USDC_INDEX, // USDC Curve pool index
+            BOLD_TOKEN_INDEX, // BOLD Curve pool index
+            UNIV3_FEE_USDC_WETH,
+            UNIV3_FEE_WETH_COLL,
+            uniV3QuoterSepolia
+        );
     }
 
     function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)
@@ -892,6 +906,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 string.concat('"boldToken":"', address(deployed.boldToken).toHexString(), '",'),
                 string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",'),
                 string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
+                string.concat('"exchangeHelpers":"', address(deployed.exchangeHelpers).toHexString(), '",'),
                 string.concat('"branches":[', branches.join(","), "],"),
                 string.concat('"governance":', _governanceManifest, '" ') // no comma
             ),

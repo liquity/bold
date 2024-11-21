@@ -1,7 +1,6 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
-import { getBuiltGraphSDK } from "@/.graphclient";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { MAX_UPFRONT_FEE } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
@@ -10,6 +9,7 @@ import { getCollToken, getPrefixedTroveId, usePredictAdjustTroveUpfrontFee } fro
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
+import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
 import { isTroveId } from "@/src/types";
 import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
@@ -117,7 +117,10 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
     const collPrice = usePrice(collateral?.symbol ?? null);
     const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
 
-    return upfrontFeeData.data && (
+    const debtChangeWithFee = upfrontFeeData.data?.debtChangeWithFee;
+    const isBorrowing = upfrontFeeData.data?.isBorrowing;
+
+    return (
       <>
         {depositChange !== null && (
           <TransactionDetailsRow
@@ -144,7 +147,7 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
         )}
         {leverageFactorChange && (
           <TransactionDetailsRow
-            label={upfrontFeeData.data.isBorrowing ? "Leverage increase" : "Leverage decrease"}
+            label={isBorrowing ? "Leverage increase" : "Leverage decrease"}
             value={[
               <div key="start">
                 {fmtnum(leverageFactorChange[1] - leverageFactorChange[0], {
@@ -159,15 +162,17 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
           />
         )}
         <TransactionDetailsRow
-          label={upfrontFeeData.data.isBorrowing ? "Additional debt" : "Debt reduction"}
+          label={isBorrowing ? "Additional debt" : "Debt reduction"}
           value={[
             <Amount
               key="start"
               fallback="…"
-              value={upfrontFeeData.data.debtChangeWithFee}
+              value={debtChangeWithFee}
               suffix=" BOLD"
             />,
-            dn.gt(upfrontFeeData.data.upfrontFee, 0) && (
+            upfrontFeeData.data?.upfrontFee
+            && dn.gt(upfrontFeeData.data.upfrontFee, 0)
+            && (
               <Amount
                 key="end"
                 fallback="…"
@@ -313,10 +318,8 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
       lastStep.txReceiptData,
     );
 
-    const graph = getBuiltGraphSDK();
-
     while (true) {
-      const { trove } = await graph.TroveById({ id: prefixedTroveId });
+      const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
 
       // trove found and updated: check done
       if (trove && Number(trove.updatedAt) * 1000 !== lastUpdate) {

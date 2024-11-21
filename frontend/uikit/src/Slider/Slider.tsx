@@ -1,14 +1,15 @@
 import type { SpringValue } from "@react-spring/web";
-import type { ComponentProps, CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
 import type { Direction } from "../types";
 
 import { a, useSpring, useSprings } from "@react-spring/web";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { css } from "../../styled-system/css";
 import { token } from "../../styled-system/tokens";
 
 type GradientMode = "low-to-high" | "high-to-low";
+type Chart = number[];
 
 const PADDING = 4;
 const BAR_HEIGHT = 4;
@@ -33,7 +34,7 @@ export function Slider({
   disabled?: boolean;
   gradient?: [number, number];
   gradientMode?: GradientMode;
-  chart?: number[];
+  chart?: Chart;
   keyboardStep?: (value: number, direction: Direction) => number;
   onChange: (value: number) => void;
   onDragEnd?: () => void;
@@ -341,138 +342,146 @@ export function Slider({
   );
 }
 
-function ChartSvg({
-  activeBarTransform,
-  chart,
-  gradient,
-  gradientMode,
-  value,
-}: {
-  activeBarTransform: SpringValue<string>;
-  chart: NonNullable<ComponentProps<typeof Slider>["chart"]>;
-  gradient?: [number, number];
-  gradientMode: GradientMode;
-  value: number;
-}) {
-  const chartSprings = useSprings(
-    chart.length,
-    chart.map((_, index) => {
-      const show = index / chart.length <= value;
-      return {
-        config: { mass: 2, tension: 1000, friction: 100 },
-        to: { transform: show ? `scaleY(1)` : `scaleY(0)` },
-        immediate: !show,
-      };
-    }),
-  );
+const ChartSvg = memo(
+  function ChartSvg({
+    activeBarTransform,
+    chart,
+    gradient,
+    gradientMode,
+    value,
+  }: {
+    activeBarTransform: SpringValue<string>;
+    chart: Chart;
+    gradient?: [number, number];
+    gradientMode: GradientMode;
+    value: number;
+  }) {
+    const chartSprings = useSprings(
+      chart.length,
+      chart.map((_, index) => {
+        const show = index / chart.length <= value;
+        return {
+          config: { mass: 2, tension: 1000, friction: 100 },
+          to: { transform: show ? `scaleY(1)` : `scaleY(0)` },
+          immediate: !show,
+        };
+      }),
+    );
 
-  const gradientStops = useMemo(() => {
-    if (!gradient) return null;
+    const gradientStops = useMemo(() => {
+      if (!gradient) return null;
 
-    const [step2, step3] = gradient;
-    const blur = GRADIENT_TRANSITION_BLUR / 100 / 2;
+      const [step2, step3] = gradient;
+      const blur = GRADIENT_TRANSITION_BLUR / 100 / 2;
 
-    const gradientColors = getGradientColors(gradientMode);
+      const gradientColors = getGradientColors(gradientMode);
 
-    return [
-      { offset: "0%", color: gradientColors[0] },
-      { offset: `${(step2 - blur) * 100}%`, color: gradientColors[1] },
-      { offset: `${(step2 + blur) * 100}%`, color: gradientColors[2] },
-      { offset: `${(step3 - blur) * 100}%`, color: gradientColors[3] },
-      { offset: `${(step3 + blur) * 100}%`, color: gradientColors[4] },
-      { offset: "100%", color: gradientColors[4] },
-    ];
-  }, [gradient, gradientMode]);
+      return [
+        { offset: "0%", color: gradientColors[0] },
+        { offset: `${(step2 - blur) * 100}%`, color: gradientColors[1] },
+        { offset: `${(step2 + blur) * 100}%`, color: gradientColors[2] },
+        { offset: `${(step3 - blur) * 100}%`, color: gradientColors[3] },
+        { offset: `${(step3 + blur) * 100}%`, color: gradientColors[4] },
+        { offset: "100%", color: gradientColors[4] },
+      ];
+    }, [gradient, gradientMode]);
 
-  return (
-    <svg
-      className={css({
-        position: "absolute",
-        inset: "auto 0 0",
-        width: "100%",
-        height: CHART_MAX_HEIGHT,
-      })}
-      viewBox={`0 0 100 ${CHART_MAX_HEIGHT}`}
-      preserveAspectRatio="none"
-      shapeRendering="optimizeSpeed"
-    >
-      <defs>
-        {gradientStops && (
-          <linearGradient id="barGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            {gradientStops.map((stop, index) => (
-              <stop
-                key={index}
-                offset={stop.offset}
-                stopColor={stop.color}
-              />
-            ))}
-          </linearGradient>
-        )}
-        <mask id="barMask">
-          {chartSprings.map((styles, index) => {
-            const barValue = chart[index];
-            const barWidth = 100 / chart.length;
-            const x = index * barWidth;
-            const y = CHART_MAX_HEIGHT * (1 - barValue);
-            const height = barValue * CHART_MAX_HEIGHT;
-            return (
-              <a.rect
-                key={index}
-                x={x}
-                y={y}
-                width={barWidth}
-                height={height}
-                fill="white"
-                style={{
-                  transformOrigin: `${x}px ${CHART_MAX_HEIGHT}px`,
-                  transform: styles.transform,
-                }}
-              />
-            );
-          })}
-        </mask>
-      </defs>
+    return (
+      <svg
+        className={css({
+          position: "absolute",
+          inset: "auto 0 0",
+          width: "100%",
+          height: CHART_MAX_HEIGHT,
+        })}
+        viewBox={`0 0 100 ${CHART_MAX_HEIGHT}`}
+        preserveAspectRatio="none"
+        shapeRendering="optimizeSpeed"
+      >
+        <defs>
+          {gradientStops && (
+            <linearGradient id="barGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              {gradientStops.map((stop, index) => (
+                <stop
+                  key={index}
+                  offset={stop.offset}
+                  stopColor={stop.color}
+                />
+              ))}
+            </linearGradient>
+          )}
+          <mask id="barMask">
+            {chartSprings.map((styles, index) => {
+              const barValue = chart[index];
+              const barWidth = 100 / chart.length;
+              const x = index * barWidth;
+              const y = CHART_MAX_HEIGHT * (1 - barValue);
+              const height = barValue * CHART_MAX_HEIGHT;
+              return (
+                <a.rect
+                  key={index}
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={height}
+                  fill="white"
+                  style={{
+                    transformOrigin: `${x}px ${CHART_MAX_HEIGHT}px`,
+                    transform: styles.transform,
+                  }}
+                />
+              );
+            })}
+          </mask>
+        </defs>
 
-      {chart.map((barValue, index) => {
-        const barWidth = 100 / chart.length;
-        const x = index * barWidth;
-        const y = CHART_MAX_HEIGHT * (1 - barValue);
-        const height = barValue * CHART_MAX_HEIGHT;
-        return (
-          <a.rect
-            key={index}
-            x={x}
-            y={y}
-            width={barWidth}
-            height={height}
-            fill="#DDE0E8"
-          />
-        );
-      })}
+        {chart.map((barValue, index) => {
+          const barWidth = 100 / chart.length;
+          const x = index * barWidth;
+          const y = CHART_MAX_HEIGHT * (1 - barValue);
+          const height = barValue * CHART_MAX_HEIGHT;
+          return (
+            <a.rect
+              key={index}
+              x={x}
+              y={y}
+              width={barWidth}
+              height={height}
+              fill="#DDE0E8"
+            />
+          );
+        })}
 
-      <rect
-        x="0"
-        y="0"
-        width="100"
-        height={CHART_MAX_HEIGHT * 2}
-        fill={gradientStops ? "url(#barGradient)" : "var(--colors-warning)"}
-        mask="url(#barMask)"
-      />
+        <rect
+          x="0"
+          y="0"
+          width="100"
+          height={CHART_MAX_HEIGHT * 2}
+          fill={gradientStops ? "url(#barGradient)" : "var(--colors-warning)"}
+          mask="url(#barMask)"
+        />
 
-      <a.rect
-        x="0"
-        y={CHART_MAX_HEIGHT - 1}
-        width="100"
-        height="1"
-        fill="currentColor"
-        style={{
-          transform: activeBarTransform,
-          transformOrigin: "0 0",
-        }}
-      />
-    </svg>
-  );
-}
+        <a.rect
+          x="0"
+          y={CHART_MAX_HEIGHT - 1}
+          width="100"
+          height="1"
+          fill="currentColor"
+          style={{
+            transform: activeBarTransform,
+            transformOrigin: "0 0",
+          }}
+        />
+      </svg>
+    );
+  },
+  (prev, next) => (
+    prev.value === next.value
+    && prev.gradientMode === next.gradientMode
+    && JSON.stringify(prev.chart) === JSON.stringify(next.chart)
+    && JSON.stringify(prev.gradient) === JSON.stringify(next.gradient)
+  ),
+);
 
 function isTouchEvent(
   event: ReactTouchEvent | ReactMouseEvent | TouchEvent | MouseEvent,

@@ -10,20 +10,23 @@ import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import {
   DEBT_SUGGESTIONS,
+  ETH_MAX_RESERVE,
   INTEREST_RATE_DEFAULT,
   MAX_ANNUAL_INTEREST_RATE,
+  MAX_COLLATERAL_DEPOSITS,
   MIN_ANNUAL_INTEREST_RATE,
+  MIN_DEBT,
 } from "@/src/constants";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
+import { dnum18, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useTroveCount } from "@/src/subgraph-hooks";
+import { useTrovesCount } from "@/src/subgraph-hooks";
 import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -76,7 +79,17 @@ export function BorrowScreen() {
 
   const collateral = collaterals[collIndex];
 
-  const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`);
+  const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
+  const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`, {
+    validate: (parsed, value) => {
+      const isAboveMax = maxCollDeposit && parsed && dn.gt(parsed, maxCollDeposit);
+      return {
+        parsed: isAboveMax ? maxCollDeposit : parsed,
+        value: isAboveMax ? dn.toString(maxCollDeposit) : value,
+      };
+    },
+  });
+
   const debt = useInputFieldValue((value) => `${fmtnum(value)} BOLD`);
 
   const [interestRate, setInterestRate] = useState(dn.div(dn.from(INTEREST_RATE_DEFAULT, 18), 100));
@@ -93,11 +106,7 @@ export function BorrowScreen() {
 
   const collBalance = balances[collateral.symbol];
 
-  const troveCount = useTroveCount(account.address, collIndex);
-
-  if (!collPrice) {
-    return null;
-  }
+  const troveCount = useTrovesCount(account.address ?? null, collIndex);
 
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
@@ -111,13 +120,43 @@ export function BorrowScreen() {
       && loanDetails.depositUsd
       && loanDetails.deposit
       && dn.gt(loanDetails.deposit, 0)
-    ? DEBT_SUGGESTIONS.map((ratio) => {
-      const debt = loanDetails.maxDebt && dn.mul(loanDetails.maxDebt, ratio);
-      const ltv = debt && loanDetails.deposit && getLtv(loanDetails.deposit, debt, collPrice);
+    ? DEBT_SUGGESTIONS.map((ratio, index) => {
+      let debt = loanDetails.maxDebt && dn.mul(loanDetails.maxDebt, ratio);
+
+      // debt < MIN_DEBT
+      if (debt && dn.lt(debt, MIN_DEBT)) {
+        if (index === 0) {
+          // if it’s the first suggestion, set it to MIN_DEBT
+          debt = MIN_DEBT;
+        } else {
+          // otherwise don’t show it
+          return null;
+        }
+      }
+
+      const ltv = debt && loanDetails.deposit && collPrice && getLtv(
+        loanDetails.deposit,
+        debt,
+        collPrice,
+      );
+
+      // don’t show if ltv > MAX_LTV_ALLOWED
+      if (ltv && dn.gt(ltv, loanDetails.maxLtv)) {
+        return null;
+      }
+
       const risk = ltv && getLiquidationRisk(ltv, loanDetails.maxLtv);
+
       return { debt, ltv, risk };
     })
     : null;
+
+  const maxAmount = collBalance.data && dnumMax(
+    dn.sub(collBalance.data, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0), // Only keep a reserve for ETH, not LSTs
+    dnum18(0),
+  );
+
+  const isBelowMinDebt = debt.parsed && !debt.isEmpty && dn.lt(debt.parsed, MIN_DEBT);
 
   const allowSubmit = account.isConnected
     && deposit.parsed
@@ -185,17 +224,15 @@ export function BorrowScreen() {
               placeholder="0.00"
               secondary={{
                 start: `$${
-                  deposit.parsed
+                  deposit.parsed && collPrice
                     ? fmtnum(dn.mul(collPrice, deposit.parsed), "2z")
                     : "0.00"
                 }`,
-                end: account.isConnected && (
+                end: maxAmount && dn.gt(maxAmount, 0) && (
                   <TextButton
-                    label={`Max ${fmtnum(collBalance.data ?? 0)} ${collateral.name}`}
+                    label={`Max ${fmtnum(maxAmount)} ${collateral.name}`}
                     onClick={() => {
-                      deposit.setValue(
-                        fmtnum(collBalance.data ?? 0).replace(",", ""),
-                      );
+                      deposit.setValue(dn.toString(maxAmount));
                     }}
                   />
                 ),
@@ -204,7 +241,7 @@ export function BorrowScreen() {
             />
           }
           footer={{
-            start: (
+            start: collPrice && (
               <Field.FooterInfoCollPrice
                 collPriceUsd={collPrice}
                 collName={collateral.name}
@@ -228,6 +265,10 @@ export function BorrowScreen() {
                   label="BOLD"
                 />
               }
+              drawer={debt.isFocused || !isBelowMinDebt ? null : {
+                mode: "error",
+                message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
+              }}
               label="Loan"
               placeholder="0.00"
               secondary={{
@@ -238,27 +279,22 @@ export function BorrowScreen() {
                 }`,
                 end: debtSuggestions && (
                   <HFlex gap={6}>
-                    {debtSuggestions.map((s) => (
-                      s.debt && s.risk && (
-                        <PillButton
-                          key={dn.toString(s.debt)}
-                          label={`$${fmtnum(s.debt, { compact: true, digits: 0 })}`}
-                          onClick={() => {
-                            if (s.debt) {
-                              debt.setValue(dn.toString(s.debt, 0));
-                            }
-                          }}
-                          warnLevel={s.risk}
-                        />
-                      )
-                    ))}
-                    {debtSuggestions.length > 0 && (
-                      <InfoTooltip
-                        {...infoTooltipProps(
-                          content.borrowScreen.infoTooltips.interestRateSuggestions,
-                        )}
-                      />
-                    )}
+                    {debtSuggestions.map((s) => {
+                      return s && (
+                        s.debt && s.risk && (
+                          <PillButton
+                            key={dn.toString(s.debt)}
+                            label={`$${fmtnum(s.debt, { compact: true, digits: 0 })}`}
+                            onClick={() => {
+                              if (s.debt) {
+                                debt.setValue(dn.toString(s.debt, 0));
+                              }
+                            }}
+                            warnLevel={s.risk}
+                          />
+                        )
+                      );
+                    })}
                   </HFlex>
                 ),
               }}

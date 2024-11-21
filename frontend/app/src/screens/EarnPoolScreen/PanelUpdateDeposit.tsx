@@ -26,7 +26,7 @@ export function PanelUpdateDeposit({
   position,
 }: {
   deposited: Dnum;
-  collIndex: null | CollIndex;
+  collIndex: CollIndex;
   position?: PositionEarn;
 }) {
   const account = useAccount();
@@ -128,13 +128,13 @@ export function PanelUpdateDeposit({
                 </HFlex>
               ),
               end: mode === "add"
-                ? (boldBalance.data && (
+                ? boldBalance.data && (
                   <TextButton
                     label={`Max ${fmtnum(boldBalance.data, 2)} BOLD`}
                     onClick={() => setValue(dn.toString(boldBalance.data))}
                   />
-                ))
-                : (position?.deposit && dn.gt(position.deposit, 0) && (
+                )
+                : position?.deposit && dn.gt(position.deposit, 0) && (
                   <TextButton
                     label={`Max ${fmtnum(position.deposit, 2)} BOLD`}
                     onClick={() => {
@@ -142,7 +142,7 @@ export function PanelUpdateDeposit({
                       setClaimRewards(true);
                     }}
                   />
-                )),
+                ),
             }}
           />
         }
@@ -230,23 +230,52 @@ export function PanelUpdateDeposit({
           size="large"
           wide
           onClick={() => {
-            if (collateral && account.address && collIndex !== null) {
+            if (!account.address || !collateral || (mode === "remove" && !position)) {
+              return;
+            }
+
+            const newPosition = position
+              ? { ...position, deposit: updatedDeposit }
+              : {
+                type: "earn" as const,
+                owner: account.address,
+                collIndex: collIndex,
+                deposit: updatedDeposit,
+                rewards: { bold: DNUM_0, coll: DNUM_0 },
+              };
+
+            if (mode === "remove" && position) {
               txFlow.start({
-                flowId: mode === "remove" ? "earnWithdraw" : "earnDeposit",
+                flowId: "earnWithdraw",
                 backLink: [
                   `/earn/${collateral.name.toLowerCase()}`,
                   "Back to editing",
                 ],
                 successLink: ["/", "Go to the Dashboard"],
-                successMessage: mode === "remove"
-                  ? "The withdrawal has been processed successfully."
-                  : "The deposit has been processed successfully.",
-
-                depositor: account.address,
-                boldAmount: dn.abs(depositDifference),
+                successMessage: "The withdrawal has been processed successfully.",
                 claim: claimRewards,
                 collIndex,
+                prevEarnPosition: position,
+                earnPosition: newPosition,
               });
+              return;
+            }
+
+            if (mode === "add") {
+              txFlow.start({
+                flowId: "earnDeposit",
+                backLink: [
+                  `/earn/${collateral.name.toLowerCase()}`,
+                  "Back to editing",
+                ],
+                successLink: ["/", "Go to the Dashboard"],
+                successMessage: "The deposit has been processed successfully.",
+                claim: claimRewards,
+                collIndex,
+                prevEarnPosition: position ?? null,
+                earnPosition: newPosition,
+              });
+              return;
             }
           }}
         />

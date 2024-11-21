@@ -66,7 +66,7 @@ export function PositionCardBorrow({
             <div
               className={css({
                 display: "flex",
-                color: "strongSurfaceContentAlt2",
+                color: "white",
               })}
             >
               <IconBorrow size={16} />

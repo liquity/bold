@@ -69,21 +69,21 @@ export function Screen({
 
   const headingSpring = useSpring({
     from: {
-      opacity: 0,
+      opacity: 1,
       transform: `
-        scale3d(1.03, 1.03, 1)
-        translate3d(0, 16px, 0)
+        scale(1.08)
+        translate(0, 16px)
       `,
     },
     to: {
       opacity: 1,
       transform: `
-        scale3d(1, 1, 1)
-        translate3d(0, 0px, 0)
+        scale(1)
+        translate(0, 0px)
       `,
     },
     config: {
-      mass: 2,
+      mass: 1,
       tension: 2400,
       friction: 120,
     },
@@ -127,12 +127,17 @@ export function Screen({
         )}
       </header>
     )
-    : heading;
+    : (
+      <div style={{ width }}>
+        {heading}
+      </div>
+    );
 
   return (
     <div
       className={cx(
         css({
+          position: "relative",
           flexGrow: 1,
           display: "flex",
           gap: 48,
@@ -156,10 +161,10 @@ export function Screen({
                 base: "static",
                 large: "absolute",
               },
-              left: 100,
+              left: 0,
+              zIndex: 1,
             })}
             style={{
-              width,
               transform: style.transform,
               opacity: style.opacity.to([0, 0.5, 1], [0, 1, 1]),
             }}

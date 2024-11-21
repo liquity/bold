@@ -26,6 +26,7 @@ export function StakePositionSummary({
         position: "relative",
         display: "flex",
         flexDirection: "column",
+        width: "100%",
         padding: 16,
         borderRadius: 8,
         userSelect: "none",
@@ -199,18 +200,33 @@ export function StakePositionSummary({
               ? (
                 <HFlex
                   gap={8}
-                  className={css({
-                    color: txPreviewMode ? "var(--update-color)" : "inherit",
-                  })}
                 >
-                  <HFlex gap={4}>
+                  <HFlex
+                    gap={4}
+                    className={css({
+                      color: txPreviewMode
+                          && stakePosition?.rewards.lusd
+                          && dn.gt(stakePosition?.rewards.lusd, 0)
+                        ? "var(--update-color)"
+                        : "inherit",
+                    })}
+                  >
                     <Amount
                       format="2diff"
                       value={stakePosition?.rewards.lusd ?? 0}
                     />
                     <TokenIcon symbol="LUSD" size="mini" />
                   </HFlex>
-                  <HFlex gap={4}>
+                  <HFlex
+                    gap={4}
+                    className={css({
+                      color: txPreviewMode
+                          && stakePosition?.rewards.eth
+                          && dn.gt(stakePosition?.rewards.eth, 0)
+                        ? "var(--update-color)"
+                        : "inherit",
+                    })}
+                  >
                     <Amount
                       format="2diff"
                       value={stakePosition?.rewards.eth ?? 0}

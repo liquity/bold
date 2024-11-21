@@ -61,7 +61,7 @@ export function PositionCardLeverage({
             <div
               className={css({
                 display: "flex",
-                color: "strongSurfaceContentAlt2",
+                color: "brandGreen",
               })}
             >
               <IconLeverage size={16} />

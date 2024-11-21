@@ -1,13 +1,13 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
-import { getBuiltGraphSDK } from "@/.graphclient";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { fmtnum } from "@/src/formatting";
 import { getCollToken, getPrefixedTroveId, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { usePrice } from "@/src/services/Prices";
+import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
 import { isTroveId } from "@/src/types";
 import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
@@ -139,7 +139,6 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
     const { loan, prevLoan } = request;
 
     const collChange = getCollChange(loan, prevLoan);
-    const debtChange = dn.sub(loan.borrowed, prevLoan.borrowed);
 
     const collateral = getCollToken(loan.collIndex);
     if (!collateral) {
@@ -194,13 +193,13 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
               />
             </div>,
             upfrontFeeData.data?.upfrontFee
-            && dn.gt(upfrontFeeData.data?.upfrontFee, 0n)
+            && dn.gt(upfrontFeeData.data.upfrontFee, 0n)
             && (
               <Amount
                 key="end"
                 fallback="…"
                 prefix="Incl. "
-                value={upfrontFeeData.data?.upfrontFee}
+                value={upfrontFeeData.data.upfrontFee}
                 suffix=" BOLD upfront fee"
               />
             ),
@@ -386,10 +385,8 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
       lastStep.txReceiptData,
     );
 
-    const graph = getBuiltGraphSDK();
-
     while (true) {
-      const { trove } = await graph.TroveById({ id: prefixedTroveId });
+      const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
 
       // trove found and updated: check done
       if (trove && Number(trove.updatedAt) * 1000 !== lastUpdate) {
