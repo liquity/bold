@@ -41,7 +41,6 @@ import "../Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
 import "../Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol";
 import "../Zappers/Modules/Exchanges/HybridCurveUniV3Exchange.sol";
 import {WETHTester} from "../test/TestContracts/WETHTester.sol";
-import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import "forge-std/console2.sol";
 import {IRateProvider, IWeightedPool, IWeightedPoolFactory} from "./Interfaces/Balancer/IWeightedPool.sol";
 import {IVault} from "./Interfaces/Balancer/IVault.sol";
@@ -232,11 +231,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // );
         }
 
-        deployGovernance(deployer, SALT, deployed.boldToken, deployed.usdc);
+        string memory governanceManifest = deployGovernance(deployer, SALT, deployed.boldToken, deployed.usdc);
 
         vm.stopBroadcast();
 
-        vm.writeFile("deployment-manifest.json", _getManifestJson(deployed));
+        vm.writeFile("deployment-manifest.json", _getManifestJson(deployed, governanceManifest));
 
         if (vm.envOr("OPEN_DEMO_TROVES", false)) {
             // Anvil default accounts
@@ -891,7 +890,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
     }
 
-    function _getManifestJson(DeploymentResult memory deployed) internal pure returns (string memory) {
+    function _getManifestJson(DeploymentResult memory deployed, string memory _governanceManifest) internal pure returns (string memory) {
         string[] memory branches = new string[](deployed.contractsArray.length);
 
         // Poor man's .map()
@@ -908,7 +907,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",'),
                 string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
                 string.concat('"exchangeHelpers":"', address(deployed.exchangeHelpers).toHexString(), '",'),
-                string.concat('"branches":[', branches.join(","), "]") // no comma
+                string.concat('"branches":[', branches.join(","), "],"),
+                string.concat('"governance":', _governanceManifest, '" ') // no comma
             ),
             "}"
         );
