@@ -13,10 +13,6 @@ function getBatchManager(uint256 troveId) returns address {
     return troveManager.Troves[troveId].interestBatchManager;
 }
 
-function getBatchManagerStake(uint256 troveId) returns uint256 {
-    return troveManager.Troves[troveId].stake;
-}
-
 function getTroveBatchDebtShares(uint256 troveId) returns uint256 {
     return troveManager.Troves[troveId].batchDebtShares;
 }
@@ -102,4 +98,12 @@ function trove_batch_valid_eq_timestamp(env e, uint256 troveId,
         troveManager.Troves[troveId].lastDebtUpdateTime <= e.block.timestamp &&
         troveManager.batches[batchAddress].lastDebtUpdateTime <= e.block.timestamp &&
         troveManager.Troves[troveId].lastDebtUpdateTime == troveManager.batches[batchAddress].lastDebtUpdateTime;
+}
+
+
+function num_shares_num_debt_assumption(
+    uint256 share_debt_scalar,
+    TroveManager.LatestBatchData batchData,
+    address batchAddress) returns bool {
+    return getBatchTotalShares(batchAddress) == share_debt_scalar * batchData.recordedDebt;
 }
