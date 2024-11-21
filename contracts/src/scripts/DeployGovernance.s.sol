@@ -67,7 +67,13 @@ contract DeployGovernance is Script, Deployers {
     ICurveStableswapNG private curvePool;
     ILiquidityGauge private gauge;
 
-    function deployGovernance(address _deployer, bytes32 _salt, IERC20 _boldToken, IERC20 _usdc, ICurveStableswapNG _curvePool) internal returns (address, string memory) {
+    function deployGovernance(
+        address _deployer,
+        bytes32 _salt,
+        IERC20 _boldToken,
+        IERC20 _usdc,
+        ICurveStableswapNG _curvePool
+    ) internal returns (address, string memory) {
         deployEnvironment(_boldToken, _usdc);
 
         curvePool = _curvePool;
@@ -101,29 +107,26 @@ contract DeployGovernance is Script, Deployers {
         return (governanceAddress, _getManifestJson());
     }
 
-    function computeGovernanceAddressWithNoInitiatives(
-        address _deployer,
-        bytes32 _salt
-    ) internal view returns (address) {
+    function computeGovernanceAddressWithNoInitiatives(address _deployer, bytes32 _salt)
+        internal
+        view
+        returns (address)
+    {
         address[] memory initialInitiatives;
         (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt, initialInitiatives);
         return governanceAddress;
     }
 
-    function computeGovernanceAddress(
-        address _deployer,
-        bytes32 _salt,
-        address[] memory _initialInitiatives
-    ) internal view returns (address) {
+    function computeGovernanceAddress(address _deployer, bytes32 _salt, address[] memory _initialInitiatives)
+        internal
+        view
+        returns (address)
+    {
         (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt, _initialInitiatives);
         return governanceAddress;
     }
 
-    function computeGovernanceAddressAndConfig(
-        address _deployer,
-        bytes32 _salt,
-        address[] memory _initialInitiatives
-    )
+    function computeGovernanceAddressAndConfig(address _deployer, bytes32 _salt, address[] memory _initialInitiatives)
         internal
         view
         returns (address, IGovernance.Configuration memory)
@@ -221,8 +224,12 @@ contract DeployGovernance is Script, Deployers {
             "{",
             string.concat(
                 string.concat('"REGISTRATION_FEE":"', uint256(REGISTRATION_FEE).toString(), '",'),
-                string.concat('"REGISTRATION_THRESHOLD_FACTOR":"', uint256(REGISTRATION_THRESHOLD_FACTOR).toString(), '",'),
-                string.concat('"UNREGISTRATION_THRESHOLD_FACTOR":"', uint256(UNREGISTRATION_THRESHOLD_FACTOR).toString(), '",'),
+                string.concat(
+                    '"REGISTRATION_THRESHOLD_FACTOR":"', uint256(REGISTRATION_THRESHOLD_FACTOR).toString(), '",'
+                ),
+                string.concat(
+                    '"UNREGISTRATION_THRESHOLD_FACTOR":"', uint256(UNREGISTRATION_THRESHOLD_FACTOR).toString(), '",'
+                ),
                 string.concat('"REGISTRATION_WARM_UP_PERIOD":"', uint256(REGISTRATION_WARM_UP_PERIOD).toString(), '",'),
                 string.concat('"UNREGISTRATION_AFTER_EPOCHS":"', uint256(UNREGISTRATION_AFTER_EPOCHS).toString(), '",'),
                 string.concat('"VOTING_THRESHOLD_FACTOR":"', uint256(VOTING_THRESHOLD_FACTOR).toString(), '",'),

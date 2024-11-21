@@ -230,7 +230,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // );
         }
 
-        (address governanceAddress, string memory governanceManifest) = deployGovernance(deployer, SALT, deployed.boldToken, deployed.usdc, ICurveStableswapNG(address(deployed.usdcCurvePool)));
+        (address governanceAddress, string memory governanceManifest) = deployGovernance(
+            deployer, SALT, deployed.boldToken, deployed.usdc, ICurveStableswapNG(address(deployed.usdcCurvePool))
+        );
         address computedGovernanceAddress = computeGovernanceAddressWithNoInitiatives(deployer, SALT);
         assert(governanceAddress == computedGovernanceAddress);
 
@@ -879,7 +881,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
     }
 
-    function _getManifestJson(DeploymentResult memory deployed, string memory _governanceManifest) internal pure returns (string memory) {
+    function _getManifestJson(DeploymentResult memory deployed, string memory _governanceManifest)
+        internal
+        pure
+        returns (string memory)
+    {
         string[] memory branches = new string[](deployed.contractsArray.length);
 
         // Poor man's .map()
