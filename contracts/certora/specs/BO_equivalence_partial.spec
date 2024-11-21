@@ -10,9 +10,6 @@ methods {
     function SafeERC20._callOptionalReturn(address token, bytes memory data) internal => NONDET;
     // contributes to non-linearity
     function _.fetchPrice() external => NONDET;
-    
-    // depepnds on 2 state variables totalStakesSnapshot / totalCollateralSnapshot
-    // function TroveManager._computeNewStake(uint _coll) internal returns (uint) => NONDET;
 
     function SortedTroves.insert(uint256 _id, uint256 _annualInterestRate, uint256 _prevId, uint256 _nextId) external => NONDET;
 
@@ -86,7 +83,7 @@ function troveBatchTroveEquivalent_(env e, uint256 troveIdX, uint256 troveIdY,
 
 // recordedDebt
 // STATUS: VERIFIED
-// https://vaas-stg.certora.com/output/11775/f2e2dc2a7caf4261bf07b0a012fb5d0f?anonymousKey=b037c668f873a9a2e50ace15ead6b45a12c8c2d5
+// https://vaas-stg.certora.com/output/11775/5365ab00333f49d29a7bc89ce596075f?anonymousKey=d1123309af27b89dd7947096457605f446c73d3d
 rule troveBatchTroveEquivalenceAddColl_recordedDebt(){
     uint256 troveIdX;
     uint256 troveIdY;
@@ -114,14 +111,13 @@ rule troveBatchTroveEquivalenceAddColl_recordedDebt(){
 
 
     // adding this to get around the CEX where BorrowerOperations.interestBatchManagerOf is not the same as the batch manager
-    require currentContract.interestBatchManagerOf[troveIdY] == batchAddress;
-    require currentContract.interestBatchManagerOf[troveIdX] == 0;
+    require batch_manager_storage_locations_agree(troveIdY);
+    require batch_manager_storage_locations_agree(troveIdX);
 
     // confirmed by the liquity team as one of the pre-conditions
     require troveDataX_before.annualInterestRate == troveManager.batches[batchAddress].annualInterestRate;
 
-    // assuming batch debt shares of a trove are less than total shares for of the batch
-    require troveManager.Troves[troveIdY].batchDebtShares <= troveManager.batches[batchAddress].totalDebtShares;
+    // assuming total shares of the batch > 0
     require troveManager.batches[batchAddress].totalDebtShares > 0;
 
     
@@ -148,7 +144,7 @@ rule troveBatchTroveEquivalenceAddColl_recordedDebt(){
 
 // redistribution debt/coll gains and  recorded collateral
 // STATUS: VERIFIED
-// https://prover.certora.com/output/11775/719c45e717cc44d48f96efa7f5b18243?anonymousKey=2e13104362c896777711d318b16d4b44162dd05b
+// https://vaas-stg.certora.com/output/11775/9fea33ae5343403dad8373284cbf03da?anonymousKey=1433e989df37699a4c8c81d317f894f9bcd2492d
 rule troveBatchTroveEquivalenceAddColl_gainsColl(){
     uint256 troveIdX;
     uint256 troveIdY;
@@ -182,7 +178,7 @@ rule troveBatchTroveEquivalenceAddColl_gainsColl(){
 
 // stake
 // STATUS: VERIFIED
-// https://prover.certora.com/output/11775/2816ed9a1f234fcab23c916ff1b7738a?anonymousKey=080c5257964d7136a661079504d57cd8a5a14dd2
+// https://vaas-stg.certora.com/output/11775/8fbcb6a01ec24ed0bad3a89ec12e77ba?anonymousKey=1c920b9cb828e0622850de308f8056b7f844fcc9
 rule troveBatchTroveEquivalenceAddColl_stake(){
     uint256 troveIdX;
     uint256 troveIdY;
@@ -212,7 +208,7 @@ rule troveBatchTroveEquivalenceAddColl_stake(){
 
 // recordedDebt
 // STATUS: VERIFIED
-// https://vaas-stg.certora.com/output/11775/d2f03e55d10141f1b924ed9ccc4b1f12?anonymousKey=4453fbefe80131b366498ab2650ef330aaffcc83
+// https://vaas-stg.certora.com/output/11775/9e7b201012e04f1780fe0fe2335ac0a3?anonymousKey=fa820c490755f8b5ee9c81068e71690e62f835cf
 rule troveBatchTroveEquivalenceWithdrawColl_recordedDebt(){
     uint256 troveIdX;
     uint256 troveIdY;
@@ -239,14 +235,13 @@ rule troveBatchTroveEquivalenceWithdrawColl_recordedDebt(){
     require trove_trove_valid_eq_timestamp(e, troveIdX, troveIdX);
 
     // adding this to get around the CEX where BorrowerOperations.interestBatchManagerOf is not the same as the batch manager
-    require currentContract.interestBatchManagerOf[troveIdY] == batchAddress;
-    require currentContract.interestBatchManagerOf[troveIdX] == 0;
+    require batch_manager_storage_locations_agree(troveIdX);
+    require batch_manager_storage_locations_agree(troveIdY);
 
     // confirmed by the liquity team as one of the pre-conditions
     require troveDataX_before.annualInterestRate == troveManager.batches[batchAddress].annualInterestRate;
 
-    // assuming batch debt shares of a trove are less than total shares for of the batch
-    require troveManager.Troves[troveIdY].batchDebtShares <= troveManager.batches[batchAddress].totalDebtShares;
+    // assuming total shares of the batch > 0
     require troveManager.batches[batchAddress].totalDebtShares > 0;
 
     uint256 _batchDebtShares = troveManager.Troves[troveIdY].batchDebtShares;
@@ -272,7 +267,7 @@ rule troveBatchTroveEquivalenceWithdrawColl_recordedDebt(){
 
 // redistribution debt/coll gains and  recorded collateral
 // STATUS: VERIFIED
-// https://vaas-stg.certora.com/output/40748/28e0c8aa514b41b497e9318c11312909?anonymousKey=4f1672843167e3f9c219d3ee87a3f83fdc7579c4
+// https://vaas-stg.certora.com/output/11775/d9e9d6ea0521456e882c6dec67e9a81a?anonymousKey=19ad554e6d8a57df250cea8370a98025109c0635
 rule troveBatchTroveEquivalenceWithdrawColl_gainsColl(){
     uint256 troveIdX;
     uint256 troveIdY;
@@ -306,7 +301,7 @@ rule troveBatchTroveEquivalenceWithdrawColl_gainsColl(){
 
 // stake
 // STATUS: VERIFIED
-// https://prover.certora.com/output/11775/6cf00c6171344acebd1d3b3a97e7f4f6?anonymousKey=02e47532cd3e760c863823f50a39fe086066a714
+// https://vaas-stg.certora.com/output/11775/ad0f8923b3a849b381ba6f79fb958551?anonymousKey=2cc668b10691e138f47b6c5bf35b018eb3f29276
 rule troveBatchTroveEquivalenceWithdrawColl_stake(){
     uint256 troveIdX;
     uint256 troveIdY;
@@ -340,46 +335,35 @@ rule troveBatchTroveEquivalenceWithdrawColl_stake(){
 //////////////// Increasing Debt /////////////////////
 
 // recordedDebt
+// with shares to debt scalar multiplier of 1 and 1e9
 // STATUS: VERIFIED
-// https://vaas-stg.certora.com/output/11775/0ff12f388c9247fba86e5e328a8b90c7?anonymousKey=1b4367d940c12ca9c69e2226ae858cf49e1dd3e5
+// https://vaas-stg.certora.com/output/11775/abbccfbca73143f28adb2fb36f0b2f12?anonymousKey=13c7b3527292b231499182a0528b6079dd28a55e
 rule troveBatchTroveEquivalenceWithdrawBold_recordedDebt(){
+    env e;
     uint256 troveIdX;
     uint256 troveIdY;
     address batchAddress;
     require batchAddress != 0;
     require getBatchManager(troveIdX) == 0;
     require getBatchManager(troveIdY) == batchAddress;
-
     // adding this to avoid management fee that can cause deviation from a non-batch trove
     require troveManager.batches[batchAddress].annualManagementFee == 0;
     
-    env e;
-    
     TroveManager.LatestTroveData troveDataX_before = troveManager.getLatestTroveData(e, troveIdX);
-    
     TroveManager.LatestTroveData troveDataY_before  = troveManager.getLatestTroveData(e, troveIdY);
-
     TroveManager.LatestBatchData batchData_before= troveManager.getLatestBatchData(e, batchAddress);
     
     require troveBatchTroveEquivalent_(e, troveIdX, troveIdY, troveDataX_before, troveDataY_before);
-
     // adding to get around the CEX where block timestamp is more than max uint64 and lastDebtUpdate gets 
-    // stored as a smaller value than previous due to overflow causing a higher period to lead to higher accrued interest
     require trove_trove_valid_eq_timestamp(e, troveIdX, troveIdX);
-
-
     // adding this to get around the CEX where BorrowerOperations.interestBatchManagerOf is not the same as the batch manager
-    require currentContract.interestBatchManagerOf[troveIdY] == batchAddress;
-    require currentContract.interestBatchManagerOf[troveIdX] == 0;
-
+    require batch_manager_storage_locations_agree(troveIdX);
+    require batch_manager_storage_locations_agree(troveIdY);
     // confirmed by the liquity team as one of the pre-conditions
     require troveDataX_before.annualInterestRate == troveManager.batches[batchAddress].annualInterestRate;
-
-    // assuming batch debt shares of a trove are less than total shares for of the batch
-    require troveManager.Troves[troveIdY].batchDebtShares <= troveManager.batches[batchAddress].totalDebtShares;
+    // assuming total shares of the batch > 0
     require troveManager.batches[batchAddress].totalDebtShares > 0;
 
-    
     uint256 _batchDebtShares = troveManager.Troves[troveIdY].batchDebtShares;
     uint256 _totalDebtShares = troveManager.batches[batchAddress].totalDebtShares;
     
@@ -388,7 +372,10 @@ rule troveBatchTroveEquivalenceWithdrawBold_recordedDebt(){
 
     require debt_and_shares_relationship(troveIdY, batchAddress, batchData_before, troveDataY_before);
 
-    require num_shares_num_debt_assumption(batchData_before, batchAddress);
+    // requiring that the batch total shares are a scalar multiple of the batch recordedDebt
+    uint256 share_debt_scalar;
+    require share_debt_scalar == 1 || share_debt_scalar == 1000000000;
+    require num_shares_num_debt_assumption(share_debt_scalar, batchData_before, batchAddress);
 
     storage init = lastStorage;
     uint256 boldAmount;
@@ -407,7 +394,7 @@ rule troveBatchTroveEquivalenceWithdrawBold_recordedDebt(){
 
 // redistribution debt/coll gains and  recorded collateral
 // STATUS: VERIFIED
-// https://vaas-stg.certora.com/output/11775/ddeb6832e10d4736ad3fa33b59997cf9?anonymousKey=4ebd5aee5eb785e9684b44c815cb5acf404ee9bc
+// https://vaas-stg.certora.com/output/11775/355e4a71be3b499f821cfb4f8792a58e?anonymousKey=5598175e06e5988c8410316421a73a2c904539c3
 rule troveBatchTroveEquivalenceWithdrawBold_gainsColl(){
     uint256 troveIdX;
     uint256 troveIdY;
@@ -430,7 +417,7 @@ rule troveBatchTroveEquivalenceWithdrawBold_gainsColl(){
 
 
     // adding this to get around the CEX where BorrowerOperations.interestBatchManagerOf is not the same as the batch manager
-    require currentContract.interestBatchManagerOf[troveIdY] == batchAddress;
+    require batch_manager_storage_locations_agree(troveIdX);
 
     // confirmed by the liquity team as one of the pre-conditions
     require troveDataX_before.annualInterestRate == troveManager.batches[batchAddress].annualInterestRate;
@@ -457,7 +444,7 @@ rule troveBatchTroveEquivalenceWithdrawBold_gainsColl(){
 
 // stake
 // STATUS: VERIFIED
-// https://prover.certora.com/output/11775/d318729e27964eb3b1fc4c7d25ec3971?anonymousKey=9659ac3bf1c0b26c4ee4de0834a10cfe60d1e674
+// https://vaas-stg.certora.com/output/11775/7c1705d5d6c24f9daf61b6a4cdd647fc?anonymousKey=98bb7c1cb2fa0ea0338fce9a4c199c50aea46d8e
 rule troveBatchTroveEquivalenceWithdrawBold_stake(){
     uint256 troveIdX;
     uint256 troveIdY;
@@ -488,7 +475,7 @@ rule troveBatchTroveEquivalenceWithdrawBold_stake(){
 
 // recordedDebt
 // STATUS: VERIFIED
-// https://vaas-stg.certora.com/output/11775/26ec5349b7674587a53e55bc5cabbcb0?anonymousKey=0bc4f01f799c5e1b80b6a50fbf9f473f7bdfb1ba
+// https://vaas-stg.certora.com/output/11775/95d5d66774c2445cbdbe5b6b3f2c952b?anonymousKey=49a47727edd049074274796d5462bc4f7901af4b
 rule troveBatchTroveEquivalenceRepayBold_recordedDebt(){
     uint256 troveIdX;
     uint256 troveIdY;
@@ -516,14 +503,13 @@ rule troveBatchTroveEquivalenceRepayBold_recordedDebt(){
 
 
     // adding this to get around the CEX where BorrowerOperations.interestBatchManagerOf is not the same as the batch manager
-    require currentContract.interestBatchManagerOf[troveIdY] == batchAddress;
-    require currentContract.interestBatchManagerOf[troveIdX] == 0;
+    require batch_manager_storage_locations_agree(troveIdX);
+    require batch_manager_storage_locations_agree(troveIdY);
 
     // confirmed by the liquity team as one of the pre-conditions
     require troveDataX_before.annualInterestRate == troveManager.batches[batchAddress].annualInterestRate;
 
-    // assuming batch debt shares of a trove are less than total shares for of the batch
-    require troveManager.Troves[troveIdY].batchDebtShares <= troveManager.batches[batchAddress].totalDebtShares;
+    // assuming total shares of the batch > 0
     require troveManager.batches[batchAddress].totalDebtShares > 0;
 
     uint256 _batchDebtShares = troveManager.Troves[troveIdY].batchDebtShares;
@@ -533,8 +519,11 @@ rule troveBatchTroveEquivalenceRepayBold_recordedDebt(){
     require troveDataX_before.redistBoldDebtGain == troveDataY_before.redistBoldDebtGain * _batchDebtShares / _totalDebtShares;
 
     require debt_and_shares_relationship(troveIdY, batchAddress, batchData_before, troveDataY_before);
-
-    require num_shares_num_debt_assumption(batchData_before, batchAddress);
+    
+    // requiring that the batch total shares are a scalar multiple of the batch recordedDebt
+    uint256 share_debt_scalar;
+    require share_debt_scalar == 1 || share_debt_scalar == 1000000000 || share_debt_scalar == 10^9 - 5 || share_debt_scalar == 2;
+    require num_shares_num_debt_assumption(share_debt_scalar, batchData_before, batchAddress);
 
     storage init = lastStorage;
     uint256 boldAmount;
@@ -551,7 +540,7 @@ rule troveBatchTroveEquivalenceRepayBold_recordedDebt(){
 
 // redistribution debt/coll gains and  recorded collateral
 // STATUS: VERIFIED
-// https://vaas-stg.certora.com/output/11775/65fe4818c79e421ca07030dd2bb14726?anonymousKey=2a37718f20265ebab9ea2d25d1d111e594435ecf
+// https://vaas-stg.certora.com/output/11775/47f52cb0cb9f47ef84f9a85db2efda98?anonymousKey=db65484e53ff3b0f1f05941d930429969fed048c
 rule troveBatchTroveEquivalenceRepayBold_gainsColl(){
     uint256 troveIdX;
     uint256 troveIdY;
@@ -574,7 +563,7 @@ rule troveBatchTroveEquivalenceRepayBold_gainsColl(){
 
 
     // adding this to get around the CEX where BorrowerOperations.interestBatchManagerOf is not the same as the batch manager
-    require currentContract.interestBatchManagerOf[troveIdY] == batchAddress;
+    require batch_manager_storage_locations_agree(troveIdY);
 
     // confirmed by the liquity team as one of the pre-conditions
     require troveDataX_before.annualInterestRate == troveManager.batches[batchAddress].annualInterestRate;
@@ -599,7 +588,7 @@ rule troveBatchTroveEquivalenceRepayBold_gainsColl(){
 
 // stake
 // STATUS: VERIFIED
-// https://prover.certora.com/output/11775/88395440eff2411f90007bfc3ce8ac0d?anonymousKey=6521bcac25f5ecc590d0dfaf3702d18c3e288505
+// https://vaas-stg.certora.com/output/11775/f0a580b2edc24913846047098d65ca1c?anonymousKey=b2fd2de8de536cfee05625a21dd8f5cef49f3be4
 rule troveBatchTroveEquivalenceRepayBold_stake(){
     uint256 troveIdX;
     uint256 troveIdY;

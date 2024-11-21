@@ -100,39 +100,10 @@ function trove_batch_valid_eq_timestamp(env e, uint256 troveId,
         troveManager.Troves[troveId].lastDebtUpdateTime == troveManager.batches[batchAddress].lastDebtUpdateTime;
 }
 
-ghost uint256 share_debt_scalar;
+
 function num_shares_num_debt_assumption(
+    uint256 share_debt_scalar,
     TroveManager.LatestBatchData batchData,
     address batchAddress) returns bool {
-    return (
-        // share_debt_scalar == 1
-        share_debt_scalar == 1 ||
-        share_debt_scalar == 2 ||
-        share_debt_scalar == 3 ||
-        share_debt_scalar == 4 ||
-        share_debt_scalar == 5 ||
-        share_debt_scalar ==  (1000000000 - 5) ||
-        share_debt_scalar  == 1000000000
-        ) &&
-        getBatchTotalShares(batchAddress) ==
-        share_debt_scalar * batchData.recordedDebt;
-}
-
-ghost uint256 share_share_scalar;
-function num_shares_num_totalShares_assumption(
-    uint256 troveId,
-    address batchAddress) returns bool {
-    return (share_debt_scalar == 1 ||
-            share_debt_scalar == 2 ||
-            share_debt_scalar == 3 ||
-            share_debt_scalar == 4 ||
-            share_debt_scalar == 5 ||
-            share_debt_scalar == 6 ||
-            share_debt_scalar == 7 ||
-            share_debt_scalar == 8 ||
-            share_debt_scalar == 9 ||
-            share_debt_scalar == 10
-        ) &&
-        getBatchTotalShares(batchAddress) ==
-        share_debt_scalar * getTroveBatchDebtShares(troveId);
+    return getBatchTotalShares(batchAddress) == share_debt_scalar * batchData.recordedDebt;
 }
