@@ -426,7 +426,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         r.exchangeHelpers = new HybridCurveUniV3ExchangeHelpers(
             r.usdc,
             _WETH,
-            usdcCurvePool,
+            r.usdcCurvePool,
             USDC_INDEX, // USDC Curve pool index
             BOLD_TOKEN_INDEX, // BOLD Curve pool index
             UNIV3_FEE_USDC_WETH,

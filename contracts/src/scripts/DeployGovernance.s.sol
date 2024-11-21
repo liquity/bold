@@ -112,8 +112,8 @@ contract DeployGovernance is Script, Deployers {
         view
         returns (address)
     {
-        address[] memory initialInitiatives;
-        (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt, initialInitiatives);
+        address[] memory emptyInitialInitiatives;
+        (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt, emptyInitialInitiatives);
         return governanceAddress;
     }
 
