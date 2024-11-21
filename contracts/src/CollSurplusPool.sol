@@ -27,7 +27,7 @@ contract CollSurplusPool is ICollSurplusPool {
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
 
     event CollBalanceUpdated(address indexed _account, uint256 _newBalance);
-    event CollSent(address _to, uint256 _amount);
+    event CollSent(address indexed _to, uint256 _amount);
 
     constructor(IAddressesRegistry _addressesRegistry) {
         collToken = _addressesRegistry.collToken();
