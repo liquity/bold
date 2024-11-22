@@ -917,7 +917,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
                 string.concat('"exchangeHelpers":"', address(deployed.exchangeHelpers).toHexString(), '",'),
                 string.concat('"branches":[', branches.join(","), "],"),
-                string.concat('"governance":', _governanceManifest, '" ') // no comma
+                string.concat('"governance":', _governanceManifest, '') // no comma
             ),
             "}"
         );
