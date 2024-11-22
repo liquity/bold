@@ -18,7 +18,6 @@ import {UniV4Donations} from "V2-gov/src/UniV4Donations.sol";
 import {CurveV2GaugeRewards} from "V2-gov/src/CurveV2GaugeRewards.sol";
 import {Hooks} from "V2-gov/src/utils/BaseHook.sol";
 
-import {MockStakingV1} from "V2-gov/test/mocks/MockStakingV1.sol";
 import {HookMiner} from "V2-gov/script/utils/HookMiner.sol";
 
 import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
@@ -29,10 +28,8 @@ contract DeployGovernance is Script, Deployers {
     using Strings for *;
 
     // Environment Constants
-    ERC20Faucet private lqty;
-    IERC20 private boldToken;
-    address private stakingV1;
-    IERC20 private usdc;
+    ERC20Faucet internal lqty;
+    address internal stakingV1;
 
     PoolManager private constant poolManager = PoolManager(0xE8E23e97Fa135823143d6b9Cba9c699040D51F70);
     ICurveStableswapFactoryNG private constant curveFactory =
@@ -74,18 +71,16 @@ contract DeployGovernance is Script, Deployers {
         IERC20 _usdc,
         ICurveStableswapNG _curvePool
     ) internal returns (address, string memory) {
-        deployEnvironment(_boldToken, _usdc);
-
         curvePool = _curvePool;
 
         (address governanceAddress, IGovernance.Configuration memory governanceConfiguration) =
-            computeGovernanceAddressAndConfig(_deployer, _salt, initialInitiatives);
+            computeGovernanceAddressAndConfig(_deployer, _salt, _boldToken, initialInitiatives);
 
         governance = new Governance{salt: _salt}(
             address(lqty),
-            address(boldToken),
+            address(_boldToken),
             stakingV1,
-            address(boldToken),
+            address(_boldToken),
             governanceConfiguration,
             _deployer,
             initialInitiatives
@@ -97,36 +92,36 @@ contract DeployGovernance is Script, Deployers {
         //console2.log(governanceAddress, "governanceAddress");
         assert(governanceAddress == address(governance));
         // Uni V4 initiative
-        deployUniV4Donations(governance);
+        deployUniV4Donations(governance, _boldToken, _usdc);
 
         // Curve initiative
-        //deployCurveV2GaugeRewards(governance);
+        //deployCurveV2GaugeRewards(governance, _boldToken);
 
         governance.registerInitialInitiatives(initialInitiatives);
 
         return (governanceAddress, _getManifestJson());
     }
 
-    function computeGovernanceAddressWithNoInitiatives(address _deployer, bytes32 _salt)
+    function computeGovernanceAddress(
+        address _deployer,
+        bytes32 _salt,
+        IERC20 _boldToken,
+        address[] memory _initialInitiatives
+    )
         internal
         view
         returns (address)
     {
-        address[] memory emptyInitialInitiatives;
-        (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt, emptyInitialInitiatives);
+        (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt, _boldToken, _initialInitiatives);
         return governanceAddress;
     }
 
-    function computeGovernanceAddress(address _deployer, bytes32 _salt, address[] memory _initialInitiatives)
-        internal
-        view
-        returns (address)
-    {
-        (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt, _initialInitiatives);
-        return governanceAddress;
-    }
-
-    function computeGovernanceAddressAndConfig(address _deployer, bytes32 _salt, address[] memory _initialInitiatives)
+    function computeGovernanceAddressAndConfig(
+        address _deployer,
+        bytes32 _salt,
+        IERC20 _boldToken,
+        address[] memory _initialInitiatives
+    )
         internal
         view
         returns (address, IGovernance.Configuration memory)
@@ -145,13 +140,17 @@ contract DeployGovernance is Script, Deployers {
             epochDuration: EPOCH_DURATION,
             epochVotingCutoff: EPOCH_VOTING_CUTOFF
         });
+        //console2.log(address(lqty), "address(lqty)");
+        //console2.log(address(_boldToken), "address(_boldToken)");
+        //console2.log(stakingV1, "stakingV1");
+        //console2.log(_initialInitiatives.length, "_initialInitiatives");
         bytes memory bytecode = abi.encodePacked(
             type(Governance).creationCode,
             abi.encode(
                 address(lqty),
-                address(boldToken),
+                address(_boldToken),
                 stakingV1,
-                address(boldToken),
+                address(_boldToken),
                 governanceConfiguration,
                 _deployer,
                 _initialInitiatives
@@ -163,14 +162,7 @@ contract DeployGovernance is Script, Deployers {
         return (governanceAddress, governanceConfiguration);
     }
 
-    function deployEnvironment(IERC20 _boldToken, IERC20 _usdc) private {
-        boldToken = _boldToken;
-        usdc = _usdc;
-        lqty = new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days);
-        stakingV1 = address(new MockStakingV1(address(lqty)));
-    }
-
-    function deployUniV4Donations(IGovernance _governance) private {
+    function deployUniV4Donations(IGovernance _governance, IERC20 _boldToken, IERC20 _usdc) private {
         uint160 flags = uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.AFTER_ADD_LIQUIDITY_FLAG);
 
         (, bytes32 salt) = HookMiner.find(
@@ -180,12 +172,12 @@ contract DeployGovernance is Script, Deployers {
             type(UniV4Donations).creationCode,
             abi.encode(
                 address(_governance),
-                address(boldToken),
+                address(_boldToken),
                 address(lqty),
                 block.timestamp,
                 EPOCH_DURATION,
                 address(poolManager),
-                address(usdc),
+                address(_usdc),
                 FEE,
                 MAX_TICK_SPACING
             )
@@ -193,12 +185,12 @@ contract DeployGovernance is Script, Deployers {
 
         uniV4Donations = new UniV4Donations{salt: salt}(
             address(_governance),
-            address(boldToken),
+            address(_boldToken),
             address(lqty),
             block.timestamp,
             EPOCH_DURATION,
             address(poolManager),
-            address(usdc),
+            address(_usdc),
             FEE,
             MAX_TICK_SPACING
         );
@@ -207,14 +199,14 @@ contract DeployGovernance is Script, Deployers {
         initialInitiatives.push(address(uniV4Donations));
     }
 
-    function deployCurveV2GaugeRewards(IGovernance _governance) private {
+    function deployCurveV2GaugeRewards(IGovernance _governance, IERC20 _boldToken) private {
         gauge = ILiquidityGauge(curveFactory.deploy_gauge(address(curvePool)));
 
         curveV2GaugeRewards =
-            new CurveV2GaugeRewards(address(_governance), address(boldToken), address(lqty), address(gauge), DURATION);
+            new CurveV2GaugeRewards(address(_governance), address(_boldToken), address(lqty), address(gauge), DURATION);
 
         // add BOLD as reward token
-        gauge.add_reward(address(boldToken), address(curveV2GaugeRewards));
+        gauge.add_reward(address(_boldToken), address(curveV2GaugeRewards));
 
         initialInitiatives.push(address(curveV2GaugeRewards));
     }
