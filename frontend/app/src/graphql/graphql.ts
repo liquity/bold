@@ -86,6 +86,52 @@ export enum BorrowerInfo_OrderBy {
   TrovesByCollateral = 'trovesByCollateral'
 }
 
+export type CollSurplus = {
+  __typename?: 'CollSurplus';
+  amount: Scalars['BigInt']['output'];
+  id: Scalars['String']['output'];
+};
+
+export type CollSurplus_Filter = {
+  /** Filter for the block changed event. */
+  _change_block?: InputMaybe<BlockChangedFilter>;
+  amount?: InputMaybe<Scalars['BigInt']['input']>;
+  amount_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  amount_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  amount_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  amount_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  amount_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  amount_not?: InputMaybe<Scalars['BigInt']['input']>;
+  amount_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  and?: InputMaybe<Array<InputMaybe<CollSurplus_Filter>>>;
+  id?: InputMaybe<Scalars['String']['input']>;
+  id_contains?: InputMaybe<Scalars['String']['input']>;
+  id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_ends_with?: InputMaybe<Scalars['String']['input']>;
+  id_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_gt?: InputMaybe<Scalars['String']['input']>;
+  id_gte?: InputMaybe<Scalars['String']['input']>;
+  id_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  id_lt?: InputMaybe<Scalars['String']['input']>;
+  id_lte?: InputMaybe<Scalars['String']['input']>;
+  id_not?: InputMaybe<Scalars['String']['input']>;
+  id_not_contains?: InputMaybe<Scalars['String']['input']>;
+  id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  id_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  id_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  id_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  id_starts_with?: InputMaybe<Scalars['String']['input']>;
+  id_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  or?: InputMaybe<Array<InputMaybe<CollSurplus_Filter>>>;
+};
+
+export enum CollSurplus_OrderBy {
+  Amount = 'amount',
+  Id = 'id'
+}
+
 export type Collateral = {
   __typename?: 'Collateral';
   addresses: CollateralAddresses;
@@ -899,6 +945,8 @@ export type Query = {
   _meta?: Maybe<_Meta_>;
   borrowerInfo?: Maybe<BorrowerInfo>;
   borrowerInfos: Array<BorrowerInfo>;
+  collSurplus?: Maybe<CollSurplus>;
+  collSurpluses: Array<CollSurplus>;
   collateral?: Maybe<Collateral>;
   collateralAddresses?: Maybe<CollateralAddresses>;
   collateralAddresses_collection: Array<CollateralAddresses>;
@@ -950,6 +998,24 @@ export type QueryBorrowerInfosArgs = {
   skip?: InputMaybe<Scalars['Int']['input']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<BorrowerInfo_Filter>;
+};
+
+
+export type QueryCollSurplusArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID']['input'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryCollSurplusesArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<CollSurplus_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<CollSurplus_Filter>;
 };
 
 
@@ -1472,6 +1538,8 @@ export type Subscription = {
   _meta?: Maybe<_Meta_>;
   borrowerInfo?: Maybe<BorrowerInfo>;
   borrowerInfos: Array<BorrowerInfo>;
+  collSurplus?: Maybe<CollSurplus>;
+  collSurpluses: Array<CollSurplus>;
   collateral?: Maybe<Collateral>;
   collateralAddresses?: Maybe<CollateralAddresses>;
   collateralAddresses_collection: Array<CollateralAddresses>;
@@ -1523,6 +1591,24 @@ export type SubscriptionBorrowerInfosArgs = {
   skip?: InputMaybe<Scalars['Int']['input']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<BorrowerInfo_Filter>;
+};
+
+
+export type SubscriptionCollSurplusArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID']['input'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type SubscriptionCollSurplusesArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<CollSurplus_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<CollSurplus_Filter>;
 };
 
 
@@ -2144,20 +2230,14 @@ export type TrovesByAccountQueryVariables = Exact<{
 }>;
 
 
-export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<(
-    { __typename?: 'Trove' }
-    & { ' $fragmentRefs'?: { 'FullTroveFragmentFragment': FullTroveFragmentFragment } }
-  )> };
+export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null }> };
 
 export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TroveByIdQuery = { __typename?: 'Query', trove?: (
-    { __typename?: 'Trove' }
-    & { ' $fragmentRefs'?: { 'FullTroveFragmentFragment': FullTroveFragmentFragment } }
-  ) | null };
+export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null } | null };
 
 export type StabilityPoolQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2173,20 +2253,14 @@ export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
 }>;
 
 
-export type StabilityPoolDepositsByAccountQuery = { __typename?: 'Query', stabilityPoolDeposits: Array<(
-    { __typename?: 'StabilityPoolDeposit' }
-    & { ' $fragmentRefs'?: { 'StabilityPoolDepositFragmentFragment': StabilityPoolDepositFragmentFragment } }
-  )> };
+export type StabilityPoolDepositsByAccountQuery = { __typename?: 'Query', stabilityPoolDeposits: Array<{ __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } }> };
 
 export type StabilityPoolDepositQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type StabilityPoolDepositQuery = { __typename?: 'Query', stabilityPoolDeposit?: (
-    { __typename?: 'StabilityPoolDeposit' }
-    & { ' $fragmentRefs'?: { 'StabilityPoolDepositFragmentFragment': StabilityPoolDepositFragmentFragment } }
-  ) | null };
+export type StabilityPoolDepositQuery = { __typename?: 'Query', stabilityPoolDeposit?: { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } } | null };
 
 export type StabilityPoolEpochScaleQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2294,73 +2368,69 @@ export const TrovesByAccountDocument = new TypedDocumentString(`
     orderBy: updatedAt
     orderDirection: desc
   ) {
-    ...FullTroveFragment
+    id
+    borrower
+    closedAt
+    createdAt
+    debt
+    deposit
+    interestRate
+    mightBeLeveraged
+    stake
+    status
+    troveId
+    updatedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+      collIndex
+    }
+    interestBatch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
+    }
   }
 }
-    fragment FullTroveFragment on Trove {
-  id
-  borrower
-  closedAt
-  createdAt
-  debt
-  deposit
-  interestRate
-  mightBeLeveraged
-  stake
-  status
-  troveId
-  updatedAt
-  collateral {
-    id
-    token {
-      symbol
-      name
-    }
-    minCollRatio
-    collIndex
-  }
-  interestBatch {
-    id
-    annualInterestRate
-    annualManagementFee
-    batchManager
-  }
-}`) as unknown as TypedDocumentString<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
+    `) as unknown as TypedDocumentString<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
 export const TroveByIdDocument = new TypedDocumentString(`
     query TroveById($id: ID!) {
   trove(id: $id) {
-    ...FullTroveFragment
+    id
+    borrower
+    closedAt
+    createdAt
+    debt
+    deposit
+    interestRate
+    mightBeLeveraged
+    stake
+    status
+    troveId
+    updatedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+      collIndex
+    }
+    interestBatch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
+    }
   }
 }
-    fragment FullTroveFragment on Trove {
-  id
-  borrower
-  closedAt
-  createdAt
-  debt
-  deposit
-  interestRate
-  mightBeLeveraged
-  stake
-  status
-  troveId
-  updatedAt
-  collateral {
-    id
-    token {
-      symbol
-      name
-    }
-    minCollRatio
-    collIndex
-  }
-  interestBatch {
-    id
-    annualInterestRate
-    annualManagementFee
-    batchManager
-  }
-}`) as unknown as TypedDocumentString<TroveByIdQuery, TroveByIdQueryVariables>;
+    `) as unknown as TypedDocumentString<TroveByIdQuery, TroveByIdQueryVariables>;
 export const StabilityPoolDocument = new TypedDocumentString(`
     query StabilityPool($id: ID!) {
   stabilityPool(id: $id) {
@@ -2372,45 +2442,41 @@ export const StabilityPoolDocument = new TypedDocumentString(`
 export const StabilityPoolDepositsByAccountDocument = new TypedDocumentString(`
     query StabilityPoolDepositsByAccount($account: Bytes!) {
   stabilityPoolDeposits(where: {depositor: $account, deposit_gt: 0}) {
-    ...StabilityPoolDepositFragment
+    id
+    deposit
+    depositor
+    collateral {
+      collIndex
+    }
+    snapshot {
+      B
+      P
+      S
+      epoch
+      scale
+    }
   }
 }
-    fragment StabilityPoolDepositFragment on StabilityPoolDeposit {
-  id
-  deposit
-  depositor
-  collateral {
-    collIndex
-  }
-  snapshot {
-    B
-    P
-    S
-    epoch
-    scale
-  }
-}`) as unknown as TypedDocumentString<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
+    `) as unknown as TypedDocumentString<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
 export const StabilityPoolDepositDocument = new TypedDocumentString(`
     query StabilityPoolDeposit($id: ID!) {
   stabilityPoolDeposit(id: $id) {
-    ...StabilityPoolDepositFragment
+    id
+    deposit
+    depositor
+    collateral {
+      collIndex
+    }
+    snapshot {
+      B
+      P
+      S
+      epoch
+      scale
+    }
   }
 }
-    fragment StabilityPoolDepositFragment on StabilityPoolDeposit {
-  id
-  deposit
-  depositor
-  collateral {
-    collIndex
-  }
-  snapshot {
-    B
-    P
-    S
-    epoch
-    scale
-  }
-}`) as unknown as TypedDocumentString<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>;
+    `) as unknown as TypedDocumentString<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>;
 export const StabilityPoolEpochScaleDocument = new TypedDocumentString(`
     query StabilityPoolEpochScale($id: ID!) {
   stabilityPoolEpochScale(id: $id) {
