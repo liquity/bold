@@ -3,8 +3,9 @@ import type { PositionEarn } from "@/src/types";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { getCollToken, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconEarn, StrongCard, TokenIcon } from "@liquity2/uikit";
+import { HFlex, IconEarn, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
+import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows, EditSquare } from "./shared";
 
 export function PositionCardEarn({
@@ -27,7 +28,7 @@ export function PositionCardEarn({
       legacyBehavior
       passHref
     >
-      <StrongCard
+      <PositionCard
         heading={[
           <div
             key="start"
@@ -35,7 +36,7 @@ export function PositionCardEarn({
               display: "flex",
               alignItems: "center",
               gap: 8,
-              color: "strongSurfaceContent",
+              color: "positionContent",
             })}
           >
             <div
@@ -76,14 +77,14 @@ export function PositionCardEarn({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContentAlt",
+                      color: "positionContentAlt",
                     })}
                   >
                     Current APR
                   </div>
                   <div
                     className={css({
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     <Amount
@@ -107,7 +108,7 @@ export function PositionCardEarn({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContentAlt",
+                      color: "positionContentAlt",
                     })}
                   >
                     Rewards
@@ -117,7 +118,7 @@ export function PositionCardEarn({
                       display: "flex",
                       alignItems: "center",
                       gap: 4,
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     <Amount
@@ -132,7 +133,7 @@ export function PositionCardEarn({
                       display: "flex",
                       alignItems: "center",
                       gap: 4,
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     <Amount

@@ -2,8 +2,9 @@ import type { PositionStake } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { css } from "@/styled-system/css";
-import { HFlex, IconStake, StrongCard, TokenIcon } from "@liquity2/uikit";
+import { HFlex, IconStake, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
+import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows, EditSquare } from "./shared";
 
 export function PositionCardStake({
@@ -22,7 +23,7 @@ export function PositionCardStake({
       legacyBehavior
       passHref
     >
-      <StrongCard
+      <PositionCard
         heading={[
           <div
             key="start"
@@ -30,7 +31,7 @@ export function PositionCardStake({
               display: "flex",
               alignItems: "center",
               gap: 8,
-              color: "strongSurfaceContent",
+              color: "positionContent",
             })}
           >
             <div
@@ -71,14 +72,14 @@ export function PositionCardStake({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContentAlt",
+                      color: "positionContentAlt",
                     })}
                   >
                     Voting power
                   </div>
                   <div
                     className={css({
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     <Amount
@@ -101,7 +102,7 @@ export function PositionCardStake({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContentAlt",
+                      color: "positionContentAlt",
                     })}
                   >
                     Rewards
@@ -111,7 +112,7 @@ export function PositionCardStake({
                       display: "flex",
                       alignItems: "center",
                       gap: 4,
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     <Amount value={rewards.lusd} format="2diff" />
@@ -122,7 +123,7 @@ export function PositionCardStake({
                       display: "flex",
                       alignItems: "center",
                       gap: 4,
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     <Amount value={rewards.eth} format="4diff" />

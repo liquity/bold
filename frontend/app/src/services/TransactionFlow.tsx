@@ -11,6 +11,7 @@
 // - Flow context: a transaction flow as stored in local storage (steps + request).
 
 import type { Contracts } from "@/src/contracts";
+import type { Request as ClaimCollateralSurplusRequest } from "@/src/tx-flows/claimCollateralSurplus";
 import type { Request as CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import type { Request as EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
 import type { Request as EarnDepositRequest } from "@/src/tx-flows/earnDeposit";
@@ -31,6 +32,7 @@ import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { getContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
+import { claimCollateralSurplus } from "@/src/tx-flows/claimCollateralSurplus";
 import { closeLoanPosition } from "@/src/tx-flows/closeLoanPosition";
 import { earnClaimRewards } from "@/src/tx-flows/earnClaimRewards";
 import { earnDeposit } from "@/src/tx-flows/earnDeposit";
@@ -54,6 +56,7 @@ import { useTransactionReceipt, useWriteContract } from "wagmi";
 const TRANSACTION_FLOW_KEY = `${LOCAL_STORAGE_PREFIX}transaction_flow`;
 
 export type FlowRequest =
+  | ClaimCollateralSurplusRequest
   | CloseLoanPositionRequest
   | EarnClaimRewardsRequest
   | EarnDepositRequest
@@ -73,6 +76,7 @@ const flowDeclarations: {
     any // Use 'any' here to allow any StepId type
   >;
 } = {
+  claimCollateralSurplus,
   closeLoanPosition,
   earnClaimRewards,
   earnDeposit,
@@ -88,6 +92,7 @@ const flowDeclarations: {
 };
 
 const FlowIdSchema = v.union([
+  v.literal("claimCollateralSurplus"),
   v.literal("closeLoanPosition"),
   v.literal("earnClaimRewards"),
   v.literal("earnDeposit"),

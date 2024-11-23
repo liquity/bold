@@ -1,4 +1,5 @@
 import type { PositionLoanCommitted } from "@/src/types";
+import type { ReactNode } from "react";
 
 import { getContracts } from "@/src/contracts";
 import { formatRedemptionRisk } from "@/src/formatting";
@@ -6,9 +7,10 @@ import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-mat
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconLeverage, StatusDot, StrongCard, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import { HFlex, IconLeverage, StatusDot, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
+import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows, EditSquare } from "./shared";
 
 export function PositionCardLeverage({
@@ -16,15 +18,21 @@ export function PositionCardLeverage({
   collIndex,
   deposit,
   interestRate,
+  statusTag,
   troveId,
-}: Pick<
-  PositionLoanCommitted,
-  | "borrowed"
-  | "collIndex"
-  | "deposit"
-  | "interestRate"
-  | "troveId"
->) {
+}:
+  & Pick<
+    PositionLoanCommitted,
+    | "borrowed"
+    | "collIndex"
+    | "deposit"
+    | "interestRate"
+    | "troveId"
+  >
+  & {
+    statusTag?: ReactNode;
+  })
+{
   const contracts = getContracts();
   const { symbol } = contracts.collaterals[collIndex];
   const token = TOKENS_BY_SYMBOL[symbol];
@@ -47,7 +55,7 @@ export function PositionCardLeverage({
       legacyBehavior
       passHref
     >
-      <StrongCard
+      <PositionCard
         heading={[
           <div
             key="start"
@@ -55,7 +63,7 @@ export function PositionCardLeverage({
               display: "flex",
               alignItems: "center",
               gap: 8,
-              color: "strongSurfaceContent",
+              color: "positionContent",
             })}
           >
             <div
@@ -66,7 +74,8 @@ export function PositionCardLeverage({
             >
               <IconLeverage size={16} />
             </div>
-            Leverage loan
+            <div>Leverage loan</div>
+            {statusTag}
           </div>,
         ]}
         contextual={<EditSquare />}
@@ -92,7 +101,7 @@ export function PositionCardLeverage({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContentAlt",
+                      color: "positionContentAlt",
                     })}
                   >
                     LTV
@@ -128,7 +137,7 @@ export function PositionCardLeverage({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     {liquidationRisk === "low" ? "Low" : liquidationRisk === "medium" ? "Medium" : "High"}{" "}
@@ -152,14 +161,14 @@ export function PositionCardLeverage({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContentAlt",
+                      color: "positionContentAlt",
                     })}
                   >
                     Interest rate
                   </div>
                   <div
                     className={css({
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     {dn.format(dn.mul(interestRate, 100), 2)}%
@@ -177,7 +186,7 @@ export function PositionCardLeverage({
                 >
                   <div
                     className={css({
-                      color: "strongSurfaceContent",
+                      color: "positionContent",
                     })}
                   >
                     {formatRedemptionRisk(redemptionRisk)}

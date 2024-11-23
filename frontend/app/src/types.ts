@@ -40,6 +40,9 @@ export type MenuSection = {
 };
 
 export type PositionLoanBase = {
+  // TODO: rename the type to "loan" and move "borrow" | "leverage" to
+  // a "mode" field. The two separate types come from a previous design
+  // where the two types of positions were having separate types.
   type: "borrow" | "leverage";
   batchManager: null | Address;
   borrowed: Dnum;
@@ -47,6 +50,11 @@ export type PositionLoanBase = {
   collIndex: CollIndex;
   deposit: Dnum;
   interestRate: Dnum;
+  status:
+    | "active"
+    | "closed"
+    | "liquidated"
+    | "redeemed";
 };
 
 export type PositionLoanCommitted = PositionLoanBase & {

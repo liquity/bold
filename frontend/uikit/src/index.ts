@@ -29,7 +29,6 @@ export { RadioGroup, useRadioGroup } from "./Radio/RadioGroup";
 export { Root, RootEntryPoint } from "./Root/Root";
 export { Slider } from "./Slider/Slider";
 export { StatusDot } from "./StatusDot/StatusDot";
-export { StrongCard } from "./StrongCard/StrongCard";
 export { Tabs } from "./Tabs/Tabs";
 export { AnchorTextButton } from "./TextButton/AnchorTextButton";
 export { TextButton } from "./TextButton/TextButton";
