@@ -171,6 +171,8 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_ADDRESSES_REGISTRY`;
     case "borrowerOperations":
       return `${prefix}_BORROWER_OPERATIONS`;
+    case "collSurplusPool":
+      return `${prefix}_COLL_SURPLUS_POOL`;
     case "collToken":
       return `${prefix}_COLL_TOKEN`;
     case "defaultPool":
