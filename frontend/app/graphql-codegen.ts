@@ -31,6 +31,7 @@ const config: CodegenConfig = {
     "./src/graphql/": {
       preset: "client",
       config: {
+        dedupeFragments: true,
         documentMode: "string",
         strictScalars: true,
         scalars: {

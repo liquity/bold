@@ -1895,18 +1895,18 @@ export type Trove = {
   id: Scalars['ID']['output'];
   interestBatch?: Maybe<InterestBatch>;
   interestRate: Scalars['BigInt']['output'];
+  mightBeLeveraged: Scalars['Boolean']['output'];
   stake: Scalars['BigInt']['output'];
   status: TroveStatus;
   troveId: Scalars['String']['output'];
   updatedAt: Scalars['BigInt']['output'];
-  usedLeverageZapper: Scalars['Boolean']['output'];
 };
 
 export enum TroveStatus {
   Active = 'active',
-  ClosedByLiquidation = 'closedByLiquidation',
-  ClosedByOwner = 'closedByOwner',
-  Zombie = 'zombie'
+  Closed = 'closed',
+  Liquidated = 'liquidated',
+  Redeemed = 'redeemed'
 }
 
 export type Trove_Filter = {
@@ -2013,6 +2013,10 @@ export type Trove_Filter = {
   interestRate_lte?: InputMaybe<Scalars['BigInt']['input']>;
   interestRate_not?: InputMaybe<Scalars['BigInt']['input']>;
   interestRate_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  mightBeLeveraged?: InputMaybe<Scalars['Boolean']['input']>;
+  mightBeLeveraged_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
+  mightBeLeveraged_not?: InputMaybe<Scalars['Boolean']['input']>;
+  mightBeLeveraged_not_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
   or?: InputMaybe<Array<InputMaybe<Trove_Filter>>>;
   stake?: InputMaybe<Scalars['BigInt']['input']>;
   stake_gt?: InputMaybe<Scalars['BigInt']['input']>;
@@ -2054,10 +2058,6 @@ export type Trove_Filter = {
   updatedAt_lte?: InputMaybe<Scalars['BigInt']['input']>;
   updatedAt_not?: InputMaybe<Scalars['BigInt']['input']>;
   updatedAt_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  usedLeverageZapper?: InputMaybe<Scalars['Boolean']['input']>;
-  usedLeverageZapper_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
-  usedLeverageZapper_not?: InputMaybe<Scalars['Boolean']['input']>;
-  usedLeverageZapper_not_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
 };
 
 export enum Trove_OrderBy {
@@ -2082,11 +2082,11 @@ export enum Trove_OrderBy {
   InterestBatchDebt = 'interestBatch__debt',
   InterestBatchId = 'interestBatch__id',
   InterestRate = 'interestRate',
+  MightBeLeveraged = 'mightBeLeveraged',
   Stake = 'stake',
   Status = 'status',
   TroveId = 'troveId',
-  UpdatedAt = 'updatedAt',
-  UsedLeverageZapper = 'usedLeverageZapper'
+  UpdatedAt = 'updatedAt'
 }
 
 export type _Block_ = {
@@ -2137,19 +2137,27 @@ export type TrovesCountQueryVariables = Exact<{
 
 export type TrovesCountQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', troves: number, trovesByCollateral: Array<number> } | null };
 
+export type FullTroveFragmentFragment = { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null } & { ' $fragmentName'?: 'FullTroveFragmentFragment' };
+
 export type TrovesByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
 }>;
 
 
-export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, updatedAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, stake: bigint, troveId: string, usedLeverageZapper: boolean, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null }> };
+export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<(
+    { __typename?: 'Trove' }
+    & { ' $fragmentRefs'?: { 'FullTroveFragmentFragment': FullTroveFragmentFragment } }
+  )> };
 
 export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, updatedAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, stake: bigint, troveId: string, usedLeverageZapper: boolean, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null } | null };
+export type TroveByIdQuery = { __typename?: 'Query', trove?: (
+    { __typename?: 'Trove' }
+    & { ' $fragmentRefs'?: { 'FullTroveFragmentFragment': FullTroveFragmentFragment } }
+  ) | null };
 
 export type StabilityPoolQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2158,19 +2166,27 @@ export type StabilityPoolQueryVariables = Exact<{
 
 export type StabilityPoolQuery = { __typename?: 'Query', stabilityPool?: { __typename?: 'StabilityPool', id: string, totalDeposited: bigint } | null };
 
+export type StabilityPoolDepositFragmentFragment = { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } } & { ' $fragmentName'?: 'StabilityPoolDepositFragmentFragment' };
+
 export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
 }>;
 
 
-export type StabilityPoolDepositsByAccountQuery = { __typename?: 'Query', stabilityPoolDeposits: Array<{ __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } }> };
+export type StabilityPoolDepositsByAccountQuery = { __typename?: 'Query', stabilityPoolDeposits: Array<(
+    { __typename?: 'StabilityPoolDeposit' }
+    & { ' $fragmentRefs'?: { 'StabilityPoolDepositFragmentFragment': StabilityPoolDepositFragmentFragment } }
+  )> };
 
 export type StabilityPoolDepositQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type StabilityPoolDepositQuery = { __typename?: 'Query', stabilityPoolDeposit?: { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } } | null };
+export type StabilityPoolDepositQuery = { __typename?: 'Query', stabilityPoolDeposit?: (
+    { __typename?: 'StabilityPoolDeposit' }
+    & { ' $fragmentRefs'?: { 'StabilityPoolDepositFragmentFragment': StabilityPoolDepositFragmentFragment } }
+  ) | null };
 
 export type StabilityPoolEpochScaleQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -2207,7 +2223,54 @@ export class TypedDocumentString<TResult, TVariables>
     return this.value;
   }
 }
-
+export const FullTroveFragmentFragmentDoc = new TypedDocumentString(`
+    fragment FullTroveFragment on Trove {
+  id
+  borrower
+  closedAt
+  createdAt
+  debt
+  deposit
+  interestRate
+  mightBeLeveraged
+  stake
+  status
+  troveId
+  updatedAt
+  collateral {
+    id
+    token {
+      symbol
+      name
+    }
+    minCollRatio
+    collIndex
+  }
+  interestBatch {
+    id
+    annualInterestRate
+    annualManagementFee
+    batchManager
+  }
+}
+    `, {"fragmentName":"FullTroveFragment"}) as unknown as TypedDocumentString<FullTroveFragmentFragment, unknown>;
+export const StabilityPoolDepositFragmentFragmentDoc = new TypedDocumentString(`
+    fragment StabilityPoolDepositFragment on StabilityPoolDeposit {
+  id
+  deposit
+  depositor
+  collateral {
+    collIndex
+  }
+  snapshot {
+    B
+    P
+    S
+    epoch
+    scale
+  }
+}
+    `, {"fragmentName":"StabilityPoolDepositFragment"}) as unknown as TypedDocumentString<StabilityPoolDepositFragmentFragment, unknown>;
 export const TotalDepositedDocument = new TypedDocumentString(`
     query TotalDeposited {
   collaterals {
@@ -2227,71 +2290,77 @@ export const TrovesCountDocument = new TypedDocumentString(`
 export const TrovesByAccountDocument = new TypedDocumentString(`
     query TrovesByAccount($account: Bytes!) {
   troves(
-    where: {borrower: $account, closedAt: null}
+    where: {borrower: $account, status_in: [active, redeemed, liquidated]}
     orderBy: updatedAt
     orderDirection: desc
   ) {
-    id
-    borrower
-    closedAt
-    collateral {
-      id
-      token {
-        symbol
-        name
-      }
-      minCollRatio
-      collIndex
-    }
-    createdAt
-    updatedAt
-    debt
-    deposit
-    interestBatch {
-      id
-      annualInterestRate
-      annualManagementFee
-      batchManager
-    }
-    interestRate
-    stake
-    troveId
-    usedLeverageZapper
+    ...FullTroveFragment
   }
 }
-    `) as unknown as TypedDocumentString<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
+    fragment FullTroveFragment on Trove {
+  id
+  borrower
+  closedAt
+  createdAt
+  debt
+  deposit
+  interestRate
+  mightBeLeveraged
+  stake
+  status
+  troveId
+  updatedAt
+  collateral {
+    id
+    token {
+      symbol
+      name
+    }
+    minCollRatio
+    collIndex
+  }
+  interestBatch {
+    id
+    annualInterestRate
+    annualManagementFee
+    batchManager
+  }
+}`) as unknown as TypedDocumentString<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
 export const TroveByIdDocument = new TypedDocumentString(`
     query TroveById($id: ID!) {
   trove(id: $id) {
-    id
-    borrower
-    closedAt
-    collateral {
-      id
-      token {
-        symbol
-        name
-      }
-      minCollRatio
-      collIndex
-    }
-    createdAt
-    updatedAt
-    debt
-    deposit
-    interestBatch {
-      id
-      annualInterestRate
-      annualManagementFee
-      batchManager
-    }
-    interestRate
-    stake
-    troveId
-    usedLeverageZapper
+    ...FullTroveFragment
   }
 }
-    `) as unknown as TypedDocumentString<TroveByIdQuery, TroveByIdQueryVariables>;
+    fragment FullTroveFragment on Trove {
+  id
+  borrower
+  closedAt
+  createdAt
+  debt
+  deposit
+  interestRate
+  mightBeLeveraged
+  stake
+  status
+  troveId
+  updatedAt
+  collateral {
+    id
+    token {
+      symbol
+      name
+    }
+    minCollRatio
+    collIndex
+  }
+  interestBatch {
+    id
+    annualInterestRate
+    annualManagementFee
+    batchManager
+  }
+}`) as unknown as TypedDocumentString<TroveByIdQuery, TroveByIdQueryVariables>;
 export const StabilityPoolDocument = new TypedDocumentString(`
     query StabilityPool($id: ID!) {
   stabilityPool(id: $id) {
@@ -2303,41 +2372,45 @@ export const StabilityPoolDocument = new TypedDocumentString(`
 export const StabilityPoolDepositsByAccountDocument = new TypedDocumentString(`
     query StabilityPoolDepositsByAccount($account: Bytes!) {
   stabilityPoolDeposits(where: {depositor: $account, deposit_gt: 0}) {
-    id
-    collateral {
-      collIndex
-    }
-    deposit
-    depositor
-    snapshot {
-      B
-      P
-      S
-      epoch
-      scale
-    }
+    ...StabilityPoolDepositFragment
   }
 }
-    `) as unknown as TypedDocumentString<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
+    fragment StabilityPoolDepositFragment on StabilityPoolDeposit {
+  id
+  deposit
+  depositor
+  collateral {
+    collIndex
+  }
+  snapshot {
+    B
+    P
+    S
+    epoch
+    scale
+  }
+}`) as unknown as TypedDocumentString<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
 export const StabilityPoolDepositDocument = new TypedDocumentString(`
     query StabilityPoolDeposit($id: ID!) {
   stabilityPoolDeposit(id: $id) {
-    id
-    collateral {
-      collIndex
-    }
-    deposit
-    depositor
-    snapshot {
-      B
-      P
-      S
-      epoch
-      scale
-    }
+    ...StabilityPoolDepositFragment
   }
 }
-    `) as unknown as TypedDocumentString<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>;
+    fragment StabilityPoolDepositFragment on StabilityPoolDeposit {
+  id
+  deposit
+  depositor
+  collateral {
+    collIndex
+  }
+  snapshot {
+    B
+    P
+    S
+    epoch
+    scale
+  }
+}`) as unknown as TypedDocumentString<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>;
 export const StabilityPoolEpochScaleDocument = new TypedDocumentString(`
     query StabilityPoolEpochScale($id: ID!) {
   stabilityPoolEpochScale(id: $id) {
