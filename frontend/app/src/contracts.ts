@@ -4,6 +4,7 @@ import type { Address } from "@liquity2/uikit";
 import { ActivePool } from "@/src/abi/ActivePool";
 import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
+import { CollSurplusPool } from "@/src/abi/CollSurplusPool";
 import { DefaultPool } from "@/src/abi/DefaultPool";
 import { ExchangeHelpers } from "@/src/abi/ExchangeHelpers";
 import { Governance } from "@/src/abi/Governance";
@@ -48,6 +49,7 @@ const BorrowerOperationsErrorsAbi = BorrowerOperations.filter((f) => f.type === 
 const collateralAbis = {
   ActivePool,
   BorrowerOperations,
+  CollSurplusPool,
   CollToken: erc20Abi,
   DefaultPool,
   LeverageLSTZapper: [
@@ -117,6 +119,7 @@ const CONTRACTS: Contracts = {
     contracts: {
       ActivePool: { address: contracts.ACTIVE_POOL, abi: abis.ActivePool },
       BorrowerOperations: { address: contracts.BORROWER_OPERATIONS, abi: abis.BorrowerOperations },
+      CollSurplusPool: { address: contracts.COLL_SURPLUS_POOL, abi: abis.CollSurplusPool },
       CollToken: { address: contracts.COLL_TOKEN, abi: abis.CollToken },
       DefaultPool: { address: contracts.DEFAULT_POOL, abi: abis.DefaultPool },
       LeverageLSTZapper: {
