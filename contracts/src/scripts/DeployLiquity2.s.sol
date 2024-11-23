@@ -44,6 +44,7 @@ import {WETHTester} from "../test/TestContracts/WETHTester.sol";
 import "forge-std/console2.sol";
 import {IRateProvider, IWeightedPool, IWeightedPoolFactory} from "./Interfaces/Balancer/IWeightedPool.sol";
 import {IVault} from "./Interfaces/Balancer/IVault.sol";
+import {MockStakingV1} from "V2-gov/test/mocks/MockStakingV1.sol";
 
 import {DeployGovernance, ICurveStableswapNG} from "./DeployGovernance.s.sol";
 
@@ -170,6 +171,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         console2.log(deployer, "deployer");
         console2.log(deployer.balance, "deployer balance");
 
+        // Needed for Governance (they will be constants for mainnet)
+        lqty = new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days);
+        stakingV1 = address(new MockStakingV1(address(lqty)));
+
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](3);
         troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WETH
         troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // wstETH
@@ -232,10 +237,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // );
         }
 
+        // Governance
         (address governanceAddress, string memory governanceManifest) = deployGovernance(
             deployer, SALT, deployed.boldToken, deployed.usdc, ICurveStableswapNG(address(deployed.usdcCurvePool))
         );
-        address computedGovernanceAddress = computeGovernanceAddressWithNoInitiatives(deployer, SALT);
+        address computedGovernanceAddress = computeGovernanceAddress(deployer, SALT, deployed.boldToken, new address[](0));
+        //console2.log(computedGovernanceAddress, "computedGovernanceAddress");
+        //console2.log(governanceAddress, "governanceAddress");
         assert(governanceAddress == computedGovernanceAddress);
 
         vm.stopBroadcast();
@@ -480,7 +488,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
         contracts.priceFeed = new PriceFeedTestnet();
-        contracts.interestRouter = IInterestRouter(computeGovernanceAddressWithNoInitiatives(deployer, SALT));
+        //console2.log(computeGovernanceAddress(deployer, SALT, _boldToken, new address[](0)), "computeGovernanceAddress");
+        contracts.interestRouter = IInterestRouter(computeGovernanceAddress(deployer, SALT, _boldToken, new address[](0)));
         addresses.borrowerOperations = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry)))
         );
@@ -917,7 +926,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
                 string.concat('"exchangeHelpers":"', address(deployed.exchangeHelpers).toHexString(), '",'),
                 string.concat('"branches":[', branches.join(","), "],"),
-                string.concat('"governance":', _governanceManifest, '" ') // no comma
+                string.concat('"governance":', _governanceManifest, '') // no comma
             ),
             "}"
         );
