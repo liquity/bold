@@ -5,11 +5,12 @@ import { css, cx } from "../../styled-system/css";
 import { useTheme } from "../Theme/Theme";
 
 export type ButtonProps = {
-  size?: "mini" | "small" | "medium" | "large";
   label: ReactNode;
   maxWidth?: number;
-  wide?: boolean;
   mode?: "primary" | "secondary" | "tertiary" | "positive" | "negative";
+  shape?: "rounded" | "rectangular";
+  size?: "mini" | "small" | "medium" | "large";
+  wide?: boolean;
 };
 
 export function Button({
@@ -17,12 +18,13 @@ export function Button({
   label,
   maxWidth,
   mode = "secondary",
+  shape = "rounded",
   size = "medium",
   style,
   wide,
   ...props
 }: ComponentPropsWithoutRef<"button"> & ButtonProps) {
-  const buttonStyles = useButtonStyles(size, mode);
+  const buttonStyles = useButtonStyles({ mode, shape, size });
   return (
     <button
       className={cx(buttonStyles.className, className)}
@@ -46,10 +48,15 @@ export function Button({
   );
 }
 
-export function useButtonStyles(
-  size: ButtonProps["size"] = "medium",
-  mode: ButtonProps["mode"] = "secondary",
-) {
+export function useButtonStyles({
+  mode = "secondary",
+  size = "medium",
+  shape = "rounded",
+}: {
+  mode: ButtonProps["mode"];
+  size: ButtonProps["size"];
+  shape: ButtonProps["shape"];
+}) {
   const { color } = useTheme();
 
   const geometry = match(size)
@@ -69,7 +76,7 @@ export function useButtonStyles(
       height: 40,
       padding: "0 14px",
       fontSize: 16,
-      borderRadius: 20,
+      borderRadius: shape === "rectangular" ? 8 : 20,
     }))
     .with("large", () => ({
       height: 74,
@@ -115,6 +122,7 @@ export function useButtonStyles(
     cursor: "pointer",
     transition: "background 50ms",
     color: "var(--color)",
+    textDecoration: "none",
     background: {
       base: "var(--background)",
       _hover: "var(--backgroundHover)",
