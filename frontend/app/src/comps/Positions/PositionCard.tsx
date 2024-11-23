@@ -1,10 +1,9 @@
 import type { HTMLAttributes, ReactElement, ReactNode } from "react";
 
+import { IconArrowRight, LoadingSurface } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
 import { forwardRef, useState } from "react";
-import { css, cx } from "../../styled-system/css";
-import { IconArrowRight } from "../icons";
-import { LoadingSurface } from "../LoadingSurface/LoadingSurface";
+import { css, cx } from "../../../styled-system/css";
 
 type Cell = {
   label: ReactNode;
@@ -13,7 +12,7 @@ type Cell = {
 
 type ElementOrString = ReactElement | string;
 
-export const StrongCard = forwardRef<
+export const PositionCard = forwardRef<
   HTMLAnchorElement,
   {
     contextual?: ReactNode;
@@ -22,7 +21,7 @@ export const StrongCard = forwardRef<
     main?: Cell;
     secondary?: ReactNode;
   } & HTMLAttributes<HTMLAnchorElement>
->(function StrongCard({
+>(function PositionCard({
   contextual,
   heading,
   loading,
@@ -69,10 +68,10 @@ export const StrongCard = forwardRef<
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
-          padding: "16px 16px 12px",
+          padding: "12px 16px",
           borderRadius: 8,
           outline: "none",
-          "--background": "token(colors.strongSurface)",
+          "--background": "token(colors.position)",
           _focusVisible: {
             outline: "2px solid token(colors.focused)",
           },
@@ -100,7 +99,7 @@ export const StrongCard = forwardRef<
           className={css({
             display: "flex",
             justifyContent: "space-between",
-            color: "strongSurfaceContentAlt",
+            color: "positionContentAlt",
           })}
         >
           <h1
@@ -115,7 +114,7 @@ export const StrongCard = forwardRef<
             <div
               className={css({
                 fontSize: 14,
-                color: "strongSurfaceContent",
+                color: "positionContent",
               })}
             >
               {heading2}
@@ -152,7 +151,7 @@ export const StrongCard = forwardRef<
           >
             <div
               className={css({
-                color: "strongSurfaceContent",
+                color: "positionContent",
                 fontSize: 28,
               })}
             >
@@ -161,7 +160,7 @@ export const StrongCard = forwardRef<
             <div
               className={css({
                 fontSize: 14,
-                color: "strongSurfaceContentAlt",
+                color: "positionContentAlt",
               })}
             >
               {main.label}

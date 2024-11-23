@@ -1,5 +1,6 @@
 import type { PositionLoanCommitted } from "@/src/types";
 
+import { LoanStatusTag } from "@/src/comps/Tag/LoanStatusTag";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
 import { useStoredState } from "@/src/services/StoredState";
 import { PositionCardBorrow } from "./PositionCardBorrow";
@@ -14,6 +15,7 @@ export function PositionCardLoan(
     | "collIndex"
     | "deposit"
     | "interestRate"
+    | "status"
     | "troveId"
   >,
 ) {
@@ -26,7 +28,17 @@ export function PositionCardLoan(
 
   const prefixedTroveId = getPrefixedTroveId(props.collIndex, props.troveId);
   const loanMode = storedState.loanModes[prefixedTroveId] ?? props.type;
-  return loanMode === "leverage"
-    ? <PositionCardLeverage {...props} />
-    : <PositionCardBorrow {...props} />;
+
+  const Card = loanMode === "leverage" ? PositionCardLeverage : PositionCardBorrow;
+
+  return (
+    <Card
+      {...props}
+      statusTag={props.status === "liquidated"
+        ? <LoanStatusTag status="liquidated" />
+        : props.status === "redeemed"
+        ? <LoanStatusTag status="redeemed" />
+        : null}
+    />
+  );
 }

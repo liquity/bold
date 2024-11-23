@@ -419,7 +419,7 @@ function subgraphTroveToLoan(
   }
 
   return {
-    type: trove.usedLeverageZapper ? "leverage" : "borrow",
+    type: trove.mightBeLeveraged ? "leverage" : "borrow",
     batchManager: isAddress(trove.interestBatch?.batchManager)
       ? trove.interestBatch.batchManager
       : null,
@@ -431,6 +431,7 @@ function subgraphTroveToLoan(
     interestRate: dnum18(trove.interestBatch?.annualInterestRate ?? trove.interestRate),
     troveId: trove.troveId,
     updatedAt: Number(trove.updatedAt) * 1000,
+    status: trove.status,
   };
 }
 

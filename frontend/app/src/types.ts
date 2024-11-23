@@ -47,6 +47,11 @@ export type PositionLoanBase = {
   collIndex: CollIndex;
   deposit: Dnum;
   interestRate: Dnum;
+  status:
+    | "active"
+    | "closed"
+    | "liquidated"
+    | "redeemed";
 };
 
 export type PositionLoanCommitted = PositionLoanBase & {
