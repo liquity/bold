@@ -24,46 +24,81 @@ export default {
   generalInfotooltips: {
     loanLiquidationRisk: [
       "Liquidation risk",
-      "If the LTV of a loan goes above the max LTV, it becomes undercollateralized and will be liquidated. In that case, the borrower's debt is paid off but they lose most of their collateral. In order to avoid liquidation, one can increase the collateral or reduce the debt.",
+      <>
+        If the LTV of a loan goes above the max LTV, it becomes undercollateralized and will be liquidated. In that
+        case, the borrower's debt is paid off but they lose most of their collateral. In order to avoid liquidation, one
+        can increase the collateral or reduce the debt.
+      </>,
     ],
     loanRedemptionRisk: [
       "Redemption risk",
       <>
-        "Users paying the lowest interest rate can get redeemed, if the price of BOLD falls below $1. By raising your
-        interest rate, you reduce this risk.",
+        Users paying the lowest interest rate can get redeemed, if the price of BOLD falls below $1. By raising your
+        interest rate, you reduce this risk.
       </>,
     ],
     loanLtv: [
       "Loan-to-value ratio",
-      "The ratio between the amount of BOLD borrowed and the deposited collateral (in USD).",
+      <>
+        The ratio between the amount of BOLD borrowed and the deposited collateral (in USD).
+      </>,
     ],
     loanMaxLtv: [
       "Maximum Loan-To-Value (LTV) Ratio",
-      "The maximum ratio between the USD value of a loan (in BOLD) and the collateral backing it. The LTV will fluctuate as the price of the collateral changes. To decrease the LTV add more colateral or reduce debt.",
+      <>
+        The maximum ratio between the USD value of a loan (in BOLD) and the collateral backing it. The LTV will
+        fluctuate as the price of the collateral changes. To decrease the LTV add more colateral or reduce debt.
+      </>,
     ],
     loanLiquidationPrice: [
       "Liquidation price",
-      "The collateral price at which a loan can be liquidated.",
+      <>The collateral price at which a loan can be liquidated.</>,
     ],
     ethPrice: [
       "ETH Price",
-      "The current price of ETH, as reported by the oracle. The ETH price is used to calculate the Loan-To-Value (LTV) ratio of a loan.",
+      <>
+        The current price of ETH, as reported by the oracle. The ETH price is used to calculate the Loan-To-Value (LTV)
+        ratio of a loan.
+      </>,
     ],
     interestRateBoldPerYear: [
       "Interest rate",
-      "The annualized interest amount in BOLD for the selected interest rate. The accumulated interest is added to the loan.",
+      <>
+        The annualized interest amount in BOLD for the selected interest rate. The accumulated interest is added to the
+        loan.
+      </>,
     ],
     interestRateAdjustment: [
       "Interest rate adjustment",
-      "The interest rate can be adjusted at any time. If it is adjusted within less than seven days of the last adjustment, there is a fee.",
+      <>
+        The interest rate can be adjusted at any time. If it is adjusted within less than seven days of the last
+        adjustment, there is a fee.
+      </>,
     ],
+    redeemedLoan: {
+      heading: "Your collateral and debt are reduced by the same value.",
+      body: (
+        <>
+          When BOLD trades for under $1, anyone can redeem positions to get BOLD back at $1. Positions with the lowest
+          interest rate get redeemed first.
+        </>
+      ),
+      footerLink: {
+        href: "https://github.com/liquity/bold#bold-redemptions",
+        label: "Learn more",
+      },
+    },
   },
 
   // Redemption info box
   redemptionInfo: {
     title: "Redemptions in a nutshell",
-    subtitle:
-      "Redemptions help maintain BOLD's peg in a decentralized way. If a user is redeemed, their collateral and debt are reduced equally, resulting in no net loss.",
+    subtitle: (
+      <>
+        Redemptions help maintain BOLD’s peg in a decentralized way. If a user is redeemed, their collateral and debt
+        are reduced equally, resulting in no net loss.
+      </>
+    ),
     infoItems: [
       {
         icon: "bold",
@@ -88,16 +123,20 @@ export default {
     delegateModes: {
       manual: {
         label: "Manual",
-        secondary: "The interest rate is set manually and can be updated at any time.",
+        secondary: <>The interest rate is set manually and can be updated at any time.</>,
       },
       delegate: {
         label: "Delegated",
-        secondary: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
+        secondary: <>The interest rate is set and updated by a third party of your choice. They may charge a fee.</>,
       },
       strategy: {
         label: "Automated (ICP)",
-        secondary:
-          "The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer (ICP).",
+        secondary: (
+          <>
+            The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer
+            (ICP).
+          </>
+        ),
       },
     },
 
@@ -117,7 +156,11 @@ export default {
 
     delegatesModal: {
       title: "Set a delegate",
-      intro: "The interest rate is set and updated by a third party of your choice. They may charge a fee.",
+      intro: (
+        <>
+          The interest rate is set and updated by a third party of your choice. They may charge a fee.
+        </>
+      ),
     },
   },
 
@@ -226,14 +269,21 @@ export default {
     infoTooltips: {
       leverageLevel: [
         "Leverage level",
-        "Choose the amplification of your exposure. Note that a higher level means higher liquidation risk. You are responsible for your own assessment of what a suitable level is.",
+        <>
+          Choose the amplification of your exposure. Note that a higher level means higher liquidation risk. You are
+          responsible for your own assessment of what a suitable level is.
+        </>,
       ],
       interestRateSuggestions: [
-        "Positions with lower interest rates are the first to be redeemed by BOLD holders.",
+        <>
+          Positions with lower interest rates are the first to be redeemed by BOLD holders.
+        </>,
       ],
       exposure: [
         "Exposure",
-        "Your total exposure to the collateral asset after amplification.",
+        <>
+          Your total exposure to the collateral asset after amplification.
+        </>,
       ],
     },
   },
@@ -338,11 +388,11 @@ export default {
 
   // Stake screen
   stakeScreen: {
-    headline: (lqtyIcon: N, lusdEthIcons: N) => (
+    headline: (lqtyIcon: N) => (
       <>
         <span>Stake</span>
         {lqtyIcon} <span>LQTY & get</span>
-         <span>voting power</span>
+        <span>voting power</span>
       </>
     ),
     subheading: (
