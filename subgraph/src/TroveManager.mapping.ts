@@ -1,5 +1,4 @@
-import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
-import { leverageZappers } from "../addresses";
+import { Address, BigInt, ByteArray, crypto, dataSource } from "@graphprotocol/graph-ts";
 import { BorrowerInfo, Collateral, InterestBatch, InterestRateBracket, Trove } from "../generated/schema";
 import {
   BatchUpdated as BatchUpdatedEvent,
@@ -7,6 +6,12 @@ import {
   TroveOperation as TroveOperationEvent,
 } from "../generated/templates/TroveManager/TroveManager";
 import { TroveNFT as TroveNFTContract } from "../generated/templates/TroveManager/TroveNFT";
+
+enum LeverageUpdate {
+  yes = 0,
+  no = 1,
+  unchanged = 2,
+}
 
 // see Operation enum in
 // contracts/src/Interfaces/ITroveEvents.sol
@@ -22,83 +27,114 @@ let OP_OPEN_TROVE_AND_JOIN_BATCH = 7;
 let OP_SET_INTEREST_BATCH_MANAGER = 8;
 let OP_REMOVE_FROM_BATCH = 9;
 
-// let FLASH_LOAN_TOPIC_HASH = crypto.keccak256(
-//   ByteArray.fromUTF8("FlashLoan(address,address,uint256,uint256)"),
-// ).toHexString();
+let FLASH_LOAN_TOPIC_HASH = crypto.keccak256(
+  ByteArray.fromUTF8("FlashLoan(address,address,uint256,uint256)"),
+).toHexString();
 
 export function handleTroveOperation(event: TroveOperationEvent): void {
   let timestamp = event.block.timestamp;
   let troveId = event.params._troveId;
   let collId = dataSource.context().getString("collId");
-  let collIndex = dataSource.context().getI32("collIndex");
   let troveFullId = collId + ":" + troveId.toHexString();
 
   let operation = event.params._operation;
   let tm = TroveManagerContract.bind(event.address);
-
-  let to = event.transaction.to;
-  let leverageZapper = Address.fromString(leverageZappers[collIndex]);
-  let toLeverageZapper = to ? leverageZapper.equals(to) : false;
-
-  // let hasFlashLoan = false;
-  // let receipt = event.receipt;
-  // if (receipt) {
-  //   for (let i = 0; i < receipt.logs.length; i++) {
-  //     const currentLog = receipt.logs[i];
-  //     const topicHash = currentLog.topics[0].toHexString();
-  //     if (topicHash == FLASH_LOAN_TOPIC_HASH) {
-  //       hasFlashLoan = true;
-  //       break;
-  //     }
-  //   }
-  // }
+  let leverageUpdate = getLeverageUpdate(event);
+  let trove = Trove.load(troveFullId);
 
   switch (operation) {
     case OP_OPEN_TROVE:
     case OP_ADJUST_TROVE:
     case OP_ADJUST_TROVE_INTEREST_RATE:
     case OP_APPLY_PENDING_DEBT:
-    case OP_REDEEM_COLLATERAL:
-      updateTrove(tm, troveId, timestamp, toLeverageZapper);
+      updateTrove(tm, troveId, timestamp, leverageUpdate);
       break;
 
     case OP_OPEN_TROVE_AND_JOIN_BATCH:
-      updateTrove(tm, troveId, timestamp, toLeverageZapper);
-      enterBatch(
-        collId,
-        troveId,
-        tm.Troves(troveId).getInterestBatchManager(),
-      );
+      updateTrove(tm, troveId, timestamp, leverageUpdate);
+      enterBatch(collId, troveId, tm.Troves(troveId).getInterestBatchManager());
       break;
 
     case OP_SET_INTEREST_BATCH_MANAGER:
-      enterBatch(
-        collId,
-        troveId,
-        tm.Troves(troveId).getInterestBatchManager(),
-      );
+      enterBatch(collId, troveId, tm.Troves(troveId).getInterestBatchManager());
       break;
 
     case OP_REMOVE_FROM_BATCH:
       leaveBatch(collId, troveId, event.params._annualInterestRate);
       break;
 
-    case OP_CLOSE_TROVE:
-    case OP_LIQUIDATE:
-      updateTrove(tm, troveId, timestamp, toLeverageZapper);
+    case OP_REDEEM_COLLATERAL:
+      updateTrove(tm, troveId, timestamp, leverageUpdate);
 
-      let trove = Trove.load(troveFullId);
       if (!trove) {
         throw new Error("Trove not found: " + troveFullId);
       }
+      trove.status = "redeemed";
+      trove.save();
+      break;
+
+    case OP_CLOSE_TROVE:
+      updateTrove(tm, troveId, timestamp, leverageUpdate);
+
+      if (!trove) {
+        throw new Error("Trove not found: " + troveFullId);
+      }
+
       if (trove.interestBatch !== null) {
         leaveBatch(collId, troveId, BigInt.fromI32(0));
       }
+
       trove.closedAt = timestamp;
-      trove.status = operation === OP_LIQUIDATE ? "closedByLiquidation" : "closedByOwner";
+      trove.status = "closed";
       trove.save();
       break;
+
+    case OP_LIQUIDATE:
+      updateTrove(tm, troveId, timestamp, leverageUpdate);
+
+      if (!trove) {
+        throw new Error("Trove not found: " + troveFullId);
+      }
+
+      if (trove.interestBatch !== null) {
+        leaveBatch(collId, troveId, BigInt.fromI32(0));
+      }
+
+      trove.debt = event.params._debtIncreaseFromRedist;
+      trove.deposit = event.params._collIncreaseFromRedist;
+
+      trove.closedAt = timestamp;
+      trove.status = "liquidated";
+      trove.save();
+      break;
+
+    default:
+      throw new Error("Unsupported operation: " + operation.toString());
   }
+}
+
+function getLeverageUpdate(event: TroveOperationEvent): LeverageUpdate {
+  let operation = event.params._operation;
+
+  // check if the operation involved a flash loan,
+  // which would indicate a potential leveraged update
+  if (
+    operation === OP_OPEN_TROVE
+    || operation === OP_OPEN_TROVE_AND_JOIN_BATCH
+    || operation === OP_ADJUST_TROVE
+    || operation === OP_ADJUST_TROVE_INTEREST_RATE
+  ) {
+    let receipt = event.receipt;
+    let logs = receipt ? receipt.logs : [];
+    for (let i = 0; i < logs.length; i++) {
+      if (logs[i].topics[0].toHexString() === FLASH_LOAN_TOPIC_HASH) {
+        return LeverageUpdate.yes;
+      }
+    }
+    return LeverageUpdate.no;
+  }
+
+  return LeverageUpdate.unchanged;
 }
 
 function floorToDecimals(value: BigInt, decimals: u8): BigInt {
@@ -224,17 +260,17 @@ function updateRateBracketDebt(
 }
 
 // When a trove gets updated (either on TroveUpdated or BatchedTroveUpdated):
-//  1. update the collateral total deposited & debt
-//  2. create the trove if it doesn't exist
-//  3. create the borrower if it doesn't exist
-//  4. update the borrower's total trove count & trove count by collateral
+//  1. update the collateral (branch) total deposited & debt
+//  2. create the trove entity if it doesn't exist
+//  3. create the borrower entity if it doesn't exist
+//  4. update the borrower's total trove count & trove count by collateral (branch)
 //  5. for non-batched troves, update the prev & current interest rate brackets
 //  6. update the trove's deposit, debt & stake
 function updateTrove(
   troveManagerContract: TroveManagerContract,
   troveId: BigInt,
   timestamp: BigInt,
-  usedLeverageZapper: boolean,
+  mightBeLeveragedUpdate: LeverageUpdate,
 ): void {
   let collId = dataSource.context().getString("collId");
 
@@ -297,7 +333,7 @@ function updateTrove(
     trove.status = "active";
     trove.troveId = troveId.toHexString();
     trove.updatedAt = timestamp;
-    trove.usedLeverageZapper = usedLeverageZapper;
+    trove.mightBeLeveraged = mightBeLeveragedUpdate === LeverageUpdate.yes;
     trove.save();
   }
 
@@ -318,8 +354,12 @@ function updateTrove(
     ? newInterestRate
     : BigInt.fromI32(0);
   trove.stake = newStake;
+
+  if (mightBeLeveragedUpdate !== LeverageUpdate.unchanged) {
+    trove.mightBeLeveraged = mightBeLeveragedUpdate === LeverageUpdate.yes;
+  }
+
   trove.updatedAt = timestamp;
-  trove.usedLeverageZapper = usedLeverageZapper;
   trove.save();
 }
 
