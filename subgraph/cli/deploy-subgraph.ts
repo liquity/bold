@@ -136,7 +136,10 @@ export async function main() {
 
   graphDeployCommand.push(options.name);
 
-  await updateNetworksWithLocalBoldToken();
+  if (isLocal) {
+    await updateNetworksWithLocalBoldToken();
+  }
+
   await generateNetworksJson(isLocal);
 
   echo`

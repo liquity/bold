@@ -153,6 +153,7 @@ export const InterestRateField = memo(
                 label={delegate
                   ? (
                     <div
+                      title={delegate}
                       className={css({
                         display: "flex",
                         alignItems: "center",

@@ -89,7 +89,33 @@ export const TrovesByAccountQuery = graphql(`
       orderBy: updatedAt
       orderDirection: desc
     ) {
-      ...FullTroveFragment
+      id
+      borrower
+      closedAt
+      createdAt
+      debt
+      deposit
+      interestRate
+      mightBeLeveraged
+      stake
+      status
+      troveId
+      updatedAt
+      collateral {
+        id
+        token {
+          symbol
+          name
+        }
+        minCollRatio
+        collIndex
+      }
+      interestBatch {
+        id
+        annualInterestRate
+        annualManagementFee
+        batchManager
+      }
     }
   }
 `);
@@ -97,7 +123,33 @@ export const TrovesByAccountQuery = graphql(`
 export const TroveByIdQuery = graphql(`
   query TroveById($id: ID!) {
     trove(id: $id) {
-      ...FullTroveFragment
+      id
+      borrower
+      closedAt
+      createdAt
+      debt
+      deposit
+      interestRate
+      mightBeLeveraged
+      stake
+      status
+      troveId
+      updatedAt
+      collateral {
+        id
+        token {
+          symbol
+          name
+        }
+        minCollRatio
+        collIndex
+      }
+      interestBatch {
+        id
+        annualInterestRate
+        annualManagementFee
+        batchManager
+      }
     }
   }
 `);
@@ -132,7 +184,19 @@ export const StabilityPoolDepositQueryFragment = graphql(`
 export const StabilityPoolDepositsByAccountQuery = graphql(`
   query StabilityPoolDepositsByAccount($account: Bytes!) {
     stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {
-      ...StabilityPoolDepositFragment
+      id
+      deposit
+      depositor
+      collateral {
+        collIndex
+      }
+      snapshot {
+        B
+        P
+        S
+        epoch
+        scale
+      }
     }
   }
 `);
@@ -140,7 +204,19 @@ export const StabilityPoolDepositsByAccountQuery = graphql(`
 export const StabilityPoolDepositQuery = graphql(`
   query StabilityPoolDeposit($id: ID!) {
     stabilityPoolDeposit(id: $id) {
-      ...StabilityPoolDepositFragment
+      id
+      deposit
+      depositor
+      collateral {
+        collIndex
+      }
+      snapshot {
+        B
+        P
+        S
+        epoch
+        scale
+      }
     }
   }
 `);
