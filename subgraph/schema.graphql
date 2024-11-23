@@ -40,9 +40,9 @@ type InterestRateBracket @entity {
 
 enum TroveStatus {
   active
-  closedByOwner
-  closedByLiquidation
-  zombie
+  closed
+  liquidated
+  redeemed
 }
 
 type Trove @entity {
@@ -58,8 +58,13 @@ type Trove @entity {
   stake: BigInt!
   status: TroveStatus!
   troveId: String!
-  usedLeverageZapper: Boolean!
+  mightBeLeveraged: Boolean!
   updatedAt: BigInt!
+}
+
+type CollSurplus @entity {
+  id: String! # address
+  amount: BigInt!
 }
 
 type BorrowerInfo @entity {
