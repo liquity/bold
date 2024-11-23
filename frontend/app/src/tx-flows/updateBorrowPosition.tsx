@@ -316,7 +316,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
           ...LeverageWETHZapper,
           functionName: "addCollWithRawETH",
           args: [troveId],
-          value: collChange[0],
+          value: dn.abs(collChange)[0],
         }))
         .with("withdrawColl", () => ({
           ...LeverageWETHZapper,
@@ -331,7 +331,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
         .with("withdrawBold", () => ({
           ...LeverageWETHZapper,
           functionName: "withdrawBold",
-          args: [troveId, debtChange[0], maxUpfrontFee[0]],
+          args: [troveId, dn.abs(debtChange)[0], maxUpfrontFee[0]],
         }))
         .exhaustive();
     }
