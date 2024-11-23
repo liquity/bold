@@ -23,45 +23,14 @@ import { COLLATERALS, isAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
-import { match } from "ts-pattern";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useReadContract, useReadContracts } from "wagmi";
-
-// As defined in ITroveManager.sol
-export type TroveStatus =
-  | "nonExistent"
-  | "active"
-  | "closedByOwner"
-  | "closedByLiquidation"
-  | "unredeemable";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
     ? troveId
     // : troveId.slice(0, chars + 2) + "…" + troveId.slice(-chars);
     : troveId.slice(0, chars + 2) + "…";
-}
-
-export function troveStatusFromNumber(value: number): TroveStatus {
-  return match<number, TroveStatus>(value)
-    .with(0, () => "nonExistent")
-    .with(1, () => "active")
-    .with(2, () => "closedByOwner")
-    .with(3, () => "closedByLiquidation")
-    .with(4, () => "unredeemable")
-    .otherwise(() => {
-      throw new Error(`Unknown trove status number: ${value}`);
-    });
-}
-
-export function troveStatusToLabel(status: TroveStatus) {
-  return match(status)
-    .with("nonExistent", () => "Non-existent")
-    .with("active", () => "Active")
-    .with("closedByOwner", () => "Closed by owner")
-    .with("closedByLiquidation", () => "Closed by liquidation")
-    .with("unredeemable", () => "Unredeemable")
-    .exhaustive();
 }
 
 export function getTroveId(owner: Address, ownerIndex: bigint | number) {

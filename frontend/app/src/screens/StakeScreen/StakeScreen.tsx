@@ -61,13 +61,7 @@ export function StakeScreen() {
       heading={{
         title: (
           <HFlex>
-            {content.stakeScreen.headline(
-              <TokenIcon size={24} symbol="LQTY" />,
-              <TokenIcon.Group>
-                <TokenIcon symbol="LUSD" />
-                <TokenIcon symbol="ETH" />
-              </TokenIcon.Group>,
-            )}
+            {content.stakeScreen.headline(<TokenIcon size={24} symbol="LQTY" />)}
           </HFlex>
         ),
         subtitle: (
