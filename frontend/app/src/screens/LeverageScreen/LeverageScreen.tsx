@@ -129,6 +129,7 @@ export function LeverageScreen() {
 
   const newLoan: PositionLoanUncommitted = {
     type: "leverage",
+    status: "active",
     batchManager: interestRateDelegate,
     borrowed: leverageField.debt ?? dn.from(0, 18),
     borrower: account.address ?? ADDRESS_ZERO,

@@ -153,6 +153,12 @@ const VPositionLoanBase = v.object({
   collIndex: vCollIndex(),
   deposit: vDnum(),
   interestRate: vDnum(),
+  status: v.union([
+    v.literal("active"),
+    v.literal("closed"),
+    v.literal("liquidated"),
+    v.literal("redeemed"),
+  ]),
 });
 
 export function vPositionLoanCommited() {

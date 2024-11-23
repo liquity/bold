@@ -43,6 +43,7 @@ function getTime() {
 export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
   {
     type: "borrow",
+    status: "active",
     borrowed: dn.from(12_789, 18),
     borrower: DEMO_ACCOUNT,
     deposit: dn.from(5.5, 18),
@@ -55,6 +56,7 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
   },
   {
     type: "leverage",
+    status: "active",
     borrowed: dn.from(28_934.23, 18),
     borrower: DEMO_ACCOUNT,
     deposit: dn.from(19.20, 18), // 8 ETH @ 2.4 leverage
