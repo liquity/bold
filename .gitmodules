@@ -10,3 +10,9 @@
 [submodule "contracts/lib/V2-gov"]
 	path = contracts/lib/V2-gov
 	url = https://github.com/liquity/V2-gov
+[submodule "contracts/lib/v3-periphery"]
+	path = contracts/lib/v3-periphery
+	url = https://github.com/Uniswap/v3-periphery
+[submodule "contracts/lib/v3-core"]
+	path = contracts/lib/v3-core
+	url = https://github.com/Uniswap/v3-core
