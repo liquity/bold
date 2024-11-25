@@ -254,7 +254,20 @@ function LoanCardHeading({
         }}
       >
         {mode === "leverage"
-          ? <IconLeverage size={16} />
+          ? (
+            inheritColor
+              ? <IconLeverage size={16} />
+              : (
+                <div
+                  className={css({
+                    display: "flex",
+                    color: "brandGreen",
+                  })}
+                >
+                  <IconLeverage size={16} />
+                </div>
+              )
+          )
           : <IconBorrow size={16} />}
       </div>
       <div>{title}</div>
