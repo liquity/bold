@@ -16,10 +16,6 @@ export function StakePositionSummary({
   stakePosition: null | PositionStake;
   txPreviewMode?: boolean;
 }) {
-  // We might want to use an inactive state like for the Earn positions.
-  // For now, it's always active.
-  const active = true;
-
   return (
     <div
       className={css({
@@ -28,28 +24,12 @@ export function StakePositionSummary({
         flexDirection: "column",
         width: "100%",
         padding: 16,
+        color: "token(colors.strongSurfaceContent)",
+        background: "token(colors.strongSurface)",
         borderRadius: 8,
         userSelect: "none",
-
-        "--fg-primary-active": "token(colors.strongSurfaceContent)",
-        "--fg-primary-inactive": "token(colors.content)",
-
-        "--fg-secondary-active": "token(colors.strongSurfaceContentAlt)",
-        "--fg-secondary-inactive": "token(colors.contentAlt)",
-
-        "--border-active": "color-mix(in srgb, token(colors.secondary) 15%, transparent)",
-        "--border-inactive": "token(colors.infoSurfaceBorder)",
-
-        "--bg-active": "token(colors.strongSurface)",
-        "--bg-inactive": "token(colors.infoSurface)",
-
         "--update-color": "token(colors.positiveAlt)",
       })}
-      style={{
-        color: `var(--fg-primary-${active ? "active" : "inactive"})`,
-        background: `var(--bg-${active ? "active" : "inactive"})`,
-        border: active ? 0 : "1px solid var(--border-inactive)",
-      }}
     >
       {txPreviewMode && <TagPreview />}
       <div
@@ -58,10 +38,8 @@ export function StakePositionSummary({
           alignItems: "flex-start",
           flexDirection: "column",
           paddingBottom: 12,
+          borderBottom: "1px solid color-mix(in srgb, token(colors.secondary) 15%, transparent)",
         })}
-        style={{
-          borderBottom: `1px solid var(--border-${active ? "active" : "inactive"})`,
-        }}
       >
         <h1
           title="LQTY Stake"
@@ -158,7 +136,7 @@ export function StakePositionSummary({
           <div
             className={css({
               fontSize: 14,
-              color: "var(--fg-secondary-active)",
+              color: "token(colors.strongSurfaceContentAlt)",
             })}
           >
             Staked
@@ -190,110 +168,99 @@ export function StakePositionSummary({
             })}
           >
             <div
-              style={{
-                color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
-              }}
+              className={css({
+                color: "token(colors.strongSurfaceContentAlt)",
+              })}
             >
               Rewards
             </div>
-            {active
-              ? (
-                <HFlex
-                  gap={8}
-                >
-                  <HFlex
-                    gap={4}
-                    className={css({
-                      color: txPreviewMode
-                          && stakePosition?.rewards.lusd
-                          && dn.gt(stakePosition?.rewards.lusd, 0)
-                        ? "var(--update-color)"
-                        : "inherit",
-                    })}
-                  >
-                    <Amount
-                      format="2diff"
-                      value={stakePosition?.rewards.lusd ?? 0}
-                    />
-                    <TokenIcon symbol="LUSD" size="mini" />
-                  </HFlex>
-                  <HFlex
-                    gap={4}
-                    className={css({
-                      color: txPreviewMode
-                          && stakePosition?.rewards.eth
-                          && dn.gt(stakePosition?.rewards.eth, 0)
-                        ? "var(--update-color)"
-                        : "inherit",
-                    })}
-                  >
-                    <Amount
-                      format="2diff"
-                      value={stakePosition?.rewards.eth ?? 0}
-                    />
-                    <TokenIcon symbol="ETH" size="mini" />
-                  </HFlex>
-                </HFlex>
-              )
-              : (
-                <TokenIcon.Group size="mini">
-                  <TokenIcon symbol="LUSD" />
-                  <TokenIcon symbol="ETH" />
-                </TokenIcon.Group>
-              )}
-          </div>
-          {active && (
-            <div>
-              <div
-                style={{
-                  color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
-                }}
-              >
-                Voting power
-              </div>
-              <div
+            <HFlex
+              gap={8}
+            >
+              <HFlex
+                gap={4}
                 className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
+                  color: txPreviewMode
+                      && stakePosition?.rewards.lusd
+                      && dn.gt(stakePosition?.rewards.lusd, 0)
+                    ? "var(--update-color)"
+                    : "inherit",
                 })}
               >
-                <div
-                  style={{
-                    color: txPreviewMode
-                        && prevStakePosition
-                        && stakePosition?.share
-                        && !dn.eq(prevStakePosition.share, stakePosition.share)
-                      ? "var(--update-color)"
-                      : "inherit",
-                  }}
-                >
-                  <Amount
-                    percentage
-                    value={stakePosition?.share ?? 0}
-                  />
-                </div>
-                {prevStakePosition && stakePosition && !dn.eq(prevStakePosition.share, stakePosition.share)
-                  ? (
-                    <div
-                      className={css({
-                        color: "contentAlt",
-                        textDecoration: "line-through",
-                      })}
-                    >
-                      <Amount
-                        percentage
-                        value={prevStakePosition?.share ?? 0}
-                      />
-                    </div>
-                  )
-                  : " of pool"}
-                <InfoTooltip>
-                  Voting power is the percentage of the total staked LQTY that you own.
-                </InfoTooltip>
-              </div>
+                <Amount
+                  format="2diff"
+                  value={stakePosition?.rewards.lusd ?? 0}
+                />
+                <TokenIcon symbol="LUSD" size="mini" />
+              </HFlex>
+              <HFlex
+                gap={4}
+                className={css({
+                  color: txPreviewMode
+                      && stakePosition?.rewards.eth
+                      && dn.gt(stakePosition?.rewards.eth, 0)
+                    ? "var(--update-color)"
+                    : "inherit",
+                })}
+              >
+                <Amount
+                  format="2diff"
+                  value={stakePosition?.rewards.eth ?? 0}
+                />
+                <TokenIcon symbol="ETH" size="mini" />
+              </HFlex>
+            </HFlex>
+          </div>
+          <div>
+            <div
+              className={css({
+                color: "token(colors.strongSurfaceContentAlt)",
+              })}
+            >
+              Voting power
             </div>
-          )}
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              })}
+            >
+              <div
+                style={{
+                  color: txPreviewMode
+                      && prevStakePosition
+                      && stakePosition?.share
+                      && !dn.eq(prevStakePosition.share, stakePosition.share)
+                    ? "var(--update-color)"
+                    : "inherit",
+                }}
+              >
+                <Amount
+                  percentage
+                  value={stakePosition?.share ?? 0}
+                />
+              </div>
+              {prevStakePosition && stakePosition && !dn.eq(prevStakePosition.share, stakePosition.share)
+                ? (
+                  <div
+                    className={css({
+                      color: "contentAlt",
+                      textDecoration: "line-through",
+                    })}
+                  >
+                    <Amount
+                      percentage
+                      value={prevStakePosition?.share ?? 0}
+                    />
+                  </div>
+                )
+                : " of pool"}
+              <InfoTooltip>
+                Voting power is the percentage of the total staked LQTY that you own.
+              </InfoTooltip>
+            </div>
+          </div>
         </div>
       </div>
     </div>
