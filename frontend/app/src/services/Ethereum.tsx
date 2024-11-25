@@ -34,6 +34,13 @@ import {
   useAccountModal,
   useConnectModal,
 } from "@rainbow-me/rainbowkit";
+import {
+  coinbaseWallet,
+  injectedWallet,
+  metaMaskWallet,
+  safeWallet,
+  walletConnectWallet,
+} from "@rainbow-me/rainbowkit/wallets";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { match } from "ts-pattern";
@@ -157,6 +164,16 @@ export function useWagmiConfig() {
       appName: "Liquity V2",
       projectId: WALLET_CONNECT_PROJECT_ID,
       chains: [chain],
+      wallets: [{
+        groupName: "Suggested",
+        wallets: [
+          injectedWallet,
+          metaMaskWallet,
+          coinbaseWallet,
+          safeWallet,
+          walletConnectWallet,
+        ],
+      }],
       transports: {
         [chain.id]: http(CHAIN_RPC_URL),
       },

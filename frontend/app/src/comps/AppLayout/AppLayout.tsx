@@ -18,7 +18,7 @@ export function AppLayout({
       className={css({
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
+        alignItems: "flex-start",
         width: "100%",
         minHeight: "100vh",
         margin: "0 auto",

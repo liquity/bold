@@ -109,7 +109,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
               fallback="…"
               prefix="Incl. "
               value={upfrontFee.data}
-              suffix=" BOLD upfront fee"
+              suffix=" BOLD interest rate adjustment fee"
             />,
           ]}
         />

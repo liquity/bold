@@ -156,7 +156,7 @@ export function PanelClosePosition({
           }}
         />
         <Field
-          label="You reclaim"
+          label="You reclaim collateral"
           field={
             <div
               className={css({

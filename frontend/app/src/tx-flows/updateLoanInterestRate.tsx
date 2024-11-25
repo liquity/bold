@@ -1,6 +1,7 @@
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
+import { Amount } from "@/src/comps/Amount/Amount";
 import { MAX_ANNUAL_INTEREST_RATE, MIN_ANNUAL_INTEREST_RATE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
@@ -90,6 +91,13 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
     const { request } = flow;
     const { loan, prevLoan } = request;
 
+    const upfrontFee = usePredictAdjustInterestRateUpfrontFee(
+      loan.collIndex,
+      loan.troveId,
+      loan.batchManager ?? loan.interestRate,
+      prevLoan.batchManager !== null,
+    );
+
     const yearlyBoldInterest = dn.mul(loan.borrowed, loan.interestRate);
 
     return loan.batchManager
@@ -107,7 +115,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
       : (
         <>
           <TransactionDetailsRow
-            label="Set interest rate"
+            label="New interest rate"
             value={[
               <div key="start">
                 {fmtnum(loan.interestRate, "full", 100)}%
@@ -146,6 +154,17 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
               ]}
             />
           )}
+          <TransactionDetailsRow
+            label="Interest rate adjustment fee"
+            value={[
+              <Amount
+                key="start"
+                fallback="…"
+                value={upfrontFee.data}
+                suffix=" BOLD"
+              />,
+            ]}
+          />
         </>
       );
   },

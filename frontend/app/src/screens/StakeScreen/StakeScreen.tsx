@@ -1,20 +1,11 @@
 "use client";
 
-import type { TokenSymbol } from "@liquity2/uikit";
-import type { Dnum } from "dnum";
-import type { ReactNode } from "react";
-
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import content from "@/src/content";
-import { getProtocolContract } from "@/src/contracts";
-import { useDemoMode } from "@/src/demo-mode";
-import { ACCOUNT_STAKED_LQTY } from "@/src/demo-mode";
-import { dnum18 } from "@/src/dnum-utils";
 import { dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
@@ -38,22 +29,19 @@ import {
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import { encodeFunctionData } from "viem";
-import { useEstimateGas, useGasPrice } from "wagmi";
+import { PanelRewards } from "./PanelRewards";
 import { PanelVoting } from "./PanelVoting";
 
 const TABS = [
   { label: content.stakeScreen.tabs.deposit, id: "deposit" },
   { label: content.stakeScreen.tabs.rewards, id: "rewards" },
-  // { label: content.stakeScreen.tabs.voting, id: "voting" },
+  { label: content.stakeScreen.tabs.voting, id: "voting" },
 ];
 
 export function StakeScreen() {
   const router = useRouter();
   const { action = "deposit" } = useParams();
-
   const account = useAccount();
-
   const stakePosition = useStakePosition(account.address ?? null);
 
   return (
@@ -94,7 +82,7 @@ export function StakeScreen() {
         />
 
         {action === "deposit" && <PanelUpdateStake />}
-        {action === "rewards" && <PanelClaimRewards />}
+        {action === "rewards" && <PanelRewards />}
         {action === "voting" && <PanelVoting />}
       </VFlex>
     </Screen>
@@ -326,177 +314,5 @@ function PanelUpdateStake() {
         />
       </div>
     </>
-  );
-}
-
-function PanelClaimRewards() {
-  const account = useAccount();
-  const txFlow = useTransactionFlow();
-  const demoMode = useDemoMode();
-
-  const ethPrice = usePrice("ETH");
-
-  const stakePosition = useStakePosition(account.address ?? null);
-  const LqtyStaking = getProtocolContract("LqtyStaking");
-
-  const gasEstimate = useEstimateGas({
-    account: account.address,
-    data: encodeFunctionData({
-      abi: LqtyStaking.abi,
-      functionName: "unstake",
-      args: [0n],
-    }),
-    to: LqtyStaking.address,
-  });
-
-  const gasPrice = useGasPrice();
-
-  if (!ethPrice) {
-    return null;
-  }
-
-  const txGasPriceEth = gasEstimate.data && gasPrice.data
-    ? dnum18(gasEstimate.data * gasPrice.data)
-    : null;
-
-  const txGasPriceUsd = txGasPriceEth && dn.mul(txGasPriceEth, ethPrice);
-
-  const rewardsLusd = (
-    demoMode.enabled
-      ? ACCOUNT_STAKED_LQTY.rewardLusd
-      : stakePosition.data?.rewards.lusd
-  ) ?? dn.from(0, 18);
-
-  const rewardsEth = (
-    demoMode.enabled
-      ? ACCOUNT_STAKED_LQTY.rewardEth
-      : stakePosition.data?.rewards.eth
-  ) ?? dn.from(0, 18);
-
-  const totalRewardsUsd = dn.add(
-    rewardsLusd,
-    dn.mul(rewardsEth, ethPrice),
-  );
-
-  // const allowSubmit = account.isConnected && dn.gt(totalRewardsUsd, 0);
-  const allowSubmit = account.isConnected;
-
-  return (
-    <VFlex gap={48}>
-      <VFlex gap={0}>
-        <Rewards
-          amount={rewardsLusd}
-          label="Issuance gain"
-          symbol="LUSD"
-        />
-        <Rewards
-          amount={rewardsEth}
-          label="Redemption gain"
-          symbol="ETH"
-        />
-
-        <div
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            padding: "24px 0",
-            color: "contentAlt",
-          })}
-        >
-          <HFlex justifyContent="space-between" gap={24}>
-            <div>Total in USD</div>
-            <Amount
-              format="2z"
-              prefix="$"
-              value={totalRewardsUsd}
-            />
-          </HFlex>
-          <HFlex justifyContent="space-between" gap={24}>
-            <div>Expected Gas Fee</div>
-            <Amount
-              format="2z"
-              prefix="~$"
-              value={txGasPriceUsd ?? 0}
-            />
-          </HFlex>
-        </div>
-      </VFlex>
-
-      <ConnectWarningBox />
-
-      <Button
-        disabled={!allowSubmit}
-        label="Next: Summary"
-        mode="primary"
-        size="large"
-        wide
-        onClick={() => {
-          if (account.address && stakePosition.data) {
-            txFlow.start({
-              flowId: "stakeClaimRewards",
-              backLink: [
-                `/stake`,
-                "Back to stake position",
-              ],
-              successLink: ["/", "Go to the Dashboard"],
-              successMessage: "The rewards have been claimed successfully.",
-
-              stakePosition: {
-                ...stakePosition.data,
-                rewards: {
-                  eth: dn.from(0, 18),
-                  lusd: dn.from(0, 18),
-                },
-              },
-              prevStakePosition: stakePosition.data,
-            });
-          }
-        }}
-      />
-    </VFlex>
-  );
-}
-
-function Rewards({
-  amount,
-  label,
-  symbol,
-}: {
-  amount: Dnum;
-  label: ReactNode;
-  symbol: TokenSymbol;
-}) {
-  return (
-    <div
-      className={css({
-        display: "grid",
-        gap: 24,
-        gridTemplateColumns: "1.2fr 1fr",
-        alignItems: "start",
-        padding: "24px 0",
-        borderBottom: "1px solid token(colors.separator)",
-      })}
-    >
-      <div
-        className={css({
-          paddingTop: 4,
-        })}
-      >
-        {label}
-      </div>
-      <div
-        className={css({
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          gap: 8,
-          fontSize: 28,
-        })}
-      >
-        <Amount value={amount} />
-        <TokenIcon symbol={symbol} size={24} />
-      </div>
-    </div>
   );
 }
