@@ -2,7 +2,7 @@ import type { CollateralToken } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ComponentPropsWithoutRef } from "react";
 
-import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALLOWED } from "@/src/constants";
+import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALLOWED_RATIO } from "@/src/constants";
 import content from "@/src/content";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
@@ -144,7 +144,7 @@ export function useLeverageField({
   collPrice,
   collToken,
   depositPreLeverage,
-  maxLtvAllowedRatio = MAX_LTV_ALLOWED,
+  maxLtvAllowedRatio = MAX_LTV_ALLOWED_RATIO,
   onFocusChange,
 }: {
   collPrice: Dnum;

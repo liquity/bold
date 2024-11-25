@@ -3,7 +3,7 @@ import type { Dnum } from "dnum";
 
 import {
   LTV_RISK,
-  MAX_LTV_ALLOWED,
+  MAX_LTV_ALLOWED_RATIO,
   ONE_YEAR_IN_SECONDS,
   REDEMPTION_RISK,
   UPFRONT_INTEREST_PERIOD,
@@ -116,7 +116,7 @@ export function getLoanDetails(
   collPrice: Dnum | null,
 ): LoanDetails {
   const maxLtv = dn.div(dn.from(1, 18), minCollRatio);
-  const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED);
+  const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED_RATIO);
   const depositUsd = deposit && collPrice ? dn.mul(deposit, collPrice) : null;
 
   const ltv = debt && depositUsd && !dn.eq(depositUsd, 0)
