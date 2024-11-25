@@ -44,12 +44,32 @@ export function Screen({
     },
   });
 
+  const headingSpring = useSpring({
+    from: {
+      opacity: 0,
+      transform: `
+        translate(0, 48px)
+      `,
+    },
+    to: {
+      opacity: 1,
+      transform: `
+        translate(0, 0px)
+      `,
+    },
+    config: {
+      mass: 1,
+      tension: 2200,
+      friction: 220,
+    },
+  });
+
   const screenSpring = useSpring({
     from: {
       opacity: 0,
       transform: `
-        scale3d(1.03, 1.03, 1)
-        translate3d(0, 40px, 0)
+        scale3d(0.95, 0.95, 1)
+        translate3d(0, 20px, 0)
       `,
     },
     to: {
@@ -59,33 +79,11 @@ export function Screen({
         translate3d(0, 0px, 0)
       `,
     },
-    delay: 100,
+    delay: 150,
     config: {
-      mass: 1,
-      tension: 1600,
-      friction: 120,
-    },
-  });
-
-  const headingSpring = useSpring({
-    from: {
-      opacity: 1,
-      transform: `
-        scale(1.08)
-        translate(0, 16px)
-      `,
-    },
-    to: {
-      opacity: 1,
-      transform: `
-        scale(1)
-        translate(0, 0px)
-      `,
-    },
-    config: {
-      mass: 1,
+      mass: 2,
       tension: 2400,
-      friction: 120,
+      friction: 220,
     },
   });
 
@@ -194,6 +192,8 @@ export function Screen({
           display: "flex",
           flexDirection: "column",
           position: "relative",
+          transformOrigin: "50% 0",
+          willChange: "transform, opacity",
         })}
         style={{
           gap,
