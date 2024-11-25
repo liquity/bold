@@ -162,7 +162,9 @@ export function PanelUpdateLeveragePosition({
       ) || (
         initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor
       )
-    );
+    )
+    // above the minimum debt
+    && newLoanDetails.debt && dn.gt(newLoanDetails.debt, MIN_DEBT);
 
   return (
     <>
@@ -264,7 +266,17 @@ export function PanelUpdateLeveragePosition({
         />
 
         <Field
-          field={<LeverageField {...leverageField} />}
+          field={
+            <LeverageField
+              drawer={newLoanDetails.debt && dn.lt(newLoanDetails.debt, MIN_DEBT)
+                ? {
+                  mode: "error",
+                  message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
+                }
+                : null}
+              {...leverageField}
+            />
+          }
           footer={[
             {
               start: <Field.FooterInfo label="ETH liquidation price" />,
