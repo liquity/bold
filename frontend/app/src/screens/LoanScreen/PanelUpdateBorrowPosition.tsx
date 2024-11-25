@@ -198,43 +198,45 @@ export function PanelUpdateBorrowPosition({
                   <HFlex alignItems="center" gap={8}>
                     <Amount
                       format={2}
-                      suffix={` ${collToken.symbol}`}
+                      suffix={` ${collToken.name}`}
                       value={newLoanDetails.deposit}
                     />
                     <InfoTooltip heading="Collateral update">
                       <div>
-                        Current:{" "}
+                        Before:{" "}
                         <Amount
                           format={2}
-                          suffix={` ${collToken.symbol}`}
+                          suffix={` ${collToken.name}`}
                           value={loanDetails.deposit}
                         />
                         {collPrice && (
                           <>
-                            {" / "}
+                            {" ("}
                             <Amount
                               format={2}
                               prefix="$"
                               value={dn.mul(loanDetails.deposit, collPrice)}
                             />
+                            {")"}
                           </>
                         )}
                       </div>
                       <div>
-                        Update:{" "}
+                        After:{" "}
                         <Amount
                           format={2}
-                          suffix={` ${collToken.symbol}`}
+                          suffix={` ${collToken.name}`}
                           value={newLoanDetails.deposit}
                         />
                         {collPrice && (
                           <>
-                            {" / "}
+                            {" ("}
                             <Amount
                               format={2}
                               prefix="$"
                               value={dn.mul(newLoanDetails.deposit, collPrice)}
                             />
+                            {")"}
                           </>
                         )}
                       </div>
@@ -324,7 +326,14 @@ export function PanelUpdateBorrowPosition({
                         suffix=" BOLD"
                       />
                     </div>
-                    <InfoTooltip heading="Debt update" />
+                    <InfoTooltip heading="Debt update">
+                      <div>
+                        Before: <Amount value={loanDetails.debt} suffix=" BOLD" />
+                      </div>
+                      <div>
+                        After: <Amount value={newLoanDetails.debt} suffix=" BOLD" />
+                      </div>
+                    </InfoTooltip>
                   </HFlex>
                 }
               />
