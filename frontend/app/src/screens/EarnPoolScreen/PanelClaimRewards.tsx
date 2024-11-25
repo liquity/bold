@@ -25,21 +25,21 @@ export function PanelClaimRewards({
   const txFlow = useTransactionFlow();
 
   const collateral = getCollToken(collIndex);
-  const collPriceUsd = usePrice(collateral?.symbol ?? null);
-  const boldPriceUsd = usePrice("BOLD");
-
-  if (!collPriceUsd || !boldPriceUsd || !collateral) {
-    return null;
+  if (!collateral) {
+    throw new Error(`Invalid collateral index: ${collIndex}`);
   }
 
-  const totalRewards = dn.add(
+  const boldPriceUsd = usePrice("BOLD");
+  const collPriceUsd = usePrice(collateral.symbol ?? null);
+
+  const totalRewards = collPriceUsd && boldPriceUsd && dn.add(
     dn.mul(position?.rewards?.bold ?? DNUM_0, boldPriceUsd),
     dn.mul(position?.rewards?.coll ?? DNUM_0, collPriceUsd),
   );
 
-  const gasFeeUsd = dn.multiply(dn.from(0.0015, 18), collPriceUsd);
+  const gasFeeUsd = collPriceUsd && dn.multiply(dn.from(0.0015, 18), collPriceUsd);
 
-  const allowSubmit = account.isConnected;
+  const allowSubmit = account.isConnected && totalRewards && dn.gt(totalRewards, 0);
 
   return (
     <VFlex gap={48}>
@@ -92,7 +92,7 @@ export function PanelClaimRewards({
         size="large"
         wide
         onClick={() => {
-          if (!collateral || !account.address || !position) {
+          if (!account.address || !position) {
             return;
           }
           txFlow.start({
