@@ -3,9 +3,17 @@
 pragma solidity ^0.8.18;
 
 import "../Dependencies/AddRemoveManagers.sol";
+import "./TestContracts/AddRemoveManagersTester.sol";
 import "./TestContracts/DevTestSetup.sol";
 
 contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
+    AddRemoveManagersTester addRemoveManagersTester;
+
+    function setUp() public override {
+        super.setUp();
+        addRemoveManagersTester = new AddRemoveManagersTester(addressesRegistry);
+    }
+
     function testSetAddManager() public {
         uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 10000e18, 1e17);
 
@@ -696,5 +704,42 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         assertEq(troveManager.getTroveColl(ATroveId), 0, "Wrong trove coll");
         assertEq(collToken.balanceOf(A), AInitialCollBalance + 100 ether + ETH_GAS_COMPENSATION, "Wrong owner balance");
         assertEq(collToken.balanceOf(B), BInitialCollBalance, "Wrong manager balance");
+    }
+
+    function _testReceiver(
+        address _sender,
+        address _owner,
+        address _manager,
+        address _receiver,
+        address _expectedReceiver
+    ) public {
+        uint256 troveId = 1;
+        addRemoveManagersTester.setRemoveManagerWithReceiverPermissionless(troveId, _manager, _receiver);
+
+        vm.startPrank(_sender);
+        address receiverResult =
+            addRemoveManagersTester.requireSenderIsOwnerOrRemoveManagerAndGetReceiver(troveId, _owner);
+        vm.stopPrank();
+
+        assertEq(receiverResult, _expectedReceiver);
+    }
+
+    function testReceiverForRemoveManager() public {
+        // 1. With receiver zero
+        _testReceiver(A, A, B, address(0), A);
+        _testReceiver(B, A, B, address(0), A);
+
+        // 2. With manager zero
+        _testReceiver(A, A, address(0), address(0), A);
+
+        // 3. With receiver non zero
+        // 3.1. With manager != owner
+        // 3.1.1. From owner
+        _testReceiver(A, A, B, C, A);
+        // 3.1.2. From manager
+        _testReceiver(B, A, B, C, C);
+
+        // 3.2. With manager == owner
+        _testReceiver(A, A, A, C, C);
     }
 }
