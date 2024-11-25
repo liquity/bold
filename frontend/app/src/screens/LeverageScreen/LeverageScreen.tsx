@@ -17,6 +17,7 @@ import {
   INTEREST_RATE_DEFAULT,
   LEVERAGE_MAX_SLIPPAGE,
   MAX_COLLATERAL_DEPOSITS,
+  MIN_DEBT,
 } from "@/src/constants";
 import content from "@/src/content";
 import { getContracts, getProtocolContract } from "@/src/contracts";
@@ -155,6 +156,10 @@ export function LeverageScreen() {
   const hasAllowedSlippage = leverageSlippage.data
     && dn.lte(leverageSlippage.data, LEVERAGE_MAX_SLIPPAGE);
 
+  const leverageFieldDrawer = (hasDeposit && newLoan.borrowed && dn.lt(newLoan.borrowed, MIN_DEBT))
+    ? { mode: "error" as const, message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+    : leverageSlippageElements.drawer;
+
   const allowSubmit = account.isConnected
     && hasDeposit
     && interestRate && dn.gt(interestRate, 0)
@@ -252,7 +257,7 @@ export function LeverageScreen() {
         <Field
           field={
             <LeverageField
-              drawer={leverageSlippageElements.drawer}
+              drawer={leverageFieldDrawer}
               onDrawerClose={leverageSlippageElements.onClose}
               {...leverageField}
             />
@@ -482,21 +487,31 @@ function useSlippageElements(
   }
 
   if (leverageSlippage.status === "error") {
-    const message = (
-      <HFlex gap={4}>
-        Slippage calculation failed.
-        <TextButton
-          size="small"
-          label="retry"
-          onClick={() => {
-            leverageSlippage.refetch();
-          }}
-        />
-      </HFlex>
+    const retry = (
+      <TextButton
+        size="small"
+        label="retry"
+        onClick={() => {
+          leverageSlippage.refetch();
+        }}
+      />
     );
     return {
-      drawer: { mode: "error", message },
-      message,
+      drawer: {
+        mode: "error",
+        message: (
+          <HFlex gap={4}>
+            <div>Slippage calculation failed.</div>
+            {retry}
+          </HFlex>
+        ),
+      },
+      message: (
+        <VFlex gap={4}>
+          <div>Slippage calculation failed. ({leverageSlippage.error.message})</div>
+          {retry}
+        </VFlex>
+      ),
       mode: "error",
       onClose,
     };
