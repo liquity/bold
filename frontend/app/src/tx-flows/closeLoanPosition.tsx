@@ -103,7 +103,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
           ]}
         />
         <TransactionDetailsRow
-          label="You reclaim"
+          label="You reclaim collateral"
           value={[
             <Amount
               key="start"
@@ -113,7 +113,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
           ]}
         />
         <TransactionDetailsRow
-          label="Gas compensation refund"
+          label="You reclaim the gas compensation deposit"
           value={[
             <div
               key="start"

@@ -107,7 +107,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
       : (
         <>
           <TransactionDetailsRow
-            label="Set interest rate"
+            label="New interest rate"
             value={[
               <div key="start">
                 {fmtnum(loan.interestRate, "full", 100)}%
