@@ -13,6 +13,7 @@
   "hintHelpers": "0x71d43e3ce3c8c593773dd9b843e9db949384adc7",
   "multiTroveGetter": "0xd55dbe705404242cda541390361ce28ce7f50b95",
   "exchangeHelpers": "0xbf0257d28388738705196887ca1deba8b70f55e1",
+  "USDC": "0x375a88c7ba42507b597579a99170c854b7ef1f38",
   "branches": [
     {
       "addressesRegistry": "0xea55ac45b7527e0069c14579a256a0a07b3e4235",
@@ -32,12 +33,12 @@
       "wethZapper": "0x40d4330501e09b5e98cc13c3f07c43d89f95d549",
       "leverageZapper": "0x611d0b89d7a6053e474aca719ba8435e81c4804f",
       "interestRouter": "0x16fda5823f296c24125be4976fd6cec9fab9da2e",
-      "collToken": "0x375a88c7ba42507b597579a99170c854b7ef1f38"
+      "collToken": "0x2442ca14d1217b4dd503e47dfdf79b774b56ea89"
     },
     {
       "addressesRegistry": "0x9b751dbbd3310b490a11dd8c5754d998ad939fdf",
       "metadataNFT": "0xf7f1b556f02c747749ca161f07a4a8539fc71f08",
-      "priceFeedTestnet": "0xd204bbb0db0dfa99e218a4d4b4d3904ba7515b21",
+      "priceFeed": "0xd204bbb0db0dfa99e218a4d4b4d3904ba7515b21",
       "borrowerOperations": "0xee9390dd1ada7b2acd4922879f1a90f743d371ea",
       "troveManager": "0x71aca0d1c8ad87ced23d5816c2988d8d8a912ac3",
       "troveNFT": "0x805e8e1cd47ae7356682b43896e1c2fcffc5979b",
