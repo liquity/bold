@@ -539,8 +539,8 @@ function LoanCard({
                           </div>
                         ),
                         label: mode === "leverage"
-                          ? "View as loan"
-                          : "View as leverage",
+                          ? "Convert to BOLD loan"
+                          : "Convert to leverage loan",
                       },
                       {
                         icon: (
