@@ -140,7 +140,7 @@ export function BorrowScreen() {
         collPrice,
       );
 
-      // don’t show if ltv > MAX_LTV_ALLOWED
+      // don’t show if ltv > max LTV
       if (ltv && dn.gt(ltv, loanDetails.maxLtv)) {
         return null;
       }
@@ -211,9 +211,8 @@ export function BorrowScreen() {
                   menuWidth={300}
                   onSelect={(index) => {
                     deposit.setValue("");
-                    const { symbol } = collaterals[index];
                     router.push(
-                      `/borrow/${symbol.toLowerCase()}`,
+                      `/borrow/${collaterals[index].symbol.toLowerCase()}`,
                       { scroll: false },
                     );
                   }}
