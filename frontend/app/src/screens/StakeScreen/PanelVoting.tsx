@@ -328,7 +328,7 @@ export function PanelVoting() {
 
         <Button
           disabled={!allowSubmit}
-          label="Coming soon: cast votes"
+          label="Coming soon"
           mode="primary"
           size="large"
           wide
