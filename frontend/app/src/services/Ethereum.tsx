@@ -38,9 +38,11 @@ import {
   coinbaseWallet,
   injectedWallet,
   metaMaskWallet,
+  rabbyWallet,
   safeWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { match } from "ts-pattern";
@@ -168,6 +170,7 @@ export function useWagmiConfig() {
         groupName: "Suggested",
         wallets: [
           injectedWallet,
+          rabbyWallet,
           metaMaskWallet,
           coinbaseWallet,
           safeWallet,

@@ -3,6 +3,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { MAX_UPFRONT_FEE } from "@/src/constants";
+import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLeverDownTroveParams, getLeverUpTroveParams } from "@/src/liquity-leverage";
 import { getCollToken, getPrefixedTroveId, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
@@ -12,9 +13,11 @@ import { usePrice } from "@/src/services/Prices";
 import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
 import { isTroveId } from "@/src/types";
 import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
+import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
+import { readContract } from "wagmi/actions";
 
 const FlowIdSchema = v.literal("updateLeveragePosition");
 
@@ -52,12 +55,14 @@ const RequestSchema = v.object({
 export type Request = v.InferOutput<typeof RequestSchema>;
 
 type Step =
+  | "approveLst"
   | "decreaseDeposit"
   | "increaseDeposit"
   | "leverDownTrove"
   | "leverUpTrove";
 
 const stepNames: Record<Step, string> = {
+  approveLst: "Approve {tokenName}",
   decreaseDeposit: "Decrease Deposit",
   increaseDeposit: "Increase Deposit",
   leverDownTrove: "Decrease Leverage",
@@ -130,7 +135,7 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
                 key="start"
                 fallback="…"
                 value={depositChange}
-                suffix={` ${collateral.symbol}`}
+                suffix={` ${collateral.name}`}
                 format={{
                   digits: 2,
                   signDisplay: "exceptZero",
@@ -191,10 +196,31 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
     return v.parse(RequestSchema, request);
   },
 
-  async getSteps({ request }) {
-    const { depositChange, leverageFactorChange } = request;
+  async getSteps({ account, contracts, request, wagmiConfig }) {
+    const { depositChange, leverageFactorChange, loan } = request;
+    const collateral = contracts.collaterals[loan.collIndex];
 
     const steps: Step[] = [];
+
+    // only check approval for non-ETH collaterals
+    if (collateral.symbol !== "ETH" && depositChange && dn.gt(depositChange, 0)) {
+      const { LeverageLSTZapper, CollToken } = collateral.contracts;
+
+      const allowance = dnum18(
+        await readContract(wagmiConfig, {
+          ...CollToken,
+          functionName: "allowance",
+          args: [
+            account.address ?? ADDRESS_ZERO,
+            LeverageLSTZapper.address,
+          ],
+        }),
+      );
+
+      if (dn.lt(allowance, depositChange)) {
+        steps.push("approveLst");
+      }
+    }
 
     if (depositChange) {
       steps.push(dn.gt(depositChange, 0) ? "increaseDeposit" : "decreaseDeposit");
@@ -208,8 +234,12 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
     return steps;
   },
 
-  getStepName(stepId) {
-    return stepNames[stepId];
+  getStepName(stepId, { request }) {
+    const token = getCollToken(request.loan.collIndex);
+    if (!token) {
+      throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+    }
+    return stepNames[stepId].replace(/\{tokenName\}/g, token.name);
   },
 
   async writeContractParams(stepId, { account, contracts, request, wagmiConfig }) {
@@ -222,6 +252,20 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
 
     if (!account.address) {
       throw new Error("Account address is required");
+    }
+
+    if (stepId === "approveLst") {
+      if (!request.depositChange) {
+        throw new Error("Invalid step: depositChange is required with approveLst");
+      }
+      return {
+        ...collateral.contracts.CollToken,
+        functionName: "approve",
+        args: [
+          Zapper.address,
+          request.depositChange[0],
+        ],
+      };
     }
 
     if (stepId === "increaseDeposit") {

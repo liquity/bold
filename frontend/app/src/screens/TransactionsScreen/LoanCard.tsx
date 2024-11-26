@@ -27,15 +27,15 @@ export function LoanCard({
   leverageMode,
   loadingState,
   loan,
-  prevLoan,
   onRetry,
+  prevLoan,
   txPreviewMode = false,
 }: {
   leverageMode: boolean;
   loadingState: LoadingState;
   loan: PositionLoan | null;
-  prevLoan?: PositionLoan | null;
   onRetry: () => void;
+  prevLoan?: PositionLoan | null;
   txPreviewMode?: boolean;
 }) {
   const collToken = getCollToken(loan?.collIndex ?? prevLoan?.collIndex ?? null);
@@ -575,7 +575,7 @@ function LoadingCard({
         cardtransform: "scale3d(1, 1, 1)",
         containerHeight: height,
         cardHeight: height,
-        cardBackground: token("colors.blue:950"),
+        cardBackground: token("colors.position"),
         cardColor: token("colors.white"),
       })),
     config: {
