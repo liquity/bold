@@ -688,13 +688,11 @@ function useResetQueriesOnPathChange(condition: boolean) {
   useEffect(() => {
     // when the condition changes, set a flag to invalidate
     if (pathName === "/transactions" && condition) {
-      console.log("SETTING INVALIDATE ON PATH CHANGE");
       invalidateOnPathChange.current = true;
       return;
     }
     // when the path changes, invalidate if the flag is set
     if (pathName !== "/transactions" && invalidateOnPathChange.current) {
-      console.log("CLEARING INVALIDATE ON PATH CHANGE");
       queryClient.resetQueries();
       invalidateOnPathChange.current = false;
     }
