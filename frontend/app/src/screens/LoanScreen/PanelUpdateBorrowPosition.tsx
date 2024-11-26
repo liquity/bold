@@ -79,7 +79,7 @@ export function PanelUpdateBorrowPosition({
   const collBalance = useBalance(account.address, collToken.symbol);
   const boldBalance = useBalance(account.address, "BOLD");
 
-  const collMax = depositMode === "remove" ? loan.deposit : (
+  const collMax = depositMode === "remove" ? null : (
     collBalance.data && dnumMax(
       dn.sub(
         collBalance.data,
