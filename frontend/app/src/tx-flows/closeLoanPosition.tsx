@@ -144,13 +144,13 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
       throw new Error("Account address is required");
     }
 
-    const [debt] = await readContract(wagmiConfig, {
+    const { entireDebt } = await readContract(wagmiConfig, {
       ...coll.contracts.TroveManager,
-      functionName: "Troves",
+      functionName: "getLatestTroveData",
       args: [BigInt(loan.troveId)],
     });
 
-    const isBoldApproved = request.repayWithCollateral || !dn.gt(debt, [
+    const isBoldApproved = request.repayWithCollateral || !dn.gt(entireDebt, [
       await readContract(wagmiConfig, {
         ...contracts.BoldToken,
         functionName: "allowance",
@@ -179,9 +179,9 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
     const coll = contracts.collaterals[loan.collIndex];
 
     if (stepId === "approveBold") {
-      const [debt] = await readContract(wagmiConfig, {
+      const { entireDebt } = await readContract(wagmiConfig, {
         ...coll.contracts.TroveManager,
-        functionName: "Troves",
+        functionName: "getLatestTroveData",
         args: [BigInt(loan.troveId)],
       });
 
@@ -192,7 +192,7 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
       return {
         ...contracts.BoldToken,
         functionName: "approve",
-        args: [Zapper.address, dn.mul([debt, 18], 1.1)[0]], // TODO: calculate the amount to approve in a more precise way
+        args: [Zapper.address, dn.mul([entireDebt, 18], 1.1)[0]], // TODO: calculate the amount to approve in a more precise way
       };
     }
 
