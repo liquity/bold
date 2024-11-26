@@ -25,9 +25,11 @@ export function Positions({
   columns,
   showNewPositionCard = true,
   title = (mode) => (
-    mode === "actions"
-      ? content.home.openPositionTitle
-      : content.home.myPositionsTitle
+    mode === "loading"
+      ? " "
+      : mode === "positions"
+      ? content.home.myPositionsTitle
+      : content.home.openPositionTitle
   ),
 }: {
   address: null | Address;
@@ -210,7 +212,7 @@ function PositionsGroup({
             userSelect: "none",
           })}
           style={{
-            paddingBottom: mode === "actions" ? 48 : 32,
+            paddingBottom: 32,
           }}
           onClick={onTitleClick}
         >

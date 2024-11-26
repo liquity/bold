@@ -47,7 +47,7 @@ export function ProtocolStats() {
           userSelect: "none",
         })}
       >
-        <HFlex gap={8} alignItems="center">
+        <HFlex gap={4} alignItems="center">
           <Logo size={16} />
           <span>TVL</span>{" "}
           <span>
@@ -65,7 +65,7 @@ export function ProtocolStats() {
             return (
               <HFlex
                 key={symbol}
-                gap={8}
+                gap={4}
               >
                 <TokenIcon
                   size={16}
@@ -87,7 +87,7 @@ export function ProtocolStats() {
             <AnchorTextButton
               href={`/account?address=${account.address}`}
               label={
-                <HFlex gap={8} alignItems="center">
+                <HFlex gap={4} alignItems="center">
                   <Image
                     alt=""
                     width={16}

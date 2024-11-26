@@ -111,7 +111,7 @@ function BorrowingRow({
         <div
           className={css({
             display: "flex",
-            gap: 8,
+            gap: 16,
             justifyContent: "flex-end",
           })}
         >
@@ -126,7 +126,7 @@ function BorrowingRow({
                   className={css({
                     display: "flex",
                     alignItems: "center",
-                    gap: 8,
+                    gap: 4,
                     fontSize: 14,
                   })}
                 >
@@ -148,7 +148,7 @@ function BorrowingRow({
                   className={css({
                     display: "flex",
                     alignItems: "center",
-                    gap: 8,
+                    gap: 4,
                     fontSize: 14,
                   })}
                 >
@@ -215,7 +215,7 @@ function EarnRewardsRow({
                 className={css({
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
+                  gap: 4,
                   fontSize: 14,
                 })}
               >
