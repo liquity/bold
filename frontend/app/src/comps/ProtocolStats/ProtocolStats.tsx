@@ -85,6 +85,7 @@ export function ProtocolStats() {
           })}
           {account.address && (
             <AnchorTextButton
+              id="footer-account-button"
               href={`/account?address=${account.address}`}
               label={
                 <HFlex gap={4} alignItems="center">
