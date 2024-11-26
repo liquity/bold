@@ -80,7 +80,8 @@ export function BorrowScreen() {
   const collateral = collaterals[collIndex];
 
   const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
-  const deposit = useInputFieldValue((value) => `${fmtnum(value)} ${collateral.name}`, {
+
+  const deposit = useInputFieldValue(fmtnum, {
     validate: (parsed, value) => {
       const isAboveMax = maxCollDeposit && parsed && dn.gt(parsed, maxCollDeposit);
       return {
@@ -90,7 +91,7 @@ export function BorrowScreen() {
     },
   });
 
-  const debt = useInputFieldValue((value) => `${fmtnum(value)} BOLD`);
+  const debt = useInputFieldValue(fmtnum);
 
   const [interestRate, setInterestRate] = useState(dn.div(dn.from(INTEREST_RATE_DEFAULT, 18), 100));
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");

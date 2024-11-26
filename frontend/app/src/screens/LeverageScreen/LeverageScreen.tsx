@@ -90,7 +90,7 @@ export function LeverageScreen() {
   const collPrice = usePrice(collToken.symbol);
 
   const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
-  const depositPreLeverage = useInputFieldValue((value) => `${fmtnum(value)} ${collToken.name}`, {
+  const depositPreLeverage = useInputFieldValue(fmtnum, {
     validate: (parsed, value) => {
       const isAboveMax = maxCollDeposit && parsed && dn.gt(parsed, maxCollDeposit);
       return {
@@ -470,6 +470,7 @@ function useSlippageElements(
   onClose: () => void;
 } {
   const [forceDrawerClosed, setForceDrawerClosed] = useState(false);
+
   useEffect(() => {
     setForceDrawerClosed(false);
   }, [leverageSlippage.status]);
