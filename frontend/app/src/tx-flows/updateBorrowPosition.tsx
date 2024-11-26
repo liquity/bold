@@ -304,7 +304,7 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
             !dn.lt(debtChange, 0n),
             maxUpfrontFee[0],
           ],
-          value: collChange[0],
+          value: dn.gt(collChange, 0n) ? collChange[0] : 0n,
         }))
         .with("depositColl", () => ({
           ...LeverageWETHZapper,
