@@ -6,7 +6,7 @@ import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
 import { PositionCard } from "./PositionCard";
-import { CardRow, CardRows, EditSquare } from "./shared";
+import { CardRow, CardRows } from "./shared";
 
 export function PositionCardEarn({
   owner,
@@ -39,18 +39,18 @@ export function PositionCardEarn({
               color: "positionContent",
             })}
           >
-            <div
-              className={css({
-                display: "flex",
-                color: "brandLightBlue",
-              })}
-            >
-              <IconEarn size={16} />
-            </div>
             Earn position
           </div>,
         ]}
-        contextual={<EditSquare />}
+        contextual={
+          <div
+            className={css({
+              color: "positionContent",
+            })}
+          >
+            <IconEarn size={32} />
+          </div>
+        }
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">

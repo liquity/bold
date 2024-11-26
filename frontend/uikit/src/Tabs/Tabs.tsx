@@ -91,6 +91,7 @@ export function Tabs({
     ? {
       container: {
         height: 32,
+        padding: 3,
         "--background": token("colors.controlSurface"),
         "--border": `1px solid ${token("colors.border")}`,
         borderRadius: 16,
@@ -109,6 +110,7 @@ export function Tabs({
     : {
       container: {
         height: 44,
+        padding: 4,
         "--background": token("colors.fieldSurface"),
         "--border": "0",
         borderRadius: 8,
@@ -254,7 +256,13 @@ function Tab({
         outlineOffset: compact ? 1 : -2,
       }}
     >
-      {label}
+      <div
+        style={{
+          translate: compact ? "0 -0.5px" : "0 0",
+        }}
+      >
+        {label}
+      </div>
     </button>
   );
 }

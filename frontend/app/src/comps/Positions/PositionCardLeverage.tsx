@@ -11,7 +11,7 @@ import { HFlex, IconLeverage, StatusDot, TokenIcon, TOKENS_BY_SYMBOL } from "@li
 import * as dn from "dnum";
 import Link from "next/link";
 import { PositionCard } from "./PositionCard";
-import { CardRow, CardRows, EditSquare } from "./shared";
+import { CardRow, CardRows } from "./shared";
 
 export function PositionCardLeverage({
   borrowed,
@@ -66,19 +66,19 @@ export function PositionCardLeverage({
               color: "positionContent",
             })}
           >
-            <div
-              className={css({
-                display: "flex",
-                color: "brandGreen",
-              })}
-            >
-              <IconLeverage size={16} />
-            </div>
             <div>Leverage loan</div>
             {statusTag}
           </div>,
         ]}
-        contextual={<EditSquare />}
+        contextual={
+          <div
+            className={css({
+              color: "positionContent",
+            })}
+          >
+            <IconLeverage size={32} />
+          </div>
+        }
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">

@@ -159,6 +159,18 @@ export function Screen({
                 base: "static",
                 large: "absolute",
               },
+              width: {
+                base: "100%",
+                large: "auto",
+              },
+              maxWidth: {
+                base: 540,
+                large: "100%",
+              },
+              marginBottom: {
+                base: -16,
+                large: 0,
+              },
               left: 0,
               zIndex: 1,
             })}
