@@ -44,7 +44,7 @@ export type DelegateMode = "manual" | "strategy" | "delegate";
 const DELEGATE_MODES: DelegateMode[] = [
   "manual",
   "delegate",
-  "strategy",
+  // "strategy",
 ];
 
 export const InterestRateField = memo(
