@@ -305,7 +305,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     throw new Error("Not implemented");
   },
 
-  async postFlowCheck({ request, steps }) {
+  async postFlowCheck({ request, steps, storedState }) {
     const lastStep = steps?.at(-1);
 
     if (lastStep?.txStatus !== "post-check" || !isTroveId(lastStep.txReceiptData)) {
@@ -315,7 +315,17 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     const prefixedTroveId = getPrefixedTroveId(request.loan.collIndex, lastStep.txReceiptData);
     while (true) {
       const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
-      if (trove !== null) return;
+      if (trove !== null) {
+        storedState.setState(({ loanModes }) => {
+          return {
+            loanModes: {
+              ...loanModes,
+              [prefixedTroveId]: "leverage",
+            },
+          };
+        });
+        return;
+      }
     }
   },
 };
