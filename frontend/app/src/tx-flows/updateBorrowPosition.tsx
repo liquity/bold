@@ -153,58 +153,52 @@ export const updateBorrowPosition: FlowDeclaration<Request, Step> = {
 
     return (
       <>
-        <TransactionDetailsRow
-          label={dn.gt(collChange, 0) ? "You deposit" : "You withdraw"}
-          value={[
-            <div
-              key="start"
-              title={`${fmtnum(dn.abs(collChange), "full")} ${collateral.name}`}
-              style={{
-                color: dn.eq(collChange, 0n)
-                  ? "var(--colors-content-alt2)"
-                  : undefined,
-              }}
-            >
-              {fmtnum(dn.abs(collChange))} {collateral.name}
-            </div>,
-            <Amount
-              key="end"
-              fallback="…"
-              prefix="$"
-              value={collPrice && dn.mul(dn.abs(collChange), collPrice)}
-            />,
-          ]}
-        />
-        <TransactionDetailsRow
-          label={isBorrowing ? "You borrow" : "You repay"}
-          value={[
-            <div
-              key="start"
-              style={{
-                color: debtChangeWithFee && dn.eq(debtChangeWithFee, 0n)
-                  ? "var(--colors-content-alt2)"
-                  : undefined,
-              }}
-            >
-              <Amount
-                fallback="…"
-                value={debtChangeWithFee && dn.abs(debtChangeWithFee)}
-                suffix=" BOLD"
-              />
-            </div>,
-            upfrontFeeData.data?.upfrontFee
-            && dn.gt(upfrontFeeData.data.upfrontFee, 0n)
-            && (
+        {!dn.eq(collChange, 0) && (
+          <TransactionDetailsRow
+            label={dn.gt(collChange, 0) ? "You deposit" : "You withdraw"}
+            value={[
+              <div
+                key="start"
+                title={`${fmtnum(dn.abs(collChange), "full")} ${collateral.name}`}
+                style={{
+                  color: dn.eq(collChange, 0n)
+                    ? "var(--colors-content-alt2)"
+                    : undefined,
+                }}
+              >
+                {fmtnum(dn.abs(collChange))} {collateral.name}
+              </div>,
               <Amount
                 key="end"
                 fallback="…"
-                prefix="Incl. "
-                value={upfrontFeeData.data.upfrontFee}
-                suffix=" BOLD interest rate adjustment fee"
-              />
-            ),
-          ]}
-        />
+                prefix="$"
+                value={collPrice && dn.mul(dn.abs(collChange), collPrice)}
+              />,
+            ]}
+          />
+        )}
+        {debtChangeWithFee && !dn.eq(debtChangeWithFee, 0n) && (
+          <TransactionDetailsRow
+            label={isBorrowing ? "You borrow" : "You repay"}
+            value={[
+              <Amount
+                key="start"
+                fallback="…"
+                value={debtChangeWithFee && dn.abs(debtChangeWithFee)}
+                suffix=" BOLD"
+              />,
+              upfrontFeeData.data?.upfrontFee && dn.gt(upfrontFeeData.data.upfrontFee, 0n) && (
+                <Amount
+                  key="end"
+                  fallback="…"
+                  prefix="Incl. "
+                  value={upfrontFeeData.data.upfrontFee}
+                  suffix=" BOLD interest rate adjustment fee"
+                />
+              ),
+            ]}
+          />
+        )}
       </>
     );
   },
