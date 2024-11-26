@@ -385,7 +385,7 @@ function FlowSteps({
               .with("awaiting-confirmation", () => "Awaiting confirmation…")
               .with("confirmed", () => "Confirmed")
               .with("post-check", () => "Awaiting indexer…")
-              .otherwise(() => "Ready")}
+              .otherwise(() => index === currentStep ? "Ready to sign" : "Next transaction")}
             mode={match(step.txStatus)
               .returnType<ComponentProps<typeof StepDisc>["mode"]>()
               .with(
