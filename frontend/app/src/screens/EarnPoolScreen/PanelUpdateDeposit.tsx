@@ -84,6 +84,7 @@ export function PanelUpdateDeposit({
                 label="BOLD"
               />
             }
+            id="input-deposit-change"
             label={{
               start: mode === "remove"
                 ? content.earnScreen.withdrawPanel.label
@@ -176,6 +177,7 @@ export function PanelUpdateDeposit({
                 })}
               >
                 <Checkbox
+                  id="checkbox-claim-rewards"
                   checked={claimRewards}
                   onChange={setClaimRewards}
                 />

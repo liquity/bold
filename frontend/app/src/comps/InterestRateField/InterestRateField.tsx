@@ -34,7 +34,7 @@ import {
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
-import { memo, useState } from "react";
+import { memo, useId, useState } from "react";
 import { match } from "ts-pattern";
 
 import icLogo from "./ic-logo.svg";
@@ -52,6 +52,7 @@ export const InterestRateField = memo(
     collIndex,
     debt,
     delegate,
+    inputId: inputIdFromProps,
     interestRate,
     mode,
     onChange,
@@ -61,6 +62,7 @@ export const InterestRateField = memo(
     collIndex: CollIndex;
     debt: Dnum | null;
     delegate: Address | null;
+    inputId?: string;
     interestRate: Dnum | null;
     mode: DelegateMode;
     onChange: (interestRate: Dnum) => void;
@@ -70,6 +72,9 @@ export const InterestRateField = memo(
     const [delegatePicker, setDelegatePicker] = useState<
       "strategy" | "delegate" | null
     >(null);
+
+    const autoInputId = useId();
+    const inputId = inputIdFromProps ?? autoInputId;
 
     const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
       defaultValue: interestRate
@@ -99,6 +104,7 @@ export const InterestRateField = memo(
     return (
       <>
         <InputField
+          id={inputId}
           labelHeight={32}
           labelSpacing={24}
           disabled={mode !== "manual"}

@@ -134,6 +134,7 @@ export function PanelUpdateBorrowPosition({
           field={
             <InputField
               {...depositChange.inputFieldProps}
+              id="input-deposit-change"
               contextual={
                 <InputTokenBadge
                   background={false}
@@ -256,6 +257,7 @@ export function PanelUpdateBorrowPosition({
           field={
             <InputField
               {...debtChange.inputFieldProps}
+              id="input-debt-change"
               contextual={
                 <InputTokenBadge
                   background={false}

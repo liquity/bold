@@ -24,6 +24,7 @@ const InputField = forwardRef<HTMLInputElement, {
   difference?: ReactNode;
   disabled?: boolean;
   drawer?: null | Drawer;
+  id?: string;
   onDrawerClose?: () => void;
   label?:
     | ReactNode
@@ -49,6 +50,7 @@ const InputField = forwardRef<HTMLInputElement, {
   difference,
   disabled = false,
   drawer,
+  id: idFromProps,
   onDrawerClose,
   label,
   labelHeight = 12,
@@ -78,7 +80,8 @@ const InputField = forwardRef<HTMLInputElement, {
     ? secondary
     : { start: secondary };
 
-  const id = useId();
+  const autoId = useId();
+  const id = idFromProps ?? autoId;
 
   const valueMeasurement = useRef<HTMLDivElement>(null);
 
