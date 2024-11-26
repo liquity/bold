@@ -444,8 +444,8 @@ function LoanCard({
                 position: "absolute",
                 inset: 0,
                 padding: "16px 16px 24px",
-                background: "strongSurface",
-                color: "strongSurfaceContent",
+                background: "position",
+                color: "positionContent",
                 borderRadius: 8,
                 userSelect: "none",
               })}
