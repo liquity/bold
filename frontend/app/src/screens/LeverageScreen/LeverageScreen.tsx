@@ -151,7 +151,7 @@ export function LeverageScreen() {
     loan: newLoan,
   });
 
-  const leverageSlippageElements = useSlippageElements(leverageSlippage, hasDeposit);
+  const leverageSlippageElements = useSlippageElements(leverageSlippage, hasDeposit && account.isConnected);
 
   const hasAllowedSlippage = leverageSlippage.data
     && dn.lte(leverageSlippage.data, LEVERAGE_MAX_SLIPPAGE);
