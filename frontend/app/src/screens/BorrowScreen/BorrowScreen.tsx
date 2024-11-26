@@ -199,6 +199,7 @@ export function BorrowScreen() {
           // “You deposit”
           field={
             <InputField
+              id="input-deposit"
               contextual={
                 <Dropdown
                   items={collaterals.map(({ symbol, name }) => ({
@@ -259,6 +260,7 @@ export function BorrowScreen() {
           // “You borrow”
           field={
             <InputField
+              id="input-debt"
               contextual={
                 <InputField.Badge
                   icon={<TokenIcon symbol="BOLD" />}
@@ -332,6 +334,7 @@ export function BorrowScreen() {
               collIndex={collIndex}
               debt={debt.parsed}
               delegate={interestRateDelegate}
+              inputId="input-interest-rate"
               interestRate={interestRate}
               mode={interestRateMode}
               onChange={setInterestRate}

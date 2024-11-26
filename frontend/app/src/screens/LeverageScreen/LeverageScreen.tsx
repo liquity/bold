@@ -196,6 +196,7 @@ export function LeverageScreen() {
         <Field
           field={
             <InputField
+              id="input-deposit"
               contextual={
                 <Dropdown
                   items={collateralTokens.map(({ symbol, name }) => ({
@@ -258,6 +259,7 @@ export function LeverageScreen() {
           field={
             <LeverageField
               drawer={leverageFieldDrawer}
+              inputId="input-liquidation-price"
               onDrawerClose={leverageSlippageElements.onClose}
               {...leverageField}
             />
@@ -301,42 +303,41 @@ export function LeverageScreen() {
           }}
         />
 
-        <VFlex gap={0}>
-          <Field
-            field={
-              <InterestRateField
-                collIndex={collIndex}
-                debt={leverageField.debt}
-                delegate={interestRateDelegate}
-                interestRate={interestRate}
-                mode={interestRateMode}
-                onChange={setInterestRate}
-                onDelegateChange={setInterestRateDelegate}
-                onModeChange={setInterestRateMode}
+        <Field
+          field={
+            <InterestRateField
+              collIndex={collIndex}
+              debt={leverageField.debt}
+              delegate={interestRateDelegate}
+              inputId="input-interest-rate"
+              interestRate={interestRate}
+              mode={interestRateMode}
+              onChange={setInterestRate}
+              onDelegateChange={setInterestRateDelegate}
+              onModeChange={setInterestRateMode}
+            />
+          }
+          footer={{
+            start: (
+              <Field.FooterInfoRedemptionRisk
+                riskLevel={redemptionRisk}
               />
-            }
-            footer={{
-              start: (
-                <Field.FooterInfoRedemptionRisk
-                  riskLevel={redemptionRisk}
-                />
-              ),
-              end: (
-                <span
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    color: "contentAlt",
-                  })}
-                >
-                  <IconSuggestion size={16} />
-                  <span>You can adjust interest rate later</span>
-                </span>
-              ),
-            }}
-          />
-        </VFlex>
+            ),
+            end: (
+              <span
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  color: "contentAlt",
+                })}
+              >
+                <IconSuggestion size={16} />
+                <span>You can adjust interest rate later</span>
+              </span>
+            ),
+          }}
+        />
 
         <RedemptionInfo />
 

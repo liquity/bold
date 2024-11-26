@@ -10,6 +10,7 @@ export function Radio({
   appearance = "radio",
   checked: checkedProp,
   disabled,
+  id,
   index,
   onChange,
   tabIndex,
@@ -17,6 +18,7 @@ export function Radio({
   appearance?: "radio" | "checkbox";
   checked?: boolean;
   disabled?: boolean;
+  id?: string;
   index?: number;
   onChange?: (checked: boolean) => void;
   tabIndex?: number;
@@ -81,6 +83,7 @@ export function Radio({
   return (
     <button
       ref={input}
+      id={id}
       type="button"
       role="checkbox"
       aria-checked={checked}

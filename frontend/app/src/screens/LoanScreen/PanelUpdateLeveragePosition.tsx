@@ -171,6 +171,7 @@ export function PanelUpdateLeveragePosition({
           field={
             <InputField
               {...depositChange.inputFieldProps}
+              id="input-deposit-change"
               contextual={
                 <InputTokenBadge
                   background={false}
@@ -266,6 +267,7 @@ export function PanelUpdateLeveragePosition({
         <Field
           field={
             <LeverageField
+              inputId="input-liquidation-price"
               drawer={newLoanDetails.debt && dn.lt(newLoanDetails.debt, MIN_DEBT)
                 ? {
                   mode: "error",

@@ -88,6 +88,7 @@ export function PanelUpdateRate({
         // “Interest rate”
         field={
           <InterestRateField
+            inputId="input-interest-rate"
             collIndex={loan.collIndex}
             debt={debt.parsed}
             delegate={interestRateDelegate}

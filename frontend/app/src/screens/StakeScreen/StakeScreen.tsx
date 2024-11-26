@@ -136,6 +136,7 @@ function PanelUpdateStake() {
       <Field
         field={
           <InputField
+            id="input-staking-change"
             contextual={
               <InputTokenBadge
                 background={false}
