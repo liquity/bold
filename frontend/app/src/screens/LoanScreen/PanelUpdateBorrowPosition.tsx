@@ -118,9 +118,13 @@ export function PanelUpdateBorrowPosition({
 
   const isBelowMinDebt = debtChange.parsed && !debtChange.isEmpty && newDebt && dn.lt(newDebt, MIN_DEBT);
 
-  const allowSubmit = account.isConnected && (
+  const allowSubmit = (
+    account.isConnected
+  ) && (
     !dn.eq(loanDetails.deposit ?? dnum18(0), newLoanDetails.deposit ?? dnum18(0))
     || !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0))
+  ) && (
+    !isBelowMinDebt
   );
 
   return (
