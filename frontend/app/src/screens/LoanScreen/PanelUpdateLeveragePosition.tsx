@@ -121,13 +121,11 @@ export function PanelUpdateLeveragePosition({
 
   const collBalance = useBalance(account.address, collToken.symbol);
 
-  const collMax = depositMode === "remove" ? initialLoanDetails.depositPreLeverage : (
-    collBalance.data
-      ? dn.sub(
-        collBalance.data,
-        collToken?.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
-      )
-      : dnum18(0)
+  const collMax = depositMode === "remove" ? null : (
+    collBalance.data && dn.sub(
+      collBalance.data,
+      collToken?.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
+    )
   );
 
   useEffect(() => {
