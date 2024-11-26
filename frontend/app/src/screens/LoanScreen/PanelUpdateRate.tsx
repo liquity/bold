@@ -80,7 +80,7 @@ export function PanelUpdateRate({
     && dn.gt(debt.parsed, 0)
     && interestRate
     && dn.gt(interestRate, 0)
-    && !dn.eq(interestRate, loan.interestRate);
+    && (!dn.eq(interestRate, loan.interestRate) || loan.batchManager !== interestRateDelegate);
 
   return (
     <>
