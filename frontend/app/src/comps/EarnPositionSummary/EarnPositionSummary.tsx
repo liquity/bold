@@ -60,16 +60,16 @@ export function EarnPositionSummary({
         width: "100%",
         userSelect: "none",
 
-        "--fg-primary-active": "token(colors.strongSurfaceContent)",
+        "--fg-primary-active": "token(colors.positionContent)",
         "--fg-primary-inactive": "token(colors.content)",
 
-        "--fg-secondary-active": "token(colors.strongSurfaceContentAlt)",
+        "--fg-secondary-active": "token(colors.positionContentAlt)",
         "--fg-secondary-inactive": "token(colors.contentAlt)",
 
         "--border-active": "color-mix(in srgb, token(colors.secondary) 15%, transparent)",
         "--border-inactive": "token(colors.infoSurfaceBorder)",
 
-        "--bg-active": "token(colors.strongSurface)",
+        "--bg-active": "token(colors.position)",
         "--bg-inactive": "token(colors.infoSurface)",
       })}
       style={{
