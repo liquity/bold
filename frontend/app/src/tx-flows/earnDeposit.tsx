@@ -24,10 +24,7 @@ const RequestSchema = v.object({
     v.string(), // label
   ]),
   successMessage: v.string(),
-  prevEarnPosition: v.union([
-    v.null(),
-    vPositionEarn(),
-  ]),
+  prevEarnPosition: v.union([v.null(), vPositionEarn()]),
   earnPosition: vPositionEarn(),
   collIndex: vCollIndex(),
   claim: v.boolean(),
@@ -58,24 +55,20 @@ export const earnDeposit: FlowDeclaration<Request, Step> = {
 
   Details({ flow }) {
     const { request } = flow;
-    const boldPrice = usePrice("BOLD");
+    const boldPrice = usePrice("USDN");
     const boldAmount = dn.sub(
       request.earnPosition.deposit,
-      request.prevEarnPosition?.deposit ?? dn.from(0, 18),
+      request.prevEarnPosition?.deposit ?? dn.from(0, 18)
     );
     return (
       <>
         <TransactionDetailsRow
-          label="You deposit"
+          label='You deposit'
           value={[
+            <Amount key='start' suffix=' USDN' value={boldAmount} />,
             <Amount
-              key="start"
-              suffix=" BOLD"
-              value={boldAmount}
-            />,
-            <Amount
-              key="end"
-              prefix="$"
+              key='end'
+              prefix='$'
               value={boldPrice && dn.mul(boldAmount, boldPrice)}
             />,
           ]}
@@ -100,15 +93,12 @@ export const earnDeposit: FlowDeclaration<Request, Step> = {
     const collateral = contracts.collaterals[request.collIndex];
     const boldAmount = dn.sub(
       request.earnPosition.deposit,
-      request.prevEarnPosition?.deposit ?? dn.from(0, 18),
+      request.prevEarnPosition?.deposit ?? dn.from(0, 18)
     );
     return {
       ...collateral.contracts.StabilityPool,
       functionName: "provideToSP",
-      args: [
-        boldAmount[0],
-        request.claim,
-      ],
+      args: [boldAmount[0], request.claim],
     };
   },
 };

@@ -54,7 +54,7 @@ export const earnClaimRewards: FlowDeclaration<Request, Step> = {
       return null;
     }
 
-    const boldPrice = usePrice("BOLD");
+    const boldPrice = usePrice("USDN");
     const collPrice = usePrice(collateral.symbol);
 
     const rewardsBold = request.earnPosition.rewards.bold;
@@ -65,33 +65,21 @@ export const earnClaimRewards: FlowDeclaration<Request, Step> = {
     return (
       <>
         <TransactionDetailsRow
-          label="Claiming BOLD rewards"
+          label='Claiming USDN rewards'
           value={[
-            <Amount
-              key="start"
-              value={rewardsBold}
-              suffix=" BOLD"
-            />,
-            <Amount
-              key="end"
-              value={rewardsBoldUsd}
-              prefix="$"
-            />,
+            <Amount key='start' value={rewardsBold} suffix=' USDN' />,
+            <Amount key='end' value={rewardsBoldUsd} prefix='$' />,
           ]}
         />
         <TransactionDetailsRow
           label={`Claiming ${collateral.name} rewards`}
           value={[
             <Amount
-              key="start"
+              key='start'
               value={rewardsColl}
               suffix={` ${collateral.symbol}`}
             />,
-            <Amount
-              key="end"
-              value={rewardsCollUsd}
-              prefix="$"
-            />,
+            <Amount key='end' value={rewardsCollUsd} prefix='$' />,
           ]}
         />
       </>

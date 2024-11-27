@@ -1,7 +1,11 @@
 import type { PositionEarn } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { getCollToken, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
+import {
+  getCollToken,
+  useEarnPool,
+  useEarnPosition,
+} from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
@@ -12,12 +16,7 @@ export function PositionCardEarn({
   owner,
   collIndex,
   deposit,
-}: Pick<
-  PositionEarn,
-  | "owner"
-  | "collIndex"
-  | "deposit"
->) {
+}: Pick<PositionEarn, "owner" | "collIndex" | "deposit">) {
   const token = getCollToken(collIndex);
   const earnPool = useEarnPool(collIndex);
   const earnPosition = useEarnPosition(collIndex, owner ?? null);
@@ -31,7 +30,7 @@ export function PositionCardEarn({
       <PositionCard
         heading={[
           <div
-            key="start"
+            key='start'
             className={css({
               display: "flex",
               alignItems: "center",
@@ -53,13 +52,13 @@ export function PositionCardEarn({
         }
         main={{
           value: (
-            <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+            <HFlex gap={8} alignItems='center' justifyContent='flex-start'>
               <Amount value={deposit} format={2} />
-              <TokenIcon size="medium" symbol="BOLD" />
+              <TokenIcon size='medium' symbol='USDN' />
             </HFlex>
           ),
           label: token && (
-            <HFlex gap={4} justifyContent="flex-start">
+            <HFlex gap={4} justifyContent='flex-start'>
               In the {token.name} stability pool
             </HFlex>
           ),
@@ -87,11 +86,7 @@ export function PositionCardEarn({
                       color: "positionContent",
                     })}
                   >
-                    <Amount
-                      fallback="−"
-                      percentage
-                      value={earnPool.data.apr}
-                    />
+                    <Amount fallback='−' percentage value={earnPool.data.apr} />
                   </div>
                 </div>
               }
@@ -122,11 +117,11 @@ export function PositionCardEarn({
                     })}
                   >
                     <Amount
-                      fallback="−"
+                      fallback='−'
                       value={earnPosition.data?.rewards.bold}
                       format={2}
                     />
-                    <TokenIcon size="mini" symbol="BOLD" />
+                    <TokenIcon size='mini' symbol='USDN' />
                   </div>
                   <div
                     className={css({
@@ -137,11 +132,11 @@ export function PositionCardEarn({
                     })}
                   >
                     <Amount
-                      fallback="−"
+                      fallback='−'
                       value={earnPosition.data?.rewards.coll}
                       format={2}
                     />
-                    {token && <TokenIcon size="mini" symbol={token.symbol} />}
+                    {token && <TokenIcon size='mini' symbol={token.symbol} />}
                   </div>
                 </div>
               }

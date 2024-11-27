@@ -35,21 +35,21 @@ export default {
       "Redemption risk",
       <>
         Users paying the lowest interest rate can get redeemed, if the price of
-        BOLD falls below $1. By raising your interest rate, you reduce this
+        USDN falls below $1. By raising your interest rate, you reduce this
         risk.
       </>,
     ],
     loanLtv: [
       "Loan-to-value ratio",
       <>
-        The ratio between the amount of BOLD borrowed and the deposited
+        The ratio between the amount of USDN borrowed and the deposited
         collateral (in USD).
       </>,
     ],
     loanMaxLtv: [
       "Maximum Loan-To-Value (LTV) Ratio",
       <>
-        The maximum ratio between the USD value of a loan (in BOLD) and the
+        The maximum ratio between the USD value of a loan (in USDN) and the
         collateral backing it. The LTV will fluctuate as the price of the
         collateral changes. To decrease the LTV add more colateral or reduce
         debt.
@@ -69,7 +69,7 @@ export default {
     interestRateBoldPerYear: [
       "Interest rate",
       <>
-        The annualized interest amount in BOLD for the selected interest rate.
+        The annualized interest amount in USDN for the selected interest rate.
         The accumulated interest is added to the loan.
       </>,
     ],
@@ -84,7 +84,7 @@ export default {
       heading: "Your collateral and debt are reduced by the same value.",
       body: (
         <>
-          When BOLD trades for under $1, anyone can redeem positions to get BOLD
+          When USDN trades for under $1, anyone can redeem positions to get USDN
           back at $1. Positions with the lowest interest rate get redeemed
           first.
         </>
@@ -109,7 +109,7 @@ export default {
     infoItems: [
       {
         icon: "bold",
-        text: "Redemptions occur when BOLD drops below $1.",
+        text: "Redemptions occur when USDN drops below $1.",
       },
       {
         icon: "redemption",
@@ -201,9 +201,9 @@ export default {
     myPositionsTitle: "My positions",
     actions: {
       borrow: {
-        title: "Borrow BOLD",
+        title: "Borrow USDN",
         description:
-          "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
+          "Set your own interest rate and borrow USDN against ETH and staked ETH.",
       },
       leverage: {
         title: "Leverage ETH",
@@ -211,8 +211,8 @@ export default {
           "Set your own interest rate and increase your exposure to ETH and staked ETH.",
       },
       earn: {
-        title: "Earn with BOLD",
-        description: "Cover liquidations to earn BOLD and collateral assets.",
+        title: "Earn with USDN",
+        description: "Cover liquidations to earn USDN and collateral assets.",
       },
       stake: {
         title: "Stake LQTY",
@@ -233,7 +233,7 @@ export default {
       ],
       spTvl: [
         "Total Value Locked",
-        "The total amount of BOLD deposited in each stability pool.",
+        "The total amount of USDN deposited in each stability pool.",
       ],
       borrowTvl: [
         "Total Value Locked",
@@ -246,7 +246,7 @@ export default {
   borrowScreen: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Borrow {boldIcon} BOLD with {tokensIcons} ETH
+        Borrow {boldIcon} USDN with {tokensIcons} ETH
       </>
     ),
     depositField: {
@@ -264,7 +264,7 @@ export default {
     action: "Next: Summary",
     infoTooltips: {
       interestRateSuggestions: [
-        "Positions with lower interest rates are the first to be redeemed by BOLD holders.",
+        "Positions with lower interest rates are the first to be redeemed by USDN holders.",
       ],
     },
   },
@@ -294,7 +294,7 @@ export default {
       interestRateSuggestions: [
         <>
           Positions with lower interest rates are the first to be redeemed by
-          BOLD holders.
+          USDN holders.
         </>,
       ],
       exposure: [
@@ -308,14 +308,14 @@ export default {
   earnHome: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Deposit {boldIcon} BOLD to earn rewards {tokensIcons}
+        Deposit {boldIcon} USDN to earn rewards {tokensIcons}
       </>
     ),
     subheading: (
       <>
-        A BOLD deposit in a stability pool earns rewards from the fees that
+        A USDN deposit in a stability pool earns rewards from the fees that
         users pay on their loans. Also, in case the system needs to liquidate
-        positions, the BOLD may be swapped to collateral.
+        positions, the USDN may be swapped to collateral.
       </>
     ),
     poolsColumns: {
@@ -325,7 +325,7 @@ export default {
     },
     infoTooltips: {
       tvl: (collateral: N) => [
-        <>Total BOLD covering {collateral}-backed position liquidations</>,
+        <>Total USDN covering {collateral}-backed position liquidations</>,
       ],
     },
   },
@@ -375,10 +375,10 @@ export default {
     },
     infoTooltips: {
       tvl: (collateral: N) => [
-        <>Total BOLD covering {collateral}-backed position liquidations.</>,
+        <>Total USDN covering {collateral}-backed position liquidations.</>,
       ],
       depositPoolShare: [
-        "Percentage of your BOLD deposit compared to the total deposited in this stability pool.",
+        "Percentage of your USDN deposit compared to the total deposited in this stability pool.",
       ],
       alsoClaimRewardsDeposit: [
         <>
@@ -394,14 +394,14 @@ export default {
         </>,
       ],
       currentApr: [
-        "Average annualized return for BOLD deposits over the past 7 days.",
+        "Average annualized return for USDN deposits over the past 7 days.",
       ],
       rewardsEth: [
         "ETH rewards",
         "Your proceeds from liquidations conducted by this stability pool.",
       ],
       rewardsBold: [
-        "BOLD rewards",
+        "USDN rewards",
         "Your earnings from protocol revenue distributions to this stability pool.",
       ],
     },
@@ -458,7 +458,7 @@ export default {
       intro: (
         <>
           Direct incentives from Liquity V2 protocol revenues towards liquidity
-          providers for BOLD. Upvote from Thursday to Tuesday. Downvote all
+          providers for USDN. Upvote from Thursday to Tuesday. Downvote all
           week. <Link href='https://github.com/liquity/V2-gov'>Learn more</Link>
         </>
       ),

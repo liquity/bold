@@ -2,10 +2,16 @@ import type { LoadingState } from "@/src/screens/TransactionsScreen/Transactions
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { MAX_ANNUAL_INTEREST_RATE, MIN_ANNUAL_INTEREST_RATE } from "@/src/constants";
+import {
+  MAX_ANNUAL_INTEREST_RATE,
+  MIN_ANNUAL_INTEREST_RATE,
+} from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { getPrefixedTroveId, usePredictAdjustInterestRateUpfrontFee } from "@/src/liquity-utils";
+import {
+  getPrefixedTroveId,
+  usePredictAdjustInterestRateUpfrontFee,
+} from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
@@ -59,10 +65,11 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
       loan.collIndex,
       loan.troveId,
       loan.batchManager ?? loan.interestRate,
-      prevLoan.batchManager !== null,
+      prevLoan.batchManager !== null
     );
 
-    const borrowedWithFee = upfrontFee.data && dn.add(loan.borrowed, upfrontFee.data);
+    const borrowedWithFee =
+      upfrontFee.data && dn.add(loan.borrowed, upfrontFee.data);
 
     const loadingState = match(upfrontFee)
       .returnType<LoadingState>()
@@ -95,78 +102,74 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
       loan.collIndex,
       loan.troveId,
       loan.batchManager ?? loan.interestRate,
-      prevLoan.batchManager !== null,
+      prevLoan.batchManager !== null
     );
 
     const yearlyBoldInterest = dn.mul(loan.borrowed, loan.interestRate);
 
-    return loan.batchManager
-      ? (
+    return loan.batchManager ? (
+      <TransactionDetailsRow
+        label='Interest rate delegate'
+        value={[
+          <AccountButton key='start' address={loan.batchManager} />,
+          <div key='end'>
+            {fmtnum(loan.interestRate, "full", 100)}% (~
+            {fmtnum(yearlyBoldInterest, 4)} USDN per year)
+          </div>,
+        ]}
+      />
+    ) : (
+      <>
         <TransactionDetailsRow
-          label="Interest rate delegate"
+          label='New interest rate'
           value={[
-            <AccountButton key="start" address={loan.batchManager} />,
-            <div key="end">
-              {fmtnum(loan.interestRate, "full", 100)}% (~{fmtnum(yearlyBoldInterest, 4)} BOLD per year)
+            <div key='start'>{fmtnum(loan.interestRate, "full", 100)}%</div>,
+            <div
+              key='end'
+              title={`${fmtnum(yearlyBoldInterest, "full")} USDN per year`}
+            >
+              ~{fmtnum(yearlyBoldInterest, 4)} USDN per year
             </div>,
           ]}
         />
-      )
-      : (
-        <>
+        {prevLoan.batchManager && (
           <TransactionDetailsRow
-            label="New interest rate"
+            label='Remove interest rate delegate'
             value={[
-              <div key="start">
-                {fmtnum(loan.interestRate, "full", 100)}%
+              <div
+                key='start'
+                className={css({
+                  textDecoration: "line-through",
+                })}
+              >
+                <AccountButton address={prevLoan.batchManager} />
               </div>,
               <div
-                key="end"
-                title={`${fmtnum(yearlyBoldInterest, "full")} BOLD per year`}
+                key='end'
+                className={css({
+                  textDecoration: "line-through",
+                })}
               >
-                ~{fmtnum(yearlyBoldInterest, 4)} BOLD per year
+                {fmtnum(prevLoan.interestRate, "full", 100)}% (~
+                {fmtnum(dn.mul(prevLoan.borrowed, prevLoan.interestRate), 4)}{" "}
+                USDN per year)
               </div>,
             ]}
           />
-          {prevLoan.batchManager && (
-            <TransactionDetailsRow
-              label="Remove interest rate delegate"
-              value={[
-                <div
-                  key="start"
-                  className={css({
-                    textDecoration: "line-through",
-                  })}
-                >
-                  <AccountButton address={prevLoan.batchManager} />
-                </div>,
-                <div
-                  key="end"
-                  className={css({
-                    textDecoration: "line-through",
-                  })}
-                >
-                  {fmtnum(prevLoan.interestRate, "full", 100)}% (~{fmtnum(
-                    dn.mul(prevLoan.borrowed, prevLoan.interestRate),
-                    4,
-                  )} BOLD per year)
-                </div>,
-              ]}
-            />
-          )}
-          <TransactionDetailsRow
-            label="Interest rate adjustment fee"
-            value={[
-              <Amount
-                key="start"
-                fallback="…"
-                value={upfrontFee.data}
-                suffix=" BOLD"
-              />,
-            ]}
-          />
-        </>
-      );
+        )}
+        <TransactionDetailsRow
+          label='Interest rate adjustment fee'
+          value={[
+            <Amount
+              key='start'
+              fallback='…'
+              value={upfrontFee.data}
+              suffix=' USDN'
+            />,
+          ]}
+        />
+      </>
+    );
   },
   async getSteps({ request, contracts, wagmiConfig }) {
     const loan = request.loan;
@@ -176,11 +179,12 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
       return ["setInterestBatchManager"];
     }
 
-    const isInBatch = (await readContract(wagmiConfig, {
-      ...collateral.contracts.BorrowerOperations,
-      functionName: "interestBatchManagerOf",
-      args: [BigInt(loan.troveId)],
-    })) !== ADDRESS_ZERO;
+    const isInBatch =
+      (await readContract(wagmiConfig, {
+        ...collateral.contracts.BorrowerOperations,
+        functionName: "interestBatchManagerOf",
+        args: [BigInt(loan.troveId)],
+      })) !== ADDRESS_ZERO;
 
     return isInBatch ? ["unsetInterestBatchManager"] : ["adjustInterestRate"];
   },
@@ -199,19 +203,14 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
 
   async writeContractParams(stepId, { contracts, request }) {
     const { loan } = request;
-    const { BorrowerOperations } = contracts.collaterals[loan.collIndex].contracts;
+    const { BorrowerOperations } =
+      contracts.collaterals[loan.collIndex].contracts;
 
     if (stepId === "adjustInterestRate") {
       return {
         ...BorrowerOperations,
         functionName: "adjustTroveInterestRate" as const,
-        args: [
-          BigInt(loan.troveId),
-          loan.interestRate[0],
-          0n,
-          0n,
-          maxUint256,
-        ],
+        args: [BigInt(loan.troveId), loan.interestRate[0], 0n, 0n, maxUint256],
       };
     }
 
@@ -219,13 +218,7 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
       return {
         ...BorrowerOperations,
         functionName: "removeFromBatch" as const,
-        args: [
-          BigInt(loan.troveId),
-          loan.interestRate[0],
-          0n,
-          0n,
-          maxUint256,
-        ],
+        args: [BigInt(loan.troveId), loan.interestRate[0], 0n, 0n, maxUint256],
       };
     }
 
@@ -247,7 +240,10 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
   },
   async postFlowCheck({ request, steps }) {
     const lastStep = steps?.at(-1);
-    if (lastStep?.txStatus !== "post-check" || !isTroveId(lastStep.txReceiptData)) {
+    if (
+      lastStep?.txStatus !== "post-check" ||
+      !isTroveId(lastStep.txReceiptData)
+    ) {
       return;
     }
 
@@ -256,11 +252,13 @@ export const updateLoanInterestRate: FlowDeclaration<Request, Step> = {
 
     const prefixedTroveId = getPrefixedTroveId(
       loan.collIndex,
-      lastStep.txReceiptData,
+      lastStep.txReceiptData
     );
 
     while (true) {
-      const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
+      const { trove } = await graphQuery(TroveByIdQuery, {
+        id: prefixedTroveId,
+      });
 
       // trove found and updated: check done
       if (trove && Number(trove.updatedAt) * 1000 !== lastUpdate) {

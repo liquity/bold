@@ -25,7 +25,7 @@ export const ACCOUNT_STAKED_LQTY = {
 } as const;
 
 export const ACCOUNT_BALANCES = {
-  BOLD: dn.from(3_987, 18),
+  USDN: dn.from(3_987, 18),
   ETH: dn.from(2.429387, 18),
   LQTY: dn.from(2008.217, 18),
   RETH: dn.from(1.3732, 18),

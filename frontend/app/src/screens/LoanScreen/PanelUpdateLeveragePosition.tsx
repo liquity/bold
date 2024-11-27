@@ -5,16 +5,26 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
-import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
+import {
+  LeverageField,
+  useLeverageField,
+} from "@/src/comps/LeverageField/LeverageField";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { Value } from "@/src/comps/Value/Value";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
-import { ETH_MAX_RESERVE, MAX_LTV_RESERVE_RATIO, MIN_DEBT } from "@/src/constants";
+import {
+  ETH_MAX_RESERVE,
+  MAX_LTV_RESERVE_RATIO,
+  MIN_DEBT,
+} from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
-import { getLiquidationPriceFromLeverage, getLoanDetails } from "@/src/liquity-math";
+import {
+  getLiquidationPriceFromLeverage,
+  getLoanDetails,
+} from "@/src/liquity-math";
 import { getCollToken } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
@@ -57,28 +67,26 @@ export function PanelUpdateLeveragePosition({
     loan.borrowed,
     loan.interestRate,
     collToken?.collateralRatio,
-    collPrice,
+    collPrice
   );
 
   // deposit change
   const [depositMode, setDepositMode] = useState<"add" | "remove">("add");
   const depositChange = useInputFieldValue((value) => dn.format(value));
   const [userLeverageFactor, setUserLeverageFactor] = useState(
-    initialLoanDetails.leverageFactor ?? 1,
+    initialLoanDetails.leverageFactor ?? 1
   );
 
   let newDepositPreLeverage = depositChange.parsed
-    ? (
-      depositMode === "remove"
-        ? dn.sub(
+    ? depositMode === "remove"
+      ? dn.sub(
           initialLoanDetails.depositPreLeverage ?? dnum18(0),
-          depositChange.parsed,
+          depositChange.parsed
         )
-        : dn.add(
+      : dn.add(
           initialLoanDetails.depositPreLeverage ?? dnum18(0),
-          depositChange.parsed,
+          depositChange.parsed
         )
-    )
     : initialLoanDetails.depositPreLeverage;
 
   if (newDepositPreLeverage && dn.lt(newDepositPreLeverage, 0)) {
@@ -87,14 +95,14 @@ export function PanelUpdateLeveragePosition({
 
   const newDeposit = dn.mul(
     newDepositPreLeverage ?? dnum18(0),
-    userLeverageFactor,
+    userLeverageFactor
   );
 
   const totalPositionValue = dn.mul(newDeposit, collPrice ?? dnum18(0));
 
   const newDebt = dn.sub(
     totalPositionValue,
-    dn.mul(newDepositPreLeverage ?? dnum18(0), collPrice ?? dnum18(0)),
+    dn.mul(newDepositPreLeverage ?? dnum18(0), collPrice ?? dnum18(0))
   );
 
   const newLoanDetails = getLoanDetails(
@@ -102,13 +110,13 @@ export function PanelUpdateLeveragePosition({
     newDebt,
     initialLoanDetails.interestRate,
     collToken.collateralRatio,
-    collPrice,
+    collPrice
   );
 
   const liquidationPrice = getLiquidationPriceFromLeverage(
     userLeverageFactor,
     collPrice ?? dnum18(0),
-    collToken.collateralRatio,
+    collToken.collateralRatio
   );
 
   // leverage factor
@@ -121,12 +129,14 @@ export function PanelUpdateLeveragePosition({
 
   const collBalance = useBalance(account.address, collToken.symbol);
 
-  const collMax = depositMode === "remove" ? null : (
-    collBalance.data && dn.sub(
-      collBalance.data,
-      collToken?.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
-    )
-  );
+  const collMax =
+    depositMode === "remove"
+      ? null
+      : collBalance.data &&
+        dn.sub(
+          collBalance.data,
+          collToken?.symbol === "ETH" ? ETH_MAX_RESERVE : 0 // Only keep a reserve for ETH, not LSTs
+        );
 
   useEffect(() => {
     if (leverageField.leverageFactor !== userLeverageFactor) {
@@ -136,7 +146,10 @@ export function PanelUpdateLeveragePosition({
 
   const initialLeverageFactorSet = useRef(false);
   useEffect(() => {
-    if (initialLoanDetails.leverageFactor && !initialLeverageFactorSet.current) {
+    if (
+      initialLoanDetails.leverageFactor &&
+      !initialLeverageFactorSet.current
+    ) {
       leverageField.updateLeverageFactor(initialLoanDetails.leverageFactor);
       initialLeverageFactorSet.current = true;
     }
@@ -148,21 +161,20 @@ export function PanelUpdateLeveragePosition({
     setAgreeToLiquidationRisk(false);
   }, [newLoanDetails.status]);
 
-  const allowSubmit = account.isConnected
-    && (newLoanDetails.status !== "at-risk" || agreeToLiquidationRisk)
-    && newLoanDetails.status !== "underwater"
-    && newLoanDetails.status !== "liquidatable"
-    && (
-      // either the deposit or the leverage factor has changed
-      !dn.eq(
-        initialLoanDetails.deposit ?? dnum18(0),
-        newLoanDetails.deposit ?? dnum18(0),
-      ) || (
-        initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor
-      )
-    )
+  const allowSubmit =
+    account.isConnected &&
+    (newLoanDetails.status !== "at-risk" || agreeToLiquidationRisk) &&
+    newLoanDetails.status !== "underwater" &&
+    newLoanDetails.status !== "liquidatable" &&
+    // either the deposit or the leverage factor has changed
+    (!dn.eq(
+      initialLoanDetails.deposit ?? dnum18(0),
+      newLoanDetails.deposit ?? dnum18(0)
+    ) ||
+      initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor) &&
     // above the minimum debt
-    && newLoanDetails.debt && dn.gt(newLoanDetails.debt, MIN_DEBT);
+    newLoanDetails.debt &&
+    dn.gt(newLoanDetails.debt, MIN_DEBT);
 
   return (
     <>
@@ -171,7 +183,7 @@ export function PanelUpdateLeveragePosition({
           field={
             <InputField
               {...depositChange.inputFieldProps}
-              id="input-deposit-change"
+              id='input-deposit-change'
               contextual={
                 <InputTokenBadge
                   background={false}
@@ -180,15 +192,24 @@ export function PanelUpdateLeveragePosition({
                 />
               }
               label={{
-                start: depositMode === "remove"
-                  ? "Decrease your deposit"
-                  : "Increase your deposit",
+                start:
+                  depositMode === "remove"
+                    ? "Decrease your deposit"
+                    : "Increase your deposit",
                 end: (
                   <Tabs
                     compact
                     items={[
-                      { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
-                      { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
+                      {
+                        label: "Deposit",
+                        panelId: "panel-deposit",
+                        tabId: "tab-deposit",
+                      },
+                      {
+                        label: "Withdraw",
+                        panelId: "panel-withdraw",
+                        tabId: "tab-withdraw",
+                      },
                     ]}
                     onSelect={(index, { origin, event }) => {
                       setDepositMode(index === 1 ? "remove" : "add");
@@ -203,13 +224,13 @@ export function PanelUpdateLeveragePosition({
                 ),
               }}
               labelHeight={32}
-              placeholder="0.00"
+              placeholder='0.00'
               secondary={{
-                start: collPrice && (
-                  depositChange.parsed
+                start:
+                  collPrice &&
+                  (depositChange.parsed
                     ? "$" + fmtnum(dn.mul(depositChange.parsed, collPrice))
-                    : "$0.00"
-                ),
+                    : "$0.00"),
                 end: collMax && dn.gt(collMax, 0) && (
                   <TextButton
                     label={`Max ${fmtnum(collMax, 2)} ${collToken.name}`}
@@ -222,134 +243,157 @@ export function PanelUpdateLeveragePosition({
             />
           }
           footer={{
-            start: <Field.FooterInfo label="Deposit after" />,
-            end: initialLoanDetails.depositPreLeverage && newDepositPreLeverage && (
-              <Field.FooterInfo
-                value={
-                  <HFlex alignItems="center" gap={8}>
-                    <ValueUpdate
-                      before={
-                        <Value
-                          negative={initialLoanDetails.depositPreLeverage && dn.lt(
-                            initialLoanDetails.depositPreLeverage,
-                            0,
-                          )}
-                          title={`${
-                            fmtnum(
-                              initialLoanDetails.depositPreLeverage,
-                              "full",
-                            )
-                          } ${collToken.name}`}
-                        >
-                          {fmtnum(initialLoanDetails.depositPreLeverage)}
-                        </Value>
-                      }
-                      after={
-                        <HFlex alignItems="center" gap={8}>
+            start: <Field.FooterInfo label='Deposit after' />,
+            end: initialLoanDetails.depositPreLeverage &&
+              newDepositPreLeverage && (
+                <Field.FooterInfo
+                  value={
+                    <HFlex alignItems='center' gap={8}>
+                      <ValueUpdate
+                        before={
                           <Value
-                            negative={newLoanDetails.deposit && dn.lt(newDepositPreLeverage, 0)}
-                            title={`${fmtnum(newDepositPreLeverage, "full")} ${collToken.name}`}
+                            negative={
+                              initialLoanDetails.depositPreLeverage &&
+                              dn.lt(initialLoanDetails.depositPreLeverage, 0)
+                            }
+                            title={`${fmtnum(
+                              initialLoanDetails.depositPreLeverage,
+                              "full"
+                            )} ${collToken.name}`}
                           >
-                            {fmtnum(newDepositPreLeverage)} {collToken.name}
+                            {fmtnum(initialLoanDetails.depositPreLeverage)}
                           </Value>
-                          <InfoTooltip heading="Collateral update" />
-                        </HFlex>
-                      }
-                      fontSize={14}
-                    />
-                  </HFlex>
-                }
-              />
-            ),
+                        }
+                        after={
+                          <HFlex alignItems='center' gap={8}>
+                            <Value
+                              negative={
+                                newLoanDetails.deposit &&
+                                dn.lt(newDepositPreLeverage, 0)
+                              }
+                              title={`${fmtnum(
+                                newDepositPreLeverage,
+                                "full"
+                              )} ${collToken.name}`}
+                            >
+                              {fmtnum(newDepositPreLeverage)} {collToken.name}
+                            </Value>
+                            <InfoTooltip heading='Collateral update' />
+                          </HFlex>
+                        }
+                        fontSize={14}
+                      />
+                    </HFlex>
+                  }
+                />
+              ),
           }}
         />
 
         <Field
           field={
             <LeverageField
-              inputId="input-liquidation-price"
-              drawer={newLoanDetails.debt && dn.lt(newLoanDetails.debt, MIN_DEBT)
-                ? {
-                  mode: "error",
-                  message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
-                }
-                : null}
+              inputId='input-liquidation-price'
+              drawer={
+                newLoanDetails.debt && dn.lt(newLoanDetails.debt, MIN_DEBT)
+                  ? {
+                      mode: "error",
+                      message: `You must borrow at least ${fmtnum(
+                        MIN_DEBT,
+                        2
+                      )} USDN.`,
+                    }
+                  : null
+              }
               {...leverageField}
             />
           }
           footer={[
             {
-              start: <Field.FooterInfo label="ETH liquidation price" />,
-              end: (
-                <ValueUpdate
-                  fontSize={14}
-                  before={initialLoanDetails.liquidationPrice && (
-                    `$${fmtnum(initialLoanDetails.liquidationPrice)}`
-                  )}
-                  after={liquidationPrice && newLoanDetails.deposit && dn.gt(newLoanDetails.deposit, 0)
-                    ? `$${fmtnum(liquidationPrice)}`
-                    : "N/A"}
-                />
-              ),
-            },
-            {
-              start: <Field.FooterInfo label="ETH exposure" />,
-              end: (
-                <ValueUpdate
-                  fontSize={14}
-                  before={initialLoanDetails.depositPreLeverage && (
-                    <div
-                      title={`${fmtnum(initialLoanDetails.deposit, "full")} ${collToken.name}`}
-                    >
-                      {fmtnum(initialLoanDetails.deposit)} {collToken.name}
-                    </div>
-                  )}
-                  after={newDepositPreLeverage && (
-                    <Value
-                      negative={newLoanDetails.deposit && dn.lt(newLoanDetails.deposit, 0)}
-                      title={`${fmtnum(newLoanDetails.deposit, "full")} ${collToken.name}`}
-                    >
-                      {fmtnum(newLoanDetails.deposit)} {collToken.name}
-                    </Value>
-                  )}
-                />
-              ),
-            },
-            {
-              start: <Field.FooterInfo label="Leverage" />,
+              start: <Field.FooterInfo label='ETH liquidation price' />,
               end: (
                 <ValueUpdate
                   fontSize={14}
                   before={
-                    <Value negative={initialLoanDetails.status === "underwater"}>
-                      {initialLoanDetails.status === "underwater" ? INFINITY : (
-                        `${fmtnum(initialLoanDetails.leverageFactor, 4)}x`
-                      )}
-                    </Value>
+                    initialLoanDetails.liquidationPrice &&
+                    `$${fmtnum(initialLoanDetails.liquidationPrice)}`
                   }
                   after={
-                    <>
-                      {fmtnum(userLeverageFactor, "1z")}x
-                    </>
+                    liquidationPrice &&
+                    newLoanDetails.deposit &&
+                    dn.gt(newLoanDetails.deposit, 0)
+                      ? `$${fmtnum(liquidationPrice)}`
+                      : "N/A"
                   }
                 />
               ),
             },
             {
-              start: <Field.FooterInfo label="Implied total debt" />,
+              start: <Field.FooterInfo label='ETH exposure' />,
               end: (
                 <ValueUpdate
                   fontSize={14}
-                  before={initialLoanDetails.debt && (
-                    `${fmtnum(initialLoanDetails.debt)} BOLD`
-                  )}
-                  after={newLoanDetails.debt && dn.gt(newLoanDetails.debt, 0)
-                    ? (
-                      `${fmtnum(newLoanDetails.debt)} BOLD`
+                  before={
+                    initialLoanDetails.depositPreLeverage && (
+                      <div
+                        title={`${fmtnum(initialLoanDetails.deposit, "full")} ${
+                          collToken.name
+                        }`}
+                      >
+                        {fmtnum(initialLoanDetails.deposit)} {collToken.name}
+                      </div>
                     )
-                    : (
-                      `N/A`
-                    )}
+                  }
+                  after={
+                    newDepositPreLeverage && (
+                      <Value
+                        negative={
+                          newLoanDetails.deposit &&
+                          dn.lt(newLoanDetails.deposit, 0)
+                        }
+                        title={`${fmtnum(newLoanDetails.deposit, "full")} ${
+                          collToken.name
+                        }`}
+                      >
+                        {fmtnum(newLoanDetails.deposit)} {collToken.name}
+                      </Value>
+                    )
+                  }
+                />
+              ),
+            },
+            {
+              start: <Field.FooterInfo label='Leverage' />,
+              end: (
+                <ValueUpdate
+                  fontSize={14}
+                  before={
+                    <Value
+                      negative={initialLoanDetails.status === "underwater"}
+                    >
+                      {initialLoanDetails.status === "underwater"
+                        ? INFINITY
+                        : `${fmtnum(initialLoanDetails.leverageFactor, 4)}x`}
+                    </Value>
+                  }
+                  after={<>{fmtnum(userLeverageFactor, "1z")}x</>}
+                />
+              ),
+            },
+            {
+              start: <Field.FooterInfo label='Implied total debt' />,
+              end: (
+                <ValueUpdate
+                  fontSize={14}
+                  before={
+                    initialLoanDetails.debt &&
+                    `${fmtnum(initialLoanDetails.debt)} USDN`
+                  }
+                  after={
+                    newLoanDetails.debt && dn.gt(newLoanDetails.debt, 0)
+                      ? `${fmtnum(newLoanDetails.debt)} USDN`
+                      : `N/A`
+                  }
                 />
               ),
             },
@@ -371,7 +415,7 @@ export function PanelUpdateLeveragePosition({
                   <>
                     <StatusDot
                       mode={riskLevelToStatusMode(
-                        initialLoanDetails.liquidationRisk,
+                        initialLoanDetails.liquidationRisk
                       )}
                     />
                     {formatRisk(initialLoanDetails.liquidationRisk)}
@@ -381,7 +425,7 @@ export function PanelUpdateLeveragePosition({
                   <>
                     <StatusDot
                       mode={riskLevelToStatusMode(
-                        newLoanDetails.liquidationRisk,
+                        newLoanDetails.liquidationRisk
                       )}
                     />
                     {formatRisk(newLoanDetails.liquidationRisk)}
@@ -389,12 +433,12 @@ export function PanelUpdateLeveragePosition({
                 ),
               },
               {
-                label: <abbr title="Loan-to-value ratio">LTV</abbr>,
+                label: <abbr title='Loan-to-value ratio'>LTV</abbr>,
                 before: initialLoanDetails.ltv && (
                   <Value
                     negative={dn.gt(
                       initialLoanDetails.ltv,
-                      initialLoanDetails.maxLtvAllowed,
+                      initialLoanDetails.maxLtvAllowed
                     )}
                   >
                     <Amount value={initialLoanDetails.ltv} percentage />
@@ -402,65 +446,69 @@ export function PanelUpdateLeveragePosition({
                 ),
                 after: (
                   <Value
-                    negative={(
-                      newLoanDetails.status === "underwater"
-                      || newLoanDetails.status === "liquidatable"
-                    ) || (
-                      newLoanDetails.ltv && dn.gt(
-                        newLoanDetails.ltv,
-                        newLoanDetails.maxLtvAllowed,
-                      )
-                    )}
+                    negative={
+                      newLoanDetails.status === "underwater" ||
+                      newLoanDetails.status === "liquidatable" ||
+                      (newLoanDetails.ltv &&
+                        dn.gt(newLoanDetails.ltv, newLoanDetails.maxLtvAllowed))
+                    }
                   >
-                    {newLoanDetails.status === "underwater"
-                        || newLoanDetails.status === "liquidatable"
-                      ? "N/A"
-                      : <Amount value={newLoanDetails.ltv} percentage />}
+                    {newLoanDetails.status === "underwater" ||
+                    newLoanDetails.status === "liquidatable" ? (
+                      "N/A"
+                    ) : (
+                      <Amount value={newLoanDetails.ltv} percentage />
+                    )}
                   </Value>
                 ),
               },
             ]}
           />
 
-          {newLoanDetails.status === "underwater" || newLoanDetails.status === "liquidatable"
-            ? (
-              <WarningBox>
-                <div>
-                  Your position is above the maximum <abbr title="Loan-to-value ratio">LTV</abbr> of{" "}
-                  <Amount value={newLoanDetails.maxLtv} percentage />. You need to add at least{" "}
-                  <Amount value={newLoanDetails.depositToZero && dn.mul(newLoanDetails.depositToZero, -1)} format={4} />
-                  {" "}
-                  {collToken.name} to prevent liquidation.
-                </div>
-              </WarningBox>
-            )
-            : newLoanDetails.status === "at-risk"
-            ? (
-              <WarningBox>
-                <div>
-                  The maximum <abbr title="Loan-to-value ratio">LTV</abbr> for the position is{" "}
-                  {fmtnum(dn.mul(newLoanDetails.maxLtv, 100))}%. Your updated position is close and is at risk of being
-                  liquidated.
-                </div>
-                <label
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    cursor: "pointer",
-                  })}
-                >
-                  <Checkbox
-                    checked={agreeToLiquidationRisk}
-                    onChange={(checked) => {
-                      setAgreeToLiquidationRisk(checked);
-                    }}
-                  />
-                  I understand. Let’s continue.
-                </label>
-              </WarningBox>
-            )
-            : null}
+          {newLoanDetails.status === "underwater" ||
+          newLoanDetails.status === "liquidatable" ? (
+            <WarningBox>
+              <div>
+                Your position is above the maximum{" "}
+                <abbr title='Loan-to-value ratio'>LTV</abbr> of{" "}
+                <Amount value={newLoanDetails.maxLtv} percentage />. You need to
+                add at least{" "}
+                <Amount
+                  value={
+                    newLoanDetails.depositToZero &&
+                    dn.mul(newLoanDetails.depositToZero, -1)
+                  }
+                  format={4}
+                />
+                {" "}
+                {collToken.name} to prevent liquidation.
+              </div>
+            </WarningBox>
+          ) : newLoanDetails.status === "at-risk" ? (
+            <WarningBox>
+              <div>
+                The maximum <abbr title='Loan-to-value ratio'>LTV</abbr> for the
+                position is {fmtnum(dn.mul(newLoanDetails.maxLtv, 100))}%. Your
+                updated position is close and is at risk of being liquidated.
+              </div>
+              <label
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  cursor: "pointer",
+                })}
+              >
+                <Checkbox
+                  checked={agreeToLiquidationRisk}
+                  onChange={(checked) => {
+                    setAgreeToLiquidationRisk(checked);
+                  }}
+                />
+                I understand. Let’s continue.
+              </label>
+            </WarningBox>
+          ) : null}
         </VFlex>
       </VFlex>
 
@@ -476,9 +524,9 @@ export function PanelUpdateLeveragePosition({
         <ConnectWarningBox />
         <Button
           disabled={!allowSubmit}
-          label="Update position"
-          mode="primary"
-          size="large"
+          label='Update position'
+          mode='primary'
+          size='large'
           wide
           onClick={() => {
             if (account.address) {
@@ -491,16 +539,19 @@ export function PanelUpdateLeveragePosition({
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position has been updated successfully.",
 
-                depositChange: (!depositChange.parsed || dn.eq(depositChange.parsed, 0))
-                  ? null
-                  : dn.mul(depositChange.parsed, depositMode === "remove" ? -1 : 1),
+                depositChange:
+                  !depositChange.parsed || dn.eq(depositChange.parsed, 0)
+                    ? null
+                    : dn.mul(
+                        depositChange.parsed,
+                        depositMode === "remove" ? -1 : 1
+                      ),
 
-                leverageFactorChange: (
-                    !initialLoanDetails.leverageFactor
-                    || userLeverageFactor === initialLoanDetails.leverageFactor
-                  )
-                  ? null
-                  : [initialLoanDetails.leverageFactor, userLeverageFactor],
+                leverageFactorChange:
+                  !initialLoanDetails.leverageFactor ||
+                  userLeverageFactor === initialLoanDetails.leverageFactor
+                    ? null
+                    : [initialLoanDetails.leverageFactor, userLeverageFactor],
 
                 prevLoan: { ...loan },
                 loan: {

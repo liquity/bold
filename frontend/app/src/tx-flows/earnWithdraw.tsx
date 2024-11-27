@@ -55,24 +55,19 @@ export const earnWithdraw: FlowDeclaration<Request, Step> = {
 
   Details({ flow }) {
     const { request } = flow;
-    const boldPrice = usePrice("BOLD");
-    const boldAmount = dn.abs(dn.sub(
-      request.earnPosition.deposit,
-      request.prevEarnPosition.deposit,
-    ));
+    const boldPrice = usePrice("USDN");
+    const boldAmount = dn.abs(
+      dn.sub(request.earnPosition.deposit, request.prevEarnPosition.deposit)
+    );
     return (
       <>
         <TransactionDetailsRow
-          label="You withdraw"
+          label='You withdraw'
           value={[
+            <Amount key='start' suffix=' USDN' value={boldAmount} />,
             <Amount
-              key="start"
-              suffix=" BOLD"
-              value={boldAmount}
-            />,
-            <Amount
-              key="end"
-              prefix="$"
+              key='end'
+              prefix='$'
               value={boldPrice && dn.mul(boldAmount, boldPrice)}
             />,
           ]}
@@ -95,17 +90,13 @@ export const earnWithdraw: FlowDeclaration<Request, Step> = {
 
   async writeContractParams(_stepId, { contracts, request }) {
     const collateral = contracts.collaterals[request.collIndex];
-    const boldAmount = dn.abs(dn.sub(
-      request.earnPosition.deposit,
-      request.prevEarnPosition.deposit,
-    ));
+    const boldAmount = dn.abs(
+      dn.sub(request.earnPosition.deposit, request.prevEarnPosition.deposit)
+    );
     return {
       ...collateral.contracts.StabilityPool,
       functionName: "withdrawFromSP",
-      args: [
-        boldAmount[0],
-        request.claim,
-      ],
+      args: [boldAmount[0], request.claim],
     };
   },
 };

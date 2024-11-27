@@ -39,10 +39,7 @@ export function PanelVoting() {
   const initiatives = useInitiatives();
 
   const [votes, setVotes] = useState<
-    Record<
-      InitiativeId,
-      { vote: Vote | null; value: Dnum }
-    >
+    Record<InitiativeId, { vote: Vote | null; value: Dnum }>
   >({});
 
   const remainingVotingPower = Object.values(votes).reduce(
@@ -52,7 +49,7 @@ export function PanelVoting() {
       }
       return remaining;
     },
-    dn.from(1, 18),
+    dn.from(1, 18)
   );
 
   const handleVote = (id: InitiativeId, vote: Vote | null) => {
@@ -147,7 +144,7 @@ export function PanelVoting() {
               <IconExternal size={16} />
             </>
           }
-          href="https://discord.com/invite/2up5U32"
+          href='https://discord.com/invite/2up5U32'
           external
         />
       </div>
@@ -188,12 +185,13 @@ export function PanelVoting() {
             "& td:last-child": {
               paddingRight: 0,
             },
-            "& td:nth-of-type(2) > div, & td:nth-of-type(3) > div, & td:nth-of-type(4) > div": {
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              minHeight: 34,
-            },
+            "& td:nth-of-type(2) > div, & td:nth-of-type(3) > div, & td:nth-of-type(4) > div":
+              {
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                minHeight: 34,
+              },
             "& tr:last-child td": {
               paddingBottom: 16,
             },
@@ -214,16 +212,20 @@ export function PanelVoting() {
         <thead>
           <tr>
             <th>
-              Epoch<br /> Initiatives
+              Epoch
+              <br /> Initiatives
             </th>
             <th>
-              <abbr title="Total Value Locked">TVL</abbr>
+              <abbr title='Total Value Locked'>TVL</abbr>
             </th>
-            <th title="Pair volume in 7 days">
-              Pair vol<br /> in 7d
+            <th title='Pair volume in 7 days'>
+              Pair vol
+              <br /> in 7d
             </th>
-            <th title="Votes distribution">
-              Votes<br />distrib
+            <th title='Votes distribution'>
+              Votes
+              <br />
+              distrib
             </th>
             <th>Decision</th>
           </tr>
@@ -268,9 +270,7 @@ export function PanelVoting() {
                 </div>
               </td>
               <td>
-                <div>
-                  {fmtnum(initiative.votesDistribution, 2, 100)}%
-                </div>
+                <div>{fmtnum(initiative.votesDistribution, 2, 100)}%</div>
               </td>
               <td>
                 <div
@@ -297,9 +297,7 @@ export function PanelVoting() {
         <tfoot>
           <tr>
             <td colSpan={4}>
-              <div>
-                Voting power left
-              </div>
+              <div>Voting power left</div>
             </td>
             <td>
               <div
@@ -312,11 +310,7 @@ export function PanelVoting() {
                     : "inherit",
                 }}
               >
-                <Amount
-                  format={2}
-                  value={remainingVotingPower}
-                  percentage
-                />
+                <Amount format={2} value={remainingVotingPower} percentage />
               </div>
             </td>
           </tr>
@@ -328,12 +322,11 @@ export function PanelVoting() {
 
         <Button
           disabled={!allowSubmit}
-          label="Coming soon"
-          mode="primary"
-          size="large"
+          label='Coming soon'
+          mode='primary'
+          size='large'
           wide
-          onClick={() => {
-          }}
+          onClick={() => {}}
         />
       </VFlex>
     </section>
@@ -343,7 +336,7 @@ export function PanelVoting() {
 const INITIATIVES_DEMO: Initiative[] = [
   {
     id: "1",
-    name: "WETH-BOLD 0.3%",
+    name: "WETH-USDN 0.3%",
     protocol: "Uniswap V4",
     tvl: dn.from(2_420_000, 18),
     pairVolume: dn.from(1_420_000, 18),
@@ -351,15 +344,15 @@ const INITIATIVES_DEMO: Initiative[] = [
   },
   {
     id: "2",
-    name: "WETH-BOLD 0.3%",
+    name: "WETH-USDN 0.3%",
     protocol: "Uniswap V4",
     tvl: dn.from(2_420_000, 18),
     pairVolume: dn.from(1_420_000, 18),
-    votesDistribution: dn.from(0.20, 18),
+    votesDistribution: dn.from(0.2, 18),
   },
   {
     id: "3",
-    name: "crvUSD-BOLD 0.01%",
+    name: "crvUSD-USDN 0.01%",
     protocol: "Curve V2",
     tvl: dn.from(2_420_000, 18),
     pairVolume: dn.from(1_420_000, 18),
@@ -367,23 +360,23 @@ const INITIATIVES_DEMO: Initiative[] = [
   },
   {
     id: "4",
-    name: "3pool-BOLD 0.01%",
+    name: "3pool-USDN 0.01%",
     protocol: "Curve V2",
     tvl: dn.from(2_420_000, 18),
     pairVolume: dn.from(1_420_000, 18),
-    votesDistribution: dn.from(0.10, 18),
+    votesDistribution: dn.from(0.1, 18),
   },
   {
     id: "5",
-    name: "3pool-BOLD 0.01%",
+    name: "3pool-USDN 0.01%",
     protocol: "Curve V2",
     tvl: dn.from(2_420_000, 18),
     pairVolume: dn.from(1_420_000, 18),
-    votesDistribution: dn.from(0.10, 18),
+    votesDistribution: dn.from(0.1, 18),
   },
   {
     id: "6",
-    name: "3pool-BOLD 0.01%",
+    name: "3pool-USDN 0.01%",
     protocol: "Curve V2",
     tvl: dn.from(2_420_000, 18),
     pairVolume: dn.from(1_420_000, 18),
@@ -391,7 +384,7 @@ const INITIATIVES_DEMO: Initiative[] = [
   },
   {
     id: "7",
-    name: "DeFi Collective: BOLD incentives on Euler",
+    name: "DeFi Collective: USDN incentives on Euler",
     protocol: "0x5305...1418",
     tvl: dn.from(0, 18),
     pairVolume: dn.from(0, 18),
@@ -399,7 +392,7 @@ const INITIATIVES_DEMO: Initiative[] = [
   },
   {
     id: "8",
-    name: "DeFi Collective: BOLD-USDC on Balancer",
+    name: "DeFi Collective: USDN-USDC on Balancer",
     protocol: "0x7179...9f8f",
     tvl: dn.from(0, 18),
     pairVolume: dn.from(0, 18),

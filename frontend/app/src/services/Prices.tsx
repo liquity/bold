@@ -25,12 +25,12 @@ import { useRef } from "react";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "LQTY" | "BOLD" | "LUSD" | CollateralSymbol;
+type PriceToken = "LQTY" | "USDN" | "LUSD" | CollateralSymbol;
 
 type Prices = Record<PriceToken, Dnum | null>;
 
 const initialPrices: Prices = {
-  BOLD: dn.from(1, 18),
+  USDN: dn.from(1, 18),
   LQTY: null,
   LUSD: dn.from(1, 18),
 
@@ -67,8 +67,10 @@ function useCoinGeckoPrice(supportedSymbol: keyof typeof coinGeckoTokenIds) {
       const symbols = Object.keys(coinGeckoTokenIds);
 
       const response = await fetch(
-        `https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=${ids.join(",")}`,
-        { headers: { accept: "application/json" } },
+        `https://api.coingecko.com/api/v3/simple/price?vs_currencies=usd&ids=${ids.join(
+          ","
+        )}`,
+        { headers: { accept: "application/json" } }
       );
 
       if (!response.ok) {
@@ -79,15 +81,17 @@ function useCoinGeckoPrice(supportedSymbol: keyof typeof coinGeckoTokenIds) {
         v.object(
           v.entriesFromList(
             Object.values(coinGeckoTokenIds),
-            v.object({ "usd": v.number() }),
-          ),
+            v.object({ usd: v.number() })
+          )
         ),
-        await response.json(),
+        await response.json()
       );
 
       const prices = {} as Record<typeof supportedSymbol, Dnum | null>;
 
-      for (const [id, value] of Object.entries(result) as Entries<typeof result>) {
+      for (const [id, value] of Object.entries(result) as Entries<
+        typeof result
+      >) {
         const idIndex = ids.indexOf(id);
         const key = symbols[idIndex] as typeof supportedSymbol;
         prices[key] = value.usd ? dn.from(value.usd, 18) : null;
@@ -104,7 +108,9 @@ function useCoinGeckoPrice(supportedSymbol: keyof typeof coinGeckoTokenIds) {
   };
 }
 
-let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void): void {
+let useWatchPrices = function useWatchPrices(
+  callback: (prices: Prices) => void
+): void {
   const ethPrice = useWatchCollateralPrice("ETH");
   const rethPrice = useWatchCollateralPrice("RETH");
   const wstethPrice = useWatchCollateralPrice("WSTETH");
@@ -112,7 +118,7 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
   const lusdPrice = useCoinGeckoPrice("LUSD");
 
   const prevPrices = useRef<Prices>({
-    BOLD: null,
+    USDN: null,
     LQTY: null,
     LUSD: null,
     ETH: null,
@@ -122,7 +128,7 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
 
   useEffect(() => {
     const newPrices = {
-      BOLD: dn.from(1, 18), // TODO
+      USDN: dn.from(1, 18), // TODO
       LQTY: lqtyPrice.data ? dn.from(lqtyPrice.data, 18) : null,
       LUSD: lusdPrice.data ? dn.from(lusdPrice.data, 18) : null,
 
@@ -131,20 +137,15 @@ let useWatchPrices = function useWatchPrices(callback: (prices: Prices) => void)
       WSTETH: wstethPrice.data ? dnum18(wstethPrice.data) : null,
     };
 
-    const hasChanged = jsonStringifyWithDnum(newPrices) !== jsonStringifyWithDnum(prevPrices.current);
+    const hasChanged =
+      jsonStringifyWithDnum(newPrices) !==
+      jsonStringifyWithDnum(prevPrices.current);
 
     if (hasChanged) {
       callback(newPrices);
       prevPrices.current = newPrices;
     }
-  }, [
-    callback,
-    ethPrice,
-    rethPrice,
-    wstethPrice,
-    lqtyPrice,
-    lusdPrice,
-  ]);
+  }, [callback, ethPrice, rethPrice, wstethPrice, lqtyPrice, lusdPrice]);
 };
 
 // in demo mode, simulate a variation of the prices
@@ -152,14 +153,18 @@ if (DEMO_MODE) {
   useWatchPrices = (callback) => {
     useEffect(() => {
       const update = () => {
-        const variation = () => dn.from((Math.random() - 0.5) * DEMO_PRICE_UPDATE_VARIATION, 18);
+        const variation = () =>
+          dn.from((Math.random() - 0.5) * DEMO_PRICE_UPDATE_VARIATION, 18);
         callback({
-          BOLD: dn.add(DEMO_BOLD_PRICE, dn.mul(DEMO_BOLD_PRICE, variation())),
+          USDN: dn.add(DEMO_BOLD_PRICE, dn.mul(DEMO_BOLD_PRICE, variation())),
           LQTY: dn.add(DEMO_LQTY_PRICE, dn.mul(DEMO_LQTY_PRICE, variation())),
           LUSD: dn.add(DEMO_LUSD_PRICE, dn.mul(DEMO_LUSD_PRICE, variation())),
           ETH: dn.add(DEMO_ETH_PRICE, dn.mul(DEMO_ETH_PRICE, variation())),
           RETH: dn.add(DEMO_RETH_PRICE, dn.mul(DEMO_RETH_PRICE, variation())),
-          WSTETH: dn.add(DEMO_WSTETH_PRICE, dn.mul(DEMO_WSTETH_PRICE, variation())),
+          WSTETH: dn.add(
+            DEMO_WSTETH_PRICE,
+            dn.mul(DEMO_WSTETH_PRICE, variation())
+          ),
         });
       };
 

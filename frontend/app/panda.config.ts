@@ -8,7 +8,7 @@ export default defineConfig({
   presets: [
     liquityUiKitPreset as Preset, // `as Preset` prevents a type error: "Expression produces a union type that is too complex to represent."
     definePreset({
-      name: "liquity-app",
+      name: "nerite-app",
       theme: {
         extend: {
           breakpoints: {
