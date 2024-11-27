@@ -2,94 +2,85 @@ import type { ReactNode } from "react";
 
 import { createContext, useContext, useState } from "react";
 
-// The Liquity V2 base color palette, meant
+// The Nerite base color palette, meant
 // to be used by themes rather than directly.
 export const colors = {
   // Blue
-  "blue:50": "#F0F3FE",
-  "blue:100": "#DEE4FB",
-  "blue:200": "#C4D0F9",
-  "blue:300": "#9CB1F4",
-  "blue:400": "#6D8AED",
-  "blue:500": "#405AE5",
-  "blue:600": "#3544DB",
-  "blue:700": "#2D33C8",
-  "blue:800": "#2A2BA3",
-  "blue:900": "#272A81",
-  "blue:950": "#1C1D4F",
+  "blue:50": "#f3f8ed",
+  "blue:100": "#e3efd8",
+  "blue:200": "#c9e1b5",
+  "blue:300": "#a5cd89",
+  "blue:400": "#86b764",
+  "blue:500": "#679c46",
+  "blue:600": "#4f7b35",
+  "blue:700": "#3e5f2c",
+  "blue:800": "#344d27",
+  "blue:900": "#214225",
+  "blue:950": "#1e3116",
 
-  // Gray
-  "gray:50": "#F5F6F8",
-  "gray:100": "#EDEFF2",
-  "gray:200": "#DDE0E8",
-  "gray:300": "#C8CDD9",
-  "gray:400": "#B1B7C8",
-  "gray:500": "#9EA2B8",
-  "gray:600": "#878AA4",
-  "gray:700": "#73748F",
-  "gray:800": "#5F6174",
-  "gray:900": "#50525F",
-  "gray:950": "#2F3037",
+  "gray:50": "#f6f6f6",
+  "gray:100": "#e7e7e7",
+  "gray:200": "#d1d1d1",
+  "gray:300": "#b0b0b0",
+  "gray:400": "#888888",
+  "gray:500": "#6d6d6d",
+  "gray:600": "#5d5d5d",
+  "gray:700": "#4f4f4f",
+  "gray:800": "#454545",
+  "gray:900": "#3d3d3d",
+  "gray:950": "#070707",
 
-  // Yellow
-  "yellow:50": "#FDFBE9",
-  "yellow:100": "#FCF8C5",
-  "yellow:200": "#FAEE8E",
-  "yellow:300": "#F5D93A",
-  "yellow:400": "#F1C91E",
-  "yellow:500": "#E1B111",
-  "yellow:600": "#C2890C",
-  "yellow:700": "#9B620D",
-  "yellow:800": "#804E13",
-  "yellow:900": "#6D4016",
-  "yellow:950": "#402108",
+  "yellow:50": "#faf8f2",
+  "yellow:100": "#f3eee2",
+  "yellow:200": "#e5dcc3",
+  "yellow:300": "#d4c49d",
+  "yellow:400": "#c2a775",
+  "yellow:500": "#b5915a",
+  "yellow:600": "#a87f4e",
+  "yellow:700": "#8c6742",
+  "yellow:800": "#72533a",
+  "yellow:900": "#5c4432",
+  "yellow:950": "#312319",
 
-  // Green
-  "green:50": "#F1FCF2",
-  "green:100": "#DEFAE4",
-  "green:200": "#BFF3CA",
-  "green:300": "#8EE7A1",
-  "green:400": "#63D77D",
-  "green:500": "#2EB94D",
-  "green:600": "#20993C",
-  "green:700": "#1D7832",
-  "green:800": "#1C5F2C",
-  "green:900": "#194E27",
-  "green:950": "#082B12",
+  "green:50": "#f3f8f8",
+  "green:100": "#e1ebec",
+  "green:200": "#c5d9dc",
+  "green:300": "#8bb2b7",
+  "green:400": "#6e9ba2",
+  "green:500": "#537f87",
+  "green:600": "#476a73",
+  "green:700": "#3f585f",
+  "green:800": "#394b51",
+  "green:900": "#334146",
+  "green:950": "#1e292e",
 
-  // Red
-  "red:50": "#FEF5F2",
-  "red:100": "#FFE7E1",
-  "red:200": "#FFD5C9",
-  "red:300": "#FEB7A3",
-  "red:400": "#FB7C59",
-  "red:500": "#F36740",
-  "red:600": "#E14A21",
-  "red:700": "#BD3C18",
-  "red:800": "#9C3518",
-  "red:900": "#82301A",
-  "red:950": "#471608",
+  "red:50": "#fdf5ef",
+  "red:100": "#fae7da",
+  "red:200": "#f3c2a5",
+  "red:300": "#eea883",
+  "red:400": "#e67c51",
+  "red:500": "#e05a2f",
+  "red:600": "#d24324",
+  "red:700": "#ae3220",
+  "red:800": "#8b2a21",
+  "red:900": "#70261e",
+  "red:950": "#3c100e",
 
-  // brown
-  "brown:50": "#F8F6F4",
+  "brown:50": "#faf8f2",
 
-  // desert
   "desert:50": "#FAF9F7",
   "desert:100": "#EFECE5",
   "desert:950": "#2C231E",
 
-  // White
-  "white": "#FFFFFF",
+  white: "#FFFFFF",
 
-  // Brand colors
-  "brand:blue": "#405AE5",
-  "brand:lightBlue": "#6D8AED",
-  "brand:darkBlue": "#121B44",
-  "brand:green": "#63D77D",
-  "brand:golden": "#F5D93A",
-  "brand:cyan": "#95CBF3",
-  "brand:coral": "#FB7C59",
-  "brand:brown": "#DBB79B",
+  "brand:blue": "#476a73",
+  "brand:green": "#679c46",
+  "brand:darkBlue": "#070707",
+  "brand:golden": "#c2a775",
+  "brand:cyan": "#8bb2b7",
+  "brand:coral": "#e67c51",
+  "brand:brown": "#8c6742",
 };
 
 // The light theme, which is the only theme for now. These
@@ -175,7 +166,6 @@ export const lightTheme = {
     brandDarkBlue: "brand:darkBlue",
     brandDarkBlueContent: "white",
     brandDarkBlueContentAlt: "gray:50",
-    brandLightBlue: "brand:lightBlue",
     brandGolden: "brand:golden",
     brandGoldenContent: "yellow:950",
     brandGoldenContentAlt: "yellow:800",
@@ -197,7 +187,7 @@ export const lightTheme = {
     brandCyan: "brand:cyan",
     brandCoral: "brand:coral",
     brandBrown: "brand:brown",
-  } satisfies Record<string, (keyof typeof colors) | `#${string}`>,
+  } satisfies Record<string, keyof typeof colors | `#${string}`>,
 } as const;
 
 export type ThemeDescriptor = {
@@ -234,11 +224,7 @@ export function useTheme() {
   };
 }
 
-export function Theme({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function Theme({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeDescriptor>(lightTheme);
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
