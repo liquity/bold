@@ -1,4 +1,4 @@
-# Liquity V2 App
+# Nerite App
 
 ## Preview
 
