@@ -23,7 +23,7 @@ import { dnum18, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Arbitrum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useTrovesCount } from "@/src/subgraph-hooks";

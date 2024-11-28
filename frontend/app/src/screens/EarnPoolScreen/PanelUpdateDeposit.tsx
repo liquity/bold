@@ -10,7 +10,7 @@ import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getCollToken } from "@/src/liquity-utils";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Arbitrum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";

@@ -31,7 +31,6 @@ import type { ComponentType, ReactNode } from "react";
 import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { getContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
 import { useStoredState } from "@/src/services/StoredState";
 import { claimCollateralSurplus } from "@/src/tx-flows/claimCollateralSurplus";
 import { closeLoanPosition } from "@/src/tx-flows/closeLoanPosition";
@@ -58,6 +57,7 @@ import {
 } from "react";
 import * as v from "valibot";
 import { useTransactionReceipt, useWriteContract } from "wagmi";
+import { useAccount, useWagmiConfig } from "./Arbitrum";
 
 const TRANSACTION_FLOW_KEY = `${LOCAL_STORAGE_PREFIX}transaction_flow`;
 

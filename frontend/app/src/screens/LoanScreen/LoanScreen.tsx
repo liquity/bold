@@ -8,8 +8,12 @@ import content from "@/src/content";
 import { getCollateralContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import {
+  getCollToken,
+  getPrefixedTroveId,
+  parsePrefixedTroveId,
+} from "@/src/liquity-utils";
+import { useAccount } from "@/src/services/Arbitrum";
 import { usePrice } from "@/src/services/Prices";
 import { useStoredState } from "@/src/services/StoredState";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -19,7 +23,12 @@ import { css } from "@/styled-system/css";
 import { Button, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
-import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
+import {
+  notFound,
+  useRouter,
+  useSearchParams,
+  useSelectedLayoutSegment,
+} from "next/navigation";
 import { match, P } from "ts-pattern";
 import { useReadContract } from "wagmi";
 import { LoanScreenCard } from "./LoanScreenCard";
@@ -34,11 +43,7 @@ const TABS = [
   { label: "Close loan", id: "close" },
 ];
 
-export type LoanLoadingState =
-  | "error"
-  | "loading"
-  | "not-found"
-  | "success";
+export type LoanLoadingState = "error" | "loading" | "not-found" | "success";
 
 export function LoanScreen() {
   const router = useRouter();
@@ -52,7 +57,8 @@ export function LoanScreen() {
   }
 
   const loan = useLoanById(paramPrefixedId);
-  const loanMode = storedState.loanModes[paramPrefixedId] ?? loan.data?.type ?? "borrow";
+  const loanMode =
+    storedState.loanModes[paramPrefixedId] ?? loan.data?.type ?? "borrow";
 
   const collateral = getCollToken(loan.data?.collIndex ?? null);
   const collPriceUsd = usePrice(collateral?.symbol ?? null);
@@ -67,9 +73,9 @@ export function LoanScreen() {
       P.union(
         [P.any, null],
         [{ status: "pending" }, P.any],
-        [{ fetchStatus: "fetching", data: null }, P.any],
+        [{ fetchStatus: "fetching", data: null }, P.any]
       ),
-      () => "loading",
+      () => "loading"
     )
     .with([{ status: "error" }, P.any], () => "error")
     .with([{ data: null }, P.any], () => "not-found")
@@ -118,7 +124,8 @@ export function LoanScreen() {
               return {
                 loanModes: {
                   ...loanModes,
-                  [paramPrefixedId]: loanMode === "borrow" ? "leverage" : "borrow",
+                  [paramPrefixedId]:
+                    loanMode === "borrow" ? "leverage" : "borrow",
                 },
               };
             });
@@ -130,24 +137,27 @@ export function LoanScreen() {
         />
       }
     >
-      {contentTransition((style, item) => (
-        item === "success" && loan.data && (
-          modeTransition((modeStyle) => (
-            loan.data && (
-              <a.div
-                className={css({
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 32,
-                })}
-                style={{
-                  opacity: style.opacity,
-                  translateY: modeStyle.translateY,
-                }}
-              >
-                {loan.data.status === "liquidated"
-                  ? <ClaimCollateralSurplus loan={loan.data} />
-                  : (
+      {contentTransition(
+        (style, item) =>
+          item === "success" &&
+          loan.data &&
+          modeTransition(
+            (modeStyle) =>
+              loan.data && (
+                <a.div
+                  className={css({
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 32,
+                  })}
+                  style={{
+                    opacity: style.opacity,
+                    translateY: modeStyle.translateY,
+                  }}
+                >
+                  {loan.data.status === "liquidated" ? (
+                    <ClaimCollateralSurplus loan={loan.data} />
+                  ) : (
                     <>
                       {loan.data.status === "redeemed" && (
                         <div
@@ -162,7 +172,8 @@ export function LoanScreen() {
                               height: 64,
                               padding: 16,
                               background: "infoSurface",
-                              border: "1px solid token(colors.infoSurfaceBorder)",
+                              border:
+                                "1px solid token(colors.infoSurfaceBorder)",
                               borderRadius: 8,
                             })}
                           >
@@ -173,7 +184,11 @@ export function LoanScreen() {
                               })}
                             >
                               This loan has been partially redeemed.
-                              <InfoTooltip content={content.generalInfotooltips.redeemedLoan} />
+                              <InfoTooltip
+                                content={
+                                  content.generalInfotooltips.redeemedLoan
+                                }
+                              />
                             </div>
                           </div>
                         </div>
@@ -189,36 +204,38 @@ export function LoanScreen() {
                           if (!loan.data) {
                             return;
                           }
-                          const id = getPrefixedTroveId(loan.data.collIndex, loan.data.troveId);
-                          router.push(
-                            `/loan/${TABS[index].id}?id=${id}`,
-                            { scroll: false },
+                          const id = getPrefixedTroveId(
+                            loan.data.collIndex,
+                            loan.data.troveId
                           );
+                          router.push(`/loan/${TABS[index].id}?id=${id}`, {
+                            scroll: false,
+                          });
                         }}
                       />
-                      {action === "colldebt" && (
-                        loanMode === "leverage"
-                          ? <PanelUpdateLeveragePosition loan={loan.data} />
-                          : <PanelUpdateBorrowPosition loan={loan.data} />
+                      {action === "colldebt" &&
+                        (loanMode === "leverage" ? (
+                          <PanelUpdateLeveragePosition loan={loan.data} />
+                        ) : (
+                          <PanelUpdateBorrowPosition loan={loan.data} />
+                        ))}
+                      {action === "rate" && (
+                        <PanelUpdateRate loan={loan.data} />
                       )}
-                      {action === "rate" && <PanelUpdateRate loan={loan.data} />}
-                      {action === "close" && <PanelClosePosition loan={loan.data} />}
+                      {action === "close" && (
+                        <PanelClosePosition loan={loan.data} />
+                      )}
                     </>
                   )}
-              </a.div>
-            )
-          ))
-        )
-      ))}
+                </a.div>
+              )
+          )
+      )}
     </Screen>
   );
 }
 
-function ClaimCollateralSurplus({
-  loan,
-}: {
-  loan: PositionLoanCommitted;
-}) {
+function ClaimCollateralSurplus({ loan }: { loan: PositionLoanCommitted }) {
   const account = useAccount();
   const txFlow = useTransactionFlow();
   const collToken = getCollToken(loan.collIndex);
@@ -228,7 +245,10 @@ function ClaimCollateralSurplus({
 
   const csp = getCollateralContract(loan.collIndex, "CollSurplusPool");
   if (!csp) {
-    throw new Error("Collateral surplus pool not found for collateral index: " + loan.collIndex);
+    throw new Error(
+      "Collateral surplus pool not found for collateral index: " +
+        loan.collIndex
+    );
   }
 
   const collPriceUsd = usePrice(collToken.symbol);
@@ -243,12 +263,10 @@ function ClaimCollateralSurplus({
     },
   });
 
-  const collSurplusUsd = collPriceUsd && collSurplus.data
-    ? dn.mul(
-      collSurplus.data,
-      collPriceUsd,
-    )
-    : null;
+  const collSurplusUsd =
+    collPriceUsd && collSurplus.data
+      ? dn.mul(collSurplus.data, collPriceUsd)
+      : null;
 
   // const isOwner = account.address && addressesEqual(account.address, loan.borrower);
   const isOwner = true;
@@ -282,18 +300,17 @@ function ClaimCollateralSurplus({
           This loan has been liquidated
         </h1>
         <div>
-          <>
-            The collateral has been deducted from this position.
-          </>
+          <>The collateral has been deducted from this position.</>
           {isOwner && (
             <>
-              You can claim back the excess collateral accross your liquidated {collToken.name} loans.
+              You can claim back the excess collateral accross your liquidated{" "}
+              {collToken.name} loans.
             </>
           )}
         </div>
       </section>
       <Field
-        label="Remaining collateral"
+        label='Remaining collateral'
         field={
           <div
             className={css({
@@ -345,9 +362,9 @@ function ClaimCollateralSurplus({
       {isOwner && (
         <Button
           disabled={!collSurplus.data || dn.eq(collSurplus.data, 0) || !isOwner}
-          mode="primary"
-          size="large"
-          label="Claim remaining collateral"
+          mode='primary'
+          size='large'
+          label='Claim remaining collateral'
           onClick={() => {
             if (account.address) {
               txFlow.start({
@@ -357,7 +374,8 @@ function ClaimCollateralSurplus({
                   "Back to the loan",
                 ],
                 successLink: ["/", "Go to the dashboard"],
-                successMessage: "The loan position has been closed successfully.",
+                successMessage:
+                  "The loan position has been closed successfully.",
 
                 borrower: loan.borrower,
                 collIndex: loan.collIndex,

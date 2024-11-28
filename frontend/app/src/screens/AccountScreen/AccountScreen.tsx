@@ -8,7 +8,7 @@ import { Positions } from "@/src/comps/Positions/Positions";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { getCollateralContract, getContracts } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
 import {
   addressesEqual,

@@ -57,7 +57,7 @@ import {
 
 const queryClient = new QueryClient();
 
-export function Ethereum({ children }: { children: ReactNode }) {
+export function ArbitrumProvider({ children }: { children: ReactNode }) {
   const wagmiConfig = useWagmiConfig();
   const rainbowKitProps = useRainbowKitProps();
   return (

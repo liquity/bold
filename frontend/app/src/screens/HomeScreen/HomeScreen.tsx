@@ -12,7 +12,7 @@ import {
   useAverageInterestRate,
   useEarnPool,
 } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
 import {
   AnchorTextButton,

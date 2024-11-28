@@ -35,7 +35,7 @@ import {
   useAccount,
   useBalance,
   useWagmiConfig,
-} from "@/src/services/Ethereum";
+} from "@/src/services/Arbitrum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useTrovesCount } from "@/src/subgraph-hooks";

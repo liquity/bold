@@ -8,7 +8,7 @@ import { AboutModal } from "@/src/comps/AboutModal/AboutModal";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import content from "@/src/content";
 import { DemoMode } from "@/src/demo-mode";
-import { Ethereum } from "@/src/services/Ethereum";
+import { ArbitrumProvider } from "@/src/services/Arbitrum";
 import { Prices } from "@/src/services/Prices";
 import { StoredState } from "@/src/services/StoredState";
 import { TransactionFlow } from "@/src/services/TransactionFlow";
@@ -20,28 +20,22 @@ export const metadata: Metadata = {
   icons: "/favicon.svg",
 };
 
-export default function Layout({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang='en'>
       <body className={GeistSans.className}>
         <UiKit>
           <StoredState>
             <DemoMode>
-              <Ethereum>
+              <ArbitrumProvider>
                 <Prices>
                   <TransactionFlow>
                     <AboutModal>
-                      <AppLayout>
-                        {children}
-                      </AppLayout>
+                      <AppLayout>{children}</AppLayout>
                     </AboutModal>
                   </TransactionFlow>
                 </Prices>
-              </Ethereum>
+              </ArbitrumProvider>
             </DemoMode>
           </StoredState>
         </UiKit>

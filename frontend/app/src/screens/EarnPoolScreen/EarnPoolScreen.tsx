@@ -5,8 +5,12 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import content from "@/src/content";
-import { getCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import {
+  getCollIndexFromSymbol,
+  useEarnPool,
+  useEarnPosition,
+} from "@/src/liquity-utils";
+import { useAccount } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, isCollateralSymbol, Tabs } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
@@ -29,16 +33,20 @@ export function EarnPoolScreen() {
 
   const collateralSymbol = String(params.pool).toUpperCase();
   const isCollSymbolOk = isCollateralSymbol(collateralSymbol);
-  const collIndex = getCollIndexFromSymbol(isCollSymbolOk ? collateralSymbol : null);
+  const collIndex = getCollIndexFromSymbol(
+    isCollSymbolOk ? collateralSymbol : null
+  );
 
   const earnPosition = useEarnPosition(collIndex, account.address ?? null);
   const earnPool = useEarnPool(collIndex);
 
-  const hasDeposit = earnPosition.data?.deposit && dn.gt(earnPosition.data.deposit, 0);
+  const hasDeposit =
+    earnPosition.data?.deposit && dn.gt(earnPosition.data.deposit, 0);
 
   const tab = TABS.find((tab) => tab.action === params.action) ?? TABS[0];
 
-  const loadingState = earnPool.isLoading || earnPosition.isLoading ? "loading" : "success";
+  const loadingState =
+    earnPool.isLoading || earnPosition.isLoading ? "loading" : "success";
 
   const tabsTransition = useTransition(loadingState, {
     from: { opacity: 0 },
@@ -55,30 +63,30 @@ export function EarnPoolScreen() {
     return null;
   }
 
-  return earnPool.data && tab && (
-    <Screen
-      ready={loadingState === "success"}
-      back={{
-        href: "/earn",
-        label: content.earnScreen.backButton,
-      }}
-      heading={
-        <ScreenCard
-          mode={match(loadingState)
-            .returnType<"ready" | "loading">()
-            .with("success", () => "ready")
-            .with("loading", () => "loading")
-            .exhaustive()}
-          finalHeight={140}
-        >
-          {loadingState === "success"
-            ? (
+  return (
+    earnPool.data &&
+    tab && (
+      <Screen
+        ready={loadingState === "success"}
+        back={{
+          href: "/earn",
+          label: content.earnScreen.backButton,
+        }}
+        heading={
+          <ScreenCard
+            mode={match(loadingState)
+              .returnType<"ready" | "loading">()
+              .with("success", () => "ready")
+              .with("loading", () => "loading")
+              .exhaustive()}
+            finalHeight={140}
+          >
+            {loadingState === "success" ? (
               <EarnPositionSummary
                 earnPosition={earnPosition.data}
                 collIndex={collIndex}
               />
-            )
-            : (
+            ) : (
               <>
                 <div
                   className={css({
@@ -100,9 +108,7 @@ export function EarnPoolScreen() {
                   >
                     <IconEarn size={16} />
                   </div>
-                  <div>
-                    Earn Pool
-                  </div>
+                  <div>Earn Pool</div>
                 </div>
                 <HFlex gap={8}>
                   Fetching {earnPool.data.collateral?.name} Stability Pool…
@@ -110,66 +116,71 @@ export function EarnPoolScreen() {
                 </HFlex>
               </>
             )}
-        </ScreenCard>
-      }
-      className={css({
-        position: "relative",
-      })}
-    >
-      {tabsTransition((style, item) => (
-        item === "success" && (
-          <a.div
-            className={css({
-              display: "flex",
-              flexDirection: "column",
-              gap: 24,
-              width: "100%",
-            })}
-            style={{
-              opacity: style.opacity,
-            }}
-          >
-            {hasDeposit
-              ? (
-                <Tabs
-                  selected={TABS.indexOf(tab)}
-                  onSelect={(index) => {
-                    router.push(`/earn/${collateralSymbol.toLowerCase()}/${TABS[index].action}`, {
-                      scroll: false,
-                    });
-                  }}
-                  items={TABS.map((tab) => ({
-                    label: tab.label,
-                    panelId: `panel-${tab.action}`,
-                    tabId: `tab-${tab.action}`,
-                  }))}
-                />
-              )
-              : (
-                <h1
-                  className={css({
-                    fontSize: 24,
-                  })}
-                >
-                  New Stability Pool deposit
-                </h1>
-              )}
-            {tab.action === "deposit" && (
-              <PanelUpdateDeposit
-                collIndex={collIndex}
-                deposited={earnPool.data.totalDeposited ?? dn.from(0, 18)}
-                position={earnPosition.data ?? undefined}
-              />
-            )}
-            {tab.action === "claim" && (
-              <PanelClaimRewards
-                collIndex={collIndex}
-                position={earnPosition.data ?? undefined}
-              />
-            )}
-          </a.div>
-        )
-      ))}
-    </Screen>
+          </ScreenCard>
+        }
+        className={css({
+          position: "relative",
+        })}
+      >
+        {tabsTransition(
+          (style, item) =>
+            item === "success" && (
+              <a.div
+                className={css({
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 24,
+                  width: "100%",
+                })}
+                style={{
+                  opacity: style.opacity,
+                }}
+              >
+                {hasDeposit ? (
+                  <Tabs
+                    selected={TABS.indexOf(tab)}
+                    onSelect={(index) => {
+                      router.push(
+                        `/earn/${collateralSymbol.toLowerCase()}/${
+                          TABS[index].action
+                        }`,
+                        {
+                          scroll: false,
+                        }
+                      );
+                    }}
+                    items={TABS.map((tab) => ({
+                      label: tab.label,
+                      panelId: `panel-${tab.action}`,
+                      tabId: `tab-${tab.action}`,
+                    }))}
+                  />
+                ) : (
+                  <h1
+                    className={css({
+                      fontSize: 24,
+                    })}
+                  >
+                    New Stability Pool deposit
+                  </h1>
+                )}
+                {tab.action === "deposit" && (
+                  <PanelUpdateDeposit
+                    collIndex={collIndex}
+                    deposited={earnPool.data.totalDeposited ?? dn.from(0, 18)}
+                    position={earnPosition.data ?? undefined}
+                  />
+                )}
+                {tab.action === "claim" && (
+                  <PanelClaimRewards
+                    collIndex={collIndex}
+                    position={earnPosition.data ?? undefined}
+                  />
+                )}
+              </a.div>
+            )
+        )}
+      </Screen>
+    )
   );
 }

@@ -3,7 +3,7 @@
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Logo } from "@/src/comps/Logo/Logo";
 import { getContracts } from "@/src/contracts";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Arbitrum";
 import { useAllPrices } from "@/src/services/Prices";
 import { useTotalDeposited } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
