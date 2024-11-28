@@ -17,7 +17,7 @@ import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
 
-const DISPLAYED_PRICES = ["LQTY", "USDN", "ETH"] as const;
+const DISPLAYED_PRICES = ["USDN", "ETH"] as const;
 
 export function ProtocolStats() {
   const account = useAccount();
@@ -52,7 +52,7 @@ export function ProtocolStats() {
         })}
       >
         <HFlex gap={4} alignItems='center'>
-          <Logo size={16} />
+          <Logo size={26} />
           <span>TVL</span>{" "}
           <span>
             <Amount fallback='…' format='compact' prefix='$' value={tvl} />

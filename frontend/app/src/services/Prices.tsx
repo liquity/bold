@@ -8,7 +8,6 @@ import { getCollateralContract } from "@/src/contracts";
 import {
   BOLD_PRICE as DEMO_BOLD_PRICE,
   ETH_PRICE as DEMO_ETH_PRICE,
-  LQTY_PRICE as DEMO_LQTY_PRICE,
   LUSD_PRICE as DEMO_LUSD_PRICE,
   PRICE_UPDATE_INTERVAL as DEMO_PRICE_UPDATE_INTERVAL,
   PRICE_UPDATE_MANUAL as DEMO_PRICE_UPDATE_MANUAL,
@@ -25,13 +24,12 @@ import { useRef } from "react";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "LQTY" | "USDN" | "LUSD" | CollateralSymbol;
+type PriceToken = "USDN" | "LUSD" | CollateralSymbol;
 
 type Prices = Record<PriceToken, Dnum | null>;
 
 const initialPrices: Prices = {
   USDN: dn.from(1, 18),
-  LQTY: null,
   LUSD: dn.from(1, 18),
 
   // collaterals
@@ -55,7 +53,6 @@ function useWatchCollateralPrice(collateral: CollateralSymbol) {
 }
 
 const coinGeckoTokenIds = {
-  LQTY: "liquity",
   LUSD: "liquity-usd",
 } as const;
 
@@ -114,12 +111,10 @@ let useWatchPrices = function useWatchPrices(
   const ethPrice = useWatchCollateralPrice("ETH");
   const rethPrice = useWatchCollateralPrice("RETH");
   const wstethPrice = useWatchCollateralPrice("WSTETH");
-  const lqtyPrice = useCoinGeckoPrice("LQTY");
   const lusdPrice = useCoinGeckoPrice("LUSD");
 
   const prevPrices = useRef<Prices>({
     USDN: null,
-    LQTY: null,
     LUSD: null,
     ETH: null,
     RETH: null,
@@ -129,7 +124,6 @@ let useWatchPrices = function useWatchPrices(
   useEffect(() => {
     const newPrices = {
       USDN: dn.from(1, 18), // TODO
-      LQTY: lqtyPrice.data ? dn.from(lqtyPrice.data, 18) : null,
       LUSD: lusdPrice.data ? dn.from(lusdPrice.data, 18) : null,
 
       ETH: ethPrice.data ? dnum18(ethPrice.data) : null,
@@ -145,7 +139,7 @@ let useWatchPrices = function useWatchPrices(
       callback(newPrices);
       prevPrices.current = newPrices;
     }
-  }, [callback, ethPrice, rethPrice, wstethPrice, lqtyPrice, lusdPrice]);
+  }, [callback, ethPrice, rethPrice, wstethPrice, lusdPrice]);
 };
 
 // in demo mode, simulate a variation of the prices
@@ -157,7 +151,6 @@ if (DEMO_MODE) {
           dn.from((Math.random() - 0.5) * DEMO_PRICE_UPDATE_VARIATION, 18);
         callback({
           USDN: dn.add(DEMO_BOLD_PRICE, dn.mul(DEMO_BOLD_PRICE, variation())),
-          LQTY: dn.add(DEMO_LQTY_PRICE, dn.mul(DEMO_LQTY_PRICE, variation())),
           LUSD: dn.add(DEMO_LUSD_PRICE, dn.mul(DEMO_LUSD_PRICE, variation())),
           ETH: dn.add(DEMO_ETH_PRICE, dn.mul(DEMO_ETH_PRICE, variation())),
           RETH: dn.add(DEMO_RETH_PRICE, dn.mul(DEMO_RETH_PRICE, variation())),

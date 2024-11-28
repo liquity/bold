@@ -21,7 +21,6 @@ import {
   CHAIN_NAME,
   CHAIN_RPC_URL,
   CONTRACT_BOLD_TOKEN,
-  CONTRACT_LQTY_TOKEN,
   CONTRACT_LUSD_TOKEN,
   WALLET_CONNECT_PROJECT_ID,
 } from "@/src/env";
@@ -115,7 +114,6 @@ export function useBalance(
       }
     )
     .with("USDN", () => CONTRACT_BOLD_TOKEN)
-    .with("LQTY", () => CONTRACT_LQTY_TOKEN)
     .with("LUSD", () => CONTRACT_LUSD_TOKEN)
     .otherwise(() => null);
 

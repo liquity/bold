@@ -9,25 +9,16 @@ export const PRICE_UPDATE_INTERVAL = 15_000;
 export const PRICE_UPDATE_VARIATION = 0.003;
 export const PRICE_UPDATE_MANUAL = false;
 
-export const LQTY_PRICE = dn.from(0.64832, 18);
 export const ETH_PRICE = dn.from(2_580.293872, 18);
 export const RETH_PRICE = dn.from(2_884.72294, 18);
 export const WSTETH_PRICE = dn.from(2_579.931, 18);
 export const BOLD_PRICE = dn.from(1.0031, 18);
 export const LUSD_PRICE = dn.from(1.012, 18);
 
-export const STAKED_LQTY_TOTAL = [43_920_716_739_092_664_364_409_174n, 18] as const;
-
-export const ACCOUNT_STAKED_LQTY = {
-  deposit: dn.from(3414, 18),
-  rewardEth: dn.from(0.0054, 18),
-  rewardLusd: dn.from(234.24, 18),
-} as const;
 
 export const ACCOUNT_BALANCES = {
   USDN: dn.from(3_987, 18),
   ETH: dn.from(2.429387, 18),
-  LQTY: dn.from(2008.217, 18),
   RETH: dn.from(1.3732, 18),
   WSTETH: dn.from(17.912, 18),
   LUSD: dn.from(1_200, 18),
@@ -75,17 +66,6 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     rewards: {
       bold: dn.from(789.438, 18),
       coll: dn.from(0.943, 18),
-    },
-  },
-  {
-    type: "stake",
-    owner: DEMO_ACCOUNT,
-    deposit: dn.from(3414, 18),
-    share: dn.div(dn.from(3414, 18), STAKED_LQTY_TOTAL),
-    totalStaked: STAKED_LQTY_TOTAL,
-    rewards: {
-      lusd: dn.from(789.438, 18),
-      eth: dn.from(0.943, 18),
     },
   },
 ];

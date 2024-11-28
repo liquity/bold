@@ -5,7 +5,6 @@ export type Direction = -1 | 1;
 export type TokenSymbol =
   | "USDN"
   | "ETH"
-  | "LQTY"
   | "RETH"
   | "LUSD"
   | "WSTETH";

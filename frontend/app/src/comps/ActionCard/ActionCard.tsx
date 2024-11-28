@@ -16,14 +16,11 @@ export function ActionCard({
   const [active, setActive] = useState(false);
 
   const hintSpring = useSpring({
-    transform: active
-      ? "scale(1.01)"
-      : hint
-      ? "scale(1.02)"
-      : "scale(1)",
-    boxShadow: hint && !active
-      ? "0 2px 4px rgba(0, 0, 0, 0.1)"
-      : "0 2px 4px rgba(0, 0, 0, 0)",
+    transform: active ? "scale(1.01)" : hint ? "scale(1.02)" : "scale(1)",
+    boxShadow:
+      hint && !active
+        ? "0 2px 4px rgba(0, 0, 0, 0.1)"
+        : "0 2px 4px rgba(0, 0, 0, 0)",
     immediate: active,
     config: {
       mass: 1,
@@ -64,17 +61,16 @@ export function ActionCard({
       path: "/earn",
       title: ac.earn.title,
     }))
-    .with("stake", () => ({
+    .otherwise(() => ({
       colors: {
-        background: token("colors.brandGolden"),
-        foreground: token("colors.brandGoldenContent"),
-        foregroundAlt: token("colors.brandGoldenContentAlt"),
+        background: token("colors.brandBlue"),
+        foreground: token("colors.brandBlueContent"),
+        foregroundAlt: token("colors.brandBlueContentAlt"),
       },
-      description: ac.stake.description,
-      path: "/stake",
-      title: ac.stake.title,
-    }))
-    .exhaustive();
+      description: "Default description",
+      path: "/",
+      title: "Home",
+    }));
 
   return (
     <Link
@@ -92,7 +88,7 @@ export function ActionCard({
           color: "gray:50",
           outline: 0,
           userSelect: "none",
-        }),
+        })
       )}
     >
       <a.section
