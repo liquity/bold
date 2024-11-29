@@ -109,7 +109,7 @@ contract AddRemoveManagers is IAddRemoveManagers {
         if (msg.sender != _owner && msg.sender != manager) {
             revert NotOwnerNorRemoveManager();
         }
-        if (receiver == address(0)) {
+        if (receiver == address(0) || msg.sender != manager) {
             return _owner;
         }
         return receiver;
