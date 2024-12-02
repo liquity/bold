@@ -8,11 +8,13 @@ import { AboutModal } from "@/src/comps/AboutModal/AboutModal";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import content from "@/src/content";
 import { DemoMode } from "@/src/demo-mode";
+import { VERCEL_ANALYTICS } from "@/src/env";
 import { Ethereum } from "@/src/services/Ethereum";
 import { Prices } from "@/src/services/Prices";
 import { StoredState } from "@/src/services/StoredState";
 import { TransactionFlow } from "@/src/services/TransactionFlow";
 import { UiKit } from "@liquity2/uikit";
+import { Analytics } from "@vercel/analytics/react";
 import { GeistSans } from "geist/font/sans";
 
 export const metadata: Metadata = {
@@ -45,6 +47,7 @@ export default function Layout({
             </DemoMode>
           </StoredState>
         </UiKit>
+        {VERCEL_ANALYTICS && <Analytics />}
       </body>
     </html>
   );
