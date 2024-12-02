@@ -1581,8 +1581,9 @@ Redemptions at this CR may allow for a bit more bad debt to be redistributed whi
 
 ```sh
 git clone git@github.com:liquity/bold.git
-cd bold
+cd bold/contracts
 forge install
+cd ..
 pnpm install
 ```
 
