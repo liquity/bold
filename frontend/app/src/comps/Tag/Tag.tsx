@@ -10,7 +10,7 @@ export function Tag({
 }: {
   children: ReactNode;
   title?: string;
-  size?: "small" | "medium";
+  size?: "mini" | "small" | "medium";
   css?: Parameters<typeof css>[0];
 }) {
   return (
@@ -25,13 +25,34 @@ export function Tag({
         borderRadius: 8,
         userSelect: "none",
       }, cssProp)}
-      style={{
-        height: size === "small" ? 16 : 22,
-        fontSize: size === "small" ? 12 : 14,
-        padding: size === "small" ? "0 4px 1px" : 6,
-      }}
+      style={getStyles(size)}
     >
       {children}
     </div>
   );
+}
+
+function getStyles(size: Parameters<typeof Tag>[0]["size"]) {
+  if (size === "mini") {
+    return {
+      height: 12,
+      padding: "0 3px 1px",
+      fontSize: 10,
+    };
+  }
+  if (size === "small") {
+    return {
+      height: 16,
+      padding: "0 4px 1px",
+      fontSize: 12,
+    };
+  }
+  if (size === "medium") {
+    return {
+      height: 22,
+      padding: 6,
+      fontSize: 14,
+    };
+  }
+  throw new Error(`Invalid size: ${size}`);
 }

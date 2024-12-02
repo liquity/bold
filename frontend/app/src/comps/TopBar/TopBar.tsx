@@ -5,6 +5,7 @@ import type { ComponentProps } from "react";
 import { Logo } from "@/src/comps/Logo/Logo";
 import { Tag } from "@/src/comps/Tag/Tag";
 import content from "@/src/content";
+import { DEPLOYMENT_FLAVOR } from "@/src/env";
 import { css } from "@/styled-system/css";
 import { IconBorrow, IconDashboard, IconEarn, IconLeverage, IconStake } from "@liquity2/uikit";
 import Link from "next/link";
@@ -72,28 +73,32 @@ export function TopBar() {
           <div
             className={css({
               flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
               whiteSpace: "nowrap",
             })}
           >
             {content.appName}
-          </div>
-          <div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              marginLeft: -8,
-            })}
-          >
-            <Tag
-              size="small"
-              css={{
-                color: "accentContent",
-                background: "brandCoral",
-                border: 0,
-              }}
-            >
-              SEPOLIA
-            </Tag>
+            {DEPLOYMENT_FLAVOR !== "" && (
+              <div
+                className={css({
+                  display: "flex",
+                })}
+              >
+                <Tag
+                  size="mini"
+                  css={{
+                    color: "accentContent",
+                    background: "brandCoral",
+                    border: 0,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {DEPLOYMENT_FLAVOR}
+                </Tag>
+              </div>
+            )}
           </div>
         </Link>
         <Menu menuItems={menuItems} />
