@@ -36,8 +36,8 @@ function getStyles(size: Parameters<typeof Tag>[0]["size"]) {
   if (size === "mini") {
     return {
       height: 12,
-      padding: "0 3px 1px",
-      fontSize: 10,
+      padding: "0 4px 0.5px",
+      fontSize: 9,
     };
   }
   if (size === "small") {
