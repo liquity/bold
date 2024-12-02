@@ -3,6 +3,7 @@
 import type { ComponentProps } from "react";
 
 import { Logo } from "@/src/comps/Logo/Logo";
+import { Tag } from "@/src/comps/Tag/Tag";
 import content from "@/src/content";
 import { css } from "@/styled-system/css";
 import { IconBorrow, IconDashboard, IconEarn, IconLeverage, IconStake } from "@liquity2/uikit";
@@ -46,6 +47,7 @@ export function TopBar() {
         <Link
           href="/"
           className={css({
+            position: "relative",
             display: "flex",
             alignItems: "center",
             gap: 16,
@@ -74,6 +76,24 @@ export function TopBar() {
             })}
           >
             {content.appName}
+          </div>
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              marginLeft: -8,
+            })}
+          >
+            <Tag
+              size="small"
+              css={{
+                color: "accentContent",
+                background: "brandCoral",
+                border: 0,
+              }}
+            >
+              SEPOLIA
+            </Tag>
           </div>
         </Link>
         <Menu menuItems={menuItems} />
