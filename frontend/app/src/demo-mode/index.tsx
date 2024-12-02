@@ -102,31 +102,43 @@ const DemoContext = createContext<DemoModeContext>({
   updateAccountConnected: noop,
 });
 
+const DemoStorage = {
+  get: (): DemoModeState | null => {
+    if (!DEMO_MODE || typeof localStorage === "undefined") {
+      return null;
+    }
+    const storedState = localStorage.getItem(DEMO_STATE_KEY);
+    if (storedState) {
+      try {
+        return v.parse(DemoModeStateSchema, JSON.parse(storedState));
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  },
+  set: (state: DemoModeState) => {
+    if (DEMO_MODE && typeof localStorage !== "undefined") {
+      localStorage.setItem(DEMO_STATE_KEY, JSON.stringify(state));
+    }
+  },
+  clear: () => {
+    if (DEMO_MODE && typeof localStorage !== "undefined") {
+      localStorage.removeItem(DEMO_STATE_KEY);
+    }
+  },
+};
+
 export function DemoMode({
   children,
 }: {
   children: ReactNode;
 }) {
-  const [state, setState] = useState<DemoModeState>(() => {
-    // attempt restoring state from local storage
-    const storedState = typeof localStorage !== "undefined"
-      ? localStorage.getItem(DEMO_STATE_KEY)
-      : null;
-    if (storedState) {
-      try {
-        return v.parse(DemoModeStateSchema, JSON.parse(storedState));
-      } catch {
-        return demoModeStateDefault;
-      }
-    }
-    return demoModeStateDefault;
-  });
+  const [state, setState] = useState<DemoModeState>(() => DemoStorage.get() ?? demoModeStateDefault);
 
-  // save state to local storage
+  // save state to storage
   useEffect(() => {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(DEMO_STATE_KEY, JSON.stringify(state));
-    }
+    DemoStorage.set(state);
   }, [state]);
 
   const setDemoModeState = useCallback((
@@ -144,9 +156,7 @@ export function DemoMode({
   }, []);
 
   const clearDemoMode = useCallback(() => {
-    if (typeof localStorage !== "undefined") {
-      localStorage.removeItem(DEMO_STATE_KEY);
-    }
+    DemoStorage.clear();
     setState(demoModeStateDefault);
   }, []);
 
