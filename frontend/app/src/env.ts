@@ -1,3 +1,5 @@
+"use client";
+
 import type { Address, CollIndex } from "@/src/types";
 
 import { isCollIndex } from "@/src/types";
@@ -32,9 +34,12 @@ export const EnvSchema = v.pipe(
     CHAIN_CONTRACT_MULTICALL: vAddress(),
     COMMIT_HASH: v.string(),
     SUBGRAPH_URL: v.string(),
-    DEMO_MODE: v.pipe(v.optional(vEnvFlag()), v.transform((value) => value ?? false)),
-    DEPLOYMENT_FLAVOR: v.pipe(v.optional(v.string()), v.transform((value) => (value ?? "").trim())),
-    VERCEL_ANALYTICS: v.pipe(v.optional(vEnvFlag()), v.transform((value) => value ?? false)),
+    DEMO_MODE: v.optional(vEnvFlag(), "false"),
+    DEPLOYMENT_FLAVOR: v.pipe(
+      v.optional(v.string(), ""),
+      v.transform((value) => value.trim()),
+    ),
+    VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.string(),
 
     DELEGATE_AUTO: vAddress(),
