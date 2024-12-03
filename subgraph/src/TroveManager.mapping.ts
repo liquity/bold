@@ -293,7 +293,6 @@ function createTrove(
 
     let totalCollaterals = dataSource.context().getI32("totalCollaterals");
     borrowerInfo.trovesByCollateral = (new Array<i32>(totalCollaterals)).fill(0);
-    borrowerInfo.lastTroveIdByCollateral = (new Array<i32>(totalCollaterals)).fill(0);
   }
 
   // update borrower info
