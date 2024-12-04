@@ -172,7 +172,7 @@ function PanelUpdateStake() {
             value={value_}
             placeholder="0.00"
             secondary={{
-              start: parsedValue && lqtyPrice ? `$${dn.format(dn.mul(parsedValue, lqtyPrice), 2)}` : null,
+              start: parsedValue && lqtyPrice.data ? `$${dn.format(dn.mul(parsedValue, lqtyPrice.data), 2)}` : null,
               end: mode === "deposit"
                 ? (
                   <TextButton

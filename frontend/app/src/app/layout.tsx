@@ -10,7 +10,6 @@ import content from "@/src/content";
 import { DemoMode } from "@/src/demo-mode";
 import { VERCEL_ANALYTICS } from "@/src/env";
 import { Ethereum } from "@/src/services/Ethereum";
-import { Prices } from "@/src/services/Prices";
 import { StoredState } from "@/src/services/StoredState";
 import { TransactionFlow } from "@/src/services/TransactionFlow";
 import { UiKit } from "@liquity2/uikit";
@@ -34,15 +33,13 @@ export default function Layout({
           <StoredState>
             <DemoMode>
               <Ethereum>
-                <Prices>
-                  <TransactionFlow>
-                    <AboutModal>
-                      <AppLayout>
-                        {children}
-                      </AppLayout>
-                    </AboutModal>
-                  </TransactionFlow>
-                </Prices>
+                <TransactionFlow>
+                  <AboutModal>
+                    <AppLayout>
+                      {children}
+                    </AppLayout>
+                  </AboutModal>
+                </TransactionFlow>
               </Ethereum>
             </DemoMode>
           </StoredState>

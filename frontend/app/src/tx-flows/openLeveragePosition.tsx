@@ -74,30 +74,30 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     const { request } = flow;
     const { loan } = request;
 
-    const collateral = getCollToken(loan.collIndex);
-    const collPrice = usePrice(collateral?.symbol ?? null);
+    const collToken = getCollToken(loan.collIndex);
+    if (!collToken) {
+      throw new Error(`Invalid collateral index: ${loan.collIndex}`);
+    }
 
-    const initialDeposit = dn.div(
-      loan.deposit,
-      request.leverageFactor,
-    );
-
-    const yearlyBoldInterest = dn.mul(loan.borrowed, loan.interestRate);
+    const collPrice = usePrice(collToken.symbol);
 
     const upfrontFee = usePredictOpenTroveUpfrontFee(
       loan.collIndex,
       loan.borrowed,
       loan.interestRate,
     );
+
+    const initialDeposit = dn.div(loan.deposit, request.leverageFactor);
+    const yearlyBoldInterest = dn.mul(loan.borrowed, loan.interestRate);
     const borrowedWithFee = upfrontFee.data && dn.add(loan.borrowed, upfrontFee.data);
 
-    return collateral && (
+    return (
       <>
         <TransactionDetailsRow
           label="Initial deposit"
           value={[
-            `${fmtnum(initialDeposit)} ${collateral.name}`,
-            collPrice && `$${fmtnum(dn.mul(initialDeposit, collPrice))}`,
+            `${fmtnum(initialDeposit)} ${collToken.name}`,
+            collPrice.data && `$${fmtnum(dn.mul(initialDeposit, collPrice.data))}`,
           ]}
         />
         <TransactionDetailsRow
@@ -157,13 +157,18 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     wagmiConfig,
   }) {
     const { loan } = request;
-    const collateral = contracts.collaterals[loan.collIndex];
+    const collToken = getCollToken(loan.collIndex);
+    if (!collToken) {
+      throw new Error("Invalid collateral index: " + loan.collIndex);
+    }
 
-    if (collateral.symbol === "ETH") {
+    const { contracts: collContracts } = contracts.collaterals[loan.collIndex];
+
+    if (collToken.symbol === "ETH") {
       return ["openLeveragedTrove"];
     }
 
-    const { LeverageLSTZapper, CollToken } = collateral.contracts;
+    const { LeverageLSTZapper, CollToken } = collContracts;
 
     const allowance = dnum18(
       await readContract(wagmiConfig, {
@@ -302,7 +307,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
       };
     }
 
-    throw new Error("Not implemented");
+    throw new Error(`Invalid stepId: ${stepId}`);
   },
 
   async postFlowCheck({ request, steps }) {
