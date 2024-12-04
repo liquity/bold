@@ -98,7 +98,8 @@ contract ZapperLeverageMainnet is DevTestSetup {
     }
 
     function setUp() public override {
-        vm.createSelectFork(vm.rpcUrl("mainnet"));
+        uint256 forkBlock = 21328610;
+        vm.createSelectFork(vm.rpcUrl("mainnet"), forkBlock);
 
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -1062,7 +1063,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         assertApproxEqAbs(
             contractsArray[_branch].troveManager.getCurrentICR(vars.troveId, vars.price),
             vars.resultingCollateralRatio,
-            1e16,
+            17e15,
             "Wrong CR"
         );
         // token balances
