@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.24;
 
+import "openzeppelin-contracts/contracts/utils/math/Math.sol";
+
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IStabilityPool.sol";
@@ -1810,7 +1812,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                     // To avoid rebasing issues, let’s make sure the ratio debt / shares is not too high
                     _requireBelowMaxSharesRatio(currentBatchDebtShares, _batchDebt, _checkBatchSharesRatio);
 
-                    batchDebtSharesDelta = currentBatchDebtShares * debtIncrease / _batchDebt;
+                    batchDebtSharesDelta = Math.ceilDiv(currentBatchDebtShares * debtIncrease, _batchDebt);
                 }
 
                 Troves[_troveId].batchDebtShares += batchDebtSharesDelta;
