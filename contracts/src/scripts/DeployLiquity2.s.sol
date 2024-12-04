@@ -241,7 +241,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         (address governanceAddress, string memory governanceManifest) = deployGovernance(
             deployer, SALT, deployed.boldToken, deployed.usdc, ICurveStableswapNG(address(deployed.usdcCurvePool))
         );
-        address computedGovernanceAddress = computeGovernanceAddress(deployer, SALT, deployed.boldToken, new address[](0));
+        address computedGovernanceAddress =
+            computeGovernanceAddress(deployer, SALT, deployed.boldToken, new address[](0));
         //console2.log(computedGovernanceAddress, "computedGovernanceAddress");
         //console2.log(governanceAddress, "governanceAddress");
         assert(governanceAddress == computedGovernanceAddress);
@@ -489,7 +490,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         contracts.priceFeed = new PriceFeedTestnet();
         //console2.log(computeGovernanceAddress(deployer, SALT, _boldToken, new address[](0)), "computeGovernanceAddress");
-        contracts.interestRouter = IInterestRouter(computeGovernanceAddress(deployer, SALT, _boldToken, new address[](0)));
+        contracts.interestRouter =
+            IInterestRouter(computeGovernanceAddress(deployer, SALT, _boldToken, new address[](0)));
         addresses.borrowerOperations = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry)))
         );
@@ -926,7 +928,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
                 string.concat('"exchangeHelpers":"', address(deployed.exchangeHelpers).toHexString(), '",'),
                 string.concat('"branches":[', branches.join(","), "],"),
-                string.concat('"governance":', _governanceManifest, '') // no comma
+                string.concat('"governance":', _governanceManifest, "") // no comma
             ),
             "}"
         );

@@ -18,7 +18,7 @@ import "./TroveManagerTester.t.sol";
 import "../../TroveNFT.sol";
 import "../../NFTMetadata/MetadataNFT.sol";
 import "../../CollateralRegistry.sol";
-import "../../MockInterestRouter.sol";
+import "./MockInterestRouter.sol";
 import "./PriceFeedTestnet.sol";
 import "./MetadataDeployment.sol";
 import "../../Zappers/WETHZapper.sol";

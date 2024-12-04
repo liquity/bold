@@ -107,12 +107,9 @@ contract DeployGovernance is Script, Deployers {
         bytes32 _salt,
         IERC20 _boldToken,
         address[] memory _initialInitiatives
-    )
-        internal
-        view
-        returns (address)
-    {
-        (address governanceAddress,) = computeGovernanceAddressAndConfig(_deployer, _salt, _boldToken, _initialInitiatives);
+    ) internal view returns (address) {
+        (address governanceAddress,) =
+            computeGovernanceAddressAndConfig(_deployer, _salt, _boldToken, _initialInitiatives);
         return governanceAddress;
     }
 
@@ -121,11 +118,7 @@ contract DeployGovernance is Script, Deployers {
         bytes32 _salt,
         IERC20 _boldToken,
         address[] memory _initialInitiatives
-    )
-        internal
-        view
-        returns (address, IGovernance.Configuration memory)
-    {
+    ) internal view returns (address, IGovernance.Configuration memory) {
         IGovernance.Configuration memory governanceConfiguration = IGovernance.Configuration({
             registrationFee: REGISTRATION_FEE,
             registrationThresholdFactor: REGISTRATION_THRESHOLD_FACTOR,
