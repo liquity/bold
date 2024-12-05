@@ -34,6 +34,27 @@ export const EnvSchema = v.pipe(
     CHAIN_CONTRACT_MULTICALL: vAddress(),
     COMMIT_HASH: v.string(),
     SUBGRAPH_URL: v.string(),
+    COINGECKO_API_KEY: v.pipe(
+      v.optional(v.string(), ""),
+      v.rawTransform(({ dataset, addIssue, NEVER }) => {
+        const [apiType, apiKey] = dataset.value.split("|");
+        if (!apiKey) {
+          return null; // no API key
+        }
+        if (apiType !== "demo" && apiType !== "pro") {
+          addIssue({ message: `Invalid CoinGecko API type: ${apiType}` });
+          return NEVER;
+        }
+        if (!apiKey.trim()) {
+          addIssue({ message: `Invalid CoinGecko API key (empty)` });
+          return NEVER;
+        }
+        return {
+          apiType: apiType as "demo" | "pro",
+          apiKey,
+        };
+      }),
+    ),
     DEMO_MODE: v.optional(vEnvFlag(), "false"),
     DEPLOYMENT_FLAVOR: v.pipe(
       v.optional(v.string(), ""),
@@ -227,6 +248,7 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_2_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_MANAGER,
   COLL_2_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_NFT,
 
+  COINGECKO_API_KEY: process.env.NEXT_PUBLIC_COINGECKO_API_KEY,
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
   DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
   VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
@@ -257,6 +279,7 @@ export const {
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
   DELEGATE_AUTO,
+  COINGECKO_API_KEY,
   DEMO_MODE,
   DEPLOYMENT_FLAVOR,
   VERCEL_ANALYTICS,

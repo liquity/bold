@@ -62,8 +62,8 @@ export const stakeDeposit: FlowDeclaration<Request, Step> = {
     const lusdPrice = usePrice("LUSD");
     const ethPrice = usePrice("ETH");
 
-    const rewardsLusdInUsd = lusdPrice && dn.mul(rewards.lusd, lusdPrice);
-    const rewardsEthInUsd = ethPrice && dn.mul(rewards.eth, ethPrice);
+    const rewardsLusdInUsd = lusdPrice.data && dn.mul(rewards.lusd, lusdPrice.data);
+    const rewardsEthInUsd = ethPrice.data && dn.mul(rewards.eth, ethPrice.data);
 
     return (
       <>
@@ -78,7 +78,7 @@ export const stakeDeposit: FlowDeclaration<Request, Step> = {
             <Amount
               key="end"
               prefix="$"
-              value={lqtyPrice && dn.mul(request.lqtyAmount, lqtyPrice)}
+              value={lqtyPrice.data && dn.mul(request.lqtyAmount, lqtyPrice.data)}
             />,
           ]}
         />

@@ -78,12 +78,12 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
 
     const collPrice = usePrice(collateral.symbol);
 
-    if (!collPrice) {
+    if (!collPrice.data) {
       return null;
     }
 
     const amountToRepay = repayWithCollateral
-      ? (dn.div(loan.borrowed ?? dn.from(0), collPrice))
+      ? (dn.div(loan.borrowed ?? dn.from(0), collPrice.data))
       : (loan.borrowed ?? dn.from(0));
 
     const collToReclaim = repayWithCollateral

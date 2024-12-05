@@ -36,12 +36,12 @@ export function PanelClosePosition({
   // either in BOLD or in collateral
   const amountToRepay = repayToken.symbol === "BOLD"
     ? loan.borrowed
-    : collPriceUsd && dn.div(loan.borrowed, collPriceUsd);
+    : collPriceUsd.data && dn.div(loan.borrowed, collPriceUsd.data);
 
   const amountToRepayUsd = amountToRepay && (
     repayToken.symbol === "BOLD"
-      ? boldPriceUsd && dn.mul(amountToRepay, boldPriceUsd)
-      : collPriceUsd && dn.mul(amountToRepay, collPriceUsd)
+      ? boldPriceUsd.data && dn.mul(amountToRepay, boldPriceUsd.data)
+      : collPriceUsd.data && dn.mul(amountToRepay, collPriceUsd.data)
   );
 
   // when repaying with collateral, subtract the amount used to repay
@@ -49,9 +49,9 @@ export function PanelClosePosition({
     ? loan.deposit
     : amountToRepay && dn.sub(loan.deposit, amountToRepay);
 
-  const collToReclaimUsd = collToReclaim && collPriceUsd && dn.mul(
+  const collToReclaimUsd = collToReclaim && collPriceUsd.data && dn.mul(
     collToReclaim,
-    collPriceUsd,
+    collPriceUsd.data,
   );
 
   const isOwner = Boolean(account.address && addressesEqual(account.address, loan.borrower));
@@ -79,7 +79,7 @@ export function PanelClosePosition({
     return null;
   })();
 
-  if (!collPriceUsd || !boldPriceUsd || !amountToRepay || !collToReclaim) {
+  if (!collPriceUsd.data || !boldPriceUsd.data || !amountToRepay || !collToReclaim) {
     return null;
   }
 

@@ -49,15 +49,15 @@ export function PanelUpdateLeveragePosition({
     throw new Error("collToken not found");
   }
 
-  const collPrice = usePrice(collToken.symbol ?? null);
+  const collPrice = usePrice(collToken.symbol);
 
   // loan details before the update
   const initialLoanDetails = getLoanDetails(
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
-    collToken?.collateralRatio,
-    collPrice,
+    collToken.collateralRatio,
+    collPrice.data ?? null,
   );
 
   // deposit change
@@ -90,11 +90,11 @@ export function PanelUpdateLeveragePosition({
     userLeverageFactor,
   );
 
-  const totalPositionValue = dn.mul(newDeposit, collPrice ?? dnum18(0));
+  const totalPositionValue = dn.mul(newDeposit, collPrice.data ?? dnum18(0));
 
   const newDebt = dn.sub(
     totalPositionValue,
-    dn.mul(newDepositPreLeverage ?? dnum18(0), collPrice ?? dnum18(0)),
+    dn.mul(newDepositPreLeverage ?? dnum18(0), collPrice.data ?? dnum18(0)),
   );
 
   const newLoanDetails = getLoanDetails(
@@ -102,18 +102,18 @@ export function PanelUpdateLeveragePosition({
     newDebt,
     initialLoanDetails.interestRate,
     collToken.collateralRatio,
-    collPrice,
+    collPrice.data ?? null,
   );
 
   const liquidationPrice = getLiquidationPriceFromLeverage(
     userLeverageFactor,
-    collPrice ?? dnum18(0),
+    collPrice.data ?? dnum18(0),
     collToken.collateralRatio,
   );
 
   // leverage factor
   const leverageField = useLeverageField({
-    collPrice: collPrice ?? dnum18(0),
+    collPrice: collPrice.data ?? dnum18(0),
     collToken,
     depositPreLeverage: newDepositPreLeverage,
     maxLtvAllowedRatio: 1 - MAX_LTV_RESERVE_RATIO,
@@ -205,9 +205,9 @@ export function PanelUpdateLeveragePosition({
               labelHeight={32}
               placeholder="0.00"
               secondary={{
-                start: collPrice && (
+                start: collPrice.data && (
                   depositChange.parsed
-                    ? "$" + fmtnum(dn.mul(depositChange.parsed, collPrice))
+                    ? "$" + fmtnum(dn.mul(depositChange.parsed, collPrice.data))
                     : "$0.00"
                 ),
                 end: collMax && dn.gt(collMax, 0) && (

@@ -59,8 +59,8 @@ export const earnClaimRewards: FlowDeclaration<Request, Step> = {
 
     const rewardsBold = request.earnPosition.rewards.bold;
     const rewardsColl = request.earnPosition.rewards.coll;
-    const rewardsBoldUsd = boldPrice && dn.mul(rewardsBold, boldPrice);
-    const rewardsCollUsd = collPrice && dn.mul(rewardsColl, collPrice);
+    const rewardsBoldUsd = boldPrice.data && dn.mul(rewardsBold, boldPrice.data);
+    const rewardsCollUsd = collPrice.data && dn.mul(rewardsColl, collPrice.data);
 
     return (
       <>
