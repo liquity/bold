@@ -1,5 +1,3 @@
-"use client";
-
 import type { Address, CollIndex } from "@/src/types";
 
 import { isCollIndex } from "@/src/types";
