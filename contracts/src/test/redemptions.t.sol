@@ -476,11 +476,7 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer before");
 
         // Liquidate B
-        console2.log(
-            troveManager.getCurrentICR(troveIDs.B, priceFeed.getPrice()),
-            "troveManager.getCurrentICR(troveIDs.E, price)"
-        );
-        priceFeed.setPrice(priceFeed.getPrice() / 25);
+        priceFeed.setPrice(priceFeed.getPrice() / 30);
         liquidate(A, troveIDs.B);
 
         // Check B is liquidated

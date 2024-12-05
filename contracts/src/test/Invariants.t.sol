@@ -71,9 +71,9 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
 
         // TODO: randomize params? How to do it with Foundry invariant testing?
         TestDeployer.TroveManagerParams[] memory p = new TestDeployer.TroveManagerParams[](n);
-        if (n > 0) p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        if (n > 1) p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        if (n > 2) p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        if (n > 0) p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 1.1 ether, 0.05 ether, 0.1 ether);
+        if (n > 1) p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.2 ether, 0.05 ether, 0.2 ether);
+        if (n > 2) p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.2 ether, 0.05 ether, 0.2 ether);
         if (n > 3) p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 1.01 ether, 0.05 ether, 0.1 ether);
 
         TestDeployer deployer = new TestDeployer();
