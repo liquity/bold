@@ -1,3 +1,5 @@
+"use client";
+
 import type { CSSProperties } from "react";
 
 import { a, useTransition } from "@react-spring/web";

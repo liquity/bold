@@ -1,3 +1,5 @@
+"use client";
+
 import type { StatusMode } from "../types";
 
 import { css } from "../../styled-system/css";
