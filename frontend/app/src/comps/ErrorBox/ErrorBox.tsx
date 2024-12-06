@@ -20,6 +20,7 @@ export function ErrorBox({
   const contentStyles = useSpring({
     opacity: 1,
     height: expanded ? (size?.blockSize ?? 0) + 32 : 0,
+    chevronTransform: expanded ? "rotate(180deg)" : "rotate(0deg)",
     config: {
       mass: 1,
       tension: 1800,
@@ -45,7 +46,7 @@ export function ErrorBox({
           alignItems: "center",
           justifyContent: "space-between",
           width: "100%",
-          height: 48,
+          height: 46, // 48 - border width
           padding: "0 0 0 24px",
           cursor: "pointer",
           borderRadius: 8,
@@ -65,7 +66,13 @@ export function ErrorBox({
           })}
         >
           {expanded ? "Less" : "More"} details
-          <IconChevronDown size={16} />
+          <a.div
+            style={{
+              transform: contentStyles.chevronTransform,
+            }}
+          >
+            <IconChevronDown size={16} />
+          </a.div>
         </div>
       </button>
       <a.div
