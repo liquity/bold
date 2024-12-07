@@ -83,78 +83,83 @@ export function PanelClosePosition({
     return null;
   }
 
+  // happens in case the loan got redeemed
+  const claimOnly = dn.eq(amountToRepay, 0);
+
   const allowSubmit = error === null;
 
   return (
     <>
       <VFlex gap={48}>
-        <Field
-          label="You repay with"
-          field={
-            <div
-              className={css({
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                justifyContent: "space-between",
-              })}
-            >
+        {!claimOnly && (
+          <Field
+            label="You repay with"
+            field={
               <div
                 className={css({
                   display: "flex",
+                  alignItems: "center",
                   gap: 16,
-                  fontSize: 28,
-                  lineHeight: 1,
+                  justifyContent: "space-between",
                 })}
               >
-                {fmtnum(amountToRepay)}
-              </div>
-              <Dropdown
-                buttonDisplay={() => ({
-                  icon: <TokenIcon symbol={repayToken.symbol} />,
-                  label: (
-                    <>
-                      {repayToken.name}
-                      <span
+                <div
+                  className={css({
+                    display: "flex",
+                    gap: 16,
+                    fontSize: 28,
+                    lineHeight: 1,
+                  })}
+                >
+                  {fmtnum(amountToRepay)}
+                </div>
+                <Dropdown
+                  buttonDisplay={() => ({
+                    icon: <TokenIcon symbol={repayToken.symbol} />,
+                    label: (
+                      <>
+                        {repayToken.name}
+                        <span
+                          className={css({
+                            color: "contentAlt",
+                            fontWeight: 400,
+                          })}
+                        >
+                          {repayToken.symbol === "BOLD" ? " account" : " loan"}
+                        </span>
+                      </>
+                    ),
+                  })}
+                  items={(["BOLD", collToken.symbol] as const).map((symbol) => ({
+                    icon: <TokenIcon symbol={symbol} />,
+                    label: (
+                      <div
                         className={css({
-                          color: "contentAlt",
-                          fontWeight: 400,
+                          whiteSpace: "nowrap",
                         })}
                       >
-                        {repayToken.symbol === "BOLD" ? " account" : " loan"}
-                      </span>
-                    </>
-                  ),
-                })}
-                items={(["BOLD", collToken.symbol] as const).map((symbol) => ({
-                  icon: <TokenIcon symbol={symbol} />,
-                  label: (
-                    <div
-                      className={css({
-                        whiteSpace: "nowrap",
-                      })}
-                    >
-                      {TOKENS_BY_SYMBOL[symbol].name} {symbol === "BOLD" ? "(account)" : "(loan collateral)"}
-                    </div>
-                  ),
-                  value: symbol === "BOLD" ? fmtnum(boldBalance.data) : null,
-                }))}
-                menuWidth={300}
-                menuPlacement="end"
-                onSelect={setRepayDropdownIndex}
-                selected={repayDropdownIndex}
-              />
-            </div>
-          }
-          footer={{
-            start: (
-              <Field.FooterInfo
-                label={`$${fmtnum(amountToRepayUsd)}`}
-                value={null}
-              />
-            ),
-          }}
-        />
+                        {TOKENS_BY_SYMBOL[symbol].name} {symbol === "BOLD" ? "(account)" : "(loan collateral)"}
+                      </div>
+                    ),
+                    value: symbol === "BOLD" ? fmtnum(boldBalance.data) : null,
+                  }))}
+                  menuWidth={300}
+                  menuPlacement="end"
+                  onSelect={setRepayDropdownIndex}
+                  selected={repayDropdownIndex}
+                />
+              </div>
+            }
+            footer={{
+              start: (
+                <Field.FooterInfo
+                  label={`$${fmtnum(amountToRepayUsd)}`}
+                  value={null}
+                />
+              ),
+            }}
+          />
+        )}
         <Field
           label="You reclaim collateral"
           field={
@@ -220,7 +225,9 @@ export function PanelClosePosition({
           borderRadius: 8,
         })}
       >
-        {repayToken.symbol === "BOLD"
+        {claimOnly
+          ? content.closeLoan.claimOnly
+          : repayToken.symbol === "BOLD"
           ? content.closeLoan.repayWithBoldMessage
           : content.closeLoan.repayWithCollateralMessage}
       </div>
@@ -245,7 +252,9 @@ export function PanelClosePosition({
 
         <Button
           disabled={!allowSubmit}
-          label="Repay & close"
+          label={claimOnly
+            ? content.closeLoan.buttonReclaimAndClose
+            : content.closeLoan.buttonRepayAndClose}
           mode="primary"
           size="large"
           wide
@@ -261,7 +270,7 @@ export function PanelClosePosition({
                 successMessage: "The loan position has been closed successfully.",
 
                 loan: { ...loan },
-                repayWithCollateral: repayToken.symbol !== "BOLD",
+                repayWithCollateral: claimOnly ? false : repayToken.symbol !== "BOLD",
               });
             }
           }}
