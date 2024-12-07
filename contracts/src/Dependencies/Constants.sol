@@ -12,6 +12,10 @@ uint256 constant _1pct = DECIMAL_PRECISION / 100;
 // Amount of ETH to be locked in gas pool on opening troves
 uint256 constant ETH_GAS_COMPENSATION = 0.0375 ether;
 
+// Liquidation
+uint256 constant MIN_LIQUIDATION_PENALTY_SP = 5e16; // 5%
+uint256 constant MAX_LIQUIDATION_PENALTY_REDISTRIBUTION = 20e16; // 20%
+
 // Fraction of collateral awarded to liquidator
 uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%
 uint256 constant COLL_GAS_COMPENSATION_CAP = 2 ether; // Max coll gas compensation capped at 2 ETH
@@ -23,8 +27,8 @@ uint256 constant MIN_ANNUAL_INTEREST_RATE = _1pct / 2; // 0.5%
 uint256 constant MAX_ANNUAL_INTEREST_RATE = _100pct;
 
 // Batch management params
-uint128 constant MAX_ANNUAL_BATCH_MANAGEMENT_FEE = uint128(_100pct);
-uint128 constant MIN_INTEREST_RATE_CHANGE_PERIOD = 1 seconds; // prevents more than one adjustment per block
+uint128 constant MAX_ANNUAL_BATCH_MANAGEMENT_FEE = uint128(_100pct / 10); // 10%
+uint128 constant MIN_INTEREST_RATE_CHANGE_PERIOD = 120 seconds; // prevents more than one adjustment per ~10 blocks
 
 uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%
 
@@ -35,26 +39,26 @@ uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%
 // but precisely the fact that we have this max value now prevents the attack
 uint256 constant MAX_BATCH_SHARES_RATIO = 1e9;
 
-// Half-life of 12h. 12h = 720 min
-// (1/2) = d^720 => d = (1/2)^(1/720)
-uint256 constant REDEMPTION_MINUTE_DECAY_FACTOR = 999037758833783000;
+// Half-life of 6h. 6h = 360 min
+// (1/2) = d^360 => d = (1/2)^(1/360)
+uint256 constant REDEMPTION_MINUTE_DECAY_FACTOR = 998076443575628800;
 
 // BETA: 18 digit decimal. Parameter by which to divide the redeemed fraction, in order to calc the new base rate from a redemption.
 // Corresponds to (1 / ALPHA) in the white paper.
-uint256 constant REDEMPTION_BETA = 2;
+uint256 constant REDEMPTION_BETA = 1;
 
 // To prevent redemptions unless Bold depegs below 0.95 and allow the system to take off
-uint256 constant INITIAL_BASE_RATE = 5 * _1pct - REDEMPTION_FEE_FLOOR; // 5% initial redemption rate
+uint256 constant INITIAL_BASE_RATE = _100pct; // 100% initial redemption rate
 
 // Discount to be used once the shutdown thas been triggered
-uint256 constant URGENT_REDEMPTION_BONUS = 1e16; // 1%
+uint256 constant URGENT_REDEMPTION_BONUS = 2e16; // 2%
 
 uint256 constant ONE_MINUTE = 1 minutes;
 uint256 constant ONE_YEAR = 365 days;
 uint256 constant UPFRONT_INTEREST_PERIOD = 7 days;
-uint256 constant INTEREST_RATE_ADJ_COOLDOWN = 3 days;
+uint256 constant INTEREST_RATE_ADJ_COOLDOWN = 7 days;
 
-uint256 constant SP_YIELD_SPLIT = 72 * _1pct; // 72%
+uint256 constant SP_YIELD_SPLIT = 75 * _1pct; // 75%
 
 // Dummy contract that lets legacy Hardhat tests query some of the constants
 contract Constants {

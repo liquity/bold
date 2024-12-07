@@ -134,7 +134,7 @@ contract RebasingBatchShares is DevTestSetup {
     // Trigger interest fee by changing the fee to it -1
     function _triggerInterestRateFee() internal {
         // Add Fee?
-        vm.warp(block.timestamp + 1);
+        vm.warp(block.timestamp + MIN_INTEREST_RATE_CHANGE_PERIOD);
         vm.startPrank(B);
         borrowerOperations.setBatchManagerAnnualInterestRate(1e18 - subTractor++, 0, 0, type(uint256).max);
         vm.stopPrank();

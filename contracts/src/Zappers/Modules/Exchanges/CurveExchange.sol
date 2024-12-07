@@ -57,7 +57,7 @@ contract CurveExchange is IExchange {
 
         uint256 currentCollBalance = collToken.balanceOf(address(this));
         if (currentCollBalance > initialCollBalance) {
-            collToken.transfer(msg.sender, currentCollBalance - initialCollBalance);
+            collToken.safeTransfer(msg.sender, currentCollBalance - initialCollBalance);
         }
 
         return output;

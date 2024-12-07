@@ -3,10 +3,13 @@
 pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "../Interfaces/IBoldToken.sol";
 
 contract LeftoversSweep {
+    using SafeERC20 for IERC20;
+
     struct InitialBalances {
         IERC20[4] tokens; // paving the way for completely dynamic routes
         uint256[4] balances;
@@ -51,7 +54,7 @@ contract LeftoversSweep {
 
             uint256 currentBalance = _initialBalances.tokens[i].balanceOf(address(this));
             if (currentBalance > _initialBalances.balances[i]) {
-                _initialBalances.tokens[i].transfer(
+                _initialBalances.tokens[i].safeTransfer(
                     _initialBalances.receiver, currentBalance - _initialBalances.balances[i]
                 );
             }

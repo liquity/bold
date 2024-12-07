@@ -33,5 +33,5 @@ interface IZapper {
 
     function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256);
 
-    function closeTroveFromCollateral(CloseTroveParams calldata _params) external;
+    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external;
 }

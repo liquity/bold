@@ -10,7 +10,7 @@ contract WETHPriceFeed is MainnetPriceFeedBase {
     constructor(address _owner, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold)
         MainnetPriceFeedBase(_owner, _ethUsdOracleAddress, _ethUsdStalenessThreshold)
     {
-        _fetchPricePrimary(false);
+        _fetchPricePrimary();
 
         // Check the oracle didn't already fail
         assert(priceSource == PriceSource.primary);
@@ -33,7 +33,9 @@ contract WETHPriceFeed is MainnetPriceFeedBase {
     //  _fetchPricePrimary returns:
     // - The price
     // - A bool indicating whether a new oracle failure was detected in the call
-    function _fetchPricePrimary(bool _isRedemption) internal virtual returns (uint256, bool) {}
+    function _fetchPricePrimary(bool _isRedemption) internal virtual returns (uint256, bool) {
+        return _fetchPricePrimary();
+    }
 
     function _fetchPricePrimary() internal returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);

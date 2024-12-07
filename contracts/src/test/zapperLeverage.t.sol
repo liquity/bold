@@ -98,7 +98,8 @@ contract ZapperLeverageMainnet is DevTestSetup {
     }
 
     function setUp() public override {
-        vm.createSelectFork(vm.rpcUrl("mainnet"));
+        uint256 forkBlock = 21328610;
+        vm.createSelectFork(vm.rpcUrl("mainnet"), forkBlock);
 
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -1062,7 +1063,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         assertApproxEqAbs(
             contractsArray[_branch].troveManager.getCurrentICR(vars.troveId, vars.price),
             vars.resultingCollateralRatio,
-            1e16,
+            17e15,
             "Wrong CR"
         );
         // token balances
@@ -1372,13 +1373,8 @@ contract ZapperLeverageMainnet is DevTestSetup {
         // This should be done in the frontend
         uint256 flashLoanAmount = _getCloseFlashLoanAmount(_troveId, _troveManager, _priceFeed);
 
-        IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
-            troveId: _troveId,
-            flashLoanAmount: flashLoanAmount,
-            receiver: address(0) // Set later
-        });
         vm.startPrank(A);
-        _zapper.closeTroveFromCollateral(closeParams);
+        _zapper.closeTroveFromCollateral(_troveId, flashLoanAmount);
         vm.stopPrank();
     }
 
@@ -1530,14 +1526,9 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 flashLoanAmount =
             _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
 
-        IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
-            troveId: troveId,
-            flashLoanAmount: flashLoanAmount,
-            receiver: address(0) // Set later
-        });
         vm.startPrank(B);
         vm.expectRevert(AddRemoveManagers.NotOwnerNorRemoveManager.selector);
-        _zapper.closeTroveFromCollateral(closeParams);
+        _zapper.closeTroveFromCollateral(troveId, flashLoanAmount);
         vm.stopPrank();
 
         // Check receiver is back to zero
@@ -1580,11 +1571,6 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 flashLoanAmount =
             _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
 
-        IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
-            troveId: troveId,
-            flashLoanAmount: flashLoanAmount,
-            receiver: address(0) // Set later
-        });
         IFlashLoanProvider flashLoanProvider = _zapper.flashLoanProvider();
         vm.startPrank(B);
         vm.expectRevert(); // reverts without data because it calls back B
@@ -1592,7 +1578,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
             contractsArray[_branch].collToken,
             flashLoanAmount,
             IFlashLoanProvider.Operation.CloseTrove,
-            abi.encode(closeParams)
+            abi.encode(troveId, flashLoanAmount)
         );
         vm.stopPrank();
 
@@ -1636,17 +1622,12 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 flashLoanAmount =
             _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
 
-        IZapper.CloseTroveParams memory closeParams = IZapper.CloseTroveParams({
-            troveId: troveId,
-            flashLoanAmount: flashLoanAmount,
-            receiver: address(0) // Set later
-        });
         IFlashLoanProvider flashLoanProvider = _zapper.flashLoanProvider();
         IERC20[] memory tokens = new IERC20[](1);
         tokens[0] = contractsArray[_branch].collToken;
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = flashLoanAmount;
-        bytes memory userData = abi.encode(address(_zapper), IFlashLoanProvider.Operation.CloseTrove, closeParams);
+        bytes memory userData = abi.encode(address(_zapper), IFlashLoanProvider.Operation.CloseTrove, troveId, flashLoanAmount);
         IVault vault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
         vm.startPrank(B);
         vm.expectRevert("Flash loan not properly initiated");

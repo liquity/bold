@@ -39,6 +39,9 @@ contract TroveManagerTest is DevTestSetup {
 
         uint256 redemptionAmount = 1000e18; // 1k BOLD
 
+        // Wait some time so that redemption rate is not 100%
+        vm.warp(block.timestamp + 7 days);
+
         // C redeems 1k BOLD
         vm.startPrank(C);
         collateralRegistry.redeemCollateral(redemptionAmount, 10, 1e18);
@@ -69,13 +72,13 @@ contract TroveManagerTest is DevTestSetup {
 
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 200 ether, 200000e18, 1e17);
-        // A redeems 0.01 BOLD, base rate goes down to almost zero (it’s updated on redemption)
+        // A redeems 1 wei of BOLD, base rate goes down to almost zero (it’s updated on redemption)
         vm.startPrank(A);
-        collateralRegistry.redeemCollateral(1e16, 10, 1e18);
+        collateralRegistry.redeemCollateral(1, 10, 1e18);
         vm.stopPrank();
 
-        console.log(collateralRegistry.baseRate(), "baseRate");
-        assertLt(collateralRegistry.baseRate(), 3e10); // Goes down below 3e-8, i.e., below 0.000003%
+        //console.log(collateralRegistry.baseRate(), "baseRate");
+        assertLt(collateralRegistry.baseRate(), 20); // Goes down below 2e-16
     }
 
     function testLiquidationSucceedsEvenWhenEncounteringInactiveTroves() public {
