@@ -1,3 +1,5 @@
+"use client";
+
 import type { ComponentPropsWithRef } from "react";
 import type { TextButtonProps } from "./TextButton";
 

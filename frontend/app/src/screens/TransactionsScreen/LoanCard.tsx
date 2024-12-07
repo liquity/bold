@@ -53,7 +53,7 @@ export function LoanCard({
     loan.borrowed,
     loan.interestRate,
     collToken.collateralRatio,
-    collPriceUsd,
+    collPriceUsd.data ?? null,
   );
 
   const prevLoanDetails = prevLoan && getLoanDetails(
@@ -61,7 +61,7 @@ export function LoanCard({
     prevLoan.borrowed,
     prevLoan.interestRate,
     collToken.collateralRatio,
-    collPriceUsd,
+    collPriceUsd.data ?? null,
   );
 
   const {

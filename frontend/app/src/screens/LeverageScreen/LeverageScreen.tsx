@@ -106,7 +106,7 @@ export function LeverageScreen() {
 
   const leverageField = useLeverageField({
     depositPreLeverage: depositPreLeverage.parsed,
-    collPrice: collPrice ?? dn.from(0, 18),
+    collPrice: collPrice.data ?? dn.from(0, 18),
     collToken,
   });
 
@@ -116,9 +116,9 @@ export function LeverageScreen() {
   }, [collToken.symbol, leverageField.leverageFactorSuggestions]);
 
   const redemptionRisk = getRedemptionRisk(interestRate);
-  const depositUsd = depositPreLeverage.parsed && collPrice && dn.mul(
+  const depositUsd = depositPreLeverage.parsed && collPrice.data && dn.mul(
     depositPreLeverage.parsed,
-    collPrice,
+    collPrice.data,
   );
 
   const collBalance = balances[collToken.symbol].data;
@@ -241,10 +241,10 @@ export function LeverageScreen() {
             />
           }
           footer={{
-            start: collPrice && (
+            start: collPrice.data && (
               <Field.FooterInfoCollPrice
                 collName={collToken.name}
-                collPriceUsd={collPrice}
+                collPriceUsd={collPrice.data}
               />
             ),
             end: (

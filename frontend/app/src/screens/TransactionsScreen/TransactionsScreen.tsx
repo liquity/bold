@@ -22,6 +22,12 @@ export type LoadingState =
   | "not-found"
   | "success";
 
+const boxTransitionConfig = {
+  mass: 1,
+  tension: 1800,
+  friction: 120,
+};
+
 export function TransactionsScreen() {
   const {
     currentStep,
@@ -34,26 +40,25 @@ export function TransactionsScreen() {
   const isLastStep = flow?.steps && currentStepIndex === flow.steps.length - 1;
 
   const successMessageTransition = useTransition(isLastStep && currentStep?.txStatus === "confirmed", {
-    from: {
-      height: 0,
-      opacity: 0,
-      transform: "scale(0.9)",
+    from: { height: 0, opacity: 0, transform: "scale(0.9)" },
+    enter: { height: 56, opacity: 1, transform: "scale(1)" },
+    leave: { height: 0, opacity: 0, transform: "scale(1)" },
+    config: boxTransitionConfig,
+  });
+
+  const errorBoxTransition = useTransition(currentStep?.error !== null, {
+    from: { height: 0, opacity: 0, transform: "scale(0.97)" },
+    enter: [
+      { height: 48, opacity: 1, transform: "scale(1)" },
+      { height: "auto" },
+    ],
+    leave: [
+      { height: 48 },
+      { height: 0, opacity: 0, transform: "scale(0.97)" },
+    ],
+    onRest: () => {
     },
-    enter: {
-      height: 56,
-      opacity: 1,
-      transform: "scale(1)",
-    },
-    leave: {
-      height: 0,
-      opacity: 0,
-      transform: "scale(1)",
-    },
-    config: {
-      mass: 1,
-      tension: 1800,
-      friction: 120,
-    },
+    config: boxTransitionConfig,
   });
 
   if (!currentStep || !flow || !fd || !flow.steps) {
@@ -101,8 +106,12 @@ export function TransactionsScreen() {
         <fd.Details flow={flow} />
       </VFlex>
 
-      <VFlex gap={32}>
-        <div>
+      <VFlex gap={0}>
+        <div
+          className={css({
+            paddingBottom: 32,
+          })}
+        >
           {successMessageTransition((style, show) => (
             show && (
               <a.div
@@ -143,6 +152,7 @@ export function TransactionsScreen() {
             flexDirection: "column",
             gap: 16,
             width: "100%",
+            paddingBottom: 32,
           }}
         >
           {currentStep.txStatus === "confirmed"
@@ -224,17 +234,20 @@ export function TransactionsScreen() {
           </div>
         </div>
 
-        {currentStep.error && (
-          <div
-            className={css({
-              marginTop: -8,
-            })}
-          >
-            <ErrorBox title="Error">
-              {currentStep.error}
-            </ErrorBox>
-          </div>
-        )}
+        {errorBoxTransition((style, show) => (
+          show && (
+            <a.div
+              style={{
+                ...style,
+                opacity: style.opacity.to([0, 0.5, 1], [0, 0, 1]),
+              }}
+            >
+              <ErrorBox title="Error">
+                {currentStep.error}
+              </ErrorBox>
+            </a.div>
+          )
+        ))}
       </VFlex>
     </Screen>
   );

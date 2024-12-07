@@ -54,14 +54,12 @@ export function LoanScreen() {
   const loan = useLoanById(paramPrefixedId);
   const loanMode = storedState.loanModes[paramPrefixedId] ?? loan.data?.type ?? "borrow";
 
-  const collateral = getCollToken(loan.data?.collIndex ?? null);
-  const collPriceUsd = usePrice(collateral?.symbol ?? null);
+  const collToken = getCollToken(loan.data?.collIndex ?? null);
+  const collPriceUsd = usePrice(collToken?.symbol ?? null);
 
   const { troveId } = parsePrefixedTroveId(paramPrefixedId);
 
-  const tab = TABS.findIndex(({ id }) => id === action);
-
-  const loadingState = match([loan, collPriceUsd])
+  const loadingState = match([loan, collPriceUsd.data ?? null])
     .returnType<LoanLoadingState>()
     .with(
       P.union(
@@ -108,8 +106,8 @@ export function LoanScreen() {
       }}
       heading={
         <LoanScreenCard
-          collateral={collateral}
-          collPriceUsd={collPriceUsd}
+          collateral={collToken}
+          collPriceUsd={collPriceUsd.data ?? null}
           loadingState={loadingState}
           loan={loan.data ?? null}
           mode={loanMode}
@@ -184,7 +182,7 @@ export function LoanScreen() {
                           panelId: `p-${id}`,
                           tabId: `t-${id}`,
                         }))}
-                        selected={tab}
+                        selected={TABS.findIndex(({ id }) => id === action)}
                         onSelect={(index) => {
                           if (!loan.data) {
                             return;
@@ -243,11 +241,8 @@ function ClaimCollateralSurplus({
     },
   });
 
-  const collSurplusUsd = collPriceUsd && collSurplus.data
-    ? dn.mul(
-      collSurplus.data,
-      collPriceUsd,
-    )
+  const collSurplusUsd = collPriceUsd.data && collSurplus.data
+    ? dn.mul(collSurplus.data, collPriceUsd.data)
     : null;
 
   // const isOwner = account.address && addressesEqual(account.address, loan.borrower);
