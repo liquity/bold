@@ -92,16 +92,18 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
 
     return (
       <>
-        <TransactionDetailsRow
-          label={repayWithCollateral ? "You repay (from collateral)" : "You repay"}
-          value={[
-            <Amount
-              key="start"
-              value={amountToRepay}
-              suffix={` ${repayWithCollateral ? collateral.symbol : "BOLD"}`}
-            />,
-          ]}
-        />
+        {dn.gt(amountToRepay, 0) && (
+          <TransactionDetailsRow
+            label={repayWithCollateral ? "You repay (from collateral)" : "You repay"}
+            value={[
+              <Amount
+                key="start"
+                value={amountToRepay}
+                suffix={` ${repayWithCollateral ? collateral.symbol : "BOLD"}`}
+              />,
+            ]}
+          />
+        )}
         <TransactionDetailsRow
           label="You reclaim collateral"
           value={[
@@ -213,8 +215,8 @@ export const closeLoanPosition: FlowDeclaration<Request, Step> = {
     if (stepId === "closeLoanPositionFromCollateral") {
       const closeFlashLoanAmount = await getCloseFlashLoanAmount(loan.collIndex, loan.troveId, wagmiConfig);
 
-      if (!closeFlashLoanAmount) {
-        throw new Error("Could not calculate closeFlashLoanAmount");
+      if (closeFlashLoanAmount === null) {
+        throw new Error("The flash loan amount could not be calculated.");
       }
 
       const closeParams = {

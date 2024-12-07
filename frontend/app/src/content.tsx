@@ -165,6 +165,11 @@ export default {
   },
 
   closeLoan: {
+    claimOnly: (
+      <>
+        You are reclaiming your collateral and closing the position. The deposit will be returned to your wallet.
+      </>
+    ),
     repayWithBoldMessage: (
       <>
         You are repaying your debt and closing the position. The deposit will be returned to your wallet.
@@ -176,6 +181,8 @@ export default {
         will be returned to your wallet.
       </>
     ),
+    buttonRepayAndClose: "Repay & close",
+    buttonReclaimAndClose: "Reclaim & close",
   },
 
   // Home screen
