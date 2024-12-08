@@ -4,6 +4,8 @@ pragma solidity 0.8.24;
 import {StdCheats} from "forge-std/StdCheats.sol";
 import {IERC20Metadata} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
+import {IERC20 as IERC20_GOV} from "openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 import {StringFormatting} from "../test/Utils/StringFormatting.sol";
 import {Accounts} from "../test/TestContracts/Accounts.sol";
 import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
@@ -249,7 +251,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             balancerFactory = balancerFactorySepolia;
             // Needed for Governance (they will be constants for mainnet)
             lqty = address(new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days));
-            stakingV1 = address(new MockStakingV1(lqty));
+            ERC20Faucet lusd = new ERC20Faucet("Liquity USD", "LUSD", 100 ether, 1 days);
+            stakingV1 = address(new MockStakingV1(IERC20_GOV(lqty), IERC20_GOV(address(lusd))));
         }
 
 

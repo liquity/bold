@@ -121,7 +121,6 @@ contract DeployGovernance is Script, Deployers {
             registrationFee: REGISTRATION_FEE,
             registrationThresholdFactor: REGISTRATION_THRESHOLD_FACTOR,
             unregistrationThresholdFactor: UNREGISTRATION_THRESHOLD_FACTOR,
-            registrationWarmUpPeriod: REGISTRATION_WARM_UP_PERIOD,
             unregistrationAfterEpochs: UNREGISTRATION_AFTER_EPOCHS,
             votingThresholdFactor: VOTING_THRESHOLD_FACTOR,
             minClaim: MIN_CLAIM,
