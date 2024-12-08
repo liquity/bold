@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {DeployGovernance, ICurveStableswapNG} from "./DeployGovernance.s.sol";
+import {DeployGovernance} from "./DeployGovernance.s.sol";
 
 import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
 
@@ -10,7 +10,8 @@ import "forge-std/console2.sol";
 contract DeployOnlyGovernance is DeployGovernance {
     ERC20Faucet constant boldToken = ERC20Faucet(0x0E18B884eC3095F7C27bbbeB0a266a5674BCAffd);
     ERC20Faucet constant usdc = ERC20Faucet(0xF00ad39d0aC1A422DAB5A2EceBAa5268ea909aD4);
-    ICurveStableswapNG constant usdcCurvePool = ICurveStableswapNG(0xA02aEa0F1bCCa66FFa56071E5C7058ccA9B92E2b);
+    address private constant curveFactoryAddress = 0xfb37b8D939FFa77114005e61CFc2e543d6F49A81;
+    address constant usdcCurvePoolAddress = 0xA02aEa0F1bCCa66FFa56071E5C7058ccA9B92E2b;
 
     bytes32 SALT;
     address deployer;
@@ -32,6 +33,6 @@ contract DeployOnlyGovernance is DeployGovernance {
         console2.log(deployer, "deployer");
         console2.log(deployer.balance, "deployer balance");
 
-        deployGovernance(deployer, SALT, boldToken, usdc, usdcCurvePool);
+        deployGovernance(deployer, SALT, boldToken, usdc, curveFactoryAddress, usdcCurvePoolAddress);
     }
 }
