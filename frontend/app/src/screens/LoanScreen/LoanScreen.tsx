@@ -58,6 +58,7 @@ export function LoanScreen() {
   const collPriceUsd = usePrice(collToken?.symbol ?? null);
 
   const { troveId } = parsePrefixedTroveId(paramPrefixedId);
+  const fullyRedeemed = loan.data && loan.data.status === "redeemed" && dn.eq(loan.data.borrowed, 0);
 
   const loadingState = match([loan, collPriceUsd.data ?? null])
     .returnType<LoanLoadingState>()
@@ -150,29 +151,25 @@ export function LoanScreen() {
                       {loan.data.status === "redeemed" && (
                         <div
                           className={css({
-                            paddingBottom: 32,
+                            display: "flex",
+                            alignItems: "center",
+                            height: 64,
+                            padding: 16,
+                            background: "infoSurface",
+                            border: "1px solid token(colors.infoSurfaceBorder)",
+                            borderRadius: 8,
                           })}
                         >
                           <div
                             className={css({
                               display: "flex",
-                              alignItems: "center",
-                              height: 64,
-                              padding: 16,
-                              background: "infoSurface",
-                              border: "1px solid token(colors.infoSurfaceBorder)",
-                              borderRadius: 8,
+                              gap: 8,
                             })}
                           >
-                            <div
-                              className={css({
-                                display: "flex",
-                                gap: 8,
-                              })}
-                            >
-                              This loan has been partially redeemed.
-                              <InfoTooltip content={content.generalInfotooltips.redeemedLoan} />
-                            </div>
+                            {fullyRedeemed
+                              ? "This loan has been fully redeemed."
+                              : "This loan has been partially redeemed."}
+                            <InfoTooltip content={content.generalInfotooltips.redeemedLoan} />
                           </div>
                         </div>
                       )}
