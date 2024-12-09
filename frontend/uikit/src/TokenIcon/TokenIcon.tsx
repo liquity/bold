@@ -1,3 +1,5 @@
+"use client";
+
 import type { ComponentProps, ReactElement } from "react";
 import type { Token } from "../types";
 

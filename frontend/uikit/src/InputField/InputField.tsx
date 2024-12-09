@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 
 import { a, useSpring, useTransition } from "@react-spring/web";

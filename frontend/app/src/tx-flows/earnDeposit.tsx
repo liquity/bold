@@ -76,7 +76,7 @@ export const earnDeposit: FlowDeclaration<Request, Step> = {
             <Amount
               key="end"
               prefix="$"
-              value={boldPrice && dn.mul(boldAmount, boldPrice)}
+              value={boldPrice.data && dn.mul(boldAmount, boldPrice.data)}
             />,
           ]}
         />
