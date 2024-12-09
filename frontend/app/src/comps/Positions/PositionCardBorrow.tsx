@@ -160,7 +160,7 @@ export function PositionCardBorrow({
                       color: "positionContent",
                     })}
                   >
-                    {formatLiquidationRisk(liquidationRisk)}
+                    {liquidationRisk && formatLiquidationRisk(liquidationRisk)}
                   </div>
                   <StatusDot
                     mode={riskLevelToStatusMode(liquidationRisk)}

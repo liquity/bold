@@ -1,6 +1,6 @@
 "use client";
 
-import type { CollateralSymbol, Entries, TokenSymbol } from "@/src/types";
+import type { CollateralSymbol, TokenSymbol } from "@/src/types";
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { Dnum } from "dnum";
 
