@@ -240,8 +240,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             balancerFactory = balancerFactoryMainnet;
             lqty = LQTY_ADDRESS;
             stakingV1 = LQTY_STAKING_ADDRESS;
-        } else { // sepolia
-            WETH = new WETHTester({_tapAmount: 0, _tapPeriod: type(uint256).max});
+        } else { // sepolia, local
+            if (block.chainid == 31337) { // local
+                WETH = new WETHTester({_tapAmount: 100 ether, _tapPeriod: 1 days});
+            } else { // sepolia
+                WETH = new WETHTester({_tapAmount: 0, _tapPeriod: type(uint256).max});
+            }
             USDC = new ERC20Faucet("USDC", "USDC", 0, type(uint256).max);
             curveStableswapFactory = curveStableswapFactorySepolia;
             uniV3Router = uniV3RouterSepolia;
@@ -723,6 +727,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     }
 
     function _deployCurveBoldUsdcPool(IBoldToken _boldToken) internal returns (ICurveStableswapNGPool) {
+        if (block.chainid == 31337) { // local
+            return ICurveStableswapNGPool(address(0));
+        }
+
         // deploy Curve StableswapNG pool
         address[] memory coins = new address[](2);
         coins[BOLD_TOKEN_INDEX] = address(_boldToken);
