@@ -243,11 +243,8 @@ contract GasCompZapper is BaseZapper {
     function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external override {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
-        CloseTroveParams memory params = CloseTroveParams({
-            troveId: _troveId,
-            flashLoanAmount: _flashLoanAmount,
-            receiver: receiver
-        });
+        CloseTroveParams memory params =
+            CloseTroveParams({troveId: _troveId, flashLoanAmount: _flashLoanAmount, receiver: receiver});
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;

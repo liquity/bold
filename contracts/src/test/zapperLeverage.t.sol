@@ -1627,7 +1627,8 @@ contract ZapperLeverageMainnet is DevTestSetup {
         tokens[0] = contractsArray[_branch].collToken;
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = flashLoanAmount;
-        bytes memory userData = abi.encode(address(_zapper), IFlashLoanProvider.Operation.CloseTrove, troveId, flashLoanAmount);
+        bytes memory userData =
+            abi.encode(address(_zapper), IFlashLoanProvider.Operation.CloseTrove, troveId, flashLoanAmount);
         IVault vault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
         vm.startPrank(B);
         vm.expectRevert("Flash loan not properly initiated");

@@ -33,7 +33,7 @@ contract WETHPriceFeed is MainnetPriceFeedBase {
     //  _fetchPricePrimary returns:
     // - The price
     // - A bool indicating whether a new oracle failure was detected in the call
-    function _fetchPricePrimary(bool /* _isRedemption */) internal virtual returns (uint256, bool) {
+    function _fetchPricePrimary(bool /* _isRedemption */ ) internal virtual returns (uint256, bool) {
         return _fetchPricePrimary();
     }
 
