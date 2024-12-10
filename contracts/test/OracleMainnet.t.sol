@@ -6,6 +6,8 @@ import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/MainnetPriceFeedBase.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
+import "src/PriceFeeds/ChainlinkPriceFeed.sol";
+import "src/PriceFeeds/CompositeChainlinkPriceFeed.sol";
 
 import "./TestContracts/Accounts.sol";
 import "./TestContracts/ChainlinkOracleMock.sol";
@@ -16,6 +18,8 @@ import "./TestContracts/Deployment.t.sol";
 import "src/Dependencies/AggregatorV3Interface.sol";
 import "src/Interfaces/IRETHPriceFeed.sol";
 import "src/Interfaces/IWSTETHPriceFeed.sol";
+import "src/Interfaces/IChainlinkPriceFeed.sol";
+import "src/Interfaces/ICompositeChainlinkPriceFeed.sol";
 
 import "src/Interfaces/IRETHToken.sol";
 import "src/Interfaces/IWSTETH.sol";
@@ -27,12 +31,16 @@ contract OraclesMainnet is TestAccounts {
     AggregatorV3Interface ethOracle;
     AggregatorV3Interface stethOracle;
     AggregatorV3Interface rethOracle;
+    AggregatorV3Interface aaveOracle;
+    AggregatorV3Interface ldoOracle;
 
     ChainlinkOracleMock mockOracle;
 
     IMainnetPriceFeed wethPriceFeed;
     IRETHPriceFeed rethPriceFeed;
     IWSTETHPriceFeed wstethPriceFeed;
+    IChainlinkPriceFeed aavePriceFeed;
+    ICompositeChainlinkPriceFeed ldoPriceFeed;
 
     IRETHToken rethToken;
     IWSTETH wstETH;
@@ -86,6 +94,8 @@ contract OraclesMainnet is TestAccounts {
         ethOracle = AggregatorV3Interface(result.externalAddresses.ETHOracle);
         rethOracle = AggregatorV3Interface(result.externalAddresses.RETHOracle);
         stethOracle = AggregatorV3Interface(result.externalAddresses.STETHOracle);
+        aaveOracle = AggregatorV3Interface(0x547a514d5e3769680Ce22B2361c10Ea13619e8a9);
+        ldoOracle = AggregatorV3Interface(0x4e844125952D32AcdF339BE976c98E22F6F318dB);
 
         mockOracle = new ChainlinkOracleMock();
 
@@ -120,6 +130,8 @@ contract OraclesMainnet is TestAccounts {
         wethPriceFeed = IMainnetPriceFeed(address(contractsArray[0].priceFeed));
         rethPriceFeed = IRETHPriceFeed(address(contractsArray[1].priceFeed));
         wstethPriceFeed = IWSTETHPriceFeed(address(contractsArray[2].priceFeed));
+        aavePriceFeed = new ChainlinkPriceFeed(address(deployer), address(aaveOracle), _24_HOURS);
+        ldoPriceFeed = new CompositeChainlinkPriceFeed(address(deployer), address(ethOracle), address(ldoOracle), _24_HOURS, _24_HOURS);
 
         // log some current blockchain state
         // console2.log(block.timestamp, "block.timestamp");
@@ -266,6 +278,27 @@ contract OraclesMainnet is TestAccounts {
         uint256 expectedFetchedPrice = latestAnswerStethUsd * stethWstethExchangeRate / 1e18;
 
         assertEq(fetchedStethUsdPrice, expectedFetchedPrice);
+    }
+
+    function testFetchPriceReturnsCorrectPriceAave() public {
+        (uint256 fetchedAaveUsdPrice,) = aavePriceFeed.fetchPrice();
+        assertGt(fetchedAaveUsdPrice, 0);
+
+        uint256 latestAnswerAaveUsd = _getLatestAnswerFromOracle(aaveOracle);
+
+        assertEq(fetchedAaveUsdPrice, latestAnswerAaveUsd);
+    }
+
+    function testFetchPriceReturnsCorrectPriceLdo() public {
+        (uint256 fetchedLdoUsdPrice,) = ldoPriceFeed.fetchPrice();
+        assertGt(fetchedLdoUsdPrice, 0);
+
+        uint256 latestAnswerLdoEth = _getLatestAnswerFromOracle(ldoOracle);
+        uint256 latestAnswerEthUsd = _getLatestAnswerFromOracle(ethOracle);
+
+        uint256 expectedPrice = latestAnswerLdoEth * latestAnswerEthUsd / 1e18;
+
+        assertEq(fetchedLdoUsdPrice, expectedPrice);
     }
 
     // --- Thresholds set at deployment ---
