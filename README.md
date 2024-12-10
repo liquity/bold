@@ -1603,7 +1603,7 @@ cd contracts
 pnpm tsx utils/deployment-manifest-to-app-env.ts deployment-manifest.json
 
 # We are now ready to pass the deployed contracts to the app:
-cd ../frontend
+cd ../frontend/app
 
 # Copy the example .env file:
 cp .env .env.local
