@@ -27,8 +27,8 @@ export const AnchorTextButton = forwardRef<
     <a
       ref={ref}
       className={cx(
-        props.className,
         textButtonStyles.className,
+        props.className,
       )}
       {...externalProps}
       {...props}

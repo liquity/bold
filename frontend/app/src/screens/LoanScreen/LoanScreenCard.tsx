@@ -34,7 +34,7 @@ import { a, useTransition } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { match, P } from "ts-pattern";
 
 type LoanMode = "borrow" | "leverage";
@@ -335,30 +335,7 @@ function LoanCard({
   nftUrl: string | null;
   onLeverageModeChange: (mode: LoanMode) => void;
 }) {
-  const [notifyCopy, setNotifyCopy] = useState(false);
-
-  useEffect(() => {
-    if (!notifyCopy) {
-      return;
-    }
-    const timeout = setTimeout(() => {
-      setNotifyCopy(false);
-    }, 500);
-    return () => {
-      clearTimeout(timeout);
-    };
-  }, [notifyCopy]);
-
-  const notifyCopyTransition = useTransition(notifyCopy, {
-    from: { opacity: 0, transform: "scale(0.9)" },
-    enter: { opacity: 1, transform: "scale(1)" },
-    leave: { opacity: 0, transform: "scale(1)" },
-    config: {
-      mass: 1,
-      tension: 2000,
-      friction: 80,
-    },
-  });
+  const notifyCopy = useNotifyCopy();
 
   const cardTransition = useTransition(props, {
     keys: (props) => props.mode,
@@ -474,7 +451,7 @@ function LoanCard({
                       right: 16,
                     })}
                   >
-                    {notifyCopyTransition((style, show) => (
+                    {notifyCopy.transition((style, show) => (
                       show && (
                         <a.div
                           className={css({
@@ -604,7 +581,7 @@ function LoanCard({
                         }
                         if (index === 1) {
                           navigator.clipboard.writeText(window.location.href);
-                          setNotifyCopy(true);
+                          notifyCopy.notify();
                         }
                         if (index === 2) {
                           window.open(`${CHAIN_BLOCK_EXPLORER?.url}address/${loan.borrower}`);
@@ -620,8 +597,6 @@ function LoanCard({
                   className={css({
                     display: "flex",
                     flexDirection: "column",
-                    // alignItems: "center",
-                    // justifyContent: "space-between",
                   })}
                 >
                   <div
@@ -846,4 +821,36 @@ function LoanCard({
       })}
     </div>
   );
+}
+
+function useNotifyCopy() {
+  const [notifyCopy, setNotifyCopy] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const notify = useCallback(() => {
+    clearTimeout(timeoutRef.current);
+    setNotifyCopy(true);
+    timeoutRef.current = setTimeout(() => {
+      setNotifyCopy(false);
+    }, 500);
+  }, []);
+
+  const transition = useTransition(notifyCopy, {
+    from: { opacity: 0, transform: "scale(0.9)" },
+    enter: { opacity: 1, transform: "scale(1)" },
+    leave: { opacity: 0, transform: "scale(1)" },
+    config: {
+      mass: 1,
+      tension: 2000,
+      friction: 80,
+    },
+  });
+
+  useEffect(() => {
+    return () => {
+      clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  return { notify, transition };
 }
