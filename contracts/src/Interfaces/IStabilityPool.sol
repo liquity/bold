@@ -105,4 +105,13 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     function P() external view returns (uint256);
     function currentScale() external view returns (uint128);
     function currentEpoch() external view returns (uint128);
+
+    function collateralSwapIn(
+        uint256 _colleteralAmountIn,
+        uint256 _boldAmountOut,
+        address _swapper
+    ) external;
+
+    function setBroker(address _broker) external;
+
 }
