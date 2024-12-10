@@ -24,7 +24,6 @@ export function ProtocolStats() {
       className={css({
         display: "flex",
         width: "100%",
-        padding: "0 24px",
       })}
     >
       <div

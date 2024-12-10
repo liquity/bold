@@ -4,12 +4,13 @@ import "@liquity2/uikit/index.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-import { AboutModal } from "@/src/comps/AboutModal/AboutModal";
+import { About } from "@/src/comps/About/About";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import content from "@/src/content";
 import { DemoMode } from "@/src/demo-mode";
 import { VERCEL_ANALYTICS } from "@/src/env";
 import { Ethereum } from "@/src/services/Ethereum";
+import { ReactQuery } from "@/src/services/ReactQuery";
 import { StoredState } from "@/src/services/StoredState";
 import { TransactionFlow } from "@/src/services/TransactionFlow";
 import { UiKit } from "@liquity2/uikit";
@@ -30,19 +31,21 @@ export default function Layout({
     <html lang="en">
       <body className={GeistSans.className}>
         <UiKit>
-          <StoredState>
-            <DemoMode>
-              <Ethereum>
-                <TransactionFlow>
-                  <AboutModal>
-                    <AppLayout>
-                      {children}
-                    </AppLayout>
-                  </AboutModal>
-                </TransactionFlow>
-              </Ethereum>
-            </DemoMode>
-          </StoredState>
+          <ReactQuery>
+            <StoredState>
+              <DemoMode>
+                <Ethereum>
+                  <TransactionFlow>
+                    <About>
+                      <AppLayout>
+                        {children}
+                      </AppLayout>
+                    </About>
+                  </TransactionFlow>
+                </Ethereum>
+              </DemoMode>
+            </StoredState>
+          </ReactQuery>
         </UiKit>
         {VERCEL_ANALYTICS && <Analytics />}
       </body>
