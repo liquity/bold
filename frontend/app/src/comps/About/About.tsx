@@ -250,16 +250,16 @@ export function About({ children }: { children: ReactNode }) {
 function ModalTitle() {
   const logoSpring = useSpring({
     from: {
-      containerWidth: 0,
+      containerProgress: 0,
       transform: `
-        translateX(-40px)
-        rotate(-280deg)
+        translateX(-64px)
+        rotate(-240deg)
       `,
     },
     to: {
-      containerWidth: 56,
+      containerProgress: 1,
       transform: `
-        translateX(-16px)
+        translateX(0px)
         rotate(0deg)
       `,
     },
@@ -268,6 +268,7 @@ function ModalTitle() {
       mass: 1,
       tension: 800,
       friction: 80,
+      precision: 0.001,
     },
   });
   return (
@@ -285,11 +286,11 @@ function ModalTitle() {
         className={css({
           display: "flex",
           alignItems: "center",
-          justifyContent: "flex-end",
+          justifyContent: "flex-start",
           height: 40,
         })}
         style={{
-          width: logoSpring.containerWidth,
+          width: logoSpring.containerProgress.to([0, 0.5, 1], [0, 0, 56]),
         }}
       >
         <a.div
