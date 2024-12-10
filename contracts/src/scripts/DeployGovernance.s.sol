@@ -91,7 +91,8 @@ contract DeployGovernance is Script, Deployers {
         deployUniV4Donations(governance, _boldToken, _usdc);
 
         // Curve initiative
-        if (block.chainid == 1) { // mainnet
+        if (block.chainid == 1) {
+            // mainnet
             deployCurveV2GaugeRewards(governance, _boldToken, _curveFactoryAddress, _curvePoolAddress);
         }
 

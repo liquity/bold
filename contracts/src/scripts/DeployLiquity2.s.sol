@@ -229,7 +229,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         console2.log(deployer.balance, "deployer balance");
         console2.log("Use Testnet PriceFeeds: ", useTestnetPriceFeeds);
 
-        if (block.chainid == 1) { // mainnet
+        if (block.chainid == 1) {
+            // mainnet
             WETH = IWETH(WETH_ADDRESS);
             USDC = IERC20(USDC_ADDRESS);
             curveStableswapFactory = curveStableswapFactoryMainnet;
@@ -240,10 +241,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             balancerFactory = balancerFactoryMainnet;
             lqty = LQTY_ADDRESS;
             stakingV1 = LQTY_STAKING_ADDRESS;
-        } else { // sepolia, local
-            if (block.chainid == 31337) { // local
+        } else {
+            // sepolia, local
+            if (block.chainid == 31337) {
+                // local
                 WETH = new WETHTester({_tapAmount: 100 ether, _tapPeriod: 1 days});
-            } else { // sepolia
+            } else {
+                // sepolia
                 WETH = new WETHTester({_tapAmount: 0, _tapPeriod: type(uint256).max});
             }
             USDC = new ERC20Faucet("USDC", "USDC", 0, type(uint256).max);
@@ -259,7 +263,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             stakingV1 = address(new MockStakingV1(IERC20_GOV(lqty), IERC20_GOV(address(lusd))));
         }
 
-
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](3);
         // TODO: move params out of here
         troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WETH
@@ -273,8 +276,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collNames[1] = "Rocket Pool ETH";
         collSymbols[1] = "rETH";
 
-        DeploymentResult memory deployed =
-            _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols);
+        DeploymentResult memory deployed = _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols);
 
         if (block.chainid == 11155111) {
             // Provide liquidity for zaps if we're on Sepolia
@@ -286,12 +288,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                     // WETH, we do USDC-WETH
                     (uint256 price,) = deployed.contractsArray[0].priceFeed.fetchPrice();
                     uint256 token1Amount = 1_000_000 ether;
-                    _provideUniV3Liquidity(ERC20Faucet(address(USDC)), ERC20Faucet(address(WETH)), token1Amount, price, UNIV3_FEE_USDC_WETH);
+                    _provideUniV3Liquidity(
+                        ERC20Faucet(address(USDC)), ERC20Faucet(address(WETH)), token1Amount, price, UNIV3_FEE_USDC_WETH
+                    );
                 } else {
                     // LSTs, we do WETH-LST
                     uint256 token1Amount = 1_000 ether;
                     _provideUniV3Liquidity(
-                        ERC20Faucet(address(WETH)), ERC20Faucet(address(deployed.contractsArray[i].collToken)), token1Amount, 1 ether, UNIV3_FEE_WETH_COLL
+                        ERC20Faucet(address(WETH)),
+                        ERC20Faucet(address(deployed.contractsArray[i].collToken)),
+                        token1Amount,
+                        1 ether,
+                        UNIV3_FEE_WETH_COLL
                     );
                 }
             }
@@ -393,9 +401,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
     }
 
-    function openDemoTroves(DemoTroveParams[] memory demoTroves, LiquityContracts[] memory contractsArray)
-        internal
-    {
+    function openDemoTroves(DemoTroveParams[] memory demoTroves, LiquityContracts[] memory contractsArray) internal {
         for (uint256 i = 0; i < demoTroves.length; i++) {
             DemoTroveParams memory trove = demoTroves[i];
             LiquityContracts memory contracts = contractsArray[trove.collIndex];
@@ -461,14 +467,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
-        if (block.chainid == 1 && !useTestnetPriceFeeds) { // mainnet
+        if (block.chainid == 1 && !useTestnetPriceFeeds) {
+            // mainnet
             // ETH
             vars.collaterals[0] = IERC20Metadata(WETH);
-            vars.priceFeeds[0] = new WETHPriceFeed(
-                deployer,
-                ETH_ORACLE_ADDRESS,
-                ETH_USD_STALENESS_THRESHOLD
-            );
+            vars.priceFeeds[0] = new WETHPriceFeed(deployer, ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD);
 
             // wstETH
             vars.collaterals[1] = IERC20Metadata(WSTETH_ADDRESS);
@@ -491,7 +494,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 ETH_USD_STALENESS_THRESHOLD,
                 RETH_ETH_STALENESS_THRESHOLD
             );
-        } else { // Sepolia
+        } else {
+            // Sepolia
             // Use WETH as collateral for the first branch
             vars.collaterals[0] = WETH;
             vars.priceFeeds[0] = new PriceFeedTestnet();
@@ -727,7 +731,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     }
 
     function _deployCurveBoldUsdcPool(IBoldToken _boldToken) internal returns (ICurveStableswapNGPool) {
-        if (block.chainid == 31337) { // local
+        if (block.chainid == 31337) {
+            // local
             return ICurveStableswapNGPool(address(0));
         }
 
@@ -798,9 +803,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
     }
 
-    function _mintBold(uint256 _boldAmount, uint256 _price, LiquityContracts memory _contracts)
-        internal
-    {
+    function _mintBold(uint256 _boldAmount, uint256 _price, LiquityContracts memory _contracts) internal {
         uint256 collAmount = _boldAmount * 2 ether / _price; // CR of ~200%
 
         ERC20Faucet(address(_contracts.collToken)).mint(deployer, collAmount);
@@ -918,10 +921,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         return uint160(Math.sqrt((_price << 192) / DECIMAL_PRECISION));
     }
 
-    function _provideCurveLiquidity(
-        IBoldToken _boldToken,
-        LiquityContracts memory _contracts
-    ) internal {
+    function _provideCurveLiquidity(IBoldToken _boldToken, LiquityContracts memory _contracts) internal {
         ICurveStableswapNGPool usdcCurvePool =
             HybridCurveUniV3Exchange(address(_contracts.leverageZapper.exchange())).curvePool();
         // Add liquidity to USDC-BOLD
