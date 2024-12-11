@@ -15,6 +15,7 @@ import "../../SortedTroves.sol";
 import "../../StabilityPool.sol";
 import "./BorrowerOperationsTester.t.sol";
 import "./TroveManagerTester.t.sol";
+import "./CollateralRegistryTester.sol";
 import "../../TroveNFT.sol";
 import "../../NFTMetadata/MetadataNFT.sol";
 import "../../CollateralRegistry.sol";
@@ -148,7 +149,7 @@ contract TestDeployer is MetadataDeployment {
     struct DeploymentResultMainnet {
         LiquityContracts[] contractsArray;
         ExternalAddresses externalAddresses;
-        ICollateralRegistry collateralRegistry;
+        CollateralRegistryTester collateralRegistry;
         IBoldToken boldToken;
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
@@ -574,7 +575,7 @@ contract TestDeployer is MetadataDeployment {
         vars.troveManagers[2] = ITroveManager(troveManagerAddress);
 
         // Deploy registry and register the TMs
-        result.collateralRegistry = new CollateralRegistry(result.boldToken, vars.collaterals, vars.troveManagers);
+        result.collateralRegistry = new CollateralRegistryTester(result.boldToken, vars.collaterals, vars.troveManagers);
 
         result.hintHelpers = new HintHelpers(result.collateralRegistry);
         result.multiTroveGetter = new MultiTroveGetter(result.collateralRegistry);
