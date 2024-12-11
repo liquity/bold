@@ -46,7 +46,6 @@ const ZDeploymentManifest = z.object({
       collToken: ZAddress,
       defaultPool: ZAddress,
       gasPool: ZAddress,
-      interestRouter: ZAddress,
       leverageZapper: ZAddress,
       metadataNFT: ZAddress,
       priceFeed: ZAddress,

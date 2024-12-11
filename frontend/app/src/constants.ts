@@ -30,6 +30,7 @@ export const UPFRONT_INTEREST_PERIOD = 7n * ONE_DAY_IN_SECONDS;
 export const SP_YIELD_SPLIT = 72n * 10n ** 16n; // 72%
 
 export const DATA_REFRESH_INTERVAL = 30_000;
+export const PRICE_REFRESH_INTERVAL = 60_000;
 
 export const LEVERAGE_MAX_SLIPPAGE = 0.05; // 5%
 export const CLOSE_FROM_COLLATERAL_SLIPPAGE = 0.05; // 5%

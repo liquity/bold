@@ -39,7 +39,7 @@ export function PositionCardBorrow({
   const token = getCollToken(collIndex);
   const collateralPriceUsd = usePrice(token?.symbol ?? null);
 
-  const ltv = collateralPriceUsd && getLtv(deposit, borrowed, collateralPriceUsd);
+  const ltv = collateralPriceUsd.data && getLtv(deposit, borrowed, collateralPriceUsd.data);
   const redemptionRisk = getRedemptionRisk(interestRate);
 
   const maxLtv = token && dn.from(1 / token.collateralRatio, 18);
@@ -160,7 +160,7 @@ export function PositionCardBorrow({
                       color: "positionContent",
                     })}
                   >
-                    {formatLiquidationRisk(liquidationRisk)}
+                    {liquidationRisk && formatLiquidationRisk(liquidationRisk)}
                   </div>
                   <StatusDot
                     mode={riskLevelToStatusMode(liquidationRisk)}

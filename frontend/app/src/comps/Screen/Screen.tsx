@@ -48,19 +48,21 @@ export function Screen({
     from: {
       opacity: 0,
       transform: `
-        translate(0, 48px)
+        scale3d(0.95, 0.95, 1)
+        translate(0, 12px)
       `,
     },
     to: {
       opacity: 1,
       transform: `
+        scale3d(1, 1, 1)
         translate(0, 0px)
       `,
     },
     config: {
       mass: 1,
       tension: 2200,
-      friction: 220,
+      friction: 120,
     },
   });
 
@@ -79,11 +81,11 @@ export function Screen({
         translate3d(0, 0px, 0)
       `,
     },
-    delay: 150,
+    delay: 100,
     config: {
-      mass: 2,
-      tension: 2400,
-      friction: 220,
+      mass: 1,
+      tension: 2200,
+      friction: 120,
     },
   });
 
