@@ -134,9 +134,9 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
                 36,
                 "Wrong batch management fee accrual"
             );
-            assertEqDecimal(weth.balanceOf(address(c.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool");
+            assertEqDecimal(weth.balanceOf(address(c.pools.gasPool)), handler.getGasPool(i), 18, "Wrong GasPool");
             assertApproxEqAbsDecimal(
-                c.collSurplusPool.getCollBalance(), handler.collSurplus(i), 10, 18, "Wrong CollSurplusPool"
+                c.pools.collSurplusPool.getCollBalance(), handler.collSurplus(i), 10, 18, "Wrong CollSurplusPool"
             );
             assertApproxEqAbsDecimal(
                 c.stabilityPool.getTotalBoldDeposits(),

@@ -73,20 +73,24 @@ contract TestDeployer is MetadataDeployment {
 
     bytes32 constant SALT = keccak256("LiquityV2");
 
+    struct LiquityContractsDevPools {
+        IDefaultPool defaultPool;
+        ICollSurplusPool collSurplusPool;
+        GasPool gasPool;
+    }
+
     struct LiquityContractsDev {
         IAddressesRegistry addressesRegistry;
-        IActivePool activePool;
         IBorrowerOperationsTester borrowerOperations; // Tester
-        ICollSurplusPool collSurplusPool;
-        IDefaultPool defaultPool;
         ISortedTroves sortedTroves;
+        IActivePool activePool;
         IStabilityPool stabilityPool;
         ITroveManagerTester troveManager; // Tester
         ITroveNFT troveNFT;
         IPriceFeedTestnet priceFeed; // Tester
-        GasPool gasPool;
         IInterestRouter interestRouter;
         IERC20Metadata collToken;
+        LiquityContractsDevPools pools;
     }
 
     struct LiquityContracts {
@@ -457,9 +461,9 @@ contract TestDeployer is MetadataDeployment {
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
-        contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
-        contracts.gasPool = new GasPool{salt: SALT}(contracts.addressesRegistry);
-        contracts.collSurplusPool = new CollSurplusPool{salt: SALT}(contracts.addressesRegistry);
+        contracts.pools.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
+        contracts.pools.gasPool = new GasPool{salt: SALT}(contracts.addressesRegistry);
+        contracts.pools.collSurplusPool = new CollSurplusPool{salt: SALT}(contracts.addressesRegistry);
         contracts.sortedTroves = new SortedTroves{salt: SALT}(contracts.addressesRegistry);
 
         assert(address(contracts.borrowerOperations) == addresses.borrowerOperations);
@@ -467,9 +471,9 @@ contract TestDeployer is MetadataDeployment {
         assert(address(contracts.troveNFT) == addresses.troveNFT);
         assert(address(contracts.stabilityPool) == addresses.stabilityPool);
         assert(address(contracts.activePool) == addresses.activePool);
-        assert(address(contracts.defaultPool) == addresses.defaultPool);
-        assert(address(contracts.gasPool) == addresses.gasPool);
-        assert(address(contracts.collSurplusPool) == addresses.collSurplusPool);
+        assert(address(contracts.pools.defaultPool) == addresses.defaultPool);
+        assert(address(contracts.pools.gasPool) == addresses.gasPool);
+        assert(address(contracts.pools.collSurplusPool) == addresses.collSurplusPool);
         assert(address(contracts.sortedTroves) == addresses.sortedTroves);
 
         // Connect contracts

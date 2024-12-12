@@ -55,9 +55,9 @@ contract DevTestSetup is BaseTest {
         collToken = contracts.collToken;
         activePool = contracts.activePool;
         borrowerOperations = contracts.borrowerOperations;
-        collSurplusPool = contracts.collSurplusPool;
-        defaultPool = contracts.defaultPool;
-        gasPool = contracts.gasPool;
+        collSurplusPool = contracts.pools.collSurplusPool;
+        defaultPool = contracts.pools.defaultPool;
+        gasPool = contracts.pools.gasPool;
         priceFeed = contracts.priceFeed;
         sortedTroves = contracts.sortedTroves;
         stabilityPool = contracts.stabilityPool;

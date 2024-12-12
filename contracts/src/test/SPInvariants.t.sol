@@ -29,7 +29,7 @@ contract SPInvariantsTest is Assertions, BaseInvariantTest {
                 priceFeed: contracts.priceFeed,
                 stabilityPool: contracts.stabilityPool,
                 troveManager: contracts.troveManager,
-                collSurplusPool: contracts.collSurplusPool
+                collSurplusPool: contracts.pools.collSurplusPool
             }),
             hintHelpers
         );
