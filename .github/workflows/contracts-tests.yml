@@ -107,7 +107,6 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
 
   coverage:
-    if: false
     name: Coverage
     runs-on: ubuntu-latest
     continue-on-error: true
@@ -136,61 +135,54 @@ jobs:
       - name: Install lcov
         run: sudo apt-get -y install lcov
 
-      #- name: Filter out tests from coverage
-      #  run: |
-      #    lcov --remove lcov_foundry.info -o lcov_foundry.info 'src/test/*'
-
       # Hardhat
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3.0.0
-        with:
-          version: 8
+      # - name: Install pnpm
+      #   uses: pnpm/action-setup@v3.0.0
+      #   with:
+      #     version: 8
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".node-version"
-          cache: "pnpm"
-          cache-dependency-path: "pnpm-lock.yaml"
+      # - name: Install Node.js
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version-file: ".node-version"
+      #     cache: "pnpm"
+      #     cache-dependency-path: "pnpm-lock.yaml"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      # - name: Install dependencies
+      #   run: pnpm install --frozen-lockfile
 
-      - name: harhdat coverage
-        run: pnpm coverage
-        continue-on-error: true
-        timeout-minutes: 30
-        env:
-          NODE_OPTIONS: --max-old-space-size=8192
+      # - name: harhdat coverage
+      #   run: pnpm coverage
+      #   continue-on-error: true
+      #   timeout-minutes: 30
+      #   env:
+      #     NODE_OPTIONS: --max-old-space-size=8192
 
       # Merge
-      - name: ls
-        run: |
-          ls && ls coverage
+      # - name: Remove path from contract names in Hardhat
+      #   run: |
+      #     sed -i "s/SF:.*src/SF:src/g" coverage/lcov.info
 
-      - name: Remove path from contract names in Hardhat
-        run: |
-          sed -i "s/SF:.*src/SF:src/g" coverage/lcov.info
+      # - name: Merge coverage reports
+      #   run: |
+      #     lcov \
+      #         --rc lcov_branch_coverage=1 \
+      #         --add-tracefile lcov_foundry.info \
+      #         --add-tracefile coverage/lcov.info \
+      #         --output-file lcov_merged.info
 
-      - name: Merge coverage reports
+      # Instead of merge
+      - name: Rename coverage file
         run: |
-          lcov \
-              --rc lcov_branch_coverage=1 \
-              --add-tracefile lcov_foundry.info \
-              --add-tracefile coverage/lcov.info \
-              --output-file lcov_merged.info
+          mv lcov_foundry.info lcov_merged.info
 
       # Filter
-      - name: Filter out tests from coverage
+      - name: Filter out from coverage
         run: |
           lcov --remove lcov_merged.info -o lcov_merged.info \
-              'src/test/*' \
-              'src/TestContracts/*' \
-              'src/OldTestContracts/*' \
               'src/Dependencies/*' \
               'src/Interfaces/*' \
               'src/Types/*' \
-              'src/scripts/*' \
               'src/MultiTroveGetter.sol' \
               'src/deployment.sol'
 
