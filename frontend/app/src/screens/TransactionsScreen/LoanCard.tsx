@@ -38,15 +38,17 @@ export function LoanCard({
   prevLoan?: PositionLoan | null;
   txPreviewMode?: boolean;
 }) {
-  const collToken = getCollToken(loan?.collIndex ?? prevLoan?.collIndex ?? null);
+  const collIndex = loan?.collIndex ?? prevLoan?.collIndex ?? null;
+  const collToken = getCollToken(collIndex);
 
   if (!collToken) {
-    return null;
+    throw new Error(`Collateral token not found: ${collIndex}`);
   }
 
   const collPriceUsd = usePrice(collToken.symbol);
 
   const isLoanClosing = prevLoan && !loan;
+  const maxLtv = dn.div(dn.from(1, 18), collToken.collateralRatio);
 
   const loanDetails = loan && getLoanDetails(
     loan.deposit,
@@ -70,15 +72,25 @@ export function LoanCard({
     leverageFactor,
     redemptionRisk,
     liquidationRisk,
+    liquidationPrice,
   } = loanDetails || {};
 
-  const maxLtv = dn.div(dn.from(1, 18), collToken.collateralRatio);
+  const loanDetailsFilled = Boolean(
+    typeof leverageFactor === "number"
+      && depositPreLeverage
+      && liquidationRisk
+      && liquidationPrice,
+  );
 
   return (
     <LoadingCard
       height={isLoanClosing ? LOAN_CARD_HEIGHT_REDUCED : LOAN_CARD_HEIGHT}
       leverage={leverageMode}
-      loadingState={loadingState}
+      loadingState={loadingState === "success"
+        ? collPriceUsd.status === "pending" || !loanDetailsFilled
+          ? "loading"
+          : collPriceUsd.status
+        : loadingState}
       onRetry={onRetry}
       txPreviewMode={txPreviewMode}
     >
@@ -137,8 +149,8 @@ export function LoanCard({
           && loanDetails
           && typeof leverageFactor === "number"
           && depositPreLeverage
-          && maxLtv
           && liquidationRisk
+          && liquidationPrice
           && (
             <>
               {leverageMode
@@ -230,14 +242,11 @@ export function LoanCard({
                     })}
                   >
                     <Value negative={ltv && dn.gt(ltv, maxLtv)}>
-                      ${fmtnum(loanDetails.liquidationPrice)}
+                      ${fmtnum(liquidationPrice)}
                     </Value>
-                    {loanDetails?.liquidationPrice
+                    {liquidationPrice
                       && prevLoanDetails?.liquidationPrice
-                      && !dn.eq(
-                        prevLoanDetails.liquidationPrice,
-                        loanDetails.liquidationPrice,
-                      )
+                      && !dn.eq(prevLoanDetails.liquidationPrice, liquidationPrice)
                       && (
                         <div
                           className={css({
