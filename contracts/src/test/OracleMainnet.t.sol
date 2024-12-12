@@ -41,7 +41,7 @@ contract OraclesMainnet is TestAccounts {
     WSTETHTokenMock mockWstethToken;
 
     TestDeployer.LiquityContracts[] contractsArray;
-    ICollateralRegistry collateralRegistry;
+    CollateralRegistryTester collateralRegistry;
     IBoldToken boldToken;
 
     struct StoredOracle {
@@ -127,6 +127,11 @@ contract OraclesMainnet is TestAccounts {
         // console2.log(ethOracle.decimals(), "ETHUSD decimals");
         // console2.log(rethOracle.decimals(), "RETHETH decimals");
         // console2.log(stethOracle.decimals(), "STETHETH decimals");
+
+        // Artificially decay the base rate so we start with a low redemption rate.
+        // Normally, we would just wait for it to decay "naturally" (with `vm.warp`), but we can't do that here,
+        // as it would result in all the oracles going stale.
+        collateralRegistry.setBaseRate(0);
     }
 
     function _getLatestAnswerFromOracle(AggregatorV3Interface _oracle) internal view returns (uint256) {
