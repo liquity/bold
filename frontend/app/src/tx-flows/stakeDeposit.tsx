@@ -3,59 +3,44 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import { dnum18 } from "@/src/dnum-utils";
+import { signPermit } from "@/src/permit";
+import { PermissionStatus } from "@/src/screens/TransactionsScreen/PermissionStatus";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
+import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { readContract } from "wagmi/actions";
+import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { createRequestSchema } from "./shared";
 
-const FlowIdSchema = v.literal("stakeDeposit");
+const RequestSchema = createRequestSchema(
+  "stakeDeposit",
+  {
+    lqtyAmount: vDnum(),
+    stakePosition: vPositionStake(),
+    prevStakePosition: v.union([v.null(), vPositionStake()]),
+  },
+);
 
-const RequestSchema = v.object({
-  flowId: FlowIdSchema,
-  backLink: v.union([
-    v.null(),
-    v.tuple([
-      v.string(), // path
-      v.string(), // label
-    ]),
-  ]),
-  successLink: v.tuple([
-    v.string(), // path
-    v.string(), // label
-  ]),
-  successMessage: v.string(),
+export type StakeDepositRequest = v.InferOutput<typeof RequestSchema>;
 
-  lqtyAmount: vDnum(),
-  stakePosition: vPositionStake(),
-  prevStakePosition: v.union([v.null(), vPositionStake()]),
-});
+const USE_PERMIT = false;
 
-export type Request = v.InferOutput<typeof RequestSchema>;
-
-type Step = "stakeDeposit" | "approveLqty";
-
-const stepNames: Record<Step, string> = {
-  approveLqty: "Approve LQTY",
-  stakeDeposit: "Stake",
-};
-
-export const stakeDeposit: FlowDeclaration<Request, Step> = {
+export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
   title: "Review & Send Transaction",
 
-  Summary({ flow }) {
+  Summary({ request }) {
     return (
       <StakePositionSummary
-        prevStakePosition={flow.request.prevStakePosition}
-        stakePosition={flow.request.stakePosition}
+        prevStakePosition={request.prevStakePosition}
+        stakePosition={request.stakePosition}
         txPreviewMode
       />
     );
   },
 
-  Details({ flow }) {
-    const { request } = flow;
+  Details({ request }) {
     const { rewards } = request.stakePosition;
 
     const lqtyPrice = usePrice("LQTY");
@@ -116,48 +101,137 @@ export const stakeDeposit: FlowDeclaration<Request, Step> = {
     );
   },
 
+  steps: {
+    // approve via permit
+    permitLqty: {
+      name: () => "Approve LQTY",
+      Status: PermissionStatus,
+
+      async commit({ account, contracts, request, wagmiConfig }) {
+        if (!account) {
+          throw new Error("Account address is required");
+        }
+
+        const { deadline, ...permit } = await signPermit({
+          token: contracts.LqtyToken.address,
+          spender: contracts.Governance.address,
+          value: request.lqtyAmount[0],
+          account,
+          wagmiConfig,
+        });
+
+        return JSON.stringify({
+          ...permit,
+          deadline: Number(deadline),
+        });
+      },
+
+      async verify() {
+        // nothing to do
+      },
+    },
+
+    // approve tx
+    approveLqty: {
+      name: () => "Approve LQTY",
+      Status: TransactionStatus,
+
+      async commit({ account, contracts, request, wagmiConfig }) {
+        if (!account) {
+          throw new Error("Account address is required");
+        }
+
+        const { LqtyToken, Governance } = contracts;
+
+        return writeContract(wagmiConfig, {
+          ...LqtyToken,
+          functionName: "approve",
+          args: [Governance.address, request.lqtyAmount[0]],
+        });
+      },
+
+      async verify({ wagmiConfig }, hash) {
+        await waitForTransactionReceipt(wagmiConfig, {
+          hash: hash as `0x${string}`,
+        });
+      },
+    },
+
+    stakeDeposit: {
+      name: () => "Stake",
+      Status: TransactionStatus,
+
+      async commit({ account, contracts, request, wagmiConfig, steps }) {
+        if (!account) {
+          throw new Error("Account address is required");
+        }
+
+        const permitStep = steps?.find((step) => step.id === "permitLqty");
+        const depositLqtyViaPermit = Boolean(permitStep?.artifact);
+
+        // deposit LQTY
+        if (!depositLqtyViaPermit) {
+          return writeContract(wagmiConfig, {
+            ...contracts.Governance,
+            functionName: "depositLQTY",
+            args: [request.lqtyAmount[0]],
+          });
+        }
+
+        // deposit LQTY via permit
+        const permit = JSON.parse(permitStep?.artifact ?? "");
+        return writeContract(wagmiConfig, {
+          ...contracts.Governance,
+          functionName: "depositLQTYViaPermit",
+          args: [
+            request.lqtyAmount[0],
+            {
+              owner: account,
+              spender: contracts.Governance.address,
+              value: request.lqtyAmount[0],
+              deadline: permit.deadline,
+              v: permit.v,
+              r: permit.r,
+              s: permit.s,
+            },
+          ],
+        });
+      },
+
+      async verify({ wagmiConfig }, hash) {
+        await waitForTransactionReceipt(wagmiConfig, { hash: hash as `0x${string}` });
+      },
+    },
+  },
+
   async getSteps({ account, contracts, request, wagmiConfig }) {
-    if (!account.address) {
+    if (!account) {
       throw new Error("Account address is required");
     }
 
-    const lqtyAllowance = await readContract(wagmiConfig, {
-      ...contracts.LqtyToken,
-      functionName: "allowance",
-      args: [account.address, contracts.LqtyStaking.address],
-    });
+    const steps: string[] = [];
 
-    const isLqtyApproved = dn.lte(request.lqtyAmount, dnum18(lqtyAllowance));
+    // approve
+    if (USE_PERMIT) {
+      steps.push("permitLqty");
+    } else {
+      const lqtyAllowance = await readContract(wagmiConfig, {
+        ...contracts.LqtyToken,
+        functionName: "allowance",
+        args: [account, contracts.LqtyStaking.address],
+      });
+      if (dn.gt(request.lqtyAmount, dnum18(lqtyAllowance))) {
+        steps.push("approveLqty");
+      }
+    }
 
-    return [
-      isLqtyApproved ? null : "approveLqty" as const,
-      "stakeDeposit" as const,
-    ].filter((step): step is Step => step !== null);
-  },
+    // stake
+    steps.push("stakeDeposit");
 
-  getStepName(stepId) {
-    return stepNames[stepId];
+    return steps;
   },
 
   parseRequest(request) {
     return v.parse(RequestSchema, request);
-  },
-
-  async writeContractParams(stepId, { contracts, request }) {
-    if (stepId === "approveLqty") {
-      return {
-        ...contracts.LqtyToken,
-        functionName: "approve",
-        args: [contracts.LqtyStaking.address, request.lqtyAmount[0]],
-      };
-    }
-    if (stepId === "stakeDeposit") {
-      return {
-        ...contracts.LqtyStaking,
-        functionName: "stake",
-        args: [request.lqtyAmount[0]],
-      };
-    }
-    throw new Error(`Invalid stepId: ${stepId}`);
   },
 };

@@ -3,58 +3,40 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
+import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
+import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { createRequestSchema } from "./shared";
 
-const FlowIdSchema = v.literal("unstakeDeposit");
+const RequestSchema = createRequestSchema(
+  "unstakeDeposit",
+  {
+    lqtyAmount: vDnum(),
+    stakePosition: vPositionStake(),
+    prevStakePosition: v.union([v.null(), vPositionStake()]),
+  },
+);
 
-const RequestSchema = v.object({
-  flowId: FlowIdSchema,
-  backLink: v.union([
-    v.null(),
-    v.tuple([
-      v.string(), // path
-      v.string(), // label
-    ]),
-  ]),
-  successLink: v.tuple([
-    v.string(), // path
-    v.string(), // label
-  ]),
-  successMessage: v.string(),
+export type UnstakeDepositRequest = v.InferOutput<typeof RequestSchema>;
 
-  lqtyAmount: vDnum(),
-  stakePosition: vPositionStake(),
-  prevStakePosition: v.union([v.null(), vPositionStake()]),
-});
-
-export type Request = v.InferOutput<typeof RequestSchema>;
-
-type Step = "unstakeDeposit";
-
-const stepNames: Record<Step, string> = {
-  unstakeDeposit: "Unstake",
-};
-
-export const unstakeDeposit: FlowDeclaration<Request, Step> = {
+export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
   title: "Review & Send Transaction",
 
-  Summary({ flow }) {
+  Summary({ request }) {
     return (
       <StakePositionSummary
-        prevStakePosition={flow.request.prevStakePosition}
-        stakePosition={flow.request.stakePosition}
+        prevStakePosition={request.prevStakePosition}
+        stakePosition={request.stakePosition}
         txPreviewMode
       />
     );
   },
 
-  Details({ flow }) {
-    const { request } = flow;
+  Details({ request }) {
     const { rewards } = request.stakePosition;
-
     const lqtyPrice = usePrice("LQTY");
     const lusdPrice = usePrice("LUSD");
     const ethPrice = usePrice("ETH");
@@ -113,26 +95,32 @@ export const unstakeDeposit: FlowDeclaration<Request, Step> = {
     );
   },
 
+  steps: {
+    unstakeDeposit: {
+      name: () => "Unstake",
+      Status: TransactionStatus,
+
+      async commit({ contracts, request, wagmiConfig }) {
+        return writeContract(wagmiConfig, {
+          ...contracts.LqtyStaking,
+          functionName: "unstake",
+          args: [request.lqtyAmount[0]],
+        });
+      },
+
+      async verify({ wagmiConfig }, hash) {
+        await waitForTransactionReceipt(wagmiConfig, {
+          hash: hash as `0x${string}`,
+        });
+      },
+    },
+  },
+
   async getSteps() {
     return ["unstakeDeposit"];
   },
 
-  getStepName(stepId) {
-    return stepNames[stepId];
-  },
-
   parseRequest(request) {
     return v.parse(RequestSchema, request);
-  },
-
-  async writeContractParams(stepId, { contracts, request }) {
-    if (stepId === "unstakeDeposit") {
-      return {
-        ...contracts.LqtyStaking,
-        functionName: "unstake",
-        args: [request.lqtyAmount[0]],
-      };
-    }
-    throw new Error(`Invalid stepId: ${stepId}`);
   },
 };
