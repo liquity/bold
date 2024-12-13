@@ -87,7 +87,7 @@ export function LoanCard({
       height={isLoanClosing ? LOAN_CARD_HEIGHT_REDUCED : LOAN_CARD_HEIGHT}
       leverage={leverageMode}
       loadingState={loadingState === "success"
-        ? collPriceUsd.status === "pending" || !loanDetailsFilled
+        ? collPriceUsd.status === "pending" || (!isLoanClosing && !loanDetailsFilled)
           ? "loading"
           : collPriceUsd.status
         : loadingState}
