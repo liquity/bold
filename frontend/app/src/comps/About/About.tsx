@@ -3,13 +3,14 @@
 import type { Entries } from "@/src/types";
 import type { ReactNode } from "react";
 
+import { useFlashTransition } from "@/src/anim-utils";
 import { Logo } from "@/src/comps/Logo/Logo";
 import * as env from "@/src/env";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, Button, Modal } from "@liquity2/uikit";
-import { a, useSpring, useTransition } from "@react-spring/web";
+import { a, useSpring } from "@react-spring/web";
 import { useQuery } from "@tanstack/react-query";
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useState } from "react";
 
 const ENV_EXCLUDE: (keyof typeof env)[] = [
   "CollateralSymbolSchema",
@@ -113,7 +114,7 @@ const envGroups = getEnvGroups();
 export function About({ children }: { children: ReactNode }) {
   const contractsHash = useContractsHash(envGroups);
   const [visible, setVisible] = useState(false);
-  const notifyCopy = useNotifyCopy();
+  const copyTransition = useFlashTransition();
   return (
     <AboutContext.Provider
       value={{
@@ -136,7 +137,7 @@ export function About({ children }: { children: ReactNode }) {
             flexDirection: "column",
             gap: 32,
             width: "100%",
-            paddingTop: 32,
+            padding: "32px 0 8px",
             "& section": {
               display: "flex",
               flexDirection: "column",
@@ -146,13 +147,13 @@ export function About({ children }: { children: ReactNode }) {
           })}
         >
           <section>
-            <h2
+            <h1
               className={css({
                 fontSize: 20,
               })}
             >
               About this version
-            </h2>
+            </h1>
             <AboutTable
               entries={{
                 "Release": (
@@ -182,20 +183,20 @@ export function About({ children }: { children: ReactNode }) {
                 gap: 8,
               })}
             >
-              <h2
+              <h1
                 className={css({
                   fontSize: 20,
                 })}
               >
                 Build environment
-              </h2>
+              </h1>
               <div
                 className={css({
                   display: "flex",
                   gap: 8,
                 })}
               >
-                {notifyCopy.transition((style, item) => (
+                {copyTransition.transition((style, item) => (
                   item && (
                     <a.div
                       className={css({
@@ -223,7 +224,7 @@ export function About({ children }: { children: ReactNode }) {
                   label="Copy to clipboard"
                   onClick={() => {
                     navigator.clipboard.writeText(JSON.stringify(envGroups, null, 2));
-                    notifyCopy.notify();
+                    copyTransition.flash();
                   }}
                 />
               </div>
@@ -379,36 +380,4 @@ function AboutTable({
       </table>
     </div>
   );
-}
-
-function useNotifyCopy() {
-  const [notifyCopy, setNotifyCopy] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const notify = useCallback(() => {
-    clearTimeout(timeoutRef.current);
-    setNotifyCopy(true);
-    timeoutRef.current = setTimeout(() => {
-      setNotifyCopy(false);
-    }, 500);
-  }, []);
-
-  const transition = useTransition(notifyCopy, {
-    from: { opacity: 0, transform: "scale(0.9)" },
-    enter: { opacity: 1, transform: "scale(1)" },
-    leave: { opacity: 0, transform: "scale(1)" },
-    config: {
-      mass: 1,
-      tension: 2000,
-      friction: 80,
-    },
-  });
-
-  useEffect(() => {
-    return () => {
-      clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
-  return { notify, transition };
 }

@@ -3,6 +3,7 @@ import type { CollateralToken } from "@liquity2/uikit";
 import type { ReactNode } from "react";
 import type { LoanLoadingState } from "./LoanScreen";
 
+import { useFlashTransition } from "@/src/anim-utils";
 import { INFINITY } from "@/src/characters";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { LoanStatusTag } from "@/src/comps/Tag/LoanStatusTag";
@@ -34,7 +35,6 @@ import { a, useTransition } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { match, P } from "ts-pattern";
 
 type LoanMode = "borrow" | "leverage";
@@ -335,7 +335,7 @@ function LoanCard({
   nftUrl: string | null;
   onLeverageModeChange: (mode: LoanMode) => void;
 }) {
-  const notifyCopy = useNotifyCopy();
+  const copyTransition = useFlashTransition();
 
   const cardTransition = useTransition(props, {
     keys: (props) => props.mode,
@@ -451,7 +451,7 @@ function LoanCard({
                       right: 16,
                     })}
                   >
-                    {notifyCopy.transition((style, show) => (
+                    {copyTransition.transition((style, show) => (
                       show && (
                         <a.div
                           className={css({
@@ -581,7 +581,7 @@ function LoanCard({
                         }
                         if (index === 1) {
                           navigator.clipboard.writeText(window.location.href);
-                          notifyCopy.notify();
+                          copyTransition.flash();
                         }
                         if (index === 2) {
                           window.open(`${CHAIN_BLOCK_EXPLORER?.url}address/${loan.borrower}`);
@@ -821,36 +821,4 @@ function LoanCard({
       })}
     </div>
   );
-}
-
-function useNotifyCopy() {
-  const [notifyCopy, setNotifyCopy] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const notify = useCallback(() => {
-    clearTimeout(timeoutRef.current);
-    setNotifyCopy(true);
-    timeoutRef.current = setTimeout(() => {
-      setNotifyCopy(false);
-    }, 500);
-  }, []);
-
-  const transition = useTransition(notifyCopy, {
-    from: { opacity: 0, transform: "scale(0.9)" },
-    enter: { opacity: 1, transform: "scale(1)" },
-    leave: { opacity: 0, transform: "scale(1)" },
-    config: {
-      mass: 1,
-      tension: 2000,
-      friction: 80,
-    },
-  });
-
-  useEffect(() => {
-    return () => {
-      clearTimeout(timeoutRef.current);
-    };
-  }, []);
-
-  return { notify, transition };
 }
