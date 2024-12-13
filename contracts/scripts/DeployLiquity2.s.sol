@@ -259,9 +259,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             uniV3PositionManager = uniV3PositionManagerSepolia;
             balancerFactory = balancerFactorySepolia;
             // Needed for Governance (they will be constants for mainnet)
-            lqty = address(new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days));
-            ERC20Faucet lusd = new ERC20Faucet("Liquity USD", "LUSD", 100 ether, 1 days);
+            lqty = address(new MockERC20Tester("Liquity", "LQTY"));
+            MockERC20Tester lusd = new MockERC20Tester("Liquity USD", "LUSD");
             stakingV1 = address(new MockStakingV1(IERC20_GOV(lqty), IERC20_GOV(address(lusd))));
+
+            // Let stakingV1 spend anyone's LQTY without approval, like in the real LQTYStaking
+            MockERC20Tester(lqty).mock_setWildcardSpender(address(stakingV1), true);
         }
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](3);
