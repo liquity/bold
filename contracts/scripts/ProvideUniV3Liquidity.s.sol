@@ -4,14 +4,14 @@ pragma solidity 0.8.24;
 import {Script} from "forge-std/Script.sol";
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
-import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
-import {WETHTester} from "../test/TestContracts/WETHTester.sol";
+import {ERC20Faucet} from "test/TestContracts/ERC20Faucet.sol";
+import {WETHTester} from "test/TestContracts/WETHTester.sol";
 
-import "../Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
-import "../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
-import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Pool.sol";
-import "../Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Factory.sol";
-import "../Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
+import "src/Zappers/Modules/Exchanges/UniswapV3/ISwapRouter.sol";
+import "src/Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
+import "src/Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Pool.sol";
+import "src/Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Factory.sol";
+import "src/Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
 
 import "forge-std/console2.sol";
 

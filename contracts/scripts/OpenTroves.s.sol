@@ -3,20 +3,20 @@ pragma solidity 0.8.24;
 
 import {Script} from "forge-std/Script.sol";
 import {Clones} from "openzeppelin-contracts/contracts/proxy/Clones.sol";
-import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
-import {IBorrowerOperations} from "../Interfaces/IBorrowerOperations.sol";
-import {ICollateralRegistry} from "../Interfaces/ICollateralRegistry.sol";
-import {IHintHelpers} from "../Interfaces/IHintHelpers.sol";
-import {ISortedTroves} from "../Interfaces/ISortedTroves.sol";
-import {ITroveManager} from "../Interfaces/ITroveManager.sol";
-import {ITroveNFT} from "../Interfaces/ITroveNFT.sol";
+import {ERC20Faucet} from "test/TestContracts/ERC20Faucet.sol";
+import {IBorrowerOperations} from "src/Interfaces/IBorrowerOperations.sol";
+import {ICollateralRegistry} from "src/Interfaces/ICollateralRegistry.sol";
+import {IHintHelpers} from "src/Interfaces/IHintHelpers.sol";
+import {ISortedTroves} from "src/Interfaces/ISortedTroves.sol";
+import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
+import {ITroveNFT} from "src/Interfaces/ITroveNFT.sol";
 
 import {
     ETH_GAS_COMPENSATION,
     MAX_ANNUAL_INTEREST_RATE,
     MIN_ANNUAL_INTEREST_RATE,
     MIN_INTEREST_RATE_CHANGE_PERIOD
-} from "../Dependencies/Constants.sol";
+} from "src/Dependencies/Constants.sol";
 
 function sqrt(uint256 y) pure returns (uint256 z) {
     if (y > 3) {
