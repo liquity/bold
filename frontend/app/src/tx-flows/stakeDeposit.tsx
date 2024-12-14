@@ -11,8 +11,8 @@ import { usePrice } from "@/src/services/Prices";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
-import { createRequestSchema } from "./shared";
+import { getBytecode, readContract, writeContract } from "wagmi/actions";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "stakeDeposit",
@@ -25,7 +25,7 @@ const RequestSchema = createRequestSchema(
 
 export type StakeDepositRequest = v.InferOutput<typeof RequestSchema>;
 
-const USE_PERMIT = false;
+const USE_PERMIT = true;
 
 export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
   title: "Review & Send Transaction",
@@ -102,6 +102,26 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
   },
 
   steps: {
+    deployUserProxy: {
+      name: () => "Deploy Staking Proxy",
+      Status: TransactionStatus,
+
+      async commit({ account, contracts, wagmiConfig }) {
+        if (!account) {
+          throw new Error("Account address is required");
+        }
+
+        return writeContract(wagmiConfig, {
+          ...contracts.Governance,
+          functionName: "deployUserProxy",
+        });
+      },
+
+      async verify({ wagmiConfig }, hash) {
+        await verifyTransaction(wagmiConfig, hash);
+      },
+    },
+
     // approve via permit
     permitLqty: {
       name: () => "Approve LQTY",
@@ -112,9 +132,17 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
           throw new Error("Account address is required");
         }
 
+        const { LqtyToken, Governance } = contracts;
+
+        const userProxyAddress = await readContract(wagmiConfig, {
+          ...Governance,
+          functionName: "deriveUserProxyAddress",
+          args: [account],
+        });
+
         const { deadline, ...permit } = await signPermit({
-          token: contracts.LqtyToken.address,
-          spender: contracts.Governance.address,
+          token: LqtyToken.address,
+          spender: userProxyAddress,
           value: request.lqtyAmount[0],
           account,
           wagmiConfig,
@@ -143,17 +171,21 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
 
         const { LqtyToken, Governance } = contracts;
 
+        const userProxyAddress = await readContract(wagmiConfig, {
+          ...Governance,
+          functionName: "deriveUserProxyAddress",
+          args: [account],
+        });
+
         return writeContract(wagmiConfig, {
           ...LqtyToken,
           functionName: "approve",
-          args: [Governance.address, request.lqtyAmount[0]],
+          args: [userProxyAddress, request.lqtyAmount[0]],
         });
       },
 
       async verify({ wagmiConfig }, hash) {
-        await waitForTransactionReceipt(wagmiConfig, {
-          hash: hash as `0x${string}`,
-        });
+        await verifyTransaction(wagmiConfig, hash);
       },
     },
 
@@ -166,11 +198,8 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
           throw new Error("Account address is required");
         }
 
-        const permitStep = steps?.find((step) => step.id === "permitLqty");
-        const depositLqtyViaPermit = Boolean(permitStep?.artifact);
-
-        // deposit LQTY
-        if (!depositLqtyViaPermit) {
+        // deposit approved LQTY
+        if (!USE_PERMIT) {
           return writeContract(wagmiConfig, {
             ...contracts.Governance,
             functionName: "depositLQTY",
@@ -179,7 +208,15 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         }
 
         // deposit LQTY via permit
+        const userProxyAddress = await readContract(wagmiConfig, {
+          ...contracts.Governance,
+          functionName: "deriveUserProxyAddress",
+          args: [account],
+        });
+
+        const permitStep = steps?.find((step) => step.id === "permitLqty");
         const permit = JSON.parse(permitStep?.artifact ?? "");
+
         return writeContract(wagmiConfig, {
           ...contracts.Governance,
           functionName: "depositLQTYViaPermit",
@@ -187,7 +224,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
             request.lqtyAmount[0],
             {
               owner: account,
-              spender: contracts.Governance.address,
+              spender: userProxyAddress,
               value: request.lqtyAmount[0],
               deadline: permit.deadline,
               v: permit.v,
@@ -199,7 +236,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
       },
 
       async verify({ wagmiConfig }, hash) {
-        await waitForTransactionReceipt(wagmiConfig, { hash: hash as `0x${string}` });
+        await verifyTransaction(wagmiConfig, hash);
       },
     },
   },
@@ -211,18 +248,39 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
 
     const steps: string[] = [];
 
-    // approve
+    // approve via permit
     if (USE_PERMIT) {
-      steps.push("permitLqty");
-    } else {
-      const lqtyAllowance = await readContract(wagmiConfig, {
-        ...contracts.LqtyToken,
-        functionName: "allowance",
-        args: [account, contracts.LqtyStaking.address],
-      });
-      if (dn.gt(request.lqtyAmount, dnum18(lqtyAllowance))) {
-        steps.push("approveLqty");
-      }
+      return ["permitLqty", "stakeDeposit"];
+    }
+
+    // get the user proxy address
+    const userProxyAddress = await readContract(wagmiConfig, {
+      ...contracts.Governance,
+      functionName: "deriveUserProxyAddress",
+      args: [account],
+    });
+
+    // check if the user proxy contract exists
+    const userProxyBytecode = await getBytecode(wagmiConfig, {
+      address: userProxyAddress,
+    });
+
+    // deploy the user proxy (optional, but prevents wallets
+    // to show a warning for approving a non-deployed contract)
+    if (!userProxyBytecode) {
+      steps.push("deployUserProxy");
+    }
+
+    // check for allowance
+    const lqtyAllowance = await readContract(wagmiConfig, {
+      ...contracts.LqtyToken,
+      functionName: "allowance",
+      args: [account, userProxyAddress],
+    });
+
+    // approve
+    if (dn.gt(request.lqtyAmount, dnum18(lqtyAllowance))) {
+      steps.push("approveLqty");
     }
 
     // stake
