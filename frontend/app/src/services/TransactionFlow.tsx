@@ -494,23 +494,28 @@ const FlowContextStorage = {
       }
 
       // parse the base flow structure
-      const baseState = v.parse(FlowStateSchema, jsonParseWithDnum(storedFlowState));
+      const flow = v.parse(FlowStateSchema, jsonParseWithDnum(storedFlowState));
 
-      const flowDeclaration = getFlowDeclaration(baseState.request.flowId);
+      const flowDeclaration = getFlowDeclaration(flow.request.flowId);
       if (!flowDeclaration) {
-        throw new Error(`Unknown flow ID: ${baseState.request.flowId}`);
+        throw new Error(`Unknown flow ID: ${flow.request.flowId}`);
       }
 
       // parse the current flow request
-      const fullRequest = flowDeclaration.parseRequest(baseState.request);
-      if (!fullRequest) {
-        throw new Error(`Invalid request for flow ${baseState.request.flowId}`);
+      const request = flowDeclaration.parseRequest(flow.request);
+      if (!request) {
+        throw new Error(`Invalid request for flow ${flow.request.flowId}`);
       }
 
-      return {
-        ...baseState,
-        request: fullRequest,
-      };
+      // remove awaiting-commit status from steps so users
+      // can refresh & retry without getting stuck
+      const steps = flow.steps?.map((step) => (
+        step.status === "awaiting-commit"
+          ? { ...step, status: "idle" as const }
+          : step
+      )) ?? null;
+
+      return { ...flow, steps, request };
     } catch (err) {
       console.error(err);
       localStorage.removeItem(TRANSACTION_FLOW_KEY);
