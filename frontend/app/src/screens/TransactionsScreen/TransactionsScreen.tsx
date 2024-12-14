@@ -55,8 +55,6 @@ export function TransactionsScreen() {
       { height: 48 },
       { height: 0, opacity: 0, transform: "scale(0.97)" },
     ],
-    onRest: () => {
-    },
     config: boxTransitionConfig,
   });
 
