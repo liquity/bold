@@ -30,20 +30,22 @@ const argv = minimist(process.argv.slice(2), {
   ],
 });
 
+const ZERO_ADDRESS = "0x" + "0".repeat(40);
+
 const ZAddress = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
 const ZDeploymentManifest = z.object({
   collateralRegistry: ZAddress,
   boldToken: ZAddress,
   hintHelpers: ZAddress,
   multiTroveGetter: ZAddress,
-  hybridCurveUniV3ExchangeHelpers: ZAddress,
+  exchangeHelpers: ZAddress,
 
   governance: z.object({
     LQTYToken: ZAddress,
-    LUSD: ZAddress,
-    LQTYStaking: ZAddress,
+    LQTYStaking: ZAddress.default(ZERO_ADDRESS),
     governance: ZAddress,
-    uniV4Donations: ZAddress,
+    uniV4DonationsInitiative: ZAddress,
+    curveV2GaugeRewardsInitiative: ZAddress,
   }),
 
   branches: z.array(
@@ -179,7 +181,7 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_HINT_HELPERS`;
     case "multiTroveGetter":
       return `${prefix}_MULTI_TROVE_GETTER`;
-    case "hybridCurveUniV3ExchangeHelpers":
+    case "exchangeHelpers":
       return `${prefix}_EXCHANGE_HELPERS`;
 
     // collateral contracts
@@ -211,14 +213,14 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
     // governance contracts
     case "LQTYToken":
       return `${prefix}_LQTY_TOKEN`;
-    case "LUSD":
-      return `${prefix}_LUSD_TOKEN`;
     case "LQTYStaking":
       return `${prefix}_LQTY_STAKING`;
     case "governance":
       return `${prefix}_GOVERNANCE`;
-    case "uniV4Donations":
-      return `${prefix}_UNI_V4_DONATIONS`;
+    case "uniV4DonationsInitiative":
+      return `${prefix}_UNI_V4_DONATIONS_INITIATIVE`;
+    case "curveV2GaugeRewardsInitiative":
+      return `${prefix}_CURVE_V2_GAUGE_REWARDS_INITIATIVE`;
   }
   return null;
 }
