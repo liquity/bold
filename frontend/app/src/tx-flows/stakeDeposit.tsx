@@ -111,6 +111,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         return JSON.stringify({
           ...permit,
           deadline: Number(deadline),
+          userProxyAddress,
         });
       },
 
@@ -168,14 +169,8 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         }
 
         // deposit LQTY via permit
-        const userProxyAddress = await readContract(wagmiConfig, {
-          ...contracts.Governance,
-          functionName: "deriveUserProxyAddress",
-          args: [account],
-        });
-
         const permitStep = steps?.find((step) => step.id === "permitLqty");
-        const permit = JSON.parse(permitStep?.artifact ?? "");
+        const { userProxyAddress, ...permit } = JSON.parse(permitStep?.artifact ?? "");
 
         return writeContract(wagmiConfig, {
           ...contracts.Governance,
