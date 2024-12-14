@@ -243,7 +243,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       async verify({ request, wagmiConfig }, hash) {
         await verifyTroveUpdate(
           wagmiConfig,
-          hash as `0x${string}`,
+          hash,
           request.loan.collIndex,
           request.loan.updatedAt,
         );
@@ -282,7 +282,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       async verify({ request, wagmiConfig }, hash) {
         await verifyTroveUpdate(
           wagmiConfig,
-          hash as `0x${string}`,
+          hash,
           request.loan.collIndex,
           request.loan.updatedAt,
         );
@@ -336,7 +336,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       async verify({ request, wagmiConfig }, hash) {
         await verifyTroveUpdate(
           wagmiConfig,
-          hash as `0x${string}`,
+          hash,
           request.loan.collIndex,
           request.loan.updatedAt,
         );
@@ -388,7 +388,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       async verify({ request, wagmiConfig }, hash) {
         await verifyTroveUpdate(
           wagmiConfig,
-          hash as `0x${string}`,
+          hash,
           request.loan.collIndex,
           request.loan.updatedAt,
         );

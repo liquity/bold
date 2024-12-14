@@ -19,7 +19,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { parseEventLogs } from "viem";
 import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
-import { createRequestSchema } from "./shared";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "openLeveragePosition",
@@ -148,9 +148,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
       },
 
       async verify({ wagmiConfig }, hash) {
-        await waitForTransactionReceipt(wagmiConfig, {
-          hash: hash as `0x${string}`,
-        });
+        await verifyTransaction(wagmiConfig, hash);
       },
     },
 

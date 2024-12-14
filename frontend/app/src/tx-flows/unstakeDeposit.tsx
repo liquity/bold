@@ -8,8 +8,8 @@ import { usePrice } from "@/src/services/Prices";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
-import { createRequestSchema } from "./shared";
+import { writeContract } from "wagmi/actions";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "unstakeDeposit",
@@ -109,9 +109,7 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
       },
 
       async verify({ wagmiConfig }, hash) {
-        await waitForTransactionReceipt(wagmiConfig, {
-          hash: hash as `0x${string}`,
-        });
+        await verifyTransaction(wagmiConfig, hash);
       },
     },
   },
