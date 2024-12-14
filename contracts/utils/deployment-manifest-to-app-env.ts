@@ -36,6 +36,15 @@ const ZDeploymentManifest = z.object({
   boldToken: ZAddress,
   hintHelpers: ZAddress,
   multiTroveGetter: ZAddress,
+  hybridCurveUniV3ExchangeHelpers: ZAddress,
+
+  governance: z.object({
+    LQTYToken: ZAddress,
+    LUSD: ZAddress,
+    LQTYStaking: ZAddress,
+    governance: ZAddress,
+    uniV4Donations: ZAddress,
+  }),
 
   branches: z.array(
     z.object({
@@ -127,7 +136,7 @@ function deployedContractsToAppEnvVariables(manifest: DeploymentManifest) {
     NEXT_PUBLIC_CONTRACT_WETH: manifest.branches[0].collToken,
   };
 
-  const { branches, ...protocol } = manifest;
+  const { branches, governance, ...protocol } = manifest;
 
   // protocol contracts
   for (const [contractName, address] of Object.entries(protocol)) {
@@ -137,13 +146,21 @@ function deployedContractsToAppEnvVariables(manifest: DeploymentManifest) {
     }
   }
 
-  // collateral contracts
+  // branches contracts
   for (const [index, contract] of Object.entries(branches)) {
     for (const [contractName, address] of Object.entries(contract)) {
       const envVarName = contractNameToAppEnvVariable(contractName, `COLL_${index}_CONTRACT`);
       if (envVarName) {
         appEnvVariables[envVarName] = address;
       }
+    }
+  }
+
+  // governance contracts
+  for (const [contractName, address] of Object.entries(governance)) {
+    const envVarName = contractNameToAppEnvVariable(contractName, "CONTRACT");
+    if (envVarName) {
+      appEnvVariables[envVarName] = address;
     }
   }
 
@@ -162,6 +179,8 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_HINT_HELPERS`;
     case "multiTroveGetter":
       return `${prefix}_MULTI_TROVE_GETTER`;
+    case "hybridCurveUniV3ExchangeHelpers":
+      return `${prefix}_EXCHANGE_HELPERS`;
 
     // collateral contracts
     case "activePool":
@@ -188,6 +207,18 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_TROVE_MANAGER`;
     case "troveNFT":
       return `${prefix}_TROVE_NFT`;
+
+    // governance contracts
+    case "LQTYToken":
+      return `${prefix}_LQTY_TOKEN`;
+    case "LUSD":
+      return `${prefix}_LUSD_TOKEN`;
+    case "LQTYStaking":
+      return `${prefix}_LQTY_STAKING`;
+    case "governance":
+      return `${prefix}_GOVERNANCE`;
+    case "uniV4Donations":
+      return `${prefix}_UNI_V4_DONATIONS`;
   }
   return null;
 }
