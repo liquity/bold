@@ -23,5 +23,6 @@ shrink_run_limit = 0 # takes too damn long to shrink, don't waste Github minutes
 
 [profile.default.rpc_endpoints]
 mainnet = "${MAINNET_RPC_URL}"
+tenderly-mainnet = "${TENDERLY_RPC_URL}"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
