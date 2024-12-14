@@ -23,7 +23,7 @@ export async function signPermit({
   value: bigint;
   wagmiConfig: WagmiConfig;
 }) {
-  const [block, nonce] = await Promise.all([
+  const [block, nonce, name] = await Promise.all([
     getBlock(wagmiConfig),
     readContract(wagmiConfig, {
       address: token,
@@ -31,13 +31,18 @@ export async function signPermit({
       functionName: "nonces",
       args: [account],
     }),
+    readContract(wagmiConfig, {
+      address: token,
+      abi: Erc2612,
+      functionName: "name",
+    }),
   ]);
 
   const deadline = block.timestamp + expiresAfter;
 
   const signature = await signTypedData(wagmiConfig, {
     domain: {
-      name: "name",
+      name,
       version: "1",
       chainId: CHAIN_ID,
       verifyingContract: token,
