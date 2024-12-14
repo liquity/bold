@@ -29,13 +29,24 @@ export function createRequestSchema<
   });
 }
 
+export async function verifyTransaction(
+  wagmiConfig: WagmiConfig,
+  hash: string,
+) {
+  await waitForTransactionReceipt(wagmiConfig, {
+    hash: hash as `0x${string}`,
+  });
+}
+
 export async function verifyTroveUpdate(
   wagmiConfig: WagmiConfig,
-  hash: `0x${string}`,
+  hash: string,
   collIndex: CollIndex,
   lastUpdate: number,
 ) {
-  const receipt = await waitForTransactionReceipt(wagmiConfig, { hash });
+  const receipt = await waitForTransactionReceipt(wagmiConfig, {
+    hash: hash as `0x${string}`,
+  });
   const prefixedTroveId = getPrefixedTroveId(collIndex, receipt.transactionHash);
   while (true) {
     // wait for the trove to be updated in the subgraph
