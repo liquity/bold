@@ -376,7 +376,7 @@ function FlowSteps({
               .with("awaiting-commit", () => "Awaiting signature…")
               .with("awaiting-verify", () => "Awaiting confirmation…")
               .with("confirmed", () => "Confirmed")
-              .otherwise(() => index === currentStep ? "Ready to sign" : "Next transaction")}
+              .otherwise(() => index === currentStep ? "Current step" : "Next step")}
             mode={match(step.status)
               .returnType<ComponentProps<typeof StepDisc>["mode"]>()
               .with(
