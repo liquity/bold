@@ -11,16 +11,16 @@ export const Governance = [
         "type": "tuple",
         "internalType": "struct IGovernance.Configuration",
         "components": [
-          { "name": "registrationFee", "type": "uint128", "internalType": "uint128" },
-          { "name": "registrationThresholdFactor", "type": "uint128", "internalType": "uint128" },
-          { "name": "unregistrationThresholdFactor", "type": "uint128", "internalType": "uint128" },
-          { "name": "unregistrationAfterEpochs", "type": "uint16", "internalType": "uint16" },
-          { "name": "votingThresholdFactor", "type": "uint128", "internalType": "uint128" },
-          { "name": "minClaim", "type": "uint88", "internalType": "uint88" },
-          { "name": "minAccrual", "type": "uint88", "internalType": "uint88" },
-          { "name": "epochStart", "type": "uint32", "internalType": "uint32" },
-          { "name": "epochDuration", "type": "uint32", "internalType": "uint32" },
-          { "name": "epochVotingCutoff", "type": "uint32", "internalType": "uint32" },
+          { "name": "registrationFee", "type": "uint256", "internalType": "uint256" },
+          { "name": "registrationThresholdFactor", "type": "uint256", "internalType": "uint256" },
+          { "name": "unregistrationThresholdFactor", "type": "uint256", "internalType": "uint256" },
+          { "name": "unregistrationAfterEpochs", "type": "uint256", "internalType": "uint256" },
+          { "name": "votingThresholdFactor", "type": "uint256", "internalType": "uint256" },
+          { "name": "minClaim", "type": "uint256", "internalType": "uint256" },
+          { "name": "minAccrual", "type": "uint256", "internalType": "uint256" },
+          { "name": "epochStart", "type": "uint256", "internalType": "uint256" },
+          { "name": "epochDuration", "type": "uint256", "internalType": "uint256" },
+          { "name": "epochVotingCutoff", "type": "uint256", "internalType": "uint256" },
         ],
       },
       { "name": "_owner", "type": "address", "internalType": "address" },
@@ -79,13 +79,6 @@ export const Governance = [
   },
   {
     "type": "function",
-    "name": "TIMESTAMP_PRECISION",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "uint120", "internalType": "uint120" }],
-    "stateMutability": "view",
-  },
-  {
-    "type": "function",
     "name": "UNREGISTRATION_AFTER_EPOCHS",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
@@ -111,8 +104,8 @@ export const Governance = [
     "inputs": [
       { "name": "_initiativesToReset", "type": "address[]", "internalType": "address[]" },
       { "name": "_initiatives", "type": "address[]", "internalType": "address[]" },
-      { "name": "_absoluteLQTYVotes", "type": "int88[]", "internalType": "int88[]" },
-      { "name": "_absoluteLQTYVetos", "type": "int88[]", "internalType": "int88[]" },
+      { "name": "_absoluteLQTYVotes", "type": "int256[]", "internalType": "int256[]" },
+      { "name": "_absoluteLQTYVetos", "type": "int256[]", "internalType": "int256[]" },
     ],
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -156,10 +149,11 @@ export const Governance = [
     "type": "function",
     "name": "claimFromStakingV1",
     "inputs": [{ "name": "_rewardRecipient", "type": "address", "internalType": "address" }],
-    "outputs": [
-      { "name": "lusdSent", "type": "uint256", "internalType": "uint256" },
-      { "name": "ethSent", "type": "uint256", "internalType": "uint256" },
-    ],
+    "outputs": [{ "name": "lusdSent", "type": "uint256", "internalType": "uint256" }, {
+      "name": "ethSent",
+      "type": "uint256",
+      "internalType": "uint256",
+    }],
     "stateMutability": "nonpayable",
   },
   {
@@ -172,18 +166,18 @@ export const Governance = [
   {
     "type": "function",
     "name": "depositLQTY",
-    "inputs": [{ "name": "_lqtyAmount", "type": "uint88", "internalType": "uint88" }],
+    "inputs": [{ "name": "_lqtyAmount", "type": "uint256", "internalType": "uint256" }],
     "outputs": [],
     "stateMutability": "nonpayable",
   },
   {
     "type": "function",
     "name": "depositLQTY",
-    "inputs": [
-      { "name": "_lqtyAmount", "type": "uint88", "internalType": "uint88" },
-      { "name": "_doSendRewards", "type": "bool", "internalType": "bool" },
-      { "name": "_recipient", "type": "address", "internalType": "address" },
-    ],
+    "inputs": [{ "name": "_lqtyAmount", "type": "uint256", "internalType": "uint256" }, {
+      "name": "_doSendRewards",
+      "type": "bool",
+      "internalType": "bool",
+    }, { "name": "_recipient", "type": "address", "internalType": "address" }],
     "outputs": [],
     "stateMutability": "nonpayable",
   },
@@ -191,30 +185,7 @@ export const Governance = [
     "type": "function",
     "name": "depositLQTYViaPermit",
     "inputs": [
-      { "name": "_lqtyAmount", "type": "uint88", "internalType": "uint88" },
-      {
-        "name": "_permitParams",
-        "type": "tuple",
-        "internalType": "struct PermitParams",
-        "components": [
-          { "name": "owner", "type": "address", "internalType": "address" },
-          { "name": "spender", "type": "address", "internalType": "address" },
-          { "name": "value", "type": "uint256", "internalType": "uint256" },
-          { "name": "deadline", "type": "uint256", "internalType": "uint256" },
-          { "name": "v", "type": "uint8", "internalType": "uint8" },
-          { "name": "r", "type": "bytes32", "internalType": "bytes32" },
-          { "name": "s", "type": "bytes32", "internalType": "bytes32" },
-        ],
-      },
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable",
-  },
-  {
-    "type": "function",
-    "name": "depositLQTYViaPermit",
-    "inputs": [
-      { "name": "_lqtyAmount", "type": "uint88", "internalType": "uint88" },
+      { "name": "_lqtyAmount", "type": "uint256", "internalType": "uint256" },
       {
         "name": "_permitParams",
         "type": "tuple",
@@ -232,6 +203,26 @@ export const Governance = [
       { "name": "_doSendRewards", "type": "bool", "internalType": "bool" },
       { "name": "_recipient", "type": "address", "internalType": "address" },
     ],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
+    "name": "depositLQTYViaPermit",
+    "inputs": [{ "name": "_lqtyAmount", "type": "uint256", "internalType": "uint256" }, {
+      "name": "_permitParams",
+      "type": "tuple",
+      "internalType": "struct PermitParams",
+      "components": [
+        { "name": "owner", "type": "address", "internalType": "address" },
+        { "name": "spender", "type": "address", "internalType": "address" },
+        { "name": "value", "type": "uint256", "internalType": "uint256" },
+        { "name": "deadline", "type": "uint256", "internalType": "uint256" },
+        { "name": "v", "type": "uint8", "internalType": "uint8" },
+        { "name": "r", "type": "bytes32", "internalType": "bytes32" },
+        { "name": "s", "type": "bytes32", "internalType": "bytes32" },
+      ],
+    }],
     "outputs": [],
     "stateMutability": "nonpayable",
   },
@@ -246,102 +237,94 @@ export const Governance = [
     "type": "function",
     "name": "epoch",
     "inputs": [],
-    "outputs": [{ "name": "", "type": "uint16", "internalType": "uint16" }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
   {
     "type": "function",
     "name": "epochStart",
     "inputs": [],
-    "outputs": [{ "name": "", "type": "uint32", "internalType": "uint32" }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
   {
     "type": "function",
     "name": "getInitiativeSnapshotAndState",
     "inputs": [{ "name": "_initiative", "type": "address", "internalType": "address" }],
-    "outputs": [
-      {
-        "name": "initiativeSnapshot",
-        "type": "tuple",
-        "internalType": "struct IGovernance.InitiativeVoteSnapshot",
-        "components": [
-          { "name": "votes", "type": "uint224", "internalType": "uint224" },
-          { "name": "forEpoch", "type": "uint16", "internalType": "uint16" },
-          { "name": "lastCountedEpoch", "type": "uint16", "internalType": "uint16" },
-          { "name": "vetos", "type": "uint224", "internalType": "uint224" },
-        ],
-      },
-      {
-        "name": "initiativeState",
-        "type": "tuple",
-        "internalType": "struct IGovernance.InitiativeState",
-        "components": [
-          { "name": "voteLQTY", "type": "uint88", "internalType": "uint88" },
-          { "name": "vetoLQTY", "type": "uint88", "internalType": "uint88" },
-          { "name": "averageStakingTimestampVoteLQTY", "type": "uint120", "internalType": "uint120" },
-          { "name": "averageStakingTimestampVetoLQTY", "type": "uint120", "internalType": "uint120" },
-          { "name": "lastEpochClaim", "type": "uint16", "internalType": "uint16" },
-        ],
-      },
-      { "name": "shouldUpdate", "type": "bool", "internalType": "bool" },
-    ],
+    "outputs": [{
+      "name": "initiativeSnapshot",
+      "type": "tuple",
+      "internalType": "struct IGovernance.InitiativeVoteSnapshot",
+      "components": [
+        { "name": "votes", "type": "uint256", "internalType": "uint256" },
+        { "name": "forEpoch", "type": "uint256", "internalType": "uint256" },
+        { "name": "lastCountedEpoch", "type": "uint256", "internalType": "uint256" },
+        { "name": "vetos", "type": "uint256", "internalType": "uint256" },
+      ],
+    }, {
+      "name": "initiativeState",
+      "type": "tuple",
+      "internalType": "struct IGovernance.InitiativeState",
+      "components": [
+        { "name": "voteLQTY", "type": "uint256", "internalType": "uint256" },
+        { "name": "voteOffset", "type": "uint256", "internalType": "uint256" },
+        { "name": "vetoLQTY", "type": "uint256", "internalType": "uint256" },
+        { "name": "vetoOffset", "type": "uint256", "internalType": "uint256" },
+        { "name": "lastEpochClaim", "type": "uint256", "internalType": "uint256" },
+      ],
+    }, { "name": "shouldUpdate", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view",
   },
   {
     "type": "function",
     "name": "getInitiativeState",
-    "inputs": [
-      { "name": "_initiative", "type": "address", "internalType": "address" },
-      {
-        "name": "_votesSnapshot",
-        "type": "tuple",
-        "internalType": "struct IGovernance.VoteSnapshot",
-        "components": [
-          { "name": "votes", "type": "uint240", "internalType": "uint240" },
-          { "name": "forEpoch", "type": "uint16", "internalType": "uint16" },
-        ],
-      },
-      {
-        "name": "_votesForInitiativeSnapshot",
-        "type": "tuple",
-        "internalType": "struct IGovernance.InitiativeVoteSnapshot",
-        "components": [
-          { "name": "votes", "type": "uint224", "internalType": "uint224" },
-          { "name": "forEpoch", "type": "uint16", "internalType": "uint16" },
-          { "name": "lastCountedEpoch", "type": "uint16", "internalType": "uint16" },
-          { "name": "vetos", "type": "uint224", "internalType": "uint224" },
-        ],
-      },
-      {
-        "name": "_initiativeState",
-        "type": "tuple",
-        "internalType": "struct IGovernance.InitiativeState",
-        "components": [
-          { "name": "voteLQTY", "type": "uint88", "internalType": "uint88" },
-          { "name": "vetoLQTY", "type": "uint88", "internalType": "uint88" },
-          { "name": "averageStakingTimestampVoteLQTY", "type": "uint120", "internalType": "uint120" },
-          { "name": "averageStakingTimestampVetoLQTY", "type": "uint120", "internalType": "uint120" },
-          { "name": "lastEpochClaim", "type": "uint16", "internalType": "uint16" },
-        ],
-      },
-    ],
-    "outputs": [
-      { "name": "status", "type": "uint8", "internalType": "enum IGovernance.InitiativeStatus" },
-      { "name": "lastEpochClaim", "type": "uint16", "internalType": "uint16" },
-      { "name": "claimableAmount", "type": "uint256", "internalType": "uint256" },
-    ],
+    "inputs": [{ "name": "_initiative", "type": "address", "internalType": "address" }, {
+      "name": "_votesSnapshot",
+      "type": "tuple",
+      "internalType": "struct IGovernance.VoteSnapshot",
+      "components": [{ "name": "votes", "type": "uint256", "internalType": "uint256" }, {
+        "name": "forEpoch",
+        "type": "uint256",
+        "internalType": "uint256",
+      }],
+    }, {
+      "name": "_votesForInitiativeSnapshot",
+      "type": "tuple",
+      "internalType": "struct IGovernance.InitiativeVoteSnapshot",
+      "components": [
+        { "name": "votes", "type": "uint256", "internalType": "uint256" },
+        { "name": "forEpoch", "type": "uint256", "internalType": "uint256" },
+        { "name": "lastCountedEpoch", "type": "uint256", "internalType": "uint256" },
+        { "name": "vetos", "type": "uint256", "internalType": "uint256" },
+      ],
+    }, {
+      "name": "_initiativeState",
+      "type": "tuple",
+      "internalType": "struct IGovernance.InitiativeState",
+      "components": [
+        { "name": "voteLQTY", "type": "uint256", "internalType": "uint256" },
+        { "name": "voteOffset", "type": "uint256", "internalType": "uint256" },
+        { "name": "vetoLQTY", "type": "uint256", "internalType": "uint256" },
+        { "name": "vetoOffset", "type": "uint256", "internalType": "uint256" },
+        { "name": "lastEpochClaim", "type": "uint256", "internalType": "uint256" },
+      ],
+    }],
+    "outputs": [{ "name": "status", "type": "uint8", "internalType": "enum IGovernance.InitiativeStatus" }, {
+      "name": "lastEpochClaim",
+      "type": "uint256",
+      "internalType": "uint256",
+    }, { "name": "claimableAmount", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
   {
     "type": "function",
     "name": "getInitiativeState",
     "inputs": [{ "name": "_initiative", "type": "address", "internalType": "address" }],
-    "outputs": [
-      { "name": "status", "type": "uint8", "internalType": "enum IGovernance.InitiativeStatus" },
-      { "name": "lastEpochClaim", "type": "uint16", "internalType": "uint16" },
-      { "name": "claimableAmount", "type": "uint256", "internalType": "uint256" },
-    ],
+    "outputs": [{ "name": "status", "type": "uint8", "internalType": "enum IGovernance.InitiativeStatus" }, {
+      "name": "lastEpochClaim",
+      "type": "uint256",
+      "internalType": "uint256",
+    }, { "name": "claimableAmount", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "nonpayable",
   },
   {
@@ -355,37 +338,36 @@ export const Governance = [
     "type": "function",
     "name": "getTotalVotesAndState",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "snapshot",
-        "type": "tuple",
-        "internalType": "struct IGovernance.VoteSnapshot",
-        "components": [
-          { "name": "votes", "type": "uint240", "internalType": "uint240" },
-          { "name": "forEpoch", "type": "uint16", "internalType": "uint16" },
-        ],
-      },
-      {
-        "name": "state",
-        "type": "tuple",
-        "internalType": "struct IGovernance.GlobalState",
-        "components": [
-          { "name": "countedVoteLQTY", "type": "uint88", "internalType": "uint88" },
-          { "name": "countedVoteLQTYAverageTimestamp", "type": "uint120", "internalType": "uint120" },
-        ],
-      },
-      { "name": "shouldUpdate", "type": "bool", "internalType": "bool" },
-    ],
+    "outputs": [{
+      "name": "snapshot",
+      "type": "tuple",
+      "internalType": "struct IGovernance.VoteSnapshot",
+      "components": [{ "name": "votes", "type": "uint256", "internalType": "uint256" }, {
+        "name": "forEpoch",
+        "type": "uint256",
+        "internalType": "uint256",
+      }],
+    }, {
+      "name": "state",
+      "type": "tuple",
+      "internalType": "struct IGovernance.GlobalState",
+      "components": [{ "name": "countedVoteLQTY", "type": "uint256", "internalType": "uint256" }, {
+        "name": "countedVoteOffset",
+        "type": "uint256",
+        "internalType": "uint256",
+      }],
+    }, { "name": "shouldUpdate", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view",
   },
   {
     "type": "function",
     "name": "globalState",
     "inputs": [],
-    "outputs": [
-      { "name": "countedVoteLQTY", "type": "uint88", "internalType": "uint88" },
-      { "name": "countedVoteLQTYAverageTimestamp", "type": "uint120", "internalType": "uint120" },
-    ],
+    "outputs": [{ "name": "countedVoteLQTY", "type": "uint256", "internalType": "uint256" }, {
+      "name": "countedVoteOffset",
+      "type": "uint256",
+      "internalType": "uint256",
+    }],
     "stateMutability": "view",
   },
   {
@@ -393,11 +375,11 @@ export const Governance = [
     "name": "initiativeStates",
     "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
     "outputs": [
-      { "name": "voteLQTY", "type": "uint88", "internalType": "uint88" },
-      { "name": "vetoLQTY", "type": "uint88", "internalType": "uint88" },
-      { "name": "averageStakingTimestampVoteLQTY", "type": "uint120", "internalType": "uint120" },
-      { "name": "averageStakingTimestampVetoLQTY", "type": "uint120", "internalType": "uint120" },
-      { "name": "lastEpochClaim", "type": "uint16", "internalType": "uint16" },
+      { "name": "voteLQTY", "type": "uint256", "internalType": "uint256" },
+      { "name": "voteOffset", "type": "uint256", "internalType": "uint256" },
+      { "name": "vetoLQTY", "type": "uint256", "internalType": "uint256" },
+      { "name": "vetoOffset", "type": "uint256", "internalType": "uint256" },
+      { "name": "lastEpochClaim", "type": "uint256", "internalType": "uint256" },
     ],
     "stateMutability": "view",
   },
@@ -418,26 +400,29 @@ export const Governance = [
   {
     "type": "function",
     "name": "lqtyAllocatedByUserToInitiative",
-    "inputs": [
-      { "name": "", "type": "address", "internalType": "address" },
-      { "name": "", "type": "address", "internalType": "address" },
-    ],
+    "inputs": [{ "name": "", "type": "address", "internalType": "address" }, {
+      "name": "",
+      "type": "address",
+      "internalType": "address",
+    }],
     "outputs": [
-      { "name": "voteLQTY", "type": "uint88", "internalType": "uint88" },
-      { "name": "vetoLQTY", "type": "uint88", "internalType": "uint88" },
-      { "name": "atEpoch", "type": "uint16", "internalType": "uint16" },
+      { "name": "voteLQTY", "type": "uint256", "internalType": "uint256" },
+      { "name": "voteOffset", "type": "uint256", "internalType": "uint256" },
+      { "name": "vetoLQTY", "type": "uint256", "internalType": "uint256" },
+      { "name": "vetoOffset", "type": "uint256", "internalType": "uint256" },
+      { "name": "atEpoch", "type": "uint256", "internalType": "uint256" },
     ],
     "stateMutability": "view",
   },
   {
     "type": "function",
     "name": "lqtyToVotes",
-    "inputs": [
-      { "name": "_lqtyAmount", "type": "uint88", "internalType": "uint88" },
-      { "name": "_currentTimestamp", "type": "uint120", "internalType": "uint120" },
-      { "name": "_averageTimestamp", "type": "uint120", "internalType": "uint120" },
-    ],
-    "outputs": [{ "name": "", "type": "uint208", "internalType": "uint208" }],
+    "inputs": [{ "name": "_lqtyAmount", "type": "uint256", "internalType": "uint256" }, {
+      "name": "_timestamp",
+      "type": "uint256",
+      "internalType": "uint256",
+    }, { "name": "_offset", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "pure",
   },
   {
@@ -472,16 +457,17 @@ export const Governance = [
     "type": "function",
     "name": "registeredInitiatives",
     "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
-    "outputs": [{ "name": "", "type": "uint16", "internalType": "uint16" }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
   {
     "type": "function",
     "name": "resetAllocations",
-    "inputs": [
-      { "name": "_initiativesToReset", "type": "address[]", "internalType": "address[]" },
-      { "name": "checkAll", "type": "bool", "internalType": "bool" },
-    ],
+    "inputs": [{ "name": "_initiativesToReset", "type": "address[]", "internalType": "address[]" }, {
+      "name": "checkAll",
+      "type": "bool",
+      "internalType": "bool",
+    }],
     "outputs": [],
     "stateMutability": "nonpayable",
   },
@@ -489,35 +475,33 @@ export const Governance = [
     "type": "function",
     "name": "secondsWithinEpoch",
     "inputs": [],
-    "outputs": [{ "name": "", "type": "uint32", "internalType": "uint32" }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
   {
     "type": "function",
     "name": "snapshotVotesForInitiative",
     "inputs": [{ "name": "_initiative", "type": "address", "internalType": "address" }],
-    "outputs": [
-      {
-        "name": "voteSnapshot",
-        "type": "tuple",
-        "internalType": "struct IGovernance.VoteSnapshot",
-        "components": [
-          { "name": "votes", "type": "uint240", "internalType": "uint240" },
-          { "name": "forEpoch", "type": "uint16", "internalType": "uint16" },
-        ],
-      },
-      {
-        "name": "initiativeVoteSnapshot",
-        "type": "tuple",
-        "internalType": "struct IGovernance.InitiativeVoteSnapshot",
-        "components": [
-          { "name": "votes", "type": "uint224", "internalType": "uint224" },
-          { "name": "forEpoch", "type": "uint16", "internalType": "uint16" },
-          { "name": "lastCountedEpoch", "type": "uint16", "internalType": "uint16" },
-          { "name": "vetos", "type": "uint224", "internalType": "uint224" },
-        ],
-      },
-    ],
+    "outputs": [{
+      "name": "voteSnapshot",
+      "type": "tuple",
+      "internalType": "struct IGovernance.VoteSnapshot",
+      "components": [{ "name": "votes", "type": "uint256", "internalType": "uint256" }, {
+        "name": "forEpoch",
+        "type": "uint256",
+        "internalType": "uint256",
+      }],
+    }, {
+      "name": "initiativeVoteSnapshot",
+      "type": "tuple",
+      "internalType": "struct IGovernance.InitiativeVoteSnapshot",
+      "components": [
+        { "name": "votes", "type": "uint256", "internalType": "uint256" },
+        { "name": "forEpoch", "type": "uint256", "internalType": "uint256" },
+        { "name": "lastCountedEpoch", "type": "uint256", "internalType": "uint256" },
+        { "name": "vetos", "type": "uint256", "internalType": "uint256" },
+      ],
+    }],
     "stateMutability": "nonpayable",
   },
   {
@@ -546,8 +530,10 @@ export const Governance = [
     "name": "userStates",
     "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
     "outputs": [
-      { "name": "allocatedLQTY", "type": "uint88", "internalType": "uint88" },
-      { "name": "averageStakingTimestamp", "type": "uint120", "internalType": "uint120" },
+      { "name": "unallocatedLQTY", "type": "uint256", "internalType": "uint256" },
+      { "name": "unallocatedOffset", "type": "uint256", "internalType": "uint256" },
+      { "name": "allocatedLQTY", "type": "uint256", "internalType": "uint256" },
+      { "name": "allocatedOffset", "type": "uint256", "internalType": "uint256" },
     ],
     "stateMutability": "view",
   },
@@ -556,10 +542,10 @@ export const Governance = [
     "name": "votesForInitiativeSnapshot",
     "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
     "outputs": [
-      { "name": "votes", "type": "uint224", "internalType": "uint224" },
-      { "name": "forEpoch", "type": "uint16", "internalType": "uint16" },
-      { "name": "lastCountedEpoch", "type": "uint16", "internalType": "uint16" },
-      { "name": "vetos", "type": "uint224", "internalType": "uint224" },
+      { "name": "votes", "type": "uint256", "internalType": "uint256" },
+      { "name": "forEpoch", "type": "uint256", "internalType": "uint256" },
+      { "name": "lastCountedEpoch", "type": "uint256", "internalType": "uint256" },
+      { "name": "vetos", "type": "uint256", "internalType": "uint256" },
     ],
     "stateMutability": "view",
   },
@@ -567,27 +553,28 @@ export const Governance = [
     "type": "function",
     "name": "votesSnapshot",
     "inputs": [],
-    "outputs": [
-      { "name": "votes", "type": "uint240", "internalType": "uint240" },
-      { "name": "forEpoch", "type": "uint16", "internalType": "uint16" },
-    ],
+    "outputs": [{ "name": "votes", "type": "uint256", "internalType": "uint256" }, {
+      "name": "forEpoch",
+      "type": "uint256",
+      "internalType": "uint256",
+    }],
     "stateMutability": "view",
   },
   {
     "type": "function",
     "name": "withdrawLQTY",
-    "inputs": [{ "name": "_lqtyAmount", "type": "uint88", "internalType": "uint88" }],
+    "inputs": [{ "name": "_lqtyAmount", "type": "uint256", "internalType": "uint256" }],
     "outputs": [],
     "stateMutability": "nonpayable",
   },
   {
     "type": "function",
     "name": "withdrawLQTY",
-    "inputs": [
-      { "name": "_lqtyAmount", "type": "uint88", "internalType": "uint88" },
-      { "name": "_doSendRewards", "type": "bool", "internalType": "bool" },
-      { "name": "_recipient", "type": "address", "internalType": "address" },
-    ],
+    "inputs": [{ "name": "_lqtyAmount", "type": "uint256", "internalType": "uint256" }, {
+      "name": "_doSendRewards",
+      "type": "bool",
+      "internalType": "bool",
+    }, { "name": "_recipient", "type": "address", "internalType": "address" }],
     "outputs": [],
     "stateMutability": "nonpayable",
   },
@@ -618,10 +605,12 @@ export const Governance = [
   {
     "type": "event",
     "name": "DeployUserProxy",
-    "inputs": [
-      { "name": "user", "type": "address", "indexed": true, "internalType": "address" },
-      { "name": "userProxy", "type": "address", "indexed": true, "internalType": "address" },
-    ],
+    "inputs": [{ "name": "user", "type": "address", "indexed": true, "internalType": "address" }, {
+      "name": "userProxy",
+      "type": "address",
+      "indexed": true,
+      "internalType": "address",
+    }],
     "anonymous": false,
   },
   {
@@ -641,10 +630,12 @@ export const Governance = [
   {
     "type": "event",
     "name": "OwnershipTransferred",
-    "inputs": [
-      { "name": "previousOwner", "type": "address", "indexed": true, "internalType": "address" },
-      { "name": "newOwner", "type": "address", "indexed": true, "internalType": "address" },
-    ],
+    "inputs": [{ "name": "previousOwner", "type": "address", "indexed": true, "internalType": "address" }, {
+      "name": "newOwner",
+      "type": "address",
+      "indexed": true,
+      "internalType": "address",
+    }],
     "anonymous": false,
   },
   {
@@ -661,11 +652,12 @@ export const Governance = [
   {
     "type": "event",
     "name": "SnapshotVotes",
-    "inputs": [
-      { "name": "votes", "type": "uint256", "indexed": false, "internalType": "uint256" },
-      { "name": "forEpoch", "type": "uint256", "indexed": false, "internalType": "uint256" },
-      { "name": "boldAccrued", "type": "uint256", "indexed": false, "internalType": "uint256" },
-    ],
+    "inputs": [{ "name": "votes", "type": "uint256", "indexed": false, "internalType": "uint256" }, {
+      "name": "forEpoch",
+      "type": "uint256",
+      "indexed": false,
+      "internalType": "uint256",
+    }, { "name": "boldAccrued", "type": "uint256", "indexed": false, "internalType": "uint256" }],
     "anonymous": false,
   },
   {
@@ -682,11 +674,12 @@ export const Governance = [
   {
     "type": "event",
     "name": "UnregisterInitiative",
-    "inputs": [
-      { "name": "initiative", "type": "address", "indexed": false, "internalType": "address" },
-      { "name": "atEpoch", "type": "uint256", "indexed": false, "internalType": "uint256" },
-      { "name": "hookSuccess", "type": "bool", "indexed": false, "internalType": "bool" },
-    ],
+    "inputs": [{ "name": "initiative", "type": "address", "indexed": false, "internalType": "address" }, {
+      "name": "atEpoch",
+      "type": "uint256",
+      "indexed": false,
+      "internalType": "uint256",
+    }, { "name": "hookSuccess", "type": "bool", "indexed": false, "internalType": "bool" }],
     "anonymous": false,
   },
   {
