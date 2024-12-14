@@ -63,7 +63,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
 
   steps: {
     deployUserProxy: {
-      name: () => "Deploy Staking Proxy",
+      name: () => "Initialize Staking",
       Status: TransactionStatus,
 
       async commit({ account, contracts, wagmiConfig }) {
