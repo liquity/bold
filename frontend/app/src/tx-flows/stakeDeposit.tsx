@@ -203,11 +203,6 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
 
     const steps: string[] = [];
 
-    // approve via permit
-    if (USE_PERMIT) {
-      return ["permitLqty", "stakeDeposit"];
-    }
-
     // get the user proxy address
     const userProxyAddress = await readContract(wagmiConfig, {
       ...contracts.Governance,
@@ -224,6 +219,15 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
     // to show a warning for approving a non-deployed contract)
     if (!userProxyBytecode) {
       steps.push("deployUserProxy");
+    }
+
+    // approve via permit
+    if (USE_PERMIT) {
+      return [
+        ...steps,
+        "permitLqty",
+        "stakeDeposit",
+      ];
     }
 
     // check for allowance
