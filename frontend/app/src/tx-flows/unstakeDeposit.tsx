@@ -36,62 +36,23 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
   },
 
   Details({ request }) {
-    const { rewards } = request.stakePosition;
     const lqtyPrice = usePrice("LQTY");
-    const lusdPrice = usePrice("LUSD");
-    const ethPrice = usePrice("ETH");
-
-    const rewardsLusdInUsd = lusdPrice.data && dn.mul(rewards.lusd, lusdPrice.data);
-    const rewardsEthInUsd = ethPrice.data && dn.mul(rewards.eth, ethPrice.data);
-
     return (
-      <>
-        <TransactionDetailsRow
-          label="You withdraw"
-          value={[
-            <Amount
-              key="start"
-              suffix=" LQTY"
-              value={request.lqtyAmount}
-            />,
-            <Amount
-              key="end"
-              prefix="$"
-              value={lqtyPrice.data && dn.mul(request.lqtyAmount, lqtyPrice.data)}
-            />,
-          ]}
-        />
-        <TransactionDetailsRow
-          label="Claiming LUSD rewards"
-          value={[
-            <Amount
-              key="start"
-              value={rewards.lusd}
-              suffix=" LUSD"
-            />,
-            <Amount
-              key="end"
-              value={rewardsLusdInUsd}
-              prefix="$"
-            />,
-          ]}
-        />
-        <TransactionDetailsRow
-          label="Claiming ETH rewards"
-          value={[
-            <Amount
-              key="start"
-              value={rewards.eth}
-              suffix=" ETH"
-            />,
-            <Amount
-              key="end"
-              value={rewardsEthInUsd}
-              prefix="$"
-            />,
-          ]}
-        />
-      </>
+      <TransactionDetailsRow
+        label="You withdraw"
+        value={[
+          <Amount
+            key="start"
+            suffix=" LQTY"
+            value={request.lqtyAmount}
+          />,
+          <Amount
+            key="end"
+            prefix="$"
+            value={lqtyPrice.data && dn.mul(request.lqtyAmount, lqtyPrice.data)}
+          />,
+        ]}
+      />
     );
   },
 
@@ -101,9 +62,10 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
       Status: TransactionStatus,
 
       async commit({ contracts, request, wagmiConfig }) {
+        const { Governance } = contracts;
         return writeContract(wagmiConfig, {
-          ...contracts.LqtyStaking,
-          functionName: "unstake",
+          ...Governance,
+          functionName: "withdrawLQTY",
           args: [request.lqtyAmount[0]],
         });
       },
