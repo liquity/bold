@@ -44,12 +44,12 @@ export function PanelStaking() {
     )
     : dn.from(0, 18);
 
-  const updatedShare = stakePosition.data?.totalStaked
-      && dn.gt(stakePosition.data?.totalStaked, 0)
-    ? dn.div(
-      updatedDeposit,
-      dn.add(stakePosition.data.totalStaked, depositDifference),
-    )
+  const updatedTotalStaked = stakePosition.data?.totalStaked
+    ? dn.add(stakePosition.data.totalStaked, depositDifference)
+    : null;
+
+  const updatedShare = updatedTotalStaked && dn.gt(updatedTotalStaked, 0)
+    ? dn.div(updatedDeposit, updatedTotalStaked)
     : dn.from(0, 18);
 
   const lqtyBalance = useBalance(account.address, "LQTY");
@@ -58,14 +58,19 @@ export function PanelStaking() {
     stakePosition.data?.deposit,
     0,
   );
-  const sufficientBalance = mode === "withdraw" || (
-    lqtyBalance.data && dn.gte(lqtyBalance.data, depositDifference)
+
+  const insufficientBalance = mode === "deposit" && isDepositFilled && (
+    !lqtyBalance.data || dn.lt(lqtyBalance.data, parsedValue)
+  );
+
+  const withdrawOutOfRange = mode === "withdraw" && isDepositFilled && (
+    !stakePosition.data || dn.lt(stakePosition.data.deposit, parsedValue)
   );
 
   const allowSubmit = Boolean(
     account.isConnected
       && isDepositFilled
-      && sufficientBalance,
+      && !insufficientBalance,
   );
 
   const rewardsLusd = dn.from(0, 18);
@@ -77,10 +82,17 @@ export function PanelStaking() {
         field={
           <InputField
             id="input-staking-change"
-            drawer={!isDepositFilled || sufficientBalance ? null : {
-              mode: "error",
-              message: `Insufficient balance. You have ${fmtnum(lqtyBalance.data ?? 0)} LQTY.`,
-            }}
+            drawer={insufficientBalance
+              ? {
+                mode: "error",
+                message: `Insufficient balance. You have ${fmtnum(lqtyBalance.data ?? 0)} LQTY.`,
+              }
+              : withdrawOutOfRange
+              ? {
+                mode: "error",
+                message: `You can’t withdraw more than you have staked.`,
+              }
+              : null}
             contextual={
               <InputTokenBadge
                 background={false}
