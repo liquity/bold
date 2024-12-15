@@ -1,21 +1,26 @@
 import type { PositionStake } from "@/src/types";
 
+import { useAppear } from "@/src/anim-utils";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, InfoTooltip, TokenIcon } from "@liquity2/uikit";
+import { a } from "@react-spring/web";
 import * as dn from "dnum";
 
 export function StakePositionSummary({
+  loadingState = "success",
   prevStakePosition,
   stakePosition,
   txPreviewMode = false,
 }: {
+  loadingState?: "error" | "pending" | "success";
   prevStakePosition?: null | PositionStake;
   stakePosition: null | PositionStake;
   txPreviewMode?: boolean;
 }) {
+  const appear = useAppear(loadingState === "success");
   return (
     <div
       className={css({
@@ -98,25 +103,40 @@ export function StakePositionSummary({
               className={css({
                 display: "flex",
                 alignItems: "center",
-                gap: 12,
+                gap: 8,
+                height: 40,
               })}
             >
-              <div
-                style={{
-                  color: txPreviewMode
-                      && prevStakePosition
-                      && stakePosition?.deposit
-                      && !dn.eq(prevStakePosition.deposit, stakePosition.deposit)
-                    ? "var(--update-color)"
-                    : "inherit",
-                }}
-              >
-                <Amount
-                  format={2}
-                  value={stakePosition?.deposit ?? 0}
-                />
-              </div>
-              <TokenIcon symbol="LQTY" size={32} />
+              {appear((style, show) => (
+                show && (
+                  <a.div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      height: 40,
+                    })}
+                    style={style}
+                  >
+                    <div
+                      style={{
+                        color: txPreviewMode
+                            && prevStakePosition
+                            && stakePosition?.deposit
+                            && !dn.eq(prevStakePosition.deposit, stakePosition.deposit)
+                          ? "var(--update-color)"
+                          : "inherit",
+                      }}
+                    >
+                      <Amount
+                        format={2}
+                        value={stakePosition?.deposit ?? 0}
+                      />
+                    </div>
+                    <TokenIcon symbol="LQTY" size={32} />
+                  </a.div>
+                )
+              ))}
               {prevStakePosition
                 && stakePosition
                 && !dn.eq(prevStakePosition.deposit, stakePosition.deposit)
@@ -219,47 +239,53 @@ export function StakePositionSummary({
             >
               Voting power
             </div>
-            <div
-              className={css({
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-              })}
-            >
-              <div
-                style={{
-                  color: txPreviewMode
-                      && prevStakePosition
-                      && stakePosition?.share
-                      && !dn.eq(prevStakePosition.share, stakePosition.share)
-                    ? "var(--update-color)"
-                    : "inherit",
-                }}
-              >
-                <Amount
-                  percentage
-                  value={stakePosition?.share ?? 0}
-                />
-              </div>
-              {prevStakePosition && stakePosition && !dn.eq(prevStakePosition.share, stakePosition.share)
-                ? (
+
+            {appear((style, show) => (
+              show && (
+                <a.div
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  })}
+                  style={style}
+                >
                   <div
-                    className={css({
-                      color: "contentAlt",
-                      textDecoration: "line-through",
-                    })}
+                    style={{
+                      color: txPreviewMode
+                          && prevStakePosition
+                          && stakePosition?.share
+                          && !dn.eq(prevStakePosition.share, stakePosition.share)
+                        ? "var(--update-color)"
+                        : "inherit",
+                    }}
                   >
                     <Amount
                       percentage
-                      value={prevStakePosition?.share ?? 0}
+                      value={stakePosition?.share ?? 0}
                     />
                   </div>
-                )
-                : " of pool"}
-              <InfoTooltip>
-                Voting power is the percentage of the total staked LQTY that you own.
-              </InfoTooltip>
-            </div>
+                  {prevStakePosition && stakePosition && !dn.eq(prevStakePosition.share, stakePosition.share)
+                    ? (
+                      <div
+                        className={css({
+                          color: "contentAlt",
+                          textDecoration: "line-through",
+                        })}
+                      >
+                        <Amount
+                          percentage
+                          value={prevStakePosition?.share ?? 0}
+                        />
+                      </div>
+                    )
+                    : " of pool"}
+                  <InfoTooltip>
+                    Voting power is the percentage of the total staked LQTY that you own.
+                  </InfoTooltip>
+                </a.div>
+              )
+            ))}
           </div>
         </div>
       </div>

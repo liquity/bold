@@ -46,6 +46,7 @@ export function StakeScreen() {
     >
       <StakePositionSummary
         stakePosition={stakePosition.data ?? null}
+        loadingState={stakePosition.status}
       />
       <VFlex gap={24}>
         <Tabs
