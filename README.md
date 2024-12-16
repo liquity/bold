@@ -1,7 +1,5 @@
 ![Liquity V2](https://github.com/user-attachments/assets/b3ffbc5e-b7a8-46b6-a080-e18a0792bb64)
 
-# Liquity V2
-
 ## Table of Contents
 1. [Significant Changes in Liquity v2](#significant-changes-in-liquity-v2)
 
