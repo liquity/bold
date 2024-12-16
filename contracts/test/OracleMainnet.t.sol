@@ -2,12 +2,16 @@
 
 pragma solidity 0.8.24;
 
+import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
+import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
+
 import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/MainnetPriceFeedBase.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
 import "src/PriceFeeds/ChainlinkPriceFeed.sol";
 import "src/PriceFeeds/CompositeChainlinkPriceFeed.sol";
+import "src/PriceFeeds/PythPriceFeed.sol";
 
 import "./TestContracts/Accounts.sol";
 import "./TestContracts/ChainlinkOracleMock.sol";
@@ -20,6 +24,7 @@ import "src/Interfaces/IRETHPriceFeed.sol";
 import "src/Interfaces/IWSTETHPriceFeed.sol";
 import "src/Interfaces/IChainlinkPriceFeed.sol";
 import "src/Interfaces/ICompositeChainlinkPriceFeed.sol";
+import "src/Interfaces/IPythPriceFeed.sol";
 
 import "src/Interfaces/IRETHToken.sol";
 import "src/Interfaces/IWSTETH.sol";
@@ -34,6 +39,7 @@ contract OraclesMainnet is TestAccounts {
     AggregatorV3Interface aaveOracle;
     AggregatorV3Interface ldoOracle;
 
+    IPyth pythContract;
     ChainlinkOracleMock mockOracle;
 
     IMainnetPriceFeed wethPriceFeed;
@@ -41,6 +47,7 @@ contract OraclesMainnet is TestAccounts {
     IWSTETHPriceFeed wstethPriceFeed;
     IChainlinkPriceFeed aavePriceFeed;
     ICompositeChainlinkPriceFeed ldoPriceFeed;
+    IPythPriceFeed lqtyPriceFeed;
 
     IRETHToken rethToken;
     IWSTETH wstETH;
@@ -97,6 +104,7 @@ contract OraclesMainnet is TestAccounts {
         aaveOracle = AggregatorV3Interface(0x547a514d5e3769680Ce22B2361c10Ea13619e8a9);
         ldoOracle = AggregatorV3Interface(0x4e844125952D32AcdF339BE976c98E22F6F318dB);
 
+        pythContract = IPyth(0x4305FB66699C3B2702D4d05CF36551390A4c69C6);
         mockOracle = new ChainlinkOracleMock();
 
         rethToken = IRETHToken(result.externalAddresses.RETHToken);
@@ -132,6 +140,7 @@ contract OraclesMainnet is TestAccounts {
         wstethPriceFeed = IWSTETHPriceFeed(address(contractsArray[2].priceFeed));
         aavePriceFeed = new ChainlinkPriceFeed(address(deployer), address(aaveOracle), _24_HOURS);
         ldoPriceFeed = new CompositeChainlinkPriceFeed(address(deployer), address(ethOracle), address(ldoOracle), _24_HOURS, _24_HOURS);
+        lqtyPriceFeed = new PythPriceFeed(address(deployer), address(pythContract), 0x5e8b35b0da37ede980d8f4ddaa7988af73d8c3d110e3eddd2a56977beb839b63, 7 days);
 
         // log some current blockchain state
         // console2.log(block.timestamp, "block.timestamp");
@@ -299,6 +308,17 @@ contract OraclesMainnet is TestAccounts {
         uint256 expectedPrice = latestAnswerLdoEth * latestAnswerEthUsd / 1e18;
 
         assertEq(fetchedLdoUsdPrice, expectedPrice);
+    }
+
+    function testFetchPriceReturnsCorrectPriceLqty() public {
+        (uint256 fetchedLqtyUsdPrice,) = lqtyPriceFeed.fetchPrice();
+        assertGt(fetchedLqtyUsdPrice, 0);
+
+        PythStructs.Price memory price = pythContract.getPriceUnsafe(0x5e8b35b0da37ede980d8f4ddaa7988af73d8c3d110e3eddd2a56977beb839b63);
+
+        uint256 expectedPrice = uint256(int256(price.price)) * 10 ** uint256(18 + int256(price.expo));
+
+        assertEq(fetchedLqtyUsdPrice, expectedPrice);
     }
 
     // --- Thresholds set at deployment ---
