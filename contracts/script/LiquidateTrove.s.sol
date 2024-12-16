@@ -7,7 +7,7 @@ import {IAddressesRegistry} from "src/Interfaces/IAddressesRegistry.sol";
 import {ICollateralRegistry} from "src/Interfaces/ICollateralRegistry.sol";
 import {LatestTroveData} from "src/Types/LatestTroveData.sol";
 import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
-import {IPriceFeedTestnet} from "src/test/TestContracts/Interfaces/IPriceFeedTestnet.sol";
+import {IPriceFeedTestnet} from "test/TestContracts/Interfaces/IPriceFeedTestnet.sol";
 
 contract LiquidateTrove is Script {
     using Strings for uint256;
