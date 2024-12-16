@@ -244,8 +244,8 @@ export function PanelStaking() {
             if (account.address) {
               txFlow.start({
                 flowId: mode === "deposit" ? "stakeDeposit" : "unstakeDeposit",
-                backLink: [`/stake`, "Back to stake position"],
-                successLink: ["/", "Go to the Dashboard"],
+                backLink: ["/stake", "Back to stake position"],
+                successLink: ["/stake/voting", "Allocate voting power"],
                 successMessage: "The stake position has been updated successfully.",
 
                 lqtyAmount: dn.abs(depositDifference),

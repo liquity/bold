@@ -145,3 +145,19 @@ export type LoanDetails = {
     | "liquidatable" // above the max LTV before liquidation
     | "underwater"; // above 100% LTV
 };
+
+// governance
+export type Initiative =
+  & {
+    name: string;
+    protocol: string;
+    address: Address;
+  }
+  & (
+    | { tvl: Dnum; pairVolume: Dnum; votesDistribution: Dnum }
+    | { tvl: null; pairVolume: null; votesDistribution: null }
+  );
+
+export type Vote = "for" | "against";
+export type VoteAllocation = { vote: Vote | null; value: Dnum };
+export type VoteAllocations = Record<Address, VoteAllocation>;

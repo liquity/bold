@@ -19,6 +19,7 @@ import { useAccount, useConfig as useWagmiConfig } from "wagmi";
 
 /* flows registration */
 
+import { allocateVotingPower, type AllocateVotingPowerRequest } from "@/src/tx-flows/allocateVotingPower";
 import { claimCollateralSurplus, type ClaimCollateralSurplusRequest } from "@/src/tx-flows/claimCollateralSurplus";
 import { closeLoanPosition, type CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import { earnClaimRewards, type EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
@@ -34,6 +35,7 @@ import { updateLeveragePosition, type UpdateLeveragePositionRequest } from "@/sr
 import { updateLoanInterestRate, type UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
 
 export type FlowRequestMap = {
+  "allocateVotingPower": AllocateVotingPowerRequest;
   "claimCollateralSurplus": ClaimCollateralSurplusRequest;
   "closeLoanPosition": CloseLoanPositionRequest;
   "earnClaimRewards": EarnClaimRewardsRequest;
@@ -50,6 +52,7 @@ export type FlowRequestMap = {
 };
 
 const FlowIdSchema = v.union([
+  v.literal("allocateVotingPower"),
   v.literal("claimCollateralSurplus"),
   v.literal("closeLoanPosition"),
   v.literal("earnClaimRewards"),
@@ -66,6 +69,7 @@ const FlowIdSchema = v.union([
 ]);
 
 export const flows: FlowsMap = {
+  allocateVotingPower,
   claimCollateralSurplus,
   closeLoanPosition,
   earnClaimRewards,
