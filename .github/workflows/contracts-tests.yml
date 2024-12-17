@@ -173,18 +173,18 @@ jobs:
 
       # Instead of merge
       - name: Rename coverage file
-        run: |
-          mv lcov_foundry.info lcov_merged.info
+        run: mv lcov_foundry.info lcov_merged.info
 
       # Filter
       - name: Filter out from coverage
-        run: |
-          lcov --remove lcov_merged.info -o lcov_merged.info \
-              'src/Dependencies/*' \
-              'src/Interfaces/*' \
-              'src/Types/*' \
-              'src/MultiTroveGetter.sol' \
-              'src/deployment.sol'
+        run:
+          lcov --remove lcov_merged.info -o lcov_merged.info
+            'test/*'
+            'script/*'
+            'src/Interfaces/*'
+            'src/NFTMetadata/*'
+            'src/Types/*'
+            'src/MultiTroveGetter.sol'
 
       # Send to coveralls
       - name: Coveralls
