@@ -20,8 +20,6 @@ import {Hooks} from "V2-gov/src/utils/BaseHook.sol";
 
 import {HookMiner} from "V2-gov/script/utils/HookMiner.sol";
 
-import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
-
 import "forge-std/console2.sol";
 
 contract DeployGovernance is Script, Deployers {

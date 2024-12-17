@@ -4,10 +4,10 @@ pragma solidity 0.8.24;
 import {console} from "forge-std/console.sol";
 import {Script} from "forge-std/Script.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {StringFormatting} from "../test/Utils/StringFormatting.sol";
-import {IBoldToken} from "../Interfaces/IBoldToken.sol";
-import {ICollateralRegistry} from "../Interfaces/ICollateralRegistry.sol";
-import {DECIMAL_PRECISION} from "../Dependencies/Constants.sol";
+import {StringFormatting} from "test/Utils/StringFormatting.sol";
+import {IBoldToken} from "src/Interfaces/IBoldToken.sol";
+import {ICollateralRegistry} from "src/Interfaces/ICollateralRegistry.sol";
+import {DECIMAL_PRECISION} from "src/Dependencies/Constants.sol";
 
 contract RedeemCollateral is Script {
     using Strings for *;
