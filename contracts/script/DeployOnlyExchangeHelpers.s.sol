@@ -5,9 +5,9 @@ import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
 import {Script} from "forge-std/Script.sol";
 
-import "../Zappers/Modules/Exchanges/HybridCurveUniV3ExchangeHelpers.sol";
-import "../Zappers/Modules/Exchanges/Curve/ICurveStableswapNGPool.sol";
-import "../Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
+import "src/Zappers/Modules/Exchanges/HybridCurveUniV3ExchangeHelpers.sol";
+import "src/Zappers/Modules/Exchanges/Curve/ICurveStableswapNGPool.sol";
+import "src/Zappers/Modules/Exchanges/UniswapV3/IQuoterV2.sol";
 
 import "forge-std/console2.sol";
 

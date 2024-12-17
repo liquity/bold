@@ -3,11 +3,11 @@ pragma solidity 0.8.24;
 
 import {Script} from "forge-std/Script.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {IAddressesRegistry} from "../Interfaces/IAddressesRegistry.sol";
-import {ICollateralRegistry} from "../Interfaces/ICollateralRegistry.sol";
-import {LatestTroveData} from "../Types/LatestTroveData.sol";
-import {ITroveManager} from "../Interfaces/ITroveManager.sol";
-import {IPriceFeedTestnet} from "../test/TestContracts/Interfaces/IPriceFeedTestnet.sol";
+import {IAddressesRegistry} from "src/Interfaces/IAddressesRegistry.sol";
+import {ICollateralRegistry} from "src/Interfaces/ICollateralRegistry.sol";
+import {LatestTroveData} from "src/Types/LatestTroveData.sol";
+import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
+import {IPriceFeedTestnet} from "test/TestContracts/Interfaces/IPriceFeedTestnet.sol";
 
 contract LiquidateTrove is Script {
     using Strings for uint256;

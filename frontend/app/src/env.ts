@@ -13,6 +13,28 @@ export const CollateralSymbolSchema = v.union([
 export const EnvSchema = v.pipe(
   v.object({
     APP_VERSION: v.string(),
+    BLOCKING_LIST: v.optional(vAddress()),
+    BLOCKING_VPNAPI: v.pipe(
+      v.optional(v.string(), ""),
+      v.transform((value) => {
+        if (!value.trim()) {
+          return null; // not set
+        }
+
+        const [apiKey, countries = ""] = value.split("|");
+        if (!apiKey) {
+          throw new Error(
+            `Invalid BLOCKING_VPNAPI value: ${value}. `
+              + `Expected format: API_KEY or API_KEY|COUNTRY,COUNTRY,… `
+              + `(e.g. 123456|US,CA)`,
+          );
+        }
+        return {
+          apiKey: apiKey.trim(),
+          countries: countries.split(",").map((c) => c.trim().toUpperCase()),
+        };
+      }),
+    ),
     CHAIN_ID: v.pipe(
       v.string(),
       v.transform((value) => {
@@ -58,11 +80,11 @@ export const EnvSchema = v.pipe(
       v.optional(v.string(), ""),
       v.transform((value) => value.trim()),
     ),
+    INITIATIVE_UNI_V4_DONATIONS: vAddress(),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.string(),
 
     DELEGATE_AUTO: vAddress(),
-    INITIATIVE_UNI_V4_DONATIONS: vAddress(),
 
     CONTRACT_BOLD_TOKEN: vAddress(),
     CONTRACT_COLLATERAL_REGISTRY: vAddress(),
@@ -181,19 +203,25 @@ export type Env = v.InferOutput<typeof EnvSchema>;
 
 const parsedEnv = v.parse(EnvSchema, {
   APP_VERSION: process.env.APP_VERSION, // set in next.config.js
-  CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID,
-  CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
-  CHAIN_CURRENCY: process.env.NEXT_PUBLIC_CHAIN_CURRENCY,
-  CHAIN_RPC_URL: process.env.NEXT_PUBLIC_CHAIN_RPC_URL,
+  BLOCKING_LIST: process.env.NEXT_PUBLIC_BLOCKING_LIST,
+  BLOCKING_VPNAPI: process.env.NEXT_PUBLIC_BLOCKING_VPNAPI,
   CHAIN_BLOCK_EXPLORER: process.env.NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER,
   CHAIN_CONTRACT_ENS_REGISTRY: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_ENS_REGISTRY,
   CHAIN_CONTRACT_ENS_RESOLVER: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER,
   CHAIN_CONTRACT_MULTICALL: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL,
+  CHAIN_CURRENCY: process.env.NEXT_PUBLIC_CHAIN_CURRENCY,
+  CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID,
+  CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
+  CHAIN_RPC_URL: process.env.NEXT_PUBLIC_CHAIN_RPC_URL,
+  COINGECKO_API_KEY: process.env.NEXT_PUBLIC_COINGECKO_API_KEY,
   COMMIT_HASH: process.env.COMMIT_HASH, // set in next.config.js
-  SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
-
   DELEGATE_AUTO: process.env.NEXT_PUBLIC_DELEGATE_AUTO,
+  DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
+  DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
   INITIATIVE_UNI_V4_DONATIONS: process.env.NEXT_PUBLIC_INITIATIVE_UNI_V4_DONATIONS,
+  SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
+  VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
+  WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 
   CONTRACT_BOLD_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY: process.env.NEXT_PUBLIC_CONTRACT_COLLATERAL_REGISTRY,
@@ -245,16 +273,12 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_2_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_STABILITY_POOL,
   COLL_2_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_MANAGER,
   COLL_2_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_NFT,
-
-  COINGECKO_API_KEY: process.env.NEXT_PUBLIC_COINGECKO_API_KEY,
-  DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
-  DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
-  VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
-  WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 });
 
 export const {
   APP_VERSION,
+  BLOCKING_LIST,
+  BLOCKING_VPNAPI,
   CHAIN_BLOCK_EXPLORER,
   CHAIN_CONTRACT_ENS_REGISTRY,
   CHAIN_CONTRACT_ENS_RESOLVER,

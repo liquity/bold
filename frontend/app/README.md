@@ -2,38 +2,30 @@
 
 ## Preview
 
-<https://liquity2.vercel.app/>
+<https://liquity2-sepolia.vercel.app/>
 
 ## Requirements
 
-- [Node.js](https://nodejs.org/)
-- [pnpm](https://pnpm.io/)
+- [Node.js](https://nodejs.org/) (v20 or later)
+- [pnpm](https://pnpm.io/) (v8)
 
-## Setup
+## Dependencies
 
 ```sh
 git clone git@github.com:liquity/bold.git
 cd bold
-pnpm install
+pnpm install # install dependencies for all packages
 ```
 
 ## How to develop
 
-Run the Hardhat Network local node:
+Copy the `.env` file to `.env.local`:
 
 ```sh
-cd bold/contracts
-ACCOUNTS_BALANCE=1000 pnpm hardhat node # ACCOUNTS_BALANCE=1000 is optional but nicer than the default values in the UI
+cp .env .env.local
 ```
 
-Deploy the contracts:
-
-```sh
-cd bold/contracts
-pnpm hardhat run --network localhost utils/deploymentDev.js
-```
-
-Copy the addresses of the deployed contracts to the `.env.local` file.
+Edit the `.env.local` file to set the environment variables.
 
 Run the development server:
 
@@ -44,8 +36,6 @@ pnpm dev
 ```
 
 You can now open <http://localhost:3000/> in your browser.
-
-See also `contracts/hardhatAccountsList2k.js` to import the accounts into MetaMask (the deployment script opens troves for the first six accounts).
 
 ## Scripts
 
