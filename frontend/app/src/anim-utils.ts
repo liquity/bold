@@ -20,3 +20,12 @@ export function useFlashTransition(duration: number = 500) {
     }),
   };
 }
+
+export function useAppear(show: boolean) {
+  return useTransition(show, {
+    from: { opacity: 0, transform: "scale(0.9)" },
+    enter: { opacity: 1, transform: "scale(1)" },
+    leave: { opacity: 0, transform: "scale(1)", immediate: true },
+    config: { mass: 1, tension: 2000, friction: 80 },
+  });
+}
