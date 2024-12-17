@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 
 import {DeployGovernance} from "./DeployGovernance.s.sol";
 
-import {ERC20Faucet} from "../test/TestContracts/ERC20Faucet.sol";
+import {ERC20Faucet} from "test/TestContracts/ERC20Faucet.sol";
 
 import "forge-std/console2.sol";
 

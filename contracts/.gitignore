@@ -20,8 +20,10 @@ docs/
 artifacts
 cache_hardhat
 
-coverage/
-coverage.json
+/coverage
+/coverage.json
+/lcov_foundry.info
+/lcov_merged.info
 
 .venv
 
