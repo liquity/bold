@@ -2,30 +2,24 @@
 
 pragma solidity 0.8.24;
 
-import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
-import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
-import "@pythnetwork/pyth-sdk-solidity/PythUtils.sol";
+import "./PythPriceFeedBase.sol";
 
-import "../Dependencies/Ownable.sol";
-import "../Interfaces/IPythPriceFeed.sol";
-import "../BorrowerOperations.sol";
-
-contract PythPriceFeed is IPythPriceFeed, Ownable {
-    IPyth public pythContract;
-    bytes32 public priceFeedId;
-    uint256 public priceAgeThreshold;
-    uint256 internal _lastGoodPrice;
-    IBorrowerOperations borrowerOperations;
-
+contract PythPriceFeed is PythPriceFeedBase {
     constructor(
         address _owner,
         address _pythContract,
         bytes32 _priceFeedId,
         uint256 _priceAgeThreshold
-    ) Ownable(_owner) {
-        pythContract = IPyth(_pythContract);
-        priceFeedId = _priceFeedId;
-        priceAgeThreshold = _priceAgeThreshold;
+    )
+        PythPriceFeedBase(
+            _owner,
+            _pythContract,
+            _priceFeedId,
+            _priceAgeThreshold
+        )
+    {
+        _fetchPrice();
+        assert(priceSource == PriceSource.primary);
     }
 
     // Returns:
@@ -34,34 +28,31 @@ contract PythPriceFeed is IPythPriceFeed, Ownable {
     // --- a) the system was not shut down prior to this call, and
     // --- b) an oracle or exchange rate contract failed during this call.
     function fetchPrice() public returns (uint256, bool) {
-        return _fetchPrice();
+        if (priceSource == PriceSource.primary) {
+            return _fetchPrice();
+        }
+
+        assert(priceSource == PriceSource.lastGoodPrice);
+        return (lastGoodPrice, false);
     }
 
     function fetchRedemptionPrice() external returns (uint256, bool) {
-        return _fetchPrice();
-    }
-
-    function lastGoodPrice() external view returns (uint256) {
-        return _lastGoodPrice;
+        return fetchPrice();
     }
 
     function _fetchPrice() internal returns (uint256, bool) {
-        PythStructs.Price memory price = pythContract.getPriceNoOlderThan(
-            priceFeedId,
-            priceAgeThreshold
-        );
-        uint256 scaledPrice = PythUtils.convertToUint(
-            price.price,
-            price.expo,
-            18
-        );
-        _lastGoodPrice = scaledPrice;
-        return (scaledPrice, false);
-    }
-
-    function setAddresses(address _borrowOperationsAddress) external onlyOwner {
-        borrowerOperations = IBorrowerOperations(_borrowOperationsAddress);
-
-        _renounceOwnership();
+        assert(priceSource == PriceSource.primary);
+        (uint256 price, bool oracleDown) = _getOracleAnswer(pyth);
+        if (oracleDown) {
+            return (
+                _shutDownAndSwitchToLastGoodPrice(
+                    address(pyth.pythContract),
+                    pyth.feedId
+                ),
+                true
+            );
+        }
+        lastGoodPrice = price;
+        return (price, false);
     }
 }
