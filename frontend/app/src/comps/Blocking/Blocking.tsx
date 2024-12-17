@@ -41,7 +41,7 @@ export function Blocking({
   if (accountVpnapi.data?.isCountryBlocked) {
     blocked = {
       title: "Blocked country",
-      message: `This app cannot be accessed from your country (${accountVpnapi.data.country}).`,
+      message: `This app cannot be accessed from this country (${accountVpnapi.data.country}).`,
     };
   }
 
