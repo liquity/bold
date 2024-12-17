@@ -1,7 +1,5 @@
 # Liquity V2
 
-[![Coverage Status](https://coveralls.io/repos/github/liquity/bold/badge.png)](https://coveralls.io/github/liquity/bold)
-
 ## Table of Contents
 1. [Significant Changes in Liquity v2](#significant-changes-in-liquity-v2)
 
