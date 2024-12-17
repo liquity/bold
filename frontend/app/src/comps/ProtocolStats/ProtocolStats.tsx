@@ -13,6 +13,7 @@ import { AnchorTextButton, HFlex, shortenAddress, TokenIcon } from "@liquity2/ui
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
+import Link from "next/link";
 
 const DISPLAYED_PRICES = ["LQTY", "BOLD", "ETH"] as const;
 
@@ -57,30 +58,41 @@ export function ProtocolStats() {
             />
           ))}
           {account.address && (
-            <AnchorTextButton
+            <Link
               id="footer-account-button"
               href={`/account?address=${account.address}`}
-              label={
-                <HFlex gap={4} alignItems="center">
-                  <Image
-                    alt=""
-                    width={16}
-                    height={16}
-                    src={blo(account.address)}
-                    className={css({
-                      borderRadius: "50%",
-                    })}
-                  />
+              passHref
+              legacyBehavior
+              scroll={true}
+            >
+              <AnchorTextButton
+                label={
+                  <HFlex gap={4} alignItems="center">
+                    <Image
+                      alt=""
+                      width={16}
+                      height={16}
+                      src={blo(account.address)}
+                      className={css({
+                        borderRadius: "50%",
+                      })}
+                    />
 
-                  <HFlex gap={8}>
-                    <span>{shortenAddress(account.address, 3)}</span>
+                    {shortenAddress(account.address, 3)}
                   </HFlex>
-                </HFlex>
-              }
-              className={css({
-                color: "content",
-              })}
-            />
+                }
+                className={css({
+                  color: "content",
+                  borderRadius: 4,
+                  _focusVisible: {
+                    outline: "2px solid token(colors.focused)",
+                  },
+                  _active: {
+                    translate: "0 1px",
+                  },
+                })}
+              />
+            </Link>
           )}
         </HFlex>
       </div>
