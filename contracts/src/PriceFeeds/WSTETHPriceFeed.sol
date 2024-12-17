@@ -40,8 +40,11 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
         // - If exchange rate or ETH-USD is down, shut down and switch to last good price. Reasoning:
         // - Exchange rate is used in all price calcs
         // - ETH-USD is used in the fallback calc, and for redemptions in the primary price calc
-        if (exchangeRateIsDown || ethUsdOracleDown) {
-            return (_shutDownAndSwitchToLastGoodPrice(address(stEthUsdOracle.aggregator)), true);
+        if (exchangeRateIsDown) {
+            return (_shutDownAndSwitchToLastGoodPrice(rateProviderAddress), true);
+        }
+        if (ethUsdOracleDown) {
+            return (_shutDownAndSwitchToLastGoodPrice(address(ethUsdOracle.aggregator)), true);
         }
 
         // If the STETH-USD feed is down, shut down and try to substitute it with the ETH-USD price
