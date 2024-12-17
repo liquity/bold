@@ -184,7 +184,10 @@ export function LoanScreen() {
                           if (!loan.data) {
                             return;
                           }
-                          const id = getPrefixedTroveId(loan.data.collIndex, loan.data.troveId);
+                          const id = getPrefixedTroveId(
+                            loan.data.collIndex,
+                            loan.data.troveId,
+                          );
                           router.push(
                             `/loan/${TABS[index].id}?id=${id}`,
                             { scroll: false },
