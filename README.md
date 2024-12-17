@@ -1,4 +1,4 @@
-# Liquity V2
+![Liquity V2](https://github.com/user-attachments/assets/b3ffbc5e-b7a8-46b6-a080-e18a0792bb64)
 
 [![Coverage Status](https://coveralls.io/repos/github/liquity/bold/badge.svg?branch=main&t=yZSfc8)](https://coveralls.io/github/liquity/bold?branch=main)
 
@@ -1570,52 +1570,3 @@ This may be used to lock in a bit more bad debt.
 Liquidations already carry a collateral premium to the caller and to the liquidators.
 
 Redemptions at this CR may allow for a bit more bad debt to be redistributed which could cause a liquidation cascade, however the difference doesn't seem particularly meaningful when compared to how high the Liquidation Premium tends to be for liquidations.
-
-## Requirements
-
-- [Node.js](https://nodejs.org/)
-- [pnpm](https://pnpm.io/)
-- [Foundry](https://book.getfoundry.sh/getting-started/installation)
-
-
-
-## Setup
-
-```sh
-git clone git@github.com:liquity/bold.git
-cd bold/contracts
-forge install
-cd ..
-pnpm install
-```
-
-## How to develop
-
-```sh
-# Run the anvil local node (keep it running in a separate terminal):
-anvil
-
-# First, the contracts:
-cd contracts
-
-# Build & deploy the contracts:
-./deploy local --open-demo-troves # optionally open troves for the first 8 anvil accounts
-
-# Print the addresses of the deployed contracts:
-pnpm tsx utils/deployment-manifest-to-app-env.ts deployment-manifest.json
-
-# We are now ready to pass the deployed contracts to the app:
-cd ../frontend/app
-
-# Copy the example .env file:
-cp .env .env.local
-
-# Edit the .env.local file:
-#  - Make sure the Hardhat / Anvil section is uncommented.
-#  - Copy into it the addresses printed by command above.
-
-# Run the app development server:
-pnpm dev
-
-# You can now open https://localhost:3000 in your browser.
-```
