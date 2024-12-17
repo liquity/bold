@@ -77,7 +77,7 @@ export function StakeScreen() {
           }))}
           selected={TABS.findIndex(({ id }) => id === action)}
           onSelect={(index) => {
-            router.push(`/stake/${TABS[index].id}`);
+            router.push(`/stake/${TABS[index].id}`, { scroll: false });
           }}
         />
 
