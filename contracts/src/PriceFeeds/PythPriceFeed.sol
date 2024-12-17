@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 
 import "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
+import "@pythnetwork/pyth-sdk-solidity/PythUtils.sol";
 
 import "../Dependencies/Ownable.sol";
 import "../Interfaces/IPythPriceFeed.sol";
@@ -49,7 +50,11 @@ contract PythPriceFeed is IPythPriceFeed, Ownable {
             priceFeedId,
             priceAgeThreshold
         );
-        uint256 scaledPrice = _scalePriceTo18decimals(price.price, price.expo);
+        uint256 scaledPrice = PythUtils.convertToUint(
+            price.price,
+            price.expo,
+            18
+        );
         _lastGoodPrice = scaledPrice;
         return (scaledPrice, false);
     }
@@ -58,12 +63,5 @@ contract PythPriceFeed is IPythPriceFeed, Ownable {
         borrowerOperations = IBorrowerOperations(_borrowOperationsAddress);
 
         _renounceOwnership();
-    }
-
-    function _scalePriceTo18decimals(
-        int256 _price,
-        int32 _decimals
-    ) internal pure returns (uint256) {
-        return uint256(_price) * 10 ** uint256(18 + int256(_decimals));
     }
 }
