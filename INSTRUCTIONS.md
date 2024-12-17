@@ -45,4 +45,4 @@ pnpm dev
 # You can now open https://localhost:3000 in your browser.
 ```
 
-See [frontend/app/README.md](./frontend/app/README.md) for details about the app development.
+See [frontend/app/README.md](./frontend/app/README.md) for more details about the app development.
