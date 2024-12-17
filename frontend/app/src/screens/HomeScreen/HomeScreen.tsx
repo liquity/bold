@@ -9,7 +9,7 @@ import { DNUM_1 } from "@/src/dnum-utils";
 import { getCollIndexFromSymbol, getCollToken, useAverageInterestRate, useEarnPool } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
+import { AnchorTextButton, Button, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 import { HomeTable } from "./HomeTable";
@@ -31,6 +31,7 @@ export function HomeScreen() {
       })}
     >
       <Positions address={account.address ?? null} />
+      <SepoliaBanner />
       <div
         className={css({
           display: "grid",
@@ -231,5 +232,46 @@ function EarnRewardsRow({
         </Link>
       </td>
     </tr>
+  );
+}
+
+function SepoliaBanner() {
+  return (
+    <section
+      className={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: 32,
+        padding: 16,
+        color: "infoSurfaceContent",
+        background: "infoSurface",
+        border: "1px solid token(colors.infoSurfaceBorder)",
+        borderRadius: 8,
+        marginTop: -40,
+      })}
+    >
+      <div>
+        This is the Sepolia release of Liquity V2. Use Sepolia ETH or get <FaucetButton label="rETH" /> or{" "}
+        <FaucetButton label="wstETH" /> test tokens to open loans and perform other actions.
+      </div>
+    </section>
+  );
+}
+
+function FaucetButton({ label }: { label: string }) {
+  return (
+    <div
+      className={css({
+        display: "inline-flex",
+        verticalAlign: "middle",
+      })}
+    >
+      <Button
+        mode="secondary"
+        size="mini"
+        label={label}
+        onClick={() => {}}
+      />
+    </div>
   );
 }
