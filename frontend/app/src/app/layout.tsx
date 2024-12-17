@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { About } from "@/src/comps/About/About";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
+import { Blocking } from "@/src/comps/Blocking/Blocking";
 import content from "@/src/content";
 import { DemoMode } from "@/src/demo-mode";
 import { VERCEL_ANALYTICS } from "@/src/env";
@@ -35,13 +36,15 @@ export default function Layout({
             <StoredState>
               <DemoMode>
                 <Ethereum>
-                  <TransactionFlow>
-                    <About>
-                      <AppLayout>
-                        {children}
-                      </AppLayout>
-                    </About>
-                  </TransactionFlow>
+                  <Blocking>
+                    <TransactionFlow>
+                      <About>
+                        <AppLayout>
+                          {children}
+                        </AppLayout>
+                      </About>
+                    </TransactionFlow>
+                  </Blocking>
                 </Ethereum>
               </DemoMode>
             </StoredState>
