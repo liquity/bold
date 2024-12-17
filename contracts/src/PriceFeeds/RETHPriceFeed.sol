@@ -38,8 +38,8 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         (uint256 rEthEthPrice, bool rEthEthOracleDown) = _getOracleAnswer(rEthEthOracle);
         (uint256 rEthPerEth, bool exchangeRateIsDown) = _getCanonicalRate();
 
-        // If the ETH-USD feed is down, shut down and switch to the last good price seen by the system
-        // since we need both ETH-USD and canonical for primary and fallback price calcs
+        // If either the ETH-USD feed or exchange rate is down, shut down and switch to the last good price
+        // seen by the system since we need both for primary and fallback price calcs
         if (ethUsdOracleDown) {
             return (_shutDownAndSwitchToLastGoodPrice(address(ethUsdOracle.aggregator)), true);
         }
