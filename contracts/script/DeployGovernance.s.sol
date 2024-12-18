@@ -35,7 +35,6 @@ contract DeployGovernance is Script, Deployers {
     uint128 private constant REGISTRATION_FEE = 100e18;
     uint128 private constant REGISTRATION_THRESHOLD_FACTOR = 0.001e18;
     uint128 private constant UNREGISTRATION_THRESHOLD_FACTOR = 3e18;
-    uint16 private constant REGISTRATION_WARM_UP_PERIOD = 4;
     uint16 private constant UNREGISTRATION_AFTER_EPOCHS = 4;
     uint128 private constant VOTING_THRESHOLD_FACTOR = 0.03e18;
     uint88 private constant MIN_CLAIM = 500e18;
@@ -216,7 +215,6 @@ contract DeployGovernance is Script, Deployers {
                 string.concat(
                     '"UNREGISTRATION_THRESHOLD_FACTOR":"', uint256(UNREGISTRATION_THRESHOLD_FACTOR).toString(), '",'
                 ),
-                string.concat('"REGISTRATION_WARM_UP_PERIOD":"', uint256(REGISTRATION_WARM_UP_PERIOD).toString(), '",'),
                 string.concat('"UNREGISTRATION_AFTER_EPOCHS":"', uint256(UNREGISTRATION_AFTER_EPOCHS).toString(), '",'),
                 string.concat('"VOTING_THRESHOLD_FACTOR":"', uint256(VOTING_THRESHOLD_FACTOR).toString(), '",'),
                 string.concat('"MIN_CLAIM":"', uint256(MIN_CLAIM).toString(), '",'),
