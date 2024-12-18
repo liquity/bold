@@ -1,1 +1,2 @@
 openzeppelin/=lib/V2-gov/lib/openzeppelin-contracts/
+@pythnetwork/pyth-sdk-solidity/=node_modules/@pythnetwork/pyth-sdk-solidity

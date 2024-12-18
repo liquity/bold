@@ -33,6 +33,7 @@
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^4.9.3",
     "@openzeppelin/test-helpers": "^0.5.16",
+    "@pythnetwork/pyth-sdk-solidity": "^4.0.0",
     "@typechain/ethers-v5": "^10.1.0",
     "@typechain/hardhat": "^6.1.2",
     "@types/chai": "^4.2.0",
