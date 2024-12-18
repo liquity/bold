@@ -40,12 +40,10 @@ contract DeployGovernance is Script, Deployers {
     uint128 private constant VOTING_THRESHOLD_FACTOR = 0.03e18;
     uint88 private constant MIN_CLAIM = 500e18;
     uint88 private constant MIN_ACCRUAL = 1000e18;
-    uint32 private constant EPOCH_DURATION = 6 days;
-    uint32 private constant EPOCH_VOTING_CUTOFF = 1 days;
+    uint32 private constant EPOCH_DURATION = 7 days;
+    uint32 private constant EPOCH_VOTING_CUTOFF = 6 days;
 
     // UniV4Donations Constants
-    uint256 private immutable VESTING_EPOCH_START = block.timestamp;
-    uint256 private constant VESTING_EPOCH_DURATION = 7 days;
     uint24 private constant FEE = 400;
     int24 constant MAX_TICK_SPACING = 32767;
 
@@ -124,7 +122,7 @@ contract DeployGovernance is Script, Deployers {
             votingThresholdFactor: VOTING_THRESHOLD_FACTOR,
             minClaim: MIN_CLAIM,
             minAccrual: MIN_ACCRUAL,
-            epochStart: uint32(block.timestamp - VESTING_EPOCH_START),
+            epochStart: block.timestamp - EPOCH_DURATION,
             /// @audit Ensures that `initialInitiatives` can be voted on
             epochDuration: EPOCH_DURATION,
             epochVotingCutoff: EPOCH_VOTING_CUTOFF
