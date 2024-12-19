@@ -32,13 +32,13 @@ contract DeployGovernance is Script, Deployers {
     PoolManager private constant poolManager = PoolManager(0xE8E23e97Fa135823143d6b9Cba9c699040D51F70);
 
     // Governance Constants
-    uint128 private constant REGISTRATION_FEE = 100e18;
-    uint128 private constant REGISTRATION_THRESHOLD_FACTOR = 0.001e18;
-    uint128 private constant UNREGISTRATION_THRESHOLD_FACTOR = 3e18;
+    uint128 private constant REGISTRATION_FEE = 1000e18;
+    uint128 private constant REGISTRATION_THRESHOLD_FACTOR = 0.0001e18; // 0.01%
+    uint128 private constant UNREGISTRATION_THRESHOLD_FACTOR = 1e18 + 1;
     uint16 private constant UNREGISTRATION_AFTER_EPOCHS = 4;
-    uint128 private constant VOTING_THRESHOLD_FACTOR = 0.03e18;
-    uint88 private constant MIN_CLAIM = 500e18;
-    uint88 private constant MIN_ACCRUAL = 1000e18;
+    uint128 private constant VOTING_THRESHOLD_FACTOR = 0.02e18;
+    uint88 private constant MIN_CLAIM = 0;
+    uint88 private constant MIN_ACCRUAL = 0;
     uint32 private constant EPOCH_DURATION = 7 days;
     uint32 private constant EPOCH_VOTING_CUTOFF = 6 days;
 
