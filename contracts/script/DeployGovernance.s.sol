@@ -35,17 +35,14 @@ contract DeployGovernance is Script, Deployers {
     uint128 private constant REGISTRATION_FEE = 100e18;
     uint128 private constant REGISTRATION_THRESHOLD_FACTOR = 0.001e18;
     uint128 private constant UNREGISTRATION_THRESHOLD_FACTOR = 3e18;
-    uint16 private constant REGISTRATION_WARM_UP_PERIOD = 4;
     uint16 private constant UNREGISTRATION_AFTER_EPOCHS = 4;
     uint128 private constant VOTING_THRESHOLD_FACTOR = 0.03e18;
     uint88 private constant MIN_CLAIM = 500e18;
     uint88 private constant MIN_ACCRUAL = 1000e18;
-    uint32 private constant EPOCH_DURATION = 6 days;
-    uint32 private constant EPOCH_VOTING_CUTOFF = 1 days;
+    uint32 private constant EPOCH_DURATION = 7 days;
+    uint32 private constant EPOCH_VOTING_CUTOFF = 6 days;
 
     // UniV4Donations Constants
-    uint256 private immutable VESTING_EPOCH_START = block.timestamp;
-    uint256 private constant VESTING_EPOCH_DURATION = 7 days;
     uint24 private constant FEE = 400;
     int24 constant MAX_TICK_SPACING = 32767;
 
@@ -96,7 +93,7 @@ contract DeployGovernance is Script, Deployers {
 
         governance.registerInitialInitiatives{gas: 600000}(initialInitiatives);
 
-        return (governanceAddress, _getManifestJson());
+        return (governanceAddress, _getGovernanceManifestJson(_curvePoolAddress));
     }
 
     function computeGovernanceAddress(
@@ -124,7 +121,7 @@ contract DeployGovernance is Script, Deployers {
             votingThresholdFactor: VOTING_THRESHOLD_FACTOR,
             minClaim: MIN_CLAIM,
             minAccrual: MIN_ACCRUAL,
-            epochStart: uint32(block.timestamp - VESTING_EPOCH_START),
+            epochStart: block.timestamp - EPOCH_DURATION,
             /// @audit Ensures that `initialInitiatives` can be voted on
             epochDuration: EPOCH_DURATION,
             epochVotingCutoff: EPOCH_VOTING_CUTOFF
@@ -218,7 +215,6 @@ contract DeployGovernance is Script, Deployers {
                 string.concat(
                     '"UNREGISTRATION_THRESHOLD_FACTOR":"', uint256(UNREGISTRATION_THRESHOLD_FACTOR).toString(), '",'
                 ),
-                string.concat('"REGISTRATION_WARM_UP_PERIOD":"', uint256(REGISTRATION_WARM_UP_PERIOD).toString(), '",'),
                 string.concat('"UNREGISTRATION_AFTER_EPOCHS":"', uint256(UNREGISTRATION_AFTER_EPOCHS).toString(), '",'),
                 string.concat('"VOTING_THRESHOLD_FACTOR":"', uint256(VOTING_THRESHOLD_FACTOR).toString(), '",'),
                 string.concat('"MIN_CLAIM":"', uint256(MIN_CLAIM).toString(), '",'),
@@ -230,15 +226,15 @@ contract DeployGovernance is Script, Deployers {
         );
     }
 
-    function _getManifestJson() internal view returns (string memory) {
+    function _getGovernanceManifestJson(address _curvePoolAddress) internal view returns (string memory) {
         return string.concat(
             "{",
             string.concat(
-                //string.concat('"constants":', _getGovernanceDeploymentConstants(), ","),
+                string.concat('"constants":', _getGovernanceDeploymentConstants(), ","),
                 string.concat('"governance":"', address(governance).toHexString(), '",'),
                 string.concat('"uniV4DonationsInitiative":"', address(uniV4Donations).toHexString(), '",'),
                 string.concat('"curveV2GaugeRewardsInitiative":"', address(curveV2GaugeRewards).toHexString(), '",'),
-                //string.concat('"curvePool":"', address(curvePool).toHexString(), '",'),
+                string.concat('"curvePool":"', _curvePoolAddress.toHexString(), '",'),
                 string.concat('"gauge":"', address(gauge).toHexString(), '",'),
                 string.concat('"LQTYToken":"', lqty.toHexString(), '" ') // no comma
             ),
