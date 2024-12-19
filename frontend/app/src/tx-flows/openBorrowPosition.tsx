@@ -97,7 +97,11 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
   Details({ flow }) {
     const { request } = flow;
     const collateral = getCollToken(flow.request.collIndex);
-    const collPrice = usePrice(collateral?.symbol ?? null);
+    if (!collateral) {
+      throw new Error(`Invalid collateral index: ${flow.request.collIndex}`);
+    }
+
+    const collPrice = usePrice(collateral.symbol);
 
     const upfrontFee = usePredictOpenTroveUpfrontFee(
       request.collIndex,
@@ -116,7 +120,7 @@ export const openBorrowPosition: FlowDeclaration<Request, Step> = {
               key="end"
               fallback="…"
               prefix="$"
-              value={collPrice && dn.mul(request.collAmount, collPrice)}
+              value={collPrice.data && dn.mul(request.collAmount, collPrice.data)}
             />,
           ]}
         />

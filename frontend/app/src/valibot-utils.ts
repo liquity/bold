@@ -3,9 +3,15 @@ import type { Address } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 
 import { isPrefixedtroveId, isTroveId } from "@/src/types";
-import { isAddress } from "@liquity2/uikit";
 import { isDnum } from "dnum";
 import * as v from "valibot";
+
+// this is duplicated from the UI kit rather than being imported,
+// to make valibot-utils.ts RSC-compatible.
+const ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
+function isAddress(address: unknown): address is Address {
+  return typeof address === "string" && ADDRESS_RE.test(address);
+}
 
 export function vAddress() {
   return v.custom<Address>(isAddress, "not a valid Ethereum address");

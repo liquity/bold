@@ -114,7 +114,7 @@ export function BorrowScreen() {
     debt.isEmpty ? null : debt.parsed,
     interestRate,
     collateral.collateralRatio,
-    collPrice,
+    collPrice.data ?? null,
   );
 
   const debtSuggestions = loanDetails.maxDebt
@@ -135,10 +135,10 @@ export function BorrowScreen() {
         }
       }
 
-      const ltv = debt && loanDetails.deposit && collPrice && getLtv(
+      const ltv = debt && loanDetails.deposit && collPrice.data && getLtv(
         loanDetails.deposit,
         debt,
-        collPrice,
+        collPrice.data,
       );
 
       // don’t show if ltv > max LTV
@@ -225,8 +225,8 @@ export function BorrowScreen() {
               placeholder="0.00"
               secondary={{
                 start: `$${
-                  deposit.parsed && collPrice
-                    ? fmtnum(dn.mul(collPrice, deposit.parsed), "2z")
+                  deposit.parsed && collPrice.data
+                    ? fmtnum(dn.mul(collPrice.data, deposit.parsed), "2z")
                     : "0.00"
                 }`,
                 end: maxAmount && dn.gt(maxAmount, 0) && (
@@ -242,9 +242,9 @@ export function BorrowScreen() {
             />
           }
           footer={{
-            start: collPrice && (
+            start: collPrice.data && (
               <Field.FooterInfoCollPrice
-                collPriceUsd={collPrice}
+                collPriceUsd={collPrice.data}
                 collName={collateral.name}
               />
             ),

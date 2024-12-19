@@ -13,6 +13,28 @@ export const CollateralSymbolSchema = v.union([
 export const EnvSchema = v.pipe(
   v.object({
     APP_VERSION: v.string(),
+    BLOCKING_LIST: v.optional(vAddress()),
+    BLOCKING_VPNAPI: v.pipe(
+      v.optional(v.string(), ""),
+      v.transform((value) => {
+        if (!value.trim()) {
+          return null; // not set
+        }
+
+        const [apiKey, countries = ""] = value.split("|");
+        if (!apiKey) {
+          throw new Error(
+            `Invalid BLOCKING_VPNAPI value: ${value}. `
+              + `Expected format: API_KEY or API_KEY|COUNTRY,COUNTRY,… `
+              + `(e.g. 123456|US,CA)`,
+          );
+        }
+        return {
+          apiKey: apiKey.trim(),
+          countries: countries.split(",").map((c) => c.trim().toUpperCase()),
+        };
+      }),
+    ),
     CHAIN_ID: v.pipe(
       v.string(),
       v.transform((value) => {
@@ -32,6 +54,34 @@ export const EnvSchema = v.pipe(
     CHAIN_CONTRACT_MULTICALL: vAddress(),
     COMMIT_HASH: v.string(),
     SUBGRAPH_URL: v.string(),
+    COINGECKO_API_KEY: v.pipe(
+      v.optional(v.string(), ""),
+      v.rawTransform(({ dataset, addIssue, NEVER }) => {
+        const [apiType, apiKey] = dataset.value.split("|");
+        if (!apiKey) {
+          return null; // no API key
+        }
+        if (apiType !== "demo" && apiType !== "pro") {
+          addIssue({ message: `Invalid CoinGecko API type: ${apiType}` });
+          return NEVER;
+        }
+        if (!apiKey.trim()) {
+          addIssue({ message: `Invalid CoinGecko API key (empty)` });
+          return NEVER;
+        }
+        return {
+          apiType: apiType as "demo" | "pro",
+          apiKey,
+        };
+      }),
+    ),
+    DEMO_MODE: v.optional(vEnvFlag(), "false"),
+    DEPLOYMENT_FLAVOR: v.pipe(
+      v.optional(v.string(), ""),
+      v.transform((value) => value.trim()),
+    ),
+    VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
+    WALLET_CONNECT_PROJECT_ID: v.string(),
 
     DELEGATE_AUTO: vAddress(),
 
@@ -85,10 +135,6 @@ export const EnvSchema = v.pipe(
     COLL_2_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
     COLL_2_CONTRACT_TROVE_NFT: v.optional(vAddress()),
     COLL_2_TOKEN_ID: v.optional(CollateralSymbolSchema),
-
-    DEMO_MODE: v.pipe(v.optional(vEnvFlag()), v.transform((value) => value ?? false)),
-    VERCEL_ANALYTICS: v.pipe(v.optional(v.string()), v.transform((value) => value ?? false)),
-    WALLET_CONNECT_PROJECT_ID: v.string(),
   }),
   v.transform((data) => {
     const env = { ...data };
@@ -157,18 +203,24 @@ export type Env = v.InferOutput<typeof EnvSchema>;
 
 const parsedEnv = v.parse(EnvSchema, {
   APP_VERSION: process.env.APP_VERSION, // set in next.config.js
-  CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID,
-  CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
-  CHAIN_CURRENCY: process.env.NEXT_PUBLIC_CHAIN_CURRENCY,
-  CHAIN_RPC_URL: process.env.NEXT_PUBLIC_CHAIN_RPC_URL,
+  BLOCKING_LIST: process.env.NEXT_PUBLIC_BLOCKING_LIST,
+  BLOCKING_VPNAPI: process.env.NEXT_PUBLIC_BLOCKING_VPNAPI,
   CHAIN_BLOCK_EXPLORER: process.env.NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER,
   CHAIN_CONTRACT_ENS_REGISTRY: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_ENS_REGISTRY,
   CHAIN_CONTRACT_ENS_RESOLVER: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER,
   CHAIN_CONTRACT_MULTICALL: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL,
+  CHAIN_CURRENCY: process.env.NEXT_PUBLIC_CHAIN_CURRENCY,
+  CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID,
+  CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
+  CHAIN_RPC_URL: process.env.NEXT_PUBLIC_CHAIN_RPC_URL,
+  COINGECKO_API_KEY: process.env.NEXT_PUBLIC_COINGECKO_API_KEY,
   COMMIT_HASH: process.env.COMMIT_HASH, // set in next.config.js
-  SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
-
   DELEGATE_AUTO: process.env.NEXT_PUBLIC_DELEGATE_AUTO,
+  DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
+  DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
+  SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
+  VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
+  WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 
   CONTRACT_BOLD_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY: process.env.NEXT_PUBLIC_CONTRACT_COLLATERAL_REGISTRY,
@@ -221,14 +273,12 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_2_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_STABILITY_POOL,
   COLL_2_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_MANAGER,
   COLL_2_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_NFT,
-
-  DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
-  VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
-  WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 });
 
 export const {
   APP_VERSION,
+  BLOCKING_LIST,
+  BLOCKING_VPNAPI,
   CHAIN_BLOCK_EXPLORER,
   CHAIN_CONTRACT_ENS_REGISTRY,
   CHAIN_CONTRACT_ENS_RESOLVER,
@@ -251,7 +301,9 @@ export const {
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
   DELEGATE_AUTO,
+  COINGECKO_API_KEY,
   DEMO_MODE,
+  DEPLOYMENT_FLAVOR,
   VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,
 } = parsedEnv;
