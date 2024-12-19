@@ -152,7 +152,7 @@ function BorrowingRow({
                     fontSize: 14,
                   })}
                 >
-                  Leverage
+                  Multiply
                   <TokenIcon symbol={symbol} size="mini" />
                 </div>
               }

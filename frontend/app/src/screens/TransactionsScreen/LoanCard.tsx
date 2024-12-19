@@ -508,7 +508,7 @@ function LeveragedExposure({
           >
             <Value
               negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
-              title={`Leverage factor: ${
+              title={`Multiply factor: ${
                 loanDetails.status === "underwater" || loanDetails.leverageFactor === null
                   ? INFINITY
                   : `${roundToDecimal(loanDetails.leverageFactor, 3)}x`
@@ -555,7 +555,7 @@ function LoadingCard({
   onRetry: () => void;
   txPreviewMode?: boolean;
 }) {
-  const title = leverage ? "Leverage loan" : "BOLD loan";
+  const title = leverage ? "Multiply" : "BOLD loan";
 
   const spring = useSpring({
     to: match(loadingState)

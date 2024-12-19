@@ -65,7 +65,7 @@ export function PositionCardLeverage({
               color: "positionContent",
             })}
           >
-            <div>Leverage loan</div>
+            <div>Multiply</div>
             {statusTag}
           </div>,
         ]}

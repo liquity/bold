@@ -115,7 +115,7 @@ export function LeverageField({
         ),
         end: (
           <HFlex gap={8}>
-            Leverage {
+            Multiply {
               <span
                 style={{
                   color: liquidationRisk === "high"

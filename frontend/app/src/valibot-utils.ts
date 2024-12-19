@@ -151,7 +151,7 @@ export function vPositionStake() {
 const VPositionLoanBase = v.object({
   type: v.union([
     v.literal("borrow"),
-    v.literal("leverage"),
+    v.literal("multiply"),
   ]),
   batchManager: v.union([v.null(), vAddress()]),
   borrowed: vDnum(),

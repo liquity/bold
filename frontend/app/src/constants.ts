@@ -43,9 +43,9 @@ export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = {
   RETH: dn.from(100_000_000n, 18),
 };
 
-// LTV factor suggestions, as ratios of the leverage factor range
+// LTV factor suggestions, as ratios of the multiply factor range
 export const LEVERAGE_FACTOR_SUGGESTIONS = [
-  norm(1.5, 1.1, 11), // 1.5x leverage with a 1.1x => 11x range
+  norm(1.5, 1.1, 11), // 1.5x multiply with a 1.1x => 11x range
   norm(2.5, 1.1, 11),
   norm(5, 1.1, 11),
 ];
