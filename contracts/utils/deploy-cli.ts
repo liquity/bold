@@ -33,6 +33,8 @@ Options:
   --rpc-url <RPC_URL>                      RPC URL to use.
   --slow                                   Only send a transaction after the previous
                                            one has been confirmed.
+  --use-testnet-pricefeeds                 Use testnet PriceFeeds instead of real
+                                           oracles when deploying to mainnet.
   --verify                                 Verify contracts after deployment.
   --verifier <VERIFIER>                    Verification provider to use.
                                            Possible values: etherscan, sourcify.
@@ -56,6 +58,7 @@ const argv = minimist(process.argv.slice(2), {
     "verify",
     "dry-run",
     "slow",
+    "use-testnet-pricefeeds",
   ],
   string: [
     "chain-id",
@@ -117,7 +120,7 @@ export async function main() {
 
   const forgeArgs: string[] = [
     "script",
-    "src/scripts/DeployLiquity2.s.sol",
+    "DeployLiquity2Script",
     "--chain-id",
     String(options.chainId),
     "--rpc-url",
@@ -172,21 +175,26 @@ export async function main() {
   echo`
 Deploying Liquity contracts with the following settings:
 
-  CHAIN_ID:           ${options.chainId}
-  DEPLOYER:           ${options.deployer}
-  LEDGER_PATH:        ${options.ledgerPath}
-  ETHERSCAN_API_KEY:  ${options.etherscanApiKey && "(secret)"}
-  OPEN_DEMO_TROVES:   ${options.openDemoTroves ? "yes" : "no"}
-  RPC_URL:            ${options.rpcUrl}
-  VERIFY:             ${options.verify ? "yes" : "no"}
-  VERIFIER:           ${options.verifier}
-  VERIFIER_URL:       ${options.verifierUrl}
+  CHAIN_ID:               ${options.chainId}
+  DEPLOYER:               ${options.deployer}
+  LEDGER_PATH:            ${options.ledgerPath}
+  ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}
+  OPEN_DEMO_TROVES:       ${options.openDemoTroves ? "yes" : "no"}
+  RPC_URL:                ${options.rpcUrl}
+  USE_TESTNET_PRICEFEEDS: ${options.useTestnetPricefeeds ? "yes" : "no"}
+  VERIFY:                 ${options.verify ? "yes" : "no"}
+  VERIFIER:               ${options.verifier}
+  VERIFIER_URL:           ${options.verifierUrl}
 `;
 
   process.env.DEPLOYER = options.deployer;
 
   if (options.openDemoTroves) {
     process.env.OPEN_DEMO_TROVES = "true";
+  }
+
+  if (options.useTestnetPricefeeds) {
+    process.env.USE_TESTNET_PRICEFEEDS = "true";
   }
 
   if ("CI" in process.env) {
@@ -297,6 +305,7 @@ async function parseArgs() {
     verifier: argv["verifier"],
     verifierUrl: argv["verifier-url"],
     gasPrice: argv["gas-price"],
+    useTestnetPricefeeds: argv["use-testnet-pricefeeds"],
   };
 
   const [networkPreset] = argv._;
@@ -312,6 +321,9 @@ async function parseArgs() {
     process.env.OPEN_DEMO_TROVES && process.env.OPEN_DEMO_TROVES !== "false",
   );
   options.rpcUrl ??= process.env.RPC_URL;
+  options.useTestnetPricefeeds ??= Boolean(
+    process.env.USE_TESTNET_PRICEFEEDS && process.env.USE_TESTNET_PRICEFEEDS !== "false",
+  );
   options.verify ??= Boolean(
     process.env.VERIFY && process.env.VERIFY !== "false",
   );

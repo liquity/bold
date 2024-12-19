@@ -221,9 +221,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vm.startBroadcast(privateKey);
         }
 
-        if (vm.envBool("USE_TESTNET_PRICEFEEDS")) {
-            useTestnetPriceFeeds = true;
-        }
+        useTestnetPriceFeeds = vm.envOr("USE_TESTNET_PRICEFEEDS", false);
 
         console2.log(deployer, "deployer");
         console2.log(deployer.balance, "deployer balance");
