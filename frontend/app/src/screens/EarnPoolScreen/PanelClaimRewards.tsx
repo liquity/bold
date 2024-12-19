@@ -30,14 +30,14 @@ export function PanelClaimRewards({
   }
 
   const boldPriceUsd = usePrice("BOLD");
-  const collPriceUsd = usePrice(collateral.symbol ?? null);
+  const collPriceUsd = usePrice(collateral.symbol);
 
-  const totalRewards = collPriceUsd && boldPriceUsd && dn.add(
-    dn.mul(position?.rewards?.bold ?? DNUM_0, boldPriceUsd),
-    dn.mul(position?.rewards?.coll ?? DNUM_0, collPriceUsd),
+  const totalRewards = collPriceUsd.data && boldPriceUsd.data && dn.add(
+    dn.mul(position?.rewards?.bold ?? DNUM_0, boldPriceUsd.data),
+    dn.mul(position?.rewards?.coll ?? DNUM_0, collPriceUsd.data),
   );
 
-  const gasFeeUsd = collPriceUsd && dn.multiply(dn.from(0.0015, 18), collPriceUsd);
+  const gasFeeUsd = collPriceUsd.data && dn.multiply(dn.from(0.0015, 18), collPriceUsd.data);
 
   const allowSubmit = account.isConnected && totalRewards && dn.gt(totalRewards, 0);
 

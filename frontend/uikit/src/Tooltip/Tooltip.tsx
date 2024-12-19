@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 
 import { autoUpdate, offset, shift, useFloating } from "@floating-ui/react-dom";

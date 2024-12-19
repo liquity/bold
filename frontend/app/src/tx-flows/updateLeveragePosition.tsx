@@ -119,7 +119,7 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
       throw new Error(`Invalid collateral index: ${loan.collIndex}`);
     }
 
-    const collPrice = usePrice(collateral?.symbol ?? null);
+    const collPrice = usePrice(collateral.symbol);
     const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
 
     const debtChangeWithFee = upfrontFeeData.data?.debtChangeWithFee;
@@ -144,7 +144,7 @@ export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
               <Amount
                 key="end"
                 fallback="…"
-                value={collPrice && dn.mul(depositChange, collPrice)}
+                value={collPrice.data && dn.mul(depositChange, collPrice.data)}
                 prefix="$"
               />,
             ]}

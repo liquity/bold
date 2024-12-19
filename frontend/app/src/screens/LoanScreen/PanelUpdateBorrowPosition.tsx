@@ -51,6 +51,11 @@ export function PanelUpdateBorrowPosition({
     throw new Error("collToken not found");
   }
 
+  // balances
+  const collBalance = useBalance(account.address, collToken.symbol);
+  const boldBalance = useBalance(account.address, "BOLD");
+
+  // prices
   const collPrice = usePrice(collToken.symbol ?? null);
   const boldPriceUsd = usePrice("BOLD") ?? dnum18(0);
 
@@ -68,16 +73,12 @@ export function PanelUpdateBorrowPosition({
   // debt change
   const [debtMode, setDebtMode] = useState<ValueUpdateMode>("add");
   const debtChange = useInputFieldValue((value) => dn.format(value));
-  const debtChangeUsd = debtChange.parsed && dn.mul(debtChange.parsed, boldPriceUsd);
 
   const newDebt = debtChange.parsed && (
     debtMode === "remove"
       ? dn.sub(loan.borrowed, debtChange.parsed)
       : dn.add(loan.borrowed, debtChange.parsed)
   );
-
-  const collBalance = useBalance(account.address, collToken.symbol);
-  const boldBalance = useBalance(account.address, "BOLD");
 
   const collMax = depositMode === "remove" ? null : (
     collBalance.data && dnumMax(
@@ -96,16 +97,18 @@ export function PanelUpdateBorrowPosition({
     )
     : null;
 
-  if (!collPrice) {
+  if (!collPrice.data || !boldPriceUsd.data) {
     return null;
   }
+
+  const debtChangeUsd = debtChange.parsed && dn.mul(debtChange.parsed, boldPriceUsd.data);
 
   const loanDetails = getLoanDetails(
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
     collToken.collateralRatio,
-    collPrice,
+    collPrice.data,
   );
 
   const newLoanDetails = getLoanDetails(
@@ -113,7 +116,7 @@ export function PanelUpdateBorrowPosition({
     newDebt,
     loanDetails.interestRate,
     collToken.collateralRatio,
-    collPrice,
+    collPrice.data,
   );
 
   const isBelowMinDebt = debtChange.parsed && !debtChange.isEmpty && newDebt && dn.lt(newDebt, MIN_DEBT);
@@ -170,8 +173,8 @@ export function PanelUpdateBorrowPosition({
               secondary={{
                 start: (
                   <Amount
-                    value={depositChange.parsed && collPrice
-                      ? dn.mul(depositChange.parsed, collPrice)
+                    value={depositChange.parsed
+                      ? dn.mul(depositChange.parsed, collPrice.data)
                       : 0}
                     suffix="$"
                   />
@@ -214,17 +217,13 @@ export function PanelUpdateBorrowPosition({
                           suffix={` ${collToken.name}`}
                           value={loanDetails.deposit}
                         />
-                        {collPrice && (
-                          <>
-                            {" ("}
-                            <Amount
-                              format={2}
-                              prefix="$"
-                              value={dn.mul(loanDetails.deposit, collPrice)}
-                            />
-                            {")"}
-                          </>
-                        )}
+                        {" ("}
+                        <Amount
+                          format={2}
+                          prefix="$"
+                          value={dn.mul(loanDetails.deposit, collPrice.data)}
+                        />
+                        {")"}
                       </div>
                       <div>
                         After:{" "}
@@ -233,17 +232,13 @@ export function PanelUpdateBorrowPosition({
                           suffix={` ${collToken.name}`}
                           value={newLoanDetails.deposit}
                         />
-                        {collPrice && (
-                          <>
-                            {" ("}
-                            <Amount
-                              format={2}
-                              prefix="$"
-                              value={dn.mul(newLoanDetails.deposit, collPrice)}
-                            />
-                            {")"}
-                          </>
-                        )}
+                        {" ("}
+                        <Amount
+                          format={2}
+                          prefix="$"
+                          value={dn.mul(newLoanDetails.deposit, collPrice.data)}
+                        />
+                        {")"}
                       </div>
                     </InfoTooltip>
                   </HFlex>

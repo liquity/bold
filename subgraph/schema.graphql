@@ -118,7 +118,6 @@ type InterestBatch @entity {
 type GovernanceUser @entity {
   id: ID! # "userAddress", e.g. "0x0000000000000000000000000000000000000000"
   allocatedLQTY: BigInt!
-  averageStakingTimestamp: BigInt!
   allocations: [GovernanceAllocation!]! @derivedFrom(field: "user")
 }
 
@@ -129,22 +128,19 @@ type GovernanceAllocation @entity {
   initiative: GovernanceInitiative!
   voteLQTY: BigInt!
   vetoLQTY: BigInt!
-  atEpoch: Int!
+  atEpoch: BigInt!
 }
 
 type GovernanceInitiative @entity {
   id: ID! # "initiativeAddress", e.g. "0x0000000000000000000000000000000000000000"
-  lastClaimEpoch: Int
-  lastVoteSnapshotEpoch: Int
+  lastClaimEpoch: BigInt
+  lastVoteSnapshotEpoch: BigInt
   lastVoteSnapshotVotes: BigInt
   registeredAt: BigInt!
-  registeredAtEpoch: Int!
+  registeredAtEpoch: BigInt!
   registrant: Bytes!
-  totalBoldClaimed: BigInt!
-  totalVetos: BigInt!
-  totalVotes: BigInt!
   unregisteredAt: BigInt
-  unregisteredAtEpoch: Int
+  unregisteredAtEpoch: BigInt
 }
 
 type GovernanceStats @entity {

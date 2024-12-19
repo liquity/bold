@@ -1,3 +1,5 @@
+"use client";
+
 import type { MouseEvent, MutableRefObject, ReactNode, TouchEvent } from "react";
 
 import { a, useSpring } from "@react-spring/web";

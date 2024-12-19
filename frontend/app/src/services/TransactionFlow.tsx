@@ -652,17 +652,28 @@ function useTransactionExecution({
       return;
     }
 
-    const writeParams = await flowDeclaration.writeContractParams(currentStepId, {
-      account,
-      contracts,
-      request: flow.request,
-      steps: flow.steps,
-      storedState,
-      wagmiConfig,
-    });
+    setStepToAwaitingSignature();
 
-    if (writeParams) {
-      contractWrite.writeContract(writeParams);
+    try {
+      const writeParams = await flowDeclaration.writeContractParams(currentStepId, {
+        account,
+        contracts,
+        request: flow.request,
+        steps: flow.steps,
+        storedState,
+        wagmiConfig,
+      });
+
+      if (writeParams) {
+        contractWrite.writeContract(writeParams);
+      }
+    } catch (err) {
+      if (!(err instanceof Error)) {
+        throw err;
+      }
+      setTimeout(() => {
+        setStepToError(err);
+      }, 0);
     }
   }, [
     account,
