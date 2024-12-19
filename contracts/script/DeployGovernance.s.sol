@@ -93,7 +93,7 @@ contract DeployGovernance is Script, Deployers {
 
         governance.registerInitialInitiatives{gas: 600000}(initialInitiatives);
 
-        return (governanceAddress, _getManifestJson());
+        return (governanceAddress, _getGovernanceManifestJson(_curvePoolAddress));
     }
 
     function computeGovernanceAddress(
@@ -226,15 +226,15 @@ contract DeployGovernance is Script, Deployers {
         );
     }
 
-    function _getManifestJson() internal view returns (string memory) {
+    function _getGovernanceManifestJson(address _curvePoolAddress) internal view returns (string memory) {
         return string.concat(
             "{",
             string.concat(
-                //string.concat('"constants":', _getGovernanceDeploymentConstants(), ","),
+                string.concat('"constants":', _getGovernanceDeploymentConstants(), ","),
                 string.concat('"governance":"', address(governance).toHexString(), '",'),
                 string.concat('"uniV4DonationsInitiative":"', address(uniV4Donations).toHexString(), '",'),
                 string.concat('"curveV2GaugeRewardsInitiative":"', address(curveV2GaugeRewards).toHexString(), '",'),
-                //string.concat('"curvePool":"', address(curvePool).toHexString(), '",'),
+                string.concat('"curvePool":"', _curvePoolAddress.toHexString(), '",'),
                 string.concat('"gauge":"', address(gauge).toHexString(), '",'),
                 string.concat('"LQTYToken":"', lqty.toHexString(), '" ') // no comma
             ),
