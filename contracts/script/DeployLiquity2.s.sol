@@ -884,8 +884,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         int24 TICK_SPACING = IUniswapV3Pool(uniV3PoolAddress).tickSpacing();
         ( /* uint256 finalSqrtPriceX96 */ , int24 tick,,,,,) = IUniswapV3Pool(uniV3PoolAddress).slot0();
         //console2.log(finalSqrtPriceX96, "finalSqrtPriceX96");
-        vars.tickLower = (tick - 6000) / TICK_SPACING * TICK_SPACING;
-        vars.tickUpper = (tick + 6000) / TICK_SPACING * TICK_SPACING;
+        vars.tickLower = (tick - 60) / TICK_SPACING * TICK_SPACING;
+        vars.tickUpper = (tick + 60) / TICK_SPACING * TICK_SPACING;
 
         INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
             token0: vars.tokens[0],
