@@ -17,11 +17,8 @@ function initialize(block: ethereum.Block): void {
   for (let i = 0; i < governanceDeploymentInitiatives.length; i++) {
     let initiative = new GovernanceInitiative(governanceDeploymentInitiatives[i]);
     initiative.registeredAt = block.timestamp;
-    initiative.registeredAtEpoch = 1;
+    initiative.registeredAtEpoch = BigInt.fromI32(1);
     initiative.registrant = Address.zero();
-    initiative.totalBoldClaimed = BigInt.fromI32(0);
-    initiative.totalVetos = BigInt.fromI32(0);
-    initiative.totalVotes = BigInt.fromI32(0);
     initiative.save();
   }
 
@@ -43,9 +40,6 @@ export function handleRegisterInitiative(event: RegisterInitiativeEvent): void {
   initiative.registeredAt = event.block.timestamp;
   initiative.registeredAtEpoch = event.params.atEpoch;
   initiative.registrant = event.params.registrant;
-  initiative.totalBoldClaimed = BigInt.fromI32(0);
-  initiative.totalVetos = BigInt.fromI32(0);
-  initiative.totalVotes = BigInt.fromI32(0);
   initiative.save();
 }
 
@@ -77,11 +71,10 @@ export function handleDepositLQTY(event: DepositLQTYEvent): void {
   let userState = governance.userStates(event.params.user);
 
   user.allocatedLQTY = userState.getAllocatedLQTY();
-  user.averageStakingTimestamp = userState.getAverageStakingTimestamp();
   user.save();
 
   let stats = getStats();
-  stats.totalLQTYStaked = stats.totalLQTYStaked.plus(event.params.depositedLQTY);
+  stats.totalLQTYStaked = stats.totalLQTYStaked.plus(event.params.lqtyAmount);
   stats.save();
 }
 
@@ -95,11 +88,10 @@ export function handleWithdrawLQTY(event: WithdrawLQTYEvent): void {
   let userState = governance.userStates(event.params.user);
 
   user.allocatedLQTY = userState.getAllocatedLQTY();
-  user.averageStakingTimestamp = userState.getAverageStakingTimestamp();
   user.save();
 
   let stats = getStats();
-  stats.totalLQTYStaked = stats.totalLQTYStaked.minus(event.params.withdrawnLQTY);
+  stats.totalLQTYStaked = stats.totalLQTYStaked.minus(event.params.lqtySent);
   stats.save();
 }
 
@@ -127,12 +119,10 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
   // votes
   allocation.voteLQTY = allocation.voteLQTY.plus(event.params.deltaVoteLQTY);
   user.allocatedLQTY = user.allocatedLQTY.plus(event.params.deltaVoteLQTY);
-  initiative.totalVotes = initiative.totalVotes.plus(event.params.deltaVoteLQTY);
 
   // vetos
   allocation.vetoLQTY = allocation.vetoLQTY.plus(event.params.deltaVetoLQTY);
   user.allocatedLQTY = user.allocatedLQTY.plus(event.params.deltaVetoLQTY);
-  initiative.totalVetos = initiative.totalVetos.plus(event.params.deltaVetoLQTY);
 
   allocation.atEpoch = event.params.atEpoch;
 
@@ -152,8 +142,7 @@ function getStats(): GovernanceStats {
 export function handleClaimForInitiative(event: ClaimForInitiativeEvent): void {
   let initiative = GovernanceInitiative.load(event.params.initiative.toHex());
   if (initiative) {
-    initiative.totalBoldClaimed = initiative.totalBoldClaimed.plus(event.params.bold);
-    initiative.lastClaimEpoch = event.params.forEpoch.toI32();
+    initiative.lastClaimEpoch = event.params.forEpoch;
     initiative.save();
   }
 }
