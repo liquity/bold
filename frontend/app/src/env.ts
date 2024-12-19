@@ -201,7 +201,7 @@ export const EnvSchema = v.pipe(
 
 export type Env = v.InferOutput<typeof EnvSchema>;
 
-const parsedEnv = v.parse(EnvSchema, {
+const parsedEnv = v.safeParse(EnvSchema, {
   APP_VERSION: process.env.APP_VERSION, // set in next.config.js
   BLOCKING_LIST: process.env.NEXT_PUBLIC_BLOCKING_LIST,
   BLOCKING_VPNAPI: process.env.NEXT_PUBLIC_BLOCKING_VPNAPI,
@@ -275,6 +275,14 @@ const parsedEnv = v.parse(EnvSchema, {
   COLL_2_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_NFT,
 });
 
+if (!parsedEnv.success) {
+  console.error(
+    "Invalid environment variable(s):",
+    v.flatten<typeof EnvSchema>(parsedEnv.issues),
+  );
+  throw new Error("Invalid environment variable(s)");
+}
+
 export const {
   APP_VERSION,
   BLOCKING_LIST,
@@ -307,4 +315,4 @@ export const {
   SUBGRAPH_URL,
   VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,
-} = parsedEnv;
+} = parsedEnv.output;
