@@ -113,6 +113,9 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       async commit({ contracts, request, wagmiConfig }) {
         const { loan } = request;
         const coll = contracts.collaterals[loan.collIndex];
+        if (!coll) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
         const { entireDebt } = await readContract(wagmiConfig, {
           ...coll.contracts.TroveManager,
           functionName: "getLatestTroveData",
@@ -147,6 +150,9 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       async commit({ contracts, request, wagmiConfig }) {
         const { loan } = request;
         const coll = contracts.collaterals[loan.collIndex];
+        if (!coll) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
 
         // repay with BOLD => get ETH
         if (!request.repayWithCollateral && coll.symbol === "ETH") {
@@ -227,7 +233,12 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
     }
 
     const { loan } = request;
+
     const coll = contracts.collaterals[loan.collIndex];
+    if (!coll) {
+      throw new Error("Invalid collateral index: " + loan.collIndex);
+    }
+
     const Zapper = coll.symbol === "ETH"
       ? coll.contracts.LeverageWETHZapper
       : coll.contracts.LeverageLSTZapper;

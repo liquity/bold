@@ -65,11 +65,11 @@ export function vEnvLink() {
     v.string(),
     v.trim(),
     v.regex(/^[^|]+\|https?:\/\/[^|]+$/),
-    v.transform<
-      string,
-      { name: string; url: string }
-    >((value) => {
-      const [name, url] = value.split("|");
+    v.transform<string, {
+      name: string;
+      url: string;
+    }>((value) => {
+      const [name, url] = value.split("|") as [string, string];
       return { name, url };
     }),
   );
@@ -101,7 +101,7 @@ export function vEnvAddressAndBlock() {
       string,
       { address: Address; blockCreated?: number }
     >((value) => {
-      const [address, block] = value.split("|");
+      const [address, block] = value.split("|") as [string, string];
       const parsedBlock = parseInt(block, 10);
       if (!isAddress(address)) {
         throw new Error(`${address} is not a valid Ethereum address`);
@@ -124,7 +124,7 @@ export function vEnvCurrency() {
       string,
       { decimals: number; name: string; symbol: string }
     >((value) => {
-      const [name, symbol, decimals] = value.split("|");
+      const [name, symbol, decimals] = value.split("|") as [string, string, string];
       return {
         decimals: parseInt(decimals, 10),
         name,

@@ -94,10 +94,9 @@ async function main() {
 
   await Promise.all(ABIS.map(async (possibleNames) => {
     const abiName = possibleNames[0];
-
     const abi = await readJsonFromDir(`${artifactsTmpDir}`, possibleNames);
 
-    if (!abi) {
+    if (!abi || !abiName) {
       throw new Error(`Could not find ABI for ${possibleNames.join(", ")}`);
     }
 

@@ -70,7 +70,11 @@ export const earnWithdraw: FlowDeclaration<EarnWithdrawRequest> = {
       Status: TransactionStatus,
 
       async commit({ contracts, request, wagmiConfig }) {
-        const { StabilityPool } = contracts.collaterals[request.collIndex].contracts;
+        const collateral = contracts.collaterals[request.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + request.collIndex);
+        }
+        const { StabilityPool } = collateral.contracts;
 
         const boldAmount = dn.abs(dn.sub(
           request.earnPosition.deposit,

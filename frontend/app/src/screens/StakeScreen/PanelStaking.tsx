@@ -131,19 +131,23 @@ export function PanelStaking() {
               start: parsedValue && lqtyPrice.data ? `$${dn.format(dn.mul(parsedValue, lqtyPrice.data), 2)}` : null,
               end: mode === "deposit"
                 ? (
-                  <TextButton
-                    label={`Max. ${(fmtnum(lqtyBalance.data ?? 0))} LQTY`}
-                    onClick={() => {
-                      setValue(dn.toString(lqtyBalance.data ?? dn.from(0, 18)));
-                    }}
-                  />
+                  lqtyBalance.data && dn.gt(lqtyBalance.data, 0) && (
+                    <TextButton
+                      label={`Max. ${(fmtnum(lqtyBalance.data))} LQTY`}
+                      onClick={() => {
+                        setValue(dn.toString(lqtyBalance.data));
+                      }}
+                    />
+                  )
                 )
                 : (
-                  stakePosition.data?.deposit && (
+                  stakePosition.data?.deposit && dn.gt(stakePosition.data?.deposit, 0) && (
                     <TextButton
                       label={`Max. ${fmtnum(stakePosition.data.deposit, 2)} LQTY`}
                       onClick={() => {
-                        setValue(dn.toString(stakePosition.data.deposit));
+                        if (stakePosition.data) {
+                          setValue(dn.toString(stakePosition.data.deposit));
+                        }
                       }}
                     />
                   )

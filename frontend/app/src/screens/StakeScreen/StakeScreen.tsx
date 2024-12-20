@@ -57,7 +57,11 @@ export function StakeScreen() {
           }))}
           selected={TABS.findIndex(({ id }) => id === action)}
           onSelect={(index) => {
-            router.push(`/stake/${TABS[index].id}`, { scroll: false });
+            const tab = TABS[index];
+            if (!tab) {
+              throw new Error("Invalid tab index");
+            }
+            router.push(`/stake/${tab.id}`, { scroll: false });
           }}
         />
 

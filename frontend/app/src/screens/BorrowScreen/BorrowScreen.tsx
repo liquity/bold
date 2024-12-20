@@ -59,7 +59,7 @@ export function BorrowScreen() {
 
   // useParams() can return an array but not with the current
   // routing setup, so we can safely cast it to a string
-  const collSymbol = String(useParams().collateral ?? contracts.collaterals[0].symbol).toUpperCase();
+  const collSymbol = String(useParams().collateral ?? contracts.collaterals[0]?.symbol ?? "").toUpperCase();
   if (!isCollateralSymbol(collSymbol)) {
     throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
@@ -78,6 +78,9 @@ export function BorrowScreen() {
   });
 
   const collateral = collaterals[collIndex];
+  if (!collateral) {
+    throw new Error(`Unknown collateral index: ${collIndex}`);
+  }
 
   const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
 
@@ -106,6 +109,9 @@ export function BorrowScreen() {
   ] as const)));
 
   const collBalance = balances[collateral.symbol];
+  if (!collBalance) {
+    throw new Error(`Unknown collateral symbol: ${collateral.symbol}`);
+  }
 
   const troveCount = useTrovesCount(account.address ?? null, collIndex);
 
@@ -206,15 +212,20 @@ export function BorrowScreen() {
                     icon: <TokenIcon symbol={symbol} />,
                     label: name,
                     value: account.isConnected
-                      ? fmtnum(balances[symbol].data ?? 0)
+                      ? fmtnum(balances[symbol]?.data ?? 0)
                       : "−",
                   }))}
                   menuPlacement="end"
                   menuWidth={300}
                   onSelect={(index) => {
+                    const coll = collaterals[index];
+                    if (!coll) {
+                      throw new Error(`Unknown collateral index: ${index}`);
+                    }
+
                     deposit.setValue("");
                     router.push(
-                      `/borrow/${collaterals[index].symbol.toLowerCase()}`,
+                      `/borrow/${coll.symbol.toLowerCase()}`,
                       { scroll: false },
                     );
                   }}

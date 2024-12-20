@@ -173,16 +173,20 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
     // Approve LST
     approveLst: {
       name: ({ contracts, request }) => {
-        const { symbol } = contracts.collaterals[request.collIndex];
-        return `Approve ${symbol}`;
+        const collateral = contracts.collaterals[request.collIndex];
+        if (!collateral) {
+          throw new Error(`Invalid collateral index: ${request.collIndex}`);
+        }
+        return `Approve ${collateral.symbol}`;
       },
       Status: TransactionStatus,
 
       async commit({ contracts, request, wagmiConfig }) {
-        const {
-          LeverageLSTZapper,
-          CollToken,
-        } = contracts.collaterals[request.collIndex].contracts;
+        const collateral = contracts.collaterals[request.collIndex];
+        if (!collateral) {
+          throw new Error(`Invalid collateral index: ${request.collIndex}`);
+        }
+        const { LeverageLSTZapper, CollToken } = collateral.contracts;
         return writeContract(wagmiConfig, {
           ...CollToken,
           functionName: "approve",
@@ -206,7 +210,11 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
       Status: TransactionStatus,
 
       async commit({ contracts, request, wagmiConfig }) {
-        const { LeverageLSTZapper } = contracts.collaterals[request.collIndex].contracts;
+        const collateral = contracts.collaterals[request.collIndex];
+        if (!collateral) {
+          throw new Error(`Invalid collateral index: ${request.collIndex}`);
+        }
+        const { LeverageLSTZapper } = collateral.contracts;
         return writeContract(wagmiConfig, {
           ...LeverageLSTZapper,
           functionName: "openTroveWithRawETH" as const,
@@ -239,6 +247,9 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
 
         // extract trove ID from logs
         const collateral = contracts.collaterals[request.collIndex];
+        if (!collateral) {
+          throw new Error(`Invalid collateral index: ${request.collIndex}`);
+        }
         const [troveOperation] = parseEventLogs({
           abi: collateral.contracts.TroveManager.abi,
           logs: receipt.logs,
@@ -273,7 +284,11 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
       Status: TransactionStatus,
 
       async commit({ contracts, request, wagmiConfig }) {
-        const { LeverageWETHZapper } = contracts.collaterals[request.collIndex].contracts;
+        const collateral = contracts.collaterals[request.collIndex];
+        if (!collateral) {
+          throw new Error(`Invalid collateral index: ${request.collIndex}`);
+        }
+        const { LeverageWETHZapper } = collateral.contracts;
         return writeContract(wagmiConfig, {
           ...LeverageWETHZapper,
           functionName: "openTroveWithRawETH",
@@ -301,7 +316,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
 
       async verify(...args) {
         // same verification as openTroveLst
-        return openBorrowPosition.steps.openTroveLst.verify(...args);
+        return openBorrowPosition.steps.openTroveLst?.verify(...args);
       },
     },
   },
@@ -312,6 +327,9 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
     }
 
     const collateral = contracts.collaterals[request.collIndex];
+    if (!collateral) {
+      throw new Error(`Invalid collateral index: ${request.collIndex}`);
+    }
     const { LeverageLSTZapper, CollToken } = collateral.contracts;
 
     // ETH collateral doesn't need approval

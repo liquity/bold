@@ -196,6 +196,9 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }
 
         const collateral = contracts.collaterals[request.loan.collIndex];
+        if (!collateral) {
+          throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+        }
         const Zapper = collateral.contracts.LeverageLSTZapper;
 
         return writeContract(wagmiConfig, {
@@ -225,6 +228,9 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }
 
         const collateral = contracts.collaterals[request.loan.collIndex];
+        if (!collateral) {
+          throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+        }
 
         // add ETH
         if (collateral.symbol === "ETH") {
@@ -264,6 +270,10 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }
 
         const collateral = contracts.collaterals[request.loan.collIndex];
+        if (!collateral) {
+          throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+        }
+
         const args = [BigInt(request.loan.troveId), request.depositChange[0] * -1n] as const;
 
         // withdraw ETH
@@ -313,6 +323,10 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }
 
         const collateral = contracts.collaterals[request.loan.collIndex];
+        if (!collateral) {
+          throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+        }
+
         const args = [{
           troveId: BigInt(request.loan.troveId),
           flashLoanAmount: params.flashLoanAmount,
@@ -367,6 +381,9 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }
 
         const collateral = contracts.collaterals[request.loan.collIndex];
+        if (!collateral) {
+          throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+        }
 
         const args = [{
           troveId: BigInt(request.loan.troveId),
@@ -402,7 +419,12 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
 
   async getSteps({ account, contracts, request, wagmiConfig }) {
     const { depositChange, leverageFactorChange, loan } = request;
+
     const collateral = contracts.collaterals[loan.collIndex];
+    if (!collateral) {
+      throw new Error(`Invalid collateral index: ${loan.collIndex}`);
+    }
+
     const steps: string[] = [];
 
     // only check approval for non-ETH collaterals

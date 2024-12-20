@@ -68,7 +68,11 @@ export function TransactionsScreen() {
     || step.status === "awaiting-commit"
   );
 
-  const StepStatus = fd.steps[step.id].Status;
+  const stepDeclaration = fd.steps[step.id];
+  if (!stepDeclaration) {
+    throw new Error(`Step declaration not found: ${step.id}`);
+  }
+  const StepStatus = stepDeclaration.Status;
 
   const stepStatusProps = match(step)
     .with({
@@ -156,7 +160,7 @@ export function TransactionsScreen() {
             steps={flow.steps.map((step) => ({
               error: step.error,
               id: step.id,
-              label: flowParams ? fd.steps[step.id].name(flowParams) : "",
+              label: flowParams ? stepDeclaration.name(flowParams) : "",
               status: step.status,
             }))}
           />
@@ -194,7 +198,7 @@ export function TransactionsScreen() {
                   step.status === "error" ? "Retry: " : ""
                 ) + (
                   flowParams
-                    ? fd.steps[step.id].name(flowParams)
+                    ? stepDeclaration.name(flowParams)
                     : ""
                 )}
                 mode="primary"
@@ -446,11 +450,12 @@ function StepDisc({
           "success",
           "error",
         ];
-        setForcedMode(
-          forcedStatuses[
-            (forcedStatuses.indexOf(forcedMode) + 1) % forcedStatuses.length
-          ],
-        );
+        const forcedStatus = forcedStatuses[
+          (forcedStatuses.indexOf(forcedMode) + 1) % forcedStatuses.length
+        ];
+        if (forcedStatus) {
+          setForcedMode(forcedStatus);
+        }
       }}
       onMouseEnter={() => setShowLabel(true)}
       onMouseLeave={() => setShowLabel(false)}

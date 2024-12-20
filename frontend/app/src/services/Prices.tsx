@@ -84,7 +84,9 @@ function useCoinGeckoPrice(supportedSymbol: null | CoinGeckoSymbol): UseQueryRes
 
       for (const key of Object.keys(coinGeckoTokenIds) as CoinGeckoSymbol[]) {
         const value = result[coinGeckoTokenIds[key]];
-        prices[key] = value.usd ? dn.from(value.usd, 18) : null;
+        if (value) {
+          prices[key] = value.usd ? dn.from(value.usd, 18) : null;
+        }
       }
 
       return prices;

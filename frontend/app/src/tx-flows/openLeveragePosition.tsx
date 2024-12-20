@@ -135,7 +135,11 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
       async commit({ contracts, request, wagmiConfig }) {
         const { loan } = request;
         const initialDeposit = dn.div(loan.deposit, request.leverageFactor);
-        const { LeverageLSTZapper, CollToken } = contracts.collaterals[loan.collIndex].contracts;
+        const collateral = contracts.collaterals[loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
+        const { LeverageLSTZapper, CollToken } = collateral.contracts;
 
         return writeContract(wagmiConfig, {
           ...CollToken,
@@ -160,6 +164,9 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
         const { loan } = request;
         const initialDeposit = dn.div(loan.deposit, request.leverageFactor);
         const collateral = contracts.collaterals[loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
         const { LeverageLSTZapper, LeverageWETHZapper } = collateral.contracts;
 
         const openLeveragedParams = await getOpenLeveragedTroveParams(
@@ -214,6 +221,9 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
         if (!collToken) throw new Error("Invalid collateral index");
 
         const collateral = contracts.collaterals[request.loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + request.loan.collIndex);
+        }
 
         const [troveOperation] = parseEventLogs({
           abi: collateral.contracts.TroveManager.abi,
@@ -264,7 +274,11 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
     }
 
     const { collaterals } = contracts;
-    const { LeverageLSTZapper, CollToken } = collaterals[loan.collIndex].contracts;
+    const collateral = collaterals[loan.collIndex];
+    if (!collateral) {
+      throw new Error("Invalid collateral index: " + loan.collIndex);
+    }
+    const { LeverageLSTZapper, CollToken } = collateral.contracts;
 
     const allowance = dnum18(
       await readContract(wagmiConfig, {

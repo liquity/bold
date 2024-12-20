@@ -24,6 +24,9 @@ export function PanelClosePosition({
 
   const contracts = getContracts();
   const collateral = contracts.collaterals[loan.collIndex];
+  if (!collateral) {
+    return null;
+  }
   const collToken = TOKENS_BY_SYMBOL[collateral.symbol];
 
   const collPriceUsd = usePrice(collToken.symbol);
