@@ -1,7 +1,6 @@
 import type { Address, Initiative } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
-import { GOVERNANCE_EPOCH_DURATION, GOVERNANCE_EPOCH_VOTING_CUTOFF } from "@/src/constants";
 import { getProtocolContract } from "@/src/contracts";
 import { KNOWN_INITIATIVES_URL } from "@/src/env";
 import { useGovernanceInitiatives } from "@/src/subgraph-hooks";
@@ -23,30 +22,43 @@ export function useGovernanceState() {
     }, {
       ...Governance,
       functionName: "secondsWithinEpoch",
+    }, {
+      ...Governance,
+      functionName: "EPOCH_DURATION",
+    }, {
+      ...Governance,
+      functionName: "EPOCH_VOTING_CUTOFF",
     }],
     query: {
       select: ([
-        epochStart,
+        epochStart_,
         totalVotesAndState,
         secondsWithinEpoch,
+        GOVERNANCE_EPOCH_DURATION,
+        GOVERNANCE_EPOCH_VOTING_CUTOFF,
       ]) => {
-        const period: "cutoff" | "voting" = (secondsWithinEpoch.result ?? 0n) > GOVERNANCE_EPOCH_VOTING_CUTOFF
+        const epochStart = epochStart_.result ?? 0n;
+        const epochDuration = GOVERNANCE_EPOCH_DURATION.result ?? 0n;
+        const epochVotingCutoff = GOVERNANCE_EPOCH_VOTING_CUTOFF.result ?? 0n;
+
+        const period: "cutoff" | "voting" = (secondsWithinEpoch.result ?? 0n) > epochVotingCutoff
           ? "cutoff"
           : "voting";
 
         const seconds = Number(secondsWithinEpoch.result ?? 0n);
-        const daysLeft = (Number(GOVERNANCE_EPOCH_DURATION) - seconds) / (24 * 60 * 60);
+        const daysLeft = (Number(epochDuration) - seconds) / (24 * 60 * 60);
         const daysLeftRounded = Math.ceil(daysLeft);
 
         return {
           countedVoteLQTY: totalVotesAndState.result?.[1].countedVoteLQTY,
           countedVoteOffset: totalVotesAndState.result?.[1].countedVoteOffset,
-          epochStart: epochStart.result,
-          secondsWithinEpoch: secondsWithinEpoch.result,
-          totalVotes: totalVotesAndState.result?.[0],
-          period,
           daysLeft,
           daysLeftRounded,
+          epochEnd: epochStart + epochDuration,
+          epochStart,
+          period,
+          secondsWithinEpoch: secondsWithinEpoch.result,
+          totalVotes: totalVotesAndState.result?.[0],
         };
       },
     },
