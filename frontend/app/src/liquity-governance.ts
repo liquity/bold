@@ -1,11 +1,13 @@
 import type { Address, Initiative } from "@/src/types";
-import type { UseQueryResult } from "@tanstack/react-query";
 import type { Config as WagmiConfig } from "wagmi";
 
 import { GOVERNANCE_EPOCH_DURATION, GOVERNANCE_EPOCH_VOTING_CUTOFF } from "@/src/constants";
 import { getProtocolContract } from "@/src/contracts";
-import { INITIATIVE_UNI_V4_DONATIONS } from "@/src/env";
+import { KNOWN_INITIATIVES_URL } from "@/src/env";
+import { useGovernanceInitiatives } from "@/src/subgraph-hooks";
+import { vAddress } from "@/src/valibot-utils";
 import { useQuery } from "@tanstack/react-query";
+import * as v from "valibot";
 import { useReadContract, useReadContracts } from "wagmi";
 import { readContract } from "wagmi/actions";
 
@@ -118,7 +120,6 @@ export function useUserStates(account: Address | null) {
       }),
     },
   });
-
   return userStates;
 }
 
@@ -139,6 +140,54 @@ export async function getUserStates(
     unallocatedLQTY: result[0],
     unallocatedOffset: result[1],
   };
+}
+
+export function useInitiatives() {
+  const initiatives = useGovernanceInitiatives();
+  const knownInitiatives = useKnownInitiatives();
+  return {
+    ...initiatives,
+    data: initiatives.data && knownInitiatives.data
+      ? initiatives.data.map((address): Initiative => {
+        const knownInitiative = knownInitiatives.data[address];
+        return {
+          address,
+          name: knownInitiative?.name ?? null,
+          pairVolume: null,
+          protocol: knownInitiative?.group ?? null,
+          tvl: null,
+          votesDistribution: null,
+        };
+      })
+      : null,
+  };
+}
+
+const KnownInitiativesSchema = v.record(
+  v.pipe(
+    vAddress(),
+    v.transform((address) => address.toLowerCase()),
+  ),
+  v.object({
+    name: v.string(),
+    group: v.string(),
+  }),
+);
+
+export function useKnownInitiatives() {
+  return useQuery({
+    queryKey: ["knownInitiatives"],
+    queryFn: async () => {
+      if (KNOWN_INITIATIVES_URL === undefined) {
+        throw new Error("KNOWN_INITIATIVES_URL is not defined");
+      }
+      const response = await fetch(KNOWN_INITIATIVES_URL, {
+        headers: { "Content-Type": "application/json" },
+      });
+      return v.parse(KnownInitiativesSchema, await response.json());
+    },
+    enabled: KNOWN_INITIATIVES_URL !== undefined,
+  });
 }
 
 // const INITIATIVES_STATIC: Initiative[] = [
@@ -207,40 +256,3 @@ export async function getUserStates(
 //     votesDistribution: dn.from(0, 18),
 //   },
 // ];
-
-const INITIATIVES_STATIC: Initiative[] = [
-  {
-    name: "UNI V4 donations",
-    protocol: "Uniswap V4",
-    address: INITIATIVE_UNI_V4_DONATIONS,
-    tvl: null,
-    pairVolume: null,
-    votesDistribution: null,
-  },
-];
-
-export function useInitiatives(): UseQueryResult<Initiative[]> {
-  return useQuery({
-    queryKey: ["initiatives"],
-    queryFn: () => {
-      return INITIATIVES_STATIC;
-    },
-  });
-}
-
-// // export function useRegisteredInitiatives() {
-// //   const Governance = getProtocolContract("Governance");
-
-// //   return useReadContract({
-// //     ...Governance,
-// //     functionName: "registeredInitiatives",
-// //     query: {
-// //       refetchInterval: DATA_REFRESH_INTERVAL,
-// //       select: (data: Record<Address, number>) => {
-// //         return Object.entries(data)
-// //           .filter(([_, epoch]) => epoch > 0)
-// //           .map(([address]) => address as Address);
-// //       },
-// //     },
-// //   });
-// // }
