@@ -5,6 +5,7 @@ import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningB
 import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
+import { formatDate } from "@/src/formatting";
 import { useGovernanceState, useInitiatives, useInitiativeState, useUserStates } from "@/src/liquity-governance";
 import { useAccount } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -115,7 +116,7 @@ export function PanelVoting() {
             })}
           >
             Current voting round ends in{" "}
-            <Tag>
+            <Tag title={governanceState.data && formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))}>
               {governanceState.data.daysLeftRounded} {governanceState.data.daysLeftRounded === 1 ? "day" : "days"}
             </Tag>
           </div>
