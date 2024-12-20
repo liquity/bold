@@ -65,8 +65,8 @@ const stepNames: Record<Step, string> = {
   approveLst: "Approve {tokenName}",
   decreaseDeposit: "Decrease Deposit",
   increaseDeposit: "Increase Deposit",
-  leverDownTrove: "Decrease Multiply",
-  leverUpTrove: "Increase Multiply",
+  leverDownTrove: "Decrease Multiplier",
+  leverUpTrove: "Increase Multiplier",
 };
 
 export const updateLeveragePosition: FlowDeclaration<Request, Step> = {
