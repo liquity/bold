@@ -709,10 +709,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         bool lst = _collToken != WETH;
         if (lst) {
             gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
+            WETHTester(payable(address(WETH))).whitelist(address(gasCompZapper));
         } else {
             wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
+            WETHTester(payable(address(WETH))).whitelist(address(wethZapper));
         }
         leverageZapper = _deployHybridLeverageZapper(_addressesRegistry, flashLoanProvider, hybridExchange, lst);
+        WETHTester(payable(address(WETH))).whitelist(address(leverageZapper));
     }
 
     function _deployHybridLeverageZapper(
