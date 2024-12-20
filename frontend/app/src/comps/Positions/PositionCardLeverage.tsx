@@ -65,7 +65,7 @@ export function PositionCardLeverage({
               color: "positionContent",
             })}
           >
-            <div>Multiply</div>
+            <div>Multiply position</div>
             {statusTag}
           </div>,
         ]}

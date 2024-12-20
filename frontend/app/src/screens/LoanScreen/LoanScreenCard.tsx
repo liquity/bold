@@ -514,7 +514,7 @@ function LoanCard({
                           ),
                           label: mode === "multiply"
                             ? "Convert to BOLD loan"
-                            : "Convert to Multiply",
+                            : "Convert to Multiply position",
                         },
                         {
                           icon: (
