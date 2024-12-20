@@ -52,7 +52,7 @@ export function PanelVoting() {
     }));
   };
 
-  const allowSubmit = dn.eq(remainingVotingPower, 0);
+  const allowSubmit = dn.lt(remainingVotingPower, 1) && dn.gte(remainingVotingPower, 0);
 
   return (
     <section
