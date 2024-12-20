@@ -15,6 +15,7 @@ import { isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import {
+  GovernanceInitiatives,
   graphQuery,
   InterestBatchQuery,
   InterestRateBracketsQuery,
@@ -397,6 +398,23 @@ export function useInterestRateBrackets(
 
   return useQuery({
     queryKey: ["InterestRateBrackets", collIndex],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
+export function useGovernanceInitiatives(options?: Options) {
+  let queryFn = async () => {
+    const { governanceInitiatives } = await graphQuery(GovernanceInitiatives);
+    return governanceInitiatives.map((initiative) => initiative.id as Address);
+  };
+
+  if (DEMO_MODE) {
+    queryFn = async () => [];
+  }
+
+  return useQuery({
+    queryKey: ["GovernanceInitiatives"],
     queryFn,
     ...prepareOptions(options),
   });
