@@ -5,91 +5,71 @@ import { createContext, useContext, useState } from "react";
 // The Liquity V2 base color palette, meant
 // to be used by themes rather than directly.
 export const colors = {
-  // Blue
-  "blue:50": "#F0F3FE",
-  "blue:100": "#DEE4FB",
-  "blue:200": "#C4D0F9",
-  "blue:300": "#9CB1F4",
-  "blue:400": "#6D8AED",
-  "blue:500": "#405AE5",
-  "blue:600": "#3544DB",
-  "blue:700": "#2D33C8",
-  "blue:800": "#2A2BA3",
-  "blue:900": "#272A81",
-  "blue:950": "#1C1D4F",
-
-  // Gray
-  "gray:50": "#F5F6F8",
-  "gray:100": "#EDEFF2",
-  "gray:200": "#DDE0E8",
-  "gray:300": "#C8CDD9",
-  "gray:400": "#B1B7C8",
-  "gray:500": "#9EA2B8",
-  "gray:600": "#878AA4",
-  "gray:700": "#73748F",
-  "gray:800": "#5F6174",
-  "gray:900": "#50525F",
-  "gray:950": "#2F3037",
-
-  // Yellow
-  "yellow:50": "#FDFBE9",
-  "yellow:100": "#FCF8C5",
-  "yellow:200": "#FAEE8E",
-  "yellow:300": "#F5D93A",
-  "yellow:400": "#F1C91E",
-  "yellow:500": "#E1B111",
-  "yellow:600": "#C2890C",
-  "yellow:700": "#9B620D",
-  "yellow:800": "#804E13",
-  "yellow:900": "#6D4016",
-  "yellow:950": "#402108",
-
-  // Green
-  "green:50": "#F1FCF2",
-  "green:100": "#DEFAE4",
-  "green:200": "#BFF3CA",
-  "green:300": "#8EE7A1",
-  "green:400": "#63D77D",
-  "green:500": "#2EB94D",
-  "green:600": "#20993C",
-  "green:700": "#1D7832",
-  "green:800": "#1C5F2C",
-  "green:900": "#194E27",
-  "green:950": "#082B12",
-
-  // Red
-  "red:50": "#FEF5F2",
-  "red:100": "#FFE7E1",
-  "red:200": "#FFD5C9",
-  "red:300": "#FEB7A3",
-  "red:400": "#FB7C59",
-  "red:500": "#F36740",
-  "red:600": "#E14A21",
-  "red:700": "#BD3C18",
-  "red:800": "#9C3518",
-  "red:900": "#82301A",
-  "red:950": "#471608",
-
-  // brown
-  "brown:50": "#F8F6F4",
-
-  // desert
-  "desert:50": "#FAF9F7",
-  "desert:100": "#EFECE5",
-  "desert:950": "#2C231E",
-
-  // White
-  "white": "#FFFFFF",
-
-  // Brand colors
-  "brand:blue": "#405AE5",
-  "brand:lightBlue": "#6D8AED",
-  "brand:darkBlue": "#121B44",
-  "brand:green": "#63D77D",
-  "brand:golden": "#F5D93A",
-  "brand:cyan": "#95CBF3",
-  "brand:coral": "#FB7C59",
-  "brand:brown": "#DBB79B",
+    // Gray
+    "gray:100": "#E6E9EB",
+    "gray:200": "#CDD3D7",
+    "gray:300": "#B4BEC3",
+    "gray:400": "#9BA8AF",
+    "gray:500": "#82929B",
+    "gray:600": "#697C87",
+    "gray:700": "#506673",
+    "gray:800": "#37515F",
+    "gray:900": "#1E3B4B",
+    "gray:1000": "#052537",
+  
+    // Green
+    "green:100": "#D5FCE6",
+    "green:200": "#ADF9D4",
+    "green:300": "#81EEC4",
+    "green:400": "#5EDEB8",
+    "green:500": "#2FC8AA",
+    "green:600": "#22AC9E",
+    "green:700": "#17908F",
+    "green:800": "#0E6B74",
+    "green:900": "#095060",
+    "green:1000": "#073A45",
+  
+    // Yellow
+    "yellow:100": "#FFF9DA",
+    "yellow:200": "#FFF2B6",
+    "yellow:300": "#FFE992",
+    "yellow:400": "#FFE077",
+    "yellow:500": "#FFD24A",
+    "yellow:600": "#DBAD36",
+    "yellow:700": "#B78B25",
+    "yellow:800": "#936B17",
+    "yellow:900": "#7A540E",
+    "yellow:1000": "#5C3C10",
+  
+    // Red
+    "red:100": "#FDDADA",
+    "red:200": "#FCB5BB",
+    "red:300": "#F68FA1",
+    "red:400": "#EC7094",
+    "red:500": "#E14480",
+    "red:600": "#C13176",
+    "red:700": "#A2226C",
+    "red:800": "#82155F",
+    "red:900": "#6C0D57",
+    "red:1000": "#5F0B4D",
+  
+    // brown
+    "brown:50": "#F8F6F4",
+  
+    // desert
+    "desert:50": "#FAF9F7",
+    "desert:100": "#EFECE5",
+    "desert:950": "#2C231E",
+  
+    // White
+    "white": "#FFFFFF",
+  
+    // Brand colors
+    "brand:darkBlue": "#051937",
+    "brand:waterB": "#00C9B7",
+    "brand:grassG": "#A8EB12",
+    "brand:golden": "#f5d93a",
+    "brand:coralP": "#fb7c59",
 };
 
 // The light theme, which is the only theme for now. These
@@ -104,10 +84,10 @@ export const colors = {
 export const lightTheme = {
   name: "light" as const,
   colors: {
-    accent: "blue:500",
-    accentActive: "blue:600",
+    accent: "green:500",
+    accentActive: "green:600",
     accentContent: "white",
-    accentHint: "blue:400",
+    accentHint: "green:400",
     background: "white",
     backgroundActive: "gray:50",
     border: "gray:200",
@@ -116,7 +96,7 @@ export const lightTheme = {
     contentAlt: "gray:600",
     contentAlt2: "gray:500",
     controlBorder: "gray:300",
-    controlBorderStrong: "blue:950",
+    controlBorderStrong: "green:950",
     controlSurface: "white",
     controlSurfaceAlt: "gray:200",
     hint: "brown:50",
@@ -127,17 +107,17 @@ export const lightTheme = {
     fieldBorder: "gray:100",
     fieldBorderFocused: "gray:300",
     fieldSurface: "gray:50",
-    focused: "blue:500",
-    focusedSurface: "blue:50",
-    focusedSurfaceActive: "blue:100",
-    strongSurface: "blue:950",
+    focused: "green:500",
+    focusedSurface: "green:50",
+    focusedSurfaceActive: "green:100",
+    strongSurface: "green:950",
     strongSurfaceContent: "white",
     strongSurfaceContentAlt: "gray:500",
     strongSurfaceContentAlt2: "gray:100",
     position: "#2E2E3D",
     positionContent: "white",
     positionContentAlt: "gray:500",
-    interactive: "blue:950",
+    interactive: "green:950",
     negative: "red:500",
     negativeStrong: "red:600",
     negativeActive: "red:600",
@@ -156,11 +136,11 @@ export const lightTheme = {
     positiveActive: "green:600",
     positiveContent: "white",
     positiveHint: "green:400",
-    secondary: "blue:50",
-    secondaryActive: "blue:200",
-    secondaryContent: "blue:500",
-    secondaryHint: "blue:100",
-    selected: "blue:500",
+    secondary: "green:50",
+    secondaryActive: "green:200",
+    secondaryContent: "green:500",
+    secondaryHint: "green:100",
+    selected: "green:500",
     separator: "gray:50",
     surface: "white",
     tableBorder: "gray:100",
@@ -169,13 +149,13 @@ export const lightTheme = {
     disabledBorder: "gray:200",
     disabledContent: "gray:500",
     disabledSurface: "gray:50",
-    brandBlue: "brand:blue",
+    brandgreen: "brand:blue",
     brandBlueContent: "white",
-    brandBlueContentAlt: "blue:50",
-    brandDarkBlue: "brand:darkBlue",
+    brandBlueContentAlt: "green:50",
+    brandDarkgreen: "brand:darkBlue",
     brandDarkBlueContent: "white",
     brandDarkBlueContentAlt: "gray:50",
-    brandLightBlue: "brand:lightBlue",
+    brandLightgreen: "brand:lightBlue",
     brandGolden: "brand:golden",
     brandGoldenContent: "yellow:950",
     brandGoldenContentAlt: "yellow:800",
@@ -189,9 +169,9 @@ export const lightTheme = {
     riskGradient4: "#FFA12B",
     riskGradient5: "red:500",
 
-    loadingGradient1: "blue:50",
-    loadingGradient2: "blue:100",
-    loadingGradientContent: "blue:400",
+    loadingGradient1: "green:50",
+    loadingGradient2: "green:100",
+    loadingGradientContent: "green:400",
 
     // not used yet
     brandCyan: "brand:cyan",
