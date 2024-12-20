@@ -254,3 +254,11 @@ export const InterestRateBracketsQuery = graphql(`
     }
   }
 `);
+
+export const GovernanceInitiatives = graphql(`
+  query GovernanceInitiatives {
+    governanceInitiatives {
+      id
+    }
+  }
+`);
