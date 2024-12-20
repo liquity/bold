@@ -180,12 +180,21 @@ function earnPositionFromGraph(
 
 export function useStakePosition(address: null | Address) {
   const LqtyStaking = getProtocolContract("LqtyStaking");
+  const Governance = getProtocolContract("Governance");
+
+  const userProxyAddress = useReadContract({
+    ...Governance,
+    functionName: "deriveUserProxyAddress",
+    args: [address ?? "0x"],
+    query: { enabled: Boolean(address) },
+  });
+
   return useReadContracts({
     contracts: [
       {
         ...LqtyStaking,
         functionName: "stakes",
-        args: [address ?? "0x"],
+        args: [userProxyAddress.data ?? "0x"],
       },
       {
         ...LqtyStaking,
@@ -193,7 +202,7 @@ export function useStakePosition(address: null | Address) {
       },
     ],
     query: {
-      enabled: Boolean(address),
+      enabled: Boolean(address) && userProxyAddress.isSuccess,
       refetchInterval: DATA_REFRESH_INTERVAL,
       select: ([deposit_, totalStaked_]): PositionStake => {
         const totalStaked = dnum18(totalStaked_);

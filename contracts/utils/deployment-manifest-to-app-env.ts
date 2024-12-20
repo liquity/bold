@@ -160,7 +160,10 @@ function deployedContractsToAppEnvVariables(manifest: DeploymentManifest) {
 
   // governance contracts
   for (const [contractName, address] of Object.entries(governance)) {
-    const envVarName = contractNameToAppEnvVariable(contractName, "CONTRACT");
+    const envVarName = contractNameToAppEnvVariable(
+      contractName,
+      contractName.endsWith("Initiative") ? "INITIATIVE" : "CONTRACT",
+    );
     if (envVarName) {
       appEnvVariables[envVarName] = address;
     }
@@ -217,10 +220,12 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_LQTY_STAKING`;
     case "governance":
       return `${prefix}_GOVERNANCE`;
+
+    // governance initiatives
     case "uniV4DonationsInitiative":
-      return `${prefix}_UNI_V4_DONATIONS_INITIATIVE`;
+      return `${prefix}_UNI_V4_DONATIONS`;
     case "curveV2GaugeRewardsInitiative":
-      return `${prefix}_CURVE_V2_GAUGE_REWARDS_INITIATIVE`;
+      return `${prefix}_CURVE_V2_GAUGE_REWARDS`;
   }
   return null;
 }

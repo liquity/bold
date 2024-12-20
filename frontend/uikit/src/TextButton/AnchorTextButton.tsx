@@ -16,6 +16,7 @@ export const AnchorTextButton = forwardRef<
   external,
   label,
   size,
+  className,
   ...props
 }, ref) {
   const textButtonStyles = useTextButtonStyles(size);
@@ -28,7 +29,7 @@ export const AnchorTextButton = forwardRef<
       ref={ref}
       className={cx(
         textButtonStyles.className,
-        props.className,
+        className,
       )}
       {...externalProps}
       {...props}

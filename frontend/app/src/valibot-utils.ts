@@ -206,3 +206,21 @@ export function vPositionEarn() {
     }),
   });
 }
+
+export function vVote() {
+  return v.union([
+    v.literal("for"),
+    v.literal("against"),
+  ]);
+}
+
+export function vVoteAllocation() {
+  return v.object({
+    vote: v.union([v.null(), vVote()]),
+    value: vDnum(),
+  });
+}
+
+export function vVoteAllocations() {
+  return v.record(vAddress(), vVoteAllocation());
+}

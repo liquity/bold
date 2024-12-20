@@ -203,8 +203,7 @@ function Balance({
               writeContract({
                 abi: LqtyToken.abi,
                 address: LqtyToken.address,
-                functionName: "mint",
-                args: [100n * 10n ** 18n],
+                functionName: "tap",
               }, {
                 onError: (error) => {
                   alert(error.message);
