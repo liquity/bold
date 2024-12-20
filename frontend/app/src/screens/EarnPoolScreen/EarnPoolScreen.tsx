@@ -134,7 +134,11 @@ export function EarnPoolScreen() {
                 <Tabs
                   selected={TABS.indexOf(tab)}
                   onSelect={(index) => {
-                    router.push(`/earn/${collateralSymbol.toLowerCase()}/${TABS[index].action}`, {
+                    const tab = TABS[index];
+                    if (!tab) {
+                      throw new Error("Invalid tab index");
+                    }
+                    router.push(`/earn/${collateralSymbol.toLowerCase()}/${tab.action}`, {
                       scroll: false,
                     });
                   }}

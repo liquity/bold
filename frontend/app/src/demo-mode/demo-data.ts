@@ -138,10 +138,11 @@ export const INTEREST_CHART = INTEREST_RATE_BUCKETS.map(([_, size]) => (
 export function getDebtBeforeRateBucketIndex(index: number) {
   let debt = dn.from(0, 18);
   for (let i = 0; i < index; i++) {
-    if (!INTEREST_RATE_BUCKETS[i]) {
+    const bucket = INTEREST_RATE_BUCKETS[i];
+    if (!bucket) {
       break;
     }
-    debt = dn.add(debt, INTEREST_RATE_BUCKETS[i][1]);
+    debt = dn.add(debt, bucket[1]);
     if (i === index - 1) {
       break;
     }

@@ -149,9 +149,9 @@ export type LoanDetails = {
 // governance
 export type Initiative =
   & {
-    name: string;
-    protocol: string;
     address: Address;
+    name: string | null;
+    protocol: string | null;
   }
   & (
     | { tvl: Dnum; pairVolume: Dnum; votesDistribution: Dnum }

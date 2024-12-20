@@ -178,7 +178,11 @@ export const claimCollateralSurplus: FlowDeclaration<ClaimCollateralSurplusReque
 
       async commit({ contracts, request, wagmiConfig }) {
         const { collIndex } = request;
-        const { BorrowerOperations } = contracts.collaterals[collIndex].contracts;
+        const collateral = contracts.collaterals[collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + collIndex);
+        }
+        const { BorrowerOperations } = collateral.contracts;
         return writeContract(wagmiConfig, {
           ...BorrowerOperations,
           functionName: "claimCollateral",

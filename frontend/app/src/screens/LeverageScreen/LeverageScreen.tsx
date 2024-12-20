@@ -58,7 +58,7 @@ export function LeverageScreen() {
 
   // useParams() can return an array but not with the current
   // routing setup, so we can safely cast it to a string
-  const collSymbol = String(useParams().collateral ?? contracts.collaterals[0].symbol).toUpperCase();
+  const collSymbol = String(useParams().collateral ?? contracts.collaterals[0]?.symbol ?? "").toUpperCase();
   if (!isCollateralSymbol(collSymbol)) {
     throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
@@ -77,6 +77,9 @@ export function LeverageScreen() {
   });
 
   const collToken = collateralTokens[collIndex];
+  if (!collToken) {
+    throw new Error(`Unknown collateral index: ${collIndex}`);
+  }
 
   const balances = Object.fromEntries(collateralTokens.map(({ symbol }) => (
     [symbol, useBalance(account.address, symbol)] as const
@@ -106,9 +109,9 @@ export function LeverageScreen() {
     collToken,
   });
 
+  // reset leverage when collateral changes
   useEffect(() => {
-    // reset leverage when collateral changes
-    leverageField.updateLeverageFactor(leverageField.leverageFactorSuggestions[0]);
+    leverageField.updateLeverageFactor(leverageField.leverageFactorSuggestions[0] ?? 1.1);
   }, [collToken.symbol, leverageField.leverageFactorSuggestions]);
 
   const redemptionRisk = getRedemptionRisk(interestRate);
@@ -117,7 +120,7 @@ export function LeverageScreen() {
     collPrice.data,
   );
 
-  const collBalance = balances[collToken.symbol].data;
+  const collBalance = balances[collToken.symbol]?.data;
 
   const maxAmount = collBalance && dnumMax(
     dn.sub(collBalance, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0), // Only keep a reserve for ETH, not LSTs
@@ -202,7 +205,7 @@ export function LeverageScreen() {
                     icon: <TokenIcon symbol={symbol} />,
                     label: name,
                     value: account.isConnected
-                      ? fmtnum(balances[symbol].data ?? 0)
+                      ? fmtnum(balances[symbol]?.data ?? 0)
                       : "−",
                   }))}
                   menuPlacement="end"
@@ -212,7 +215,11 @@ export function LeverageScreen() {
                       depositPreLeverage.setValue("");
                       depositPreLeverage.focus();
                     }, 0);
-                    const { symbol } = collateralTokens[index];
+                    const collToken = collateralTokens[index];
+                    if (!collToken) {
+                      throw new Error(`Unknown collateral index: ${index}`);
+                    }
+                    const { symbol } = collToken;
                     router.push(
                       `/leverage/${symbol.toLowerCase()}`,
                       { scroll: false },

@@ -155,7 +155,13 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
 
       async commit({ contracts, request, wagmiConfig }) {
         const { loan } = request;
-        const { BorrowerOperations } = contracts.collaterals[loan.collIndex].contracts;
+
+        const collateral = contracts.collaterals[loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
+
+        const { BorrowerOperations } = collateral.contracts;
 
         return writeContract(wagmiConfig, {
           ...BorrowerOperations,
@@ -186,7 +192,12 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
 
       async commit({ contracts, request, wagmiConfig }) {
         const { loan } = request;
-        const { BorrowerOperations } = contracts.collaterals[loan.collIndex].contracts;
+        const collateral = contracts.collaterals[loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
+
+        const { BorrowerOperations } = collateral.contracts;
 
         if (!loan.batchManager) {
           throw new Error("No batch manager provided");
@@ -221,7 +232,12 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
 
       async commit({ contracts, request, wagmiConfig }) {
         const { loan } = request;
-        const { BorrowerOperations } = contracts.collaterals[loan.collIndex].contracts;
+        const collateral = contracts.collaterals[loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
+
+        const { BorrowerOperations } = collateral.contracts;
 
         return writeContract(wagmiConfig, {
           ...BorrowerOperations,
@@ -250,6 +266,9 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
   async getSteps({ contracts, request, wagmiConfig }) {
     const loan = request.loan;
     const collateral = contracts.collaterals[loan.collIndex];
+    if (!collateral) {
+      throw new Error("Invalid collateral index: " + loan.collIndex);
+    }
 
     if (loan.batchManager) {
       return ["setInterestBatchManager"];

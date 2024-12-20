@@ -74,6 +74,9 @@ export const earnDeposit: FlowDeclaration<EarnDepositRequest> = {
 
       async commit({ contracts, request, wagmiConfig }) {
         const collateral = contracts.collaterals[request.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + request.collIndex);
+        }
         const boldAmount = dn.sub(
           request.earnPosition.deposit,
           request.prevEarnPosition?.deposit ?? dn.from(0, 18),

@@ -139,6 +139,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       async commit({ contracts, request, wagmiConfig }) {
         const debtChange = getDebtChange(request.loan, request.prevLoan);
         const collateral = contracts.collaterals[request.loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + request.loan.collIndex);
+        }
         const Controller = collateral.symbol === "ETH"
           ? collateral.contracts.LeverageWETHZapper
           : collateral.contracts.LeverageLSTZapper;
@@ -158,13 +161,21 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     approveColl: {
       name: ({ contracts, request }) => {
         const coll = contracts.collaterals[request.loan.collIndex];
+        if (!coll) {
+          throw new Error("Invalid collateral index: " + request.loan.collIndex);
+        }
         return `Approve ${coll.symbol}`;
       },
       Status: TransactionStatus,
 
       async commit({ contracts, request, wagmiConfig }) {
         const collChange = getCollChange(request.loan, request.prevLoan);
+
         const collateral = contracts.collaterals[request.loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + request.loan.collIndex);
+        }
+
         const Controller = collateral.contracts.LeverageLSTZapper;
 
         return writeContract(wagmiConfig, {
@@ -189,6 +200,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         const collChange = getCollChange(loan, request.prevLoan);
         const debtChange = getDebtChange(loan, request.prevLoan);
         const collateral = contracts.collaterals[loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
 
         if (collateral.symbol === "ETH") {
           return writeContract(wagmiConfig, {
@@ -238,6 +252,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         const { loan } = request;
         const debtChange = getDebtChange(loan, request.prevLoan);
         const collateral = contracts.collaterals[loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
 
         if (collateral.symbol === "ETH") {
           return writeContract(wagmiConfig, {
@@ -272,6 +289,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         const { loan } = request;
         const collChange = getCollChange(loan, request.prevLoan);
         const collateral = contracts.collaterals[loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
 
         if (collateral.symbol === "ETH") {
           return writeContract(wagmiConfig, {
@@ -307,6 +327,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         const { loan, maxUpfrontFee } = request;
         const debtChange = getDebtChange(loan, request.prevLoan);
         const collateral = contracts.collaterals[loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
 
         if (collateral.symbol === "ETH") {
           return writeContract(wagmiConfig, {
@@ -341,6 +364,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         const { loan } = request;
         const collChange = getCollChange(loan, request.prevLoan);
         const collateral = contracts.collaterals[loan.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + loan.collIndex);
+        }
 
         if (collateral.symbol === "ETH") {
           return writeContract(wagmiConfig, {
@@ -372,6 +398,10 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     const debtChange = getDebtChange(request.loan, request.prevLoan);
     const collChange = getCollChange(request.loan, request.prevLoan);
     const coll = contracts.collaterals[request.loan.collIndex];
+    if (!coll) {
+      throw new Error("Invalid collateral index: " + request.loan.collIndex);
+    }
+
     const Controller = coll.symbol === "ETH"
       ? coll.contracts.LeverageWETHZapper
       : coll.contracts.LeverageLSTZapper;
