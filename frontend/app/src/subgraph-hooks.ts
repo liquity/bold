@@ -15,6 +15,7 @@ import { isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import {
+  GovernanceInitiatives,
   graphQuery,
   InterestBatchQuery,
   InterestRateBracketsQuery,
@@ -402,6 +403,23 @@ export function useInterestRateBrackets(
   });
 }
 
+export function useGovernanceInitiatives(options?: Options) {
+  let queryFn = async () => {
+    const { governanceInitiatives } = await graphQuery(GovernanceInitiatives);
+    return governanceInitiatives.map((initiative) => initiative.id as Address);
+  };
+
+  if (DEMO_MODE) {
+    queryFn = async () => [];
+  }
+
+  return useQuery({
+    queryKey: ["GovernanceInitiatives"],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
 function subgraphTroveToLoan(
   trove: TrovesByAccountQueryType["troves"][number],
 ): PositionLoanCommitted {
@@ -419,7 +437,7 @@ function subgraphTroveToLoan(
   }
 
   return {
-    type: trove.mightBeLeveraged ? "leverage" : "borrow",
+    type: trove.mightBeLeveraged ? "multiply" : "borrow",
     batchManager: isAddress(trove.interestBatch?.batchManager)
       ? trove.interestBatch.batchManager
       : null,

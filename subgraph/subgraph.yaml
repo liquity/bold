@@ -6,8 +6,8 @@ dataSources:
     name: BoldToken
     source:
       abi: BoldToken
-      address: "0x620ce1130f7c63457784cdfa31cfccbfb6be5029"
-      startBlock: 7129282
+      address: "0x6ecf96d1f30cd98c0b58d6b12ea8ae014c52464d"
+      startBlock: 7279144
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -36,8 +36,8 @@ dataSources:
     name: Governance
     source:
       abi: Governance
-      address: "0x16fda5823f296c24125be4976fd6cec9fab9da2e"
-      startBlock: 7129475
+      address: "0xd7eae81178b97e49e6471f398f0486a7c2e43721"
+      startBlock: 7279317
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -51,19 +51,21 @@ dataSources:
         - name: Governance
           file: ./abi/Governance.json
       eventHandlers:
-        - event: AllocateLQTY(address,address,int256,int256,uint16)
+        - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,bool)
           handler: handleAllocateLQTY
-        - event: ClaimForInitiative(address,uint256,uint256)
+        - event: ClaimForInitiative(indexed address,uint256,uint256,bool)
           handler: handleClaimForInitiative
-        - event: DepositLQTY(address,uint256)
+        - event: DepositLQTY(indexed
+            address,address,uint256,uint256,uint256,uint256,uint256)
           handler: handleDepositLQTY
-        - event: RegisterInitiative(address,address,uint16)
+        - event: RegisterInitiative(address,address,uint256,bool)
           handler: handleRegisterInitiative
-        - event: SnapshotVotesForInitiative(address,uint240,uint16)
+        - event: SnapshotVotesForInitiative(indexed address,uint256,uint256,uint256)
           handler: handleSnapshotVotesForInitiative
-        - event: UnregisterInitiative(address,uint16)
+        - event: UnregisterInitiative(address,uint256,bool)
           handler: handleUnregisterInitiative
-        - event: WithdrawLQTY(address,uint256,uint256,uint256)
+        - event: WithdrawLQTY(indexed
+            address,address,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleWithdrawLQTY
       blockHandlers:
         - handler: handleBlock

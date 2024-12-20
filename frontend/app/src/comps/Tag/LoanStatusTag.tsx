@@ -8,13 +8,11 @@ export function LoanStatusTag({
   return (
     <div
       className={css({
-        display: "flex",
+        display: "inline-flex",
         alignItems: "center",
         height: 16,
         padding: "0 4px 1px",
         fontSize: 12,
-        color: "infoSurfaceContent",
-        background: "infoSurface",
         borderRadius: 8,
         userSelect: "none",
 

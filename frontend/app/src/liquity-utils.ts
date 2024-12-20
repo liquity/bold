@@ -45,6 +45,9 @@ export function parsePrefixedTroveId(value: PrefixedTroveId): {
   troveId: TroveId;
 } {
   const [collIndex_, troveId] = value.split(":");
+  if (!collIndex_ || !troveId) {
+    throw new Error(`Invalid prefixed trove ID: ${value}`);
+  }
   const collIndex = parseInt(collIndex_, 10);
   if (!isCollIndex(collIndex) || !isTroveId(troveId)) {
     throw new Error(`Invalid prefixed trove ID: ${value}`);
@@ -61,15 +64,13 @@ export function getCollToken(collIndex: CollIndex | null): CollateralToken | nul
   if (collIndex === null) {
     return null;
   }
-  const collToken = collaterals.map(({ symbol }) => {
+  return collaterals.map(({ symbol }) => {
     const collateral = COLLATERALS.find((c) => c.symbol === symbol);
     if (!collateral) {
       throw new Error(`Unknown collateral symbol: ${symbol}`);
     }
     return collateral;
-  })[collIndex];
-
-  return collToken;
+  })[collIndex] ?? null;
 }
 
 export function getCollIndexFromSymbol(symbol: CollateralSymbol | null): CollIndex | null {
@@ -180,12 +181,21 @@ function earnPositionFromGraph(
 
 export function useStakePosition(address: null | Address) {
   const LqtyStaking = getProtocolContract("LqtyStaking");
+  const Governance = getProtocolContract("Governance");
+
+  const userProxyAddress = useReadContract({
+    ...Governance,
+    functionName: "deriveUserProxyAddress",
+    args: [address ?? "0x"],
+    query: { enabled: Boolean(address) },
+  });
+
   return useReadContracts({
     contracts: [
       {
         ...LqtyStaking,
         functionName: "stakes",
-        args: [address ?? "0x"],
+        args: [userProxyAddress.data ?? "0x"],
       },
       {
         ...LqtyStaking,
@@ -193,11 +203,15 @@ export function useStakePosition(address: null | Address) {
       },
     ],
     query: {
-      enabled: Boolean(address),
+      enabled: Boolean(address) && userProxyAddress.isSuccess,
       refetchInterval: DATA_REFRESH_INTERVAL,
-      select: ([deposit_, totalStaked_]): PositionStake => {
-        const totalStaked = dnum18(totalStaked_);
-        const deposit = dnum18(deposit_);
+      select: ([depositResult, totalStakedResult]): PositionStake | null => {
+        if (depositResult.status === "failure" || totalStakedResult.status === "failure") {
+          console.log("useStakePosition", depositResult.error, totalStakedResult.error);
+          return null;
+        }
+        const deposit = dnum18(depositResult.result);
+        const totalStaked = dnum18(totalStakedResult.result);
         return {
           type: "stake",
           deposit,
@@ -211,7 +225,6 @@ export function useStakePosition(address: null | Address) {
         };
       },
     },
-    allowFailure: false,
   });
 }
 

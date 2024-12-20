@@ -40,10 +40,10 @@ export type MenuSection = {
 };
 
 export type PositionLoanBase = {
-  // TODO: rename the type to "loan" and move "borrow" | "leverage" to
+  // TODO: rename the type to "loan" and move "borrow" | "multiply" to
   // a "mode" field. The two separate types come from a previous design
   // where the two types of positions were having separate types.
-  type: "borrow" | "leverage";
+  type: "borrow" | "multiply";
   batchManager: null | Address;
   borrowed: Dnum;
   borrower: Address;
@@ -70,7 +70,7 @@ export type PositionLoanUncommitted = PositionLoanBase & {
 export type PositionLoan = PositionLoanCommitted | PositionLoanUncommitted;
 
 export function isPositionLoan(position: Position): position is PositionLoan {
-  return position.type === "borrow" || position.type === "leverage";
+  return position.type === "borrow" || position.type === "multiply";
 }
 export function isPositionLoanCommitted(
   position: Position,
@@ -145,3 +145,19 @@ export type LoanDetails = {
     | "liquidatable" // above the max LTV before liquidation
     | "underwater"; // above 100% LTV
 };
+
+// governance
+export type Initiative =
+  & {
+    address: Address;
+    name: string | null;
+    protocol: string | null;
+  }
+  & (
+    | { tvl: Dnum; pairVolume: Dnum; votesDistribution: Dnum }
+    | { tvl: null; pairVolume: null; votesDistribution: null }
+  );
+
+export type Vote = "for" | "against";
+export type VoteAllocation = { vote: Vote | null; value: Dnum };
+export type VoteAllocations = Record<Address, VoteAllocation>;
