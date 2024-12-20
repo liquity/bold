@@ -1,21 +1,22 @@
-import type { Address, Dnum, Initiative, Vote, VoteAllocations } from "@/src/types";
+import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocations } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
+import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { formatDate } from "@/src/formatting";
-import { useGovernanceState, useInitiatives, useInitiativeState, useUserStates } from "@/src/liquity-governance";
-import { useAccount } from "@/src/services/Ethereum";
+import { useGovernanceState, useInitiatives } from "@/src/liquity-governance";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, Button, IconExternal, VFlex } from "@liquity2/uikit";
+import { AnchorTextButton, Button, IconExternal, shortenAddress, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
 export function PanelVoting() {
   const txFlow = useTransactionFlow();
+
   const initiatives = useInitiatives();
   const governanceState = useGovernanceState();
 
@@ -221,7 +222,7 @@ export function PanelVoting() {
             <InitiativeRow
               key={index}
               initiative={initiative}
-              voteAllocations={voteAllocations}
+              voteAllocation={voteAllocations[initiative.address]}
               onVote={handleVote}
               onVoteInputChange={handleVoteInputChange}
             />
@@ -266,12 +267,20 @@ export function PanelVoting() {
           size="large"
           wide
           onClick={() => {
+            // Filter out allocations with no vote or zero value
+            const voteAllocationsFiltered = { ...voteAllocations };
+            for (const [address, data] of Object.entries(voteAllocations) as Entries<VoteAllocations>) {
+              if (data.vote === null || dn.eq(data.value, 0)) {
+                delete voteAllocationsFiltered[address];
+              }
+            }
+
             txFlow.start({
               flowId: "allocateVotingPower",
               backLink: ["/stake/voting", "Back"],
               successLink: ["/", "Go to the Dashboard"],
               successMessage: "Your voting power has been allocated.",
-              voteAllocations,
+              voteAllocations: voteAllocationsFiltered,
             });
           }}
         />
@@ -282,17 +291,15 @@ export function PanelVoting() {
 
 function InitiativeRow({
   initiative,
-  voteAllocations,
+  voteAllocation,
   onVote,
   onVoteInputChange,
 }: {
   initiative: Initiative;
-  voteAllocations: VoteAllocations;
+  voteAllocation?: VoteAllocations[Address];
   onVote: (initiative: Address, vote: Vote) => void;
   onVoteInputChange: (initiative: Address, value: Dnum) => void;
 }) {
-  const initiativeState = useInitiativeState(initiative.address);
-  console.log(initiativeState.data);
   return (
     <tr>
       <td>
@@ -303,30 +310,37 @@ function InitiativeRow({
           })}
         >
           <div
+            title={initiative.address}
             className={css({
               display: "flex",
               alignItems: "center",
               paddingTop: 6,
             })}
           >
-            {initiative.name}
+            {initiative.name ?? "Initiative"}
           </div>
-          <div
-            className={css({
-              fontSize: 12,
-              color: "contentAlt",
-            })}
-          >
-            {initiative.protocol}
+          <div>
+            <AnchorTextButton
+              external
+              href={`${CHAIN_BLOCK_EXPLORER?.url}address/${initiative.address}`}
+              title={initiative.address}
+              label={initiative.protocol ?? shortenAddress(initiative.address, 4)}
+              className={css({
+                fontSize: 12,
+                color: "contentAlt!",
+              })}
+            />
           </div>
         </div>
       </td>
       <td>
-        <Amount
-          fallback="−"
-          format="compact"
-          value={initiative.tvl}
-        />
+        <div>
+          <Amount
+            fallback="−"
+            format="compact"
+            value={initiative.tvl}
+          />
+        </div>
       </td>
       <td>
         <div>
@@ -357,8 +371,8 @@ function InitiativeRow({
           })}
         >
           <VoteInput
-            value={voteAllocations[initiative.address]?.value ?? null}
-            vote={voteAllocations[initiative.address]?.vote ?? null}
+            value={voteAllocation?.value ?? null}
+            vote={voteAllocation?.vote ?? null}
             onChange={(value) => {
               onVoteInputChange(initiative.address, value);
             }}
