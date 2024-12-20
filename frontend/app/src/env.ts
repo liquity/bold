@@ -53,7 +53,6 @@ export const EnvSchema = v.pipe(
     CHAIN_CONTRACT_ENS_RESOLVER: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_MULTICALL: vAddress(),
     COMMIT_HASH: v.string(),
-    SUBGRAPH_URL: v.string(),
     COINGECKO_API_KEY: v.pipe(
       v.optional(v.string(), ""),
       v.rawTransform(({ dataset, addIssue, NEVER }) => {
@@ -81,6 +80,8 @@ export const EnvSchema = v.pipe(
       v.transform((value) => value.trim()),
     ),
     INITIATIVE_UNI_V4_DONATIONS: vAddress(),
+    KNOWN_INITIATIVES_URL: v.optional(v.pipe(v.string(), v.url())),
+    SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.string(),
 
@@ -219,6 +220,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
   DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
   INITIATIVE_UNI_V4_DONATIONS: process.env.NEXT_PUBLIC_INITIATIVE_UNI_V4_DONATIONS,
+  KNOWN_INITIATIVES_URL: process.env.NEXT_PUBLIC_KNOWN_INITIATIVES_URL,
   SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
   VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
@@ -312,6 +314,7 @@ export const {
   DEMO_MODE,
   DEPLOYMENT_FLAVOR,
   INITIATIVE_UNI_V4_DONATIONS,
+  KNOWN_INITIATIVES_URL,
   SUBGRAPH_URL,
   VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,
