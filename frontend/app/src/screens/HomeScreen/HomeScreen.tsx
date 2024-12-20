@@ -138,7 +138,7 @@ function BorrowingRow({
             />
           </Link>
           <Link
-            href={`/leverage/${symbol.toLowerCase()}`}
+            href={`/multiply/${symbol.toLowerCase()}`}
             legacyBehavior
             passHref
           >
