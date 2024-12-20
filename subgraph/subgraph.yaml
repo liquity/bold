@@ -67,8 +67,6 @@ dataSources:
         - event: WithdrawLQTY(indexed
             address,address,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleWithdrawLQTY
-      blockHandlers:
-        - handler: handleBlock
       file: ./src/Governance.mapping.ts
     network: sepolia
 templates:
