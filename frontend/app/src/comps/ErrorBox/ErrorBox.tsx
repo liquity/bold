@@ -32,6 +32,7 @@ export function ErrorBox({
   return (
     <section
       className={css({
+        width: "100%",
         background: "negativeSurface",
         color: "negative",
         fontSize: 14,
@@ -55,7 +56,15 @@ export function ErrorBox({
           },
         })}
       >
-        <h1>{title}</h1>
+        <h1
+          className={css({
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+          })}
+        >
+          {title}
+        </h1>
         <div
           className={css({
             display: "flex",
@@ -63,6 +72,7 @@ export function ErrorBox({
             height: "100%",
             padding: "0 32px 0 8px",
             gap: 4,
+            whiteSpace: "nowrap",
           })}
         >
           {expanded ? "Less" : "More"} details

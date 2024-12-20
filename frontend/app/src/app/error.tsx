@@ -1,12 +1,19 @@
 "use client";
 
+import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { sleep } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { AnchorButton } from "@liquity2/uikit";
+import { AnchorButton, Button } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
 import Link from "next/link";
 
-export default function NotFoundPage() {
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
   return (
     <div
       className={css({
@@ -23,6 +30,7 @@ export default function NotFoundPage() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
+          width: "100%",
         })}
       >
         <Illustration />
@@ -33,27 +41,45 @@ export default function NotFoundPage() {
             color: "content",
           })}
         >
-          Sorry, there’s nothing here
+          An unexpected error occurred
         </h1>
-        <div className={css({ height: 12 })} />
-        <p
+        <div className={css({ height: 32 })} />
+        <div
           className={css({
-            color: "contentAlt",
+            display: "flex",
+            gap: 16,
           })}
         >
-          Let’s get you back on track.
-        </p>
-        <div className={css({ height: 32 })} />
-        <Link
-          href="/"
-          passHref
-          legacyBehavior
-        >
-          <AnchorButton
+          <Link
+            href="/"
+            passHref
+            legacyBehavior
+          >
+            <AnchorButton
+              mode="secondary"
+              label="Go to dashboard"
+            />
+          </Link>
+          <Button
             mode="primary"
-            label="Go to dashboard"
+            label="Reset state"
+            onClick={reset}
           />
-        </Link>
+        </div>
+        <div className={css({ height: 40 })} />
+        <div
+          className={css({
+            display: "flex",
+            maxWidth: 600,
+          })}
+        >
+          <ErrorBox title={`Error: ${error.message}`}>
+            <pre>
+{error.message}<br /><br />
+{error.stack}
+            </pre>
+          </ErrorBox>
+        </div>
       </div>
     </div>
   );

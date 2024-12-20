@@ -23,9 +23,13 @@ const RequestSchema = createRequestSchema(
   "updateLeveragePosition",
   {
     depositChange: v.union([v.null(), vDnum()]),
+    // set to null to indicate no multiply change
     leverageFactorChange: v.union([
       v.null(),
-      v.tuple([v.number(), v.number()]),
+      v.tuple([
+        v.number(), // prev multiply
+        v.number(), // new multiply
+      ]),
     ]),
     prevLoan: vPositionLoanCommited(),
     loan: vPositionLoanCommited(),
@@ -138,7 +142,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         )}
         {leverageFactorChange && (
           <TransactionDetailsRow
-            label={isBorrowing ? "Leverage increase" : "Leverage decrease"}
+            label={isBorrowing ? "Multiply increase" : "Multiply decrease"}
             value={[
               <div key="start">
                 {fmtnum(leverageFactorChange[1] - leverageFactorChange[0], {
@@ -147,7 +151,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
                 })}x
               </div>,
               <div key="end">
-                {fmtnum(leverageFactorChange[1], 2)}x leverage
+                {fmtnum(leverageFactorChange[1], 2)}x multiply
               </div>,
             ]}
           />
@@ -290,7 +294,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
     },
 
     leverUpTrove: {
-      name: () => "Increase Leverage",
+      name: () => "Increase Multiplier",
       Status: TransactionStatus,
 
       async commit({ contracts, request, wagmiConfig }) {
@@ -344,7 +348,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
     },
 
     leverDownTrove: {
-      name: () => "Decrease Leverage",
+      name: () => "Decrease Multiplier",
       Status: TransactionStatus,
 
       async commit({ contracts, request, wagmiConfig }) {

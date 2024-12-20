@@ -37,7 +37,7 @@ import * as dn from "dnum";
 import Image from "next/image";
 import { match, P } from "ts-pattern";
 
-type LoanMode = "borrow" | "leverage";
+type LoanMode = "borrow" | "multiply";
 
 export function LoanScreenCard({
   collateral,
@@ -84,7 +84,7 @@ export function LoanScreenCard({
   );
 
   const nftUrl = useTroveNftUrl(loan?.collIndex ?? null, troveId);
-  const title = mode === "leverage" ? "Leverage loan" : "BOLD loan";
+  const title = mode === "multiply" ? "Multiply" : "BOLD loan";
 
   const fullyRedeemed = loan && loan.status === "redeemed" && dn.eq(loan.borrowed, 0);
 
@@ -257,7 +257,7 @@ function LoanCardHeading({
           color: inheritColor ? "inherit" : "var(--color-alt)",
         }}
       >
-        {mode === "leverage"
+        {mode === "multiply"
           ? <IconLeverage size={16} />
           : <IconBorrow size={16} />}
       </div>
@@ -397,7 +397,7 @@ function LoanCard({
         troveId,
         nftUrl,
       }) => {
-        const title = mode === "leverage" ? "Leverage loan" : "BOLD loan";
+        const title = mode === "multiply" ? "Multiply" : "BOLD loan";
         return (
           <a.div
             className={css({
@@ -507,14 +507,14 @@ function LoanCard({
                                 color: "accent",
                               })}
                             >
-                              {mode === "leverage"
+                              {mode === "multiply"
                                 ? <IconBorrow size={16} />
                                 : <IconLeverage size={16} />}
                             </div>
                           ),
-                          label: mode === "leverage"
+                          label: mode === "multiply"
                             ? "Convert to BOLD loan"
-                            : "Convert to leverage loan",
+                            : "Convert to Multiply position",
                         },
                         {
                           icon: (
@@ -577,7 +577,7 @@ function LoanCard({
                       selected={0}
                       onSelect={(index) => {
                         if (index === 0) {
-                          onLeverageModeChange(mode === "leverage" ? "borrow" : "leverage");
+                          onLeverageModeChange(mode === "multiply" ? "borrow" : "multiply");
                         }
                         if (index === 1) {
                           navigator.clipboard.writeText(window.location.href);
@@ -608,7 +608,7 @@ function LoanCard({
                       gap: 12,
                     })}
                   >
-                    {mode === "leverage"
+                    {mode === "multiply"
                       ? (
                         <div
                           title={`${fmtnum(loan.deposit, "full")} ${collateral}`}
@@ -630,7 +630,7 @@ function LoanCard({
                             <div>
                               <Value
                                 negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
-                                title={`Leverage factor: ${
+                                title={`Multiply factor: ${
                                   loanDetails.status === "underwater" || leverageFactor === null
                                     ? INFINITY
                                     : `${roundToDecimal(leverageFactor, 3)}x`
@@ -668,7 +668,7 @@ function LoanCard({
                       color: "positionContentAlt",
                     })}
                   >
-                    {mode === "leverage" ? "Total exposure" : "Total debt"}
+                    {mode === "multiply" ? "Total exposure" : "Total debt"}
                   </div>
                 </div>
               </div>
@@ -681,7 +681,7 @@ function LoanCard({
                       gap: 12,
                     })}
                   >
-                    <GridItem label={mode === "leverage" ? "Net value" : "Collateral"}>
+                    <GridItem label={mode === "multiply" ? "Net value" : "Collateral"}>
                       {fmtnum(loan.deposit)} {collateral.name}
                     </GridItem>
                     <GridItem label="Interest rate">
@@ -704,7 +704,7 @@ function LoanCard({
                       gap: 12,
                     })}
                   >
-                    <GridItem label={mode === "leverage" ? "Net value" : "Collateral"}>N/A</GridItem>
+                    <GridItem label={mode === "multiply" ? "Net value" : "Collateral"}>N/A</GridItem>
                     <GridItem label="Liq. price" title="Liquidation price">N/A</GridItem>
                     <GridItem label="Interest rate">N/A</GridItem>
                     <GridItem label="LTV" title="Loan-to-value ratio">N/A</GridItem>
@@ -730,7 +730,7 @@ function LoanCard({
                       gap: 12,
                     })}
                   >
-                    {mode === "leverage"
+                    {mode === "multiply"
                       ? (
                         <GridItem label="Net value">
                           <Value

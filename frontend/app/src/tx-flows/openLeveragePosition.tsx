@@ -153,7 +153,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
     },
 
     openLeveragedTrove: {
-      name: () => "Open Leveraged Position",
+      name: () => "Open Multiply Position",
       Status: TransactionStatus,
 
       async commit({ contracts, request, wagmiConfig }) {
