@@ -68,7 +68,3 @@ export const REDEMPTION_RISK: Record<Exclude<RiskLevel, "high">, number> = {
   medium: 3.5 / 100,
   low: 5 / 100,
 };
-
-// in seconds
-export const GOVERNANCE_EPOCH_DURATION = 604800;
-export const GOVERNANCE_EPOCH_VOTING_CUTOFF = 518400;
