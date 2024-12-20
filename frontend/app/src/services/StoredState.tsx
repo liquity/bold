@@ -14,7 +14,7 @@ export const StoredStateSchema = v.object({
     vPrefixedTroveId(),
     v.union([
       v.literal("borrow"),
-      v.literal("leverage"),
+      v.literal("multiply"),
     ]),
   ),
 });

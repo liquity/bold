@@ -65,11 +65,11 @@ export function vEnvLink() {
     v.string(),
     v.trim(),
     v.regex(/^[^|]+\|https?:\/\/[^|]+$/),
-    v.transform<
-      string,
-      { name: string; url: string }
-    >((value) => {
-      const [name, url] = value.split("|");
+    v.transform<string, {
+      name: string;
+      url: string;
+    }>((value) => {
+      const [name, url] = value.split("|") as [string, string];
       return { name, url };
     }),
   );
@@ -101,7 +101,7 @@ export function vEnvAddressAndBlock() {
       string,
       { address: Address; blockCreated?: number }
     >((value) => {
-      const [address, block] = value.split("|");
+      const [address, block] = value.split("|") as [string, string];
       const parsedBlock = parseInt(block, 10);
       if (!isAddress(address)) {
         throw new Error(`${address} is not a valid Ethereum address`);
@@ -124,7 +124,7 @@ export function vEnvCurrency() {
       string,
       { decimals: number; name: string; symbol: string }
     >((value) => {
-      const [name, symbol, decimals] = value.split("|");
+      const [name, symbol, decimals] = value.split("|") as [string, string, string];
       return {
         decimals: parseInt(decimals, 10),
         name,
@@ -151,7 +151,7 @@ export function vPositionStake() {
 const VPositionLoanBase = v.object({
   type: v.union([
     v.literal("borrow"),
-    v.literal("leverage"),
+    v.literal("multiply"),
   ]),
   batchManager: v.union([v.null(), vAddress()]),
   borrowed: vDnum(),
@@ -205,4 +205,22 @@ export function vPositionEarn() {
       coll: vDnum(),
     }),
   });
+}
+
+export function vVote() {
+  return v.union([
+    v.literal("for"),
+    v.literal("against"),
+  ]);
+}
+
+export function vVoteAllocation() {
+  return v.object({
+    vote: v.union([v.null(), vVote()]),
+    value: vDnum(),
+  });
+}
+
+export function vVoteAllocations() {
+  return v.record(vAddress(), vVoteAllocation());
 }

@@ -141,10 +141,8 @@ function useTvl() {
 
   const tvlByCollateral = collaterals.map((collateral, collIndex) => {
     const price = collPrices[collateral.symbol].data;
-    return price && dn.mul(
-      price,
-      totalDeposited.data[collIndex].totalDeposited,
-    );
+    const collDeposited = totalDeposited.data[collIndex];
+    return price && collDeposited && dn.mul(price, collDeposited.totalDeposited);
   });
 
   let tvl = dn.from(0, 18);

@@ -3,46 +3,30 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
+import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
 import { vCollIndex, vPositionEarn } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
+import { writeContract } from "wagmi/actions";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
-const FlowIdSchema = v.literal("earnWithdraw");
+const RequestSchema = createRequestSchema(
+  "earnWithdraw",
+  {
+    prevEarnPosition: vPositionEarn(),
+    earnPosition: vPositionEarn(),
+    collIndex: vCollIndex(),
+    claim: v.boolean(),
+  },
+);
 
-const RequestSchema = v.object({
-  flowId: FlowIdSchema,
-  backLink: v.union([
-    v.null(),
-    v.tuple([
-      v.string(), // path
-      v.string(), // label
-    ]),
-  ]),
-  successLink: v.tuple([
-    v.string(), // path
-    v.string(), // label
-  ]),
-  successMessage: v.string(),
-  prevEarnPosition: vPositionEarn(),
-  earnPosition: vPositionEarn(),
-  collIndex: vCollIndex(),
-  claim: v.boolean(),
-});
+export type EarnWithdrawRequest = v.InferOutput<typeof RequestSchema>;
 
-export type Request = v.InferOutput<typeof RequestSchema>;
-
-type Step = "withdrawFromStabilityPool";
-
-const stepNames: Record<Step, string> = {
-  withdrawFromStabilityPool: "Withdraw",
-};
-
-export const earnWithdraw: FlowDeclaration<Request, Step> = {
+export const earnWithdraw: FlowDeclaration<EarnWithdrawRequest> = {
   title: "Review & Send Transaction",
 
-  Summary({ flow }) {
-    const { request } = flow;
+  Summary({ request }) {
     return (
       <EarnPositionSummary
         collIndex={request.collIndex}
@@ -53,8 +37,7 @@ export const earnWithdraw: FlowDeclaration<Request, Step> = {
     );
   },
 
-  Details({ flow }) {
-    const { request } = flow;
+  Details({ request }) {
     const boldPrice = usePrice("BOLD");
     const boldAmount = dn.abs(dn.sub(
       request.earnPosition.deposit,
@@ -81,31 +64,41 @@ export const earnWithdraw: FlowDeclaration<Request, Step> = {
     );
   },
 
+  steps: {
+    withdrawFromStabilityPool: {
+      name: () => "Withdraw",
+      Status: TransactionStatus,
+
+      async commit({ contracts, request, wagmiConfig }) {
+        const collateral = contracts.collaterals[request.collIndex];
+        if (!collateral) {
+          throw new Error("Invalid collateral index: " + request.collIndex);
+        }
+        const { StabilityPool } = collateral.contracts;
+
+        const boldAmount = dn.abs(dn.sub(
+          request.earnPosition.deposit,
+          request.prevEarnPosition.deposit,
+        ));
+
+        return writeContract(wagmiConfig, {
+          ...StabilityPool,
+          functionName: "withdrawFromSP",
+          args: [boldAmount[0], request.claim],
+        });
+      },
+
+      async verify({ wagmiConfig }, hash) {
+        await verifyTransaction(wagmiConfig, hash);
+      },
+    },
+  },
+
   async getSteps() {
     return ["withdrawFromStabilityPool"];
   },
 
-  getStepName(stepId) {
-    return stepNames[stepId];
-  },
-
   parseRequest(request) {
     return v.parse(RequestSchema, request);
-  },
-
-  async writeContractParams(_stepId, { contracts, request }) {
-    const collateral = contracts.collaterals[request.collIndex];
-    const boldAmount = dn.abs(dn.sub(
-      request.earnPosition.deposit,
-      request.prevEarnPosition.deposit,
-    ));
-    return {
-      ...collateral.contracts.StabilityPool,
-      functionName: "withdrawFromSP",
-      args: [
-        boldAmount[0],
-        request.claim,
-      ],
-    };
   },
 };

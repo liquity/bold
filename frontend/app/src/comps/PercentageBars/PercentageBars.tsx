@@ -73,7 +73,7 @@ export function PercentageBars({
   const gapWidth = barsGap * values.length / (values.length - 1);
 
   const barsTransitions = useTransition(values.map((v, i) => [v, i]), {
-    keys: ([_, i]) => i,
+    keys: ([_, i]) => i as number, // guaranteed, defined by the map above
     from: { scaleY: 0 },
     enter: { scaleY: 1 },
     config: { mass: 2, tension: 1200, friction: 50 },
@@ -125,21 +125,23 @@ export function PercentageBars({
         </mask>
 
         <mask id={barsMaskId}>
-          {barsTransitions((props, [value], _state, index) => (
-            <a.rect
-              key={index}
-              fill="#fff"
-              height={value * height}
-              mask={`url(#${revealMaskId})`}
-              width={barWidth}
-              x={index * barWidth + index * gapWidth}
-              y={(1 - value) * height}
-              style={props}
-              className={css({
-                transformOrigin: "0 100%",
-              })}
-            />
-          ))}
+          {barsTransitions((props, [value], _state, index) =>
+            value !== undefined && ( // type guard, should never be undefined
+              <a.rect
+                key={index}
+                fill="#fff"
+                height={value * height}
+                mask={`url(#${revealMaskId})`}
+                width={barWidth}
+                x={index * barWidth + index * gapWidth}
+                y={(1 - value) * height}
+                style={props}
+                className={css({
+                  transformOrigin: "0 100%",
+                })}
+              />
+            )
+          )}
         </mask>
 
         <a.linearGradient id={gradientId}>

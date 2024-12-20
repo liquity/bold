@@ -11,7 +11,7 @@ export default {
   menu: {
     dashboard: "Dashboard",
     borrow: "Borrow",
-    leverage: "Leverage",
+    multiply: "Multiply",
     earn: "Earn",
     stake: "Stake",
   },
@@ -194,8 +194,8 @@ export default {
         title: "Borrow BOLD",
         description: "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
       },
-      leverage: {
-        title: "Leverage ETH",
+      multiply: {
+        title: "Multiply ETH",
         description: "Set your own interest rate and increase your exposure to ETH and staked ETH.",
       },
       earn: {
@@ -256,11 +256,11 @@ export default {
     },
   },
 
-  // Leverage screen
+  // Multiply screen
   leverageScreen: {
     headline: (tokensIcons: N) => (
       <>
-        Leverage your exposure to {tokensIcons}
+        Multiply your exposure to {tokensIcons}
       </>
     ),
     depositField: {
@@ -275,7 +275,7 @@ export default {
     action: "Next: Summary",
     infoTooltips: {
       leverageLevel: [
-        "Leverage level",
+        "Multiply level",
         <>
           Choose the amplification of your exposure. Note that a higher level means higher liquidation risk. You are
           responsible for your own assessment of what a suitable level is.

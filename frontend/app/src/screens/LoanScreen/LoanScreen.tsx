@@ -117,7 +117,7 @@ export function LoanScreen() {
               return {
                 loanModes: {
                   ...loanModes,
-                  [paramPrefixedId]: loanMode === "borrow" ? "leverage" : "borrow",
+                  [paramPrefixedId]: loanMode === "borrow" ? "multiply" : "borrow",
                 },
               };
             });
@@ -184,18 +184,22 @@ export function LoanScreen() {
                           if (!loan.data) {
                             return;
                           }
+                          const tab = TABS[index];
+                          if (!tab) {
+                            throw new Error("Invalid tab index");
+                          }
                           const id = getPrefixedTroveId(
                             loan.data.collIndex,
                             loan.data.troveId,
                           );
                           router.push(
-                            `/loan/${TABS[index].id}?id=${id}`,
+                            `/loan/${tab.id}?id=${id}`,
                             { scroll: false },
                           );
                         }}
                       />
                       {action === "colldebt" && (
-                        loanMode === "leverage"
+                        loanMode === "multiply"
                           ? <PanelUpdateLeveragePosition loan={loan.data} />
                           : <PanelUpdateBorrowPosition loan={loan.data} />
                       )}
