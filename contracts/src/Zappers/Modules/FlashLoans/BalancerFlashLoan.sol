@@ -47,9 +47,6 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
         receiver = IFlashLoanReceiver(msg.sender);
 
         vault.flashLoan(this, tokens, amounts, userData);
-
-        // Reset receiver
-        receiver = IFlashLoanReceiver(address(0));
     }
 
     function receiveFlashLoan(
@@ -60,6 +57,12 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
     ) external override {
         require(msg.sender == address(vault), "Caller is not Vault");
         require(address(receiver) != address(0), "Flash loan not properly initiated");
+
+        // Cache and reset receiver, to comply with CEI pattern, as some callbacks in zappers do raw calls
+        // It’s not necessary, as Balancer flash loans are protected against re-entrancy
+        // But it’s safer, specially if someone tries to reuse this code, and more gas efficient
+        IFlashLoanReceiver receiverCached = receiver;
+        receiver = IFlashLoanReceiver(address(0));
 
         // decode and operation
         Operation operation = abi.decode(userData[0:32], (Operation));
@@ -72,9 +75,9 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             // Flash loan minus fees
             uint256 effectiveFlashLoanAmount = amounts[0] - feeAmounts[0];
             // We send only effective flash loan, keeping fees here
-            tokens[0].safeTransfer(address(receiver), effectiveFlashLoanAmount);
+            tokens[0].safeTransfer(address(receiverCached), effectiveFlashLoanAmount);
             // Zapper callback
-            receiver.receiveFlashLoanOnOpenLeveragedTrove(openTroveParams, effectiveFlashLoanAmount);
+            receiverCached.receiveFlashLoanOnOpenLeveragedTrove(openTroveParams, effectiveFlashLoanAmount);
         } else if (operation == Operation.LeverUpTrove) {
             // Lever up
             // decode params
@@ -83,9 +86,9 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             // Flash loan minus fees
             uint256 effectiveFlashLoanAmount = amounts[0] - feeAmounts[0];
             // We send only effective flash loan, keeping fees here
-            tokens[0].safeTransfer(address(receiver), effectiveFlashLoanAmount);
+            tokens[0].safeTransfer(address(receiverCached), effectiveFlashLoanAmount);
             // Zapper callback
-            receiver.receiveFlashLoanOnLeverUpTrove(leverUpTroveParams, effectiveFlashLoanAmount);
+            receiverCached.receiveFlashLoanOnLeverUpTrove(leverUpTroveParams, effectiveFlashLoanAmount);
         } else if (operation == Operation.LeverDownTrove) {
             // Lever down
             // decode params
@@ -94,9 +97,9 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             // Flash loan minus fees
             uint256 effectiveFlashLoanAmount = amounts[0] - feeAmounts[0];
             // We send only effective flash loan, keeping fees here
-            tokens[0].safeTransfer(address(receiver), effectiveFlashLoanAmount);
+            tokens[0].safeTransfer(address(receiverCached), effectiveFlashLoanAmount);
             // Zapper callback
-            receiver.receiveFlashLoanOnLeverDownTrove(leverDownTroveParams, effectiveFlashLoanAmount);
+            receiverCached.receiveFlashLoanOnLeverDownTrove(leverDownTroveParams, effectiveFlashLoanAmount);
         } else if (operation == Operation.CloseTrove) {
             // Close trove
             // decode params
@@ -104,9 +107,9 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
             // Flash loan minus fees
             uint256 effectiveFlashLoanAmount = amounts[0] - feeAmounts[0];
             // We send only effective flash loan, keeping fees here
-            tokens[0].safeTransfer(address(receiver), effectiveFlashLoanAmount);
+            tokens[0].safeTransfer(address(receiverCached), effectiveFlashLoanAmount);
             // Zapper callback
-            receiver.receiveFlashLoanOnCloseTroveFromCollateral(closeTroveParams, effectiveFlashLoanAmount);
+            receiverCached.receiveFlashLoanOnCloseTroveFromCollateral(closeTroveParams, effectiveFlashLoanAmount);
         } else {
             revert("LZ: Wrong Operation");
         }
