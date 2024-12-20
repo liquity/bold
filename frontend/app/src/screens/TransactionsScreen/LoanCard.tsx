@@ -653,16 +653,7 @@ function LoadingCard({
               })}
             >
               {leverage
-                ? (
-                  <div
-                    className={css({
-                      display: "flex",
-                      color: "brandGreen",
-                    })}
-                  >
-                    <IconLeverage size={16} />
-                  </div>
-                )
+                ? <IconLeverage size={16} />
                 : <IconBorrow size={16} />}
             </div>
             {title}
