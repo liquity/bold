@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import {
   GovernanceInitiatives,
+  GovernanceUser,
   graphQuery,
   InterestBatchQuery,
   InterestRateBracketsQuery,
@@ -415,6 +416,26 @@ export function useGovernanceInitiatives(options?: Options) {
 
   return useQuery({
     queryKey: ["GovernanceInitiatives"],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
+export function useGovernanceUser(account: Address | null, options?: Options) {
+  let queryFn = async () => {
+    if (!account) return null;
+    const { governanceUser } = await graphQuery(GovernanceUser, {
+      id: account.toLowerCase(),
+    });
+    return governanceUser;
+  };
+
+  if (DEMO_MODE) {
+    queryFn = async () => null;
+  }
+
+  return useQuery({
+    queryKey: ["GovernanceUser", account],
     queryFn,
     ...prepareOptions(options),
   });
