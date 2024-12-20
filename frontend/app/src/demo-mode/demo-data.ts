@@ -44,7 +44,7 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     updatedAt: getTime(),
   },
   {
-    type: "leverage",
+    type: "multiply",
     status: "active",
     borrowed: dn.from(28_934.23, 18),
     borrower: DEMO_ACCOUNT,

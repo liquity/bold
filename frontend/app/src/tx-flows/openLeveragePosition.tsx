@@ -205,7 +205,7 @@ export const openLeveragePosition: FlowDeclaration<Request, Step> = {
     if (stepId === "approveLst") {
       return `Approve ${collateral.name ?? ""}`;
     }
-    return "Open Leveraged Position";
+    return "Open Multiply Position";
   },
 
   parseRequest(request) {

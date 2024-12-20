@@ -117,7 +117,7 @@ export function LoanScreen() {
               return {
                 loanModes: {
                   ...loanModes,
-                  [paramPrefixedId]: loanMode === "borrow" ? "leverage" : "borrow",
+                  [paramPrefixedId]: loanMode === "borrow" ? "multiply" : "borrow",
                 },
               };
             });
@@ -195,7 +195,7 @@ export function LoanScreen() {
                         }}
                       />
                       {action === "colldebt" && (
-                        loanMode === "leverage"
+                        loanMode === "multiply"
                           ? <PanelUpdateLeveragePosition loan={loan.data} />
                           : <PanelUpdateBorrowPosition loan={loan.data} />
                       )}

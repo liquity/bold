@@ -40,10 +40,10 @@ export type MenuSection = {
 };
 
 export type PositionLoanBase = {
-  // TODO: rename the type to "loan" and move "borrow" | "leverage" to
+  // TODO: rename the type to "loan" and move "borrow" | "multiply" to
   // a "mode" field. The two separate types come from a previous design
   // where the two types of positions were having separate types.
-  type: "borrow" | "leverage";
+  type: "borrow" | "multiply";
   batchManager: null | Address;
   borrowed: Dnum;
   borrower: Address;
@@ -70,7 +70,7 @@ export type PositionLoanUncommitted = PositionLoanBase & {
 export type PositionLoan = PositionLoanCommitted | PositionLoanUncommitted;
 
 export function isPositionLoan(position: Position): position is PositionLoan {
-  return position.type === "borrow" || position.type === "leverage";
+  return position.type === "borrow" || position.type === "multiply";
 }
 export function isPositionLoanCommitted(
   position: Position,

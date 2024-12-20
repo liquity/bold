@@ -58,7 +58,7 @@ export async function getLeverUpTroveParams(
 
   const leverageRatio = BigInt(leverageFactor * 1000) * DECIMAL_PRECISION / 1000n;
   if (leverageRatio <= currentLR) {
-    throw new Error(`Leverage ratio should increase: ${leverageRatio} <= ${currentLR}`);
+    throw new Error(`Multiply ratio should increase: ${leverageRatio} <= ${currentLR}`);
   }
 
   const currentCollAmount = troveData.entireColl;
@@ -117,7 +117,7 @@ export async function getLeverDownTroveParams(
 
   const leverageRatio = BigInt(leverageFactor * 1000) * DECIMAL_PRECISION / 1000n;
   if (leverageRatio >= currentLR) {
-    throw new Error(`Leverage ratio should decrease: ${leverageRatio} >= ${currentLR}`);
+    throw new Error(`Multiply ratio should decrease: ${leverageRatio} >= ${currentLR}`);
   }
 
   const currentCollAmount = troveData.entireColl;

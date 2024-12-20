@@ -316,7 +316,7 @@ export function PanelUpdateLeveragePosition({
               ),
             },
             {
-              start: <Field.FooterInfo label="Leverage" />,
+              start: <Field.FooterInfo label="Multiply" />,
               end: (
                 <ValueUpdate
                   fontSize={14}
