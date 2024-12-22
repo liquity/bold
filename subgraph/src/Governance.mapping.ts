@@ -1,10 +1,8 @@
-import { Address, BigInt, ethereum } from "@graphprotocol/graph-ts";
-import { governanceDeploymentInitiatives } from "../addresses";
+import { BigInt } from "@graphprotocol/graph-ts";
 import {
   AllocateLQTY as AllocateLQTYEvent,
   ClaimForInitiative as ClaimForInitiativeEvent,
   DepositLQTY as DepositLQTYEvent,
-  Governance as GovernanceContract,
   RegisterInitiative as RegisterInitiativeEvent,
   SnapshotVotesForInitiative as SnapshotVotesForInitiativeEvent,
   UnregisterInitiative as UnregisterInitiativeEvent,
@@ -12,27 +10,15 @@ import {
 } from "../generated/Governance/Governance";
 import { GovernanceAllocation, GovernanceInitiative, GovernanceStats, GovernanceUser } from "../generated/schema";
 
-function initialize(block: ethereum.Block): void {
-  // Initial governance initiatives passed to the constructor (no event emitted)
-  for (let i = 0; i < governanceDeploymentInitiatives.length; i++) {
-    let initiative = new GovernanceInitiative(governanceDeploymentInitiatives[i]);
-    initiative.registeredAt = block.timestamp;
-    initiative.registeredAtEpoch = BigInt.fromI32(1);
-    initiative.registrant = Address.zero();
-    initiative.save();
-  }
-
+function initializeStats(): GovernanceStats {
   // Create initial stats
   let stats = new GovernanceStats("stats");
   stats.totalLQTYStaked = BigInt.fromI32(0);
+  stats.totalOffset = BigInt.fromI32(0);
   stats.totalInitiatives = 0;
   stats.save();
-}
 
-export function handleBlock(block: ethereum.Block): void {
-  if (GovernanceStats.load("stats") === null) {
-    initialize(block);
-  }
+  return stats;
 }
 
 export function handleRegisterInitiative(event: RegisterInitiativeEvent): void {
@@ -65,15 +51,18 @@ export function handleDepositLQTY(event: DepositLQTYEvent): void {
   let user = GovernanceUser.load(event.params.user.toHex());
   if (user === null) {
     user = new GovernanceUser(event.params.user.toHex());
+    user.allocatedLQTY = BigInt.fromI32(0);
+    user.stakedLQTY = BigInt.fromI32(0);
+    user.stakedOffset = BigInt.fromI32(0);
   }
 
-  let governance = GovernanceContract.bind(event.address);
-  let userState = governance.userStates(event.params.user);
-
-  user.allocatedLQTY = userState.getAllocatedLQTY();
+  let offsetIncrease = event.params.lqtyAmount.times(event.block.timestamp);
+  user.stakedOffset = user.stakedOffset.plus(offsetIncrease);
+  user.stakedLQTY = user.stakedLQTY.plus(event.params.lqtyAmount);
   user.save();
 
   let stats = getStats();
+  stats.totalOffset = stats.totalOffset.plus(offsetIncrease);
   stats.totalLQTYStaked = stats.totalLQTYStaked.plus(event.params.lqtyAmount);
   stats.save();
 }
@@ -84,14 +73,21 @@ export function handleWithdrawLQTY(event: WithdrawLQTYEvent): void {
     return;
   }
 
-  let governance = GovernanceContract.bind(event.address);
-  let userState = governance.userStates(event.params.user);
+  let stats = getStats();
 
-  user.allocatedLQTY = userState.getAllocatedLQTY();
+  if (event.params.lqtyReceived < user.stakedLQTY) {
+    let offsetDecrease = user.stakedOffset.times(event.params.lqtyReceived).div(user.stakedLQTY);
+    stats.totalOffset = stats.totalOffset.minus(offsetDecrease);
+    user.stakedOffset = user.stakedOffset.minus(offsetDecrease);
+  } else {
+    stats.totalOffset = stats.totalOffset.minus(user.stakedOffset);
+    user.stakedOffset = BigInt.fromI32(0);
+  }
+
+  user.stakedLQTY = user.stakedLQTY.minus(event.params.lqtyReceived);
   user.save();
 
-  let stats = getStats();
-  stats.totalLQTYStaked = stats.totalLQTYStaked.minus(event.params.lqtySent);
+  stats.totalLQTYStaked = stats.totalLQTYStaked.minus(event.params.lqtyReceived);
   stats.save();
 }
 
@@ -134,7 +130,7 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
 function getStats(): GovernanceStats {
   let stats = GovernanceStats.load("stats");
   if (stats === null) {
-    throw new Error("Stats entity not found");
+    return initializeStats();
   }
   return stats;
 }

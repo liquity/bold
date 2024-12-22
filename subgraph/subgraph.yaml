@@ -49,7 +49,7 @@ dataSources:
         - GovernanceUser
       abis:
         - name: Governance
-          file: ./abi/Governance.json
+          file: ../contracts/out/Governance.sol/Governance.json
       eventHandlers:
         - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,bool)
           handler: handleAllocateLQTY
@@ -67,8 +67,6 @@ dataSources:
         - event: WithdrawLQTY(indexed
             address,address,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleWithdrawLQTY
-      blockHandlers:
-        - handler: handleBlock
       file: ./src/Governance.mapping.ts
     network: sepolia
 templates:
