@@ -118,8 +118,6 @@ type InterestBatch @entity {
 type GovernanceUser @entity {
   id: ID! # "userAddress", e.g. "0x0000000000000000000000000000000000000000"
   allocatedLQTY: BigInt!
-  stakedLQTY: BigInt!
-  stakedOffset: BigInt!
   allocations: [GovernanceAllocation!]! @derivedFrom(field: "user")
 }
 
@@ -148,6 +146,5 @@ type GovernanceInitiative @entity {
 type GovernanceStats @entity {
   id: ID!
   totalLQTYStaked: BigInt!
-  totalOffset: BigInt!
   totalInitiatives: Int!
 }
