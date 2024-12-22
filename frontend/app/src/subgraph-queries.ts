@@ -262,3 +262,23 @@ export const GovernanceInitiatives = graphql(`
     }
   }
 `);
+
+export const GovernanceUser = graphql(`
+  query GovernanceUser($id: ID!) {
+    governanceUser(id: $id) {
+      id
+      allocatedLQTY
+      stakedLQTY
+      stakedOffset
+      allocations {
+        id
+        atEpoch
+        vetoLQTY
+        voteLQTY
+        initiative {
+          id
+        }
+      }
+    }
+  }
+`);

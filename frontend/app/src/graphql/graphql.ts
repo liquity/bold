@@ -499,6 +499,8 @@ export enum GovernanceAllocation_OrderBy {
   User = 'user',
   UserAllocatedLqty = 'user__allocatedLQTY',
   UserId = 'user__id',
+  UserStakedLqty = 'user__stakedLQTY',
+  UserStakedOffset = 'user__stakedOffset',
   VetoLqty = 'vetoLQTY',
   VoteLqty = 'voteLQTY'
 }
@@ -614,6 +616,7 @@ export type GovernanceStats = {
   id: Scalars['ID']['output'];
   totalInitiatives: Scalars['Int']['output'];
   totalLQTYStaked: Scalars['BigInt']['output'];
+  totalOffset: Scalars['BigInt']['output'];
 };
 
 export type GovernanceStats_Filter = {
@@ -645,12 +648,21 @@ export type GovernanceStats_Filter = {
   totalLQTYStaked_lte?: InputMaybe<Scalars['BigInt']['input']>;
   totalLQTYStaked_not?: InputMaybe<Scalars['BigInt']['input']>;
   totalLQTYStaked_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  totalOffset?: InputMaybe<Scalars['BigInt']['input']>;
+  totalOffset_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  totalOffset_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  totalOffset_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  totalOffset_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  totalOffset_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  totalOffset_not?: InputMaybe<Scalars['BigInt']['input']>;
+  totalOffset_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
 };
 
 export enum GovernanceStats_OrderBy {
   Id = 'id',
   TotalInitiatives = 'totalInitiatives',
-  TotalLqtyStaked = 'totalLQTYStaked'
+  TotalLqtyStaked = 'totalLQTYStaked',
+  TotalOffset = 'totalOffset'
 }
 
 export type GovernanceUser = {
@@ -658,6 +670,8 @@ export type GovernanceUser = {
   allocatedLQTY: Scalars['BigInt']['output'];
   allocations: Array<GovernanceAllocation>;
   id: Scalars['ID']['output'];
+  stakedLQTY: Scalars['BigInt']['output'];
+  stakedOffset: Scalars['BigInt']['output'];
 };
 
 
@@ -691,12 +705,30 @@ export type GovernanceUser_Filter = {
   id_not?: InputMaybe<Scalars['ID']['input']>;
   id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
   or?: InputMaybe<Array<InputMaybe<GovernanceUser_Filter>>>;
+  stakedLQTY?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedLQTY_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedLQTY_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedLQTY_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  stakedLQTY_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedLQTY_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedLQTY_not?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedLQTY_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  stakedOffset?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedOffset_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedOffset_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedOffset_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  stakedOffset_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedOffset_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedOffset_not?: InputMaybe<Scalars['BigInt']['input']>;
+  stakedOffset_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
 };
 
 export enum GovernanceUser_OrderBy {
   AllocatedLqty = 'allocatedLQTY',
   Allocations = 'allocations',
-  Id = 'id'
+  Id = 'id',
+  StakedLqty = 'stakedLQTY',
+  StakedOffset = 'stakedOffset'
 }
 
 export type InterestBatch = {
@@ -2244,6 +2276,13 @@ export type GovernanceInitiativesQueryVariables = Exact<{ [key: string]: never; 
 
 export type GovernanceInitiativesQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string }> };
 
+export type GovernanceUserQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GovernanceUserQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', id: string, allocatedLQTY: bigint, stakedLQTY: bigint, stakedOffset: bigint, allocations: Array<{ __typename?: 'GovernanceAllocation', id: string, atEpoch: bigint, vetoLQTY: bigint, voteLQTY: bigint, initiative: { __typename?: 'GovernanceInitiative', id: string } }> } | null };
+
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
@@ -2476,3 +2515,22 @@ export const GovernanceInitiativesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GovernanceInitiativesQuery, GovernanceInitiativesQueryVariables>;
+export const GovernanceUserDocument = new TypedDocumentString(`
+    query GovernanceUser($id: ID!) {
+  governanceUser(id: $id) {
+    id
+    allocatedLQTY
+    stakedLQTY
+    stakedOffset
+    allocations {
+      id
+      atEpoch
+      vetoLQTY
+      voteLQTY
+      initiative {
+        id
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GovernanceUserQuery, GovernanceUserQueryVariables>;
