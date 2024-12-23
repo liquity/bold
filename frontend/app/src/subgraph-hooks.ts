@@ -15,6 +15,8 @@ import { isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import {
+  GovernanceInitiatives,
+  GovernanceUser,
   graphQuery,
   InterestBatchQuery,
   InterestRateBracketsQuery,
@@ -402,6 +404,43 @@ export function useInterestRateBrackets(
   });
 }
 
+export function useGovernanceInitiatives(options?: Options) {
+  let queryFn = async () => {
+    const { governanceInitiatives } = await graphQuery(GovernanceInitiatives);
+    return governanceInitiatives.map((initiative) => initiative.id as Address);
+  };
+
+  if (DEMO_MODE) {
+    queryFn = async () => [];
+  }
+
+  return useQuery({
+    queryKey: ["GovernanceInitiatives"],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
+export function useGovernanceUser(account: Address | null, options?: Options) {
+  let queryFn = async () => {
+    if (!account) return null;
+    const { governanceUser } = await graphQuery(GovernanceUser, {
+      id: account.toLowerCase(),
+    });
+    return governanceUser;
+  };
+
+  if (DEMO_MODE) {
+    queryFn = async () => null;
+  }
+
+  return useQuery({
+    queryKey: ["GovernanceUser", account],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
 function subgraphTroveToLoan(
   trove: TrovesByAccountQueryType["troves"][number],
 ): PositionLoanCommitted {
@@ -419,7 +458,7 @@ function subgraphTroveToLoan(
   }
 
   return {
-    type: trove.mightBeLeveraged ? "leverage" : "borrow",
+    type: trove.mightBeLeveraged ? "multiply" : "borrow",
     batchManager: isAddress(trove.interestBatch?.batchManager)
       ? trove.interestBatch.batchManager
       : null,

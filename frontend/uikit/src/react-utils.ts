@@ -1,3 +1,5 @@
+"use client";
+
 import type { RefObject } from "react";
 
 import { useEffect, useState } from "react";
@@ -33,15 +35,20 @@ export function useElementSize<T extends HTMLElement>(
   return { size, ref };
 }
 
-export function useRaf(callback: (time: number) => void) {
+export function useRaf(callback: (time: number) => void, fps = 60) {
   useEffect(() => {
     let rafId: number;
     let lastTime = 0;
+    let fpsInterval = 1000 / fps;
 
     const loop = (time: number) => {
       rafId = requestAnimationFrame(loop);
-      callback(time - lastTime);
-      lastTime = time;
+      const deltaTime = time - lastTime;
+
+      if (deltaTime > fpsInterval) {
+        lastTime = time - (deltaTime % fpsInterval);
+        callback(time);
+      }
     };
 
     rafId = requestAnimationFrame(loop);
@@ -49,5 +56,5 @@ export function useRaf(callback: (time: number) => void) {
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [callback]);
+  }, [callback, fps]);
 }

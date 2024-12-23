@@ -115,7 +115,7 @@ export function LeverageField({
         ),
         end: (
           <HFlex gap={8}>
-            Leverage {
+            Multiply {
               <span
                 style={{
                   color: liquidationRisk === "high"
@@ -170,6 +170,10 @@ export function useLeverageField({
   const maxLtvAllowed = dn.mul(maxLtv, maxLtvAllowedRatio);
   const maxLeverageFactorAllowed = getLeverageFactorFromLtv(maxLtvAllowed);
 
+  if (!LEVERAGE_FACTOR_SUGGESTIONS[0]) {
+    throw new Error("LEVERAGE_FACTOR_SUGGESTIONS must have at least one suggestion set");
+  }
+
   const [leverageFactor, setLeverageFactor] = useState(
     getLeverageFactorFromRatio(
       LEVERAGE_FACTOR_MIN,
@@ -188,7 +192,7 @@ export function useLeverageField({
   const liquidationPriceBoundaries = [
     getLiquidationPriceFromLeverage(LEVERAGE_FACTOR_MIN, collPrice, collateralRatio),
     getLiquidationPriceFromLeverage(maxLeverageFactor, collPrice, collateralRatio),
-  ];
+  ] as const;
 
   const deposit = depositPreLeverage && leverageFactor > 1
     ? dn.mul(depositPreLeverage, leverageFactor)

@@ -1,3 +1,5 @@
+"use client";
+
 import type { ComponentPropsWithRef } from "react";
 import type { TextButtonProps } from "./TextButton";
 
@@ -14,6 +16,7 @@ export const AnchorTextButton = forwardRef<
   external,
   label,
   size,
+  className,
   ...props
 }, ref) {
   const textButtonStyles = useTextButtonStyles(size);
@@ -25,8 +28,8 @@ export const AnchorTextButton = forwardRef<
     <a
       ref={ref}
       className={cx(
-        props.className,
         textButtonStyles.className,
+        className,
       )}
       {...externalProps}
       {...props}

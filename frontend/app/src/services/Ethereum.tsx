@@ -43,7 +43,6 @@ import {
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { match } from "ts-pattern";
 import { erc20Abi } from "viem";
@@ -56,18 +55,14 @@ import {
   WagmiProvider,
 } from "wagmi";
 
-const queryClient = new QueryClient();
-
 export function Ethereum({ children }: { children: ReactNode }) {
   const wagmiConfig = useWagmiConfig();
   const rainbowKitProps = useRainbowKitProps();
   return (
     <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider {...rainbowKitProps}>
-          {children}
-        </RainbowKitProvider>
-      </QueryClientProvider>
+      <RainbowKitProvider {...rainbowKitProps}>
+        {children}
+      </RainbowKitProvider>
     </WagmiProvider>
   );
 }

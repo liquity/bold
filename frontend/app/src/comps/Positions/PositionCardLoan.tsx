@@ -29,7 +29,7 @@ export function PositionCardLoan(
   const prefixedTroveId = getPrefixedTroveId(props.collIndex, props.troveId);
   const loanMode = storedState.loanModes[prefixedTroveId] ?? props.type;
 
-  const Card = loanMode === "leverage" ? PositionCardLeverage : PositionCardBorrow;
+  const Card = loanMode === "multiply" ? PositionCardLeverage : PositionCardBorrow;
 
   return (
     <Card

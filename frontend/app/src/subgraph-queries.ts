@@ -254,3 +254,31 @@ export const InterestRateBracketsQuery = graphql(`
     }
   }
 `);
+
+export const GovernanceInitiatives = graphql(`
+  query GovernanceInitiatives {
+    governanceInitiatives {
+      id
+    }
+  }
+`);
+
+export const GovernanceUser = graphql(`
+  query GovernanceUser($id: ID!) {
+    governanceUser(id: $id) {
+      id
+      allocatedLQTY
+      stakedLQTY
+      stakedOffset
+      allocations {
+        id
+        atEpoch
+        vetoLQTY
+        voteLQTY
+        initiative {
+          id
+        }
+      }
+    }
+  }
+`);
