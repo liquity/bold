@@ -1,0 +1,5 @@
+{
+  "editor.defaultFormatter": "dprint.dprint",
+  "dprint.path": "node_modules/.bin/dprint",
+  "solidity.compileUsingRemoteVersion": "v0.8.18+commit.87f61d96"
+}
