@@ -7,7 +7,12 @@ import { useAccount } from "@/src/services/Ethereum";
 import { useAllPrices } from "@/src/services/Prices";
 import { useTotalDeposited } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, HFlex, shortenAddress, TokenIcon } from "@liquity2/uikit";
+import {
+  AnchorTextButton,
+  HFlex,
+  shortenAddress,
+  TokenIcon,
+} from "@liquity2/uikit";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
@@ -20,17 +25,17 @@ export function ProtocolStats() {
   const totalDeposited = useTotalDeposited();
 
   const tvl = getContracts()
-    .collaterals
-    .map((collateral, collIndex) => {
+    .collaterals.map((collateral, collIndex) => {
       const price = prices[collateral.symbol];
       const deposited = totalDeposited.data?.[collIndex].totalDeposited;
       return price && deposited && dn.mul(price, deposited);
     })
-    .reduce((a, b) => b ? dn.add(a ?? dn.from(0, 18), b) : a, null);
+    .reduce((a, b) => (b ? dn.add(a ?? dn.from(0, 18), b) : a), null);
 
   return (
     <div
       className={css({
+        color: "#1C1D4F",
         display: "flex",
         width: "100%",
         padding: "0 24px",
@@ -51,34 +56,18 @@ export function ProtocolStats() {
           <Logo size={16} />
           <span>TVL</span>{" "}
           <span>
-            <Amount
-              fallback="…"
-              format="compact"
-              prefix="$"
-              value={tvl}
-            />
+            <Amount fallback="…" format="compact" prefix="$" value={tvl} />
           </span>
         </HFlex>
         <HFlex gap={16}>
           {DISPLAYED_PRICES.map((symbol) => {
             const price = prices[symbol];
             return (
-              <HFlex
-                key={symbol}
-                gap={4}
-              >
-                <TokenIcon
-                  size={16}
-                  symbol={symbol}
-                />
+              <HFlex key={symbol} gap={4}>
+                <TokenIcon size={16} symbol={symbol} />
                 <HFlex gap={8}>
                   <span>{symbol}</span>
-                  <Amount
-                    prefix="$"
-                    fallback="…"
-                    value={price}
-                    format="2z"
-                  />
+                  <Amount prefix="$" fallback="…" value={price} format="2z" />
                 </HFlex>
               </HFlex>
             );
@@ -105,7 +94,7 @@ export function ProtocolStats() {
                 </HFlex>
               }
               className={css({
-                color: "content",
+                color: "#1C1D4F",
               })}
             />
           )}

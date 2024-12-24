@@ -6,7 +6,10 @@ import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
 import { useStakePosition } from "@/src/liquity-utils";
-import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hooks";
+import {
+  useEarnPositionsByAccount,
+  useLoansByAccount,
+} from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
@@ -24,13 +27,12 @@ export function Positions({
   address,
   columns,
   showNewPositionCard = true,
-  title = (mode) => (
+  title = (mode) =>
     mode === "loading"
       ? " "
       : mode === "positions"
       ? content.home.myPositionsTitle
-      : content.home.openPositionTitle
-  ),
+      : content.home.openPositionTitle,
 }: {
   address: null | Address;
   columns?: number;
@@ -42,26 +44,28 @@ export function Positions({
   const stakePosition = useStakePosition(address);
 
   const isPositionsPending = Boolean(
-    address && (
-      loans.isPending
-      || earnPositions.isPending
-      || stakePosition.isPending
-    ),
+    address &&
+      (loans.isPending || earnPositions.isPending || stakePosition.isPending)
   );
 
-  const positions = isPositionsPending ? [] : (
-    DEMO_MODE ? ACCOUNT_POSITIONS : [
-      ...loans.data ?? [],
-      ...earnPositions.data ?? [],
-      ...stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : [],
-    ]
-  );
+  const positions = isPositionsPending
+    ? []
+    : DEMO_MODE
+    ? ACCOUNT_POSITIONS
+    : [
+        ...(loans.data ?? []),
+        ...(earnPositions.data ?? []),
+        ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0)
+          ? [stakePosition.data]
+          : []),
+      ];
 
-  let mode: Mode = address && positions && positions.length > 0
-    ? "positions"
-    : isPositionsPending
-    ? "loading"
-    : "actions";
+  let mode: Mode =
+    address && positions && positions.length > 0
+      ? "positions"
+      : isPositionsPending
+      ? "loading"
+      : "actions";
 
   // preloading for 1 second, prevents flickering
   // since the account doesn’t reconnect instantly
@@ -115,7 +119,7 @@ function PositionsGroup({
       }
 
       cards = cards.concat(
-        positions.map((position, index) => (
+        positions.map((position, index) =>
           match(position)
             .returnType<[number, ReactNode]>()
             .with({ type: P.union("borrow", "leverage") }, (p) => [
@@ -131,7 +135,7 @@ function PositionsGroup({
               <PositionCardStake key={index} {...p} />,
             ])
             .exhaustive()
-        )) ?? [],
+        ) ?? []
       );
 
       return cards;
@@ -144,12 +148,13 @@ function PositionsGroup({
     .with("actions", () =>
       showNewPositionCard
         ? [
-          [0, <ActionCard key="0" type="borrow" />],
-          [1, <ActionCard key="1" type="leverage" />],
-          [2, <ActionCard key="2" type="earn" />],
-          [3, <ActionCard key="3" type="stake" />],
-        ]
-        : [])
+            [0, <ActionCard key="0" type="borrow" />],
+            [1, <ActionCard key="1" type="leverage" />],
+            [2, <ActionCard key="2" type="earn" />],
+            [3, <ActionCard key="3" type="stake" />],
+          ]
+        : []
+    )
     .exhaustive();
 
   if (mode === "actions") {
@@ -210,6 +215,10 @@ function PositionsGroup({
             fontSize: 32,
             color: "content",
             userSelect: "none",
+            background:
+              "linear-gradient(90deg, #DECC44 -12.45%, #44DEC2 13.98%, #44BADD 57.41%, #4468DD 99.44%)",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
           })}
           style={{
             paddingBottom: 32,
