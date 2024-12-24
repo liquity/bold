@@ -102,7 +102,6 @@ export const lightTheme = {
     backgroundActive: "gray:50",
     border: "gray:200",
     borderSoft: "gray:100",
-    // content: "gray:950",
     content: "text:black",
     contentAlt: "text:grey",
     contentAlt2: "gray:500",
@@ -199,7 +198,7 @@ export const lightTheme = {
     brandCoral: "error",
     // brandBrown: "brand:brown",
     brandBrown: "error",
-  } satisfies Record<string, keyof typeof colors | `#${string}`>,
+  } satisfies Record<string, (keyof typeof colors) | `#${string}`>,
 } as const;
 
 export type ThemeDescriptor = {
@@ -236,7 +235,11 @@ export function useTheme() {
   };
 }
 
-export function Theme({ children }: { children: ReactNode }) {
+export function Theme({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const [theme, setTheme] = useState<ThemeDescriptor>(lightTheme);
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
