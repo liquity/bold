@@ -10,20 +10,17 @@ import { getContracts } from "@/src/contracts";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
-import {
-  AnchorButton,
-  AnchorTextButton,
-  Button,
-  HFlex,
-  IconCross,
-  VFlex,
-} from "@liquity2/uikit";
+import { AnchorButton, AnchorTextButton, Button, HFlex, IconCross, VFlex } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import Link from "next/link";
 import { Fragment, useState } from "react";
 import { match, P } from "ts-pattern";
 
-export type LoadingState = "error" | "loading" | "not-found" | "success";
+export type LoadingState =
+  | "error"
+  | "loading"
+  | "not-found"
+  | "success";
 
 export function TransactionsScreen() {
   const {
@@ -36,31 +33,28 @@ export function TransactionsScreen() {
 
   const isLastStep = flow?.steps && currentStepIndex === flow.steps.length - 1;
 
-  const successMessageTransition = useTransition(
-    isLastStep && currentStep?.txStatus === "confirmed",
-    {
-      from: {
-        height: 0,
-        opacity: 0,
-        transform: "scale(0.9)",
-      },
-      enter: {
-        height: 56,
-        opacity: 1,
-        transform: "scale(1)",
-      },
-      leave: {
-        height: 0,
-        opacity: 0,
-        transform: "scale(1)",
-      },
-      config: {
-        mass: 1,
-        tension: 1800,
-        friction: 120,
-      },
-    }
-  );
+  const successMessageTransition = useTransition(isLastStep && currentStep?.txStatus === "confirmed", {
+    from: {
+      height: 0,
+      opacity: 0,
+      transform: "scale(0.9)",
+    },
+    enter: {
+      height: 56,
+      opacity: 1,
+      transform: "scale(1)",
+    },
+    leave: {
+      height: 0,
+      opacity: 0,
+      transform: "scale(1)",
+    },
+    config: {
+      mass: 1,
+      tension: 1800,
+      friction: 120,
+    },
+  });
 
   if (!currentStep || !flow || !fd || !flow.steps) {
     return <NoTransactionsScreen />;
@@ -68,22 +62,18 @@ export function TransactionsScreen() {
 
   const contracts = getContracts();
 
-  const showBackLink =
-    currentStepIndex === 0 &&
-    (currentStep.txStatus === "idle" ||
-      currentStep.txStatus === "error" ||
-      currentStep.txStatus === "awaiting-signature");
+  const showBackLink = currentStepIndex === 0 && (
+    currentStep.txStatus === "idle"
+    || currentStep.txStatus === "error"
+    || currentStep.txStatus === "awaiting-signature"
+  );
 
   return (
     <Screen
-      back={
-        !showBackLink || !flow.request.backLink
-          ? null
-          : {
-              href: flow.request.backLink[0],
-              label: "Back",
-            }
-      }
+      back={!showBackLink || !flow.request.backLink ? null : {
+        href: flow.request.backLink[0],
+        label: "Back",
+      }}
       heading={<fd.Summary flow={flow} />}
     >
       <header
@@ -117,25 +107,24 @@ export function TransactionsScreen() {
 
       <VFlex gap={32}>
         <div>
-          {successMessageTransition(
-            (style, show) =>
-              show && (
-                <a.div
-                  style={style}
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: 56,
-                    whiteSpace: "nowrap",
-                    textAlign: "center",
-                    color: "positive",
-                  })}
-                >
-                  {flow.request.successMessage}
-                </a.div>
-              )
-          )}
+          {successMessageTransition((style, show) => (
+            show && (
+              <a.div
+                style={style}
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: 56,
+                  whiteSpace: "nowrap",
+                  textAlign: "center",
+                  color: "positive",
+                })}
+              >
+                {flow.request.successMessage}
+              </a.div>
+            )
+          ))}
 
           <FlowSteps
             currentStep={currentStepIndex}
@@ -160,35 +149,38 @@ export function TransactionsScreen() {
             width: "100%",
           }}
         >
-          {currentStep.txStatus === "confirmed" ? (
-            <Link href={flow.request.successLink[0]} legacyBehavior passHref>
-              <AnchorButton
-                label={flow.request.successLink[1]}
-                mode="positive"
+          {currentStep.txStatus === "confirmed"
+            ? (
+              <Link
+                href={flow.request.successLink[0]}
+                legacyBehavior
+                passHref
+              >
+                <AnchorButton
+                  label={flow.request.successLink[1]}
+                  mode="positive"
+                  size="large"
+                  wide
+                />
+              </Link>
+            )
+            : (
+              <Button
+                disabled={currentStep.txStatus === "awaiting-confirmation"
+                  || currentStep.txStatus === "awaiting-signature"
+                  || currentStep.txStatus === "post-check"}
+                label={(
+                  currentStep.txStatus === "error" ? "Retry: " : ""
+                ) + fd.getStepName(
+                  currentStep.id,
+                  { contracts, request: flow.request },
+                )}
+                mode="primary"
+                onClick={signAndSend}
                 size="large"
                 wide
               />
-            </Link>
-          ) : (
-            <Button
-              disabled={
-                currentStep.txStatus === "awaiting-confirmation" ||
-                currentStep.txStatus === "awaiting-signature" ||
-                currentStep.txStatus === "post-check"
-              }
-              label={
-                (currentStep.txStatus === "error" ? "Retry: " : "") +
-                fd.getStepName(currentStep.id, {
-                  contracts,
-                  request: flow.request,
-                })
-              }
-              mode="primary"
-              onClick={signAndSend}
-              size="large"
-              wide
-            />
-          )}
+            )}
           <div
             className={css({
               textAlign: "center",
@@ -196,15 +188,8 @@ export function TransactionsScreen() {
             })}
           >
             {match(currentStep.txStatus)
-              .with(
-                "idle",
-                () =>
-                  "This action will open your wallet to sign the transaction."
-              )
-              .with(
-                "awaiting-signature",
-                () => "Please sign the transaction in your wallet."
-              )
+              .with("idle", () => "This action will open your wallet to sign the transaction.")
+              .with("awaiting-signature", () => "Please sign the transaction in your wallet.")
               .with("awaiting-confirmation", () => (
                 <>
                   Waiting for the{" "}
@@ -223,8 +208,7 @@ export function TransactionsScreen() {
                     label="transaction"
                     href={`${CHAIN_BLOCK_EXPLORER?.url}tx/${currentStep.txHash}`}
                     external
-                  />
-                  {"  "}
+                  />{"  "}
                   to be indexed…
                 </>
               ))
@@ -235,8 +219,7 @@ export function TransactionsScreen() {
                     label="transaction"
                     href={`${CHAIN_BLOCK_EXPLORER?.url}tx/${currentStep.txHash}`}
                     external
-                  />
-                  {"  "}
+                  />{"  "}
                   has been confirmed.
                 </>
               ))
@@ -251,7 +234,9 @@ export function TransactionsScreen() {
               marginTop: -8,
             })}
           >
-            <ErrorBox title="Error">{currentStep.error}</ErrorBox>
+            <ErrorBox title="Error">
+              {currentStep.error}
+            </ErrorBox>
           </div>
         )}
       </VFlex>
@@ -280,70 +265,81 @@ export function TransactionDetailsRow({
           textAlign: "left",
         })}
       >
-        {Array.isArray(label) ? (
-          <VFlex gap={4}>
-            <div
-              className={css({
-                fontSize: 16,
-              })}
-            >
-              {label[0]}
-            </div>
-            {label.slice(1).map((secondary, index) => (
+        {Array.isArray(label)
+          ? (
+            <VFlex gap={4}>
               <div
-                key={index}
                 className={css({
-                  color: "contentAlt",
-                  fontSize: 14,
+                  fontSize: 16,
                 })}
               >
-                {secondary}
+                {label[0]}
               </div>
-            ))}
-          </VFlex>
-        ) : (
-          <HFlex alignItems="flex-start" justifyContent="flex-start" gap={8}>
-            {label}
-          </HFlex>
-        )}
+              {label.slice(1).map((secondary, index) => (
+                <div
+                  key={index}
+                  className={css({
+                    color: "contentAlt",
+                    fontSize: 14,
+                  })}
+                >
+                  {secondary}
+                </div>
+              ))}
+            </VFlex>
+          )
+          : (
+            <HFlex
+              alignItems="flex-start"
+              justifyContent="flex-start"
+              gap={8}
+            >
+              {label}
+            </HFlex>
+          )}
       </div>
       <div
         className={css({
           textAlign: "right",
         })}
       >
-        {Array.isArray(value) ? (
-          <VFlex alignItems="flex-end" gap={4}>
-            <HFlex
-              gap={8}
-              className={css({
-                fontSize: 16,
-              })}
+        {Array.isArray(value)
+          ? (
+            <VFlex
+              alignItems="flex-end"
+              gap={4}
             >
-              {value[0]}
-            </HFlex>
-            {value.slice(1).map((secondary, index) => (
-              <div
-                key={index}
+              <HFlex
+                gap={8}
                 className={css({
-                  color: "contentAlt",
-                  textAlign: "right",
-                  fontSize: 14,
+                  fontSize: 16,
                 })}
               >
-                {secondary}
-              </div>
-            ))}
-          </VFlex>
-        ) : (
-          <HFlex
-            className={css({
-              fontSize: 24,
-            })}
-          >
-            {value}
-          </HFlex>
-        )}
+                {value[0]}
+              </HFlex>
+              {value.slice(1).map((secondary, index) => (
+                <div
+                  key={index}
+                  className={css({
+                    color: "contentAlt",
+                    textAlign: "right",
+                    fontSize: 14,
+                  })}
+                >
+                  {secondary}
+                </div>
+              ))}
+            </VFlex>
+          )
+          : (
+            <HFlex
+              className={css({
+                fontSize: 24,
+              })}
+            >
+              {value}
+            </HFlex>
+          )}
       </div>
     </div>
   );
@@ -372,7 +368,7 @@ function FlowSteps({
     >
       {steps.map((step, index) => (
         <Fragment key={index}>
-          {index > 0 &&
+          {index > 0 && (
             Array.from({ length: 4 }).map((_, index) => (
               <div
                 key={index}
@@ -382,41 +378,31 @@ function FlowSteps({
                   backgroundColor: "contentAlt",
                 })}
               />
-            ))}
+            ))
+          )}
           <StepDisc
             index={index}
             label={step.label}
-            secondary={
-              index < currentStep
-                ? "Confirmed"
-                : match(step.txStatus)
-                    .with("error", () => "Error")
-                    .with("awaiting-signature", () => "Awaiting signature…")
-                    .with(
-                      "awaiting-confirmation",
-                      () => "Awaiting confirmation…"
-                    )
-                    .with("confirmed", () => "Confirmed")
-                    .with("post-check", () => "Awaiting indexer…")
-                    .otherwise(() =>
-                      index === currentStep
-                        ? "Ready to sign"
-                        : "Next transaction"
-                    )
-            }
+            secondary={index < currentStep ? "Confirmed" : match(step.txStatus)
+              .with("error", () => "Error")
+              .with("awaiting-signature", () => "Awaiting signature…")
+              .with("awaiting-confirmation", () => "Awaiting confirmation…")
+              .with("confirmed", () => "Confirmed")
+              .with("post-check", () => "Awaiting indexer…")
+              .otherwise(() => index === currentStep ? "Ready to sign" : "Next transaction")}
             mode={match(step.txStatus)
               .returnType<ComponentProps<typeof StepDisc>["mode"]>()
               .with(
                 P.union(
                   "awaiting-signature",
                   "awaiting-confirmation",
-                  "post-check"
+                  "post-check",
                 ),
-                () => "loading"
+                () => "loading",
               )
               .with("confirmed", () => "success")
               .with("error", () => "error")
-              .otherwise(() => (index === currentStep ? "ready" : "upcoming"))}
+              .otherwise(() => index === currentStep ? "ready" : "upcoming")}
           />
         </Fragment>
       ))}
@@ -477,7 +463,7 @@ function StepDisc({
         setForcedMode(
           forcedStatuses[
             (forcedStatuses.indexOf(forcedMode) + 1) % forcedStatuses.length
-          ]
+          ],
         );
       }}
       onMouseEnter={() => setShowLabel(true)}
@@ -551,65 +537,68 @@ function StepDisc({
         </a.div>
       ))}
 
-      {labelTransition(
-        (style, show) =>
-          show && (
+      {labelTransition((style, show) => (
+        show && (
+          <a.div
+            className={css({
+              position: "absolute",
+              bottom: `calc(100% + 16px)`,
+              left: "50%",
+              transform: "translateX(-50%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 0,
+              pointerEvents: "none",
+            })}
+            style={style}
+          >
             <a.div
               className={css({
-                position: "absolute",
-                bottom: `calc(100% + 16px)`,
-                left: "50%",
-                transform: "translateX(-50%)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: 0,
+                flexDirection: "column",
+                gap: 4,
+                minWidth: 300,
+                padding: "12px 0",
+                whiteSpace: "nowrap",
+                color: "content",
+                background: "surface",
+                border: "1px solid token(colors.border)",
+                borderRadius: 4,
+                boxShadow: "0 15px 35px rgba(60, 66, 87, 0.12), 0 5px 15px rgba(0, 0, 0, 0.08)",
                 pointerEvents: "none",
               })}
               style={style}
             >
-              <a.div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexDirection: "column",
-                  gap: 4,
-                  minWidth: 300,
-                  padding: "12px 0",
-                  whiteSpace: "nowrap",
-                  color: "content",
-                  background: "surface",
-                  border: "1px solid token(colors.border)",
-                  borderRadius: 4,
-                  boxShadow:
-                    "0 15px 35px rgba(60, 66, 87, 0.12), 0 5px 15px rgba(0, 0, 0, 0.08)",
-                  pointerEvents: "none",
-                })}
-                style={style}
-              >
-                <div>{label}</div>
-                {secondary && (
-                  <div
-                    className={css({
-                      color: "contentAlt",
-                      fontSize: 14,
-                    })}
-                  >
-                    {secondary}
-                  </div>
-                )}
-              </a.div>
+              <div>{label}</div>
+              {secondary && (
+                <div
+                  className={css({
+                    color: "contentAlt",
+                    fontSize: 14,
+                  })}
+                >
+                  {secondary}
+                </div>
+              )}
             </a.div>
-          )
-      )}
+          </a.div>
+        )
+      ))}
     </div>
   );
 }
 
 function Tick() {
   return (
-    <svg width={12 * 1.2} height={10 * 1.2} viewBox="0 0 12 10" fill="none">
+    <svg
+      width={12 * 1.2}
+      height={10 * 1.2}
+      viewBox="0 0 12 10"
+      fill="none"
+    >
       <path
         fill="currentColor"
         d="M4 7.78 1.22 5l-.947.94L4 9.667l8-8-.94-.94L4 7.78Z"
@@ -631,9 +620,15 @@ function NoTransactionsScreen() {
         width: "100%",
       })}
     >
-      <div>No ongoing transactions.</div>
       <div>
-        <Link href="/" legacyBehavior passHref>
+        No ongoing transactions.
+      </div>
+      <div>
+        <Link
+          href="/"
+          legacyBehavior
+          passHref
+        >
           <AnchorTextButton label="Back to dashboard" />
         </Link>
       </div>

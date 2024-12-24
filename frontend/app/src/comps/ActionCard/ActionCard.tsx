@@ -16,9 +16,12 @@ export function ActionCard({
   const [active, setActive] = useState(false);
 
   const hintSpring = useSpring({
-    transform: active ? "scale(1.01)" : hint ? "scale(1.02)" : "scale(1)",
-    boxShadow:
-      hint && !active
+    transform: active
+      ? "scale(1.01)"
+      : hint
+      ? "scale(1.02)"
+      : "scale(1)",
+    boxShadow: hint && !active
         ? "0 2px 4px rgba(0, 0, 0, 0.1)"
         : "0 2px 4px rgba(0, 0, 0, 0)",
     immediate: active,
@@ -89,7 +92,7 @@ export function ActionCard({
           color: "gray:50",
           outline: 0,
           userSelect: "none",
-        })
+        }),
       )}
     >
       <a.section

@@ -86,19 +86,21 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
         <thead>
           <tr>
             {columns.map((col, index) => (
-              <th key={index}>{col}</th>
+              <th key={index}>
+                {col}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
           {rows.map((row, rowIndex) => (
             <Fragment key={rowIndex}>
-              {!Array.isArray(row) ? (
-                row
-              ) : (
+              {!Array.isArray(row) ? row : (
                 <tr>
                   {row.map((cell, colIndex) => (
-                    <td key={colIndex}>{cell}</td>
+                    <td key={colIndex}>
+                      {cell}
+                    </td>
                   ))}
                 </tr>
               )}
