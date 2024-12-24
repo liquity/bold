@@ -69,7 +69,7 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
           },
           "& th": {
             paddingBottom: 8,
-            color: "contentAlt2",
+            color: "content",
           },
           "& td": {
             padding: "12px 0",

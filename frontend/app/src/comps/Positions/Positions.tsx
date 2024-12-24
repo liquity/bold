@@ -210,6 +210,10 @@ function PositionsGroup({
             fontSize: 32,
             color: "content",
             userSelect: "none",
+            background:
+              "linear-gradient(90deg, #DECC44 -12.45%, #44DEC2 13.98%, #44BADD 57.41%, #4468DD 99.44%)",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
           })}
           style={{
             paddingBottom: 32,

@@ -36,9 +36,9 @@ export function ActionCard({
   const { description, path, title, colors } = match(type)
     .with("borrow", () => ({
       colors: {
-        background: token("colors.brandDarkBlue"),
-        foreground: token("colors.brandDarkBlueContent"),
-        foregroundAlt: token("colors.brandDarkBlueContentAlt"),
+        background: "linear-gradient(180deg, #44E1BF 0%, #44B5E1 100%)",
+        foreground: "white",
+        foregroundAlt: "#F5F6F8",
       },
       description: ac.borrow.description,
       path: "/borrow",
@@ -46,9 +46,9 @@ export function ActionCard({
     }))
     .with("leverage", () => ({
       colors: {
-        background: token("colors.brandGreen"),
-        foreground: token("colors.brandGreenContent"),
-        foregroundAlt: token("colors.brandGreenContentAlt"),
+        background: "linear-gradient(180deg, #C1E99B 0%, #9BE9C6 100%)",
+        foreground: "#082B12",
+        foregroundAlt: token("colors.text:black"),
       },
       description: ac.leverage.description,
       path: "/leverage",
@@ -56,9 +56,9 @@ export function ActionCard({
     }))
     .with("earn", () => ({
       colors: {
-        background: token("colors.brandBlue"),
-        foreground: token("colors.brandBlueContent"),
-        foregroundAlt: token("colors.brandBlueContentAlt"),
+        background: token("colors.bg:black"),
+        foreground: "white",
+        foregroundAlt: "white",
       },
       description: ac.earn.description,
       path: "/earn",
@@ -66,9 +66,9 @@ export function ActionCard({
     }))
     .with("stake", () => ({
       colors: {
-        background: token("colors.brandGolden"),
-        foreground: token("colors.brandGoldenContent"),
-        foregroundAlt: token("colors.brandGoldenContentAlt"),
+        background: "linear-gradient(180deg, #E3F893 0%, #FDE8AA 100%)",
+        foreground: "#402108",
+        foregroundAlt: token("colors.text:black"),
       },
       description: ac.stake.description,
       path: "/stake",

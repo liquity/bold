@@ -91,6 +91,10 @@ export function TransactionsScreen() {
             alignItems: "center",
             justifyContent: "center",
             fontSize: 28,
+            background:
+              "linear-gradient(90deg, #DECC44 17.37%, #44DEC2 43.37%, #44BADD 74.8%, #4468DD 92.64%)",
+            backgroundClip: "text",
+            WebkitTextFillColor: "transparent",
           })}
         >
           {fd.title}
