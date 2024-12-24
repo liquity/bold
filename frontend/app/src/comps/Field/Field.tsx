@@ -37,26 +37,26 @@ export function Field({
         gap: 8,
       })}
     >
-      {label
-        ? (
+      {label ? (
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          })}
+        >
           <div
             className={css({
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
+              color: "contentAlt",
             })}
           >
-            <div
-              className={css({
-                color: "contentAlt",
-              })}
-            >
-              {label}
-            </div>
-            {field}
+            {label}
           </div>
-        )
-        : field}
+          {field}
+        </div>
+      ) : (
+        field
+      )}
       {footer && (
         <div
           className={css({
@@ -164,9 +164,7 @@ function FooterInfoWarnLevel({
             whiteSpace: "nowrap",
           })}
         >
-          <StatusDot
-            mode={riskLevelToStatusMode(level)}
-          />
+          <StatusDot mode={riskLevelToStatusMode(level)} />
           <HFlex gap={4} alignItems="center">
             {label}
             {help}
@@ -177,24 +175,28 @@ function FooterInfoWarnLevel({
   );
 }
 
-export const FooterInfoLiquidationRisk = memo(function FooterInfoLiquidationRisk({
-  riskLevel,
-}: {
-  riskLevel: RiskLevel | null;
-}) {
-  const label = formatLiquidationRisk(riskLevel);
-  return (
-    <Field.FooterInfoWarnLevel
-      help={
-        <InfoTooltip
-          {...infoTooltipProps(content.generalInfotooltips.loanLiquidationRisk)}
-        />
-      }
-      label={label}
-      level={riskLevel}
-    />
-  );
-});
+export const FooterInfoLiquidationRisk = memo(
+  function FooterInfoLiquidationRisk({
+    riskLevel,
+  }: {
+    riskLevel: RiskLevel | null;
+  }) {
+    const label = formatLiquidationRisk(riskLevel);
+    return (
+      <Field.FooterInfoWarnLevel
+        help={
+          <InfoTooltip
+            {...infoTooltipProps(
+              content.generalInfotooltips.loanLiquidationRisk
+            )}
+          />
+        }
+        label={label}
+        level={riskLevel}
+      />
+    );
+  }
+);
 
 export const FooterInfoRedemptionRisk = memo(function FooterInfoRedemptionRisk({
   riskLevel,
@@ -207,12 +209,7 @@ export const FooterInfoRedemptionRisk = memo(function FooterInfoRedemptionRisk({
       help={
         <InfoTooltip
           {...infoTooltipProps(content.generalInfotooltips.loanRedemptionRisk)}
-          heading={
-            <FooterInfoRiskLabel
-              label={label}
-              riskLevel={riskLevel}
-            />
-          }
+          heading={<FooterInfoRiskLabel label={label} riskLevel={riskLevel} />}
         />
       }
       label={label}
@@ -235,26 +232,28 @@ export const FooterInfoLoanToValue = memo(
         label="LTV"
         value={
           <HFlex gap={4}>
-            {ltvRatio
-              ? (
-                <span
-                  className={css({
-                    fontVariantNumeric: "tabular-nums",
-                  })}
-                >
-                  {higherThanMax && ">"}
-                  {fmtnum(higherThanMax ? maxLtvRatio : ltvRatio, "2z", 100)}
-                  {"%"}
-                </span>
-              )
-              : "−"}
-            <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.loanLtv)} />
+            {ltvRatio ? (
+              <span
+                className={css({
+                  fontVariantNumeric: "tabular-nums",
+                })}
+              >
+                {higherThanMax && ">"}
+                {fmtnum(higherThanMax ? maxLtvRatio : ltvRatio, "2z", 100)}
+                {"%"}
+              </span>
+            ) : (
+              "−"
+            )}
+            <InfoTooltip
+              {...infoTooltipProps(content.generalInfotooltips.loanLtv)}
+            />
           </HFlex>
         }
       />
     );
   },
-  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next)
 );
 
 export const FooterInfoLiquidationPrice = memo(
@@ -268,18 +267,18 @@ export const FooterInfoLiquidationPrice = memo(
         label="Liquidation price"
         value={
           <HFlex gap={4}>
-            {liquidationPrice
-              ? `$${fmtnum(liquidationPrice)}`
-              : "−"}
+            {liquidationPrice ? `$${fmtnum(liquidationPrice)}` : "−"}
             <InfoTooltip
-              {...infoTooltipProps(content.generalInfotooltips.loanLiquidationPrice)}
+              {...infoTooltipProps(
+                content.generalInfotooltips.loanLiquidationPrice
+              )}
             />
           </HFlex>
         }
       />
     );
   },
-  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next)
 );
 
 export function FooterInfoRiskLabel({
@@ -289,14 +288,14 @@ export function FooterInfoRiskLabel({
   label: ReactNode;
   riskLevel: RiskLevel | null;
 }) {
-  return riskLevel
-    ? (
-      <HFlex gap={8} justifyContent="flex-start">
-        <StatusDot mode={riskLevelToStatusMode(riskLevel)} />
-        {label}
-      </HFlex>
-    )
-    : label;
+  return riskLevel ? (
+    <HFlex gap={8} justifyContent="flex-start">
+      <StatusDot mode={riskLevelToStatusMode(riskLevel)} />
+      {label}
+    </HFlex>
+  ) : (
+    label
+  );
 }
 
 export const FooterInfoCollPrice = memo(
@@ -319,36 +318,34 @@ export const FooterInfoCollPrice = memo(
             >
               ${fmtnum(collPriceUsd)}
             </span>
-            <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.ethPrice)} />
+            <InfoTooltip
+              {...infoTooltipProps(content.generalInfotooltips.ethPrice)}
+            />
           </HFlex>
         }
       />
     );
   },
-  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next)
 );
 
 export const FooterInfoMaxLtv = memo(
-  function FooterInfoMaxLtv({
-    maxLtv,
-  }: {
-    maxLtv: Dnum;
-  }) {
+  function FooterInfoMaxLtv({ maxLtv }: { maxLtv: Dnum }) {
     return (
       <Field.FooterInfo
         label="Max LTV"
         value={
           <HFlex gap={4}>
-            <div>
-              {fmtnum(maxLtv, "2z", 100)}%
-            </div>
-            <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.loanMaxLtv)} />
+            <div>{fmtnum(maxLtv, "2z", 100)}%</div>
+            <InfoTooltip
+              {...infoTooltipProps(content.generalInfotooltips.loanMaxLtv)}
+            />
           </HFlex>
         }
       />
     );
   },
-  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next)
 );
 
 Field.FooterInfo = FooterInfo;

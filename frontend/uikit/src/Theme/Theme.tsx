@@ -5,71 +5,81 @@ import { createContext, useContext, useState } from "react";
 // The Liquity V2 base color palette, meant
 // to be used by themes rather than directly.
 export const colors = {
-    // Gray
-    "gray:100": "#E6E9EB",
-    "gray:200": "#CDD3D7",
-    "gray:300": "#B4BEC3",
-    "gray:400": "#9BA8AF",
-    "gray:500": "#82929B",
-    "gray:600": "#697C87",
-    "gray:700": "#506673",
-    "gray:800": "#37515F",
-    "gray:900": "#1E3B4B",
-    "gray:1000": "#052537",
-  
-    // Green
-    "green:100": "#D5FCE6",
-    "green:200": "#ADF9D4",
-    "green:300": "#81EEC4",
-    "green:400": "#5EDEB8",
-    "green:500": "#2FC8AA",
-    "green:600": "#22AC9E",
-    "green:700": "#17908F",
-    "green:800": "#0E6B74",
-    "green:900": "#095060",
-    "green:1000": "#073A45",
-  
-    // Yellow
-    "yellow:100": "#FFF9DA",
-    "yellow:200": "#FFF2B6",
-    "yellow:300": "#FFE992",
-    "yellow:400": "#FFE077",
-    "yellow:500": "#FFD24A",
-    "yellow:600": "#DBAD36",
-    "yellow:700": "#B78B25",
-    "yellow:800": "#936B17",
-    "yellow:900": "#7A540E",
-    "yellow:1000": "#5C3C10",
-  
-    // Red
-    "red:100": "#FDDADA",
-    "red:200": "#FCB5BB",
-    "red:300": "#F68FA1",
-    "red:400": "#EC7094",
-    "red:500": "#E14480",
-    "red:600": "#C13176",
-    "red:700": "#A2226C",
-    "red:800": "#82155F",
-    "red:900": "#6C0D57",
-    "red:1000": "#5F0B4D",
-  
-    // brown
-    "brown:50": "#F8F6F4",
-  
-    // desert
-    "desert:50": "#FAF9F7",
-    "desert:100": "#EFECE5",
-    "desert:950": "#2C231E",
-  
-    // White
-    "white": "#FFFFFF",
-  
-    // Brand colors
-    "brand:darkBlue": "#051937",
-    "brand:waterB": "#00C9B7",
-    "brand:grassG": "#A8EB12",
-    "brand:golden": "#f5d93a",
-    "brand:coralP": "#fb7c59",
+  // Gray
+  "gray:50": "#F5F6F8",
+  "gray:100": "#E6E9EB",
+  "gray:200": "#CDD3D7",
+  "gray:300": "#B4BEC3",
+  "gray:400": "#9BA8AF",
+  "gray:500": "#82929B",
+  "gray:600": "#697C87",
+  "gray:700": "#506673",
+  "gray:800": "#37515F",
+  "gray:900": "#1E3B4B",
+  "gray:1000": "#052537",
+
+  // Green
+  "green:100": "#D5FCE6",
+  "green:200": "#ADF9D4",
+  "green:300": "#81EEC4",
+  "green:400": "#5EDEB8",
+  "green:500": "#2FC8AA",
+  "green:600": "#22AC9E",
+  "green:700": "#17908F",
+  "green:800": "#0E6B74",
+  "green:900": "#095060",
+  "green:1000": "#073A45",
+
+  // Yellow
+  "yellow:100": "#FFF9DA",
+  "yellow:200": "#FFF2B6",
+  "yellow:300": "#FFE992",
+  "yellow:400": "#FFE077",
+  "yellow:500": "#FFD24A",
+  "yellow:600": "#DBAD36",
+  "yellow:700": "#B78B25",
+  "yellow:800": "#936B17",
+  "yellow:900": "#7A540E",
+  "yellow:1000": "#5C3C10",
+
+  // Red
+  "red:100": "#FDDADA",
+  "red:200": "#FCB5BB",
+  "red:300": "#F68FA1",
+  "red:400": "#EC7094",
+  "red:500": "#E14480",
+  "red:600": "#C13176",
+  "red:700": "#A2226C",
+  "red:800": "#82155F",
+  "red:900": "#6C0D57",
+  "red:1000": "#5F0B4D",
+
+  // brown
+  "brown:50": "#F8F6F4",
+
+  // desert
+  "desert:50": "#FAF9F7",
+  "desert:100": "#EFECE5",
+  "desert:950": "#2C231E",
+
+  // White
+  white: "#FFFFFF",
+
+  // Brand colors
+  "brand:darkBlue": "#051937",
+  "brand:waterB": "#00C9B7",
+  "brand:grassG": "#A8EB12",
+  "brand:golden": "#f5d93a",
+  "brand:coralP": "#fb7c59",
+
+  //
+  "text:black": "#3f3f3f",
+  "text:grey": "#87A2A4",
+  "bg:black": "#052537",
+  "bg:grey20": "#F2F8F8",
+
+  // TODO: Remove
+  error: "#ff0000",
 };
 
 // The light theme, which is the only theme for now. These
@@ -92,11 +102,11 @@ export const lightTheme = {
     backgroundActive: "gray:50",
     border: "gray:200",
     borderSoft: "gray:100",
-    content: "gray:950",
-    contentAlt: "gray:600",
+    // content: "gray:950",
+    content: "text:black",
+    contentAlt: "text:grey",
     contentAlt2: "gray:500",
-    controlBorder: "gray:300",
-    controlBorderStrong: "green:950",
+    controlBorder: "#1C1D4F",
     controlSurface: "white",
     controlSurfaceAlt: "gray:200",
     hint: "brown:50",
@@ -106,61 +116,71 @@ export const lightTheme = {
     dimmed: "gray:400",
     fieldBorder: "gray:100",
     fieldBorderFocused: "gray:300",
-    fieldSurface: "gray:50",
+    fieldSurface: "bg:grey20",
     focused: "green:500",
-    focusedSurface: "green:50",
+    // focusedSurface: "green:50",
+    focusedSurface: "error",
     focusedSurfaceActive: "green:100",
-    strongSurface: "green:950",
+    // strongSurface: "green:950",
+    strongSurface: "error",
     strongSurfaceContent: "white",
     strongSurfaceContentAlt: "gray:500",
     strongSurfaceContentAlt2: "gray:100",
     position: "#2E2E3D",
     positionContent: "white",
     positionContentAlt: "gray:500",
-    interactive: "green:950",
+    interactive: "text:black",
     negative: "red:500",
     negativeStrong: "red:600",
     negativeActive: "red:600",
     negativeContent: "white",
     negativeHint: "red:400",
-    negativeSurface: "red:50",
+    negativeSurface: "red:100",
     negativeSurfaceBorder: "red:100",
     negativeSurfaceContent: "red:900",
     negativeSurfaceContentAlt: "red:400",
-    negativeInfoSurface: "red:50",
+    // negativeInfoSurface: "red:50",
+    negativeInfoSurface: "error",
     negativeInfoSurfaceBorder: "red:200",
-    negativeInfoSurfaceContent: "red:950",
+    // negativeInfoSurfaceContent: "red:950",
+    negativeInfoSurfaceContent: "error",
     negativeInfoSurfaceContentAlt: "gray:600",
     positive: "green:500",
     positiveAlt: "green:400",
     positiveActive: "green:600",
     positiveContent: "white",
     positiveHint: "green:400",
-    secondary: "green:50",
+    secondary: "#E7F6F6",
     secondaryActive: "green:200",
     secondaryContent: "green:500",
     secondaryHint: "green:100",
     selected: "green:500",
     separator: "gray:50",
-    surface: "white",
+    surface: "bg:grey20",
     tableBorder: "gray:100",
     warning: "yellow:400",
     warningAlt: "yellow:300",
-    disabledBorder: "gray:200",
-    disabledContent: "gray:500",
-    disabledSurface: "gray:50",
-    brandgreen: "brand:blue",
+    disabledBorder: "#DDE8E6",
+    disabledContent: "text:grey",
+    disabledSurface: "#F4F8F8",
+    // brandgreen: "brand:blue",
+    brandgreen: "error",
     brandBlueContent: "white",
-    brandBlueContentAlt: "green:50",
+    // brandBlueContentAlt: "green:50",
+    brandBlueContentAlt: "error",
     brandDarkgreen: "brand:darkBlue",
     brandDarkBlueContent: "white",
     brandDarkBlueContentAlt: "gray:50",
-    brandLightgreen: "brand:lightBlue",
+    // brandLightgreen: "brand:lightBlue",
+    brandLightgreen: "error",
     brandGolden: "brand:golden",
-    brandGoldenContent: "yellow:950",
+    // brandGoldenContent: "yellow:950",
+    brandGoldenContent: "error",
     brandGoldenContentAlt: "yellow:800",
-    brandGreen: "brand:green",
-    brandGreenContent: "green:950",
+    // brandGreen: "brand:green",
+    brandGreen: "error",
+    // brandGreenContent: "green:950",
+    brandGreenContent: "error",
     brandGreenContentAlt: "green:800",
 
     riskGradient1: "green:400",
@@ -169,15 +189,18 @@ export const lightTheme = {
     riskGradient4: "#FFA12B",
     riskGradient5: "red:500",
 
-    loadingGradient1: "green:50",
-    loadingGradient2: "green:100",
+    loadingGradient1: "green:100",
+    loadingGradient2: "green:200",
     loadingGradientContent: "green:400",
 
     // not used yet
-    brandCyan: "brand:cyan",
-    brandCoral: "brand:coral",
-    brandBrown: "brand:brown",
-  } satisfies Record<string, (keyof typeof colors) | `#${string}`>,
+    // brandCyan: "brand:cyan",
+    brandCyan: "error",
+    // brandCoral: "brand:coral",
+    brandCoral: "error",
+    // brandBrown: "brand:brown",
+    brandBrown: "error",
+  } satisfies Record<string, keyof typeof colors | `#${string}`>,
 } as const;
 
 export type ThemeDescriptor = {
@@ -214,11 +237,7 @@ export function useTheme() {
   };
 }
 
-export function Theme({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function Theme({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<ThemeDescriptor>(lightTheme);
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
