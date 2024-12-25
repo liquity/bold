@@ -38,6 +38,7 @@ export function ProtocolStats() {
     >
       <div
         className={css({
+          color: '#ECE9F4',
           display: "flex",
           justifyContent: "space-between",
           width: "100%",
@@ -105,7 +106,7 @@ export function ProtocolStats() {
                 </HFlex>
               }
               className={css({
-                color: "content",
+                color: "#ECE9F4",
               })}
             />
           )}

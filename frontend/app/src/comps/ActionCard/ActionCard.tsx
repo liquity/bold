@@ -36,9 +36,9 @@ export function ActionCard({
   const { description, path, title, colors } = match(type)
     .with("borrow", () => ({
       colors: {
-        background: token("colors.brandDarkBlue"),
-        foreground: token("colors.brandDarkBlueContent"),
-        foregroundAlt: token("colors.brandDarkBlueContentAlt"),
+        background: "#EB893E",
+        foreground: token("colors.white"),
+        foregroundAlt: token("colors.white"),
       },
       description: ac.borrow.description,
       path: "/borrow",
@@ -46,9 +46,9 @@ export function ActionCard({
     }))
     .with("leverage", () => ({
       colors: {
-        background: token("colors.brandGreen"),
-        foreground: token("colors.brandGreenContent"),
-        foregroundAlt: token("colors.brandGreenContentAlt"),
+        background: "#FFDF41",
+        foreground: token("colors.yellow:120"),
+        foregroundAlt: token("colors.text:black"),
       },
       description: ac.leverage.description,
       path: "/leverage",
@@ -56,9 +56,9 @@ export function ActionCard({
     }))
     .with("earn", () => ({
       colors: {
-        background: token("colors.brandBlue"),
-        foreground: token("colors.brandBlueContent"),
-        foregroundAlt: token("colors.brandBlueContentAlt"),
+        background: "#8D41FF",
+        foreground: token("colors.white"),
+        foregroundAlt: token("colors.white"),
       },
       description: ac.earn.description,
       path: "/earn",
@@ -66,9 +66,9 @@ export function ActionCard({
     }))
     .with("stake", () => ({
       colors: {
-        background: token("colors.brandGolden"),
-        foreground: token("colors.brandGoldenContent"),
-        foregroundAlt: token("colors.brandGoldenContentAlt"),
+        background: "#41D9FF",
+        foreground: token("colors.blue:120"),
+        foregroundAlt: token("colors.text:black"),
       },
       description: ac.stake.description,
       path: "/stake",

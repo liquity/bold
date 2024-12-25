@@ -216,7 +216,15 @@ function PositionsGroup({
           }}
           onClick={onTitleClick}
         >
-          {title_}
+          <span className={
+            css({
+              background: "linear-gradient(90deg, #FFF4EC 0%, #FC9140 100%)",
+              backgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            })
+          }>
+            {title_}
+          </span>
         </h1>
       )}
       <a.div

@@ -11,9 +11,9 @@ const contentActions = content.home.actions;
 const actionAttributes = {
   borrow: {
     colors: {
-      background: token("colors.brandDarkBlue"),
-      foreground: token("colors.brandDarkBlueContent"),
-      foregroundAlt: token("colors.strongSurfaceContentAlt"),
+      background: "#EB893E",
+      foreground: token("colors.white"),
+      foregroundAlt: token("colors.white"),
     },
     description: contentActions.borrow.description,
     path: "/borrow",
@@ -21,9 +21,9 @@ const actionAttributes = {
   },
   leverage: {
     colors: {
-      background: token("colors.brandGreen"),
-      foreground: token("colors.brandGreenContent"),
-      foregroundAlt: token("colors.brandGreenContentAlt"),
+      background: "#FFDF41",
+      foreground: token("colors.yellow:120"),
+      foregroundAlt: token("colors.text:black"),
     },
     description: contentActions.leverage.description,
     path: "/leverage",
@@ -31,9 +31,9 @@ const actionAttributes = {
   },
   earn: {
     colors: {
-      background: token("colors.brandBlue"),
-      foreground: token("colors.brandBlueContent"),
-      foregroundAlt: token("colors.brandBlueContentAlt"),
+      background: "#8D41FF",
+      foreground: token("colors.white"),
+      foregroundAlt: token("colors.white"),
     },
     description: contentActions.earn.description,
     path: "/earn",
@@ -41,9 +41,9 @@ const actionAttributes = {
   },
   stake: {
     colors: {
-      background: token("colors.brandGolden"),
-      foreground: token("colors.brandGoldenContent"),
-      foregroundAlt: token("colors.brandGoldenContentAlt"),
+      background: "#41D9FF",
+      foreground: token("colors.blue:120"),
+      foregroundAlt: token("colors.text:black"),
     },
     description: contentActions.stake.description,
     path: "/stake",
