@@ -210,9 +210,7 @@ export function Dropdown({
               padding: "0 10px 0 16px",
               height: "100%",
               whiteSpace: "nowrap",
-              borderWidth: "1px 1px 0 1px",
-              borderStyle: "solid",
-              borderColor: "#F5F6F8",
+              border: "none",
               boxShadow: `
                 0 2px 2px rgba(0, 0, 0, 0.1),
                 0 4px 10px rgba(18, 27, 68, 0.05),
@@ -284,15 +282,15 @@ export function Dropdown({
                   display: "flex",
                   flexDirection: "column",
                   gap: 12,
-                  background: "controlSurface",
+                  background: "#4F4A6B",
                   borderRadius: 20,
                   border: "1px solid token(colors.border)",
-                  boxShadow: `
-                    0 24px 10px rgba(18, 27, 68, 0.01),
-                    0 14px 8px rgba(18, 27, 68, 0.05),
-                    0 6px 6px rgba(18, 27, 68, 0.09),
-                    0 2px 3px rgba(18, 27, 68, 0.1)
-                  `,
+                  // boxShadow: `
+                  //   0 24px 10px rgba(18, 27, 68, 0.01),
+                  //   0 14px 8px rgba(18, 27, 68, 0.05),
+                  //   0 6px 6px rgba(18, 27, 68, 0.09),
+                  //   0 2px 3px rgba(18, 27, 68, 0.1)
+                  // `,
                 })}
                 style={appearStyles}
               >

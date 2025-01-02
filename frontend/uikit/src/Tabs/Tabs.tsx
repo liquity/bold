@@ -92,18 +92,17 @@ export function Tabs({
       container: {
         height: 32,
         padding: 3,
-        "--background": token("colors.controlSurface"),
-        "--border": `1px solid ${token("colors.border")}`,
+        "--background": "#4C4689",
+        "--border": `1px solid #635D98`,
         borderRadius: 16,
       },
       activeTab: {
         border: 0,
-        "--background": token("colors.accent"),
+        "--background": "#8D42FF",
         borderRadius: 12,
       },
       activeTabContent: {
-        // color: token("colors.accentContent"),
-        color: token(`colors.${selected ? "selected" : "interactive"}`),
+        color: token(`colors.${selected ? "white" : "interactive"}`),
       },
       tabsGap: 0,
     }
@@ -117,11 +116,11 @@ export function Tabs({
       },
       activeTab: {
         border: "1px solid token(colors.border)",
-        "--background": token("colors.controlSurface"),
+        "--background": token("colors.white"),
         borderRadius: 8,
       },
       activeTabContent: {
-        color: token(`colors.${selected ? "selected" : "interactive"}`),
+        color: selected ? "#8D42FF" : token(`colors.${selected ? "white" : "interactive"}`),
       },
       tabsGap: 8,
     };
@@ -218,7 +217,7 @@ function Tab({
     }
     : {
       activeTabContent: {
-        color: selected ? token("colors.selected") : token("colors.interactive"),
+        color: selected ? "#8D42FF" : token("colors.interactive"),
       },
     };
   return (

@@ -324,7 +324,7 @@ export function Slider({
                 pointerEvents: "auto",
                 "--borderColor": "token(colors.controlBorderStrong)",
                 "--borderColorDisabled": "token(colors.disabledBorder)",
-                "--backgroundColor": "token(colors.controlSurface)",
+                "--backgroundColor": "token(colors.white)",
                 "--backgroundColorDisabled": "token(colors.disabledSurface)",
               })}
               style={{

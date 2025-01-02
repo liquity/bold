@@ -66,11 +66,11 @@ export function EarnPositionSummary({
         "--fg-secondary-active": "token(colors.positionContentAlt)",
         "--fg-secondary-inactive": "token(colors.contentAlt)",
 
-        "--border-active": "color-mix(in srgb, token(colors.secondary) 15%, transparent)",
-        "--border-inactive": "token(colors.infoSurfaceBorder)",
+        "--border-active": "#7565A3",
+        "--border-inactive": "#574B78",
 
         "--bg-active": "token(colors.position)",
-        "--bg-inactive": "token(colors.infoSurface)",
+        "--bg-inactive": "token(colors.fieldSurface)",
       })}
       style={{
         color: `var(--fg-primary-${active ? "active" : "inactive"})`,
@@ -382,8 +382,8 @@ function OpenLink({
           placeItems: "center",
           width: 34,
           height: 34,
-          color: "accentContent",
-          background: "accent",
+          color: "white",
+          background: "#8D42FF",
           borderRadius: "50%",
         })}
       >

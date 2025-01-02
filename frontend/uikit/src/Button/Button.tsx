@@ -89,10 +89,9 @@ export function useButtonStyles({
   const colors = match(mode)
     .with("primary", () => ({
       "--color": color("accentContent"),
-      "--background": color("accent"),
-      // "--backgroundHover": color("accentHint"),
-      "--backgroundHover": color("accent"),
-      "--backgroundPressed": color("accentActive"),
+      "--background": "#8D42FF",
+      "--backgroundHover": "#8D42FF",
+      "--backgroundPressed": "#8D42FF",
     }))
     .with(P.union("secondary", "tertiary"), (mode) => ({
       "--color": color("secondaryContent"),

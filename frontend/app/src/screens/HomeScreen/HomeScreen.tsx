@@ -121,6 +121,9 @@ function BorrowingRow({
             passHref
           >
             <AnchorTextButton
+              style={{
+                color: '#C49AFF'
+              }}
               label={
                 <div
                   className={css({
@@ -143,6 +146,9 @@ function BorrowingRow({
             passHref
           >
             <AnchorTextButton
+              style={{
+                color: '#C49AFF'
+              }}
               label={
                 <div
                   className={css({
@@ -210,6 +216,9 @@ function EarnRewardsRow({
           passHref
         >
           <AnchorTextButton
+            style={{
+              color: '#C49AFF'
+            }}
             label={
               <div
                 className={css({

@@ -38,7 +38,7 @@ export function StakePositionSummary({
           alignItems: "flex-start",
           flexDirection: "column",
           paddingBottom: 12,
-          borderBottom: "1px solid color-mix(in srgb, token(colors.secondary) 15%, transparent)",
+          borderBottom: "1px solid #F0F3FE26",
         })}
       >
         <h1

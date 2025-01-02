@@ -102,6 +102,7 @@ export function BorrowScreen() {
   const balances = Object.fromEntries(KNOWN_COLLATERAL_SYMBOLS.map((symbol) => ([
     symbol,
     // known collaterals are static so we can safely call this hook in a .map()
+    // eslint-disable-next-line react-hooks/rules-of-hooks
     useBalance(account.address, symbol),
   ] as const)));
 

@@ -4,6 +4,7 @@ import { a, useSpring, useTransition } from "@react-spring/web";
 import { useEffect, useState } from "react";
 import { forwardRef, useId, useRef } from "react";
 import { css, cx } from "../../styled-system/css";
+import { token } from "../../styled-system/tokens";
 import { IconCross } from "../icons";
 import { useElementSize } from "../react-utils";
 
@@ -477,7 +478,7 @@ export function InputFieldBadge({
         height: 40,
         padding: "0 16px",
         paddingLeft: icon ? 8 : 16,
-        background: "#FFF",
+        background: token("colors.controlSurface"),
         borderRadius: 20,
         userSelect: "none",
       }}

@@ -51,8 +51,7 @@ export const RedemptionInfo = memo(function RedemptionInfo() {
         gap: 32,
         padding: 16,
         color: "content",
-        background: "fieldSurface",
-        border: "1px solid token(colors.border)",
+        background: "#322E3D",
         borderRadius: 8,
       })}
     >
@@ -73,7 +72,7 @@ export const RedemptionInfo = memo(function RedemptionInfo() {
         <p
           className={css({
             fontSize: 15,
-            color: "contentAlt",
+            color: "#9F9AAC",
           })}
         >
           {subtitle}
@@ -148,9 +147,9 @@ export const RedemptionInfo = memo(function RedemptionInfo() {
 function BoldIcon() {
   return (
     <svg width="24" height="24" fill="none">
-      <rect width="24" height="24" fill="#63D77D" rx="12" />
+      <rect width="24" height="24" fill="#FC9140" rx="12" />
       <path
-        fill="#1C1D4F"
+        fill="#FFFFFF"
         fillRule="evenodd"
         d="M8.733 4H6.066v16H11.4v-.64c.801.409 1.708.64 2.67.64a5.866 5.866 0 1 0-2.67-11.092V4H8.733Zm2.666 4.908a5.866 5.866 0 0 0-3.197 5.226c0 2.278 1.3 4.254 3.197 5.225V8.91Z"
         clipRule="evenodd"
@@ -163,10 +162,10 @@ function RedemptionIcon() {
   return (
     <svg width="28" height="24" fill="none">
       <path
-        fill="#63D77D"
+        fill="#FC9140"
         d="M16 0A12 12 0 0 0 4 12H0l5.334 5.333L10.667 12h-4a9.327 9.327 0 0 1 9.334-9.333A9.327 9.327 0 0 1 25.334 12a9.326 9.326 0 0 1-14.747 7.6l-1.893 1.92A12.002 12.002 0 0 0 27.87 10.24 12 12 0 0 0 16 0Z"
       />
-      <circle cx="16" cy="12" r="3" fill="#1C1D4F" />
+      <circle cx="16" cy="12" r="3" fill="#FFFFFF" />
     </svg>
   );
 }
@@ -175,12 +174,12 @@ function InterestIcon() {
   return (
     <svg width="20" height="24" fill="none">
       <path
-        fill="#63D77D"
+        fill="#FC9140"
         d="M10 0 0 4.364v6.545C0 16.964 4.267 22.625 10 24c5.733-1.375 10-7.036 10-13.09V4.363L10 0Z"
       />
-      <circle cx="6" cy="9" r="2" fill="#1C1D4F" />
-      <circle cx="14" cy="15" r="2" fill="#1C1D4F" />
-      <path fill="#1C1D4F" d="m14.447 6.037 1.414 1.414-10.41 10.41-1.414-1.414z" />
+      <circle cx="6" cy="9" r="2" fill="#161222" />
+      <circle cx="14" cy="15" r="2" fill="#161222" />
+      <path fill="#161222" d="m14.447 6.037 1.414 1.414-10.41 10.41-1.414-1.414z" />
     </svg>
   );
 }
