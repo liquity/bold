@@ -107,9 +107,9 @@ export function useButtonStyles({
     }))
     .with("positive", () => ({
       "--color": color("positiveContent"),
-      "--background": color("positive"),
-      "--backgroundHover": color("positiveHint"),
-      "--backgroundPressed": color("positiveActive"),
+      "--background": color("accent"),
+      "--backgroundHover": color("accent"),
+      "--backgroundPressed": color("accent"),
     }))
     .exhaustive();
 
