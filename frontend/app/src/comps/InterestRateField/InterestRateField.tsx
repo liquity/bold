@@ -2,6 +2,7 @@ import type { Address, CollIndex, Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
+import { Amount } from "@/src/comps/Amount/Amount";
 import { INTEREST_RATE_DEFAULT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import content from "@/src/content";
 import { IC_STRATEGIES } from "@/src/demo-mode";
@@ -659,18 +660,11 @@ function DelegateBox({
                 alignItems: "center",
               })}
             >
-              <div>{delegate.followers} followers</div>
-              <div
-                className={css({
-                  width: 4,
-                  height: 4,
-                  background: "currentcolor",
-                  borderRadius: "50%",
-                })}
+              <Amount
+                value={delegate.boldAmount}
+                format="compact"
+                suffix=" BOLD"
               />
-              <div>
-                {fmtnum(delegate.boldAmount, "compact")} BOLD
-              </div>
             </div>
             <div
               className={css({
@@ -695,28 +689,6 @@ function DelegateBox({
             borderBottom: "1px solid token(colors.borderSoft)",
           })}
         >
-          <div
-            className={css({
-              paddingBottom: 8,
-              color: "contentAlt",
-            })}
-          >
-            Last {delegate.lastDays} days
-          </div>
-          <div
-            className={css({
-              display: "flex",
-              justifyContent: "space-between",
-              width: "100%",
-              fontSize: 14,
-              color: "content",
-            })}
-          >
-            <div>Redemptions</div>
-            <div title={`${fmtnum(delegate.redemptions, "full")} BOLD`}>
-              {fmtnum(delegate.redemptions, "compact")} BOLD
-            </div>
-          </div>
           <div
             className={css({
               display: "flex",
