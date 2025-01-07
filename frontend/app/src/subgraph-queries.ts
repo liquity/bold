@@ -282,3 +282,14 @@ export const GovernanceUser = graphql(`
     }
   }
 `);
+
+export const GovernanceStats = graphql(`
+  query GovernanceStats {
+    governanceStats(id: "stats") {
+      id
+      totalLQTYStaked
+      totalOffset
+      totalInitiatives
+    }
+  }
+`);

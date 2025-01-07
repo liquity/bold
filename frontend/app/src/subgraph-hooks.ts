@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import {
   GovernanceInitiatives,
+  GovernanceStats,
   GovernanceUser,
   graphQuery,
   InterestBatchQuery,
@@ -126,6 +127,30 @@ export function useLoansByAccount(
     queryFn,
     ...prepareOptions(options),
   });
+}
+
+function subgraphBatchToDelegate(
+  batch: NonNullable<
+    InterestBatchQueryType["interestBatch"]
+  >,
+): Delegate {
+  if (!isAddress(batch.batchManager)) {
+    throw new Error(`Invalid batch manager: ${batch.batchManager}`);
+  }
+  return {
+    id: batch.batchManager,
+    address: batch.batchManager,
+    name: shortenAddress(batch.batchManager, 4),
+    interestRate: dnum18(batch.annualInterestRate),
+    boldAmount: dnum18(batch.debt),
+    interestRateChange: [dn.from(0.015), dn.from(0.05)],
+    fee: dnum18(batch.annualManagementFee),
+
+    // not available in the subgraph yet
+    followers: 0,
+    lastDays: 0,
+    redemptions: dnum18(0),
+  };
 }
 
 export function useInterestBatchDelegate(
@@ -430,12 +455,31 @@ export function useGovernanceUser(account: Address | null, options?: Options) {
     return governanceUser;
   };
 
+  // TODO: demo mode
   if (DEMO_MODE) {
     queryFn = async () => null;
   }
 
   return useQuery({
     queryKey: ["GovernanceUser", account],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
+export function useGovernanceStats(options?: Options) {
+  let queryFn = async () => {
+    const { governanceStats } = await graphQuery(GovernanceStats);
+    return governanceStats;
+  };
+
+  // TODO: demo mode
+  if (DEMO_MODE) {
+    queryFn = async () => null;
+  }
+
+  return useQuery({
+    queryKey: ["GovernanceStats"],
     queryFn,
     ...prepareOptions(options),
   });
@@ -495,27 +539,5 @@ function subgraphStabilityPoolDepositToEarnPosition(
       bold: dnum18(0),
       coll: dnum18(0),
     },
-  };
-}
-
-function subgraphBatchToDelegate(
-  batch: NonNullable<
-    InterestBatchQueryType["interestBatch"]
-  >,
-): Delegate {
-  if (!isAddress(batch.batchManager)) {
-    throw new Error(`Invalid batch manager: ${batch.batchManager}`);
-  }
-  return {
-    id: batch.batchManager,
-    address: batch.batchManager,
-    name: shortenAddress(batch.batchManager, 4),
-    interestRate: dnum18(batch.annualInterestRate),
-    followers: 0,
-    boldAmount: dnum18(batch.debt),
-    lastDays: 0,
-    redemptions: dnum18(0),
-    interestRateChange: [dn.from(0.015), dn.from(0.05)],
-    fee: dnum18(batch.annualManagementFee),
   };
 }

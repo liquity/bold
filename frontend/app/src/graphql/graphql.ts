@@ -2283,6 +2283,11 @@ export type GovernanceUserQueryVariables = Exact<{
 
 export type GovernanceUserQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', id: string, allocatedLQTY: bigint, stakedLQTY: bigint, stakedOffset: bigint, allocations: Array<{ __typename?: 'GovernanceAllocation', id: string, atEpoch: bigint, vetoLQTY: bigint, voteLQTY: bigint, initiative: { __typename?: 'GovernanceInitiative', id: string } }> } | null };
 
+export type GovernanceStatsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GovernanceStatsQuery = { __typename?: 'Query', governanceStats?: { __typename?: 'GovernanceStats', id: string, totalLQTYStaked: bigint, totalOffset: bigint, totalInitiatives: number } | null };
+
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
@@ -2534,3 +2539,13 @@ export const GovernanceUserDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GovernanceUserQuery, GovernanceUserQueryVariables>;
+export const GovernanceStatsDocument = new TypedDocumentString(`
+    query GovernanceStats {
+  governanceStats(id: "stats") {
+    id
+    totalLQTYStaked
+    totalOffset
+    totalInitiatives
+  }
+}
+    `) as unknown as TypedDocumentString<GovernanceStatsQuery, GovernanceStatsQueryVariables>;
