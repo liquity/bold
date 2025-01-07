@@ -221,7 +221,7 @@ export function LeverageScreen() {
                     }
                     const { symbol } = collToken;
                     router.push(
-                      `/leverage/${symbol.toLowerCase()}`,
+                      `/multiply/${symbol.toLowerCase()}`,
                       { scroll: false },
                     );
                   }}
@@ -376,7 +376,7 @@ export function LeverageScreen() {
                 if (depositPreLeverage.parsed && leverageField.debt && account.address) {
                   txFlow.start({
                     flowId: "openLeveragePosition",
-                    backLink: ["/leverage", "Back to editing"],
+                    backLink: ["/multiply", "Back to editing"],
                     successLink: ["/", "Go to the Dashboard"],
                     successMessage: "The leveraged position has been created successfully.",
 
