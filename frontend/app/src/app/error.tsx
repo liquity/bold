@@ -88,8 +88,8 @@ export default function Error({
 function Illustration() {
   const spring = useSpring({
     from: {
-      diskOpacity: 0,
-      diskTransform: "scale(0.5)",
+      discOpacity: 0,
+      discTransform: "scale(0.5)",
       barOpacity: 0,
       barTransform: `
         rotate(-20deg)
@@ -99,8 +99,8 @@ function Illustration() {
     to: async (next) => {
       await Promise.all([
         next({
-          diskOpacity: 1,
-          diskTransform: "scale(1)",
+          discOpacity: 1,
+          discTransform: "scale(1)",
         }),
         sleep(200).then(() =>
           next({
@@ -138,8 +138,8 @@ function Illustration() {
           borderRadius: "50%",
         })}
         style={{
-          opacity: spring.diskOpacity,
-          transform: spring.diskTransform,
+          opacity: spring.discOpacity,
+          transform: spring.discTransform,
         }}
       />
       <a.div

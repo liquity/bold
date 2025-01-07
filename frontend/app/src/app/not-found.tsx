@@ -62,73 +62,101 @@ export default function NotFoundPage() {
 function Illustration() {
   const spring = useSpring({
     from: {
-      diskOpacity: 0,
-      diskTransform: "scale(0.5)",
-      barOpacity: 0,
-      barTransform: `
-        rotate(-20deg)
-        scale(0)
-      `,
+      leftTriangleTransform: "translate(-208px, 0px)",
+      rightTriangleTransform: "translate(208px, 0px)",
+      discOpacity: 0,
+      discTransform: "translate(0px, 300px) scale(0.5)",
     },
     to: async (next) => {
       await Promise.all([
         next({
-          diskOpacity: 1,
-          diskTransform: "scale(1)",
+          discOpacity: 1,
+          discTransform: "translate(0px, 0px) scale(1)",
         }),
-        sleep(200).then(() =>
-          next({
-            barOpacity: 1,
-            barTransform: `
-              rotate(0deg)
-              scale(1)
-            `,
-          })
-        ),
+        sleep(80).then(() => (
+          next({ leftTriangleTransform: "translate(0px, 0px)" })
+        )),
+        sleep(160).then(() => (
+          next({ rightTriangleTransform: "translate(0px, 0px)" })
+        )),
       ]);
     },
     delay: 200,
     config: {
       mass: 2,
-      tension: 1200,
-      friction: 60,
+      tension: 1000,
+      friction: 90,
     },
   });
+
+  const size = 208;
+  const padding = 24; // top & bottom padding
+
+  const width = size // left triangle
+    + 28 // gap
+    + size // disc
+    - 21 // gap
+    + size; // right triangle
+
   return (
     <div
       className={css({
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        width: 362,
-        height: 208,
+        width,
+        height: size,
       })}
     >
-      <a.div
-        className={css({
-          width: 208,
-          height: 208,
-          background: "#FB7C59",
-          borderRadius: "50%",
-        })}
-        style={{
-          opacity: spring.diskOpacity,
-          transform: spring.diskTransform,
-        }}
-      />
-      <a.div
-        className={css({
-          position: "absolute",
-          width: 362,
-          height: 24,
-          background: "#121B44",
-          transformOrigin: "50% 50%",
-        })}
-        style={{
-          opacity: spring.barOpacity,
-          transform: spring.barTransform,
-        }}
-      />
+      <svg
+        width={width}
+        height={size + padding * 2}
+        viewBox={`0 0 ${width} ${size + padding * 2}`}
+      >
+        <a.circle
+          cx={size + 28 + size / 2}
+          cy={padding + size / 2}
+          r={size / 2}
+          className={css({
+            fill: "token(colors.brandDarkBlue)",
+            transformOrigin: "50% 50%",
+          })}
+          style={{
+            opacity: spring.discOpacity,
+            transform: spring.discTransform,
+          }}
+        />
+        <a.path
+          d={`
+            M 0 ${padding + size}
+            L ${size} ${padding}
+            L ${size} ${padding + size}
+            Z
+          `}
+          className={css({
+            fill: "token(colors.brandGreen)",
+            transformOrigin: "50% 50%",
+          })}
+          style={{
+            transform: spring.leftTriangleTransform,
+          }}
+        />
+        <a.path
+          d={`
+            M ${width - size} ${padding + size}
+            L ${width} ${padding}
+            L ${width} ${padding + size}
+            Z
+          `}
+          className={css({
+            fill: "token(colors.brandCoral)",
+            transformOrigin: "50% 50%",
+          })}
+          style={{
+            transform: spring.rightTriangleTransform,
+          }}
+        />
+      </svg>
     </div>
   );
 }
