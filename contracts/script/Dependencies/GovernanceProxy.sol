@@ -254,6 +254,10 @@ contract GovernanceProxy is IGovernance, IUserProxyFactory, IMultiDelegateCall {
         governance.allocateLQTY(_resetInitiatives, _initiatives, _absoluteLQTYVotes, absoluteLQTYVetos);
     }
 
+    function resetAllocations(address[] calldata _initiativesToReset, bool _checkAll) external {
+        governance.resetAllocations(_initiativesToReset, _checkAll);
+    }
+
     function claimForInitiative(address _initiative) external override returns (uint256 claimed) {
         return governance.claimForInitiative(_initiative);
     }
