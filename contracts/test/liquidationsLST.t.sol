@@ -147,12 +147,12 @@ contract LiquidationsLSTTest is DevTestSetup {
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusAmount,
             10,
-            "CollSurplusPoll should have received collateral"
+            "CollSurplusPool should have received collateral"
         );
         assertEq(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusPool.getCollBalance(),
-            "CollSurplusPoll balance and getter should match"
+            "CollSurplusPool balance and getter should match"
         );
         vm.startPrank(A);
         borrowerOperations.claimCollateral();
@@ -301,12 +301,12 @@ contract LiquidationsLSTTest is DevTestSetup {
             collSurplusAmount = finalValues.collToLiquidate - collPenalty;
         }
         assertApproxEqAbs(
-            collToken.balanceOf(address(collSurplusPool)), collSurplusAmount, 1e9, "CollSurplusPoll mismatch"
+            collToken.balanceOf(address(collSurplusPool)), collSurplusAmount, 1e9, "CollSurplusPool mismatch"
         );
         assertEq(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusPool.getCollBalance(),
-            "CollSurplusPoll balance and getter should match"
+            "CollSurplusPool balance and getter should match"
         );
         if (collSurplusAmount > 0) {
             vm.startPrank(A);

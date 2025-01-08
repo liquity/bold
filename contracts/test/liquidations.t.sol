@@ -110,12 +110,12 @@ contract LiquidationsTest is DevTestSetup {
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusAmount,
             1,
-            "CollSurplusPoll should have received collateral"
+            "CollSurplusPool should have received collateral"
         );
         assertEq(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusPool.getCollBalance(),
-            "CollSurplusPoll balance and getter should match"
+            "CollSurplusPool balance and getter should match"
         );
         vm.startPrank(A);
         borrowerOperations.claimCollateral();
@@ -199,11 +199,11 @@ contract LiquidationsTest is DevTestSetup {
         );
 
         // Check there’s no surplus
-        assertEq(collToken.balanceOf(address(collSurplusPool)), 0, "CollSurplusPoll should be empty");
+        assertEq(collToken.balanceOf(address(collSurplusPool)), 0, "CollSurplusPool should be empty");
         assertEq(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusPool.getCollBalance(),
-            "CollSurplusPoll balance and getter should match"
+            "CollSurplusPool balance and getter should match"
         );
 
         vm.startPrank(A);
@@ -294,11 +294,11 @@ contract LiquidationsTest is DevTestSetup {
             "B trove coll mismatch"
         );
 
-        assertEq(collToken.balanceOf(address(collSurplusPool)), 0, "CollSurplusPoll should be empty");
+        assertEq(collToken.balanceOf(address(collSurplusPool)), 0, "CollSurplusPool should be empty");
         assertEq(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusPool.getCollBalance(),
-            "CollSurplusPoll balance and getter should match"
+            "CollSurplusPool balance and getter should match"
         );
     }
 
@@ -408,12 +408,12 @@ contract LiquidationsTest is DevTestSetup {
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusAmount,
             10,
-            "CollSurplusPoll should have received collateral"
+            "CollSurplusPool should have received collateral"
         );
         assertEq(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusPool.getCollBalance(),
-            "CollSurplusPoll balance and getter should match"
+            "CollSurplusPool balance and getter should match"
         );
         vm.startPrank(A);
         borrowerOperations.claimCollateral();
