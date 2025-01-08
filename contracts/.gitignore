@@ -36,3 +36,7 @@ testMatrix.json
 /counterexamples
 /counterexamples-fixed
 /counterexamples-assume
+
+# Fork script
+/anvil.pid
+/anvil.log

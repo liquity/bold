@@ -1,0 +1,109 @@
+#!/bin/bash
+
+# Exit on failure
+set -e
+
+pidfile=anvil.pid
+logfile=anvil.log
+anvil_account_0=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+anvil_url=http://localhost:8545
+
+usage() {
+  echo "Usage:"
+  echo "  ./fork start [--deploy]"
+  echo "  ./fork deploy"
+  echo "  ./fork stop"
+}
+
+die() {
+  echo "$@"
+  exit 1
+}
+
+init_env() {
+  # Export vars from .env
+  if [ -f .env ]; then
+    set -a
+    . .env
+    set +a
+  fi
+
+  [ -n "$FORK_URL" ] || die "Missing FORK_URL"
+  [ -n "$FORK_BLOCK_NUMBER" ] || FORK_BLOCK_NUMBER=$(cast block-number --rpc-url "$FORK_URL")
+  [ -n "$FORK_CHAIN_ID" ] || FORK_CHAIN_ID=$(cast chain-id --rpc-url "$FORK_URL")
+  [ -n "$DEPLOYER" ] || DEPLOYER=$anvil_account_0
+
+  anvil=(
+    anvil
+      --fork-url "$FORK_URL"
+      --fork-block-number "$FORK_BLOCK_NUMBER"
+      --fork-chain-id "$FORK_CHAIN_ID"
+      --chain-id "$FORK_CHAIN_ID"
+  )
+
+  deploy=(
+    ./deploy
+      --debug
+      --rpc-url "$anvil_url"
+      --chain-id "$FORK_CHAIN_ID"
+      --deployer "$DEPLOYER"
+  )
+}
+
+ensure_not_running() {
+  [ ! -f "$pidfile" ] || die "Already running."
+}
+
+ensure_running() {
+  [ -f "$pidfile" ] || die "Not running."
+}
+
+start() {
+  nohup "${anvil[@]}" &> "$logfile" &
+  echo $! > "$pidfile"
+}
+
+deploy() {
+  "${deploy[@]}"
+}
+
+stop() {
+  kill "$(cat "$pidfile")" || echo "Deleting stale '$pidfile'."
+  rm "$pidfile"
+}
+
+if [ $# -eq 0 ]; then
+  usage
+  exit
+fi
+
+############
+### Main ###
+############
+
+cmd=$1
+shift
+
+case $cmd in
+  start)
+    ensure_not_running
+    init_env
+    start
+    if [ "$1" = "--deploy" ]; then sleep 1; deploy; fi
+    ;;
+  deploy)
+    ensure_running
+    init_env
+    deploy
+    ;;
+  stop)
+    ensure_running
+    stop
+    ;;
+  *)
+    echo "Bad command '$cmd'."
+    echo
+    usage
+    exit 1
+    ;;
+esac
