@@ -99,7 +99,12 @@ contract ZapperLeverageMainnet is DevTestSetup {
 
     function setUp() public override {
         uint256 forkBlock = 21328610;
-        vm.createSelectFork(vm.rpcUrl("mainnet"), forkBlock);
+
+        try vm.envString("MAINNET_RPC_URL") returns (string memory rpcUrl) {
+            vm.createSelectFork(rpcUrl, forkBlock);
+        } catch {
+            vm.skip(true);
+        }
 
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
