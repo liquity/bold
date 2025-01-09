@@ -22,9 +22,10 @@ cp lcov_foundry.info lcov_merged.info
 lcov --remove lcov_merged.info -o lcov_merged.info \
      'test/*' \
      'script/*' \
-     'src/Interfaces/*' \
+     'src/Dependencies/Ownable.sol' \
+     'src/Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol' \
      'src/NFTMetadata/*' \
-     'src/Types/*' \
-     'src/MultiTroveGetter.sol'
+     'src/MultiTroveGetter.sol' \
+     'src/HintHelpers.sol'
 
 genhtml lcov_merged.info --output-directory coverage
