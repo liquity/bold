@@ -15,6 +15,8 @@
   "exchangeHelpers": "0x140deb008756237c6a46e9de9da70cda01bbee39",
   "branches": [
     {
+      "collSymbol": "WETH",
+      "collToken": "0x82bd3c80a2e0c55dd245ce230f7cf1678370fa66",
       "addressesRegistry": "0x6700620e8c75d41a7606ef38624e2a4806f264b1",
       "activePool": "0xab749a513a267aa6e4ea8c7dfbdcfd3d85f65bbf",
       "borrowerOperations": "0x0206653335be8c93bb0ee12c9cf7ac9b742df37e",
@@ -30,10 +32,11 @@
       "interestRouter": "0x7eedda08119826757c98a4680e94f3b5e1f33af6",
       "wethZapper": "0xab847e7b8ccd479dfdf252562985ec5cf52bca93",
       "gasCompZapper": "0x0000000000000000000000000000000000000000",
-      "leverageZapper": "0xd451d39cdf2f627db8cd66ed23aab14f7542a32c",
-      "collToken": "0x82bd3c80a2e0c55dd245ce230f7cf1678370fa66"
+      "leverageZapper": "0xd451d39cdf2f627db8cd66ed23aab14f7542a32c"
     },
     {
+      "collSymbol": "wstETH",
+      "collToken": "0xfdd33e1fd97491be79b8345288e67153714dde6d",
       "addressesRegistry": "0x49a69d190413838a32d16f0e266a5e9e140ce93e",
       "activePool": "0x28b7030eb2973bc4aae754754712028da398afe2",
       "borrowerOperations": "0x46d71618598a1d5133f86a44aa4c499aa7d0ec76",
@@ -49,10 +52,11 @@
       "interestRouter": "0x7eedda08119826757c98a4680e94f3b5e1f33af6",
       "wethZapper": "0x0000000000000000000000000000000000000000",
       "gasCompZapper": "0xbe8cbb81d6ad61f37f1b037dab8449d0311ae979",
-      "leverageZapper": "0x63ebcf8a699b8fca2f581cb9cbc7fef92b64ab8d",
-      "collToken": "0xfdd33e1fd97491be79b8345288e67153714dde6d"
+      "leverageZapper": "0x63ebcf8a699b8fca2f581cb9cbc7fef92b64ab8d"
     },
     {
+      "collSymbol": "rETH",
+      "collToken": "0x5968f8ce5d277a06e952548cf22199bc3acfced7",
       "addressesRegistry": "0x2efbe6cc022571d035d35b6eb79e4b182f4575fa",
       "activePool": "0xd8f0af3d6ef7518c838e71b9b2a67a519548f710",
       "borrowerOperations": "0xe261a03033ab7184e1af8cb57fb352973e4b9e43",
@@ -68,8 +72,7 @@
       "interestRouter": "0x7eedda08119826757c98a4680e94f3b5e1f33af6",
       "wethZapper": "0x0000000000000000000000000000000000000000",
       "gasCompZapper": "0xb1dff8f0a27f2ad5d0df6a0d3e3968dffd7bd7fd",
-      "leverageZapper": "0xb868bfa91d3131e506468bfe3339f6c4f7ee60c6",
-      "collToken": "0x5968f8ce5d277a06e952548cf22199bc3acfced7"
+      "leverageZapper": "0xb868bfa91d3131e506468bfe3339f6c4f7ee60c6"
     }
   ],
   "governance": {
