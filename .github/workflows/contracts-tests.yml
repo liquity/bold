@@ -181,10 +181,11 @@ jobs:
           lcov --remove lcov_merged.info -o lcov_merged.info
             'test/*'
             'script/*'
-            'src/Interfaces/*'
+            'src/Dependencies/Ownable.sol'
+            'src/Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol'
             'src/NFTMetadata/*'
-            'src/Types/*'
             'src/MultiTroveGetter.sol'
+            'src/HintHelpers.sol'
 
       # Send to coveralls
       - name: Coveralls

@@ -87,6 +87,69 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(A.balance, ethBalanceBefore - (ethAmount + ETH_GAS_COMPENSATION), "ETH bal mismatch");
     }
 
+    function testCanOpenTroveWithBatchManager() external {
+        uint256 ethAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        uint256 ethBalanceBefore = A.balance;
+
+        registerBatchManager(B);
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: 0,
+            batchManager: B,
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        assertEq(troveNFT.ownerOf(troveId), A, "Wrong owner");
+        assertGt(troveId, 0, "Trove id should be set");
+        assertEq(troveManager.getTroveEntireColl(troveId), ethAmount, "Coll mismatch");
+        assertGt(troveManager.getTroveEntireDebt(troveId), boldAmount, "Debt mismatch");
+        assertEq(boldToken.balanceOf(A), boldAmount, "BOLD bal mismatch");
+        assertEq(A.balance, ethBalanceBefore - (ethAmount + ETH_GAS_COMPENSATION), "ETH bal mismatch");
+        assertEq(borrowerOperations.interestBatchManagerOf(troveId), B, "Wrong batch manager");
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
+        assertEq(tmBatchManagerAddress, B, "Wrong batch manager (TM)");
+    }
+
+    function testCanNotOpenTroveWithBatchManagerAndInterest() external {
+        uint256 ethAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        registerBatchManager(B);
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: 5e16,
+            batchManager: B,
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        vm.expectRevert("WZ: Cannot choose interest if joining a batch");
+        wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+    }
+
     function testCanAddColl() external {
         uint256 ethAmount1 = 10 ether;
         uint256 boldAmount = 10000e18;
@@ -153,6 +216,35 @@ contract ZapperWETHTest is DevTestSetup {
         assertGt(troveManager.getTroveEntireDebt(troveId), boldAmount, "Debt mismatch");
         assertEq(boldToken.balanceOf(A), boldAmount, "BOLD bal mismatch");
         assertEq(A.balance, ethBalanceBefore + ethAmount2, "ETH bal mismatch");
+    }
+
+    function testCanNotAddReceiverWithoutRemoveManager() external {
+        uint256 ethAmount = 10 ether;
+        uint256 boldAmount1 = 10000e18;
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: boldAmount1,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        // Try to add a receiver for the zapper without remove manager
+        vm.startPrank(A);
+        vm.expectRevert(AddRemoveManagers.EmptyManager.selector);
+        wethZapper.setRemoveManagerWithReceiver(troveId, address(0), B);
+        vm.stopPrank();
     }
 
     function testCanRepayBold() external {
