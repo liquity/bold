@@ -552,7 +552,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BOLD_TOKEN_INDEX, // BOLD Curve pool index
             UNIV3_FEE_USDC_WETH,
             UNIV3_FEE_WETH_COLL,
-            uniV3QuoterSepolia
+            uniV3Quoter
         );
     }
 
@@ -703,7 +703,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BOLD_TOKEN_INDEX, // BOLD Curve pool index
             UNIV3_FEE_USDC_WETH,
             UNIV3_FEE_WETH_COLL,
-            uniV3RouterSepolia
+            uniV3Router
         );
 
         bool lst = _collToken != WETH;

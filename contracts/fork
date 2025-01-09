@@ -3,15 +3,17 @@
 # Exit on failure
 set -e
 
+export E2E_RPC_URL="http://localhost:8545"
+
 pidfile=anvil.pid
 logfile=anvil.log
 anvil_account_0=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-anvil_url=http://localhost:8545
 
 usage() {
   echo "Usage:"
   echo "  ./fork start [--deploy]"
   echo "  ./fork deploy"
+  echo "  ./fork e2e [...forge test args]"
   echo "  ./fork stop"
 }
 
@@ -44,7 +46,7 @@ init_env() {
   deploy=(
     ./deploy
       --debug
-      --rpc-url "$anvil_url"
+      --rpc-url "$E2E_RPC_URL"
       --chain-id "$FORK_CHAIN_ID"
       --deployer "$DEPLOYER"
   )
@@ -67,19 +69,24 @@ deploy() {
   "${deploy[@]}"
 }
 
+e2e() {
+  export FOUNDRY_NO_STORAGE_CACHING=true
+  forge test --match-path test/E2E.t.sol "$@"
+}
+
 stop() {
   kill "$(cat "$pidfile")" || echo "Deleting stale '$pidfile'."
   rm "$pidfile"
 }
 
+############
+### Main ###
+############
+
 if [ $# -eq 0 ]; then
   usage
   exit
 fi
-
-############
-### Main ###
-############
 
 cmd=$1
 shift
@@ -89,12 +96,16 @@ case $cmd in
     ensure_not_running
     init_env
     start
-    if [ "$1" = "--deploy" ]; then sleep 1; deploy; fi
+    if [ "$1" = "--deploy" ]; then sleep 2; deploy; fi
     ;;
   deploy)
     ensure_running
     init_env
     deploy
+    ;;
+  e2e)
+    ensure_running
+    e2e "$@"
     ;;
   stop)
     ensure_running
