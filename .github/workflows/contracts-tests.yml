@@ -183,9 +183,7 @@ jobs:
             'script/*'
             'src/Dependencies/Ownable.sol'
             'src/Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol'
-            'src/Interfaces/*'
             'src/NFTMetadata/*'
-            'src/Types/*'
             'src/MultiTroveGetter.sol'
             'src/HintHelpers.sol'
 
