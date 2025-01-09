@@ -2,7 +2,7 @@
   "name": "liquity2",
   "private": true,
   "author": "Liquity AG",
-  "license": "BUSL",
+  "license": "BSL-1.1",
   "repository": "github:liquity/bold",
   "bugs": "https://github.com/liquity/bold/issues",
   "homepage": "https://github.com/liquity/bold#readme",
