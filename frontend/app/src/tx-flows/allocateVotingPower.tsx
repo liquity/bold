@@ -182,9 +182,9 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
           remainingLqty -= qty;
 
           // allocate any remaining LQTY to the last initiative
-          if (index === initiativeAddresses.length - 1 && remainingLqty > 0n) {
-            qty += remainingLqty;
-          }
+          // if (index === initiativeAddresses.length - 1 && remainingLqty > 0n) {
+          //   qty += remainingLqty;
+          // }
 
           if (vote?.vote === "for") {
             allocationArgs.votes[index] = qty;
