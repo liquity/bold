@@ -5,6 +5,7 @@ import { useAppear } from "@/src/anim-utils";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
+import { useAccount } from "@/src/services/Ethereum";
 import { useGovernanceStats, useGovernanceUser } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, InfoTooltip, TokenIcon, useRaf } from "@liquity2/uikit";
@@ -26,7 +27,13 @@ export function StakePositionSummary({
   const govUser = useGovernanceUser(stakePosition?.owner ?? null);
   const govStats = useGovernanceStats();
 
-  const appear = useAppear(loadingState === "success" && govUser.status === "success");
+  const account = useAccount();
+
+  const appear = useAppear(
+    account.isDisconnected || (
+      loadingState === "success" && govUser.status === "success"
+    ),
+  );
 
   // totalVotingPower(t) = governanceStats.totalLQTYStaked * t - governanceStats.totalOffset
   const totalVotingPower = (t: bigint) => {
