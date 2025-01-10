@@ -15,8 +15,8 @@ import { vPositionLoanCommited } from "@/src/valibot-utils";
 import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
-import { createRequestSchema } from "./shared";
+import { readContract, writeContract } from "wagmi/actions";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "closeLoanPosition",
@@ -138,7 +138,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       },
 
       async verify({ wagmiConfig }, hash) {
-        await waitForTransactionReceipt(wagmiConfig, { hash: hash as `0x${string}` });
+        await verifyTransaction(wagmiConfig, hash);
       },
     },
 
@@ -208,7 +208,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await waitForTransactionReceipt(wagmiConfig, { hash: hash as `0x${string}` });
+        await verifyTransaction(wagmiConfig, hash);
 
         const prefixedTroveId = getPrefixedTroveId(
           request.loan.collIndex,

@@ -2,7 +2,7 @@ import type { FlowStepDeclaration } from "@/src/services/TransactionFlow";
 import type { ComponentPropsWithoutRef } from "react";
 
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
-import { AnchorTextButton } from "@liquity2/uikit";
+import { AnchorTextButton, TextButton } from "@liquity2/uikit";
 import { match } from "ts-pattern";
 
 export function TransactionStatus(
@@ -16,9 +16,9 @@ export function TransactionStatus(
             This action will open your wallet to sign the transaction.
           </>
         ))
-        .with({ status: "awaiting-commit" }, () => (
+        .with({ status: "awaiting-commit" }, ({ onRetry }) => (
           <>
-            Please sign the transaction in your wallet.
+            Please sign the transaction in your wallet. <TextButton label="Retry" onClick={onRetry} />
           </>
         ))
         .with({ status: "awaiting-verify" }, ({ artifact: txHash }) => (

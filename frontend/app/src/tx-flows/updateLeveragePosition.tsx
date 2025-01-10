@@ -16,8 +16,8 @@ import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
-import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
-import { createRequestSchema, verifyTroveUpdate } from "./shared";
+import { readContract, writeContract } from "wagmi/actions";
+import { createRequestSchema, verifyTransaction, verifyTroveUpdate } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "updateLeveragePosition",
@@ -212,9 +212,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify({ wagmiConfig }, hash) {
-        await waitForTransactionReceipt(wagmiConfig, {
-          hash: hash as `0x${string}`,
-        });
+        await verifyTransaction(wagmiConfig, hash);
       },
     },
 
