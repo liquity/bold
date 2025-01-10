@@ -9,6 +9,11 @@ pidfile=anvil.pid
 logfile=anvil.log
 anvil_account_0=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
+sourcify_version=2.5.0
+sourcify_port=5555
+sourcify_chains=sourcify-chains.json
+sourcify_config=sourcify-config.js
+
 usage() {
   echo "Usage:"
   echo "  ./fork start [--deploy]"
@@ -34,22 +39,6 @@ init_env() {
   [ -n "$FORK_BLOCK_NUMBER" ] || FORK_BLOCK_NUMBER=$(cast block-number --rpc-url "$FORK_URL")
   [ -n "$FORK_CHAIN_ID" ] || FORK_CHAIN_ID=$(cast chain-id --rpc-url "$FORK_URL")
   [ -n "$DEPLOYER" ] || DEPLOYER=$anvil_account_0
-
-  anvil=(
-    anvil
-      --fork-url "$FORK_URL"
-      --fork-block-number "$FORK_BLOCK_NUMBER"
-      --fork-chain-id "$FORK_CHAIN_ID"
-      --chain-id "$FORK_CHAIN_ID"
-  )
-
-  deploy=(
-    ./deploy
-      --debug
-      --rpc-url "$E2E_RPC_URL"
-      --chain-id "$FORK_CHAIN_ID"
-      --deployer "$DEPLOYER"
-  )
 }
 
 ensure_not_running() {
@@ -61,12 +50,53 @@ ensure_running() {
 }
 
 start() {
+  anvil=(
+    anvil
+      --fork-url "$FORK_URL"
+      --fork-block-number "$FORK_BLOCK_NUMBER"
+      --fork-chain-id "$FORK_CHAIN_ID"
+      --chain-id "$FORK_CHAIN_ID"
+  )
+
   nohup "${anvil[@]}" &> "$logfile" &
   echo $! > "$pidfile"
 }
 
+sourcify_start() {
+  sourcify=(
+    docker run
+      -d
+      -p "$sourcify_port:5555"
+      -v "./$sourcify_chains:/home/app/services/server/dist/sourcify-chains.json"
+      -v "./$sourcify_config:/home/app/services/server/dist/config/local.js"
+      -e NODE_ENV=
+      --rm
+      ghcr.io/ethereum/sourcify/server:$sourcify_version
+  )
+
+  sourcify_container=$("${sourcify[@]}")
+}
+
+sourcify_stop() {
+  docker kill "$sourcify_container"
+}
+
+# XXX the requests from sourcify are crashing anvil; don't verify for now
 deploy() {
+  deploy=(
+    ./deploy
+      --debug
+      --rpc-url "$E2E_RPC_URL"
+      --chain-id "$FORK_CHAIN_ID"
+      --deployer "$DEPLOYER"
+      # --verify
+      # --verifier sourcify
+      # --verifier-url "http://localhost:$sourcify_port"
+  )
+
+  # sourcify_start
   "${deploy[@]}"
+  # sourcify_stop
 }
 
 e2e() {
