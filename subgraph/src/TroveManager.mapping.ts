@@ -10,9 +10,9 @@ import { TroveNFT as TroveNFTContract } from "../generated/templates/TroveManage
 // decides whether to update the flag indicating
 // that a trove might be leveraged or not.
 enum LeverageUpdate {
-  yes = 0,
-  no = 1,
-  unchanged = 2,
+  yes,
+  no,
+  unchanged,
 }
 
 // see Operation enum in
