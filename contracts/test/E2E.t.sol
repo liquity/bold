@@ -249,7 +249,7 @@ contract E2ETest is Test {
         deal(token, to, give);
     }
 
-    function _openTrove(uint256 i, address owner, uint256 ownerIndex, uint256 boldAmount) internal {
+    function _openTrove(uint256 i, address owner, uint256 ownerIndex, uint256 boldAmount) internal returns (uint256) {
         IZapper.OpenTroveParams memory p;
         p.owner = owner;
         p.ownerIndex = ownerIndex;
@@ -269,9 +269,33 @@ contract E2ETest is Test {
         branches[i].collToken.approve(address(branches[i].zapper), collTokenAmount);
         branches[i].zapper.openTroveWithRawETH{value: value}(p);
         vm.stopPrank();
+
+        return boldAmount;
     }
 
-    function _openLeveragedTrove(uint256 i, address owner, uint256 ownerIndex, uint256 boldAmount) internal {
+    function _troveId(address owner, uint256 ownerIndex) internal pure returns (uint256) {
+        return uint256(keccak256(abi.encode(owner, ownerIndex)));
+    }
+
+    function _closeTroveFromCollateral(uint256 i, address owner, uint256 ownerIndex) internal returns (uint256) {
+        uint256 troveId = _troveId(owner, ownerIndex);
+        uint256 debt = branches[i].troveManager.getLatestTroveData(troveId).entireDebt;
+        IZapper zapper = IZapper(branches[i].borrowerOperations.addManagerOf(troveId));
+
+        vm.startPrank(owner);
+        zapper.closeTroveFromCollateral({
+            _troveId: troveId,
+            _flashLoanAmount: debt * 1.01 ether / branches[i].priceFeed.getPrice()
+        });
+        vm.stopPrank();
+
+        return debt;
+    }
+
+    function _openLeveragedTrove(uint256 i, address owner, uint256 ownerIndex, uint256 boldAmount)
+        internal
+        returns (uint256)
+    {
         uint256 price = branches[i].priceFeed.getPrice();
 
         ILeverageZapper.OpenLeveragedTroveParams memory p;
@@ -294,6 +318,46 @@ contract E2ETest is Test {
         branches[i].collToken.approve(address(branches[i].leverageZapper), collTokenAmount);
         branches[i].leverageZapper.openLeveragedTroveWithRawETH{value: value}(p);
         vm.stopPrank();
+
+        return boldAmount;
+    }
+
+    function _leverUpTrove(uint256 i, address owner, uint256 ownerIndex, uint256 boldAmount)
+        internal
+        returns (uint256)
+    {
+        uint256 troveId = _troveId(owner, ownerIndex);
+
+        ILeverageZapper.LeverUpTroveParams memory p = ILeverageZapper.LeverUpTroveParams({
+            troveId: troveId,
+            boldAmount: boldAmount,
+            flashLoanAmount: boldAmount * 0.99 ether / branches[i].priceFeed.getPrice(),
+            maxUpfrontFee: hintHelpers.predictAdjustTroveUpfrontFee(i, troveId, boldAmount)
+        });
+
+        vm.prank(owner);
+        branches[i].leverageZapper.leverUpTrove(p);
+
+        return boldAmount;
+    }
+
+    function _leverDownTrove(uint256 i, address owner, uint256 ownerIndex, uint256 boldAmount)
+        internal
+        returns (uint256)
+    {
+        uint256 troveId = _troveId(owner, ownerIndex);
+        uint256 debtBefore = branches[i].troveManager.getLatestTroveData(troveId).entireDebt;
+
+        ILeverageZapper.LeverDownTroveParams memory p = ILeverageZapper.LeverDownTroveParams({
+            troveId: troveId,
+            minBoldAmount: boldAmount,
+            flashLoanAmount: boldAmount * 1.01 ether / branches[i].priceFeed.getPrice()
+        });
+
+        vm.prank(owner);
+        branches[i].leverageZapper.leverDownTrove(p);
+
+        return debtBefore - branches[i].troveManager.getLatestTroveData(troveId).entireDebt;
     }
 
     function _addCurveLiquidity(
@@ -431,15 +495,13 @@ contract E2ETest is Test {
 
     function test_E2E() external {
         uint256 borrowed;
+        uint256 repaid;
         address borrower = providerOf[BOLD] = makeAddr("borrower");
 
         for (uint256 j = 0; j < 5; ++j) {
             for (uint256 i = 0; i < branches.length; ++i) {
                 skip(5 minutes);
-
-                uint256 boldAmount = 10_000 ether;
-                _openTrove(i, borrower, j, boldAmount);
-                borrowed += boldAmount;
+                borrowed += _openTrove(i, borrower, j, 10_000 ether);
             }
         }
 
@@ -464,10 +526,27 @@ contract E2ETest is Test {
 
         for (uint256 i = 0; i < branches.length; ++i) {
             skip(5 minutes);
+            borrowed += _openLeveragedTrove(i, leverageSeeker, 0, 10_000 ether);
+        }
 
-            uint256 boldAmount = 10_000 ether;
-            _openLeveragedTrove(i, leverageSeeker, 0, boldAmount);
-            borrowed += boldAmount;
+        for (uint256 i = 0; i < branches.length; ++i) {
+            skip(5 minutes);
+            borrowed += _leverUpTrove(i, leverageSeeker, 0, 1_000 ether);
+        }
+
+        for (uint256 i = 0; i < branches.length; ++i) {
+            skip(5 minutes);
+            repaid += _leverDownTrove(i, leverageSeeker, 0, 1_000 ether);
+        }
+
+        for (uint256 i = 0; i < branches.length; ++i) {
+            skip(5 minutes);
+            repaid += _closeTroveFromCollateral(i, leverageSeeker, 0);
+        }
+
+        for (uint256 i = 0; i < branches.length; ++i) {
+            skip(5 minutes);
+            repaid += _closeTroveFromCollateral(i, borrower, 0);
         }
 
         address voter = makeAddr("voter");
@@ -491,7 +570,7 @@ contract E2ETest is Test {
         uint256 gaugeReward = boldToken.balanceOf(address(curveUsdcBoldGauge));
 
         assertApproxEqRelDecimal(
-            boldToken.totalSupply() - borrowed,
+            boldToken.totalSupply() + repaid - borrowed,
             boldToken.balanceOf(stabilityDepositor) + gaugeReward,
             1e-16 ether,
             18,
