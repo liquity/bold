@@ -11,8 +11,8 @@ import { shortenAddress, TokenIcon } from "@liquity2/uikit";
 import { blo } from "blo";
 import Image from "next/image";
 import * as v from "valibot";
-import { waitForTransactionReceipt, writeContract } from "wagmi/actions";
-import { createRequestSchema } from "./shared";
+import { writeContract } from "wagmi/actions";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "claimCollateralSurplus",
@@ -191,9 +191,7 @@ export const claimCollateralSurplus: FlowDeclaration<ClaimCollateralSurplusReque
       },
 
       async verify({ wagmiConfig }, hash) {
-        await waitForTransactionReceipt(wagmiConfig, {
-          hash: hash as `0x${string}`,
-        });
+        await verifyTransaction(wagmiConfig, hash);
       },
     },
   },

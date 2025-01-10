@@ -18,7 +18,7 @@ import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { parseEventLogs } from "viem";
-import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
+import { readContract, writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -212,9 +212,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
       },
 
       async verify({ contracts, request, wagmiConfig }, hash) {
-        const receipt = await waitForTransactionReceipt(wagmiConfig, {
-          hash: hash as `0x${string}`,
-        });
+        const receipt = await verifyTransaction(wagmiConfig, hash);
 
         // Extract trove ID from logs
         const collToken = getCollToken(request.loan.collIndex);

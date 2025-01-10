@@ -88,13 +88,20 @@ export function TransactionsScreen() {
     }, () => {
       throw new Error("Expected txHash to be defined");
     })
-    .with({ status: "error" }, (s) => ({
+    .with({
+      status: "error",
+    }, (s) => ({
       status: s.status,
       error: s.error ?? "Unknown error",
     }))
-    .with({ status: "idle" }, { status: "awaiting-commit" }, (s) => ({
-      status: s.status,
-    }))
+    .with(
+      { status: "idle" },
+      (s) => ({ status: s.status }),
+    )
+    .with(
+      { status: "awaiting-commit" },
+      (s) => ({ status: s.status, onRetry: commit }),
+    )
     .exhaustive();
 
   return (

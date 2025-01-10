@@ -16,8 +16,8 @@ import { ADDRESS_ZERO, shortenAddress } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { parseEventLogs } from "viem";
-import { readContract, waitForTransactionReceipt, writeContract } from "wagmi/actions";
-import { createRequestSchema } from "./shared";
+import { readContract, writeContract } from "wagmi/actions";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "openBorrowPosition",
@@ -187,6 +187,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
           throw new Error(`Invalid collateral index: ${request.collIndex}`);
         }
         const { LeverageLSTZapper, CollToken } = collateral.contracts;
+
         return writeContract(wagmiConfig, {
           ...CollToken,
           functionName: "approve",
@@ -198,9 +199,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
       },
 
       async verify({ wagmiConfig }, hash) {
-        await waitForTransactionReceipt(wagmiConfig, {
-          hash: hash as `0x${string}`,
-        });
+        await verifyTransaction(wagmiConfig, hash);
       },
     },
 
@@ -241,9 +240,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
       },
 
       async verify({ contracts, request, wagmiConfig }, hash) {
-        const receipt = await waitForTransactionReceipt(wagmiConfig, {
-          hash: hash as `0x${string}`,
-        });
+        const receipt = await verifyTransaction(wagmiConfig, hash);
 
         // extract trove ID from logs
         const collateral = contracts.collaterals[request.collIndex];

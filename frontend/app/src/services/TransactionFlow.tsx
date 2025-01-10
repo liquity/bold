@@ -123,7 +123,8 @@ export type FlowStepDeclaration<FlowRequest extends BaseFlowRequest = BaseFlowRe
   commit: (params: FlowParams<FlowRequest>) => Promise<string | null>;
   verify: (params: FlowParams<FlowRequest>, artifact: string) => Promise<void>;
   Status: ComponentType<
-    | { status: "idle" | "awaiting-commit" }
+    | { status: "idle" }
+    | { status: "awaiting-commit"; onRetry: () => void }
     | { status: "awaiting-verify" | "confirmed"; artifact: string }
     | { status: "error"; error: string; artifact?: string }
   >;
@@ -232,79 +233,8 @@ export function TransactionFlow({
     flow,
     flowDeclaration,
     startFlow,
-    updateFlowStep,
+    commit,
   } = useFlowManager(account.address ?? null);
-
-  const commit = useCallback(async () => {
-    if (!flow || !flowDeclaration || !currentStep || currentStepIndex === -1) {
-      return;
-    }
-
-    const stepDef = flowDeclaration.steps[currentStep.id];
-    if (!stepDef) return;
-
-    updateFlowStep(currentStepIndex, {
-      status: "awaiting-commit",
-      artifact: null,
-      error: null,
-    });
-
-    try {
-      if (!account.address) {
-        throw new Error("Account address is required");
-      }
-
-      const params: FlowParams<FlowRequestMap[keyof FlowRequestMap]> = {
-        account: account.address,
-        contracts: getContracts(),
-        request: flow.request,
-        steps: flow.steps,
-        storedState,
-        wagmiConfig,
-      };
-
-      const artifact = await stepDef.commit(params);
-      if (artifact === null) {
-        throw new Error("Commit failed - no artifact returned");
-      }
-
-      updateFlowStep(currentStepIndex, {
-        status: "awaiting-verify",
-        artifact,
-        error: null,
-      });
-
-      try {
-        await stepDef.verify(params, artifact);
-        updateFlowStep(currentStepIndex, {
-          status: "confirmed",
-          artifact,
-          error: null,
-        });
-      } catch (error) {
-        updateFlowStep(currentStepIndex, {
-          status: "error",
-          artifact,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    } catch (error) {
-      updateFlowStep(currentStepIndex, {
-        status: "error",
-        artifact: null,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
-  }, [
-    flow,
-    flowDeclaration,
-    currentStep,
-    currentStepIndex,
-    account.address,
-    storedState,
-    wagmiConfig,
-    updateFlowStep,
-  ]);
 
   const start: TransactionFlowContext["start"] = useCallback((request) => {
     if (account.address) {
@@ -361,7 +291,7 @@ function useSteps(
         return null;
       }
 
-      const flowDeclaration = getFlowDeclaration(flow?.request.flowId as keyof FlowRequestMap);
+      const flowDeclaration = getFlowDeclaration(flow?.request.flowId);
       if (!flowDeclaration) {
         throw new Error("Flow declaration not found: " + flow.request.flowId);
       }
@@ -382,15 +312,16 @@ function useSteps(
 
 function useFlowManager(account: Address | null) {
   const [flow, setFlow] = useState<Flowstate<FlowRequestMap[keyof FlowRequestMap]> | null>(null);
+  const wagmiConfig = useWagmiConfig();
+  const storedState = useStoredState();
+  const runningStepRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // no account or wrong account => set flow to null (but preserve local storage state)
     if (!account || (flow && flow.account !== account)) {
       setFlow(null);
       return;
     }
 
-    // no flow => attempt to restore from local storage
     if (!flow) {
       const savedFlow = FlowContextStorage.get();
       if (savedFlow?.account === account) {
@@ -398,6 +329,87 @@ function useFlowManager(account: Address | null) {
       }
     }
   }, [account, flow]);
+
+  // start going through the states of a step
+  const startStep = useCallback(async (
+    stepDef: FlowStepDeclaration<FlowRequestMap[keyof FlowRequestMap]>,
+    stepIndex: number,
+    currentArtifact: string | null = null,
+  ) => {
+    if (!flow || !account) return;
+
+    const stepKey = `${stepIndex}-${currentArtifact ?? ""}`;
+    if (runningStepRef.current === stepKey) {
+      return;
+    }
+
+    try {
+      runningStepRef.current = stepKey;
+
+      const params: FlowParams<FlowRequestMap[keyof FlowRequestMap]> = {
+        account,
+        contracts: getContracts(),
+        request: flow.request,
+        steps: flow.steps,
+        storedState,
+        wagmiConfig,
+      };
+
+      let artifact = currentArtifact;
+
+      if (!artifact) {
+        updateFlowStep(stepIndex, {
+          status: "awaiting-commit",
+          artifact: null,
+          error: null,
+        });
+
+        artifact = await stepDef.commit(params);
+        if (artifact === null) {
+          throw new Error("Commit failed - no artifact returned");
+        }
+      }
+
+      updateFlowStep(stepIndex, {
+        status: "awaiting-verify",
+        artifact,
+        error: null,
+      });
+
+      await stepDef.verify(params, artifact);
+
+      updateFlowStep(stepIndex, {
+        status: "confirmed",
+        artifact,
+        error: null,
+      });
+    } catch (error) {
+      updateFlowStep(stepIndex, {
+        status: "error",
+        artifact: currentArtifact,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      runningStepRef.current = null;
+    }
+  }, [account, flow, storedState, wagmiConfig]);
+
+  // resume verification of the current step if needed
+  useEffect(() => {
+    if (!flow?.steps || !account) return;
+
+    const verifyingStep = flow.steps.find((step) => step.status === "awaiting-verify" && step.artifact);
+    if (!verifyingStep) return;
+
+    const stepIndex = flow.steps.indexOf(verifyingStep);
+    const flowDeclaration = getFlowDeclaration(flow.request.flowId);
+    if (!flowDeclaration) return;
+
+    const stepDef = flowDeclaration.steps[verifyingStep.id];
+    if (!stepDef) return;
+
+    startStep(stepDef, stepIndex, verifyingStep.artifact);
+  }, [flow, account, startStep]);
 
   const startFlow = useCallback((
     request: FlowRequestMap[keyof FlowRequestMap],
@@ -448,9 +460,20 @@ function useFlowManager(account: Address | null) {
 
   const flowDeclaration = useMemo(() => (
     flow && (flow.request.flowId in flows)
-      ? getFlowDeclaration(flow.request.flowId as keyof FlowRequestMap)
+      ? getFlowDeclaration(flow.request.flowId)
       : null
   ), [flow]);
+
+  const commit = useCallback(async () => {
+    if (!flow || !flowDeclaration || !currentStep || currentStepIndex === -1) {
+      return;
+    }
+
+    const stepDef = flowDeclaration.steps[currentStep.id];
+    if (!stepDef) return;
+
+    await startStep(stepDef, currentStepIndex);
+  }, [flow, flowDeclaration, currentStep, currentStepIndex, startStep]);
 
   const isFlowComplete = useMemo(
     () => flow?.steps?.at(-1)?.status === "confirmed",
@@ -463,14 +486,17 @@ function useFlowManager(account: Address | null) {
     flow,
     Boolean(awaitingSteps && account && flow.account === account),
   );
-  if (awaitingSteps && steps.data) {
-    setFlowSteps(steps.data.map((id) => ({
-      id,
-      status: "idle",
-      artifact: null,
-      error: null,
-    })));
-  }
+
+  useEffect(() => {
+    if (awaitingSteps && steps.data) {
+      setFlowSteps(steps.data.map((id) => ({
+        id,
+        status: "idle",
+        artifact: null,
+        error: null,
+      })));
+    }
+  }, [awaitingSteps, steps.data, setFlowSteps]);
 
   useResetQueriesOnPathChange(isFlowComplete);
 
@@ -482,7 +508,7 @@ function useFlowManager(account: Address | null) {
     flowDeclaration,
     isFlowComplete,
     startFlow,
-    updateFlowStep,
+    commit,
   };
 }
 
@@ -511,15 +537,7 @@ const FlowContextStorage = {
         throw new Error(`Invalid request for flow ${flow.request.flowId}`);
       }
 
-      // remove awaiting-commit status from steps so users
-      // can refresh & retry without getting stuck
-      const steps = flow.steps?.map((step) => (
-        step.status === "awaiting-commit"
-          ? { ...step, status: "idle" as const }
-          : step
-      )) ?? null;
-
-      return { ...flow, steps, request };
+      return { ...flow, request };
     } catch (err) {
       console.error(err);
       localStorage.removeItem(TRANSACTION_FLOW_KEY);
