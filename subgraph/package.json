@@ -1,5 +1,7 @@
 {
   "name": "@liquity2/subgraph",
+  "author": "Liquity AG",
+  "license": "MIT",
   "version": "1.0.0",
   "scripts": {
     "codegen": "pnpm graph codegen"
