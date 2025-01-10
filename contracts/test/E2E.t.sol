@@ -11,7 +11,9 @@ import {IGovernance} from "V2-gov/src/interfaces/IGovernance.sol";
 import {IUserProxyFactory} from "V2-gov/src/interfaces/IUserProxyFactory.sol";
 import {ILeverageZapper} from "src/Zappers/Interfaces/ILeverageZapper.sol";
 import {IZapper} from "src/Zappers/Interfaces/IZapper.sol";
+import {Ownable} from "src/Dependencies/Ownable.sol";
 import {IActivePool} from "src/Interfaces/IActivePool.sol";
+import {IAddressesRegistry} from "src/Interfaces/IAddressesRegistry.sol";
 import {IBoldToken} from "src/Interfaces/IBoldToken.sol";
 import {IBorrowerOperations} from "src/Interfaces/IBorrowerOperations.sol";
 import {ICollateralRegistry} from "src/Interfaces/ICollateralRegistry.sol";
@@ -96,6 +98,7 @@ contract E2ETest is Test {
 
     struct BranchContracts {
         IERC20 collToken;
+        IAddressesRegistry addressesRegistry;
         IPriceFeed priceFeed;
         ITroveNFT troveNFT;
         ITroveManager troveManager;
@@ -112,7 +115,6 @@ contract E2ETest is Test {
     uint256 EPOCH_DURATION;
 
     mapping(address token => address) providerOf;
-    mapping(address token => uint256) indexOf;
 
     ICollateralRegistry collateralRegistry;
     IBoldToken boldToken;
@@ -122,6 +124,8 @@ contract E2ETest is Test {
     ILiquidityGaugeV6 curveUsdcBoldGauge;
     IBribeInitiative curveUsdcBoldInitiative;
     BranchContracts[] branches;
+
+    address[] ownables;
 
     address[] initiativesToReset;
     address[] initiatives;
@@ -166,6 +170,7 @@ contract E2ETest is Test {
 
             branches.push() = BranchContracts({
                 collToken: IERC20(json.readAddress(string.concat(branch, ".collToken"))),
+                addressesRegistry: IAddressesRegistry(json.readAddress(string.concat(branch, ".addressesRegistry"))),
                 priceFeed: IPriceFeed(json.readAddress(string.concat(branch, ".priceFeed"))),
                 troveNFT: ITroveNFT(json.readAddress(string.concat(branch, ".troveNFT"))),
                 troveManager: ITroveManager(json.readAddress(string.concat(branch, ".troveManager"))),
@@ -191,12 +196,6 @@ contract E2ETest is Test {
             vm.label(address(branches[i].stabilityPool), "StabilityPool");
             vm.label(address(branches[i].leverageZapper), "LeverageZapper");
             vm.label(address(branches[i].zapper), "Zapper");
-
-            indexOf[address(branches[i].collToken)] = i;
-
-            emit log_named_decimal_uint(
-                string.concat(branches[i].collToken.symbol(), " price"), branches[i].priceFeed.getPrice(), 18
-            );
         }
 
         vm.label(ETH_WHALE, "ETH_WHALE");
@@ -375,6 +374,23 @@ contract E2ETest is Test {
         delete vetos;
 
         vm.stopPrank();
+    }
+
+    function test_OwnershipRenounced() external {
+        ownables.push(address(boldToken));
+
+        for (uint256 i = 0; i < branches.length; ++i) {
+            ownables.push(address(branches[i].addressesRegistry));
+            ownables.push(address(branches[i].priceFeed));
+        }
+
+        for (uint256 i = 0; i < ownables.length; ++i) {
+            assertEq(
+                Ownable(ownables[i]).owner(),
+                address(0),
+                string.concat("Ownership of ", vm.getLabel(ownables[i]), " should have been renounced")
+            );
+        }
     }
 
     function test_E2E() external {
