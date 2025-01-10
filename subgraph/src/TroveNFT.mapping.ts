@@ -32,7 +32,7 @@ function updateBorrowerInfo(
   let diff = update == BorrowerInfoUpdate.add ? 1 : -1;
 
   let trovesByColl = borrower.trovesByCollateral;
-  let collIndex = parseInt(trove.collateral);
+  let collIndex = <i32>parseInt(trove.collateral);
   trovesByColl[collIndex] += diff;
 
   borrower.trovesByCollateral = trovesByColl;
