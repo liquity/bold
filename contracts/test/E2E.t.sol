@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {IERC20Metadata as IERC20} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IBribeInitiative} from "V2-gov/src/interfaces/IBribeInitiative.sol";
 import {IGovernance} from "V2-gov/src/interfaces/IGovernance.sol";
@@ -112,7 +113,9 @@ contract E2ETest is Test {
 
     address BOLD;
     uint256 ETH_GAS_COMPENSATION;
+    uint256 MIN_DEBT;
     uint256 EPOCH_DURATION;
+    uint256 REGISTRATION_FEE;
 
     mapping(address token => address) providerOf;
 
@@ -163,7 +166,9 @@ contract E2ETest is Test {
         vm.label(address(curveUsdcBoldInitiative), "CurveV2GaugeRewards");
 
         ETH_GAS_COMPENSATION = json.readUint(".constants.ETH_GAS_COMPENSATION");
+        MIN_DEBT = json.readUint(".constants.MIN_DEBT");
         EPOCH_DURATION = json.readUint(".governance.constants.EPOCH_DURATION");
+        REGISTRATION_FEE = json.readUint(".governance.constants.REGISTRATION_FEE");
 
         for (uint256 i = 0; i < collateralRegistry.totalCollaterals(); ++i) {
             string memory branch = string.concat(".branches[", i.toString(), "]");
@@ -391,6 +396,37 @@ contract E2ETest is Test {
                 string.concat("Ownership of ", vm.getLabel(ownables[i]), " should have been renounced")
             );
         }
+    }
+
+    function test_Initially_NewInitiativeCannotBeRegistered() external {
+        address registrant = makeAddr("registrant");
+        address newInitiative = makeAddr("newInitiative");
+
+        _openTrove(0, registrant, 0, Math.max(REGISTRATION_FEE, MIN_DEBT));
+
+        vm.startPrank(registrant);
+        {
+            boldToken.approve(address(governance), REGISTRATION_FEE);
+            vm.expectRevert("Governance: registration-not-yet-enabled");
+            governance.registerInitiative(newInitiative);
+        }
+        vm.stopPrank();
+    }
+
+    function test_AfterOneEpoch_NewInitiativeCanBeRegistered() external {
+        address registrant = makeAddr("registrant");
+        address newInitiative = makeAddr("newInitiative");
+
+        _openTrove(0, registrant, 0, Math.max(REGISTRATION_FEE, MIN_DEBT));
+
+        skip(EPOCH_DURATION);
+
+        vm.startPrank(registrant);
+        {
+            boldToken.approve(address(governance), REGISTRATION_FEE);
+            governance.registerInitiative(newInitiative);
+        }
+        vm.stopPrank();
     }
 
     function test_E2E() external {
