@@ -24,9 +24,6 @@ function addCollateral(
   let collateral = new Collateral(collId);
   collateral.collIndex = collIndex;
   collateral.token = collId;
-  collateral.totalDebt = BigInt.fromI32(0);
-  collateral.totalDeposited = BigInt.fromI32(0);
-  collateral.price = BigInt.fromI32(0);
 
   let token = new Token(collId);
   let tokenContract = ERC20Contract.bind(tokenAddress);

@@ -334,7 +334,6 @@ function updateTrove(
   let trove = Trove.load(troveFullId);
 
   let prevDebt = trove ? trove.debt : BigInt.fromI32(0);
-  let prevDeposit = trove ? trove.deposit : BigInt.fromI32(0);
   let prevInterestRate = trove ? trove.interestRate : null;
 
   let troveData = troveManagerContract.getLatestTroveData(troveId);
@@ -343,8 +342,6 @@ function updateTrove(
   let newInterestRate = troveData.annualInterestRate;
   let newStake = troveManagerContract.Troves(troveId).getStake();
 
-  collateral.totalDeposited = collateral.totalDeposited.minus(prevDeposit).plus(newDeposit);
-  collateral.totalDebt = collateral.totalDebt.minus(prevDebt).plus(newDebt);
   collateral.save();
 
   // create trove if needed
