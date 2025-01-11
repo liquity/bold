@@ -142,7 +142,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IPriceFeed priceFeed;
         GasPool gasPool;
         IInterestRouter interestRouter;
-        IERC20 collToken;
+        IERC20Metadata collToken;
         WETHZapper wethZapper;
         GasCompZapper gasCompZapper;
         ILeverageZapper leverageZapper;
@@ -552,7 +552,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BOLD_TOKEN_INDEX, // BOLD Curve pool index
             UNIV3_FEE_USDC_WETH,
             UNIV3_FEE_WETH_COLL,
-            uniV3QuoterSepolia
+            uniV3Quoter
         );
     }
 
@@ -703,7 +703,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BOLD_TOKEN_INDEX, // BOLD Curve pool index
             UNIV3_FEE_USDC_WETH,
             UNIV3_FEE_WETH_COLL,
-            uniV3RouterSepolia
+            uniV3Router
         );
 
         bool lst = _collToken != WETH;
@@ -965,33 +965,34 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         return string.concat(whole, ".", fractional);
     }
 
-    function _getBranchContractsJson(LiquityContracts memory c) internal pure returns (string memory) {
+    function _getBranchContractsJson(LiquityContracts memory c) internal view returns (string memory) {
         return string.concat(
             "{",
             string.concat(
                 // Avoid stack too deep by chunking concats
                 string.concat(
+                    string.concat('"collSymbol":"', c.collToken.symbol(), '",'), // purely for human-readability
+                    string.concat('"collToken":"', address(c.collToken).toHexString(), '",'),
                     string.concat('"addressesRegistry":"', address(c.addressesRegistry).toHexString(), '",'),
                     string.concat('"activePool":"', address(c.activePool).toHexString(), '",'),
                     string.concat('"borrowerOperations":"', address(c.borrowerOperations).toHexString(), '",'),
                     string.concat('"collSurplusPool":"', address(c.collSurplusPool).toHexString(), '",'),
                     string.concat('"defaultPool":"', address(c.defaultPool).toHexString(), '",'),
-                    string.concat('"sortedTroves":"', address(c.sortedTroves).toHexString(), '",'),
-                    string.concat('"stabilityPool":"', address(c.stabilityPool).toHexString(), '",'),
-                    string.concat('"troveManager":"', address(c.troveManager).toHexString(), '",')
+                    string.concat('"sortedTroves":"', address(c.sortedTroves).toHexString(), '",')
                 ),
                 string.concat(
+                    string.concat('"stabilityPool":"', address(c.stabilityPool).toHexString(), '",'),
+                    string.concat('"troveManager":"', address(c.troveManager).toHexString(), '",'),
                     string.concat('"troveNFT":"', address(c.troveNFT).toHexString(), '",'),
                     string.concat('"metadataNFT":"', address(c.metadataNFT).toHexString(), '",'),
                     string.concat('"priceFeed":"', address(c.priceFeed).toHexString(), '",'),
                     string.concat('"gasPool":"', address(c.gasPool).toHexString(), '",'),
                     string.concat('"interestRouter":"', address(c.interestRouter).toHexString(), '",'),
-                    string.concat('"wethZapper":"', address(c.wethZapper).toHexString(), '",'),
-                    string.concat('"gasCompZapper":"', address(c.gasCompZapper).toHexString(), '",'),
-                    string.concat('"leverageZapper":"', address(c.leverageZapper).toHexString(), '",')
+                    string.concat('"wethZapper":"', address(c.wethZapper).toHexString(), '",')
                 ),
                 string.concat(
-                    string.concat('"collToken":"', address(c.collToken).toHexString(), '"') // no comma
+                    string.concat('"gasCompZapper":"', address(c.gasCompZapper).toHexString(), '",'),
+                    string.concat('"leverageZapper":"', address(c.leverageZapper).toHexString(), '"') // no comma
                 )
             ),
             "}"
@@ -1016,7 +1017,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     function _getManifestJson(DeploymentResult memory deployed, string memory _governanceManifest)
         internal
-        pure
+        view
         returns (string memory)
     {
         string[] memory branches = new string[](deployed.contractsArray.length);
