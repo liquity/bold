@@ -1,4 +1,4 @@
-import { Address } from "@graphprotocol/graph-ts";
+import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
 import { BorrowerInfo, Trove } from "../generated/schema";
 import { Transfer as TransferEvent } from "../generated/templates/TroveNFT/TroveNFT";
 
@@ -9,35 +9,37 @@ enum BorrowerInfoUpdate {
 
 function updateBorrowerInfo(
   borrowerAddress: Address,
-  troveId: string,
+  troveFullId: string,
   update: BorrowerInfoUpdate,
 ): void {
-  let trove = Trove.load(troveId);
+  let trove = Trove.load(troveFullId);
   if (!trove) {
-    throw new Error("Trove does not exist: " + troveId);
+    throw new Error("Trove does not exist: " + troveFullId);
   }
 
-  let borrower = BorrowerInfo.load(borrowerAddress.toHexString());
+  let borrowerInfo = BorrowerInfo.load(borrowerAddress.toHexString());
 
-  if (!borrower && update == BorrowerInfoUpdate.add) {
-    borrower = new BorrowerInfo(borrowerAddress.toHexString());
-    borrower.troves = 0;
-    borrower.trovesByCollateral = [];
+  if (!borrowerInfo && update == BorrowerInfoUpdate.add) {
+    borrowerInfo = new BorrowerInfo(borrowerAddress.toHexString());
+    borrowerInfo.troves = 0;
+
+    let totalCollaterals = dataSource.context().getI32("totalCollaterals");
+    borrowerInfo.trovesByCollateral = (new Array<i32>(totalCollaterals)).fill(0);
   }
 
-  if (!borrower) {
+  if (!borrowerInfo) {
     throw new Error("BorrowerInfo does not exist: " + borrowerAddress.toHexString());
   }
 
   let diff = update == BorrowerInfoUpdate.add ? 1 : -1;
 
-  let trovesByColl = borrower.trovesByCollateral;
-  let collIndex = <i32>parseInt(trove.collateral);
+  let trovesByColl = borrowerInfo.trovesByCollateral;
+  let collIndex = <i32> parseInt(trove.collateral);
   trovesByColl[collIndex] += diff;
 
-  borrower.trovesByCollateral = trovesByColl;
-  borrower.troves += diff;
-  borrower.save();
+  borrowerInfo.trovesByCollateral = trovesByColl;
+  borrowerInfo.troves += diff;
+  borrowerInfo.save();
 }
 
 export function handleTransfer(event: TransferEvent): void {
@@ -48,16 +50,17 @@ export function handleTransfer(event: TransferEvent): void {
     return;
   }
 
-  let troveId = event.params.tokenId.toHexString();
+  let collId = dataSource.context().getString("collId");
+  let troveFullId = collId + ":" + event.params.tokenId.toHexString();
 
   // update BorrowerInfo for the previous owner
-  updateBorrowerInfo(event.params.from, troveId, BorrowerInfoUpdate.remove);
+  updateBorrowerInfo(event.params.from, troveFullId, BorrowerInfoUpdate.remove);
 
   // update BorrowerInfo for the new owner (including zero address)
-  updateBorrowerInfo(event.params.to, troveId, BorrowerInfoUpdate.add);
+  updateBorrowerInfo(event.params.to, troveFullId, BorrowerInfoUpdate.add);
 
   // update the trove borrower
-  let trove = Trove.load(troveId);
+  let trove = Trove.load(troveFullId);
   if (trove) {
     trove.borrower = event.params.to;
     trove.save();
