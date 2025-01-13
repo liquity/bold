@@ -32,6 +32,12 @@ export function PanelVoting() {
     dn.from(1, 18),
   );
 
+  const daysLeft = governanceState.data?.daysLeft ?? 0;
+  const rtf = new Intl.RelativeTimeFormat("en", { style: "short" });
+  const remaining = daysLeft > 1
+    ? rtf.format(Math.ceil(daysLeft), "day")
+    : rtf.format(Math.ceil(daysLeft * 24 * 60), "minute");
+
   const handleVote = (initiativeAddress: Address, vote: Vote | null) => {
     setVoteAllocations((prev) => {
       return ({
@@ -117,7 +123,12 @@ export function PanelVoting() {
             })}
           >
             Current voting round ends in{" "}
-            <Tag title={governanceState.data && formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))}>
+            <Tag
+              title={governanceState.data
+                && `Epoch ${governanceState.data.epoch} ends on the ${
+                  formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))
+                }`}
+            >
               {governanceState.data.daysLeftRounded} {governanceState.data.daysLeftRounded === 1 ? "day" : "days"}
             </Tag>
           </div>
@@ -205,14 +216,8 @@ export function PanelVoting() {
             <th>
               Epoch<br /> Initiatives
             </th>
-            <th>
-              <abbr title="Total Value Locked">TVL</abbr>
-            </th>
-            <th title="Pair volume in 7 days">
-              Pair vol<br /> in 7d
-            </th>
             <th title="Votes distribution">
-              Votes<br />distrib
+              Votes<br />Distribution
             </th>
             <th>Decision</th>
           </tr>
@@ -230,7 +235,7 @@ export function PanelVoting() {
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={4}>
+            <td colSpan={2}>
               <div>
                 Voting power left
               </div>
@@ -257,9 +262,51 @@ export function PanelVoting() {
         </tfoot>
       </table>
 
+      {governanceState.data && (
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            marginBottom: 32,
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              width: 20,
+              height: 20,
+              color: "strongSurfaceContent",
+              background: "strongSurface",
+              borderRadius: "50%",
+            })}
+          >
+            <svg width="20" height="20" fill="none">
+              <path
+                clipRule="evenodd"
+                fill="currentColor"
+                fillRule="evenodd"
+                d="m15.41 5.563-6.886 10.1-4.183-3.66 1.317-1.505 2.485 2.173 5.614-8.234 1.652 1.126Z"
+              />
+            </svg>
+          </div>
+          <div>
+            <div>
+              Votes & vetos are accepted on {formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))} <br />
+            </div>
+            <div
+              className={css({
+                color: "contentAlt",
+              })}
+            >
+              Your votes for epoch #{String(governanceState.data.epoch)} will apply in {remaining}.
+            </div>
+          </div>
+        </div>
+      )}
+
       <VFlex gap={48}>
         <ConnectWarningBox />
-
         <Button
           disabled={!allowSubmit}
           label="Cast votes"
@@ -331,24 +378,6 @@ function InitiativeRow({
               })}
             />
           </div>
-        </div>
-      </td>
-      <td>
-        <div>
-          <Amount
-            fallback="−"
-            format="compact"
-            value={initiative.tvl}
-          />
-        </div>
-      </td>
-      <td>
-        <div>
-          <Amount
-            fallback="−"
-            format="compact"
-            value={initiative.pairVolume}
-          />
         </div>
       </td>
       <td>
