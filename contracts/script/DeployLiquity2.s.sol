@@ -330,7 +330,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         // Governance
         (address governanceAddress, string memory governanceManifest) = deployGovernance(
-            deployer, SALT, deployed.boldToken, USDC, address(curveStableswapFactory), address(deployed.usdcCurvePool)
+            deployer, SALT, deployed.boldToken, address(curveStableswapFactory), address(deployed.usdcCurvePool)
         );
         address computedGovernanceAddress =
             computeGovernanceAddress(deployer, SALT, deployed.boldToken, new address[](0));

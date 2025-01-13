@@ -6,7 +6,6 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {Script} from "forge-std/Script.sol";
 
-import {PoolManager, Deployers, Hooks} from "v4-core/test/utils/Deployers.sol";
 import {ICurveStableswapFactoryNG} from "V2-gov/src/interfaces/ICurveStableswapFactoryNG.sol";
 import {ICurveStableswapNG} from "V2-gov/src/interfaces/ICurveStableswapNG.sol";
 import {ILiquidityGauge} from "V2-gov/src/interfaces/ILiquidityGauge.sol";
@@ -14,22 +13,16 @@ import {ILiquidityGauge} from "V2-gov/src/interfaces/ILiquidityGauge.sol";
 import {IGovernance} from "V2-gov/src/interfaces/IGovernance.sol";
 
 import {Governance} from "V2-gov/src/Governance.sol";
-import {UniV4Donations} from "V2-gov/src/UniV4Donations.sol";
 import {CurveV2GaugeRewards} from "V2-gov/src/CurveV2GaugeRewards.sol";
-import {Hooks} from "V2-gov/src/utils/BaseHook.sol";
-
-import {HookMiner} from "V2-gov/script/utils/HookMiner.sol";
 
 import "forge-std/console2.sol";
 
-contract DeployGovernance is Script, Deployers {
+contract DeployGovernance is Script {
     using Strings for *;
 
     // Environment Constants
     address internal lqty;
     address internal stakingV1;
-
-    PoolManager private constant poolManager = PoolManager(0xE8E23e97Fa135823143d6b9Cba9c699040D51F70);
 
     // Governance Constants
     uint128 private constant REGISTRATION_FEE = 1000e18;
@@ -52,7 +45,6 @@ contract DeployGovernance is Script, Deployers {
     // Contracts
     Governance private governance;
     address[] private initialInitiatives;
-    UniV4Donations private uniV4Donations;
     CurveV2GaugeRewards private curveV2GaugeRewards;
     ILiquidityGauge private gauge;
 
@@ -60,7 +52,6 @@ contract DeployGovernance is Script, Deployers {
         address _deployer,
         bytes32 _salt,
         IERC20 _boldToken,
-        IERC20 _usdc,
         address _curveFactoryAddress,
         address _curvePoolAddress
     ) internal returns (address, string memory) {
@@ -82,8 +73,6 @@ contract DeployGovernance is Script, Deployers {
         //console2.log(address(governance), "address(governance)");
         //console2.log(governanceAddress, "governanceAddress");
         assert(governanceAddress == address(governance));
-        // Uni V4 initiative
-        deployUniV4Donations(governance, _boldToken, _usdc);
 
         // Curve initiative
         if (block.chainid == 1) {
@@ -148,43 +137,6 @@ contract DeployGovernance is Script, Deployers {
         return (governanceAddress, governanceConfiguration);
     }
 
-    function deployUniV4Donations(IGovernance _governance, IERC20 _boldToken, IERC20 _usdc) private {
-        uint160 flags = uint160(Hooks.AFTER_INITIALIZE_FLAG | Hooks.AFTER_ADD_LIQUIDITY_FLAG);
-
-        (, bytes32 salt) = HookMiner.find(
-            0x4e59b44847b379578588920cA78FbF26c0B4956C,
-            // address(this),
-            flags,
-            type(UniV4Donations).creationCode,
-            abi.encode(
-                address(_governance),
-                address(_boldToken),
-                lqty,
-                block.timestamp,
-                EPOCH_DURATION,
-                address(poolManager),
-                address(_usdc),
-                FEE,
-                MAX_TICK_SPACING
-            )
-        );
-
-        uniV4Donations = new UniV4Donations{salt: salt}(
-            address(_governance),
-            address(_boldToken),
-            lqty,
-            block.timestamp,
-            EPOCH_DURATION,
-            address(poolManager),
-            address(_usdc),
-            FEE,
-            MAX_TICK_SPACING
-        );
-
-        assert(address(governance) == address(uniV4Donations.governance()));
-        initialInitiatives.push(address(uniV4Donations));
-    }
-
     function deployCurveV2GaugeRewards(
         IGovernance _governance,
         IERC20 _boldToken,
@@ -232,7 +184,6 @@ contract DeployGovernance is Script, Deployers {
             string.concat(
                 string.concat('"constants":', _getGovernanceDeploymentConstants(), ","),
                 string.concat('"governance":"', address(governance).toHexString(), '",'),
-                string.concat('"uniV4DonationsInitiative":"', address(uniV4Donations).toHexString(), '",'),
                 string.concat('"curveV2GaugeRewardsInitiative":"', address(curveV2GaugeRewards).toHexString(), '",'),
                 string.concat('"curvePool":"', _curvePoolAddress.toHexString(), '",'),
                 string.concat('"gauge":"', address(gauge).toHexString(), '",'),
