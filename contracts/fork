@@ -3,6 +3,7 @@
 # Exit on failure
 set -e
 
+export FOUNDRY_PROFILE=e2e
 export E2E_RPC_URL="http://localhost:8545"
 
 pidfile=anvil.pid
@@ -100,7 +101,6 @@ deploy() {
 }
 
 e2e() {
-  export FOUNDRY_NO_STORAGE_CACHING=true
   forge test --match-path test/E2E.t.sol "$@"
 }
 

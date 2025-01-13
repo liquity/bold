@@ -92,10 +92,21 @@ library SideEffectFreeGetPrice {
     }
 }
 
+library StringEquality {
+    function eq(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(bytes(a)) == keccak256(bytes(b));
+    }
+
+    function notEq(string memory a, string memory b) internal pure returns (bool) {
+        return !eq(a, b);
+    }
+}
+
 contract E2ETest is Test {
     using SideEffectFreeGetPrice for IPriceFeed;
     using Strings for uint256;
     using stdJson for string;
+    using StringEquality for string;
 
     struct BranchContracts {
         IERC20 collToken;
@@ -136,17 +147,8 @@ contract E2ETest is Test {
     int256[] vetos;
 
     function setUp() external {
-        bool noStorageCaching = vm.envOr("FOUNDRY_NO_STORAGE_CACHING", false);
-        string memory rpcUrl = vm.envOr("E2E_RPC_URL", string(""));
-        vm.skip(bytes(rpcUrl).length == 0);
-
-        // As we are running tests in a fork that uses the same chain ID as the forked chain, it is important not to
-        // be caching any storage, as any new state on top of the forked block is ephemeral and should not be commingled
-        // with real state.
-        // Anvil is going to be caching any storage requests that hit the underlying RPC anyway.
-        assertTrue(noStorageCaching, "FOUNDRY_NO_STORAGE_CACHING should be set to true");
-
-        vm.createSelectFork(rpcUrl);
+        vm.skip(vm.envOr("FOUNDRY_PROFILE", string("")).notEq("e2e"));
+        vm.createSelectFork(vm.envString("E2E_RPC_URL"));
 
         string memory json = vm.readFile("deployment-manifest.json");
         collateralRegistry = ICollateralRegistry(json.readAddress(".collateralRegistry"));

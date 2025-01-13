@@ -27,4 +27,12 @@ shrink_run_limit = 0 # takes too damn long to shrink, don't waste Github minutes
 mainnet = "${MAINNET_RPC_URL}"
 tenderly-mainnet = "${TENDERLY_RPC_URL}"
 
+[profile.e2e]
+# Allows us to .gitignore broadcast logs of E2E deployments
+broadcast = 'broadcast-e2e'
+# As we are running tests in a fork that uses the same chain ID as the forked chain, it is important not to be caching
+# any storage, as any new state on top of the forked block is ephemeral and should not be commingled with real state.
+# Anvil is going to be caching any storage requests that hit the underlying RPC anyway.
+no_storage_caching = true
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

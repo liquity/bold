@@ -40,3 +40,6 @@ testMatrix.json
 # Fork script
 /anvil.pid
 /anvil.log
+
+# E2E broadcast logs
+/broadcast-e2e
