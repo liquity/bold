@@ -121,6 +121,7 @@ type GovernanceUser @entity {
   stakedLQTY: BigInt!
   stakedOffset: BigInt!
   allocations: [GovernanceAllocation!]! @derivedFrom(field: "user")
+  allocated: [Bytes!]!
 }
 
 # Allocation of a user to a given initiative.

@@ -667,6 +667,7 @@ export enum GovernanceStats_OrderBy {
 
 export type GovernanceUser = {
   __typename?: 'GovernanceUser';
+  allocated: Array<Scalars['Bytes']['output']>;
   allocatedLQTY: Scalars['BigInt']['output'];
   allocations: Array<GovernanceAllocation>;
   id: Scalars['ID']['output'];
@@ -686,6 +687,7 @@ export type GovernanceUserAllocationsArgs = {
 export type GovernanceUser_Filter = {
   /** Filter for the block changed event. */
   _change_block?: InputMaybe<BlockChangedFilter>;
+  allocated?: InputMaybe<Array<Scalars['Bytes']['input']>>;
   allocatedLQTY?: InputMaybe<Scalars['BigInt']['input']>;
   allocatedLQTY_gt?: InputMaybe<Scalars['BigInt']['input']>;
   allocatedLQTY_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -694,6 +696,11 @@ export type GovernanceUser_Filter = {
   allocatedLQTY_lte?: InputMaybe<Scalars['BigInt']['input']>;
   allocatedLQTY_not?: InputMaybe<Scalars['BigInt']['input']>;
   allocatedLQTY_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  allocated_contains?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  allocated_contains_nocase?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  allocated_not?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  allocated_not_contains?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  allocated_not_contains_nocase?: InputMaybe<Array<Scalars['Bytes']['input']>>;
   allocations_?: InputMaybe<GovernanceAllocation_Filter>;
   and?: InputMaybe<Array<InputMaybe<GovernanceUser_Filter>>>;
   id?: InputMaybe<Scalars['ID']['input']>;
@@ -724,6 +731,7 @@ export type GovernanceUser_Filter = {
 };
 
 export enum GovernanceUser_OrderBy {
+  Allocated = 'allocated',
   AllocatedLqty = 'allocatedLQTY',
   Allocations = 'allocations',
   Id = 'id',
@@ -2199,11 +2207,6 @@ export enum _SubgraphErrorPolicy_ {
   Deny = 'deny'
 }
 
-export type TotalDepositedQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type TotalDepositedQuery = { __typename?: 'Query', collaterals: Array<{ __typename?: 'Collateral', collIndex: number, totalDeposited: bigint }> };
-
 export type TrovesCountQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -2290,11 +2293,10 @@ export type GovernanceStatsQuery = { __typename?: 'Query', governanceStats?: { _
 
 export type GovernanceUserAllocationsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
-  epoch: Scalars['BigInt']['input'];
 }>;
 
 
-export type GovernanceUserAllocationsQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', allocations: Array<{ __typename?: 'GovernanceAllocation', initiative: { __typename?: 'GovernanceInitiative', id: string } }> } | null };
+export type GovernanceUserAllocationsQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', allocated: Array<string> } | null };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -2358,14 +2360,6 @@ export const StabilityPoolDepositFragmentFragmentDoc = new TypedDocumentString(`
   }
 }
     `, {"fragmentName":"StabilityPoolDepositFragment"}) as unknown as TypedDocumentString<StabilityPoolDepositFragmentFragment, unknown>;
-export const TotalDepositedDocument = new TypedDocumentString(`
-    query TotalDeposited {
-  collaterals {
-    collIndex
-    totalDeposited
-  }
-}
-    `) as unknown as TypedDocumentString<TotalDepositedQuery, TotalDepositedQueryVariables>;
 export const TrovesCountDocument = new TypedDocumentString(`
     query TrovesCount($id: ID!) {
   borrowerInfo(id: $id) {
@@ -2558,13 +2552,9 @@ export const GovernanceStatsDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<GovernanceStatsQuery, GovernanceStatsQueryVariables>;
 export const GovernanceUserAllocationsDocument = new TypedDocumentString(`
-    query GovernanceUserAllocations($id: ID!, $epoch: BigInt!) {
+    query GovernanceUserAllocations($id: ID!) {
   governanceUser(id: $id) {
-    allocations(where: {atEpoch: $epoch}) {
-      initiative {
-        id
-      }
-    }
+    allocated
   }
 }
     `) as unknown as TypedDocumentString<GovernanceUserAllocationsQuery, GovernanceUserAllocationsQueryVariables>;

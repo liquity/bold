@@ -15,7 +15,6 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 const documents = {
-    "\n  query TotalDeposited {\n    collaterals {\n      collIndex\n      totalDeposited\n    }\n  }\n": types.TotalDepositedDocument,
     "\n  query TrovesCount($id: ID!) {\n    borrowerInfo(id: $id) {\n      troves\n      trovesByCollateral\n    }\n  }\n": types.TrovesCountDocument,
     "\n  fragment FullTroveFragment on Trove {\n    id\n    borrower\n    closedAt\n    createdAt\n    debt\n    deposit\n    interestRate\n    mightBeLeveraged\n    stake\n    status\n    troveId\n    updatedAt\n    collateral {\n      id\n      token {\n        symbol\n        name\n      }\n      minCollRatio\n      collIndex\n    }\n    interestBatch {\n      id\n      annualInterestRate\n      annualManagementFee\n      batchManager\n    }\n  }\n": types.FullTroveFragmentFragmentDoc,
     "\n  query TrovesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        borrower: $account,\n        status_in: [active,redeemed,liquidated],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      borrower\n      closedAt\n      createdAt\n      debt\n      deposit\n      interestRate\n      mightBeLeveraged\n      stake\n      status\n      troveId\n      updatedAt\n      collateral {\n        id\n        token {\n          symbol\n          name\n        }\n        minCollRatio\n        collIndex\n      }\n      interestBatch {\n        id\n        annualInterestRate\n        annualManagementFee\n        batchManager\n      }\n    }\n  }\n": types.TrovesByAccountDocument,
@@ -30,13 +29,9 @@ const documents = {
     "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n": types.GovernanceInitiativesDocument,
     "\n  query GovernanceUser($id: ID!) {\n    governanceUser(id: $id) {\n      id\n      allocatedLQTY\n      stakedLQTY\n      stakedOffset\n      allocations {\n        id\n        atEpoch\n        vetoLQTY\n        voteLQTY\n        initiative {\n          id\n        }\n      }\n    }\n  }\n": types.GovernanceUserDocument,
     "\n  query GovernanceStats {\n    governanceStats(id: \"stats\") {\n      id\n      totalLQTYStaked\n      totalOffset\n      totalInitiatives\n    }\n  }\n": types.GovernanceStatsDocument,
-    "\n  query GovernanceUserAllocations($id: ID!, $epoch: BigInt!) {\n    governanceUser(id: $id) {\n      allocations(where: { atEpoch: $epoch }) {\n        initiative {\n          id\n        }\n      }\n    }\n  }\n": types.GovernanceUserAllocationsDocument,
+    "\n  query GovernanceUserAllocations($id: ID!) {\n    governanceUser(id: $id) {\n      allocated\n    }\n  }\n": types.GovernanceUserAllocationsDocument,
 };
 
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query TotalDeposited {\n    collaterals {\n      collIndex\n      totalDeposited\n    }\n  }\n"): typeof import('./graphql').TotalDepositedDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -96,7 +91,7 @@ export function graphql(source: "\n  query GovernanceStats {\n    governanceStat
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query GovernanceUserAllocations($id: ID!, $epoch: BigInt!) {\n    governanceUser(id: $id) {\n      allocations(where: { atEpoch: $epoch }) {\n        initiative {\n          id\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GovernanceUserAllocationsDocument;
+export function graphql(source: "\n  query GovernanceUserAllocations($id: ID!) {\n    governanceUser(id: $id) {\n      allocated\n    }\n  }\n"): typeof import('./graphql').GovernanceUserAllocationsDocument;
 
 
 export function graphql(source: string) {

@@ -297,14 +297,10 @@ export const GovernanceStats = graphql(`
   }
 `);
 
-export const GovernanceUserAllocations = graphql(`
-  query GovernanceUserAllocations($id: ID!, $epoch: BigInt!) {
+export const GovernanceUserAllocated = graphql(`
+  query GovernanceUserAllocations($id: ID!) {
     governanceUser(id: $id) {
-      allocations(where: { atEpoch: $epoch }) {
-        initiative {
-          id
-        }
-      }
+      allocated
     }
   }
 `);

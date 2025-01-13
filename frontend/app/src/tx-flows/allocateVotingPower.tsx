@@ -6,14 +6,14 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { getUserStates, useInitiatives } from "@/src/liquity-governance";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { GovernanceUserAllocations, graphQuery } from "@/src/subgraph-queries";
+import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
 import { vVoteAllocations } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { IconDownvote, IconUpvote } from "@liquity2/uikit";
 import { IconStake } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { readContract, writeContract } from "wagmi/actions";
+import { writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -183,11 +183,6 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
           let qty = dn.mul([unallocatedLQTY, 18], vote.value)[0];
           remainingLqty -= qty;
 
-          // allocate any remaining LQTY to the last initiative
-          // if (index === initiativeAddresses.length - 1 && remainingLqty > 0n) {
-          //   qty += remainingLqty;
-          // }
-
           if (vote?.vote === "for") {
             allocationArgs.votes[index] = qty;
           } else if (vote?.vote === "against") {
@@ -195,24 +190,16 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
           }
         }
 
-        // get allocations for the current epoch
-        const epoch = await readContract(wagmiConfig, {
-          ...contracts.Governance,
-          functionName: "epoch",
-        });
-        const { governanceUser } = await graphQuery(
-          GovernanceUserAllocations,
-          { id: account.toLowerCase(), epoch },
+        const allocated = await graphQuery(
+          GovernanceUserAllocated,
+          { id: account.toLowerCase() },
         );
-        const allocations = governanceUser?.allocations.map((a) => (
-          a.initiative.id as Address
-        )) ?? [];
 
         return writeContract(wagmiConfig, {
           ...contracts.Governance,
           functionName: "allocateLQTY",
           args: [
-            allocations,
+            (allocated.governanceUser?.allocated ?? []) as Address[],
             allocationArgs.initiatives,
             allocationArgs.votes,
             allocationArgs.vetos,
