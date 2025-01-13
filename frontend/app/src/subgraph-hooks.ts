@@ -6,7 +6,7 @@ import type {
 import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
-import { ACCOUNT_POSITIONS, BORROW_STATS } from "@/src/demo-mode";
+import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { DEMO_MODE } from "@/src/env";
 import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
@@ -25,7 +25,6 @@ import {
   StabilityPoolDepositsByAccountQuery,
   StabilityPoolEpochScaleQuery,
   StabilityPoolQuery,
-  TotalDepositedQuery,
   TroveByIdQuery,
   TrovesByAccountQuery,
   TrovesCountQuery,
@@ -72,31 +71,6 @@ export function useTrovesCount(
 
   return useQuery({
     queryKey: ["TrovesCount", borrower, collIndex],
-    queryFn,
-    ...prepareOptions(options),
-  });
-}
-
-export function useTotalDeposited(options?: Options) {
-  let queryFn = async () => {
-    const { collaterals } = await graphQuery(TotalDepositedQuery);
-    return collaterals.map(({ collIndex, totalDeposited }) => {
-      if (!isCollIndex(collIndex)) {
-        throw new Error(`Invalid collateral index: ${collIndex}`);
-      }
-      return {
-        collIndex,
-        totalDeposited: dnum18(totalDeposited),
-      };
-    });
-  };
-
-  if (DEMO_MODE) {
-    queryFn = async () => Object.values(BORROW_STATS);
-  }
-
-  return useQuery({
-    queryKey: ["TotalDeposited"],
     queryFn,
     ...prepareOptions(options),
   });

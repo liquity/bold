@@ -29,15 +29,6 @@ export async function graphQuery<TResult, TVariables>(
   return result.data as TResult;
 }
 
-export const TotalDepositedQuery = graphql(`
-  query TotalDeposited {
-    collaterals {
-      collIndex
-      totalDeposited
-    }
-  }
-`);
-
 export const TrovesCountQuery = graphql(`
   query TrovesCount($id: ID!) {
     borrowerInfo(id: $id) {

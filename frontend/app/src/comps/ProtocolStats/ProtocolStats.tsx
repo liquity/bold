@@ -4,22 +4,64 @@ import type { TokenSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Logo } from "@/src/comps/Logo/Logo";
-import { getContracts } from "@/src/contracts";
+import { LIQUITY_STATS_URL } from "@/src/env";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
-import { useTotalDeposited } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, HFlex, shortenAddress, TokenIcon } from "@liquity2/uikit";
+import { useQuery } from "@tanstack/react-query";
 import { blo } from "blo";
-import * as dn from "dnum";
 import Image from "next/image";
 import Link from "next/link";
+import * as v from "valibot";
 
 const DISPLAYED_PRICES = ["LQTY", "BOLD", "ETH"] as const;
 
+const StatsSchema = v.object({
+  total_bold_supply: v.string(),
+  total_debt_pending: v.string(),
+  total_coll_value: v.string(),
+  total_sp_deposits: v.string(),
+  total_value_locked: v.string(),
+  max_sp_apy: v.string(),
+  branch: v.record(
+    v.string(),
+    v.object({
+      coll_active: v.string(),
+      coll_default: v.string(),
+      coll_price: v.string(),
+      sp_deposits: v.string(),
+      interest_accrual_1y: v.string(),
+      interest_pending: v.string(),
+      batch_management_fees_pending: v.string(),
+      debt_pending: v.string(),
+      coll_value: v.string(),
+      sp_apy: v.string(),
+      value_locked: v.string(),
+    }),
+  ),
+});
+
+function useStats() {
+  return useQuery({
+    queryKey: ["liquity-stats"],
+    queryFn: async () => {
+      if (!LIQUITY_STATS_URL) {
+        throw new Error("LIQUITY_STATS_URL is not defined");
+      }
+      const response = await fetch(LIQUITY_STATS_URL);
+      return v.parse(StatsSchema, await response.json());
+    },
+  });
+}
+
 export function ProtocolStats() {
   const account = useAccount();
-  const tvl = useTvl();
+  const stats = useStats();
+
+  const tvl = stats.data?.total_value_locked;
+  const tvlNum = parseFloat(tvl ?? "0");
+
   return (
     <div
       className={css({
@@ -42,12 +84,14 @@ export function ProtocolStats() {
           <Logo size={16} />
           <span>TVL</span>{" "}
           <span>
-            <Amount
-              fallback="…"
-              format="compact"
-              prefix="$"
-              value={tvl}
-            />
+            {tvlNum && !isNaN(tvlNum) && (
+              <Amount
+                fallback="…"
+                format="compact"
+                prefix="$"
+                value={tvlNum}
+              />
+            )}
           </span>
         </HFlex>
         <HFlex gap={16}>
@@ -122,33 +166,4 @@ function Price({ symbol }: { symbol: TokenSymbol }) {
       </HFlex>
     </HFlex>
   );
-}
-
-function useTvl() {
-  const { collaterals } = getContracts();
-  const totalDeposited = useTotalDeposited();
-  const collPrices = Object.fromEntries(collaterals.map((collateral) => (
-    [collateral.symbol, usePrice(collateral.symbol)] as const
-  ))) as Record<TokenSymbol, ReturnType<typeof usePrice>>;
-
-  // make sure all prices and the total deposited have loaded before calculating the TVL
-  if (
-    !Object.values(collPrices).every((cp) => cp.status === "success")
-    || totalDeposited.status !== "success"
-  ) {
-    return null;
-  }
-
-  const tvlByCollateral = collaterals.map((collateral, collIndex) => {
-    const price = collPrices[collateral.symbol].data;
-    const collDeposited = totalDeposited.data[collIndex];
-    return price && collDeposited && dn.mul(price, collDeposited.totalDeposited);
-  });
-
-  let tvl = dn.from(0, 18);
-  for (const value of tvlByCollateral ?? []) {
-    tvl = value ? dn.add(tvl, value) : tvl;
-  }
-
-  return tvl;
 }
