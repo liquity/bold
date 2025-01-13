@@ -59,6 +59,9 @@ export default function NotFoundPage() {
   );
 }
 
+const ILLUSTRATION_SIZE = 208; // width & height
+const ILLUSTRATION_PADDING = 24; // top & bottom padding
+
 function Illustration() {
   const spring = useSpring({
     from: {
@@ -89,14 +92,11 @@ function Illustration() {
     },
   });
 
-  const size = 208;
-  const padding = 24; // top & bottom padding
-
-  const width = size // left triangle
+  const width = ILLUSTRATION_SIZE // left triangle
     + 28 // gap
-    + size // disc
+    + ILLUSTRATION_SIZE // disc
     - 21 // gap
-    + size; // right triangle
+    + ILLUSTRATION_SIZE; // right triangle
 
   return (
     <div
@@ -105,18 +105,18 @@ function Illustration() {
         justifyContent: "center",
         alignItems: "center",
         width,
-        height: size,
+        height: ILLUSTRATION_SIZE,
       })}
     >
       <svg
         width={width}
-        height={size + padding * 2}
-        viewBox={`0 0 ${width} ${size + padding * 2}`}
+        height={ILLUSTRATION_SIZE + ILLUSTRATION_PADDING * 2}
+        viewBox={`0 0 ${width} ${ILLUSTRATION_SIZE + ILLUSTRATION_PADDING * 2}`}
       >
         <a.circle
-          cx={size + 28 + size / 2}
-          cy={padding + size / 2}
-          r={size / 2}
+          cx={ILLUSTRATION_SIZE + 28 + ILLUSTRATION_SIZE / 2}
+          cy={ILLUSTRATION_PADDING + ILLUSTRATION_SIZE / 2}
+          r={ILLUSTRATION_SIZE / 2}
           className={css({
             fill: "token(colors.brandDarkBlue)",
             transformOrigin: "50% 50%",
@@ -128,9 +128,9 @@ function Illustration() {
         />
         <a.path
           d={`
-            M 0 ${padding + size}
-            L ${size} ${padding}
-            L ${size} ${padding + size}
+            M 0 ${ILLUSTRATION_PADDING + ILLUSTRATION_SIZE}
+            L ${ILLUSTRATION_SIZE} ${ILLUSTRATION_PADDING}
+            L ${ILLUSTRATION_SIZE} ${ILLUSTRATION_PADDING + ILLUSTRATION_SIZE}
             Z
           `}
           className={css({
@@ -143,9 +143,9 @@ function Illustration() {
         />
         <a.path
           d={`
-            M ${width - size} ${padding + size}
-            L ${width} ${padding}
-            L ${width} ${padding + size}
+            M ${width - ILLUSTRATION_SIZE} ${ILLUSTRATION_PADDING + ILLUSTRATION_SIZE}
+            L ${width} ${ILLUSTRATION_PADDING}
+            L ${width} ${ILLUSTRATION_PADDING + ILLUSTRATION_SIZE}
             Z
           `}
           className={css({
