@@ -30,6 +30,7 @@ const documents = {
     "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n": types.GovernanceInitiativesDocument,
     "\n  query GovernanceUser($id: ID!) {\n    governanceUser(id: $id) {\n      id\n      allocatedLQTY\n      stakedLQTY\n      stakedOffset\n      allocations {\n        id\n        atEpoch\n        vetoLQTY\n        voteLQTY\n        initiative {\n          id\n        }\n      }\n    }\n  }\n": types.GovernanceUserDocument,
     "\n  query GovernanceStats {\n    governanceStats(id: \"stats\") {\n      id\n      totalLQTYStaked\n      totalOffset\n      totalInitiatives\n    }\n  }\n": types.GovernanceStatsDocument,
+    "\n  query GovernanceUserAllocations($id: ID!, $epoch: BigInt!) {\n    governanceUser(id: $id) {\n      allocations(where: { atEpoch: $epoch }) {\n        initiative {\n          id\n        }\n      }\n    }\n  }\n": types.GovernanceUserAllocationsDocument,
 };
 
 /**
@@ -92,6 +93,10 @@ export function graphql(source: "\n  query GovernanceUser($id: ID!) {\n    gover
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query GovernanceStats {\n    governanceStats(id: \"stats\") {\n      id\n      totalLQTYStaked\n      totalOffset\n      totalInitiatives\n    }\n  }\n"): typeof import('./graphql').GovernanceStatsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GovernanceUserAllocations($id: ID!, $epoch: BigInt!) {\n    governanceUser(id: $id) {\n      allocations(where: { atEpoch: $epoch }) {\n        initiative {\n          id\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GovernanceUserAllocationsDocument;
 
 
 export function graphql(source: string) {

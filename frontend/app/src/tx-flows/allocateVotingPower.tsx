@@ -1,17 +1,19 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import type { Address, Initiative, VoteAllocation } from "@/src/types";
 
+import { AddressLink } from "@/src/comps/AddressLink/AddressLink";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { getUserStates, useInitiatives } from "@/src/liquity-governance";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
+import { GovernanceUserAllocations, graphQuery } from "@/src/subgraph-queries";
 import { vVoteAllocations } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { IconDownvote, IconUpvote } from "@liquity2/uikit";
 import { IconStake } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { writeContract } from "wagmi/actions";
+import { readContract, writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -193,11 +195,24 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
           }
         }
 
+        // get allocations for the current epoch
+        const epoch = await readContract(wagmiConfig, {
+          ...contracts.Governance,
+          functionName: "epoch",
+        });
+        const { governanceUser } = await graphQuery(
+          GovernanceUserAllocations,
+          { id: account.toLowerCase(), epoch },
+        );
+        const allocations = governanceUser?.allocations.map((a) => (
+          a.initiative.id as Address
+        )) ?? [];
+
         return writeContract(wagmiConfig, {
           ...contracts.Governance,
           functionName: "allocateLQTY",
           args: [
-            [],
+            allocations,
             allocationArgs.initiatives,
             allocationArgs.votes,
             allocationArgs.vetos,

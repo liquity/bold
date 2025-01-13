@@ -2288,6 +2288,14 @@ export type GovernanceStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GovernanceStatsQuery = { __typename?: 'Query', governanceStats?: { __typename?: 'GovernanceStats', id: string, totalLQTYStaked: bigint, totalOffset: bigint, totalInitiatives: number } | null };
 
+export type GovernanceUserAllocationsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+  epoch: Scalars['BigInt']['input'];
+}>;
+
+
+export type GovernanceUserAllocationsQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', allocations: Array<{ __typename?: 'GovernanceAllocation', initiative: { __typename?: 'GovernanceInitiative', id: string } }> } | null };
+
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
@@ -2549,3 +2557,14 @@ export const GovernanceStatsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GovernanceStatsQuery, GovernanceStatsQueryVariables>;
+export const GovernanceUserAllocationsDocument = new TypedDocumentString(`
+    query GovernanceUserAllocations($id: ID!, $epoch: BigInt!) {
+  governanceUser(id: $id) {
+    allocations(where: {atEpoch: $epoch}) {
+      initiative {
+        id
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GovernanceUserAllocationsQuery, GovernanceUserAllocationsQueryVariables>;
