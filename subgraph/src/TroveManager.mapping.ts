@@ -10,9 +10,9 @@ import { TroveNFT as TroveNFTContract } from "../generated/templates/TroveManage
 // decides whether to update the flag indicating
 // that a trove might be leveraged or not.
 enum LeverageUpdate {
-  yes = 0,
-  no = 1,
-  unchanged = 2,
+  yes,
+  no,
+  unchanged,
 }
 
 // see Operation enum in
@@ -49,7 +49,9 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   }
 
   if (operation === OP_ADJUST_TROVE) {
-    updateTrove(tm, troveId, timestamp, getLeverageUpdate(event), true);
+    trove = updateTrove(tm, troveId, timestamp, getLeverageUpdate(event), false);
+    trove.status = "active";
+    trove.save();
     return;
   }
 
@@ -65,17 +67,23 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   }
 
   if (operation === OP_ADJUST_TROVE_INTEREST_RATE) {
-    updateTrove(tm, troveId, timestamp, LeverageUpdate.unchanged, false);
+    trove = updateTrove(tm, troveId, timestamp, getLeverageUpdate(event), false);
+    trove.status = "active";
+    trove.save();
     return;
   }
 
   if (operation === OP_SET_INTEREST_BATCH_MANAGER) {
-    enterBatch(collId, troveId, tm.Troves(troveId).getInterestBatchManager());
+    trove = enterBatch(collId, troveId, tm.Troves(troveId).getInterestBatchManager());
+    trove.status = "active";
+    trove.save();
     return;
   }
 
   if (operation === OP_REMOVE_FROM_BATCH) {
-    leaveBatch(collId, troveId, event.params._annualInterestRate);
+    trove = leaveBatch(collId, troveId, event.params._annualInterestRate);
+    trove.status = "active";
+    trove.save();
     return;
   }
 
@@ -114,27 +122,14 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
 }
 
 function getLeverageUpdate(event: TroveOperationEvent): LeverageUpdate {
-  let operation = event.params._operation;
-
-  // check if the operation involved a flash loan,
-  // which would indicate a potential leveraged update
-  if (
-    operation === OP_OPEN_TROVE
-    || operation === OP_OPEN_TROVE_AND_JOIN_BATCH
-    || operation === OP_ADJUST_TROVE
-    || operation === OP_ADJUST_TROVE_INTEREST_RATE
-  ) {
-    let receipt = event.receipt;
-    let logs = receipt ? receipt.logs : [];
-    for (let i = 0; i < logs.length; i++) {
-      if (logs[i].topics[0].equals(FLASH_LOAN_TOPIC)) {
-        return LeverageUpdate.yes;
-      }
+  let receipt = event.receipt;
+  let logs = receipt ? receipt.logs : [];
+  for (let i = 0; i < logs.length; i++) {
+    if (logs[i].topics[0].equals(FLASH_LOAN_TOPIC)) {
+      return LeverageUpdate.yes;
     }
-    return LeverageUpdate.no;
   }
-
-  return LeverageUpdate.unchanged;
+  return LeverageUpdate.no;
 }
 
 function floorToDecimals(value: BigInt, decimals: u8): BigInt {
@@ -150,23 +145,13 @@ function getRateFloored(rate: BigInt): BigInt {
 //  1. set the interest batch on the trove
 //  2. set the interest rate to 0 (indicating that the trove is in a batch)
 //  3. remove its debt from its rate bracket (handled at the batch level)
-function enterBatch(collId: string, troveId: BigInt, batchManager: Address): void {
+function enterBatch(collId: string, troveId: BigInt, batchManager: Address): Trove {
   let troveFullId = collId + ":" + troveId.toHexString();
   let batchId = collId + ":" + batchManager.toHexString();
 
   let trove = Trove.load(troveFullId);
-  if (!trove) {
+  if (trove === null) {
     throw new Error("Trove not found: " + troveFullId);
-  }
-
-  // leave the previous batch if needed
-  if (trove.interestBatch !== null) {
-    leaveBatch(collId, troveId, BigInt.fromI32(0));
-  }
-
-  let batch = InterestBatch.load(batchId);
-  if (!batch) {
-    throw new Error("Batch not found: " + batchId);
   }
 
   updateRateBracketDebt(
@@ -180,13 +165,15 @@ function enterBatch(collId: string, troveId: BigInt, batchManager: Address): voi
   trove.interestBatch = batchId;
   trove.interestRate = BigInt.fromI32(0);
   trove.save();
+
+  return trove;
 }
 
 // When a trove leaves a batch:
 //  1. remove the interest batch on the trove
 //  2. set the interest rate to the new rate
 //  3. add its debt to the rate bracket of the current rate
-function leaveBatch(collId: string, troveId: BigInt, interestRate: BigInt): void {
+function leaveBatch(collId: string, troveId: BigInt, interestRate: BigInt): Trove {
   let troveFullId = collId + ":" + troveId.toHexString();
 
   let trove = Trove.load(troveFullId);
@@ -194,14 +181,8 @@ function leaveBatch(collId: string, troveId: BigInt, interestRate: BigInt): void
     throw new Error("Trove not found: " + troveFullId);
   }
 
-  let batchId = trove.interestBatch;
-  if (batchId === null) {
+  if (trove.interestBatch === null) {
     throw new Error("Trove is not in a batch: " + troveFullId);
-  }
-
-  let batch = InterestBatch.load(batchId);
-  if (batch === null) {
-    throw new Error("Batch not found: " + batchId);
   }
 
   updateRateBracketDebt(
@@ -214,7 +195,10 @@ function leaveBatch(collId: string, troveId: BigInt, interestRate: BigInt): void
 
   trove.interestBatch = null;
   trove.interestRate = interestRate;
+  trove.status = "active"; // always reset the status when leaving a batch
   trove.save();
+
+  return trove;
 }
 
 function loadOrCreateInterestRateBracket(
@@ -350,7 +334,6 @@ function updateTrove(
   let trove = Trove.load(troveFullId);
 
   let prevDebt = trove ? trove.debt : BigInt.fromI32(0);
-  let prevDeposit = trove ? trove.deposit : BigInt.fromI32(0);
   let prevInterestRate = trove ? trove.interestRate : null;
 
   let troveData = troveManagerContract.getLatestTroveData(troveId);
@@ -359,8 +342,6 @@ function updateTrove(
   let newInterestRate = troveData.annualInterestRate;
   let newStake = troveManagerContract.Troves(troveId).getStake();
 
-  collateral.totalDeposited = collateral.totalDeposited.minus(prevDeposit).plus(newDeposit);
-  collateral.totalDebt = collateral.totalDebt.minus(prevDebt).plus(newDebt);
   collateral.save();
 
   // create trove if needed

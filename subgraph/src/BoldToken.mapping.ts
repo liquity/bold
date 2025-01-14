@@ -7,7 +7,11 @@ import { CollateralRegistry as CollateralRegistryContract } from "../generated/B
 import { ERC20 as ERC20Contract } from "../generated/BoldToken/ERC20";
 import { TroveManager as TroveManagerContract } from "../generated/BoldToken/TroveManager";
 import { Collateral, CollateralAddresses, StabilityPoolEpochScale, Token } from "../generated/schema";
-import { StabilityPool as StabilityPoolTemplate, TroveManager as TroveManagerTemplate } from "../generated/templates";
+import {
+  StabilityPool as StabilityPoolTemplate,
+  TroveManager as TroveManagerTemplate,
+  TroveNFT as TroveNFTTemplate,
+} from "../generated/templates";
 
 function addCollateral(
   collIndex: i32,
@@ -20,9 +24,6 @@ function addCollateral(
   let collateral = new Collateral(collId);
   collateral.collIndex = collIndex;
   collateral.token = collId;
-  collateral.totalDebt = BigInt.fromI32(0);
-  collateral.totalDeposited = BigInt.fromI32(0);
-  collateral.price = BigInt.fromI32(0);
 
   let token = new Token(collId);
   let tokenContract = ERC20Contract.bind(tokenAddress);
@@ -68,6 +69,7 @@ function addCollateral(
   context.setI32("totalCollaterals", totalCollaterals);
 
   TroveManagerTemplate.createWithContext(troveManagerAddress, context);
+  TroveNFTTemplate.createWithContext(Address.fromBytes(addresses.troveNft), context);
   StabilityPoolTemplate.createWithContext(Address.fromBytes(addresses.stabilityPool), context);
 }
 

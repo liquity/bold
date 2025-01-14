@@ -27,6 +27,8 @@ dataSources:
           file: ../contracts/out/ERC20.sol/ERC20.json
         - name: TroveManager
           file: ../contracts/out/TroveManager.sol/TroveManager.json
+        - name: TroveNFT
+          file: ../contracts/out/TroveNFT.sol/TroveNFT.json
       eventHandlers:
         - event: CollateralRegistryAddressChanged(address)
           handler: handleCollateralRegistryAddressChanged
@@ -99,6 +101,25 @@ templates:
         - event: BatchUpdated(indexed
             address,uint8,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleBatchUpdated
+  - name: TroveNFT
+    kind: ethereum/contract
+    network: sepolia
+    source:
+      abi: TroveNFT
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/TroveNFT.mapping.ts
+      entities:
+        - BorrowerInfo
+        - Trove
+      abis:
+        - name: TroveNFT
+          file: ../contracts/out/TroveNFT.sol/TroveNFT.json
+      eventHandlers:
+        - event: Transfer(indexed address,indexed address,indexed uint256)
+          handler: handleTransfer
   - name: StabilityPool
     kind: ethereum/contract
     network: sepolia
