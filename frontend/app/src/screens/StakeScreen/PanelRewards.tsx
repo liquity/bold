@@ -40,7 +40,7 @@ export function PanelRewards() {
 
   const gasPrice = useGasPrice();
 
-  if (!ethPrice) {
+  if (!ethPrice.data) {
     return null;
   }
 
@@ -48,7 +48,7 @@ export function PanelRewards() {
     ? dnum18(gasEstimate.data * gasPrice.data)
     : null;
 
-  const txGasPriceUsd = txGasPriceEth && dn.mul(txGasPriceEth, ethPrice);
+  const txGasPriceUsd = txGasPriceEth && dn.mul(txGasPriceEth, ethPrice.data);
 
   const rewardsLusd = (
     demoMode.enabled
@@ -64,7 +64,7 @@ export function PanelRewards() {
 
   const totalRewardsUsd = dn.add(
     rewardsLusd,
-    dn.mul(rewardsEth, ethPrice),
+    dn.mul(rewardsEth, ethPrice.data),
   );
 
   const allowSubmit = account.isConnected && dn.gt(totalRewardsUsd, 0);

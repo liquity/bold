@@ -6,7 +6,7 @@ import type {
 import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
-import { ACCOUNT_POSITIONS, BORROW_STATS } from "@/src/demo-mode";
+import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { DEMO_MODE } from "@/src/env";
 import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
@@ -15,6 +15,9 @@ import { isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import {
+  GovernanceInitiatives,
+  GovernanceStats,
+  GovernanceUser,
   graphQuery,
   InterestBatchQuery,
   InterestRateBracketsQuery,
@@ -22,7 +25,6 @@ import {
   StabilityPoolDepositsByAccountQuery,
   StabilityPoolEpochScaleQuery,
   StabilityPoolQuery,
-  TotalDepositedQuery,
   TroveByIdQuery,
   TrovesByAccountQuery,
   TrovesCountQuery,
@@ -74,31 +76,6 @@ export function useTrovesCount(
   });
 }
 
-export function useTotalDeposited(options?: Options) {
-  let queryFn = async () => {
-    const { collaterals } = await graphQuery(TotalDepositedQuery);
-    return collaterals.map(({ collIndex, totalDeposited }) => {
-      if (!isCollIndex(collIndex)) {
-        throw new Error(`Invalid collateral index: ${collIndex}`);
-      }
-      return {
-        collIndex,
-        totalDeposited: dnum18(totalDeposited),
-      };
-    });
-  };
-
-  if (DEMO_MODE) {
-    queryFn = async () => Object.values(BORROW_STATS);
-  }
-
-  return useQuery({
-    queryKey: ["TotalDeposited"],
-    queryFn,
-    ...prepareOptions(options),
-  });
-}
-
 export function useLoansByAccount(
   account?: Address | null,
   options?: Options,
@@ -124,6 +101,30 @@ export function useLoansByAccount(
     queryFn,
     ...prepareOptions(options),
   });
+}
+
+function subgraphBatchToDelegate(
+  batch: NonNullable<
+    InterestBatchQueryType["interestBatch"]
+  >,
+): Delegate {
+  if (!isAddress(batch.batchManager)) {
+    throw new Error(`Invalid batch manager: ${batch.batchManager}`);
+  }
+  return {
+    id: batch.batchManager,
+    address: batch.batchManager,
+    name: shortenAddress(batch.batchManager, 4),
+    interestRate: dnum18(batch.annualInterestRate),
+    boldAmount: dnum18(batch.debt),
+    interestRateChange: [dn.from(0.015), dn.from(0.05)],
+    fee: dnum18(batch.annualManagementFee),
+
+    // not available in the subgraph yet
+    followers: 0,
+    lastDays: 0,
+    redemptions: dnum18(0),
+  };
 }
 
 export function useInterestBatchDelegate(
@@ -402,6 +403,77 @@ export function useInterestRateBrackets(
   });
 }
 
+export function useGovernanceInitiatives(options?: Options) {
+  let queryFn = async () => {
+    const { governanceInitiatives } = await graphQuery(GovernanceInitiatives);
+    return governanceInitiatives.map((initiative) => initiative.id as Address);
+  };
+
+  if (DEMO_MODE) {
+    queryFn = async () => [];
+  }
+
+  return useQuery({
+    queryKey: ["GovernanceInitiatives"],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
+export function useGovernanceUser(account: Address | null, options?: Options) {
+  let queryFn = async () => {
+    if (!account) return null;
+    const { governanceUser } = await graphQuery(GovernanceUser, {
+      id: account.toLowerCase(),
+    });
+    if (!governanceUser) {
+      return null;
+    }
+    return {
+      ...governanceUser,
+      id: governanceUser.id as Address,
+      allocatedLQTY: BigInt(governanceUser.allocatedLQTY),
+      stakedLQTY: BigInt(governanceUser.stakedLQTY),
+      stakedOffset: BigInt(governanceUser.stakedOffset),
+      allocations: governanceUser.allocations.map((allocation) => ({
+        ...allocation,
+        voteLQTY: BigInt(allocation.voteLQTY),
+        vetoLQTY: BigInt(allocation.vetoLQTY),
+        initiative: allocation.initiative.id as Address,
+      })),
+    };
+  };
+
+  // TODO: demo mode
+  if (DEMO_MODE) {
+    queryFn = async () => null;
+  }
+
+  return useQuery({
+    queryKey: ["GovernanceUser", account],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
+export function useGovernanceStats(options?: Options) {
+  let queryFn = async () => {
+    const { governanceStats } = await graphQuery(GovernanceStats);
+    return governanceStats;
+  };
+
+  // TODO: demo mode
+  if (DEMO_MODE) {
+    queryFn = async () => null;
+  }
+
+  return useQuery({
+    queryKey: ["GovernanceStats"],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
 function subgraphTroveToLoan(
   trove: TrovesByAccountQueryType["troves"][number],
 ): PositionLoanCommitted {
@@ -419,7 +491,7 @@ function subgraphTroveToLoan(
   }
 
   return {
-    type: trove.mightBeLeveraged ? "leverage" : "borrow",
+    type: trove.mightBeLeveraged ? "multiply" : "borrow",
     batchManager: isAddress(trove.interestBatch?.batchManager)
       ? trove.interestBatch.batchManager
       : null,
@@ -456,27 +528,5 @@ function subgraphStabilityPoolDepositToEarnPosition(
       bold: dnum18(0),
       coll: dnum18(0),
     },
-  };
-}
-
-function subgraphBatchToDelegate(
-  batch: NonNullable<
-    InterestBatchQueryType["interestBatch"]
-  >,
-): Delegate {
-  if (!isAddress(batch.batchManager)) {
-    throw new Error(`Invalid batch manager: ${batch.batchManager}`);
-  }
-  return {
-    id: batch.batchManager,
-    address: batch.batchManager,
-    name: shortenAddress(batch.batchManager, 4),
-    interestRate: dnum18(batch.annualInterestRate),
-    followers: 0,
-    boldAmount: dnum18(batch.debt),
-    lastDays: 0,
-    redemptions: dnum18(0),
-    interestRateChange: [dn.from(0.015), dn.from(0.05)],
-    fee: dnum18(batch.annualManagementFee),
   };
 }

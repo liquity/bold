@@ -1,8 +1,14 @@
-import type { CollIndex, TroveId } from "@/src/types";
+import type { CollIndex, Dnum, TroveId } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
-import { CLOSE_FROM_COLLATERAL_SLIPPAGE } from "@/src/constants";
+import { CLOSE_FROM_COLLATERAL_SLIPPAGE, DATA_REFRESH_INTERVAL } from "@/src/constants";
+import { getProtocolContract } from "@/src/contracts";
 import { getCollateralContracts } from "@/src/contracts";
+import { dnum18 } from "@/src/dnum-utils";
+import { useDebouncedQueryKey } from "@/src/react-utils";
+import { useWagmiConfig } from "@/src/services/Ethereum";
+import { useQuery } from "@tanstack/react-query";
+import * as dn from "dnum";
 import { readContract, readContracts } from "wagmi/actions";
 
 const DECIMAL_PRECISION = 10n ** 18n;
@@ -52,7 +58,7 @@ export async function getLeverUpTroveParams(
 
   const leverageRatio = BigInt(leverageFactor * 1000) * DECIMAL_PRECISION / 1000n;
   if (leverageRatio <= currentLR) {
-    throw new Error(`Leverage ratio should increase: ${leverageRatio} <= ${currentLR}`);
+    throw new Error(`Multiply ratio should increase: ${leverageRatio} <= ${currentLR}`);
   }
 
   const currentCollAmount = troveData.entireColl;
@@ -111,7 +117,7 @@ export async function getLeverDownTroveParams(
 
   const leverageRatio = BigInt(leverageFactor * 1000) * DECIMAL_PRECISION / 1000n;
   if (leverageRatio >= currentLR) {
-    throw new Error(`Leverage ratio should decrease: ${leverageRatio} >= ${currentLR}`);
+    throw new Error(`Multiply ratio should decrease: ${leverageRatio} >= ${currentLR}`);
   }
 
   const currentCollAmount = troveData.entireColl;
@@ -207,4 +213,63 @@ export async function getCloseFlashLoanAmount(
 
 function leverageRatioToCollateralRatio(inputRatio: bigint) {
   return inputRatio * DECIMAL_PRECISION / (inputRatio - DECIMAL_PRECISION);
+}
+
+export function useCheckLeverageSlippage({
+  collIndex,
+  initialDeposit,
+  leverageFactor,
+  ownerIndex,
+}: {
+  collIndex: CollIndex;
+  initialDeposit: Dnum | null;
+  leverageFactor: number;
+  ownerIndex: number | null;
+}) {
+  const wagmiConfig = useWagmiConfig();
+  const WethContract = getProtocolContract("WETH");
+  const ExchangeHelpersContract = getProtocolContract("ExchangeHelpers");
+
+  const debouncedQueryKey = useDebouncedQueryKey([
+    "openLeveragedTroveParams",
+    collIndex,
+    String(!initialDeposit || initialDeposit[0]),
+    leverageFactor,
+    ownerIndex,
+  ], 100);
+
+  return useQuery({
+    queryKey: debouncedQueryKey,
+    queryFn: async () => {
+      const params = initialDeposit && await getOpenLeveragedTroveParams(
+        collIndex,
+        initialDeposit[0],
+        leverageFactor,
+        wagmiConfig,
+      );
+
+      if (params === null) {
+        return null;
+      }
+
+      const [_, slippage] = await readContract(wagmiConfig, {
+        abi: ExchangeHelpersContract.abi,
+        address: ExchangeHelpersContract.address,
+        functionName: "getCollFromBold",
+        args: [
+          params.expectedBoldAmount,
+          WethContract.address,
+          params.flashLoanAmount,
+        ],
+      });
+
+      return dnum18(slippage);
+    },
+    enabled: Boolean(
+      initialDeposit
+        && dn.gt(initialDeposit, 0)
+        && ownerIndex !== null,
+    ),
+    refetchInterval: DATA_REFRESH_INTERVAL,
+  });
 }

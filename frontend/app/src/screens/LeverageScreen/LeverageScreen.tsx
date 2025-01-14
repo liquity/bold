@@ -1,7 +1,7 @@
 "use client";
 
 import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
-import type { Address, Dnum, PositionLoanUncommitted } from "@/src/types";
+import type { Address, PositionLoanUncommitted } from "@/src/types";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -12,7 +12,6 @@ import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/Lever
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import {
-  DATA_REFRESH_INTERVAL,
   ETH_MAX_RESERVE,
   INTEREST_RATE_DEFAULT,
   LEVERAGE_MAX_SLIPPAGE,
@@ -20,15 +19,14 @@ import {
   MIN_DEBT,
 } from "@/src/constants";
 import content from "@/src/content";
-import { getContracts, getProtocolContract } from "@/src/contracts";
+import { getContracts } from "@/src/contracts";
 import { dnum18, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { getOpenLeveragedTroveParams } from "@/src/liquity-leverage";
+import { useCheckLeverageSlippage } from "@/src/liquity-leverage";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { getCollIndexFromSymbol } from "@/src/liquity-utils";
-import { useDebouncedQueryKey } from "@/src/react-utils";
-import { useAccount, useBalance, useWagmiConfig } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useTrovesCount } from "@/src/subgraph-hooks";
@@ -48,11 +46,9 @@ import {
   TokenIcon,
   VFlex,
 } from "@liquity2/uikit";
-import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useReadContract } from "wagmi";
 
 export function LeverageScreen() {
   const router = useRouter();
@@ -62,7 +58,7 @@ export function LeverageScreen() {
 
   // useParams() can return an array but not with the current
   // routing setup, so we can safely cast it to a string
-  const collSymbol = String(useParams().collateral ?? contracts.collaterals[0].symbol).toUpperCase();
+  const collSymbol = String(useParams().collateral ?? contracts.collaterals[0]?.symbol ?? "").toUpperCase();
   if (!isCollateralSymbol(collSymbol)) {
     throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
@@ -81,6 +77,9 @@ export function LeverageScreen() {
   });
 
   const collToken = collateralTokens[collIndex];
+  if (!collToken) {
+    throw new Error(`Unknown collateral index: ${collIndex}`);
+  }
 
   const balances = Object.fromEntries(collateralTokens.map(({ symbol }) => (
     [symbol, useBalance(account.address, symbol)] as const
@@ -106,22 +105,22 @@ export function LeverageScreen() {
 
   const leverageField = useLeverageField({
     depositPreLeverage: depositPreLeverage.parsed,
-    collPrice: collPrice ?? dn.from(0, 18),
+    collPrice: collPrice.data ?? dn.from(0, 18),
     collToken,
   });
 
+  // reset leverage when collateral changes
   useEffect(() => {
-    // reset leverage when collateral changes
-    leverageField.updateLeverageFactor(leverageField.leverageFactorSuggestions[0]);
+    leverageField.updateLeverageFactor(leverageField.leverageFactorSuggestions[0] ?? 1.1);
   }, [collToken.symbol, leverageField.leverageFactorSuggestions]);
 
   const redemptionRisk = getRedemptionRisk(interestRate);
-  const depositUsd = depositPreLeverage.parsed && collPrice && dn.mul(
+  const depositUsd = depositPreLeverage.parsed && collPrice.data && dn.mul(
     depositPreLeverage.parsed,
-    collPrice,
+    collPrice.data,
   );
 
-  const collBalance = balances[collToken.symbol].data;
+  const collBalance = balances[collToken.symbol]?.data;
 
   const maxAmount = collBalance && dnumMax(
     dn.sub(collBalance, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0), // Only keep a reserve for ETH, not LSTs
@@ -129,7 +128,7 @@ export function LeverageScreen() {
   );
 
   const newLoan: PositionLoanUncommitted = {
-    type: "leverage",
+    type: "multiply",
     status: "active",
     batchManager: interestRateDelegate,
     borrowed: leverageField.debt ?? dn.from(0, 18),
@@ -145,13 +144,16 @@ export function LeverageScreen() {
   const hasDeposit = Boolean(depositPreLeverage.parsed && dn.gt(depositPreLeverage.parsed, 0));
 
   const leverageSlippage = useCheckLeverageSlippage({
+    collIndex,
     initialDeposit: depositPreLeverage.parsed,
     leverageFactor: leverageField.leverageFactor,
     ownerIndex: troveCount.data ?? null,
-    loan: newLoan,
   });
 
-  const leverageSlippageElements = useSlippageElements(leverageSlippage, hasDeposit && account.isConnected);
+  const leverageSlippageElements = useSlippageElements(
+    leverageSlippage,
+    hasDeposit && account.isConnected,
+  );
 
   const hasAllowedSlippage = leverageSlippage.data
     && dn.lte(leverageSlippage.data, LEVERAGE_MAX_SLIPPAGE);
@@ -203,7 +205,7 @@ export function LeverageScreen() {
                     icon: <TokenIcon symbol={symbol} />,
                     label: name,
                     value: account.isConnected
-                      ? fmtnum(balances[symbol].data ?? 0)
+                      ? fmtnum(balances[symbol]?.data ?? 0)
                       : "−",
                   }))}
                   menuPlacement="end"
@@ -213,9 +215,13 @@ export function LeverageScreen() {
                       depositPreLeverage.setValue("");
                       depositPreLeverage.focus();
                     }, 0);
-                    const { symbol } = collateralTokens[index];
+                    const collToken = collateralTokens[index];
+                    if (!collToken) {
+                      throw new Error(`Unknown collateral index: ${index}`);
+                    }
+                    const { symbol } = collToken;
                     router.push(
-                      `/leverage/${symbol.toLowerCase()}`,
+                      `/multiply/${symbol.toLowerCase()}`,
                       { scroll: false },
                     );
                   }}
@@ -241,10 +247,10 @@ export function LeverageScreen() {
             />
           }
           footer={{
-            start: collPrice && (
+            start: collPrice.data && (
               <Field.FooterInfoCollPrice
                 collName={collToken.name}
-                collPriceUsd={collPrice}
+                collPriceUsd={collPrice.data}
               />
             ),
             end: (
@@ -370,7 +376,7 @@ export function LeverageScreen() {
                 if (depositPreLeverage.parsed && leverageField.debt && account.address) {
                   txFlow.start({
                     flowId: "openLeveragePosition",
-                    backLink: ["/leverage", "Back to editing"],
+                    backLink: ["/multiply", "Back to editing"],
                     successLink: ["/", "Go to the Dashboard"],
                     successMessage: "The leveraged position has been created successfully.",
 
@@ -402,63 +408,6 @@ export function LeverageScreen() {
       </div>
     </Screen>
   );
-}
-
-export function useCheckLeverageSlippage({
-  initialDeposit,
-  leverageFactor,
-  loan,
-  ownerIndex,
-}: {
-  initialDeposit: Dnum | null;
-  leverageFactor: number;
-  loan: PositionLoanUncommitted;
-  ownerIndex: number | null;
-}) {
-  const { collIndex } = loan;
-  const wagmiConfig = useWagmiConfig();
-  const WethContract = getProtocolContract("WETH");
-  const ExchangeHelpersContract = getProtocolContract("ExchangeHelpers");
-
-  const debouncedQueryKey = useDebouncedQueryKey([
-    "openLeveragedTroveParams",
-    collIndex,
-    String(!initialDeposit || initialDeposit[0]),
-    leverageFactor,
-    ownerIndex,
-  ], 100);
-
-  const openLeveragedTroveParams = useQuery({
-    queryKey: debouncedQueryKey,
-    queryFn: () => (
-      initialDeposit && getOpenLeveragedTroveParams(
-        collIndex,
-        initialDeposit[0],
-        leverageFactor,
-        wagmiConfig,
-      )
-    ),
-    enabled: Boolean(
-      initialDeposit
-        && dn.gt(initialDeposit, 0)
-        && ownerIndex !== null,
-    ),
-    refetchInterval: DATA_REFRESH_INTERVAL,
-  });
-
-  const boldAmount = openLeveragedTroveParams.data?.expectedBoldAmount ?? 0n;
-  const flashLoanAmount = openLeveragedTroveParams.data?.flashLoanAmount ?? 0n;
-
-  return useReadContract({
-    abi: ExchangeHelpersContract.abi,
-    address: ExchangeHelpersContract.address,
-    functionName: "getCollFromBold",
-    args: [boldAmount, WethContract.address, flashLoanAmount],
-    query: {
-      enabled: Boolean(openLeveragedTroveParams.data),
-      select: (result) => dnum18(result[1]),
-    },
-  });
 }
 
 function useSlippageElements(
@@ -523,7 +472,6 @@ function useSlippageElements(
     const message = "Calculating slippage…";
     return {
       drawer: null,
-      // drawer: { mode: "loading", message },
       message,
       mode: "loading",
       onClose,
@@ -550,11 +498,6 @@ function useSlippageElements(
 
   return {
     drawer: null,
-    // drawer: {
-    //   mode: "success",
-    //   message: `Slippage below threshold (${fmtnum(LEVERAGE_MAX_SLIPPAGE, 2, 100)}%)`,
-    //   autoClose: 700,
-    // },
     onClose,
     mode: "success",
   };

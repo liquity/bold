@@ -1,3 +1,5 @@
+"use client";
+
 import type { CSSProperties, HTMLAttributes, ReactNode } from "react";
 
 import { css, cx } from "../../styled-system/css";

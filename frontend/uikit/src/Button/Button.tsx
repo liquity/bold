@@ -1,3 +1,5 @@
+"use client";
+
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { match, P } from "ts-pattern";

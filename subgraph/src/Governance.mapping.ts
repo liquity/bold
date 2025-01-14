@@ -1,10 +1,8 @@
-import { Address, BigInt, ethereum } from "@graphprotocol/graph-ts";
-import { governanceDeploymentInitiatives } from "../addresses";
+import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 import {
   AllocateLQTY as AllocateLQTYEvent,
   ClaimForInitiative as ClaimForInitiativeEvent,
   DepositLQTY as DepositLQTYEvent,
-  Governance as GovernanceContract,
   RegisterInitiative as RegisterInitiativeEvent,
   SnapshotVotesForInitiative as SnapshotVotesForInitiativeEvent,
   UnregisterInitiative as UnregisterInitiativeEvent,
@@ -12,30 +10,15 @@ import {
 } from "../generated/Governance/Governance";
 import { GovernanceAllocation, GovernanceInitiative, GovernanceStats, GovernanceUser } from "../generated/schema";
 
-function initialize(block: ethereum.Block): void {
-  // Initial governance initiatives passed to the constructor (no event emitted)
-  for (let i = 0; i < governanceDeploymentInitiatives.length; i++) {
-    let initiative = new GovernanceInitiative(governanceDeploymentInitiatives[i]);
-    initiative.registeredAt = block.timestamp;
-    initiative.registeredAtEpoch = 1;
-    initiative.registrant = Address.zero();
-    initiative.totalBoldClaimed = BigInt.fromI32(0);
-    initiative.totalVetos = BigInt.fromI32(0);
-    initiative.totalVotes = BigInt.fromI32(0);
-    initiative.save();
-  }
-
+function initializeStats(): GovernanceStats {
   // Create initial stats
   let stats = new GovernanceStats("stats");
   stats.totalLQTYStaked = BigInt.fromI32(0);
+  stats.totalOffset = BigInt.fromI32(0);
   stats.totalInitiatives = 0;
   stats.save();
-}
 
-export function handleBlock(block: ethereum.Block): void {
-  if (GovernanceStats.load("stats") === null) {
-    initialize(block);
-  }
+  return stats;
 }
 
 export function handleRegisterInitiative(event: RegisterInitiativeEvent): void {
@@ -43,9 +26,6 @@ export function handleRegisterInitiative(event: RegisterInitiativeEvent): void {
   initiative.registeredAt = event.block.timestamp;
   initiative.registeredAtEpoch = event.params.atEpoch;
   initiative.registrant = event.params.registrant;
-  initiative.totalBoldClaimed = BigInt.fromI32(0);
-  initiative.totalVetos = BigInt.fromI32(0);
-  initiative.totalVotes = BigInt.fromI32(0);
   initiative.save();
 }
 
@@ -71,17 +51,20 @@ export function handleDepositLQTY(event: DepositLQTYEvent): void {
   let user = GovernanceUser.load(event.params.user.toHex());
   if (user === null) {
     user = new GovernanceUser(event.params.user.toHex());
+    user.allocated = [];
+    user.allocatedLQTY = BigInt.fromI32(0);
+    user.stakedLQTY = BigInt.fromI32(0);
+    user.stakedOffset = BigInt.fromI32(0);
   }
 
-  let governance = GovernanceContract.bind(event.address);
-  let userState = governance.userStates(event.params.user);
-
-  user.allocatedLQTY = userState.getAllocatedLQTY();
-  user.averageStakingTimestamp = userState.getAverageStakingTimestamp();
+  let offsetIncrease = event.params.lqtyAmount.times(event.block.timestamp);
+  user.stakedOffset = user.stakedOffset.plus(offsetIncrease);
+  user.stakedLQTY = user.stakedLQTY.plus(event.params.lqtyAmount);
   user.save();
 
   let stats = getStats();
-  stats.totalLQTYStaked = stats.totalLQTYStaked.plus(event.params.depositedLQTY);
+  stats.totalOffset = stats.totalOffset.plus(offsetIncrease);
+  stats.totalLQTYStaked = stats.totalLQTYStaked.plus(event.params.lqtyAmount);
   stats.save();
 }
 
@@ -91,15 +74,21 @@ export function handleWithdrawLQTY(event: WithdrawLQTYEvent): void {
     return;
   }
 
-  let governance = GovernanceContract.bind(event.address);
-  let userState = governance.userStates(event.params.user);
+  let stats = getStats();
 
-  user.allocatedLQTY = userState.getAllocatedLQTY();
-  user.averageStakingTimestamp = userState.getAverageStakingTimestamp();
+  if (event.params.lqtyReceived < user.stakedLQTY) {
+    let offsetDecrease = user.stakedOffset.times(event.params.lqtyReceived).div(user.stakedLQTY);
+    stats.totalOffset = stats.totalOffset.minus(offsetDecrease);
+    user.stakedOffset = user.stakedOffset.minus(offsetDecrease);
+  } else {
+    stats.totalOffset = stats.totalOffset.minus(user.stakedOffset);
+    user.stakedOffset = BigInt.fromI32(0);
+  }
+
+  user.stakedLQTY = user.stakedLQTY.minus(event.params.lqtyReceived);
   user.save();
 
-  let stats = getStats();
-  stats.totalLQTYStaked = stats.totalLQTYStaked.minus(event.params.withdrawnLQTY);
+  stats.totalLQTYStaked = stats.totalLQTYStaked.minus(event.params.lqtyReceived);
   stats.save();
 }
 
@@ -124,17 +113,30 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
     allocation.vetoLQTY = BigInt.fromI32(0);
   }
 
+  let wasAllocated = allocation.voteLQTY.gt(BigInt.fromI32(0)) || allocation.vetoLQTY.gt(BigInt.fromI32(0));
+
   // votes
   allocation.voteLQTY = allocation.voteLQTY.plus(event.params.deltaVoteLQTY);
   user.allocatedLQTY = user.allocatedLQTY.plus(event.params.deltaVoteLQTY);
-  initiative.totalVotes = initiative.totalVotes.plus(event.params.deltaVoteLQTY);
 
   // vetos
   allocation.vetoLQTY = allocation.vetoLQTY.plus(event.params.deltaVetoLQTY);
   user.allocatedLQTY = user.allocatedLQTY.plus(event.params.deltaVetoLQTY);
-  initiative.totalVetos = initiative.totalVetos.plus(event.params.deltaVetoLQTY);
 
   allocation.atEpoch = event.params.atEpoch;
+
+  let isAllocated = allocation.voteLQTY.gt(BigInt.fromI32(0)) || allocation.vetoLQTY.gt(BigInt.fromI32(0));
+
+  let allocated = user.allocated;
+  let initiativeAddress = Bytes.fromHexString(initiativeId);
+  if (!wasAllocated && isAllocated && !allocated.includes(initiativeAddress)) {
+    allocated.push(Bytes.fromHexString(initiativeId));
+    user.allocated = allocated;
+  } else if (wasAllocated && !isAllocated && allocated.includes(initiativeAddress)) {
+    let index = allocated.indexOf(initiativeAddress);
+    allocated.splice(index, 1);
+    user.allocated = allocated;
+  }
 
   allocation.save();
   user.save();
@@ -144,7 +146,7 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
 function getStats(): GovernanceStats {
   let stats = GovernanceStats.load("stats");
   if (stats === null) {
-    throw new Error("Stats entity not found");
+    return initializeStats();
   }
   return stats;
 }
@@ -152,8 +154,7 @@ function getStats(): GovernanceStats {
 export function handleClaimForInitiative(event: ClaimForInitiativeEvent): void {
   let initiative = GovernanceInitiative.load(event.params.initiative.toHex());
   if (initiative) {
-    initiative.totalBoldClaimed = initiative.totalBoldClaimed.plus(event.params.bold);
-    initiative.lastClaimEpoch = event.params.forEpoch.toI32();
+    initiative.lastClaimEpoch = event.params.forEpoch;
     initiative.save();
   }
 }

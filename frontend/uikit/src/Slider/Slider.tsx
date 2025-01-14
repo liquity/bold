@@ -1,3 +1,5 @@
+"use client";
+
 import type { SpringValue } from "@react-spring/web";
 import type { CSSProperties } from "react";
 import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";

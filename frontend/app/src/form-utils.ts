@@ -82,7 +82,7 @@ export function useForm<Form extends Record<string, FormValue<unknown>>>(
           }));
         }
       },
-      value: form[name][0],
+      value: form[name]?.[0] as string, // type guard, should never be undefined
     };
   }
 
@@ -98,7 +98,10 @@ export function useForm<Form extends Record<string, FormValue<unknown>>>(
     setForm((form) => {
       const newForm: Record<string, FormValue<unknown>> = { ...form };
       for (const [name, value] of Object.entries(values)) {
-        const parser = newForm[name][2];
+        const parser = newForm[name]?.[2];
+        if (!parser) {
+          throw new Error(`No parser found for field ${name}`);
+        }
         newForm[name] = [value, parser(value), parser];
       }
       return { ...form, ...newForm };

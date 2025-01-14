@@ -3,136 +3,132 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
+import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
+import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
+import { writeContract } from "wagmi/actions";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
-const FlowIdSchema = v.literal("unstakeDeposit");
+const RequestSchema = createRequestSchema(
+  "unstakeDeposit",
+  {
+    lqtyAmount: vDnum(),
+    stakePosition: vPositionStake(),
+    prevStakePosition: v.union([v.null(), vPositionStake()]),
+  },
+);
 
-const RequestSchema = v.object({
-  flowId: FlowIdSchema,
-  backLink: v.union([
-    v.null(),
-    v.tuple([
-      v.string(), // path
-      v.string(), // label
-    ]),
-  ]),
-  successLink: v.tuple([
-    v.string(), // path
-    v.string(), // label
-  ]),
-  successMessage: v.string(),
+export type UnstakeDepositRequest = v.InferOutput<typeof RequestSchema>;
 
-  lqtyAmount: vDnum(),
-  stakePosition: vPositionStake(),
-  prevStakePosition: v.union([v.null(), vPositionStake()]),
-});
-
-export type Request = v.InferOutput<typeof RequestSchema>;
-
-type Step = "unstakeDeposit";
-
-const stepNames: Record<Step, string> = {
-  unstakeDeposit: "Unstake",
-};
-
-export const unstakeDeposit: FlowDeclaration<Request, Step> = {
+export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
   title: "Review & Send Transaction",
 
-  Summary({ flow }) {
+  Summary({ request }) {
     return (
       <StakePositionSummary
-        prevStakePosition={flow.request.prevStakePosition}
-        stakePosition={flow.request.stakePosition}
+        prevStakePosition={request.prevStakePosition}
+        stakePosition={request.stakePosition}
         txPreviewMode
       />
     );
   },
 
-  Details({ flow }) {
-    const { request } = flow;
-    const { rewards } = request.stakePosition;
-
+  Details({ request }) {
     const lqtyPrice = usePrice("LQTY");
-    const lusdPrice = usePrice("LUSD");
-    const ethPrice = usePrice("ETH");
-
-    const rewardsLusdInUsd = lusdPrice && dn.mul(rewards.lusd, lusdPrice);
-    const rewardsEthInUsd = ethPrice && dn.mul(rewards.eth, ethPrice);
-
     return (
-      <>
-        <TransactionDetailsRow
-          label="You withdraw"
-          value={[
-            <Amount
-              key="start"
-              suffix=" LQTY"
-              value={request.lqtyAmount}
-            />,
-            <Amount
-              key="end"
-              prefix="$"
-              value={lqtyPrice && dn.mul(request.lqtyAmount, lqtyPrice)}
-            />,
-          ]}
-        />
-        <TransactionDetailsRow
-          label="Claiming LUSD rewards"
-          value={[
-            <Amount
-              key="start"
-              value={rewards.lusd}
-              suffix=" LUSD"
-            />,
-            <Amount
-              key="end"
-              value={rewardsLusdInUsd}
-              prefix="$"
-            />,
-          ]}
-        />
-        <TransactionDetailsRow
-          label="Claiming ETH rewards"
-          value={[
-            <Amount
-              key="start"
-              value={rewards.eth}
-              suffix=" ETH"
-            />,
-            <Amount
-              key="end"
-              value={rewardsEthInUsd}
-              prefix="$"
-            />,
-          ]}
-        />
-      </>
+      <TransactionDetailsRow
+        label="You withdraw"
+        value={[
+          <Amount
+            key="start"
+            suffix=" LQTY"
+            value={request.lqtyAmount}
+          />,
+          <Amount
+            key="end"
+            prefix="$"
+            value={lqtyPrice.data && dn.mul(request.lqtyAmount, lqtyPrice.data)}
+          />,
+        ]}
+      />
     );
   },
 
-  async getSteps() {
-    return ["unstakeDeposit"];
+  steps: {
+    // reset allocations
+    resetAllocations: {
+      name: () => "Reset Allocations",
+      Status: TransactionStatus,
+
+      async commit({ account, contracts, wagmiConfig }) {
+        if (!account) {
+          throw new Error("Account address is required");
+        }
+
+        const allocated = await graphQuery(
+          GovernanceUserAllocated,
+          { id: account.toLowerCase() },
+        );
+
+        return writeContract(wagmiConfig, {
+          ...contracts.Governance,
+          functionName: "resetAllocations",
+          args: [(allocated.governanceUser?.allocated ?? []) as Address[], true],
+        });
+      },
+
+      async verify({ wagmiConfig }, hash) {
+        await verifyTransaction(wagmiConfig, hash);
+      },
+    },
+
+    unstakeDeposit: {
+      name: () => "Unstake",
+      Status: TransactionStatus,
+
+      async commit({ contracts, request, wagmiConfig }) {
+        const { Governance } = contracts;
+        return writeContract(wagmiConfig, {
+          ...Governance,
+          functionName: "withdrawLQTY",
+          args: [request.lqtyAmount[0]],
+        });
+      },
+
+      async verify({ wagmiConfig }, hash) {
+        await verifyTransaction(wagmiConfig, hash);
+      },
+    },
   },
 
-  getStepName(stepId) {
-    return stepNames[stepId];
+  async getSteps({ account }) {
+    if (!account) {
+      throw new Error("Account address is required");
+    }
+
+    const steps: string[] = [];
+
+    // check if the user has any allocations
+    const allocated = await graphQuery(
+      GovernanceUserAllocated,
+      { id: account.toLowerCase() },
+    );
+    if (
+      allocated.governanceUser
+      && allocated.governanceUser.allocated.length > 0
+    ) {
+      steps.push("resetAllocations");
+    }
+
+    steps.push("unstakeDeposit");
+
+    return steps;
   },
 
   parseRequest(request) {
     return v.parse(RequestSchema, request);
-  },
-
-  async writeContractParams(stepId, { contracts, request }) {
-    if (stepId === "unstakeDeposit") {
-      return {
-        ...contracts.LqtyStaking,
-        functionName: "unstake",
-        args: [request.lqtyAmount[0]],
-      };
-    }
-    throw new Error(`Invalid stepId: ${stepId}`);
   },
 };

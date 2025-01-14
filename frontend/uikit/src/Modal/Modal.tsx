@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 
 import { a, useTransition } from "@react-spring/web";
@@ -13,11 +15,13 @@ export function Modal({
   onClose,
   title,
   visible,
+  maxWidth = 534,
 }: {
   children: ReactNode;
   onClose: () => void;
   title?: ReactNode;
   visible: boolean;
+  maxWidth?: number;
 }) {
   const visibility = useTransition(visible, {
     config: {
@@ -100,14 +104,14 @@ export function Modal({
                   <a.div
                     className={css({
                       position: "relative",
-                      width: 534,
-                      maxWidth: "100%",
+                      width: "100%",
                       padding: 24,
                       outline: "2px solid accent",
                       background: "background",
                       borderRadius: 8,
                     })}
                     style={{
+                      maxWidth,
                       opacity,
                       transform,
                     }}

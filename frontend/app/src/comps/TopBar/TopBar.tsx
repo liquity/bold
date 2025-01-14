@@ -3,7 +3,9 @@
 import type { ComponentProps } from "react";
 
 import { Logo } from "@/src/comps/Logo/Logo";
+import { Tag } from "@/src/comps/Tag/Tag";
 import content from "@/src/content";
+import { DEPLOYMENT_FLAVOR } from "@/src/env";
 import { css } from "@/styled-system/css";
 import { IconBorrow, IconDashboard, IconEarn, IconLeverage, IconStake } from "@liquity2/uikit";
 import Link from "next/link";
@@ -13,7 +15,7 @@ import { Menu } from "./Menu";
 const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
   [content.menu.dashboard, "/", IconDashboard],
   [content.menu.borrow, "/borrow", IconBorrow],
-  [content.menu.leverage, "/leverage", IconLeverage],
+  [content.menu.multiply, "/multiply", IconLeverage],
   [content.menu.earn, "/earn", IconEarn],
   [content.menu.stake, "/stake", IconStake],
 ];
@@ -46,6 +48,7 @@ export function TopBar() {
         <Link
           href="/"
           className={css({
+            position: "relative",
             display: "flex",
             alignItems: "center",
             gap: 16,
@@ -70,10 +73,32 @@ export function TopBar() {
           <div
             className={css({
               flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
               whiteSpace: "nowrap",
             })}
           >
             {content.appName}
+            {DEPLOYMENT_FLAVOR !== "" && (
+              <div
+                className={css({
+                  display: "flex",
+                })}
+              >
+                <Tag
+                  size="mini"
+                  css={{
+                    color: "accentContent",
+                    background: "brandCoral",
+                    border: 0,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {DEPLOYMENT_FLAVOR}
+                </Tag>
+              </div>
+            )}
           </div>
         </Link>
         <Menu menuItems={menuItems} />

@@ -7,9 +7,6 @@ type Collateral @entity {
   addresses: CollateralAddresses! @derivedFrom(field: "collateral")
   stabilityPoolDeposits: [StabilityPoolDeposit!]!
   @derivedFrom(field: "collateral")
-  totalDeposited: BigInt!
-  totalDebt: BigInt!
-  price: BigInt!
 }
 
 type Token @entity(immutable: true) {
@@ -118,8 +115,10 @@ type InterestBatch @entity {
 type GovernanceUser @entity {
   id: ID! # "userAddress", e.g. "0x0000000000000000000000000000000000000000"
   allocatedLQTY: BigInt!
-  averageStakingTimestamp: BigInt!
+  stakedLQTY: BigInt!
+  stakedOffset: BigInt!
   allocations: [GovernanceAllocation!]! @derivedFrom(field: "user")
+  allocated: [Bytes!]!
 }
 
 # Allocation of a user to a given initiative.
@@ -129,26 +128,24 @@ type GovernanceAllocation @entity {
   initiative: GovernanceInitiative!
   voteLQTY: BigInt!
   vetoLQTY: BigInt!
-  atEpoch: Int!
+  atEpoch: BigInt!
 }
 
 type GovernanceInitiative @entity {
   id: ID! # "initiativeAddress", e.g. "0x0000000000000000000000000000000000000000"
-  lastClaimEpoch: Int
-  lastVoteSnapshotEpoch: Int
+  lastClaimEpoch: BigInt
+  lastVoteSnapshotEpoch: BigInt
   lastVoteSnapshotVotes: BigInt
   registeredAt: BigInt!
-  registeredAtEpoch: Int!
+  registeredAtEpoch: BigInt!
   registrant: Bytes!
-  totalBoldClaimed: BigInt!
-  totalVetos: BigInt!
-  totalVotes: BigInt!
   unregisteredAt: BigInt
-  unregisteredAtEpoch: Int
+  unregisteredAtEpoch: BigInt
 }
 
 type GovernanceStats @entity {
   id: ID!
   totalLQTYStaked: BigInt!
+  totalOffset: BigInt!
   totalInitiatives: Int!
 }

@@ -1,15 +1,18 @@
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { debounce } from "./utils";
 
-// this hook can be used to debounce React Query key changes
-export function useDebouncedQueryKey<T extends Array<unknown>>(values: T, delay: number): T {
+export function useDebouncedQueryKey<T extends unknown[]>(
+  values: T,
+  delay: number,
+): T {
   const [debouncedValue, setDebouncedValue] = useState(values);
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedValue(values);
-    }, delay);
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [...values, delay]);
+
+  const debouncedSet = useCallback(
+    debounce(setDebouncedValue, delay),
+    [delay],
+  );
+
+  debouncedSet(values);
+
   return debouncedValue;
 }

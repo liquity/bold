@@ -1,9 +1,13 @@
+"use client";
+
 import type { ReactNode } from "react";
 
-import { UpdatePrices } from "@/src/comps/Debug/UpdatePrices";
+import { useAbout } from "@/src/comps/About/About";
 import { ProtocolStats } from "@/src/comps/ProtocolStats/ProtocolStats";
 import { TopBar } from "@/src/comps/TopBar/TopBar";
+import * as env from "@/src/env";
 import { css } from "@/styled-system/css";
+import { TextButton } from "@liquity2/uikit";
 
 export const LAYOUT_WIDTH = 1092;
 export const MIN_WIDTH = 960;
@@ -63,13 +67,41 @@ export function AppLayout({
         <div
           className={css({
             width: "100%",
-            paddingTop: 64,
+            padding: "48px 24px 0",
           })}
         >
+          <BuildInfo />
           <ProtocolStats />
         </div>
       </div>
-      <UpdatePrices />
+    </div>
+  );
+}
+
+function BuildInfo() {
+  const about = useAbout();
+  return (
+    <div
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "flex-end",
+        height: 40,
+      })}
+    >
+      <TextButton
+        label={`${about.fullVersion} (${about.contractsHash})`}
+        title={`About Liquity V2 App v${env.APP_VERSION}-${env.COMMIT_HASH} (contracts hash: ${about.contractsHash})`}
+        onClick={() => {
+          about.openModal();
+        }}
+        className={css({
+          color: "dimmed",
+        })}
+        style={{
+          fontSize: 12,
+        }}
+      />
     </div>
   );
 }

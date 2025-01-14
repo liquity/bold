@@ -6,8 +6,6 @@ import type { ComponentProps, ReactNode } from "react";
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
-import { getContracts } from "@/src/contracts";
-import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
 import { AnchorButton, AnchorTextButton, Button, HFlex, IconCross, VFlex } from "@liquity2/uikit";
@@ -22,51 +20,89 @@ export type LoadingState =
   | "not-found"
   | "success";
 
+const boxTransitionConfig = {
+  mass: 1,
+  tension: 1800,
+  friction: 120,
+};
+
 export function TransactionsScreen() {
   const {
-    currentStep,
+    commit,
+    currentStep: step,
     currentStepIndex,
     flow,
     flowDeclaration: fd,
-    signAndSend,
+    flowParams,
   } = useTransactionFlow();
 
   const isLastStep = flow?.steps && currentStepIndex === flow.steps.length - 1;
 
-  const successMessageTransition = useTransition(isLastStep && currentStep?.txStatus === "confirmed", {
-    from: {
-      height: 0,
-      opacity: 0,
-      transform: "scale(0.9)",
-    },
-    enter: {
-      height: 56,
-      opacity: 1,
-      transform: "scale(1)",
-    },
-    leave: {
-      height: 0,
-      opacity: 0,
-      transform: "scale(1)",
-    },
-    config: {
-      mass: 1,
-      tension: 1800,
-      friction: 120,
-    },
+  const successMessageTransition = useTransition(isLastStep && step?.status === "confirmed", {
+    from: { height: 0, opacity: 0, transform: "scale(0.9)" },
+    enter: { height: 56, opacity: 1, transform: "scale(1)" },
+    leave: { height: 0, opacity: 0, transform: "scale(1)" },
+    config: boxTransitionConfig,
   });
 
-  if (!currentStep || !flow || !fd || !flow.steps) {
+  const errorBoxTransition = useTransition(Boolean(step?.error), {
+    from: { height: 0, opacity: 0, transform: "scale(0.97)" },
+    enter: [
+      { height: 48, opacity: 1, transform: "scale(1)" },
+      { height: "auto" },
+    ],
+    leave: [
+      { height: 48 },
+      { height: 0, opacity: 0, transform: "scale(0.97)" },
+    ],
+    config: boxTransitionConfig,
+  });
+
+  if (!step || !flow || !fd || !flow.steps) {
     return <NoTransactionsScreen />;
   }
 
-  const contracts = getContracts();
-
   const showBackLink = currentStepIndex === 0 && (
-    currentStep.txStatus === "idle"
-    || currentStep.txStatus === "error"
-    || currentStep.txStatus === "awaiting-signature"
+    step.status === "idle"
+    || step.status === "error"
+    || step.status === "awaiting-commit"
   );
+
+  const stepDeclaration = fd.steps[step.id];
+  if (!stepDeclaration) {
+    throw new Error(`Step declaration not found: ${step.id}`);
+  }
+  const StepStatus = stepDeclaration.Status;
+
+  const stepStatusProps = match(step)
+    .with({
+      status: P.union("awaiting-verify", "confirmed"),
+      artifact: P.string,
+    }, (s) => ({
+      status: s.status,
+      artifact: s.artifact,
+    }))
+    .with({
+      status: P.union("awaiting-verify", "confirmed"),
+      artifact: P.nullish,
+    }, () => {
+      throw new Error("Expected txHash to be defined");
+    })
+    .with({
+      status: "error",
+    }, (s) => ({
+      status: s.status,
+      error: s.error ?? "Unknown error",
+    }))
+    .with(
+      { status: "idle" },
+      (s) => ({ status: s.status }),
+    )
+    .with(
+      { status: "awaiting-commit" },
+      (s) => ({ status: s.status, onRetry: commit }),
+    )
+    .exhaustive();
 
   return (
     <Screen
@@ -74,7 +110,7 @@ export function TransactionsScreen() {
         href: flow.request.backLink[0],
         label: "Back",
       }}
-      heading={<fd.Summary flow={flow} />}
+      heading={<fd.Summary {...flow} />}
     >
       <header
         className={css({
@@ -98,11 +134,15 @@ export function TransactionsScreen() {
       </header>
 
       <VFlex gap={32}>
-        <fd.Details flow={flow} />
+        <fd.Details {...flow} />
       </VFlex>
 
-      <VFlex gap={32}>
-        <div>
+      <VFlex gap={0}>
+        <div
+          className={css({
+            paddingBottom: 32,
+          })}
+        >
           {successMessageTransition((style, show) => (
             show && (
               <a.div
@@ -124,15 +164,16 @@ export function TransactionsScreen() {
 
           <FlowSteps
             currentStep={currentStepIndex}
-            steps={flow.steps.map((step) => ({
-              error: step.error,
-              id: step.id,
-              label: fd.getStepName(step.id, {
-                contracts,
-                request: flow.request,
-              }),
-              txStatus: step.txStatus,
-            }))}
+            steps={flow.steps.map((step) => {
+              const stepDeclaration = fd.steps[step.id];
+              const label = flowParams && stepDeclaration ? stepDeclaration.name(flowParams) : "";
+              return ({
+                error: step.error,
+                id: step.id,
+                label,
+                status: step.status,
+              });
+            })}
           />
         </div>
 
@@ -143,9 +184,10 @@ export function TransactionsScreen() {
             flexDirection: "column",
             gap: 16,
             width: "100%",
+            paddingBottom: 32,
           }}
         >
-          {currentStep.txStatus === "confirmed"
+          {step.status === "confirmed"
             ? (
               <Link
                 href={flow.request.successLink[0]}
@@ -162,17 +204,16 @@ export function TransactionsScreen() {
             )
             : (
               <Button
-                disabled={currentStep.txStatus === "awaiting-confirmation"
-                  || currentStep.txStatus === "awaiting-signature"
-                  || currentStep.txStatus === "post-check"}
+                disabled={step.status === "awaiting-verify" || step.status === "awaiting-commit"}
                 label={(
-                  currentStep.txStatus === "error" ? "Retry: " : ""
-                ) + fd.getStepName(
-                  currentStep.id,
-                  { contracts, request: flow.request },
+                  step.status === "error" ? "Retry: " : ""
+                ) + (
+                  flowParams
+                    ? stepDeclaration.name(flowParams)
+                    : ""
                 )}
                 mode="primary"
-                onClick={signAndSend}
+                onClick={commit}
                 size="large"
                 wide
               />
@@ -183,58 +224,24 @@ export function TransactionsScreen() {
               color: "contentAlt",
             })}
           >
-            {match(currentStep.txStatus)
-              .with("idle", () => "This action will open your wallet to sign the transaction.")
-              .with("awaiting-signature", () => "Please sign the transaction in your wallet.")
-              .with("awaiting-confirmation", () => (
-                <>
-                  Waiting for the{" "}
-                  <AnchorTextButton
-                    label="transaction"
-                    href={`${CHAIN_BLOCK_EXPLORER?.url}tx/${currentStep.txHash}`}
-                    external
-                  />{" "}
-                  to be confirmed…
-                </>
-              ))
-              .with("post-check", () => (
-                <>
-                  Waiting for the{" "}
-                  <AnchorTextButton
-                    label="transaction"
-                    href={`${CHAIN_BLOCK_EXPLORER?.url}tx/${currentStep.txHash}`}
-                    external
-                  />{"  "}
-                  to be indexed…
-                </>
-              ))
-              .with("confirmed", () => (
-                <>
-                  The{" "}
-                  <AnchorTextButton
-                    label="transaction"
-                    href={`${CHAIN_BLOCK_EXPLORER?.url}tx/${currentStep.txHash}`}
-                    external
-                  />{"  "}
-                  has been confirmed.
-                </>
-              ))
-              .with("error", () => "An error occurred. Please try again.")
-              .exhaustive()}
+            <StepStatus {...stepStatusProps} />
           </div>
         </div>
 
-        {currentStep.error && (
-          <div
-            className={css({
-              marginTop: -8,
-            })}
-          >
-            <ErrorBox title="Error">
-              {currentStep.error}
-            </ErrorBox>
-          </div>
-        )}
+        {errorBoxTransition((style, show) => (
+          show && (
+            <a.div
+              style={{
+                ...style,
+                opacity: style.opacity.to([0, 0.5, 1], [0, 0, 1]),
+              }}
+            >
+              <ErrorBox title="Error">
+                {step.error}
+              </ErrorBox>
+            </a.div>
+          )
+        ))}
       </VFlex>
     </Screen>
   );
@@ -350,7 +357,7 @@ function FlowSteps({
     error: string | null;
     id: string;
     label: string;
-    txStatus: FlowStepStatus;
+    status: FlowStepStatus;
   }>;
 }) {
   return steps.length === 1 ? null : (
@@ -379,23 +386,15 @@ function FlowSteps({
           <StepDisc
             index={index}
             label={step.label}
-            secondary={index < currentStep ? "Confirmed" : match(step.txStatus)
+            secondary={index < currentStep ? "Confirmed" : match(step.status)
               .with("error", () => "Error")
-              .with("awaiting-signature", () => "Awaiting signature…")
-              .with("awaiting-confirmation", () => "Awaiting confirmation…")
+              .with("awaiting-commit", () => "Awaiting signature…")
+              .with("awaiting-verify", () => "Awaiting confirmation…")
               .with("confirmed", () => "Confirmed")
-              .with("post-check", () => "Awaiting indexer…")
-              .otherwise(() => index === currentStep ? "Ready to sign" : "Next transaction")}
-            mode={match(step.txStatus)
+              .otherwise(() => index === currentStep ? "Current step" : "Next step")}
+            mode={match(step.status)
               .returnType<ComponentProps<typeof StepDisc>["mode"]>()
-              .with(
-                P.union(
-                  "awaiting-signature",
-                  "awaiting-confirmation",
-                  "post-check",
-                ),
-                () => "loading",
-              )
+              .with(P.union("awaiting-commit", "awaiting-verify"), () => "loading")
               .with("confirmed", () => "success")
               .with("error", () => "error")
               .otherwise(() => index === currentStep ? "ready" : "upcoming")}
@@ -456,11 +455,12 @@ function StepDisc({
           "success",
           "error",
         ];
-        setForcedMode(
-          forcedStatuses[
-            (forcedStatuses.indexOf(forcedMode) + 1) % forcedStatuses.length
-          ],
-        );
+        const forcedStatus = forcedStatuses[
+          (forcedStatuses.indexOf(forcedMode) + 1) % forcedStatuses.length
+        ];
+        if (forcedStatus) {
+          setForcedMode(forcedStatus);
+        }
       }}
       onMouseEnter={() => setShowLabel(true)}
       onMouseLeave={() => setShowLabel(false)}

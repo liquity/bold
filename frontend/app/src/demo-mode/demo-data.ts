@@ -5,17 +5,6 @@ import type { Dnum } from "dnum";
 import { INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import * as dn from "dnum";
 
-export const PRICE_UPDATE_INTERVAL = 15_000;
-export const PRICE_UPDATE_VARIATION = 0.003;
-export const PRICE_UPDATE_MANUAL = false;
-
-export const LQTY_PRICE = dn.from(0.64832, 18);
-export const ETH_PRICE = dn.from(2_580.293872, 18);
-export const RETH_PRICE = dn.from(2_884.72294, 18);
-export const WSTETH_PRICE = dn.from(2_579.931, 18);
-export const BOLD_PRICE = dn.from(1.0031, 18);
-export const LUSD_PRICE = dn.from(1.012, 18);
-
 export const STAKED_LQTY_TOTAL = [43_920_716_739_092_664_364_409_174n, 18] as const;
 
 export const ACCOUNT_STAKED_LQTY = {
@@ -55,7 +44,7 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     updatedAt: getTime(),
   },
   {
-    type: "leverage",
+    type: "multiply",
     status: "active",
     borrowed: dn.from(28_934.23, 18),
     borrower: DEMO_ACCOUNT,
@@ -149,10 +138,11 @@ export const INTEREST_CHART = INTEREST_RATE_BUCKETS.map(([_, size]) => (
 export function getDebtBeforeRateBucketIndex(index: number) {
   let debt = dn.from(0, 18);
   for (let i = 0; i < index; i++) {
-    if (!INTEREST_RATE_BUCKETS[i]) {
+    const bucket = INTEREST_RATE_BUCKETS[i];
+    if (!bucket) {
       break;
     }
-    debt = dn.add(debt, INTEREST_RATE_BUCKETS[i][1]);
+    debt = dn.add(debt, bucket[1]);
     if (i === index - 1) {
       break;
     }

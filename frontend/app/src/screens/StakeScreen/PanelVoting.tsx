@@ -1,51 +1,62 @@
-import type { Dnum } from "@/src/types";
-import type { UseQueryResult } from "@tanstack/react-query";
+import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocations } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
-import { fmtnum } from "@/src/formatting";
+import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
+import { formatDate } from "@/src/formatting";
+import { useGovernanceState, useInitiatives } from "@/src/liquity-governance";
+import { useAccount } from "@/src/services/Ethereum";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { useGovernanceUser } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, Button, IconExternal, VFlex } from "@liquity2/uikit";
-import { useQuery } from "@tanstack/react-query";
+import { AnchorTextButton, Button, IconExternal, shortenAddress, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useState } from "react";
-
-type InitiativeId = string;
-
-type Initiative = {
-  id: InitiativeId;
-  name: string;
-  protocol: string;
-  tvl: Dnum;
-  pairVolume: Dnum;
-  votesDistribution: Dnum;
-};
-
-type Vote = "for" | "against";
-
-function useInitiatives(): UseQueryResult<Initiative[]> {
-  return useQuery({
-    queryKey: ["initiatives"],
-    queryFn: () => {
-      return INITIATIVES_DEMO;
-    },
-  });
-}
+import { useEffect, useState } from "react";
 
 export function PanelVoting() {
+  const txFlow = useTransactionFlow();
+
+  const account = useAccount();
+  const governanceState = useGovernanceState();
+  const governanceUser = useGovernanceUser(account.address ?? null);
   const initiatives = useInitiatives();
 
-  const [votes, setVotes] = useState<
-    Record<
-      InitiativeId,
-      { vote: Vote | null; value: Dnum }
-    >
-  >({});
+  const [voteAllocations, setVoteAllocations] = useState<VoteAllocations>({});
 
-  const remainingVotingPower = Object.values(votes).reduce(
+  useEffect(() => {
+    const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
+
+    const allocations: VoteAllocations = {};
+    for (const allocation of governanceUser.data?.allocations ?? []) {
+      const vote = allocation.voteLQTY > 0n
+        ? "for" as const
+        : allocation.vetoLQTY > 0n
+        ? "against" as const
+        : null;
+
+      if (vote === null) {
+        continue;
+      }
+
+      const qty: Dnum = [
+        vote === "for"
+          ? allocation.voteLQTY
+          : allocation.vetoLQTY,
+        18,
+      ];
+
+      allocations[allocation.initiative] = {
+        value: dn.div(qty, stakedLQTY),
+        vote,
+      };
+    }
+    setVoteAllocations(allocations);
+  }, [governanceUser.status]);
+
+  const remainingVotingPower = Object.values(voteAllocations).reduce(
     (remaining, voteData) => {
       if (voteData.vote !== null) {
         return dn.sub(remaining, voteData.value);
@@ -55,28 +66,33 @@ export function PanelVoting() {
     dn.from(1, 18),
   );
 
-  const handleVote = (id: InitiativeId, vote: Vote | null) => {
-    setVotes((prev) => ({
+  const daysLeft = governanceState.data?.daysLeft ?? 0;
+  const rtf = new Intl.RelativeTimeFormat("en", { style: "short" });
+  const remaining = daysLeft > 1
+    ? rtf.format(Math.ceil(daysLeft), "day")
+    : rtf.format(Math.ceil(daysLeft * 24 * 60), "minute");
+
+  const handleVote = (initiativeAddress: Address, vote: Vote | null) => {
+    setVoteAllocations((prev) => ({
       ...prev,
-      [id]: {
+      [initiativeAddress]: {
+        vote: prev[initiativeAddress]?.vote === vote ? null : vote,
         value: dn.from(0),
-        vote: prev[id]?.vote === vote ? null : vote,
       },
     }));
   };
 
-  const handleVoteInputChange = (id: InitiativeId, value: Dnum) => {
-    setVotes((prev) => ({
+  const handleVoteInputChange = (initiativeAddress: Address, value: Dnum) => {
+    setVoteAllocations((prev) => ({
       ...prev,
-      [id]: {
-        vote: prev[id]?.vote ?? null,
+      [initiativeAddress]: {
+        vote: prev[initiativeAddress]?.vote ?? null,
         value: dn.div(value, 100),
       },
     }));
   };
 
-  // const allowSubmit = dn.lt(remainingVotingPower, 1);
-  const allowSubmit = false;
+  const allowSubmit = dn.lt(remainingVotingPower, 1) && dn.gte(remainingVotingPower, 0);
 
   return (
     <section
@@ -129,16 +145,26 @@ export function PanelVoting() {
           gap: 24,
         })}
       >
-        <div
-          className={css({
-            display: "flex",
-            justifyContent: "flex-start",
-            alignItems: "center",
-            gap: 6,
-          })}
-        >
-          Current voting round ends in <Tag>1 day</Tag>
-        </div>
+        {governanceState.data && (
+          <div
+            className={css({
+              display: "flex",
+              justifyContent: "flex-start",
+              alignItems: "center",
+              gap: 6,
+            })}
+          >
+            Current voting round ends in{" "}
+            <Tag
+              title={governanceState.data
+                && `Epoch ${governanceState.data.epoch} ends on the ${
+                  formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))
+                }`}
+            >
+              {governanceState.data.daysLeftRounded} {governanceState.data.daysLeftRounded === 1 ? "day" : "days"}
+            </Tag>
+          </div>
+        )}
 
         <AnchorTextButton
           label={
@@ -151,6 +177,12 @@ export function PanelVoting() {
           external
         />
       </div>
+
+      {governanceState.data?.period === "cutoff" && (
+        <div>
+          You can only veto today
+        </div>
+      )}
 
       <table
         className={css({
@@ -216,87 +248,24 @@ export function PanelVoting() {
             <th>
               Epoch<br /> Initiatives
             </th>
-            <th>
-              <abbr title="Total Value Locked">TVL</abbr>
-            </th>
-            <th title="Pair volume in 7 days">
-              Pair vol<br /> in 7d
-            </th>
-            <th title="Votes distribution">
-              Votes<br />distrib
-            </th>
+            <th>Allocation</th>
             <th>Decision</th>
           </tr>
         </thead>
         <tbody>
           {initiatives.data?.map((initiative, index) => (
-            <tr key={index}>
-              <td>
-                <div
-                  className={css({
-                    display: "flex",
-                    flexDirection: "column",
-                  })}
-                >
-                  <div
-                    className={css({
-                      display: "flex",
-                      alignItems: "center",
-                      paddingTop: 6,
-                    })}
-                  >
-                    {initiative.name}
-                  </div>
-                  <div
-                    className={css({
-                      fontSize: 12,
-                      color: "contentAlt",
-                    })}
-                  >
-                    {initiative.protocol}
-                  </div>
-                </div>
-              </td>
-              <td>
-                <div title={`$${fmtnum(initiative.tvl, "full")}`}>
-                  {fmtnum(initiative.tvl, "compact")}
-                </div>
-              </td>
-              <td>
-                <div title={`$${fmtnum(initiative.pairVolume, "full")}`}>
-                  {fmtnum(initiative.pairVolume, "compact")}
-                </div>
-              </td>
-              <td>
-                <div>
-                  {fmtnum(initiative.votesDistribution, 2, 100)}%
-                </div>
-              </td>
-              <td>
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "flex-end",
-                    height: 34,
-                  })}
-                >
-                  <VoteInput
-                    value={votes[initiative.id]?.value ?? null}
-                    vote={votes[initiative.id]?.vote ?? null}
-                    onChange={(value) => {
-                      handleVoteInputChange(initiative.id, value);
-                    }}
-                    onVote={(vote) => handleVote(initiative.id, vote)}
-                  />
-                </div>
-              </td>
-            </tr>
+            <InitiativeRow
+              key={index}
+              initiative={initiative}
+              voteAllocation={voteAllocations[initiative.address]}
+              onVote={handleVote}
+              onVoteInputChange={handleVoteInputChange}
+            />
           ))}
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={4}>
+            <td colSpan={2}>
               <div>
                 Voting power left
               </div>
@@ -323,16 +292,73 @@ export function PanelVoting() {
         </tfoot>
       </table>
 
+      {governanceState.data && (
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            marginBottom: 32,
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              width: 20,
+              height: 20,
+              color: "strongSurfaceContent",
+              background: "strongSurface",
+              borderRadius: "50%",
+            })}
+          >
+            <svg width="20" height="20" fill="none">
+              <path
+                clipRule="evenodd"
+                fill="currentColor"
+                fillRule="evenodd"
+                d="m15.41 5.563-6.886 10.1-4.183-3.66 1.317-1.505 2.485 2.173 5.614-8.234 1.652 1.126Z"
+              />
+            </svg>
+          </div>
+          <div>
+            <div>
+              Votes & vetos are accepted on {formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))}.<br />
+            </div>
+            <div
+              className={css({
+                color: "contentAlt",
+              })}
+            >
+              Your votes for epoch #{String(governanceState.data.epoch)} will apply {remaining}.
+            </div>
+          </div>
+        </div>
+      )}
+
       <VFlex gap={48}>
         <ConnectWarningBox />
-
         <Button
           disabled={!allowSubmit}
-          label="Coming soon"
+          label="Cast votes"
           mode="primary"
           size="large"
           wide
           onClick={() => {
+            // Filter out allocations with no vote or zero value
+            const voteAllocationsFiltered = { ...voteAllocations };
+            for (const [address, data] of Object.entries(voteAllocations) as Entries<VoteAllocations>) {
+              if (data.vote === null || dn.eq(data.value, 0)) {
+                delete voteAllocationsFiltered[address];
+              }
+            }
+
+            txFlow.start({
+              flowId: "allocateVotingPower",
+              backLink: ["/stake/voting", "Back"],
+              successLink: ["/", "Go to the Dashboard"],
+              successMessage: "Your voting power has been allocated.",
+              voteAllocations: voteAllocationsFiltered,
+            });
           }}
         />
       </VFlex>
@@ -340,69 +366,74 @@ export function PanelVoting() {
   );
 }
 
-const INITIATIVES_DEMO: Initiative[] = [
-  {
-    id: "1",
-    name: "WETH-BOLD 0.3%",
-    protocol: "Uniswap V4",
-    tvl: dn.from(2_420_000, 18),
-    pairVolume: dn.from(1_420_000, 18),
-    votesDistribution: dn.from(0.35, 18),
-  },
-  {
-    id: "2",
-    name: "WETH-BOLD 0.3%",
-    protocol: "Uniswap V4",
-    tvl: dn.from(2_420_000, 18),
-    pairVolume: dn.from(1_420_000, 18),
-    votesDistribution: dn.from(0.20, 18),
-  },
-  {
-    id: "3",
-    name: "crvUSD-BOLD 0.01%",
-    protocol: "Curve V2",
-    tvl: dn.from(2_420_000, 18),
-    pairVolume: dn.from(1_420_000, 18),
-    votesDistribution: dn.from(0.15, 18),
-  },
-  {
-    id: "4",
-    name: "3pool-BOLD 0.01%",
-    protocol: "Curve V2",
-    tvl: dn.from(2_420_000, 18),
-    pairVolume: dn.from(1_420_000, 18),
-    votesDistribution: dn.from(0.10, 18),
-  },
-  {
-    id: "5",
-    name: "3pool-BOLD 0.01%",
-    protocol: "Curve V2",
-    tvl: dn.from(2_420_000, 18),
-    pairVolume: dn.from(1_420_000, 18),
-    votesDistribution: dn.from(0.10, 18),
-  },
-  {
-    id: "6",
-    name: "3pool-BOLD 0.01%",
-    protocol: "Curve V2",
-    tvl: dn.from(2_420_000, 18),
-    pairVolume: dn.from(1_420_000, 18),
-    votesDistribution: dn.from(0.05, 18),
-  },
-  {
-    id: "7",
-    name: "DeFi Collective: BOLD incentives on Euler",
-    protocol: "0x5305...1418",
-    tvl: dn.from(0, 18),
-    pairVolume: dn.from(0, 18),
-    votesDistribution: dn.from(0.025, 18),
-  },
-  {
-    id: "8",
-    name: "DeFi Collective: BOLD-USDC on Balancer",
-    protocol: "0x7179...9f8f",
-    tvl: dn.from(0, 18),
-    pairVolume: dn.from(0, 18),
-    votesDistribution: dn.from(0, 18),
-  },
-];
+function InitiativeRow({
+  initiative,
+  voteAllocation,
+  onVote,
+  onVoteInputChange,
+}: {
+  initiative: Initiative;
+  voteAllocation?: VoteAllocations[Address];
+  onVote: (initiative: Address, vote: Vote) => void;
+  onVoteInputChange: (initiative: Address, value: Dnum) => void;
+}) {
+  return (
+    <tr>
+      <td>
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+          })}
+        >
+          <div
+            title={initiative.address}
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              paddingTop: 6,
+            })}
+          >
+            {initiative.name ?? "Initiative"}
+          </div>
+          <div>
+            <AnchorTextButton
+              external
+              href={`${CHAIN_BLOCK_EXPLORER?.url}address/${initiative.address}`}
+              title={initiative.address}
+              label={initiative.protocol ?? shortenAddress(initiative.address, 4)}
+              className={css({
+                fontSize: 12,
+                color: "contentAlt!",
+              })}
+            />
+          </div>
+        </div>
+      </td>
+      <td>
+      </td>
+      <td>
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            height: "100%",
+            paddingTop: 6,
+          })}
+        >
+          <VoteInput
+            value={voteAllocation?.value ?? null}
+            vote={voteAllocation?.vote ?? null}
+            onChange={(value) => {
+              onVoteInputChange(initiative.address, value);
+            }}
+            onVote={(vote) => {
+              onVote(initiative.address, vote);
+            }}
+          />
+        </div>
+      </td>
+    </tr>
+  );
+}

@@ -54,7 +54,7 @@ export function PanelUpdateRate({
     loan.borrowed,
     loan.interestRate,
     collToken.collateralRatio,
-    collPrice,
+    collPrice.data ?? null,
   );
 
   const newLoanDetails = getLoanDetails(
@@ -62,7 +62,7 @@ export function PanelUpdateRate({
     debt.isEmpty ? null : debt.parsed,
     interestRate,
     collToken.collateralRatio,
-    collPrice,
+    collPrice.data ?? null,
   );
 
   const boldInterestPerYear = interestRate

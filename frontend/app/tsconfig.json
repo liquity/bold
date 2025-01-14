@@ -1,12 +1,26 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "target": "es2023",
     "useDefineForClassFields": true,
-    "lib": ["es2020", "dom", "dom.iterable"],
+    "lib": ["es2023", "dom", "dom.iterable"],
     "module": "esnext",
-    "skipLibCheck": true,
+
+    "allowJs": false,
+    "alwaysStrict": true,
+    "esModuleInterop": true,
     "incremental": true,
-    /* Bundler mode */
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "useUnknownInCatchVariables": true,
+
+    /* bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -14,13 +28,6 @@
     "noEmit": true,
     "jsx": "preserve",
 
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "allowJs": false,
-    "esModuleInterop": true,
     "paths": {
       "@/*": ["./*"]
     },
