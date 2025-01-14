@@ -1,4 +1,5 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
+import type { Address } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
@@ -8,6 +9,7 @@ import { PermissionStatus } from "@/src/screens/TransactionsScreen/PermissionSta
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
+import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
@@ -74,6 +76,33 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         return writeContract(wagmiConfig, {
           ...contracts.Governance,
           functionName: "deployUserProxy",
+        });
+      },
+
+      async verify({ wagmiConfig }, hash) {
+        await verifyTransaction(wagmiConfig, hash);
+      },
+    },
+
+    // reset allocations
+    resetAllocations: {
+      name: () => "Reset Allocations",
+      Status: TransactionStatus,
+
+      async commit({ account, contracts, wagmiConfig }) {
+        if (!account) {
+          throw new Error("Account address is required");
+        }
+
+        const allocated = await graphQuery(
+          GovernanceUserAllocated,
+          { id: account.toLowerCase() },
+        );
+
+        return writeContract(wagmiConfig, {
+          ...contracts.Governance,
+          functionName: "resetAllocations",
+          args: [(allocated.governanceUser?.allocated ?? []) as Address[], true],
         });
       },
 
@@ -202,6 +231,18 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
     }
 
     const steps: string[] = [];
+
+    // check if the user has any allocations
+    const allocated = await graphQuery(
+      GovernanceUserAllocated,
+      { id: account.toLowerCase() },
+    );
+    if (
+      allocated.governanceUser
+      && allocated.governanceUser.allocated.length > 0
+    ) {
+      steps.push("resetAllocations");
+    }
 
     // get the user proxy address
     const userProxyAddress = await readContract(wagmiConfig, {

@@ -6,6 +6,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { getUserStates, useInitiatives } from "@/src/liquity-governance";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
+import { useGovernanceUser } from "@/src/subgraph-hooks";
 import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
 import { vVoteAllocations } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
@@ -132,8 +133,10 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
     );
   },
 
-  Details({ request }) {
+  Details({ request, account }) {
     const initiatives = useInitiatives();
+    const governanceUser = useGovernanceUser(account);
+    const stakedLQTY = governanceUser.data?.stakedLQTY ?? 0n;
     return (
       <>
         {Object.entries(request.voteAllocations).map(([address, vote]) => {
@@ -143,6 +146,7 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
               key={address}
               initiative={initiative}
               vote={vote}
+              stakedLQTY={stakedLQTY}
             />
           );
         })}
@@ -162,7 +166,7 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
         const userStates = await getUserStates(wagmiConfig, account);
 
         const { voteAllocations } = request;
-        const { unallocatedLQTY } = userStates;
+        const { stakedLQTY } = userStates;
 
         const initiativeAddresses = Object.keys(voteAllocations) as Address[];
 
@@ -172,16 +176,13 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
           vetos: new Array(initiativeAddresses.length).fill(0n) as bigint[],
         };
 
-        let remainingLqty = unallocatedLQTY;
-
         for (const [index, address] of initiativeAddresses.entries()) {
           const vote = voteAllocations[address];
           if (!vote) {
             throw new Error("Vote not found");
           }
 
-          let qty = dn.mul([unallocatedLQTY, 18], vote.value)[0];
-          remainingLqty -= qty;
+          let qty = dn.mul([stakedLQTY, 18], vote.value)[0];
 
           if (vote?.vote === "for") {
             allocationArgs.votes[index] = qty;
@@ -225,10 +226,13 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
 function VoteAllocation({
   initiative,
   vote,
+  stakedLQTY,
 }: {
   initiative: Initiative;
   vote: VoteAllocation;
+  stakedLQTY: bigint;
 }) {
+  const lqtyAllocation = dn.mul([stakedLQTY, 18], vote.value);
   return (
     <TransactionDetailsRow
       label={[
@@ -257,7 +261,7 @@ function VoteAllocation({
             alignItems: "center",
           })}
         >
-          {vote.vote === "for" ? "Support" : "Oppose"}
+          {vote.vote === "for" ? "Support" : "Oppose"} with <Amount value={lqtyAllocation} /> LQTY
         </div>,
       ]}
     />
