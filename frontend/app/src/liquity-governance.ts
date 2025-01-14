@@ -155,6 +155,7 @@ export async function getUserStates(
   return {
     allocatedLQTY: result[2],
     allocatedOffset: result[3],
+    stakedLQTY: result[2] + result[0],
     unallocatedLQTY: result[0],
     unallocatedOffset: result[1],
   };
