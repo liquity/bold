@@ -152,6 +152,88 @@ NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=address|blockCreated
 NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=0xca11bde05977b3631167028862be2a173976ca11|14353601
 ```
 
+### `NEXT_PUBLIC_COINGECKO_API_KEY`
+
+API key for CoinGecko integration. Use 'demo' for the demo API or 'pro' for the pro API.
+
+```dosini
+# Format
+NEXT_PUBLIC_COINGECKO_API_KEY=apiType|API_KEY
+
+# Example
+NEXT_PUBLIC_COINGECKO_API_KEY=pro|CG-xxxxxxxxxxxxxxxxxxxx
+```
+
+### `NEXT_PUBLIC_BLOCKING_LIST`
+
+Smart contract address for the blocking list implementation. The contract must implement `isBlackListed(address)(bool)`.
+
+```dosini
+# Example
+NEXT_PUBLIC_BLOCKING_LIST=0x97044531D0fD5B84438499A49629488105Dc58e6
+```
+
+### `NEXT_PUBLIC_BLOCKING_VPNAPI`
+
+VPNAPI.io detection to only allow certain country codes.
+
+```dosini
+# Format
+NEXT_PUBLIC_BLOCKING_VPNAPI=key|countryCodes
+
+# Example
+NEXT_PUBLIC_BLOCKING_VPNAPI=1234|US,CA
+```
+
+### `NEXT_PUBLIC_DEMO_MODE`
+
+Enable or disable demo mode for testing purposes.
+
+```dosini
+# Example
+NEXT_PUBLIC_DEMO_MODE=false
+```
+
+### `NEXT_PUBLIC_KNOWN_INITIATIVES_URL`
+
+URL for fetching known initiatives data (optional).
+
+### `NEXT_PUBLIC_LIQUITY_STATS_URL`
+
+URL for fetching Liquity protocol statistics.
+
+```dosini
+# Example
+NEXT_PUBLIC_LIQUITY_STATS_URL=https://api.liquity.org/v2/testnet/sepolia.json
+```
+
+### `NEXT_PUBLIC_SAFE_API_URL`
+
+URL for the Safe transaction service API.
+
+```dosini
+# Example
+NEXT_PUBLIC_SAFE_API_URL=https://safe-transaction-mainnet.safe.global/api
+```
+
+### `NEXT_PUBLIC_SUBGRAPH_URL`
+
+URL for The Graph protocol subgraph queries.
+
+```dosini
+# Example
+NEXT_PUBLIC_SUBGRAPH_URL=https://api.studio.thegraph.com/query/…
+```
+
+### `NEXT_PUBLIC_VERCEL_ANALYTICS`
+
+Enable or disable Vercel Analytics for tracking application metrics.
+
+```dosini
+# Example
+NEXT_PUBLIC_VERCEL_ANALYTICS=false
+```
+
 ### `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`
 
 A WalletConnect project ID which can be obtained by [creating a WalletConnect project](https://cloud.walletconnect.com/app).
