@@ -8,19 +8,53 @@ import content from "@/src/content";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { formatDate } from "@/src/formatting";
 import { useGovernanceState, useInitiatives } from "@/src/liquity-governance";
+import { useAccount } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { useGovernanceUser } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, Button, IconExternal, shortenAddress, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function PanelVoting() {
   const txFlow = useTransactionFlow();
 
-  const initiatives = useInitiatives();
+  const account = useAccount();
   const governanceState = useGovernanceState();
+  const governanceUser = useGovernanceUser(account.address ?? null);
+  const initiatives = useInitiatives();
 
   const [voteAllocations, setVoteAllocations] = useState<VoteAllocations>({});
+
+  useEffect(() => {
+    const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
+
+    const allocations: VoteAllocations = {};
+    for (const allocation of governanceUser.data?.allocations ?? []) {
+      const vote = allocation.voteLQTY > 0n
+        ? "for" as const
+        : allocation.vetoLQTY > 0n
+        ? "against" as const
+        : null;
+
+      if (vote === null) {
+        continue;
+      }
+
+      const qty: Dnum = [
+        vote === "for"
+          ? allocation.voteLQTY
+          : allocation.vetoLQTY,
+        18,
+      ];
+
+      allocations[allocation.initiative] = {
+        value: dn.div(qty, stakedLQTY),
+        vote,
+      };
+    }
+    setVoteAllocations(allocations);
+  }, [governanceUser.status]);
 
   const remainingVotingPower = Object.values(voteAllocations).reduce(
     (remaining, voteData) => {
@@ -39,15 +73,13 @@ export function PanelVoting() {
     : rtf.format(Math.ceil(daysLeft * 24 * 60), "minute");
 
   const handleVote = (initiativeAddress: Address, vote: Vote | null) => {
-    setVoteAllocations((prev) => {
-      return ({
-        ...prev,
-        [initiativeAddress]: {
-          value: dn.from(0),
-          vote: prev[initiativeAddress]?.vote === vote ? null : vote,
-        },
-      });
-    });
+    setVoteAllocations((prev) => ({
+      ...prev,
+      [initiativeAddress]: {
+        vote: prev[initiativeAddress]?.vote === vote ? null : vote,
+        value: dn.from(0),
+      },
+    }));
   };
 
   const handleVoteInputChange = (initiativeAddress: Address, value: Dnum) => {
@@ -216,9 +248,7 @@ export function PanelVoting() {
             <th>
               Epoch<br /> Initiatives
             </th>
-            <th title="Votes distribution">
-              Votes<br />Distribution
-            </th>
+            <th>Allocation</th>
             <th>Decision</th>
           </tr>
         </thead>
@@ -292,14 +322,14 @@ export function PanelVoting() {
           </div>
           <div>
             <div>
-              Votes & vetos are accepted on {formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))} <br />
+              Votes & vetos are accepted on {formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))}.<br />
             </div>
             <div
               className={css({
                 color: "contentAlt",
               })}
             >
-              Your votes for epoch #{String(governanceState.data.epoch)} will apply in {remaining}.
+              Your votes for epoch #{String(governanceState.data.epoch)} will apply {remaining}.
             </div>
           </div>
         </div>
@@ -381,14 +411,6 @@ function InitiativeRow({
         </div>
       </td>
       <td>
-        <div>
-          <Amount
-            fallback="−"
-            format={1}
-            percentage
-            value={initiative.votesDistribution}
-          />
-        </div>
       </td>
       <td>
         <div
@@ -396,7 +418,8 @@ function InitiativeRow({
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
-            height: 34,
+            height: "100%",
+            paddingTop: 6,
           })}
         >
           <VoteInput
