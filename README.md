@@ -1170,7 +1170,9 @@ The value extracted is excessive, i.e. above and beyond the arbitrage profit exp
 
 To mitigate this value extraction on RETH and WSTETH branches, the system uses the maximum of a market price and a canonical price in redemptions. This mitigates oracle lag arbitrages by giving the redeemer the "worst" price at any given moment.
 
-However, this only applies if the delta between market price and canonical price is within the oracle deviation threshold (1% for WSTETH, 2% for RETH). If the difference is greater, then the normal primary pricing calculation is used - a large delta is assumed to reflect a legitimate difference between market price and canonical rate.
+The trade-off of this solution that redemptions may sometimes be unprofitable during volatile peroods with high oracle lag. However, as long as redemptions do happen eventually and in the long term, then peg maintenance will hold.
+
+However, this "worst price" solution only applies if the delta between market price and canonical price is within the oracle deviation threshold (1% for WSTETH, 2% for RETH). If the difference is greater, then the normal primary pricing calculation is used - a large delta is assumed to reflect a legitimate difference between market price and canonical rate.
 
 ### TODO - [INHERITANCE DIAGRAM]
 
@@ -1284,7 +1286,7 @@ In v2, some oracles used for LSTs have larger update thresholds - e.g. Chainlink
 
 However, we don’t expect oracle frontrunning to be a significant issue since these LST-ETH feeds are historically not volatile and rarely deviate by significant amounts: they usually update based on the heartbeat (mininum update frequency) rather than the threshold.
 
- Still several solutions were considered. None are ideal:
+ Still several solutions were considered. Here are some:
 
 | Solution                                                                                  | Challenge                                                                                                                                                   |
 |-------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -1297,7 +1299,10 @@ However, we don’t expect oracle frontrunning to be a significant issue since t
 
 #### Solution 
 
-Solution 6 was provisionally chosen, as it involves minimal technical complexity. Parameters for redemptions are TBD.
+To mitigate this value extraction on RETH and WSTETH branches, the system uses the maximum of a market price and a canonical price in redemptions. This mitigates oracle lag arbitrages by giving the redeemer the "worst" price at any given moment. 
+
+However, this only applies if the delta between market price and canonical price is within the oracle deviation threshold (1% for WSTETH, 2% for RETH). If the difference is greater, then the normal primary pricing calculation is used - a large delta is assumed to reflect a legitimate difference between market price and canonical rate.
+
 
 ### 2 - Bypassing redemption routing logic via temporary SP deposits
 
