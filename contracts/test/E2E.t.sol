@@ -701,4 +701,27 @@ contract E2ETest is Test {
             _closeTroveFromCollateral(i, leverageSeeker, 0);
         }
     }
+
+    function test_ManagerOfCurveGauge_CanReassignRewardDistributor() external {
+        vm.skip(address(curveUsdcBoldGauge) == address(0));
+
+        address newRewardDistributor = makeAddr("newRewardDistributor");
+        uint256 rewardAmount = 10_000 ether;
+        _openTrove(0, newRewardDistributor, 0, rewardAmount);
+
+        vm.startPrank(newRewardDistributor);
+        boldToken.approve(address(curveUsdcBoldGauge), rewardAmount);
+        vm.expectRevert();
+        curveUsdcBoldGauge.deposit_reward_token(BOLD, rewardAmount, 7 days);
+        vm.stopPrank();
+
+        address manager = curveUsdcBoldGauge.manager();
+        vm.label(manager, "manager");
+        vm.prank(manager);
+        curveUsdcBoldGauge.set_reward_distributor(BOLD, newRewardDistributor);
+
+        vm.startPrank(newRewardDistributor);
+        curveUsdcBoldGauge.deposit_reward_token(BOLD, rewardAmount, 7 days);
+        vm.stopPrank();
+    }
 }
