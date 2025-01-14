@@ -5,6 +5,7 @@ import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePosi
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
+import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
@@ -57,6 +58,33 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
   },
 
   steps: {
+    // reset allocations
+    resetAllocations: {
+      name: () => "Reset Allocations",
+      Status: TransactionStatus,
+
+      async commit({ account, contracts, wagmiConfig }) {
+        if (!account) {
+          throw new Error("Account address is required");
+        }
+
+        const allocated = await graphQuery(
+          GovernanceUserAllocated,
+          { id: account.toLowerCase() },
+        );
+
+        return writeContract(wagmiConfig, {
+          ...contracts.Governance,
+          functionName: "resetAllocations",
+          args: [(allocated.governanceUser?.allocated ?? []) as Address[], true],
+        });
+      },
+
+      async verify({ wagmiConfig }, hash) {
+        await verifyTransaction(wagmiConfig, hash);
+      },
+    },
+
     unstakeDeposit: {
       name: () => "Unstake",
       Status: TransactionStatus,
@@ -76,8 +104,28 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
     },
   },
 
-  async getSteps() {
-    return ["unstakeDeposit"];
+  async getSteps({ account }) {
+    if (!account) {
+      throw new Error("Account address is required");
+    }
+
+    const steps: string[] = [];
+
+    // check if the user has any allocations
+    const allocated = await graphQuery(
+      GovernanceUserAllocated,
+      { id: account.toLowerCase() },
+    );
+    if (
+      allocated.governanceUser
+      && allocated.governanceUser.allocated.length > 0
+    ) {
+      steps.push("resetAllocations");
+    }
+
+    steps.push("unstakeDeposit");
+
+    return steps;
   },
 
   parseRequest(request) {

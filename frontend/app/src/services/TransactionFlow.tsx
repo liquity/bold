@@ -132,8 +132,16 @@ export type FlowStepDeclaration<FlowRequest extends BaseFlowRequest = BaseFlowRe
 
 export type FlowDeclaration<FlowRequest extends BaseFlowRequest> = {
   title: ReactNode;
-  Summary: ComponentType<{ request: FlowRequest; steps: FlowStep[] | null }>;
-  Details: ComponentType<{ request: FlowRequest; steps: FlowStep[] | null }>;
+  Summary: ComponentType<{
+    account: Address | null;
+    request: FlowRequest;
+    steps: FlowStep[] | null;
+  }>;
+  Details: ComponentType<{
+    account: Address | null;
+    request: FlowRequest;
+    steps: FlowStep[] | null;
+  }>;
   steps: Record<string, FlowStepDeclaration<FlowRequest>>;
   getSteps: (params: FlowParams<FlowRequest>) => Promise<string[]>;
   parseRequest: (request: unknown) => FlowRequest | null;
