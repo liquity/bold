@@ -18,24 +18,6 @@ function tokenItemRow(
   };
 }
 
-const itemsWithSecondary = [
-  {
-    label: "Manually",
-    secondary: "Set the interest rate as you see fit",
-  },
-  {
-    label: "By Strategy",
-    secondary: "It’s an automated strategy developed by ICP that helps avoid redemption and reduce costs",
-  },
-  {
-    label: "By Delegation",
-    secondary: `
-      Delegates manage your interest rate, optimizing costs and preventing redemption.
-      They charge a fee for this.
-    `,
-  },
-] as const;
-
 function PlaceholderIcon() {
   return (
     <div
@@ -88,11 +70,25 @@ export function DropdownFixture({
             icon: <PlaceholderIcon />,
           }
           : undefined}
-        items={small ? itemsWithSecondary : [
-          tokenItemRow("ETH", "ETH", "10.00"),
-          tokenItemRow("RETH", "rETH", "30.00"),
-          tokenItemRow("WSTETH", "wstETH", "40.00"),
-        ]}
+        items={small
+          ? [{
+            label: "Manually",
+            secondary: "Set the interest rate as you see fit",
+          }, {
+            label: "By Strategy",
+            secondary: "It’s an automated strategy developed by ICP that helps avoid redemption and reduce costs",
+          }, {
+            label: "By Delegation",
+            secondary: `
+              Delegates manage your interest rate, optimizing costs and preventing redemption.
+              They charge a fee for this.
+            `,
+          }]
+          : [
+            tokenItemRow("ETH", "ETH", "10.00"),
+            tokenItemRow("RETH", "rETH", "30.00"),
+            tokenItemRow("WSTETH", "wstETH", "40.00"),
+          ]}
         menuWidth={300}
         onSelect={setSelected}
         selected={selected}

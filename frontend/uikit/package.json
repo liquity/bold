@@ -59,22 +59,22 @@
   },
   "dependencies": {
     "@floating-ui/react-dom": "^2.1.2",
-    "focus-trap-react": "^10.3.0"
+    "focus-trap-react": "^10.3.1"
   },
   "devDependencies": {
     "@svgr/core": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0",
     "@svgr/plugin-svgo": "^8.1.0",
-    "@types/react": "^18.0.0",
-    "@types/react-dom": "^18.0.0",
-    "@vitejs/plugin-react-swc": "^3.7.1",
-    "dprint": "^0.47.5",
-    "globals": "^15.11.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react-swc": "^3.7.2",
+    "dprint": "^0.47.6",
+    "globals": "^15.14.0",
     "oxlint": "^0.10.3",
-    "tsx": "^4.16.5",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.10",
-    "vite-plugin-dts": "^4.3.0",
-    "zx": "^8.1.9"
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.11",
+    "vite-plugin-dts": "^4.5.0",
+    "zx": "^8.3.0"
   }
 }
