@@ -164,12 +164,16 @@ export function TransactionsScreen() {
 
           <FlowSteps
             currentStep={currentStepIndex}
-            steps={flow.steps.map((step) => ({
-              error: step.error,
-              id: step.id,
-              label: flowParams ? stepDeclaration.name(flowParams) : "",
-              status: step.status,
-            }))}
+            steps={flow.steps.map((step) => {
+              const stepDeclaration = fd.steps[step.id];
+              const label = flowParams && stepDeclaration ? stepDeclaration.name(flowParams) : "";
+              return ({
+                error: step.error,
+                id: step.id,
+                label,
+                status: step.status,
+              });
+            })}
           />
         </div>
 
@@ -390,13 +394,7 @@ function FlowSteps({
               .otherwise(() => index === currentStep ? "Current step" : "Next step")}
             mode={match(step.status)
               .returnType<ComponentProps<typeof StepDisc>["mode"]>()
-              .with(
-                P.union(
-                  "awaiting-commit",
-                  "awaiting-verify",
-                ),
-                () => "loading",
-              )
+              .with(P.union("awaiting-commit", "awaiting-verify"), () => "loading")
               .with("confirmed", () => "success")
               .with("error", () => "error")
               .otherwise(() => index === currentStep ? "ready" : "upcoming")}
