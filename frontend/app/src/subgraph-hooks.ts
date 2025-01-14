@@ -426,7 +426,22 @@ export function useGovernanceUser(account: Address | null, options?: Options) {
     const { governanceUser } = await graphQuery(GovernanceUser, {
       id: account.toLowerCase(),
     });
-    return governanceUser;
+    if (!governanceUser) {
+      return null;
+    }
+    return {
+      ...governanceUser,
+      id: governanceUser.id as Address,
+      allocatedLQTY: BigInt(governanceUser.allocatedLQTY),
+      stakedLQTY: BigInt(governanceUser.stakedLQTY),
+      stakedOffset: BigInt(governanceUser.stakedOffset),
+      allocations: governanceUser.allocations.map((allocation) => ({
+        ...allocation,
+        voteLQTY: BigInt(allocation.voteLQTY),
+        vetoLQTY: BigInt(allocation.vetoLQTY),
+        initiative: allocation.initiative.id as Address,
+      })),
+    };
   };
 
   // TODO: demo mode
