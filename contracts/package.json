@@ -10,6 +10,7 @@
     "format": "forge fmt && dprint fmt",
     "test": "hardhat test --parallel",
     "coverage": "hardhat coverage",
+    "extract-abi": "tsx utils/extract-abi.ts",
     "fuzz": "tsx utils/fuzz.ts",
     "fuzz-repro": "tsx utils/fuzz-repro.ts",
     "fuzz-start": "pm2 start --time --interpreter node --interpreter-args '--import tsx' utils/fuzz.ts",
@@ -19,7 +20,7 @@
   },
   "repository": "github:liquity/bold",
   "author": "Liquity AG",
-  "license": "GPL-3.0",
+  "license": "BUSL-1.1",
   "bugs": "https://github.com/liquity/bold/issues",
   "homepage": "https://github.com/liquity/bold#readme",
   "devDependencies": {
@@ -37,6 +38,7 @@
     "@typechain/hardhat": "^6.1.2",
     "@types/chai": "^4.2.0",
     "@types/mocha": ">=9.1.0",
+    "@types/node": "^22.8.1",
     "chai": "^4.2.0",
     "decimal.js": "^10.4.3",
     "hardhat": "^2.14.0",
@@ -47,6 +49,7 @@
     "tsx": "^4.16.5",
     "typechain": "^8.1.0",
     "typescript": "^5.5.4",
+    "viem": "^2.21.35",
     "zod": "^3.23.8",
     "zx": "^8.1.9"
   }

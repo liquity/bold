@@ -110,7 +110,7 @@ contract MulticollateralTest is DevTestSetup {
         }
     }
 
-    function testMultiCollateralDeployment() public view {
+    function testMultiCollateralDeployment() public {
         // check deployment
         assertEq(collateralRegistry.totalCollaterals(), NUM_COLLATERALS, "Wrong number of branches");
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
@@ -121,6 +121,11 @@ contract MulticollateralTest is DevTestSetup {
             assertEq(address(collateralRegistry.getToken(c)), ZERO_ADDRESS, "Extra collateral token");
             assertEq(address(collateralRegistry.getTroveManager(c)), ZERO_ADDRESS, "Extra TroveManager");
         }
+        // reverts for invalid index
+        vm.expectRevert("Invalid index");
+        collateralRegistry.getToken(10);
+        vm.expectRevert("Invalid index");
+        collateralRegistry.getTroveManager(10);
     }
 
     struct TestValues {
@@ -161,8 +166,10 @@ contract MulticollateralTest is DevTestSetup {
         testValues4.troveId = openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 10e18, 10000e18, 5e16);
         makeMulticollateralSPDepositAndClaim(3, A, 10000e18);
 
+        // let time go by to reduce redemption rate (/16)
+        vm.warp(block.timestamp + 1 days);
+
         // Check A’s final bal
-        // TODO: change when we switch to new gas compensation
         assertEq(boldToken.balanceOf(A), 16000e18, "Wrong Bold balance before redemption");
 
         // initial balances
@@ -195,11 +202,27 @@ contract MulticollateralTest is DevTestSetup {
         testValues3.fee = fee * testValues3.redeemAmount / redeemAmount * DECIMAL_PRECISION / testValues3.price;
         testValues4.fee = fee * testValues4.redeemAmount / redeemAmount * DECIMAL_PRECISION / testValues4.price;
 
+        // Check redemption rate
+        assertApproxEqAbs(
+            collateralRegistry.getRedemptionFeeWithDecay(redeemAmount),
+            redeemAmount * (INITIAL_BASE_RATE / 16 + REDEMPTION_FEE_FLOOR) / DECIMAL_PRECISION,
+            1e7,
+            "Wrong redemption fee with decay"
+        );
+
+        uint256 initialBoldSupply = boldToken.totalSupply();
+
         // A redeems 1.6k
         redeem(A, redeemAmount);
 
+        // Check redemption rate
+        assertApproxEqAbs(
+            collateralRegistry.getRedemptionRate(),
+            INITIAL_BASE_RATE / 16 + REDEMPTION_FEE_FLOOR + redeemAmount * DECIMAL_PRECISION / initialBoldSupply,
+            1e5,
+            "Wrong redemption rate");
+
         // Check bold balance
-        // TODO: change when we switch to new gas compensation
         assertApproxEqAbs(boldToken.balanceOf(A), 14400e18, 10, "Wrong Bold balance after redemption");
 
         // Check collateral balances

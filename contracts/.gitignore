@@ -36,3 +36,12 @@ testMatrix.json
 /counterexamples
 /counterexamples-fixed
 /counterexamples-assume
+
+# Fork script
+/.env.*
+!/.env.template
+/anvil.pid
+/anvil.log
+
+# E2E broadcast logs
+/broadcast-e2e

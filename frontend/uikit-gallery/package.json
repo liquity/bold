@@ -2,6 +2,8 @@
   "name": "@liquity2/uikit-gallery",
   "version": "0.0.0",
   "private": true,
+  "author": "Liquity AG",
+  "license": "MIT",
   "scripts": {
     "build": "pnpm build-uikit && pnpm panda-codegen && pnpm cosmos-export && next build",
     "build-static": "pnpm build && cp -r ./out/_next ./cosmos-export && cp -r ./out/cosmos ./cosmos-export",
