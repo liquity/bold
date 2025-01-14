@@ -1,10 +1,12 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import type { Address, Initiative, VoteAllocation } from "@/src/types";
 
+import { AddressLink } from "@/src/comps/AddressLink/AddressLink";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { getUserStates, useInitiatives } from "@/src/liquity-governance";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
+import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
 import { vVoteAllocations } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { IconDownvote, IconUpvote } from "@liquity2/uikit";
@@ -181,11 +183,6 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
           let qty = dn.mul([unallocatedLQTY, 18], vote.value)[0];
           remainingLqty -= qty;
 
-          // allocate any remaining LQTY to the last initiative
-          // if (index === initiativeAddresses.length - 1 && remainingLqty > 0n) {
-          //   qty += remainingLqty;
-          // }
-
           if (vote?.vote === "for") {
             allocationArgs.votes[index] = qty;
           } else if (vote?.vote === "against") {
@@ -193,11 +190,16 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
           }
         }
 
+        const allocated = await graphQuery(
+          GovernanceUserAllocated,
+          { id: account.toLowerCase() },
+        );
+
         return writeContract(wagmiConfig, {
           ...contracts.Governance,
           functionName: "allocateLQTY",
           args: [
-            [],
+            (allocated.governanceUser?.allocated ?? []) as Address[],
             allocationArgs.initiatives,
             allocationArgs.votes,
             allocationArgs.vetos,
