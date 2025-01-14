@@ -38,6 +38,8 @@ testMatrix.json
 /counterexamples-assume
 
 # Fork script
+/.env.*
+!/.env.template
 /anvil.pid
 /anvil.log
 
