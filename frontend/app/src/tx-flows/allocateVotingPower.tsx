@@ -232,8 +232,10 @@ function VoteAllocation({
   return (
     <TransactionDetailsRow
       label={[
-        initiative.name,
-        initiative.protocol,
+        initiative.name ?? "Initiative",
+        <div title={initiative.address}>
+          {initiative.protocol ?? <AddressLink address={initiative.address} />}
+        </div>,
       ]}
       value={[
         <div

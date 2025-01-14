@@ -375,26 +375,28 @@ export function StakePositionSummary({
                           <p>
                             Voting power increases over time based on the total amount of LQTY staked.
                           </p>
-                          <div
-                            className={css({
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 8,
-                            })}
-                          >
-                            <TooltipRow
-                              label="All voting power"
-                              value={<div ref={votingPowerTooltipTotalRef} />}
-                            />
-                            <TooltipRow
-                              label="Your voting power"
-                              value={<div ref={votingPowerTooltipRef} />}
-                            />
-                            <TooltipRow
-                              label="Your voting share"
-                              value={<div ref={votingPowerTooltipShareRef} />}
-                            />
-                          </div>
+                          {account.address && (
+                            <div
+                              className={css({
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 8,
+                              })}
+                            >
+                              <TooltipRow
+                                label="All voting power"
+                                value={<div ref={votingPowerTooltipTotalRef} />}
+                              />
+                              <TooltipRow
+                                label="Your voting power"
+                                value={<div ref={votingPowerTooltipRef} />}
+                              />
+                              <TooltipRow
+                                label="Your voting share"
+                                value={<div ref={votingPowerTooltipShareRef} />}
+                              />
+                            </div>
+                          )}
                         </div>
                       ),
                       footerLink: {

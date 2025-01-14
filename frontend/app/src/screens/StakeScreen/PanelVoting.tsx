@@ -8,19 +8,53 @@ import content from "@/src/content";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { formatDate } from "@/src/formatting";
 import { useGovernanceState, useInitiatives } from "@/src/liquity-governance";
+import { useAccount } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { useGovernanceUser } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, Button, IconExternal, shortenAddress, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function PanelVoting() {
   const txFlow = useTransactionFlow();
 
-  const initiatives = useInitiatives();
+  const account = useAccount();
   const governanceState = useGovernanceState();
+  const governanceUser = useGovernanceUser(account.address ?? null);
+  const initiatives = useInitiatives();
 
   const [voteAllocations, setVoteAllocations] = useState<VoteAllocations>({});
+
+  useEffect(() => {
+    const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
+
+    const allocations: VoteAllocations = {};
+    for (const allocation of governanceUser.data?.allocations ?? []) {
+      const vote = allocation.voteLQTY > 0n
+        ? "for" as const
+        : allocation.vetoLQTY > 0n
+        ? "against" as const
+        : null;
+
+      if (vote === null) {
+        continue;
+      }
+
+      const qty: Dnum = [
+        vote === "for"
+          ? allocation.voteLQTY
+          : allocation.vetoLQTY,
+        18,
+      ];
+
+      allocations[allocation.initiative] = {
+        value: dn.div(qty, stakedLQTY),
+        vote,
+      };
+    }
+    setVoteAllocations(allocations);
+  }, [governanceUser.status]);
 
   const remainingVotingPower = Object.values(voteAllocations).reduce(
     (remaining, voteData) => {
@@ -32,16 +66,20 @@ export function PanelVoting() {
     dn.from(1, 18),
   );
 
+  const daysLeft = governanceState.data?.daysLeft ?? 0;
+  const rtf = new Intl.RelativeTimeFormat("en", { style: "short" });
+  const remaining = daysLeft > 1
+    ? rtf.format(Math.ceil(daysLeft), "day")
+    : rtf.format(Math.ceil(daysLeft * 24 * 60), "minute");
+
   const handleVote = (initiativeAddress: Address, vote: Vote | null) => {
-    setVoteAllocations((prev) => {
-      return ({
-        ...prev,
-        [initiativeAddress]: {
-          value: dn.from(0),
-          vote: prev[initiativeAddress]?.vote === vote ? null : vote,
-        },
-      });
-    });
+    setVoteAllocations((prev) => ({
+      ...prev,
+      [initiativeAddress]: {
+        vote: prev[initiativeAddress]?.vote === vote ? null : vote,
+        value: dn.from(0),
+      },
+    }));
   };
 
   const handleVoteInputChange = (initiativeAddress: Address, value: Dnum) => {
@@ -117,7 +155,12 @@ export function PanelVoting() {
             })}
           >
             Current voting round ends in{" "}
-            <Tag title={governanceState.data && formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))}>
+            <Tag
+              title={governanceState.data
+                && `Epoch ${governanceState.data.epoch} ends on the ${
+                  formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))
+                }`}
+            >
               {governanceState.data.daysLeftRounded} {governanceState.data.daysLeftRounded === 1 ? "day" : "days"}
             </Tag>
           </div>
@@ -205,15 +248,7 @@ export function PanelVoting() {
             <th>
               Epoch<br /> Initiatives
             </th>
-            <th>
-              <abbr title="Total Value Locked">TVL</abbr>
-            </th>
-            <th title="Pair volume in 7 days">
-              Pair vol<br /> in 7d
-            </th>
-            <th title="Votes distribution">
-              Votes<br />distrib
-            </th>
+            <th>Allocation</th>
             <th>Decision</th>
           </tr>
         </thead>
@@ -230,7 +265,7 @@ export function PanelVoting() {
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={4}>
+            <td colSpan={2}>
               <div>
                 Voting power left
               </div>
@@ -257,9 +292,51 @@ export function PanelVoting() {
         </tfoot>
       </table>
 
+      {governanceState.data && (
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            marginBottom: 32,
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              width: 20,
+              height: 20,
+              color: "strongSurfaceContent",
+              background: "strongSurface",
+              borderRadius: "50%",
+            })}
+          >
+            <svg width="20" height="20" fill="none">
+              <path
+                clipRule="evenodd"
+                fill="currentColor"
+                fillRule="evenodd"
+                d="m15.41 5.563-6.886 10.1-4.183-3.66 1.317-1.505 2.485 2.173 5.614-8.234 1.652 1.126Z"
+              />
+            </svg>
+          </div>
+          <div>
+            <div>
+              Votes & vetos are accepted on {formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))}.<br />
+            </div>
+            <div
+              className={css({
+                color: "contentAlt",
+              })}
+            >
+              Your votes for epoch #{String(governanceState.data.epoch)} will apply {remaining}.
+            </div>
+          </div>
+        </div>
+      )}
+
       <VFlex gap={48}>
         <ConnectWarningBox />
-
         <Button
           disabled={!allowSubmit}
           label="Cast votes"
@@ -334,32 +411,6 @@ function InitiativeRow({
         </div>
       </td>
       <td>
-        <div>
-          <Amount
-            fallback="−"
-            format="compact"
-            value={initiative.tvl}
-          />
-        </div>
-      </td>
-      <td>
-        <div>
-          <Amount
-            fallback="−"
-            format="compact"
-            value={initiative.pairVolume}
-          />
-        </div>
-      </td>
-      <td>
-        <div>
-          <Amount
-            fallback="−"
-            format={1}
-            percentage
-            value={initiative.votesDistribution}
-          />
-        </div>
       </td>
       <td>
         <div
@@ -367,7 +418,8 @@ function InitiativeRow({
             display: "flex",
             alignItems: "center",
             justifyContent: "flex-end",
-            height: 34,
+            height: "100%",
+            paddingTop: 6,
           })}
         >
           <VoteInput
