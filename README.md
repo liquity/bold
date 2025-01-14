@@ -1348,7 +1348,7 @@ No fix is deemed necessary, since:
 
 ### 4 - Oracle failure and urgent redemptions with the frozen last good price
 
-When an oracle failure triggers a branch shutdown, the respective PriceFeed’s `fetchPrice` function returns the recorded `lastGoodPrice` price thereafter. Thus the LST on that branch after shutdown is always priced using `lastGoodPrice`.
+An ETH-USD market oracle failure and/or a canonical LST exchange rate failure trigger branch shutdowns which then and thereafter use the `lastGoodPrice` to price the branch's collateral.
 
 During shutdown, the only operation that uses the LST price is urgent redemptions.   
 
