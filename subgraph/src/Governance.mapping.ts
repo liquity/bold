@@ -1,4 +1,4 @@
-import { BigInt } from "@graphprotocol/graph-ts";
+import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 import {
   AllocateLQTY as AllocateLQTYEvent,
   ClaimForInitiative as ClaimForInitiativeEvent,
@@ -51,6 +51,7 @@ export function handleDepositLQTY(event: DepositLQTYEvent): void {
   let user = GovernanceUser.load(event.params.user.toHex());
   if (user === null) {
     user = new GovernanceUser(event.params.user.toHex());
+    user.allocated = [];
     user.allocatedLQTY = BigInt.fromI32(0);
     user.stakedLQTY = BigInt.fromI32(0);
     user.stakedOffset = BigInt.fromI32(0);
@@ -112,6 +113,8 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
     allocation.vetoLQTY = BigInt.fromI32(0);
   }
 
+  let wasAllocated = allocation.voteLQTY.gt(BigInt.fromI32(0)) || allocation.vetoLQTY.gt(BigInt.fromI32(0));
+
   // votes
   allocation.voteLQTY = allocation.voteLQTY.plus(event.params.deltaVoteLQTY);
   user.allocatedLQTY = user.allocatedLQTY.plus(event.params.deltaVoteLQTY);
@@ -121,6 +124,19 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
   user.allocatedLQTY = user.allocatedLQTY.plus(event.params.deltaVetoLQTY);
 
   allocation.atEpoch = event.params.atEpoch;
+
+  let isAllocated = allocation.voteLQTY.gt(BigInt.fromI32(0)) || allocation.vetoLQTY.gt(BigInt.fromI32(0));
+
+  let allocated = user.allocated;
+  let initiativeAddress = Bytes.fromHexString(initiativeId);
+  if (!wasAllocated && isAllocated && !allocated.includes(initiativeAddress)) {
+    allocated.push(Bytes.fromHexString(initiativeId));
+    user.allocated = allocated;
+  } else if (wasAllocated && !isAllocated && allocated.includes(initiativeAddress)) {
+    let index = allocated.indexOf(initiativeAddress);
+    allocated.splice(index, 1);
+    user.allocated = allocated;
+  }
 
   allocation.save();
   user.save();

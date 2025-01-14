@@ -15,6 +15,9 @@ export function useGovernanceState() {
   return useReadContracts({
     contracts: [{
       ...Governance,
+      functionName: "epoch",
+    }, {
+      ...Governance,
       functionName: "epochStart",
     }, {
       ...Governance,
@@ -31,12 +34,14 @@ export function useGovernanceState() {
     }],
     query: {
       select: ([
+        epoch_,
         epochStart_,
         totalVotesAndState,
         secondsWithinEpoch,
         GOVERNANCE_EPOCH_DURATION,
         GOVERNANCE_EPOCH_VOTING_CUTOFF,
       ]) => {
+        const epoch = epoch_.result ?? 0n;
         const epochStart = epochStart_.result ?? 0n;
         const epochDuration = GOVERNANCE_EPOCH_DURATION.result ?? 0n;
         const epochVotingCutoff = GOVERNANCE_EPOCH_VOTING_CUTOFF.result ?? 0n;
@@ -54,6 +59,7 @@ export function useGovernanceState() {
           countedVoteOffset: totalVotesAndState.result?.[1].countedVoteOffset,
           daysLeft,
           daysLeftRounded,
+          epoch,
           epochEnd: epochStart + epochDuration,
           epochStart,
           period,

@@ -13,7 +13,10 @@ export async function graphQuery<TResult, TVariables>(
       "Content-Type": "application/json",
       Accept: "application/graphql-response+json",
     },
-    body: JSON.stringify({ query, variables }),
+    body: JSON.stringify(
+      { query, variables },
+      (_, value) => typeof value === "bigint" ? String(value) : value,
+    ),
   });
 
   if (!response.ok) {
@@ -281,6 +284,14 @@ export const GovernanceStats = graphql(`
       totalLQTYStaked
       totalOffset
       totalInitiatives
+    }
+  }
+`);
+
+export const GovernanceUserAllocated = graphql(`
+  query GovernanceUserAllocations($id: ID!) {
+    governanceUser(id: $id) {
+      allocated
     }
   }
 `);
