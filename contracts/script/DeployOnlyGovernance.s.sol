@@ -33,6 +33,6 @@ contract DeployOnlyGovernance is DeployGovernance {
         console2.log(deployer, "deployer");
         console2.log(deployer.balance, "deployer balance");
 
-        deployGovernance(deployer, SALT, boldToken, usdc, curveFactoryAddress, usdcCurvePoolAddress);
+        deployGovernance(deployer, SALT, boldToken, curveFactoryAddress, usdcCurvePoolAddress);
     }
 }

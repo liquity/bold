@@ -1,0 +1,7 @@
+{
+  "1": {
+    "sourcifyName": "Ethereum Mainnet (forked)",
+    "supported": true,
+    "rpc": ["http://localhost:8545"]
+  }
+}

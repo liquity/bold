@@ -59,7 +59,12 @@ contract OraclesMainnet is TestAccounts {
     }
 
     function setUp() public {
-        vm.createSelectFork(vm.rpcUrl("mainnet"));
+        try vm.envString("MAINNET_RPC_URL") returns (string memory rpcUrl) {
+            vm.createSelectFork(rpcUrl);
+        } catch {
+            vm.skip(true);
+        }
+
         Vars memory vars;
 
         accounts = new Accounts();

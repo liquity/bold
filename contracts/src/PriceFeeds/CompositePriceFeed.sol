@@ -111,9 +111,9 @@ abstract contract CompositePriceFeed is MainnetPriceFeedBase {
     // An individual Pricefeed instance implements _fetchPricePrimary according to the data sources it uses. Returns:
     // - The price
     // - A bool indicating whether a new oracle failure or exchange rate failure was detected in the call
-    function _fetchPricePrimary(bool _isRedemption) internal virtual returns (uint256, bool) {}
+    function _fetchPricePrimary(bool _isRedemption) internal virtual returns (uint256, bool);
 
     // Returns the LST exchange rate and a bool indicating whether the exchange rate failed to return a valid rate.
     // Implementation depends on the specific LST.
-    function _getCanonicalRate() internal view virtual returns (uint256, bool) {}
+    function _getCanonicalRate() internal view virtual returns (uint256, bool);
 }
