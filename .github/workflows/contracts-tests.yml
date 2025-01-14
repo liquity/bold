@@ -89,7 +89,7 @@ jobs:
           version: ${{ env.FOUNDRY_VERSION }}
 
       - name: Fork mainnet
-        run: ./fork start
+        run: ./fork start && sleep 5
 
       - name: Deploy contracts
         run: ./fork deploy
