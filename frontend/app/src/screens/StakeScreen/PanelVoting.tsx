@@ -1,4 +1,5 @@
-import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocations } from "@/src/types";
+import type { InitiativeStatus } from "@/src/liquity-governance";
+import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocation, VoteAllocations } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
@@ -6,15 +7,24 @@ import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
-import { formatDate } from "@/src/formatting";
-import { useGovernanceState, useInitiatives } from "@/src/liquity-governance";
+import { fmtnum, formatDate } from "@/src/formatting";
+import { useGovernanceState, useInitiatives, useInitiativesStates } from "@/src/liquity-governance";
 import { useAccount } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useGovernanceUser } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, Button, IconExternal, shortenAddress, VFlex } from "@liquity2/uikit";
+import {
+  AnchorTextButton,
+  Button,
+  IconDownvote,
+  IconEdit,
+  IconExternal,
+  IconUpvote,
+  shortenAddress,
+  VFlex,
+} from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 export function PanelVoting() {
   const txFlow = useTransactionFlow();
@@ -23,9 +33,35 @@ export function PanelVoting() {
   const governanceState = useGovernanceState();
   const governanceUser = useGovernanceUser(account.address ?? null);
   const initiatives = useInitiatives();
+  const initiativesStates = useInitiativesStates(initiatives.data?.map((i) => i.address) ?? []);
 
-  const [voteAllocations, setVoteAllocations] = useState<VoteAllocations>({});
+  const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
 
+  // vote allocations to be submitted
+  const [inputVoteAllocations, setInputVoteAllocations] = useState<VoteAllocations>({});
+
+  // current vote allocations
+  const voteAllocations = useMemo(() => {
+    const allocations: VoteAllocations = {};
+
+    for (const allocation of governanceUser.data?.allocations ?? []) {
+      const { voteLQTY, vetoLQTY } = allocation;
+
+      const voteAllocation: VoteAllocation | null = voteLQTY > 0n
+        ? { vote: "for", value: [voteLQTY, 18] }
+        : vetoLQTY > 0n
+        ? { vote: "against", value: [vetoLQTY, 18] }
+        : null;
+
+      if (voteAllocation) {
+        allocations[allocation.initiative] = voteAllocation;
+      }
+    }
+
+    return allocations;
+  }, [governanceUser.data?.allocations]);
+
+  // fill input vote allocations from user data
   useEffect(() => {
     const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
 
@@ -53,10 +89,14 @@ export function PanelVoting() {
         vote,
       };
     }
-    setVoteAllocations(allocations);
+    setInputVoteAllocations(allocations);
   }, [governanceUser.status]);
 
-  const remainingVotingPower = Object.values(voteAllocations).reduce(
+  const isCutoff = governanceState.data?.period === "cutoff";
+
+  const hasAnyAllocations = (governanceUser.data?.allocations ?? []).length > 0;
+
+  const remainingVotingPower = Object.values(inputVoteAllocations).reduce(
     (remaining, voteData) => {
       if (voteData.vote !== null) {
         return dn.sub(remaining, voteData.value);
@@ -67,13 +107,15 @@ export function PanelVoting() {
   );
 
   const daysLeft = governanceState.data?.daysLeft ?? 0;
-  const rtf = new Intl.RelativeTimeFormat("en", { style: "short" });
+  const rtf = new Intl.RelativeTimeFormat("en", { style: "long" });
   const remaining = daysLeft > 1
     ? rtf.format(Math.ceil(daysLeft), "day")
+    : daysLeft > (1 / 24)
+    ? rtf.format(Math.ceil(daysLeft * 24), "hours")
     : rtf.format(Math.ceil(daysLeft * 24 * 60), "minute");
 
   const handleVote = (initiativeAddress: Address, vote: Vote | null) => {
-    setVoteAllocations((prev) => ({
+    setInputVoteAllocations((prev) => ({
       ...prev,
       [initiativeAddress]: {
         vote: prev[initiativeAddress]?.vote === vote ? null : vote,
@@ -83,7 +125,7 @@ export function PanelVoting() {
   };
 
   const handleVoteInputChange = (initiativeAddress: Address, value: Dnum) => {
-    setVoteAllocations((prev) => ({
+    setInputVoteAllocations((prev) => ({
       ...prev,
       [initiativeAddress]: {
         vote: prev[initiativeAddress]?.vote ?? null,
@@ -92,7 +134,24 @@ export function PanelVoting() {
     }));
   };
 
-  const allowSubmit = dn.lt(remainingVotingPower, 1) && dn.gte(remainingVotingPower, 0);
+  const allowSubmit = dn.lt(remainingVotingPower, 1) && (
+    hasAnyAllocations || dn.gte(remainingVotingPower, 0)
+  );
+
+  const cutoffStartDate = governanceState.data && new Date(
+    Number(governanceState.data.cutoffStart) * 1000,
+  );
+  const epochEndDate = governanceState.data && new Date(
+    Number(governanceState.data.epochEnd) * 1000,
+  );
+
+  if (
+    governanceState.status === "pending"
+    || initiatives.status === "pending"
+    || governanceUser.status === "pending"
+  ) {
+    return null;
+  }
 
   return (
     <section
@@ -169,18 +228,44 @@ export function PanelVoting() {
         <AnchorTextButton
           label={
             <>
-              Discuss on Discord
+              Discuss
               <IconExternal size={16} />
             </>
           }
-          href="https://discord.com/invite/2up5U32"
+          href="https://voting.liquity.org/"
           external
         />
       </div>
 
-      {governanceState.data?.period === "cutoff" && (
-        <div>
-          You can only veto today
+      {isCutoff && (
+        <div
+          className={css({
+            paddingTop: 16,
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              height: 40,
+              paddingLeft: 12,
+              fontSize: 14,
+              background: "yellow:50",
+              border: "1px solid token(colors.yellow:200)",
+              borderRadius: 8,
+            })}
+          >
+            <div>
+              <svg width="16" height="17" fill="none">
+                <path
+                  fill="#E1B111"
+                  d="M.668 14.333h14.667L8 1.666.668 14.333Zm8-2H7.335v-1.334h1.333v1.334Zm0-2.667H7.335V6.999h1.333v2.667Z"
+                />
+              </svg>
+            </div>
+            <div>Only downvotes are accepted today.</div>
+          </div>
         </div>
       )}
 
@@ -248,24 +333,27 @@ export function PanelVoting() {
             <th>
               Epoch<br /> Initiatives
             </th>
-            <th>Allocation</th>
-            <th>Decision</th>
+            <th>{hasAnyAllocations ? "Allocation" : "Decision"}</th>
           </tr>
         </thead>
         <tbody>
           {initiatives.data?.map((initiative, index) => (
             <InitiativeRow
               key={index}
+              disableFor={isCutoff}
               initiative={initiative}
-              voteAllocation={voteAllocations[initiative.address]}
+              initiativesStatus={initiativesStates.data?.[initiative.address]?.status}
+              inputVoteAllocation={inputVoteAllocations[initiative.address]}
               onVote={handleVote}
               onVoteInputChange={handleVoteInputChange}
+              totalStaked={stakedLQTY}
+              voteAllocation={voteAllocations[initiative.address]}
             />
           ))}
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={2}>
+            <td>
               <div>
                 Voting power left
               </div>
@@ -296,40 +384,61 @@ export function PanelVoting() {
         <div
           className={css({
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
             gap: 16,
             marginBottom: 32,
           })}
         >
           <div
             className={css({
-              display: "flex",
-              width: 20,
-              height: 20,
-              color: "strongSurfaceContent",
-              background: "strongSurface",
-              borderRadius: "50%",
+              paddingTop: 12,
             })}
           >
-            <svg width="20" height="20" fill="none">
-              <path
-                clipRule="evenodd"
-                fill="currentColor"
-                fillRule="evenodd"
-                d="m15.41 5.563-6.886 10.1-4.183-3.66 1.317-1.505 2.485 2.173 5.614-8.234 1.652 1.126Z"
-              />
-            </svg>
+            <div
+              className={css({
+                display: "flex",
+                width: 20,
+                height: 20,
+                color: "strongSurfaceContent",
+                background: "strongSurface",
+                borderRadius: "50%",
+              })}
+            >
+              <svg width="20" height="20" fill="none">
+                <path
+                  clipRule="evenodd"
+                  fill="currentColor"
+                  fillRule="evenodd"
+                  d="m15.41 5.563-6.886 10.1-4.183-3.66 1.317-1.505 2.485 2.173 5.614-8.234 1.652 1.126Z"
+                />
+              </svg>
+            </div>
           </div>
           <div>
-            <div>
-              Votes & vetos are accepted on {formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))}.<br />
-            </div>
+            {cutoffStartDate && epochEndDate && (
+              <div>
+                {isCutoff ? "Upvotes ended on " : "Upvotes accepted until "}
+                <time
+                  dateTime={formatDate(cutoffStartDate, "iso")}
+                  title={formatDate(cutoffStartDate, "iso")}
+                >
+                  {formatDate(cutoffStartDate)}
+                </time>.
+                {" Downvotes accepted until "}
+                <time
+                  dateTime={formatDate(epochEndDate, "iso")}
+                  title={formatDate(epochEndDate, "iso")}
+                >
+                  {formatDate(epochEndDate)}
+                </time>.
+              </div>
+            )}
             <div
               className={css({
                 color: "contentAlt",
               })}
             >
-              Your votes for epoch #{String(governanceState.data.epoch)} will apply {remaining}.
+              Votes for epoch #{String(governanceState.data.epoch)} will be snapshotted {remaining}.
             </div>
           </div>
         </div>
@@ -345,8 +454,8 @@ export function PanelVoting() {
           wide
           onClick={() => {
             // Filter out allocations with no vote or zero value
-            const voteAllocationsFiltered = { ...voteAllocations };
-            for (const [address, data] of Object.entries(voteAllocations) as Entries<VoteAllocations>) {
+            const voteAllocationsFiltered = { ...inputVoteAllocations };
+            for (const [address, data] of Object.entries(inputVoteAllocations) as Entries<VoteAllocations>) {
               if (data.vote === null || dn.eq(data.value, 0)) {
                 delete voteAllocationsFiltered[address];
               }
@@ -355,7 +464,7 @@ export function PanelVoting() {
             txFlow.start({
               flowId: "allocateVotingPower",
               backLink: ["/stake/voting", "Back"],
-              successLink: ["/", "Go to the Dashboard"],
+              successLink: ["/stake/voting", "Back to overview"],
               successMessage: "Your voting power has been allocated.",
               voteAllocations: voteAllocationsFiltered,
             });
@@ -367,16 +476,28 @@ export function PanelVoting() {
 }
 
 function InitiativeRow({
+  disableFor,
   initiative,
-  voteAllocation,
+  initiativesStatus,
+  inputVoteAllocation,
   onVote,
   onVoteInputChange,
+  totalStaked,
+  voteAllocation,
 }: {
+  disableFor: boolean;
   initiative: Initiative;
-  voteAllocation?: VoteAllocations[Address];
+  initiativesStatus?: InitiativeStatus;
+  inputVoteAllocation?: VoteAllocations[Address];
   onVote: (initiative: Address, vote: Vote) => void;
   onVoteInputChange: (initiative: Address, value: Dnum) => void;
+  totalStaked: Dnum;
+  voteAllocation?: VoteAllocation;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [editIntent, setEditIntent] = useState(false);
+  const editMode = editIntent || !voteAllocation?.vote;
+
   return (
     <tr>
       <td>
@@ -392,9 +513,40 @@ function InitiativeRow({
               display: "flex",
               alignItems: "center",
               paddingTop: 6,
+              gap: 4,
             })}
+            style={{
+              height: editMode ? "auto" : 26 + 6 + 4,
+            }}
           >
-            {initiative.name ?? "Initiative"}
+            <div
+              className={css({
+                textOverflow: "ellipsis",
+                overflow: "hidden",
+                maxWidth: 200,
+              })}
+            >
+              {initiative.name ?? "Initiative"}
+            </div>
+            {initiativesStatus && (
+              <div
+                title={`Status: ${initiativesStatus}`}
+                className={css({
+                  display: "inline-flex",
+                  alignItems: "center",
+                  height: 16,
+                  padding: "0 4px 1px",
+                  fontSize: 12,
+                  color: "infoSurfaceContent",
+                  background: "infoSurface",
+                  border: "1px solid token(colors.infoSurfaceBorder)",
+                  borderRadius: 8,
+                  userSelect: "none",
+                })}
+              >
+                {initiativesStatus}
+              </div>
+            )}
           </div>
           <div>
             <AnchorTextButton
@@ -411,8 +563,6 @@ function InitiativeRow({
         </div>
       </td>
       <td>
-      </td>
-      <td>
         <div
           className={css({
             display: "flex",
@@ -422,18 +572,87 @@ function InitiativeRow({
             paddingTop: 6,
           })}
         >
-          <VoteInput
-            value={voteAllocation?.value ?? null}
-            vote={voteAllocation?.vote ?? null}
-            onChange={(value) => {
-              onVoteInputChange(initiative.address, value);
-            }}
-            onVote={(vote) => {
-              onVote(initiative.address, vote);
-            }}
-          />
+          {editMode
+            ? (
+              <VoteInput
+                ref={inputRef}
+                forDisabled={disableFor}
+                onChange={(value) => {
+                  onVoteInputChange(initiative.address, value);
+                }}
+                onVote={(vote) => {
+                  onVote(initiative.address, vote);
+                }}
+                value={inputVoteAllocation?.value ?? null}
+                vote={inputVoteAllocation?.vote ?? null}
+              />
+            )
+            : (
+              voteAllocation.vote && (
+                <Vote
+                  share={dn.div(voteAllocation?.value ?? [0n, 18], totalStaked)}
+                  quantity={voteAllocation?.value ?? [0n, 18]}
+                  vote={voteAllocation?.vote ?? null}
+                  onEdit={() => {
+                    setEditIntent(true);
+                    setTimeout(() => {
+                      inputRef.current?.focus();
+                    }, 0);
+                  }}
+                />
+              )
+            )}
         </div>
       </td>
     </tr>
+  );
+}
+
+function Vote({
+  onEdit,
+  quantity,
+  share,
+  vote,
+}: {
+  onEdit?: () => void;
+  quantity: Dnum;
+  share: Dnum;
+  vote: Vote;
+}) {
+  return (
+    <div
+      className={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: 4,
+      })}
+    >
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 8,
+        })}
+      >
+        {vote === "for" && <IconUpvote size={20} />}
+        {vote === "against" && <IconDownvote size={20} />}
+        {fmtnum(share, 2, 100)}%
+        <Button
+          size="mini"
+          title="Change"
+          label={<IconEdit size={16} />}
+          onClick={onEdit}
+        />
+      </div>
+      <div
+        className={css({
+          color: "contentAlt",
+          fontSize: 12,
+        })}
+      >
+        {fmtnum(quantity, 2)} LQTY {vote === "for" ? "for" : "against"}
+      </div>
+    </div>
   );
 }

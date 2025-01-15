@@ -133,7 +133,7 @@ export function PanelStaking() {
                 ? (
                   lqtyBalance.data && dn.gt(lqtyBalance.data, 0) && (
                     <TextButton
-                      label={`Max. ${(fmtnum(lqtyBalance.data))} LQTY`}
+                      label={`Max. ${(fmtnum(lqtyBalance.data, 2))} LQTY`}
                       onClick={() => {
                         setValue(dn.toString(lqtyBalance.data));
                       }}

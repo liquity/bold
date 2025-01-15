@@ -6,27 +6,32 @@ import { css } from "@/styled-system/css";
 import { IconDownvote, IconUpvote } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 
 type Vote = "for" | "against";
 
-export function VoteInput({
-  onChange,
-  onVote,
-  value,
-  vote,
-}: {
+export const VoteInput = forwardRef<HTMLInputElement, {
+  againstDisabled?: boolean;
+  forDisabled?: boolean;
   onChange: (value: Dnum) => void;
   onVote: (vote: "for" | "against") => void;
   value: Dnum | null;
   vote: "for" | "against" | null;
-}) {
+}>(({
+  againstDisabled,
+  forDisabled,
+  onChange,
+  onVote,
+  value,
+  vote,
+}, forwardedRef) => {
   const [isFocused, setIsFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const [inputValue, setInputValue] = useState(
     value ? dn.toString(dn.mul(value, 100)) : "",
   );
+
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const displayValue = (() => {
     // not selected => empty
@@ -81,17 +86,26 @@ export function VoteInput({
       }}
     >
       <VoteButton
+        disabled={forDisabled}
         onSelect={() => onVote("for")}
         selected={vote === "for"}
         vote="for"
       />
       <VoteButton
+        disabled={againstDisabled}
         onSelect={() => onVote("against")}
         selected={vote === "against"}
         vote="against"
       />
       <input
-        ref={inputRef}
+        ref={(elt) => {
+          inputRef.current = elt;
+          if (typeof forwardedRef === "function") {
+            forwardedRef(elt);
+          } else if (forwardedRef) {
+            forwardedRef.current = elt;
+          }
+        }}
         onFocus={() => {
           setIsFocused(true);
           setInputValue(
@@ -135,13 +149,15 @@ export function VoteInput({
       />
     </div>
   );
-}
+});
 
 function VoteButton({
+  disabled,
   onSelect,
   selected,
   vote,
 }: {
+  disabled?: boolean;
   onSelect: () => void;
   selected: boolean;
   vote: Vote;
@@ -159,9 +175,10 @@ function VoteButton({
 
   return (
     <button
-      type="button"
-      title={vote === "for" ? "Vote for" : "Vote against"}
+      disabled={disabled}
       onClick={() => onSelect()}
+      title={vote === "for" ? "Vote for" : "Vote against"}
+      type="button"
       className={css({
         position: "relative",
         display: "flex",
@@ -177,6 +194,10 @@ function VoteButton({
         _active: {
           transform: "translateY(1px)",
         },
+        _disabled: {
+          cursor: "not-allowed",
+          transform: "none!important",
+        },
       })}
     >
       {selectTransition((style, item) => (
@@ -184,12 +205,17 @@ function VoteButton({
           className={css({
             position: "absolute",
             inset: 0,
-            color: "contentAlt",
+            "--color-normal": "token(colors.contentAlt)",
             "--color-selected": "token(colors.accent)",
+            "--color-disabled": "token(colors.dimmed)",
           })}
           style={{
             transform: item ? style.transform : undefined,
-            color: selected ? "var(--color-selected)" : undefined,
+            color: selected
+              ? "var(--color-selected)"
+              : disabled
+              ? "var(--color-disabled)"
+              : "var(--color-normal)",
           }}
         >
           {vote === "for"

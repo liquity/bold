@@ -261,7 +261,7 @@ function VoteAllocation({
             alignItems: "center",
           })}
         >
-          {vote.vote === "for" ? "Support" : "Oppose"} with <Amount value={lqtyAllocation} /> LQTY
+          {vote.vote === "for" ? "Upvote" : "Downvote"} with <Amount value={lqtyAllocation} /> LQTY
         </div>,
       ]}
     />

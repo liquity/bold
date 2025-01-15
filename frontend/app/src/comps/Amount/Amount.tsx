@@ -8,6 +8,7 @@ export function Amount({
   percentage = false,
   prefix = "",
   suffix = "",
+  title: titleProp,
   value,
 }: {
   fallback?: string;
@@ -15,6 +16,7 @@ export function Amount({
   percentage?: boolean;
   prefix?: string;
   suffix?: string;
+  title?: string | null;
   value: Parameters<typeof fmtnum>[0];
 }) {
   const scale = percentage ? 100 : 1;
@@ -26,7 +28,9 @@ export function Amount({
   const showFallback = value === null || value === undefined;
 
   const content = showFallback ? fallback : prefix + fmtnum(value, format, scale) + suffix;
-  const title = showFallback ? undefined : prefix + fmtnum(value, "full", scale) + suffix;
+  const title = showFallback ? undefined : (
+    titleProp === undefined ? prefix + fmtnum(value, "full", scale) + suffix : titleProp
+  );
 
   const fallbackTransition = useTransition([{ content, title, showFallback }], {
     keys: (item) => String(item.showFallback),
@@ -52,7 +56,7 @@ export function Amount({
 
   return fallbackTransition((style, { content, title }) => (
     <a.div
-      title={title}
+      title={title ?? undefined}
       className={css({
         display: "inline-flex",
         width: "fit-content",

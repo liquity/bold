@@ -409,6 +409,42 @@ export function StakePositionSummary({
               )
             ))}
           </div>
+          <div
+            className={css({
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+            })}
+          >
+            <div
+              className={css({
+                color: "token(colors.strongSurfaceContentAlt)",
+              })}
+            >
+              Allocated
+            </div>
+            {govUser.data?.allocatedLQTY && (
+              <div
+                title={`${fmtnum([govUser.data.allocatedLQTY, 18], "full")} LQTY`}
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                })}
+              >
+                <Amount
+                  title={null}
+                  format="compact"
+                  value={[govUser.data.allocatedLQTY, 18]}
+                />
+                <TokenIcon
+                  title={null}
+                  symbol="LQTY"
+                  size="mini"
+                />
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
+import type { Address } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
