@@ -215,6 +215,13 @@ contract DevTestSetup is BaseTest {
         internal
         returns (uint256 coll, uint256 debtRequest, ABCDEF memory troveIDs)
     {
+        return _setupForRedemption(_troveInterestRates, false);
+    }
+
+    function _setupForRedemption(ABCDEF memory _troveInterestRates, bool _batched)
+        internal
+        returns (uint256 coll, uint256 debtRequest, ABCDEF memory troveIDs)
+    {
         priceFeed.setPrice(2000e18);
 
         // fast-forward to pass bootstrap phase
@@ -222,10 +229,17 @@ contract DevTestSetup is BaseTest {
 
         coll = 20 ether;
         debtRequest = 20200e18;
-        troveIDs.A = openTroveNoHints100pct(A, coll, debtRequest, _troveInterestRates.A);
-        troveIDs.B = openTroveNoHints100pct(B, coll, debtRequest, _troveInterestRates.B);
-        troveIDs.C = openTroveNoHints100pct(C, coll, debtRequest, _troveInterestRates.C);
-        troveIDs.D = openTroveNoHints100pct(D, coll, debtRequest, _troveInterestRates.D);
+        if (_batched) {
+            troveIDs.A = openTroveAndJoinBatchManager(A, coll, debtRequest, A, _troveInterestRates.A);
+            troveIDs.B = openTroveAndJoinBatchManager(B, coll, debtRequest, B, _troveInterestRates.B);
+            troveIDs.C = openTroveAndJoinBatchManager(C, coll, debtRequest, C, _troveInterestRates.C);
+            troveIDs.D = openTroveAndJoinBatchManager(D, coll, debtRequest, D, _troveInterestRates.D);
+        } else {
+            troveIDs.A = openTroveNoHints100pct(A, coll, debtRequest, _troveInterestRates.A);
+            troveIDs.B = openTroveNoHints100pct(B, coll, debtRequest, _troveInterestRates.B);
+            troveIDs.C = openTroveNoHints100pct(C, coll, debtRequest, _troveInterestRates.C);
+            troveIDs.D = openTroveNoHints100pct(D, coll, debtRequest, _troveInterestRates.D);
+        }
 
         // A, B, C, D transfer all their Bold to E
         transferBold(A, E, boldToken.balanceOf(A));
@@ -242,6 +256,16 @@ contract DevTestSetup is BaseTest {
         troveInterestRates.D = 4e17; // 40%
 
         return _setupForRedemption(troveInterestRates);
+    }
+
+    function _setupForRedemptionAscendingInterestInBatch() internal returns (uint256, uint256, ABCDEF memory) {
+        ABCDEF memory troveInterestRates;
+        troveInterestRates.A = 1e17; // 10%
+        troveInterestRates.B = 2e17; // 20%
+        troveInterestRates.C = 3e17; // 30%
+        troveInterestRates.D = 4e17; // 40%
+
+        return _setupForRedemption(troveInterestRates, true);
     }
 
     function _redeemAndCreateZombieTrovesAAndB(ABCDEF memory _troveIDs) internal {
