@@ -12,7 +12,7 @@ defaults:
 
 env:
   FOUNDRY_PROFILE: ci
-  FOUNDRY_VERSION: nightly
+  FOUNDRY_VERSION: stable
   CI: true
   FORCE_COLOR: true
   MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
@@ -51,13 +51,9 @@ jobs:
         run: |
           forge test -vvv --no-match-contract Mainnet
 
-      - name: Run Forge tests mainnet (zapper)
+      - name: Run Forge tests mainnet
         run: |
-          forge test -vvv --match-contract ZapperLeverageMainnet
-
-      - name: Run Forge tests mainnet (oracle)
-        run: |
-          forge test -vvv --match-contract OraclesMainnet
+          forge test -vvv --match-contract Mainnet
 
   test-e2e:
     name: Foundry "E2E" tests
@@ -223,15 +219,14 @@ jobs:
 
       # Filter
       - name: Filter out from coverage
-        run:
-          lcov --remove lcov_merged.info -o lcov_merged.info
-            'test/*'
-            'script/*'
-            'src/Dependencies/Ownable.sol'
-            'src/Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol'
-            'src/NFTMetadata/*'
-            'src/MultiTroveGetter.sol'
-            'src/HintHelpers.sol'
+        run: lcov --remove lcov_merged.info -o lcov_merged.info
+          'test/*'
+          'script/*'
+          'src/Dependencies/Ownable.sol'
+          'src/Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol'
+          'src/NFTMetadata/*'
+          'src/MultiTroveGetter.sol'
+          'src/HintHelpers.sol'
 
       # Send to coveralls
       - name: Coveralls
