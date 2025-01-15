@@ -1208,7 +1208,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         // Not enough liquidity for ETHx
         for (uint256 i = 0; i < 3; i++) {
             _testOnlyOwnerOrManagerCanLeverDownFromBalancerFLProvider(
-                leverageZapperHybridArray[i], ExchangeType.UniV3, i
+                leverageZapperHybridArray[i], ExchangeType.HybridCurveUniV3, i
             );
         }
     }
