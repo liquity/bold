@@ -192,7 +192,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
         uint256 annualInterestRate = trove.annualInterestRate;
 
-        uint256 newAnnualInterestRate = 101e16;
+        uint256 newAnnualInterestRate = MAX_ANNUAL_INTEREST_RATE + 1;
         assertEq(tmBatchManagerAddress, B, "Wrong batch manager in TM");
         assertNotEq(newAnnualInterestRate, annualInterestRate, "New interest rate should be different");
 
