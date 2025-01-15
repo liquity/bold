@@ -24,11 +24,11 @@ uint256 constant COLL_GAS_COMPENSATION_CAP = 2 ether; // Max coll gas compensati
 uint256 constant MIN_DEBT = 2000e18;
 
 uint256 constant MIN_ANNUAL_INTEREST_RATE = _1pct / 2; // 0.5%
-uint256 constant MAX_ANNUAL_INTEREST_RATE = _100pct;
+uint256 constant MAX_ANNUAL_INTEREST_RATE = 250 * _1pct;
 
 // Batch management params
 uint128 constant MAX_ANNUAL_BATCH_MANAGEMENT_FEE = uint128(_100pct / 10); // 10%
-uint128 constant MIN_INTEREST_RATE_CHANGE_PERIOD = 120 seconds; // prevents more than one adjustment per ~10 blocks
+uint128 constant MIN_INTEREST_RATE_CHANGE_PERIOD = 1 hours; // only applies to batch managers / batched Troves
 
 uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%
 
