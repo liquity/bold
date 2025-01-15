@@ -51,9 +51,13 @@ jobs:
         run: |
           forge test -vvv --no-match-contract Mainnet
 
-      - name: Run Forge tests mainnet
+      - name: Run Forge tests mainnet (zapper)
         run: |
-          forge test -vvv --match-contract Mainnet
+          forge test -vvv --match-contract ZapperLeverageMainnet
+
+      - name: Run Forge tests mainnet (oracle)
+        run: |
+          forge test -vvv --match-contract OraclesMainnet
 
   test-e2e:
     name: Foundry "E2E" tests
