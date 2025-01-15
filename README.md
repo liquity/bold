@@ -1210,7 +1210,7 @@ If the `fetchPrice` call is called inside a borrower operation or redemption, th
 
 This is intended to catch some obvious oracle and canonical rate failure modes, as well as the scenario whereby the oracle provider disables their feed. Chainlink have stated that they may disable LST feeds if volume becomes too small, and that in this case, the call to the oracle will revert.
 
-### Fallback price calculations if an oracle has been failed
+### Fallback price calculations if an oracle has failed
 
 #### Canonical exchange rate failure
 
