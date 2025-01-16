@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {Script} from "forge-std/Script.sol";
@@ -20,9 +19,14 @@ import "forge-std/console2.sol";
 contract DeployGovernance is Script {
     using Strings for *;
 
-    // Environment Constants
-    address internal lqty;
-    address internal stakingV1;
+    struct DeployGovernanceParams {
+        address deployer;
+        bytes32 salt;
+        address stakingV1;
+        address lqty;
+        address lusd;
+        address bold;
+    }
 
     // Governance Constants
     uint128 private constant REGISTRATION_FEE = 1000e18;
@@ -48,60 +52,48 @@ contract DeployGovernance is Script {
     CurveV2GaugeRewards private curveV2GaugeRewards;
     ILiquidityGauge private gauge;
 
-    function deployGovernance(
-        address _deployer,
-        bytes32 _salt,
-        IERC20 _boldToken,
-        address _curveFactoryAddress,
-        address _curvePoolAddress
-    ) internal returns (address, string memory) {
+    function deployGovernance(DeployGovernanceParams memory p, address _curveFactoryAddress, address _curvePoolAddress)
+        internal
+        returns (address, string memory)
+    {
         (address governanceAddress, IGovernance.Configuration memory governanceConfiguration) =
-            computeGovernanceAddressAndConfig(_deployer, _salt, _boldToken, initialInitiatives);
+            computeGovernanceAddressAndConfig(p);
 
-        governance = new Governance{salt: _salt}(
-            lqty,
-            address(_boldToken),
-            stakingV1,
-            address(_boldToken),
-            governanceConfiguration,
-            _deployer,
-            initialInitiatives
+        governance = new Governance{salt: p.salt}(
+            p.lqty, p.lusd, p.stakingV1, p.bold, governanceConfiguration, p.deployer, initialInitiatives
         );
 
-        //console2.log("");
-        //console2.log(governance.owner(), "governance.owner()");
-        //console2.log(address(governance), "address(governance)");
-        //console2.log(governanceAddress, "governanceAddress");
         assert(governanceAddress == address(governance));
 
         // Curve initiative
         if (block.chainid == 1) {
             // mainnet
-            deployCurveV2GaugeRewards(governance, _boldToken, _curveFactoryAddress, _curvePoolAddress);
+            deployCurveV2GaugeRewards({
+                _governance: governance,
+                _bold: p.bold,
+                _bribeToken: p.lqty, // TODO: this should be CRV
+                _curveFactoryAddress: _curveFactoryAddress,
+                _curvePoolAddress: _curvePoolAddress
+            });
+
+            // TODO: BOLD/LUSD pool
         }
 
         governance.registerInitialInitiatives{gas: 600000}(initialInitiatives);
 
-        return (governanceAddress, _getGovernanceManifestJson(_curvePoolAddress));
+        return (governanceAddress, _getGovernanceManifestJson(_curvePoolAddress, p.lqty));
     }
 
-    function computeGovernanceAddress(
-        address _deployer,
-        bytes32 _salt,
-        IERC20 _boldToken,
-        address[] memory _initialInitiatives
-    ) internal view returns (address) {
-        (address governanceAddress,) =
-            computeGovernanceAddressAndConfig(_deployer, _salt, _boldToken, _initialInitiatives);
+    function computeGovernanceAddress(DeployGovernanceParams memory p) internal view returns (address) {
+        (address governanceAddress,) = computeGovernanceAddressAndConfig(p);
         return governanceAddress;
     }
 
-    function computeGovernanceAddressAndConfig(
-        address _deployer,
-        bytes32 _salt,
-        IERC20 _boldToken,
-        address[] memory _initialInitiatives
-    ) internal view returns (address, IGovernance.Configuration memory) {
+    function computeGovernanceAddressAndConfig(DeployGovernanceParams memory p)
+        internal
+        view
+        returns (address, IGovernance.Configuration memory)
+    {
         IGovernance.Configuration memory governanceConfiguration = IGovernance.Configuration({
             registrationFee: REGISTRATION_FEE,
             registrationThresholdFactor: REGISTRATION_THRESHOLD_FACTOR,
@@ -115,31 +107,21 @@ contract DeployGovernance is Script {
             epochDuration: EPOCH_DURATION,
             epochVotingCutoff: EPOCH_VOTING_CUTOFF
         });
-        //console2.log(lqty, "lqty");
-        //console2.log(address(_boldToken), "address(_boldToken)");
-        //console2.log(stakingV1, "stakingV1");
-        //console2.log(_initialInitiatives.length, "_initialInitiatives");
+
         bytes memory bytecode = abi.encodePacked(
             type(Governance).creationCode,
-            abi.encode(
-                lqty,
-                address(_boldToken),
-                stakingV1,
-                address(_boldToken),
-                governanceConfiguration,
-                _deployer,
-                _initialInitiatives
-            )
+            abi.encode(p.lqty, p.lusd, p.stakingV1, p.bold, governanceConfiguration, p.deployer, new address[](0))
         );
 
-        address governanceAddress = vm.computeCreate2Address(_salt, keccak256(bytecode));
+        address governanceAddress = vm.computeCreate2Address(p.salt, keccak256(bytecode));
 
         return (governanceAddress, governanceConfiguration);
     }
 
     function deployCurveV2GaugeRewards(
         IGovernance _governance,
-        IERC20 _boldToken,
+        address _bold,
+        address _bribeToken,
         address _curveFactoryAddress,
         address _curvePoolAddress
     ) private {
@@ -148,10 +130,10 @@ contract DeployGovernance is Script {
         gauge = ILiquidityGauge(curveFactory.deploy_gauge(address(curvePool)));
 
         curveV2GaugeRewards =
-            new CurveV2GaugeRewards(address(_governance), address(_boldToken), lqty, address(gauge), DURATION);
+            new CurveV2GaugeRewards(address(_governance), _bold, _bribeToken, address(gauge), DURATION);
 
         // add BOLD as reward token
-        gauge.add_reward(address(_boldToken), address(curveV2GaugeRewards));
+        gauge.add_reward(_bold, address(curveV2GaugeRewards));
 
         initialInitiatives.push(address(curveV2GaugeRewards));
     }
@@ -178,7 +160,11 @@ contract DeployGovernance is Script {
         );
     }
 
-    function _getGovernanceManifestJson(address _curvePoolAddress) internal view returns (string memory) {
+    function _getGovernanceManifestJson(address _curvePoolAddress, address _lqty)
+        internal
+        view
+        returns (string memory)
+    {
         return string.concat(
             "{",
             string.concat(
@@ -187,7 +173,7 @@ contract DeployGovernance is Script {
                 string.concat('"curveV2GaugeRewardsInitiative":"', address(curveV2GaugeRewards).toHexString(), '",'),
                 string.concat('"curvePool":"', _curvePoolAddress.toHexString(), '",'),
                 string.concat('"gauge":"', address(gauge).toHexString(), '",'),
-                string.concat('"LQTYToken":"', lqty.toHexString(), '" ') // no comma
+                string.concat('"LQTYToken":"', _lqty.toHexString(), '" ') // no comma
             ),
             "}"
         );

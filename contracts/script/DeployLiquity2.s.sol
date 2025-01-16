@@ -75,6 +75,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // V1
     address LQTY_ADDRESS = 0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D;
     address LQTY_STAKING_ADDRESS = 0x4f9Fbb3f1E99B56e0Fe2892e623Ed36A76Fc605d;
+    address LUSD_ADDRESS = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0;
+
+    address internal lqty;
+    address internal stakingV1;
+    address internal lusd;
 
     // Curve
     ICurveStableswapNGFactory curveStableswapFactory;
@@ -239,6 +244,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             balancerFactory = balancerFactoryMainnet;
             lqty = LQTY_ADDRESS;
             stakingV1 = LQTY_STAKING_ADDRESS;
+            lusd = LUSD_ADDRESS;
         } else {
             // sepolia, local
             if (block.chainid == 31337) {
@@ -257,8 +263,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             balancerFactory = balancerFactorySepolia;
             // Needed for Governance (they will be constants for mainnet)
             lqty = address(new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days));
-            ERC20Faucet lusd = new ERC20Faucet("Liquity USD", "LUSD", 100 ether, 1 days);
-            stakingV1 = address(new MockStakingV1(IERC20_GOV(lqty), IERC20_GOV(address(lusd))));
+            lusd = address(new ERC20Faucet("Liquity USD", "LUSD", 100 ether, 1 days));
+            stakingV1 = address(new MockStakingV1(IERC20_GOV(lqty), IERC20_GOV(lusd)));
 
             // Let stakingV1 spend anyone's LQTY without approval, like in the real LQTYStaking
             ERC20Faucet(lqty).mock_setWildcardSpender(address(stakingV1), true);
@@ -277,7 +283,17 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collNames[1] = "Rocket Pool ETH";
         collSymbols[1] = "rETH";
 
-        DeploymentResult memory deployed = _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols);
+        DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
+            deployer: deployer,
+            salt: SALT,
+            stakingV1: stakingV1,
+            lqty: lqty,
+            lusd: lusd,
+            bold: address(0) // not yet known; will be set by `_deployAndConnectContracts()`
+        });
+
+        DeploymentResult memory deployed =
+            _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols, deployGovernanceParams);
 
         if (block.chainid == 11155111) {
             // Provide liquidity for zaps if we're on Sepolia
@@ -329,13 +345,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
 
         // Governance
-        (address governanceAddress, string memory governanceManifest) = deployGovernance(
-            deployer, SALT, deployed.boldToken, address(curveStableswapFactory), address(deployed.usdcCurvePool)
-        );
-        address computedGovernanceAddress =
-            computeGovernanceAddress(deployer, SALT, deployed.boldToken, new address[](0));
-        //console2.log(computedGovernanceAddress, "computedGovernanceAddress");
-        //console2.log(governanceAddress, "governanceAddress");
+        (address governanceAddress, string memory governanceManifest) =
+            deployGovernance(deployGovernanceParams, address(curveStableswapFactory), address(deployed.usdcCurvePool));
+        address computedGovernanceAddress = computeGovernanceAddress(deployGovernanceParams);
         assert(governanceAddress == computedGovernanceAddress);
 
         vm.stopBroadcast();
@@ -446,7 +458,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     function _deployAndConnectContracts(
         TroveManagerParams[] memory troveManagerParamsArray,
         string[] memory _collNames,
-        string[] memory _collSymbols
+        string[] memory _collSymbols,
+        DeployGovernanceParams memory _deployGovernanceParams
     ) internal returns (DeploymentResult memory r) {
         assert(_collNames.length == troveManagerParamsArray.length - 1);
         assert(_collSymbols.length == troveManagerParamsArray.length - 1);
@@ -458,6 +471,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         vars.boldTokenAddress = vm.computeCreate2Address(SALT, keccak256(vars.bytecode));
         r.boldToken = new BoldToken{salt: SALT}(deployer);
         assert(address(r.boldToken) == vars.boldTokenAddress);
+        _deployGovernanceParams.bold = address(r.boldToken);
 
         // USDC and USDC-BOLD pool
         r.usdcCurvePool = _deployCurveBoldUsdcPool(r.boldToken);
@@ -536,7 +550,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 vars.addressesRegistries[vars.i],
                 address(vars.troveManagers[vars.i]),
                 r.hintHelpers,
-                r.multiTroveGetter
+                r.multiTroveGetter,
+                computeGovernanceAddress(_deployGovernanceParams)
             );
             r.contractsArray[vars.i] = vars.contracts;
         }
@@ -584,7 +599,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IAddressesRegistry _addressesRegistry,
         address _troveManagerAddress,
         IHintHelpers _hintHelpers,
-        IMultiTroveGetter _multiTroveGetter
+        IMultiTroveGetter _multiTroveGetter,
+        address _governance
     ) internal returns (LiquityContracts memory contracts) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _collToken;
@@ -600,9 +616,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
         contracts.priceFeed = _priceFeed;
-        //console2.log(computeGovernanceAddress(deployer, SALT, _boldToken, new address[](0)), "computeGovernanceAddress");
-        contracts.interestRouter =
-            IInterestRouter(computeGovernanceAddress(deployer, SALT, _boldToken, new address[](0)));
+        contracts.interestRouter = IInterestRouter(_governance);
         addresses.borrowerOperations = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry)))
         );
