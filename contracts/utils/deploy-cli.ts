@@ -32,6 +32,7 @@ Options:
                                            - complete (default)
                                            - bold-only
                                            - use-existing-bold
+  --salt                                   SALT used for CREATE2
   --open-demo-troves                       Open demo troves after deployment (local
                                            only).
   --rpc-url <RPC_URL>                      RPC URL to use.
@@ -70,6 +71,7 @@ const argv = minimist(process.argv.slice(2), {
     "etherscan-api-key",
     "ledger-path",
     "mode",
+    "salt",
     "rpc-url",
     "verifier",
     "verifier-url",
@@ -184,6 +186,7 @@ Deploying Liquity contracts with the following settings:
   CHAIN_ID:               ${options.chainId}
   DEPLOYER:               ${options.deployer}
   DEPLOYMENT_MODE:        ${options.mode}
+  SALT:                   ${options.salt ? options.salt : "\u26A0 block.timestamp will be used !!"}
   ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}
   LEDGER_PATH:            ${options.ledgerPath}
   OPEN_DEMO_TROVES:       ${options.openDemoTroves ? "yes" : "no"}
@@ -196,6 +199,10 @@ Deploying Liquity contracts with the following settings:
 
   process.env.DEPLOYER = options.deployer;
   process.env.DEPLOYMENT_MODE = options.mode;
+
+  if (options.salt) {
+    process.env.SALT = options.salt;
+  }
 
   if (options.openDemoTroves) {
     process.env.OPEN_DEMO_TROVES = "true";
@@ -311,6 +318,7 @@ async function parseArgs() {
     help: argv["help"],
     ledgerPath: argv["ledger-path"],
     mode: argv["mode"],
+    salt: argv["salt"],
     openDemoTroves: argv["open-demo-troves"],
     rpcUrl: argv["rpc-url"],
     dryRun: argv["dry-run"],
