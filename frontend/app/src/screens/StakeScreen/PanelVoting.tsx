@@ -337,25 +337,27 @@ export function PanelVoting() {
           </tr>
         </thead>
         <tbody>
-          {initiatives.data?.filter((initiative) => {
-            const status = initiativesStates.data?.[initiative.address]?.status;
-            return status !== "disabled" && status !== "unregisterable";
-          }).map((
+          {initiatives.data?.map((
             initiative,
             index,
-          ) => (
-            <InitiativeRow
-              key={index}
-              disableFor={isCutoff}
-              initiative={initiative}
-              initiativesStatus={initiativesStates.data?.[initiative.address]?.status}
-              inputVoteAllocation={inputVoteAllocations[initiative.address]}
-              onVote={handleVote}
-              onVoteInputChange={handleVoteInputChange}
-              totalStaked={stakedLQTY}
-              voteAllocation={voteAllocations[initiative.address]}
-            />
-          ))}
+          ) => {
+            const status = initiativesStates.data?.[initiative.address]?.status;
+            const canVote = status !== "disabled" && status !== "unregisterable" && status !== "nonexistent";
+            return (
+              <InitiativeRow
+                key={index}
+                disabled={!canVote}
+                disableFor={isCutoff || !canVote}
+                initiative={initiative}
+                initiativesStatus={status}
+                inputVoteAllocation={inputVoteAllocations[initiative.address]}
+                onVote={handleVote}
+                onVoteInputChange={handleVoteInputChange}
+                totalStaked={stakedLQTY}
+                voteAllocation={voteAllocations[initiative.address]}
+              />
+            );
+          })}
         </tbody>
         <tfoot>
           <tr>
@@ -483,6 +485,7 @@ export function PanelVoting() {
 
 function InitiativeRow({
   disableFor,
+  disabled,
   initiative,
   initiativesStatus,
   inputVoteAllocation,
@@ -492,6 +495,7 @@ function InitiativeRow({
   voteAllocation,
 }: {
   disableFor: boolean;
+  disabled: boolean;
   initiative: Initiative;
   initiativesStatus?: InitiativeStatus;
   inputVoteAllocation?: VoteAllocations[Address];
@@ -502,7 +506,7 @@ function InitiativeRow({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [editIntent, setEditIntent] = useState(false);
-  const editMode = editIntent || !voteAllocation?.vote;
+  const editMode = (editIntent || !voteAllocation?.vote) && !disabled;
 
   return (
     <tr>
@@ -583,6 +587,7 @@ function InitiativeRow({
               <VoteInput
                 ref={inputRef}
                 forDisabled={disableFor}
+                againstDisabled={disabled}
                 onChange={(value) => {
                   onVoteInputChange(initiative.address, value);
                 }}
@@ -594,17 +599,18 @@ function InitiativeRow({
               />
             )
             : (
-              voteAllocation.vote && (
+              voteAllocation?.vote && (
                 <Vote
-                  share={dn.div(voteAllocation?.value ?? [0n, 18], totalStaked)}
-                  quantity={voteAllocation?.value ?? [0n, 18]}
-                  vote={voteAllocation?.vote ?? null}
                   onEdit={() => {
                     setEditIntent(true);
                     setTimeout(() => {
                       inputRef.current?.focus();
                     }, 0);
                   }}
+                  disabled={disabled}
+                  share={dn.div(voteAllocation?.value ?? [0n, 18], totalStaked)}
+                  quantity={voteAllocation?.value ?? [0n, 18]}
+                  vote={voteAllocation?.vote ?? null}
                 />
               )
             )}
@@ -616,11 +622,13 @@ function InitiativeRow({
 
 function Vote({
   onEdit,
+  disabled,
   quantity,
   share,
   vote,
 }: {
   onEdit?: () => void;
+  disabled: boolean;
   quantity: Dnum;
   share: Dnum;
   vote: Vote;
@@ -644,12 +652,14 @@ function Vote({
         {vote === "for" && <IconUpvote size={20} />}
         {vote === "against" && <IconDownvote size={20} />}
         {fmtnum(share, 2, 100)}%
-        <Button
-          size="mini"
-          title="Change"
-          label={<IconEdit size={16} />}
-          onClick={onEdit}
-        />
+        {!disabled && (
+          <Button
+            size="mini"
+            title="Change"
+            label={<IconEdit size={16} />}
+            onClick={onEdit}
+          />
+        )}
       </div>
       <div
         className={css({
