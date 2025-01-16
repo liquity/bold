@@ -28,6 +28,10 @@ Options:
                                            (required when verifying with Etherscan).
   --gas-price <GAS_PRICE>                  Max fee per gas to use in transactions.
   --help, -h                               Show this help message.
+  --mode <DEPLOYMENT_MODE>                 Deploy in one of the following modes:
+                                           - complete (default)
+                                           - bold-only
+                                           - use-existing-bold
   --open-demo-troves                       Open demo troves after deployment (local
                                            only).
   --rpc-url <RPC_URL>                      RPC URL to use.
@@ -65,6 +69,7 @@ const argv = minimist(process.argv.slice(2), {
     "deployer",
     "etherscan-api-key",
     "ledger-path",
+    "mode",
     "rpc-url",
     "verifier",
     "verifier-url",
@@ -100,6 +105,7 @@ export async function main() {
     options.chainId ??= 1;
   }
 
+  options.mode ??= "complete";
   options.verifier ??= "etherscan";
 
   // handle missing options
@@ -177,8 +183,9 @@ Deploying Liquity contracts with the following settings:
 
   CHAIN_ID:               ${options.chainId}
   DEPLOYER:               ${options.deployer}
-  LEDGER_PATH:            ${options.ledgerPath}
+  DEPLOYMENT_MODE:        ${options.mode}
   ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}
+  LEDGER_PATH:            ${options.ledgerPath}
   OPEN_DEMO_TROVES:       ${options.openDemoTroves ? "yes" : "no"}
   RPC_URL:                ${options.rpcUrl}
   USE_TESTNET_PRICEFEEDS: ${options.useTestnetPricefeeds ? "yes" : "no"}
@@ -188,6 +195,7 @@ Deploying Liquity contracts with the following settings:
 `;
 
   process.env.DEPLOYER = options.deployer;
+  process.env.DEPLOYMENT_MODE = options.mode;
 
   if (options.openDemoTroves) {
     process.env.OPEN_DEMO_TROVES = "true";
@@ -217,6 +225,11 @@ Deploying Liquity contracts with the following settings:
     hintHelpers: string;
     multiTroveGetter: string;
   };
+
+  if (options.mode === "bold-only") {
+    echo("BoldToken address:", deploymentManifest.boldToken);
+    return;
+  }
 
   const protocolContracts = {
     BoldToken: deploymentManifest.boldToken,
@@ -297,6 +310,7 @@ async function parseArgs() {
     etherscanApiKey: argv["etherscan-api-key"],
     help: argv["help"],
     ledgerPath: argv["ledger-path"],
+    mode: argv["mode"],
     openDemoTroves: argv["open-demo-troves"],
     rpcUrl: argv["rpc-url"],
     dryRun: argv["dry-run"],
@@ -317,6 +331,7 @@ async function parseArgs() {
   options.deployer ??= process.env.DEPLOYER;
   options.etherscanApiKey ??= process.env.ETHERSCAN_API_KEY;
   options.ledgerPath ??= process.env.LEDGER_PATH;
+  options.mode ??= process.env.DEPLOYMENT_MODE;
   options.openDemoTroves ??= Boolean(
     process.env.OPEN_DEMO_TROVES && process.env.OPEN_DEMO_TROVES !== "false",
   );
