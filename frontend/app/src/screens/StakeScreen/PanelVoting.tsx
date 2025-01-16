@@ -461,10 +461,20 @@ export function PanelVoting() {
           size="large"
           wide
           onClick={() => {
-            // Filter out allocations with no vote or zero value
             const voteAllocationsFiltered = { ...inputVoteAllocations };
             for (const [address, data] of Object.entries(inputVoteAllocations) as Entries<VoteAllocations>) {
+              // filter out allocations with no vote or zero value
               if (data.vote === null || dn.eq(data.value, 0)) {
+                delete voteAllocationsFiltered[address];
+              }
+
+              // filter out invalid initiatives
+              const initiativeStatus = initiativesStates.data?.[address]?.status;
+              if (
+                initiativeStatus === "nonexistent"
+                || initiativeStatus === "disabled"
+                || initiativeStatus === "unregisterable"
+              ) {
                 delete voteAllocationsFiltered[address];
               }
             }
