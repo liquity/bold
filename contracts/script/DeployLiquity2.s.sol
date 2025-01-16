@@ -257,6 +257,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         if (deploymentMode.eq(DEPLOYMENT_MODE_USE_EXISTING_BOLD)) {
             require(boldAddress.code.length > 0, string.concat("BOLD not found at ", boldAddress.toHexString()));
             boldToken = BoldToken(boldAddress);
+
+            // Check BOLD is untouched
+            require(boldToken.totalSupply() == 0, "Some BOLD has been minted!");
+            require(boldToken.collateralRegistryAddress() == address(0), "Collateral registry already set");
+            require(boldToken.owner() == deployer, "Not BOLD owner");
         } else {
             boldToken = new BoldToken{salt: SALT}(deployer);
             assert(address(boldToken) == boldAddress);
