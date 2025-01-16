@@ -314,137 +314,145 @@ export function StakePositionSummary({
               </HFlex>
             </HFlex>
           </div>
-          <div>
+          {!txPreviewMode && (
+            <div>
+              <div
+                className={css({
+                  color: "token(colors.strongSurfaceContentAlt)",
+                })}
+              >
+                Voting power
+              </div>
+
+              {appear((style, show) => (
+                show && (
+                  <a.div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    })}
+                    style={style}
+                  >
+                    <div
+                      ref={votingPowerRef}
+                      className={css({
+                        fontVariantNumeric: "tabular-nums",
+                      })}
+                      style={{
+                        color: txPreviewMode
+                            && prevStakePosition
+                            && stakePosition?.share
+                            && !dn.eq(prevStakePosition.share, stakePosition.share)
+                          ? "var(--update-color)"
+                          : "inherit",
+                      }}
+                    >
+                    </div>
+                    {prevStakePosition
+                      && stakePosition
+                      && !dn.eq(prevStakePosition.share, stakePosition.share) && (
+                      <div
+                        className={css({
+                          color: "contentAlt",
+                          textDecoration: "line-through",
+                        })}
+                      >
+                        <Amount
+                          percentage
+                          value={prevStakePosition?.share ?? 0}
+                        />
+                      </div>
+                    )}
+                    {!txPreviewMode && (
+                      <InfoTooltip
+                        content={{
+                          heading: null,
+                          body: (
+                            <div
+                              className={css({
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 16,
+                              })}
+                            >
+                              <p>
+                                Voting power increases over time based on the total amount of LQTY staked.
+                              </p>
+                              {account.address && (
+                                <div
+                                  className={css({
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 8,
+                                  })}
+                                >
+                                  <TooltipRow
+                                    label="All voting power"
+                                    value={<div ref={votingPowerTooltipTotalRef} />}
+                                  />
+                                  <TooltipRow
+                                    label="Your voting power"
+                                    value={<div ref={votingPowerTooltipRef} />}
+                                  />
+                                  <TooltipRow
+                                    label="Your voting share"
+                                    value={<div ref={votingPowerTooltipShareRef} />}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          ),
+                          footerLink: {
+                            href: "https://github.com/liquity/V2-gov#staking",
+                            label: "Learn more",
+                          },
+                        }}
+                      />
+                    )}
+                  </a.div>
+                )
+              ))}
+            </div>
+          )}
+          {!txPreviewMode && (
             <div
               className={css({
-                color: "token(colors.strongSurfaceContentAlt)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
               })}
             >
-              Voting power
-            </div>
-
-            {appear((style, show) => (
-              show && (
-                <a.div
+              <div
+                className={css({
+                  color: "token(colors.strongSurfaceContentAlt)",
+                })}
+              >
+                Allocated
+              </div>
+              {govUser.data?.allocatedLQTY && (
+                <div
+                  title={`${fmtnum([govUser.data.allocatedLQTY, 18], "full")} LQTY`}
                   className={css({
                     display: "flex",
                     alignItems: "center",
                     gap: 4,
                   })}
-                  style={style}
                 >
-                  <div
-                    ref={votingPowerRef}
-                    className={css({
-                      fontVariantNumeric: "tabular-nums",
-                    })}
-                    style={{
-                      color: txPreviewMode
-                          && prevStakePosition
-                          && stakePosition?.share
-                          && !dn.eq(prevStakePosition.share, stakePosition.share)
-                        ? "var(--update-color)"
-                        : "inherit",
-                    }}
-                  >
-                  </div>
-                  {prevStakePosition && stakePosition && !dn.eq(prevStakePosition.share, stakePosition.share) && (
-                    <div
-                      className={css({
-                        color: "contentAlt",
-                        textDecoration: "line-through",
-                      })}
-                    >
-                      <Amount
-                        percentage
-                        value={prevStakePosition?.share ?? 0}
-                      />
-                    </div>
-                  )}
-                  <InfoTooltip
-                    content={{
-                      heading: null,
-                      body: (
-                        <div
-                          className={css({
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 16,
-                          })}
-                        >
-                          <p>
-                            Voting power increases over time based on the total amount of LQTY staked.
-                          </p>
-                          {account.address && (
-                            <div
-                              className={css({
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 8,
-                              })}
-                            >
-                              <TooltipRow
-                                label="All voting power"
-                                value={<div ref={votingPowerTooltipTotalRef} />}
-                              />
-                              <TooltipRow
-                                label="Your voting power"
-                                value={<div ref={votingPowerTooltipRef} />}
-                              />
-                              <TooltipRow
-                                label="Your voting share"
-                                value={<div ref={votingPowerTooltipShareRef} />}
-                              />
-                            </div>
-                          )}
-                        </div>
-                      ),
-                      footerLink: {
-                        href: "https://github.com/liquity/V2-gov#staking",
-                        label: "Learn more",
-                      },
-                    }}
+                  <Amount
+                    title={null}
+                    format="compact"
+                    value={[govUser.data.allocatedLQTY, 18]}
                   />
-                </a.div>
-              )
-            ))}
-          </div>
-          <div
-            className={css({
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-            })}
-          >
-            <div
-              className={css({
-                color: "token(colors.strongSurfaceContentAlt)",
-              })}
-            >
-              Allocated
+                  <TokenIcon
+                    title={null}
+                    symbol="LQTY"
+                    size="mini"
+                  />
+                </div>
+              )}
             </div>
-            {govUser.data?.allocatedLQTY && (
-              <div
-                title={`${fmtnum([govUser.data.allocatedLQTY, 18], "full")} LQTY`}
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                })}
-              >
-                <Amount
-                  title={null}
-                  format="compact"
-                  value={[govUser.data.allocatedLQTY, 18]}
-                />
-                <TokenIcon
-                  title={null}
-                  symbol="LQTY"
-                  size="mini"
-                />
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>
