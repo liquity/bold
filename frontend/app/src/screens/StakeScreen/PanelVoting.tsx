@@ -26,6 +26,28 @@ import {
 import * as dn from "dnum";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+function isInitiativeStatusActive(
+  status: InitiativeStatus,
+): status is Exclude<InitiativeStatus, "disabled" | "nonexistent" | "unregisterable"> {
+  return status !== "disabled" && status !== "nonexistent" && status !== "unregisterable";
+}
+
+function initiativeStatusLabel(status: InitiativeStatus) {
+  if (status === "skip" || status === "claimable" || status === "claimed") {
+    return "Active";
+  }
+  if (status === "warm up") {
+    return "Warm-up period";
+  }
+  if (status === "unregisterable") {
+    return "Unregistering";
+  }
+  if (status === "disabled") {
+    return "Disabled";
+  }
+  return "";
+}
+
 export function PanelVoting() {
   const txFlow = useTransactionFlow();
 
@@ -337,27 +359,50 @@ export function PanelVoting() {
           </tr>
         </thead>
         <tbody>
-          {initiatives.data?.map((
-            initiative,
-            index,
-          ) => {
-            const status = initiativesStates.data?.[initiative.address]?.status;
-            const canVote = status !== "disabled" && status !== "unregisterable" && status !== "nonexistent";
-            return (
-              <InitiativeRow
-                key={index}
-                disabled={!canVote}
-                disableFor={isCutoff || !canVote}
-                initiative={initiative}
-                initiativesStatus={status}
-                inputVoteAllocation={inputVoteAllocations[initiative.address]}
-                onVote={handleVote}
-                onVoteInputChange={handleVoteInputChange}
-                totalStaked={stakedLQTY}
-                voteAllocation={voteAllocations[initiative.address]}
-              />
-            );
-          })}
+          {initiatives.data
+            // remove inactive initiatives that are not voted on
+            ?.filter((initiative) => {
+              return isInitiativeStatusActive(
+                initiativesStates.data?.[initiative.address]?.status ?? "nonexistent",
+              ) || Boolean(voteAllocations[initiative.address]);
+            })
+            .sort((a, b) => {
+              // 1. sort by allocation
+              const allocationA = voteAllocations[a.address];
+              const allocationB = voteAllocations[b.address];
+              if (allocationA && !allocationB) return -1;
+              if (!allocationA && allocationB) return 1;
+
+              // 2. sort by status
+              const statusA = initiativesStates.data?.[a.address]?.status ?? "nonexistent";
+              const statusB = initiativesStates.data?.[b.address]?.status ?? "nonexistent";
+              const isActiveA = isInitiativeStatusActive(statusA);
+              const isActiveB = isInitiativeStatusActive(statusB);
+              if (isActiveA && !isActiveB) return -1;
+              if (!isActiveA && isActiveB) return 1;
+
+              return 0;
+            })
+            .map((
+              initiative,
+              index,
+            ) => {
+              const status = initiativesStates.data?.[initiative.address]?.status;
+              return (
+                <InitiativeRow
+                  key={index}
+                  disabled={!isInitiativeStatusActive(status ?? "nonexistent")}
+                  disableFor={isCutoff}
+                  initiative={initiative}
+                  initiativesStatus={status}
+                  inputVoteAllocation={inputVoteAllocations[initiative.address]}
+                  onVote={handleVote}
+                  onVoteInputChange={handleVoteInputChange}
+                  totalStaked={stakedLQTY}
+                  voteAllocation={voteAllocations[initiative.address]}
+                />
+              );
+            })}
         </tbody>
         <tfoot>
           <tr>
@@ -470,11 +515,7 @@ export function PanelVoting() {
 
               // filter out invalid initiatives
               const initiativeStatus = initiativesStates.data?.[address]?.status;
-              if (
-                initiativeStatus === "nonexistent"
-                || initiativeStatus === "disabled"
-                || initiativeStatus === "unregisterable"
-              ) {
+              if (!isInitiativeStatusActive(initiativeStatus ?? "nonexistent")) {
                 delete voteAllocationsFiltered[address];
               }
             }
@@ -550,7 +591,7 @@ function InitiativeRow({
             </div>
             {initiativesStatus && (
               <div
-                title={`Status: ${initiativesStatus}`}
+                title={`${initiativeStatusLabel(initiativesStatus)} (${initiativesStatus})`}
                 className={css({
                   display: "inline-flex",
                   alignItems: "center",
@@ -562,9 +603,18 @@ function InitiativeRow({
                   border: "1px solid token(colors.infoSurfaceBorder)",
                   borderRadius: 8,
                   userSelect: "none",
+                  textTransform: "lowercase",
+
+                  "--color-warning": "#121B44",
+                  "--background-warning": "token(colors.warningAlt)",
                 })}
+                style={{
+                  color: isInitiativeStatusActive(initiativesStatus) ? undefined : `var(--color-warning)`,
+                  background: isInitiativeStatusActive(initiativesStatus) ? undefined : `var(--background-warning)`,
+                  border: isInitiativeStatusActive(initiativesStatus) ? undefined : 0,
+                }}
               >
-                {initiativesStatus}
+                {initiativeStatusLabel(initiativesStatus)}
               </div>
             )}
           </div>
