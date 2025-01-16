@@ -208,8 +208,8 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
         });
       },
 
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
   },

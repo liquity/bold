@@ -8,6 +8,7 @@ import type { Config as WagmiConfig } from "wagmi";
 import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { getContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { useAccount } from "@/src/services/Ethereum";
 import { useStoredState } from "@/src/services/StoredState";
 import { noop } from "@/src/utils";
 import { vAddress } from "@/src/valibot-utils";
@@ -15,7 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as v from "valibot";
-import { useAccount, useConfig as useWagmiConfig } from "wagmi";
+import { useConfig as useWagmiConfig } from "wagmi";
 
 /* flows registration */
 
@@ -158,6 +159,7 @@ export type Flowstate<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
 export type FlowParams<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
   account: Address | null;
   contracts: Contracts;
+  isSafe: boolean;
   request: FlowRequest;
   steps: FlowStep[] | null;
   storedState: ReturnType<typeof useStoredState>;
@@ -242,7 +244,7 @@ export function TransactionFlow({
     flowDeclaration,
     startFlow,
     commit,
-  } = useFlowManager(account.address ?? null);
+  } = useFlowManager(account.address ?? null, account.safeStatus !== null);
 
   const start: TransactionFlowContext["start"] = useCallback((request) => {
     if (account.address) {
@@ -266,8 +268,9 @@ export function TransactionFlow({
         flowParams: flow && account.address
           ? {
             ...flow,
-            contracts: getContracts(),
             account: account.address,
+            contracts: getContracts(),
+            isSafe: account.safeStatus !== null,
             storedState,
             wagmiConfig,
           }
@@ -304,21 +307,20 @@ function useSteps(
         throw new Error("Flow declaration not found: " + flow.request.flowId);
       }
 
-      const context = {
+      return flowDeclaration.getSteps({
         account: account.address,
         contracts: getContracts(),
+        isSafe: account.safeStatus !== null,
         request: flow.request,
         steps: flow.steps,
         storedState,
         wagmiConfig,
-      };
-
-      return flowDeclaration.getSteps(context);
+      });
     },
   });
 }
 
-function useFlowManager(account: Address | null) {
+function useFlowManager(account: Address | null, isSafe: boolean = false) {
   const [flow, setFlow] = useState<Flowstate<FlowRequestMap[keyof FlowRequestMap]> | null>(null);
   const wagmiConfig = useWagmiConfig();
   const storedState = useStoredState();
@@ -357,6 +359,7 @@ function useFlowManager(account: Address | null) {
       const params: FlowParams<FlowRequestMap[keyof FlowRequestMap]> = {
         account,
         contracts: getContracts(),
+        isSafe,
         request: flow.request,
         steps: flow.steps,
         storedState,
