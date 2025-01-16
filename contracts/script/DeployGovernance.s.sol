@@ -5,9 +5,9 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {Script} from "forge-std/Script.sol";
 
-import {ICurveStableswapFactoryNG} from "V2-gov/src/interfaces/ICurveStableswapFactoryNG.sol";
-import {ICurveStableswapNG} from "V2-gov/src/interfaces/ICurveStableswapNG.sol";
-import {ILiquidityGauge} from "V2-gov/src/interfaces/ILiquidityGauge.sol";
+import {ICurveStableSwapFactoryNG} from "test/Interfaces/Curve/ICurveStableSwapFactoryNG.sol";
+import {ICurveStableSwapNG} from "test/Interfaces/Curve/ICurveStableSwapNG.sol";
+import {ILiquidityGaugeV6} from "test/Interfaces/Curve/ILiquidityGaugeV6.sol";
 
 import {IGovernance} from "V2-gov/src/interfaces/IGovernance.sol";
 
@@ -20,6 +20,7 @@ contract DeployGovernance is Script {
     using Strings for *;
 
     struct DeployGovernanceParams {
+        uint256 epochStart;
         address deployer;
         bytes32 salt;
         address stakingV1;
@@ -27,6 +28,11 @@ contract DeployGovernance is Script {
         address lusd;
         address bold;
     }
+
+    address constant LUSD = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0;
+    address constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
+    address constant FUNDS_SAFE = 0xF06016D822943C42e3Cb7FC3a6A3B1889C1045f8;
+    address constant DEFI_COLLECTIVE_GRANTS_ADDRESS = 0xDc6f869d2D34E4aee3E89A51f2Af6D54F0F7f690;
 
     // Governance Constants
     uint128 private constant REGISTRATION_FEE = 1000e18;
@@ -36,12 +42,8 @@ contract DeployGovernance is Script {
     uint128 private constant VOTING_THRESHOLD_FACTOR = 0.02e18;
     uint88 private constant MIN_CLAIM = 0;
     uint88 private constant MIN_ACCRUAL = 0;
-    uint32 private constant EPOCH_DURATION = 7 days;
+    uint32 internal constant EPOCH_DURATION = 7 days;
     uint32 private constant EPOCH_VOTING_CUTOFF = 6 days;
-
-    // UniV4Donations Constants
-    uint24 private constant FEE = 400;
-    int24 constant MAX_TICK_SPACING = 32767;
 
     // CurveV2GaugeRewards Constants
     uint256 private constant DURATION = 7 days;
@@ -49,13 +51,21 @@ contract DeployGovernance is Script {
     // Contracts
     Governance private governance;
     address[] private initialInitiatives;
-    CurveV2GaugeRewards private curveV2GaugeRewards;
-    ILiquidityGauge private gauge;
 
-    function deployGovernance(DeployGovernanceParams memory p, address _curveFactoryAddress, address _curvePoolAddress)
-        internal
-        returns (address, string memory)
-    {
+    ICurveStableSwapNG private curveUsdcBoldPool;
+    ILiquidityGaugeV6 private curveUsdcBoldGauge;
+    CurveV2GaugeRewards private curveUsdcBoldInitiative;
+
+    ICurveStableSwapNG private curveLusdBoldPool;
+    ILiquidityGaugeV6 private curveLusdBoldGauge;
+    CurveV2GaugeRewards private curveLusdBoldInitiative;
+
+    function deployGovernance(
+        DeployGovernanceParams memory p,
+        address _curveFactoryAddress,
+        address _curveUsdcBoldPoolAddress,
+        address _curveLusdBoldPoolAddress
+    ) internal returns (address, string memory) {
         (address governanceAddress, IGovernance.Configuration memory governanceConfiguration) =
             computeGovernanceAddressAndConfig(p);
 
@@ -65,33 +75,43 @@ contract DeployGovernance is Script {
 
         assert(governanceAddress == address(governance));
 
-        // Curve initiative
+        curveUsdcBoldPool = ICurveStableSwapNG(_curveUsdcBoldPoolAddress);
+        curveLusdBoldPool = ICurveStableSwapNG(_curveLusdBoldPoolAddress);
+
         if (block.chainid == 1) {
             // mainnet
-            deployCurveV2GaugeRewards({
+            (curveUsdcBoldGauge, curveUsdcBoldInitiative) = deployCurveV2GaugeRewards({
                 _governance: governance,
                 _bold: p.bold,
-                _bribeToken: p.lqty, // TODO: this should be CRV
                 _curveFactoryAddress: _curveFactoryAddress,
-                _curvePoolAddress: _curvePoolAddress
+                _curvePool: curveUsdcBoldPool
             });
 
-            // TODO: BOLD/LUSD pool
+            (curveLusdBoldGauge, curveLusdBoldInitiative) = deployCurveV2GaugeRewards({
+                _governance: governance,
+                _bold: p.bold,
+                _curveFactoryAddress: _curveFactoryAddress,
+                _curvePool: curveLusdBoldPool
+            });
+
+            initialInitiatives.push(address(curveUsdcBoldInitiative));
+            initialInitiatives.push(address(curveLusdBoldInitiative));
+            initialInitiatives.push(DEFI_COLLECTIVE_GRANTS_ADDRESS);
         }
 
         governance.registerInitialInitiatives{gas: 600000}(initialInitiatives);
 
-        return (governanceAddress, _getGovernanceManifestJson(_curvePoolAddress, p.lqty));
+        return (governanceAddress, _getGovernanceManifestJson(p));
     }
 
-    function computeGovernanceAddress(DeployGovernanceParams memory p) internal view returns (address) {
+    function computeGovernanceAddress(DeployGovernanceParams memory p) internal pure returns (address) {
         (address governanceAddress,) = computeGovernanceAddressAndConfig(p);
         return governanceAddress;
     }
 
     function computeGovernanceAddressAndConfig(DeployGovernanceParams memory p)
         internal
-        view
+        pure
         returns (address, IGovernance.Configuration memory)
     {
         IGovernance.Configuration memory governanceConfiguration = IGovernance.Configuration({
@@ -102,8 +122,7 @@ contract DeployGovernance is Script {
             votingThresholdFactor: VOTING_THRESHOLD_FACTOR,
             minClaim: MIN_CLAIM,
             minAccrual: MIN_ACCRUAL,
-            epochStart: block.timestamp - EPOCH_DURATION,
-            /// @audit Ensures that `initialInitiatives` can be voted on
+            epochStart: p.epochStart,
             epochDuration: EPOCH_DURATION,
             epochVotingCutoff: EPOCH_VOTING_CUTOFF
         });
@@ -114,66 +133,69 @@ contract DeployGovernance is Script {
         );
 
         address governanceAddress = vm.computeCreate2Address(p.salt, keccak256(bytecode));
-
         return (governanceAddress, governanceConfiguration);
     }
 
     function deployCurveV2GaugeRewards(
         IGovernance _governance,
         address _bold,
-        address _bribeToken,
         address _curveFactoryAddress,
-        address _curvePoolAddress
-    ) private {
-        ICurveStableswapFactoryNG curveFactory = ICurveStableswapFactoryNG(_curveFactoryAddress);
-        ICurveStableswapNG curvePool = ICurveStableswapNG(_curvePoolAddress);
-        gauge = ILiquidityGauge(curveFactory.deploy_gauge(address(curvePool)));
-
-        curveV2GaugeRewards =
-            new CurveV2GaugeRewards(address(_governance), _bold, _bribeToken, address(gauge), DURATION);
+        ICurveStableSwapNG _curvePool
+    ) private returns (ILiquidityGaugeV6 gauge, CurveV2GaugeRewards curveV2GaugeRewards) {
+        ICurveStableSwapFactoryNG curveFactory = ICurveStableSwapFactoryNG(_curveFactoryAddress);
+        gauge = ILiquidityGaugeV6(curveFactory.deploy_gauge(address(_curvePool)));
+        curveV2GaugeRewards = new CurveV2GaugeRewards(address(_governance), _bold, CRV, address(gauge), DURATION);
 
         // add BOLD as reward token
         gauge.add_reward(_bold, address(curveV2GaugeRewards));
 
-        initialInitiatives.push(address(curveV2GaugeRewards));
+        // add LUSD as reward token to be distributed by the Funds Safe
+        gauge.add_reward(LUSD, FUNDS_SAFE);
+
+        // renounce gauge manager role
+        gauge.set_gauge_manager(address(0));
     }
 
-    function _getGovernanceDeploymentConstants() internal pure returns (string memory) {
+    function _getGovernanceDeploymentConstants(DeployGovernanceParams memory p) internal pure returns (string memory) {
         return string.concat(
             "{",
             string.concat(
-                string.concat('"REGISTRATION_FEE":"', uint256(REGISTRATION_FEE).toString(), '",'),
-                string.concat(
-                    '"REGISTRATION_THRESHOLD_FACTOR":"', uint256(REGISTRATION_THRESHOLD_FACTOR).toString(), '",'
-                ),
-                string.concat(
-                    '"UNREGISTRATION_THRESHOLD_FACTOR":"', uint256(UNREGISTRATION_THRESHOLD_FACTOR).toString(), '",'
-                ),
-                string.concat('"UNREGISTRATION_AFTER_EPOCHS":"', uint256(UNREGISTRATION_AFTER_EPOCHS).toString(), '",'),
-                string.concat('"VOTING_THRESHOLD_FACTOR":"', uint256(VOTING_THRESHOLD_FACTOR).toString(), '",'),
-                string.concat('"MIN_CLAIM":"', uint256(MIN_CLAIM).toString(), '",'),
-                string.concat('"MIN_ACCRUAL":"', uint256(MIN_ACCRUAL).toString(), '",'),
-                string.concat('"EPOCH_DURATION":"', uint256(EPOCH_DURATION).toString(), '",'),
-                string.concat('"EPOCH_VOTING_CUTOFF":"', uint256(EPOCH_VOTING_CUTOFF).toString(), '" ') // no comma
+                string.concat('"REGISTRATION_FEE":"', REGISTRATION_FEE.toString(), '",'),
+                string.concat('"REGISTRATION_THRESHOLD_FACTOR":"', REGISTRATION_THRESHOLD_FACTOR.toString(), '",'),
+                string.concat('"UNREGISTRATION_THRESHOLD_FACTOR":"', UNREGISTRATION_THRESHOLD_FACTOR.toString(), '",'),
+                string.concat('"UNREGISTRATION_AFTER_EPOCHS":"', UNREGISTRATION_AFTER_EPOCHS.toString(), '",'),
+                string.concat('"VOTING_THRESHOLD_FACTOR":"', VOTING_THRESHOLD_FACTOR.toString(), '",'),
+                string.concat('"MIN_CLAIM":"', MIN_CLAIM.toString(), '",'),
+                string.concat('"MIN_ACCRUAL":"', MIN_ACCRUAL.toString(), '",'),
+                string.concat('"EPOCH_START":"', p.epochStart.toString(), '",')
+            ),
+            string.concat(
+                string.concat('"EPOCH_DURATION":"', EPOCH_DURATION.toString(), '",'),
+                string.concat('"EPOCH_VOTING_CUTOFF":"', EPOCH_VOTING_CUTOFF.toString(), '",'),
+                string.concat('"FUNDS_SAFE":"', FUNDS_SAFE.toHexString(), '"') // no comma
             ),
             "}"
         );
     }
 
-    function _getGovernanceManifestJson(address _curvePoolAddress, address _lqty)
-        internal
-        view
-        returns (string memory)
-    {
+    function _getGovernanceManifestJson(DeployGovernanceParams memory p) internal view returns (string memory) {
         return string.concat(
             "{",
             string.concat(
-                string.concat('"constants":', _getGovernanceDeploymentConstants(), ","),
+                string.concat('"constants":', _getGovernanceDeploymentConstants(p), ","),
                 string.concat('"governance":"', address(governance).toHexString(), '",'),
-                string.concat('"curveV2GaugeRewardsInitiative":"', address(curveV2GaugeRewards).toHexString(), '",'),
-                string.concat('"curvePool":"', _curvePoolAddress.toHexString(), '",'),
-                string.concat('"gauge":"', address(gauge).toHexString(), '",'),
-                string.concat('"LQTYToken":"', _lqty.toHexString(), '" ') // no comma
+                string.concat('"curveUsdcBoldPool":"', address(curveUsdcBoldPool).toHexString(), '",'),
+                string.concat('"curveUsdcBoldGauge":"', address(curveUsdcBoldGauge).toHexString(), '",'),
+                string.concat('"curveUsdcBoldInitiative":"', address(curveUsdcBoldInitiative).toHexString(), '",'),
+                string.concat('"curveLusdBoldPool":"', address(curveLusdBoldPool).toHexString(), '",'),
+                string.concat('"curveLusdBoldGauge":"', address(curveLusdBoldGauge).toHexString(), '",'),
+                string.concat('"curveLusdBoldInitiative":"', address(curveLusdBoldInitiative).toHexString(), '",')
+            ),
+            string.concat(
+                string.concat('"defiCollectiveInitiative":"', DEFI_COLLECTIVE_GRANTS_ADDRESS.toHexString(), '",'),
+                string.concat('"stakingV1":"', p.stakingV1.toHexString(), '",'),
+                string.concat('"LQTYToken":"', p.lqty.toHexString(), '",'),
+                string.concat('"LUSDToken":"', p.lusd.toHexString(), '"') // no comma
             ),
             "}"
         );
