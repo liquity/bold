@@ -337,7 +337,13 @@ export function PanelVoting() {
           </tr>
         </thead>
         <tbody>
-          {initiatives.data?.map((initiative, index) => (
+          {initiatives.data?.filter((initiative) => {
+            const status = initiativesStates.data?.[initiative.address]?.status;
+            return status !== "disabled" && status !== "unregisterable";
+          }).map((
+            initiative,
+            index,
+          ) => (
             <InitiativeRow
               key={index}
               disableFor={isCutoff}
