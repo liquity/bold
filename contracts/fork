@@ -96,7 +96,7 @@ deploy() {
   )
 
   # sourcify_start
-  "${deploy[@]}"
+  "${deploy[@]}" "$@"
   # sourcify_stop
 }
 
@@ -131,7 +131,7 @@ case $cmd in
   deploy)
     ensure_running
     init_env
-    deploy
+    deploy "$@"
     ;;
   e2e)
     ensure_running

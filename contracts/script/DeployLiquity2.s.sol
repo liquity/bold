@@ -30,6 +30,8 @@ import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/CollateralRegistry.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "test/TestContracts/MetadataDeployment.sol";
+import "test/Utils/Logging.sol";
+import "test/Utils/StringEquality.sol";
 import "src/Zappers/WETHZapper.sol";
 import "src/Zappers/GasCompZapper.sol";
 import "src/Zappers/LeverageLSTZapper.sol";
@@ -52,9 +54,14 @@ import {MockStakingV1} from "V2-gov/test/mocks/MockStakingV1.sol";
 
 import {DeployGovernance} from "./DeployGovernance.s.sol";
 
-contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats, MetadataDeployment {
+contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats, MetadataDeployment, Logging {
     using Strings for *;
     using StringFormatting for *;
+    using StringEquality for string;
+
+    string constant DEPLOYMENT_MODE_COMPLETE = "complete";
+    string constant DEPLOYMENT_MODE_BOLD_ONLY = "bold-only";
+    string constant DEPLOYMENT_MODE_USE_EXISTING_BOLD = "use-existing-bold";
 
     address WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -213,7 +220,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     }
 
     function run() external {
-        SALT = keccak256(abi.encodePacked(block.timestamp));
+        string memory saltStr = vm.envOr("SALT", block.timestamp.toString());
+        SALT = keccak256(bytes(saltStr));
 
         if (vm.envBytes("DEPLOYER").length == 20) {
             // address
@@ -226,11 +234,43 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vm.startBroadcast(privateKey);
         }
 
+        string memory deploymentMode = vm.envOr("DEPLOYMENT_MODE", DEPLOYMENT_MODE_COMPLETE);
+        require(
+            deploymentMode.eq(DEPLOYMENT_MODE_COMPLETE) || deploymentMode.eq(DEPLOYMENT_MODE_BOLD_ONLY)
+                || deploymentMode.eq(DEPLOYMENT_MODE_USE_EXISTING_BOLD),
+            string.concat("Bad deployment mode: ", deploymentMode)
+        );
+
         useTestnetPriceFeeds = vm.envOr("USE_TESTNET_PRICEFEEDS", false);
 
-        console2.log(deployer, "deployer");
-        console2.log(deployer.balance, "deployer balance");
-        console2.log("Use Testnet PriceFeeds: ", useTestnetPriceFeeds);
+        _log("Deployer:               ", deployer.toHexString());
+        _log("Deployer balance:       ", deployer.balance.decimal());
+        _log("Deployment mode:        ", deploymentMode);
+        _log("CREATE2 salt:           ", 'keccak256(bytes("', saltStr, '")) = ', uint256(SALT).toHexString());
+        _log("Use testnet PriceFeeds: ", useTestnetPriceFeeds ? "yes" : "no");
+
+        // Deploy Bold or pick up existing deployment
+        bytes memory boldBytecode = bytes.concat(type(BoldToken).creationCode, abi.encode(deployer));
+        address boldAddress = vm.computeCreate2Address(SALT, keccak256(boldBytecode));
+        BoldToken boldToken;
+
+        if (deploymentMode.eq(DEPLOYMENT_MODE_USE_EXISTING_BOLD)) {
+            require(boldAddress.code.length > 0, string.concat("BOLD not found at ", boldAddress.toHexString()));
+            boldToken = BoldToken(boldAddress);
+
+            // Check BOLD is untouched
+            require(boldToken.totalSupply() == 0, "Some BOLD has been minted!");
+            require(boldToken.collateralRegistryAddress() == address(0), "Collateral registry already set");
+            require(boldToken.owner() == deployer, "Not BOLD owner");
+        } else {
+            boldToken = new BoldToken{salt: SALT}(deployer);
+            assert(address(boldToken) == boldAddress);
+        }
+
+        if (deploymentMode.eq(DEPLOYMENT_MODE_BOLD_ONLY)) {
+            vm.writeFile("deployment-manifest.json", string.concat('{"boldToken":"', boldAddress.toHexString(), '"}'));
+            return;
+        }
 
         if (block.chainid == 1) {
             // mainnet
@@ -289,7 +329,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             stakingV1: stakingV1,
             lqty: lqty,
             lusd: lusd,
-            bold: address(0) // not yet known; will be set by `_deployAndConnectContracts()`
+            bold: boldAddress
         });
 
         DeploymentResult memory deployed =
@@ -466,12 +506,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         DeploymentVars memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
-        // Deploy Bold
-        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(deployer));
-        vars.boldTokenAddress = vm.computeCreate2Address(SALT, keccak256(vars.bytecode));
-        r.boldToken = new BoldToken{salt: SALT}(deployer);
-        assert(address(r.boldToken) == vars.boldTokenAddress);
-        _deployGovernanceParams.bold = address(r.boldToken);
+        r.boldToken = BoldToken(_deployGovernanceParams.bold);
 
         // USDC and USDC-BOLD pool
         r.usdcCurvePool = _deployCurveBoldUsdcPool(r.boldToken);

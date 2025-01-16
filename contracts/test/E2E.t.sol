@@ -35,6 +35,7 @@ import {IPriceFeedV1} from "./Interfaces/LiquityV1/IPriceFeedV1.sol";
 import {ISortedTrovesV1} from "./Interfaces/LiquityV1/ISortedTrovesV1.sol";
 import {ITroveManagerV1} from "./Interfaces/LiquityV1/ITroveManagerV1.sol";
 import {ERC20Faucet} from "./TestContracts/ERC20Faucet.sol";
+import {StringEquality} from "./Utils/StringEquality.sol";
 
 address constant ETH_WHALE = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // Anvil account #1
 address constant WETH_WHALE = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC; // Anvil account #2
@@ -106,16 +107,6 @@ library SideEffectFreeGetPrice {
         } catch (bytes memory revertData) {
             return abi.decode(revertData, (uint256));
         }
-    }
-}
-
-library StringEquality {
-    function eq(string memory a, string memory b) internal pure returns (bool) {
-        return keccak256(bytes(a)) == keccak256(bytes(b));
-    }
-
-    function notEq(string memory a, string memory b) internal pure returns (bool) {
-        return !eq(a, b);
     }
 }
 

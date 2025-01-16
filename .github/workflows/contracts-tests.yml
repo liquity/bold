@@ -59,6 +59,7 @@ jobs:
     name: Foundry "E2E" tests
     runs-on: ubuntu-latest
     env:
+      SALT: Liquity2-E2E
       FORK_URL: ${{ secrets.MAINNET_RPC_URL }}
       FORK_CHAIN_ID: 1
       FORK_BLOCK_NUMBER: 21571000
@@ -91,8 +92,11 @@ jobs:
       - name: Fork mainnet
         run: ./fork start && sleep 5
 
-      - name: Deploy contracts
-        run: ./fork deploy
+      - name: Deploy BOLD
+        run: ./fork deploy --mode bold-only
+
+      - name: Deploy everything else
+        run: ./fork deploy --mode use-existing-bold
 
       - name: Run E2E tests
         run: ./fork e2e -vvv
@@ -219,15 +223,14 @@ jobs:
 
       # Filter
       - name: Filter out from coverage
-        run:
-          lcov --remove lcov_merged.info -o lcov_merged.info
-            'test/*'
-            'script/*'
-            'src/Dependencies/Ownable.sol'
-            'src/Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol'
-            'src/NFTMetadata/*'
-            'src/MultiTroveGetter.sol'
-            'src/HintHelpers.sol'
+        run: lcov --remove lcov_merged.info -o lcov_merged.info
+          'test/*'
+          'script/*'
+          'src/Dependencies/Ownable.sol'
+          'src/Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol'
+          'src/NFTMetadata/*'
+          'src/MultiTroveGetter.sol'
+          'src/HintHelpers.sol'
 
       # Send to coveralls
       - name: Coveralls
