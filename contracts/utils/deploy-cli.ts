@@ -1,4 +1,4 @@
-import { $, echo, fs, minimist } from "zx";
+import { $, chalk, echo, fs, minimist } from "zx";
 
 const HELP = `
 deploy - deploy the Liquity contracts.
@@ -29,15 +29,19 @@ Options:
   --gas-price <GAS_PRICE>                  Max fee per gas to use in transactions.
   --help, -h                               Show this help message.
   --mode <DEPLOYMENT_MODE>                 Deploy in one of the following modes:
-                                           - complete (default)
-                                           - bold-only
-                                           - use-existing-bold
-  --salt                                   SALT used for CREATE2
+                                           - complete (default),
+                                           - bold-only,
+                                           - use-existing-bold.
   --open-demo-troves                       Open demo troves after deployment (local
                                            only).
   --rpc-url <RPC_URL>                      RPC URL to use.
+  --salt <SALT>                            Use keccak256(bytes(SALT)) as CREATE2
+                                           salt instead of block timestamp.
   --slow                                   Only send a transaction after the previous
                                            one has been confirmed.
+  --unlocked                               Used when the deployer account is unlocked
+                                           in the client (i.e. no private key or
+                                           Ledger device needed).
   --use-testnet-pricefeeds                 Use testnet PriceFeeds instead of real
                                            oracles when deploying to mainnet.
   --verify                                 Verify contracts after deployment.
@@ -63,6 +67,7 @@ const argv = minimist(process.argv.slice(2), {
     "verify",
     "dry-run",
     "slow",
+    "unlocked",
     "use-testnet-pricefeeds",
   ],
   string: [
@@ -171,12 +176,16 @@ export async function main() {
     }
   }
 
-  // Ledger signing
   if (options.deployer.startsWith("0x") && options.deployer.length === 42) {
-    forgeArgs.push("--ledger");
-    if (options.ledgerPath) {
-      forgeArgs.push("--hd-paths");
-      forgeArgs.push(options.ledgerPath);
+    if (options.unlocked) {
+      forgeArgs.push("--unlocked");
+    } else {
+      // Ledger signing
+      forgeArgs.push("--ledger");
+      if (options.ledgerPath) {
+        forgeArgs.push("--hd-paths");
+        forgeArgs.push(options.ledgerPath);
+      }
     }
   }
 
@@ -186,7 +195,7 @@ Deploying Liquity contracts with the following settings:
   CHAIN_ID:               ${options.chainId}
   DEPLOYER:               ${options.deployer}
   DEPLOYMENT_MODE:        ${options.mode}
-  SALT:                   ${options.salt ? options.salt : "\u26A0 block.timestamp will be used !!"}
+  SALT:                   ${options.salt ? options.salt : chalk.yellow("block.timestamp will be used !!")}
   ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}
   LEDGER_PATH:            ${options.ledgerPath}
   OPEN_DEMO_TROVES:       ${options.openDemoTroves ? "yes" : "no"}
@@ -199,10 +208,7 @@ Deploying Liquity contracts with the following settings:
 
   process.env.DEPLOYER = options.deployer;
   process.env.DEPLOYMENT_MODE = options.mode;
-
-  if (options.salt) {
-    process.env.SALT = options.salt;
-  }
+  process.env.SALT = options.salt;
 
   if (options.openDemoTroves) {
     process.env.OPEN_DEMO_TROVES = "true";
@@ -309,6 +315,13 @@ function safeParseInt(value: string) {
   return isNaN(parsed) ? undefined : parsed;
 }
 
+function envBool(name: string): boolean {
+  return process.env[name] !== undefined
+    && process.env[name].length > 0
+    && process.env[name] !== "false"
+    && process.env[name] !== "no";
+}
+
 async function parseArgs() {
   const options = {
     chainId: safeParseInt(argv["chain-id"]),
@@ -323,6 +336,7 @@ async function parseArgs() {
     rpcUrl: argv["rpc-url"],
     dryRun: argv["dry-run"],
     slow: argv["slow"],
+    unlocked: argv["unlocked"],
     verify: argv["verify"],
     verifier: argv["verifier"],
     verifierUrl: argv["verifier-url"],
@@ -333,23 +347,17 @@ async function parseArgs() {
   const [networkPreset] = argv._;
 
   options.chainId ??= safeParseInt(process.env.CHAIN_ID ?? "");
-  options.debug ??= Boolean(
-    process.env.DEBUG && process.env.DEBUG !== "false",
-  );
+  options.debug ||= envBool("DEBUG");
   options.deployer ??= process.env.DEPLOYER;
   options.etherscanApiKey ??= process.env.ETHERSCAN_API_KEY;
   options.ledgerPath ??= process.env.LEDGER_PATH;
   options.mode ??= process.env.DEPLOYMENT_MODE;
-  options.openDemoTroves ??= Boolean(
-    process.env.OPEN_DEMO_TROVES && process.env.OPEN_DEMO_TROVES !== "false",
-  );
+  options.openDemoTroves ||= envBool("OPEN_DEMO_TROVES");
   options.rpcUrl ??= process.env.RPC_URL;
-  options.useTestnetPricefeeds ??= Boolean(
-    process.env.USE_TESTNET_PRICEFEEDS && process.env.USE_TESTNET_PRICEFEEDS !== "false",
-  );
-  options.verify ??= Boolean(
-    process.env.VERIFY && process.env.VERIFY !== "false",
-  );
+  options.salt ??= process.env.SALT;
+  options.unlocked ||= envBool("UNLOCKED");
+  options.useTestnetPricefeeds ||= envBool("USE_TESTNET_PRICEFEEDS");
+  options.verify ||= envBool("VERIFY");
   options.verifier ??= process.env.VERIFIER;
   options.verifierUrl ??= process.env.VERIFIER_URL;
 
