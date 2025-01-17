@@ -1,4 +1,4 @@
-import { $, echo, fs, minimist } from "zx";
+import { $, chalk, echo, fs, minimist } from "zx";
 
 const HELP = `
 deploy - deploy the Liquity contracts.
@@ -29,13 +29,14 @@ Options:
   --gas-price <GAS_PRICE>                  Max fee per gas to use in transactions.
   --help, -h                               Show this help message.
   --mode <DEPLOYMENT_MODE>                 Deploy in one of the following modes:
-                                           - complete (default)
-                                           - bold-only
-                                           - use-existing-bold
-  --salt                                   SALT used for CREATE2
+                                           - complete (default),
+                                           - bold-only,
+                                           - use-existing-bold.
   --open-demo-troves                       Open demo troves after deployment (local
                                            only).
   --rpc-url <RPC_URL>                      RPC URL to use.
+  --salt <SALT>                            Use keccak256(bytes(SALT)) as CREATE2
+                                           salt instead of block timestamp.
   --slow                                   Only send a transaction after the previous
                                            one has been confirmed.
   --use-testnet-pricefeeds                 Use testnet PriceFeeds instead of real
@@ -186,7 +187,7 @@ Deploying Liquity contracts with the following settings:
   CHAIN_ID:               ${options.chainId}
   DEPLOYER:               ${options.deployer}
   DEPLOYMENT_MODE:        ${options.mode}
-  SALT:                   ${options.salt ? options.salt : "\u26A0 block.timestamp will be used !!"}
+  SALT:                   ${options.salt ? options.salt : chalk.yellow("block.timestamp will be used !!")}
   ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}
   LEDGER_PATH:            ${options.ledgerPath}
   OPEN_DEMO_TROVES:       ${options.openDemoTroves ? "yes" : "no"}
@@ -199,10 +200,7 @@ Deploying Liquity contracts with the following settings:
 
   process.env.DEPLOYER = options.deployer;
   process.env.DEPLOYMENT_MODE = options.mode;
-
-  if (options.salt) {
-    process.env.SALT = options.salt;
-  }
+  process.env.SALT = options.salt;
 
   if (options.openDemoTroves) {
     process.env.OPEN_DEMO_TROVES = "true";
@@ -344,6 +342,7 @@ async function parseArgs() {
     process.env.OPEN_DEMO_TROVES && process.env.OPEN_DEMO_TROVES !== "false",
   );
   options.rpcUrl ??= process.env.RPC_URL;
+  options.salt ??= process.env.SALT;
   options.useTestnetPricefeeds ??= Boolean(
     process.env.USE_TESTNET_PRICEFEEDS && process.env.USE_TESTNET_PRICEFEEDS !== "false",
   );
