@@ -1,4 +1,5 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
+import type { Address } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
@@ -80,8 +81,8 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
         });
       },
 
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
 
@@ -98,8 +99,8 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
         });
       },
 
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
   },
