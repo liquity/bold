@@ -47,6 +47,7 @@ export type Block_Height = {
 export type BorrowerInfo = {
   __typename?: 'BorrowerInfo';
   id: Scalars['ID']['output'];
+  nextOwnerIndexes: Array<Scalars['Int']['output']>;
   troves: Scalars['Int']['output'];
   trovesByCollateral: Array<Scalars['Int']['output']>;
 };
@@ -63,6 +64,12 @@ export type BorrowerInfo_Filter = {
   id_lte?: InputMaybe<Scalars['ID']['input']>;
   id_not?: InputMaybe<Scalars['ID']['input']>;
   id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
+  nextOwnerIndexes?: InputMaybe<Array<Scalars['Int']['input']>>;
+  nextOwnerIndexes_contains?: InputMaybe<Array<Scalars['Int']['input']>>;
+  nextOwnerIndexes_contains_nocase?: InputMaybe<Array<Scalars['Int']['input']>>;
+  nextOwnerIndexes_not?: InputMaybe<Array<Scalars['Int']['input']>>;
+  nextOwnerIndexes_not_contains?: InputMaybe<Array<Scalars['Int']['input']>>;
+  nextOwnerIndexes_not_contains_nocase?: InputMaybe<Array<Scalars['Int']['input']>>;
   or?: InputMaybe<Array<InputMaybe<BorrowerInfo_Filter>>>;
   troves?: InputMaybe<Scalars['Int']['input']>;
   trovesByCollateral?: InputMaybe<Array<Scalars['Int']['input']>>;
@@ -82,6 +89,7 @@ export type BorrowerInfo_Filter = {
 
 export enum BorrowerInfo_OrderBy {
   Id = 'id',
+  NextOwnerIndexes = 'nextOwnerIndexes',
   Troves = 'troves',
   TrovesByCollateral = 'trovesByCollateral'
 }
@@ -138,11 +146,8 @@ export type Collateral = {
   collIndex: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
   minCollRatio: Scalars['BigInt']['output'];
-  price: Scalars['BigInt']['output'];
   stabilityPoolDeposits: Array<StabilityPoolDeposit>;
   token: Token;
-  totalDebt: Scalars['BigInt']['output'];
-  totalDeposited: Scalars['BigInt']['output'];
   troves: Array<Trove>;
 };
 
@@ -278,9 +283,6 @@ export enum CollateralAddresses_OrderBy {
   CollateralCollIndex = 'collateral__collIndex',
   CollateralId = 'collateral__id',
   CollateralMinCollRatio = 'collateral__minCollRatio',
-  CollateralPrice = 'collateral__price',
-  CollateralTotalDebt = 'collateral__totalDebt',
-  CollateralTotalDeposited = 'collateral__totalDeposited',
   Id = 'id',
   SortedTroves = 'sortedTroves',
   StabilityPool = 'stabilityPool',
@@ -319,14 +321,6 @@ export type Collateral_Filter = {
   minCollRatio_not?: InputMaybe<Scalars['BigInt']['input']>;
   minCollRatio_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   or?: InputMaybe<Array<InputMaybe<Collateral_Filter>>>;
-  price?: InputMaybe<Scalars['BigInt']['input']>;
-  price_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  price_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  price_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  price_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  price_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  price_not?: InputMaybe<Scalars['BigInt']['input']>;
-  price_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   stabilityPoolDeposits_?: InputMaybe<StabilityPoolDeposit_Filter>;
   token?: InputMaybe<Scalars['String']['input']>;
   token_?: InputMaybe<Token_Filter>;
@@ -349,22 +343,6 @@ export type Collateral_Filter = {
   token_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
   token_starts_with?: InputMaybe<Scalars['String']['input']>;
   token_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  totalDebt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDebt_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDebt_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDebt_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalDebt_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDebt_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDebt_not?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDebt_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalDeposited?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalDeposited_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_not?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   troves_?: InputMaybe<Trove_Filter>;
 };
 
@@ -380,15 +358,12 @@ export enum Collateral_OrderBy {
   CollIndex = 'collIndex',
   Id = 'id',
   MinCollRatio = 'minCollRatio',
-  Price = 'price',
   StabilityPoolDeposits = 'stabilityPoolDeposits',
   Token = 'token',
   TokenDecimals = 'token__decimals',
   TokenId = 'token__id',
   TokenName = 'token__name',
   TokenSymbol = 'token__symbol',
-  TotalDebt = 'totalDebt',
-  TotalDeposited = 'totalDeposited',
   Troves = 'troves'
 }
 
@@ -848,9 +823,6 @@ export enum InterestBatch_OrderBy {
   CollateralCollIndex = 'collateral__collIndex',
   CollateralId = 'collateral__id',
   CollateralMinCollRatio = 'collateral__minCollRatio',
-  CollateralPrice = 'collateral__price',
-  CollateralTotalDebt = 'collateral__totalDebt',
-  CollateralTotalDeposited = 'collateral__totalDeposited',
   Debt = 'debt',
   Id = 'id',
   Troves = 'troves'
@@ -921,9 +893,6 @@ export enum InterestRateBracket_OrderBy {
   CollateralCollIndex = 'collateral__collIndex',
   CollateralId = 'collateral__id',
   CollateralMinCollRatio = 'collateral__minCollRatio',
-  CollateralPrice = 'collateral__price',
-  CollateralTotalDebt = 'collateral__totalDebt',
-  CollateralTotalDeposited = 'collateral__totalDeposited',
   Id = 'id',
   Rate = 'rate',
   TotalDebt = 'totalDebt'
@@ -1441,9 +1410,6 @@ export enum StabilityPoolDeposit_OrderBy {
   CollateralCollIndex = 'collateral__collIndex',
   CollateralId = 'collateral__id',
   CollateralMinCollRatio = 'collateral__minCollRatio',
-  CollateralPrice = 'collateral__price',
-  CollateralTotalDebt = 'collateral__totalDebt',
-  CollateralTotalDeposited = 'collateral__totalDeposited',
   Deposit = 'deposit',
   Depositor = 'depositor',
   Id = 'id',
@@ -1957,9 +1923,6 @@ export enum Token_OrderBy {
   CollateralCollIndex = 'collateral__collIndex',
   CollateralId = 'collateral__id',
   CollateralMinCollRatio = 'collateral__minCollRatio',
-  CollateralPrice = 'collateral__price',
-  CollateralTotalDebt = 'collateral__totalDebt',
-  CollateralTotalDeposited = 'collateral__totalDeposited',
   Decimals = 'decimals',
   Id = 'id',
   Name = 'name',
@@ -2149,9 +2112,6 @@ export enum Trove_OrderBy {
   CollateralCollIndex = 'collateral__collIndex',
   CollateralId = 'collateral__id',
   CollateralMinCollRatio = 'collateral__minCollRatio',
-  CollateralPrice = 'collateral__price',
-  CollateralTotalDebt = 'collateral__totalDebt',
-  CollateralTotalDeposited = 'collateral__totalDeposited',
   CreatedAt = 'createdAt',
   Debt = 'debt',
   Deposit = 'deposit',
@@ -2207,12 +2167,12 @@ export enum _SubgraphErrorPolicy_ {
   Deny = 'deny'
 }
 
-export type TrovesCountQueryVariables = Exact<{
+export type BorrowerInfoQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TrovesCountQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', troves: number, trovesByCollateral: Array<number> } | null };
+export type BorrowerInfoQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', nextOwnerIndexes: Array<number>, troves: number, trovesByCollateral: Array<number> } | null };
 
 export type FullTroveFragmentFragment = { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null } & { ' $fragmentName'?: 'FullTroveFragmentFragment' };
 
@@ -2360,14 +2320,15 @@ export const StabilityPoolDepositFragmentFragmentDoc = new TypedDocumentString(`
   }
 }
     `, {"fragmentName":"StabilityPoolDepositFragment"}) as unknown as TypedDocumentString<StabilityPoolDepositFragmentFragment, unknown>;
-export const TrovesCountDocument = new TypedDocumentString(`
-    query TrovesCount($id: ID!) {
+export const BorrowerInfoDocument = new TypedDocumentString(`
+    query BorrowerInfo($id: ID!) {
   borrowerInfo(id: $id) {
+    nextOwnerIndexes
     troves
     trovesByCollateral
   }
 }
-    `) as unknown as TypedDocumentString<TrovesCountQuery, TrovesCountQueryVariables>;
+    `) as unknown as TypedDocumentString<BorrowerInfoQuery, BorrowerInfoQueryVariables>;
 export const TrovesByAccountDocument = new TypedDocumentString(`
     query TrovesByAccount($account: Bytes!) {
   troves(
