@@ -149,6 +149,7 @@ contract E2ETest is Test {
 
     uint256 ETH_GAS_COMPENSATION;
     uint256 MIN_DEBT;
+    uint256 EPOCH_START;
     uint256 EPOCH_DURATION;
     uint256 REGISTRATION_FEE;
 
@@ -205,6 +206,7 @@ contract E2ETest is Test {
 
         ETH_GAS_COMPENSATION = json.readUint(".constants.ETH_GAS_COMPENSATION");
         MIN_DEBT = json.readUint(".constants.MIN_DEBT");
+        EPOCH_START = json.readUint(".governance.constants.EPOCH_START");
         EPOCH_DURATION = json.readUint(".governance.constants.EPOCH_DURATION");
         REGISTRATION_FEE = json.readUint(".governance.constants.REGISTRATION_FEE");
         LQTY = json.readAddress(".governance.LQTYToken");
@@ -627,13 +629,20 @@ contract E2ETest is Test {
         }
     }
 
+    function _epoch(uint256 n) internal view returns (uint256) {
+        return EPOCH_START + (n - 1) * EPOCH_DURATION;
+    }
+
     function test_Initially_NewInitiativeCannotBeRegistered() external {
-        vm.skip(governance.epoch() != 2);
+        vm.skip(governance.epoch() > 2);
 
         address registrant = makeAddr("registrant");
         address newInitiative = makeAddr("newInitiative");
 
         _openTrove(0, registrant, 0, Math.max(REGISTRATION_FEE, MIN_DEBT));
+
+        uint256 epoch2 = _epoch(2);
+        if (block.timestamp < epoch2) vm.warp(epoch2);
 
         vm.startPrank(registrant);
         {
@@ -645,14 +654,15 @@ contract E2ETest is Test {
     }
 
     function test_AfterOneEpoch_NewInitiativeCanBeRegistered() external {
-        vm.skip(governance.epoch() != 2);
+        vm.skip(governance.epoch() > 2);
 
         address registrant = makeAddr("registrant");
         address newInitiative = makeAddr("newInitiative");
 
         _openTrove(0, registrant, 0, Math.max(REGISTRATION_FEE, MIN_DEBT));
 
-        skip(EPOCH_DURATION);
+        uint256 epoch3 = _epoch(3);
+        if (block.timestamp < epoch3) vm.warp(epoch3);
 
         vm.startPrank(registrant);
         {
@@ -790,8 +800,13 @@ contract E2ETest is Test {
             );
             assertApproxEqAbsDecimal(staker.balance, ethAmount * lqtyStake / totalLQTYStaked, 1e5, 18, "ETH reward");
 
+            skip(5 minutes);
+
             if (numInitiatives > 0) {
-                skip(5 minutes);
+                // Voting on initial initiatives opens in epoch #2
+                uint256 votingStart = _epoch(2);
+                if (block.timestamp < votingStart) vm.warp(votingStart);
+
                 _allocateLQTY_begin(staker);
 
                 for (uint256 i = 0; i < initiatives.length; ++i) {
