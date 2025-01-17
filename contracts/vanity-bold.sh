@@ -3,16 +3,16 @@
 # Exit on failure
 #set -e
 
+# Solidity script fails with `EvmError: MemoryOOG` with too many iterations
+export ITERATIONS=100000
+
 i=0
 while [ "$i" -le 100000 ]; do
-    if [ $((i % 1000)) -eq 0 ]; then
-        echo $i
-    fi
-    export SALT=beBOLD$i
-    S=$(forge script script/VanityBold.s.sol --chain-id 1 --rpc-url http://localhost:8545)
-    #echo S: $S
-    #cat ./bold-address.json
-    #echo
+    echo $i
+
+    export START_INDEX=$((i * ITERATIONS))
+    forge script script/VanityBold.s.sol --chain-id 1 --rpc-url http://localhost:8545
+
     grep -i b01d ./bold-address.json
     R=$?
     #echo R: $R
@@ -21,6 +21,7 @@ while [ "$i" -le 100000 ]; do
        echo $SALT
        cat ./bold-address.json
        echo
+       exit 0
     fi;
     i=$((i+1))
 done;
