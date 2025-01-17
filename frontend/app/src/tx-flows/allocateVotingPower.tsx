@@ -1,5 +1,5 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
-import type { Address, Initiative, VoteAllocation } from "@/src/types";
+import type { Address, Dnum, Initiative, VoteAllocation } from "@/src/types";
 
 import { AddressLink } from "@/src/comps/AddressLink/AddressLink";
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -29,8 +29,22 @@ export type AllocateVotingPowerRequest = v.InferOutput<typeof RequestSchema>;
 export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = {
   title: "Review & Send Transaction",
 
-  Summary({ request }) {
+  Summary({ request, account }) {
+    const governanceUser = useGovernanceUser(account);
+    const stakedLqty: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
+
+    let totalLqtyAllocation: Dnum = [0n, 18];
+    for (const vote of Object.values(request.voteAllocations)) {
+      if (vote) {
+        totalLqtyAllocation = dn.add(
+          totalLqtyAllocation,
+          dn.mul(stakedLqty, vote.value),
+        );
+      }
+    }
+
     const votesCount = Object.keys(request.voteAllocations).length;
+
     return (
       <div
         className={css({
@@ -116,7 +130,11 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
                   paddingBottom: 24,
                 })}
               >
-                {votesCount}
+                <Amount
+                  value={totalLqtyAllocation}
+                  format={2}
+                />{" "}
+                LQTY
               </div>
             </div>
             <div
@@ -125,7 +143,7 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
                 color: "token(colors.strongSurfaceContentAlt)",
               })}
             >
-              Total votes
+              Allocated to {votesCount} initiative{votesCount === 1 ? "" : "s"}
             </div>
           </div>
         </div>
@@ -261,7 +279,7 @@ function VoteAllocation({
             alignItems: "center",
           })}
         >
-          {vote.vote === "for" ? "Support" : "Oppose"} with <Amount value={lqtyAllocation} /> LQTY
+          {vote.vote === "for" ? "Upvote" : "Downvote"} with <Amount value={lqtyAllocation} /> LQTY
         </div>,
       ]}
     />

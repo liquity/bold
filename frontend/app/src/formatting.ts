@@ -127,12 +127,18 @@ export function formatPercentage(
   }%`;
 }
 
-export function formatDate(date: Date) {
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-  });
+export function formatDate(date: Date, format: "full" | "iso" = "full") {
+  if (format === "full") {
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    });
+  }
+  if (format === "iso") {
+    return date.toISOString();
+  }
+  throw new Error(`Invalid date format: ${format}`);
 }

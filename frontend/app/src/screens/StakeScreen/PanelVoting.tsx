@@ -1,20 +1,77 @@
-import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocations } from "@/src/types";
+import type { InitiativeStatus } from "@/src/liquity-governance";
+import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocation, VoteAllocations } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
-import { formatDate } from "@/src/formatting";
-import { useGovernanceState, useInitiatives } from "@/src/liquity-governance";
+import { fmtnum, formatDate } from "@/src/formatting";
+import { useGovernanceState, useInitiatives, useInitiativesStates } from "@/src/liquity-governance";
 import { useAccount } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useGovernanceUser } from "@/src/subgraph-hooks";
+import { jsonStringifyWithBigInt } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, Button, IconExternal, shortenAddress, VFlex } from "@liquity2/uikit";
+import {
+  AnchorTextButton,
+  Button,
+  IconDownvote,
+  IconEdit,
+  IconExternal,
+  IconUpvote,
+  shortenAddress,
+  VFlex,
+} from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+function isInitiativeStatusActive(
+  status: InitiativeStatus,
+): status is Exclude<InitiativeStatus, "disabled" | "nonexistent" | "unregisterable"> {
+  return status !== "disabled" && status !== "nonexistent" && status !== "unregisterable";
+}
+
+function initiativeStatusLabel(status: InitiativeStatus) {
+  if (status === "skip" || status === "claimable" || status === "claimed") {
+    return "Active";
+  }
+  if (status === "warm up") {
+    return "Warm-up period";
+  }
+  if (status === "unregisterable") {
+    return "Unregistering";
+  }
+  if (status === "disabled") {
+    return "Disabled";
+  }
+  return "";
+}
+
+function filterVoteAllocationsForSubmission(
+  voteAllocations: VoteAllocations,
+  initiativesStates: Record<Address, { status: InitiativeStatus }>,
+) {
+  const voteAllocationsFiltered = { ...voteAllocations };
+
+  for (const [address, data] of Object.entries(voteAllocations) as Entries<VoteAllocations>) {
+    // Filter out allocations with null or zero values. No need to explicitly set them to 0,
+    // as allocated initiatives always get reset when allocating new votes.
+    if (data.vote === null || dn.eq(data.value, 0)) {
+      delete voteAllocationsFiltered[address];
+    }
+
+    // filter out invalid initiatives
+    const initiativeStatus = initiativesStates[address]?.status;
+    if (!isInitiativeStatusActive(initiativeStatus ?? "nonexistent")) {
+      delete voteAllocationsFiltered[address];
+    }
+  }
+
+  return voteAllocationsFiltered;
+}
 
 export function PanelVoting() {
   const txFlow = useTransactionFlow();
@@ -23,13 +80,38 @@ export function PanelVoting() {
   const governanceState = useGovernanceState();
   const governanceUser = useGovernanceUser(account.address ?? null);
   const initiatives = useInitiatives();
+  const initiativesStates = useInitiativesStates(initiatives.data?.map((i) => i.address) ?? []);
 
-  const [voteAllocations, setVoteAllocations] = useState<VoteAllocations>({});
+  const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
 
-  useEffect(() => {
-    const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
-
+  // current vote allocations
+  const voteAllocations = useMemo(() => {
     const allocations: VoteAllocations = {};
+
+    for (const allocation of governanceUser.data?.allocations ?? []) {
+      const { voteLQTY, vetoLQTY } = allocation;
+
+      const voteAllocation: VoteAllocation | null = voteLQTY > 0n
+        ? { vote: "for", value: [voteLQTY, 18] }
+        : vetoLQTY > 0n
+        ? { vote: "against", value: [vetoLQTY, 18] }
+        : null;
+
+      if (voteAllocation) {
+        allocations[allocation.initiative] = voteAllocation;
+      }
+    }
+
+    return allocations;
+  }, [governanceUser.data?.allocations]);
+
+  // vote allocations from user input
+  const [inputVoteAllocations, setInputVoteAllocations] = useState<VoteAllocations>({});
+
+  // fill input vote allocations from user data
+  useEffect(() => {
+    const allocations: VoteAllocations = {};
+    const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
     for (const allocation of governanceUser.data?.allocations ?? []) {
       const vote = allocation.voteLQTY > 0n
         ? "for" as const
@@ -53,27 +135,64 @@ export function PanelVoting() {
         vote,
       };
     }
-    setVoteAllocations(allocations);
+
+    setInputVoteAllocations(allocations);
   }, [governanceUser.status]);
 
-  const remainingVotingPower = Object.values(voteAllocations).reduce(
-    (remaining, voteData) => {
-      if (voteData.vote !== null) {
-        return dn.sub(remaining, voteData.value);
+  const hasAnyAllocationChange = useMemo(() => {
+    if (!governanceUser.data || !initiativesStates.data) {
+      return false;
+    }
+
+    const serialize = (allocations: VoteAllocations) => (
+      jsonStringifyWithBigInt(
+        Object.entries(allocations).sort(([a], [b]) => a.localeCompare(b)),
+      )
+    );
+
+    // filter the current vote allocations − taking care of removing
+    // disabled + allocated initiatives as removing them doesn’t count as a change
+    const voteAllocationsFiltered = filterVoteAllocationsForSubmission(
+      voteAllocations,
+      initiativesStates.data,
+    );
+
+    const voteAllocationsToSubmit = filterVoteAllocationsForSubmission(
+      inputVoteAllocations,
+      initiativesStates.data,
+    );
+
+    return serialize(voteAllocationsFiltered) !== serialize(voteAllocationsToSubmit);
+  }, [voteAllocations, inputVoteAllocations, initiativesStates.data]);
+
+  const isCutoff = governanceState.data?.period === "cutoff";
+
+  const hasAnyAllocations = (governanceUser.data?.allocations ?? []).length > 0;
+
+  const remainingVotingPower = Object.entries(inputVoteAllocations).reduce(
+    (remaining, [initiative, voteData]) => {
+      if (voteData.vote === null) {
+        return remaining;
       }
-      return remaining;
+      const initiativeState = initiativesStates.data?.[initiative as Address];
+      if (!isInitiativeStatusActive(initiativeState?.status ?? "nonexistent")) {
+        return remaining;
+      }
+      return dn.sub(remaining, voteData.value);
     },
     dn.from(1, 18),
   );
 
   const daysLeft = governanceState.data?.daysLeft ?? 0;
-  const rtf = new Intl.RelativeTimeFormat("en", { style: "short" });
+  const rtf = new Intl.RelativeTimeFormat("en", { style: "long" });
   const remaining = daysLeft > 1
     ? rtf.format(Math.ceil(daysLeft), "day")
+    : daysLeft > (1 / 24)
+    ? rtf.format(Math.ceil(daysLeft * 24), "hours")
     : rtf.format(Math.ceil(daysLeft * 24 * 60), "minute");
 
   const handleVote = (initiativeAddress: Address, vote: Vote | null) => {
-    setVoteAllocations((prev) => ({
+    setInputVoteAllocations((prev) => ({
       ...prev,
       [initiativeAddress]: {
         vote: prev[initiativeAddress]?.vote === vote ? null : vote,
@@ -83,7 +202,7 @@ export function PanelVoting() {
   };
 
   const handleVoteInputChange = (initiativeAddress: Address, value: Dnum) => {
-    setVoteAllocations((prev) => ({
+    setInputVoteAllocations((prev) => ({
       ...prev,
       [initiativeAddress]: {
         vote: prev[initiativeAddress]?.vote ?? null,
@@ -92,7 +211,48 @@ export function PanelVoting() {
     }));
   };
 
-  const allowSubmit = dn.lt(remainingVotingPower, 1) && dn.gte(remainingVotingPower, 0);
+  const allowSubmit = dn.lt(remainingVotingPower, 1) && (
+    hasAnyAllocations
+    || dn.gte(remainingVotingPower, 0)
+    || hasAnyAllocationChange
+  );
+
+  const cutoffStartDate = governanceState.data && new Date(
+    Number(governanceState.data.cutoffStart) * 1000,
+  );
+  const epochEndDate = governanceState.data && new Date(
+    Number(governanceState.data.epochEnd) * 1000,
+  );
+
+  if (
+    governanceState.status !== "success"
+    || initiatives.status !== "success"
+    || initiativesStates.status !== "success"
+    || governanceUser.status !== "success"
+  ) {
+    return (
+      <div
+        className={css({
+          height: 200,
+          paddingTop: 40,
+        })}
+      >
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            fontSize: 18,
+            userSelect: "none",
+          })}
+        >
+          <Spinner size={18} />
+          Loading
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section
@@ -169,18 +329,44 @@ export function PanelVoting() {
         <AnchorTextButton
           label={
             <>
-              Discuss on Discord
+              Discuss
               <IconExternal size={16} />
             </>
           }
-          href="https://discord.com/invite/2up5U32"
+          href="https://voting.liquity.org/"
           external
         />
       </div>
 
-      {governanceState.data?.period === "cutoff" && (
-        <div>
-          You can only veto today
+      {isCutoff && (
+        <div
+          className={css({
+            paddingTop: 16,
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              height: 40,
+              paddingLeft: 12,
+              fontSize: 14,
+              background: "yellow:50",
+              border: "1px solid token(colors.yellow:200)",
+              borderRadius: 8,
+            })}
+          >
+            <div>
+              <svg width="16" height="17" fill="none">
+                <path
+                  fill="#E1B111"
+                  d="M.668 14.333h14.667L8 1.666.668 14.333Zm8-2H7.335v-1.334h1.333v1.334Zm0-2.667H7.335V6.999h1.333v2.667Z"
+                />
+              </svg>
+            </div>
+            <div>Only downvotes are accepted today.</div>
+          </div>
         </div>
       )}
 
@@ -248,24 +434,58 @@ export function PanelVoting() {
             <th>
               Epoch<br /> Initiatives
             </th>
-            <th>Allocation</th>
-            <th>Decision</th>
+            <th>{hasAnyAllocations ? "Allocation" : "Decision"}</th>
           </tr>
         </thead>
         <tbody>
-          {initiatives.data?.map((initiative, index) => (
-            <InitiativeRow
-              key={index}
-              initiative={initiative}
-              voteAllocation={voteAllocations[initiative.address]}
-              onVote={handleVote}
-              onVoteInputChange={handleVoteInputChange}
-            />
-          ))}
+          {initiatives.data
+            // remove inactive initiatives that are not voted on
+            ?.filter((initiative) => {
+              return isInitiativeStatusActive(
+                initiativesStates.data?.[initiative.address]?.status ?? "nonexistent",
+              ) || Boolean(voteAllocations[initiative.address]);
+            })
+            .sort((a, b) => {
+              // 1. sort by allocation
+              const allocationA = voteAllocations[a.address];
+              const allocationB = voteAllocations[b.address];
+              if (allocationA && !allocationB) return -1;
+              if (!allocationA && allocationB) return 1;
+
+              // 2. sort by status
+              const statusA = initiativesStates.data?.[a.address]?.status ?? "nonexistent";
+              const statusB = initiativesStates.data?.[b.address]?.status ?? "nonexistent";
+              const isActiveA = isInitiativeStatusActive(statusA);
+              const isActiveB = isInitiativeStatusActive(statusB);
+              if (isActiveA && !isActiveB) return -1;
+              if (!isActiveA && isActiveB) return 1;
+
+              return 0;
+            })
+            .map((
+              initiative,
+              index,
+            ) => {
+              const status = initiativesStates.data?.[initiative.address]?.status;
+              return (
+                <InitiativeRow
+                  key={index}
+                  disabled={!isInitiativeStatusActive(status ?? "nonexistent")}
+                  disableFor={isCutoff}
+                  initiative={initiative}
+                  initiativesStatus={status}
+                  inputVoteAllocation={inputVoteAllocations[initiative.address]}
+                  onVote={handleVote}
+                  onVoteInputChange={handleVoteInputChange}
+                  totalStaked={stakedLQTY}
+                  voteAllocation={voteAllocations[initiative.address]}
+                />
+              );
+            })}
         </tbody>
         <tfoot>
           <tr>
-            <td colSpan={2}>
+            <td>
               <div>
                 Voting power left
               </div>
@@ -296,40 +516,61 @@ export function PanelVoting() {
         <div
           className={css({
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
             gap: 16,
             marginBottom: 32,
           })}
         >
           <div
             className={css({
-              display: "flex",
-              width: 20,
-              height: 20,
-              color: "strongSurfaceContent",
-              background: "strongSurface",
-              borderRadius: "50%",
+              paddingTop: 12,
             })}
           >
-            <svg width="20" height="20" fill="none">
-              <path
-                clipRule="evenodd"
-                fill="currentColor"
-                fillRule="evenodd"
-                d="m15.41 5.563-6.886 10.1-4.183-3.66 1.317-1.505 2.485 2.173 5.614-8.234 1.652 1.126Z"
-              />
-            </svg>
+            <div
+              className={css({
+                display: "flex",
+                width: 20,
+                height: 20,
+                color: "strongSurfaceContent",
+                background: "strongSurface",
+                borderRadius: "50%",
+              })}
+            >
+              <svg width="20" height="20" fill="none">
+                <path
+                  clipRule="evenodd"
+                  fill="currentColor"
+                  fillRule="evenodd"
+                  d="m15.41 5.563-6.886 10.1-4.183-3.66 1.317-1.505 2.485 2.173 5.614-8.234 1.652 1.126Z"
+                />
+              </svg>
+            </div>
           </div>
           <div>
-            <div>
-              Votes & vetos are accepted on {formatDate(new Date(Number(governanceState.data.epochEnd) * 1000))}.<br />
-            </div>
+            {cutoffStartDate && epochEndDate && (
+              <div>
+                {isCutoff ? "Upvotes ended on " : "Upvotes accepted until "}
+                <time
+                  dateTime={formatDate(cutoffStartDate, "iso")}
+                  title={formatDate(cutoffStartDate, "iso")}
+                >
+                  {formatDate(cutoffStartDate)}
+                </time>.
+                {" Downvotes accepted until "}
+                <time
+                  dateTime={formatDate(epochEndDate, "iso")}
+                  title={formatDate(epochEndDate, "iso")}
+                >
+                  {formatDate(epochEndDate)}
+                </time>.
+              </div>
+            )}
             <div
               className={css({
                 color: "contentAlt",
               })}
             >
-              Your votes for epoch #{String(governanceState.data.epoch)} will apply {remaining}.
+              Votes for epoch #{String(governanceState.data.epoch)} will be snapshotted {remaining}.
             </div>
           </div>
         </div>
@@ -344,20 +585,15 @@ export function PanelVoting() {
           size="large"
           wide
           onClick={() => {
-            // Filter out allocations with no vote or zero value
-            const voteAllocationsFiltered = { ...voteAllocations };
-            for (const [address, data] of Object.entries(voteAllocations) as Entries<VoteAllocations>) {
-              if (data.vote === null || dn.eq(data.value, 0)) {
-                delete voteAllocationsFiltered[address];
-              }
-            }
-
             txFlow.start({
               flowId: "allocateVotingPower",
               backLink: ["/stake/voting", "Back"],
-              successLink: ["/", "Go to the Dashboard"],
+              successLink: ["/stake/voting", "Back to overview"],
               successMessage: "Your voting power has been allocated.",
-              voteAllocations: voteAllocationsFiltered,
+              voteAllocations: filterVoteAllocationsForSubmission(
+                inputVoteAllocations,
+                initiativesStates.data ?? {},
+              ),
             });
           }}
         />
@@ -367,16 +603,30 @@ export function PanelVoting() {
 }
 
 function InitiativeRow({
+  disableFor,
+  disabled,
   initiative,
-  voteAllocation,
+  initiativesStatus,
+  inputVoteAllocation,
   onVote,
   onVoteInputChange,
+  totalStaked,
+  voteAllocation,
 }: {
+  disableFor: boolean;
+  disabled: boolean;
   initiative: Initiative;
-  voteAllocation?: VoteAllocations[Address];
+  initiativesStatus?: InitiativeStatus;
+  inputVoteAllocation?: VoteAllocations[Address];
   onVote: (initiative: Address, vote: Vote) => void;
   onVoteInputChange: (initiative: Address, value: Dnum) => void;
+  totalStaked: Dnum;
+  voteAllocation?: VoteAllocation;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [editIntent, setEditIntent] = useState(false);
+  const editMode = (editIntent || !voteAllocation?.vote) && !disabled;
+
   return (
     <tr>
       <td>
@@ -392,9 +642,46 @@ function InitiativeRow({
               display: "flex",
               alignItems: "center",
               paddingTop: 6,
+              gap: 4,
             })}
           >
-            {initiative.name ?? "Initiative"}
+            <div
+              className={css({
+                textOverflow: "ellipsis",
+                overflow: "hidden",
+                maxWidth: 200,
+              })}
+            >
+              {initiative.name ?? "Initiative"}
+            </div>
+            {initiativesStatus && (
+              <div
+                title={`${initiativeStatusLabel(initiativesStatus)} (${initiativesStatus})`}
+                className={css({
+                  display: "inline-flex",
+                  alignItems: "center",
+                  height: 16,
+                  padding: "0 4px 1px",
+                  fontSize: 12,
+                  color: "infoSurfaceContent",
+                  background: "infoSurface",
+                  border: "1px solid token(colors.infoSurfaceBorder)",
+                  borderRadius: 8,
+                  userSelect: "none",
+                  textTransform: "lowercase",
+
+                  "--color-warning": "#121B44",
+                  "--background-warning": "token(colors.warningAlt)",
+                })}
+                style={{
+                  color: isInitiativeStatusActive(initiativesStatus) ? undefined : `var(--color-warning)`,
+                  background: isInitiativeStatusActive(initiativesStatus) ? undefined : `var(--background-warning)`,
+                  border: isInitiativeStatusActive(initiativesStatus) ? undefined : 0,
+                }}
+              >
+                {initiativeStatusLabel(initiativesStatus)}
+              </div>
+            )}
           </div>
           <div>
             <AnchorTextButton
@@ -411,8 +698,6 @@ function InitiativeRow({
         </div>
       </td>
       <td>
-      </td>
-      <td>
         <div
           className={css({
             display: "flex",
@@ -422,18 +707,97 @@ function InitiativeRow({
             paddingTop: 6,
           })}
         >
-          <VoteInput
-            value={voteAllocation?.value ?? null}
-            vote={voteAllocation?.vote ?? null}
-            onChange={(value) => {
-              onVoteInputChange(initiative.address, value);
-            }}
-            onVote={(vote) => {
-              onVote(initiative.address, vote);
-            }}
-          />
+          {editMode
+            ? (
+              <VoteInput
+                ref={inputRef}
+                forDisabled={disableFor}
+                againstDisabled={disabled}
+                onChange={(value) => {
+                  onVoteInputChange(initiative.address, value);
+                }}
+                onVote={(vote) => {
+                  onVote(initiative.address, vote);
+                }}
+                value={inputVoteAllocation?.value ?? null}
+                vote={inputVoteAllocation?.vote ?? null}
+              />
+            )
+            : (
+              voteAllocation?.vote && (
+                <Vote
+                  onEdit={() => {
+                    setEditIntent(true);
+                    setTimeout(() => {
+                      inputRef.current?.focus();
+                    }, 0);
+                  }}
+                  disabled={disabled}
+                  share={dn.div(voteAllocation?.value ?? [0n, 18], totalStaked)}
+                  vote={voteAllocation?.vote ?? null}
+                />
+              )
+            )}
         </div>
       </td>
     </tr>
+  );
+}
+
+function Vote({
+  onEdit,
+  disabled,
+  share,
+  vote,
+}: {
+  onEdit?: () => void;
+  disabled: boolean;
+  share: Dnum;
+  vote: Vote;
+}) {
+  return (
+    <div
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        height: 34,
+      })}
+    >
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 8,
+        })}
+      >
+        <div
+          title={`${fmtnum(share, 2, 100)}% of your voting power has been allocated to ${
+            vote === "for" ? "upvote" : "downvote"
+          } this initiative`}
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          })}
+        >
+          {vote === "for" && <IconUpvote size={24} />}
+          {vote === "against" && <IconDownvote size={24} />}
+          <div>
+            {fmtnum(share, 2, 100)}%
+          </div>
+        </div>
+        <Button
+          disabled={disabled}
+          size="mini"
+          title="Change"
+          label={<IconEdit size={20} />}
+          onClick={onEdit}
+          className={css({
+            height: "34px!",
+          })}
+        />
+      </div>
+    </div>
   );
 }

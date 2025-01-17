@@ -29,3 +29,9 @@ export function capitalizeFirstLetter(string: string) {
 export function roundToDecimal(value: number, decimals: number) {
   return Math.round(value * 10 ** decimals) / 10 ** decimals;
 }
+
+export function jsonStringifyWithBigInt(data: unknown) {
+  return JSON.stringify(data, (_, value) => (
+    typeof value === "bigint" ? String(value) : value
+  ));
+}

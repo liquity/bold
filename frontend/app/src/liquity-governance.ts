@@ -7,8 +7,30 @@ import { useGovernanceInitiatives } from "@/src/subgraph-hooks";
 import { vAddress } from "@/src/valibot-utils";
 import { useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
-import { useReadContract, useReadContracts } from "wagmi";
-import { readContract } from "wagmi/actions";
+import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
+import { readContract, readContracts } from "wagmi/actions";
+
+export type InitiativeStatus =
+  | "nonexistent"
+  | "warm up"
+  | "skip"
+  | "claimable"
+  | "claimed"
+  | "disabled"
+  | "unregisterable";
+
+export function initiativeStatusFromNumber(status: number): InitiativeStatus {
+  const statuses: Record<number, InitiativeStatus> = {
+    0: "nonexistent",
+    1: "warm up",
+    2: "skip",
+    3: "claimable",
+    4: "claimed",
+    5: "disabled",
+    6: "unregisterable",
+  };
+  return statuses[status] || "nonexistent";
+}
 
 export function useGovernanceState() {
   const Governance = getProtocolContract("Governance");
@@ -45,6 +67,7 @@ export function useGovernanceState() {
         const epochStart = epochStart_.result ?? 0n;
         const epochDuration = GOVERNANCE_EPOCH_DURATION.result ?? 0n;
         const epochVotingCutoff = GOVERNANCE_EPOCH_VOTING_CUTOFF.result ?? 0n;
+        const cutoffStart = (epochStart + epochDuration) - epochVotingCutoff;
 
         const period: "cutoff" | "voting" = (secondsWithinEpoch.result ?? 0n) > epochVotingCutoff
           ? "cutoff"
@@ -57,6 +80,7 @@ export function useGovernanceState() {
         return {
           countedVoteLQTY: totalVotesAndState.result?.[1].countedVoteLQTY,
           countedVoteOffset: totalVotesAndState.result?.[1].countedVoteOffset,
+          cutoffStart,
           daysLeft,
           daysLeftRounded,
           epoch,
@@ -69,28 +93,6 @@ export function useGovernanceState() {
       },
     },
   });
-}
-
-type InitiativeStatus =
-  | "nonexistent"
-  | "warm up"
-  | "skip"
-  | "claimable"
-  | "claimed"
-  | "disabled"
-  | "unregisterable";
-
-function initiativeStatusFromNumber(status: number): InitiativeStatus {
-  const statuses: Record<number, InitiativeStatus> = {
-    0: "nonexistent",
-    1: "warm up",
-    2: "skip",
-    3: "claimable",
-    4: "claimed",
-    5: "disabled",
-    6: "unregisterable",
-  };
-  return statuses[status] || "nonexistent";
 }
 
 export function useInitiativeState(initiativeAddress: Address | null) {
@@ -180,6 +182,50 @@ export function useInitiatives() {
       })
       : null,
   };
+}
+
+export function useInitiativesStates(initiatives: Address[]) {
+  const wagmiConfig = useWagmiConfig();
+
+  const Governance = getProtocolContract("Governance");
+
+  return useQuery({
+    queryKey: ["initiativesStates", initiatives.join("")],
+    queryFn: async () => {
+      // Declared explicitly to avoid this TS error:
+      // “Type instantiation is excessively deep and possibly infinite”
+      const contracts: {
+        abi: typeof Governance.abi;
+        address: Address;
+        functionName: "getInitiativeState";
+        args: [Address];
+      }[] = initiatives.map((address) => ({
+        ...Governance,
+        functionName: "getInitiativeState",
+        args: [address],
+      }));
+
+      const results = await readContracts(wagmiConfig, { contracts });
+
+      const initiativesStates: Record<Address, {
+        status: InitiativeStatus;
+        lastEpochClaim: bigint;
+        claimableAmount: bigint;
+      }> = {};
+
+      for (const [i, { result }] of results.entries()) {
+        if (result && initiatives[i]) {
+          initiativesStates[initiatives[i]] = {
+            status: initiativeStatusFromNumber(result[0]),
+            lastEpochClaim: result[1],
+            claimableAmount: result[2],
+          };
+        }
+      }
+
+      return initiativesStates;
+    },
+  });
 }
 
 const KnownInitiativesSchema = v.record(
