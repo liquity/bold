@@ -414,27 +414,25 @@ export function StakePositionSummary({
               >
                 Allocated
               </div>
-              {govUser.data?.allocatedLQTY && (
-                <div
-                  title={`${fmtnum([govUser.data.allocatedLQTY, 18], "full")} LQTY`}
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                  })}
-                >
-                  <Amount
-                    title={null}
-                    format="compact"
-                    value={[govUser.data.allocatedLQTY, 18]}
-                  />
-                  <TokenIcon
-                    title={null}
-                    symbol="LQTY"
-                    size="mini"
-                  />
-                </div>
-              )}
+              <div
+                title={`${fmtnum([govUser.data?.allocatedLQTY ?? 0n, 18], "full")} LQTY`}
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                })}
+              >
+                <Amount
+                  title={null}
+                  format="compact"
+                  value={[govUser.data?.allocatedLQTY ?? 0n, 18]}
+                />
+                <TokenIcon
+                  title={null}
+                  symbol="LQTY"
+                  size="mini"
+                />
+              </div>
             </div>
           )}
         </div>
