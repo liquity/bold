@@ -51,8 +51,6 @@ export function StakePositionSummary({
 
   const votingPowerRef = useRef<HTMLDivElement>(null);
   const votingPowerTooltipRef = useRef<HTMLDivElement>(null);
-  const votingPowerTooltipShareRef = useRef<HTMLDivElement>(null);
-  const votingPowerTooltipTotalRef = useRef<HTMLDivElement>(null);
 
   useRaf(() => {
     if (!votingPowerRef.current) {
@@ -93,14 +91,8 @@ export function StakePositionSummary({
     votingPowerRef.current.innerHTML = sharePctRoundedFormatted;
     votingPowerRef.current.title = sharePctFormatted;
 
-    if (
-      votingPowerTooltipRef.current
-      && votingPowerTooltipShareRef.current
-      && votingPowerTooltipTotalRef.current
-    ) {
-      votingPowerTooltipRef.current.innerHTML = fmtnum(Number(userVpLive / 10n ** 15n), 0);
-      votingPowerTooltipTotalRef.current.innerHTML = fmtnum(Number(totalVpLive / 10n ** 15n), 0);
-      votingPowerTooltipShareRef.current.innerHTML = sharePctFormatted;
+    if (votingPowerTooltipRef.current) {
+      votingPowerTooltipRef.current.innerHTML = sharePctFormatted;
     }
   }, 30);
 
@@ -388,16 +380,8 @@ export function StakePositionSummary({
                                   })}
                                 >
                                   <TooltipRow
-                                    label="All voting power"
-                                    value={<div ref={votingPowerTooltipTotalRef} />}
-                                  />
-                                  <TooltipRow
                                     label="Your voting power"
                                     value={<div ref={votingPowerTooltipRef} />}
-                                  />
-                                  <TooltipRow
-                                    label="Your voting share"
-                                    value={<div ref={votingPowerTooltipShareRef} />}
                                   />
                                 </div>
                               )}
