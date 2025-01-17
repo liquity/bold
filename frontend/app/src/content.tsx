@@ -191,20 +191,20 @@ export default {
     myPositionsTitle: "My positions",
     actions: {
       borrow: {
-        title: "Borrow BOLD",
-        description: "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
+        title: "Borrow",
+        description: "Mint BOLD against your collateral at whatever interest rate you want",
       },
       multiply: {
-        title: "Multiply ETH",
-        description: "Set your own interest rate and increase your exposure to ETH and staked ETH.",
+        title: "Multiply",
+        description: "Increase your exposure to ETH and its staking yield with a single click",
       },
       earn: {
         title: "Earn with BOLD",
-        description: "Cover liquidations to earn BOLD and collateral assets.",
+        description: "Deposit BOLD to earn protocol revenues and liquidation proceeds",
       },
       stake: {
         title: "Stake LQTY",
-        description: "Accrue voting power by staking your LQTY without a minimum lockup period.",
+        description: "Direct protocol incentives with LQTY while earning from Liquity V1",
       },
     },
     statsBar: {

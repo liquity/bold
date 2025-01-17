@@ -39,12 +39,9 @@ export function PositionCardLeverage({
   }
 
   const collateralPriceUsd = usePrice(token.symbol);
-  if (!collateralPriceUsd.data) {
-    return null;
-  }
 
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
-  const ltv = getLtv(deposit, borrowed, collateralPriceUsd.data);
+  const ltv = collateralPriceUsd.data && getLtv(deposit, borrowed, collateralPriceUsd.data);
   const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
   const redemptionRisk = getRedemptionRisk(interestRate);
 
@@ -134,14 +131,16 @@ export function PositionCardLeverage({
                     fontSize: 14,
                   })}
                 >
-                  <div
-                    className={css({
-                      color: "positionContent",
-                    })}
-                  >
-                    {liquidationRisk === "low" ? "Low" : liquidationRisk === "medium" ? "Medium" : "High"}{" "}
-                    liquidation risk
-                  </div>
+                  {liquidationRisk && (
+                    <div
+                      className={css({
+                        color: "positionContent",
+                      })}
+                    >
+                      {liquidationRisk === "low" ? "Low" : liquidationRisk === "medium" ? "Medium" : "High"}{" "}
+                      liquidation risk
+                    </div>
+                  )}
                   <StatusDot
                     mode={riskLevelToStatusMode(liquidationRisk)}
                     size={8}
