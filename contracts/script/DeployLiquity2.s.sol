@@ -54,6 +54,10 @@ import {MockStakingV1} from "V2-gov/test/mocks/MockStakingV1.sol";
 
 import {DeployGovernance} from "./DeployGovernance.s.sol";
 
+function _latestUTCMidnightBetweenWednesdayAndThursday() view returns (uint256) {
+    return block.timestamp / 1 weeks * 1 weeks;
+}
+
 contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats, MetadataDeployment, Logging {
     using Strings for *;
     using StringFormatting for *;
@@ -69,7 +73,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // used for gas compensation and as collateral of the first branch
     // tapping disallowed
     IWETH WETH;
-    IERC20 USDC;
+    IERC20Metadata USDC;
     address WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address RETH_ADDRESS = 0xae78736Cd615f374D3085123A210448E74Fc6393;
     address ETH_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
@@ -98,7 +102,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     ICurveStableswapNGFactory constant curveStableswapFactoryMainnet =
         ICurveStableswapNGFactory(0x6A8cbed756804B16E05E741eDaBd5cB544AE21bf);
     uint128 constant BOLD_TOKEN_INDEX = 0;
-    uint128 constant USDC_INDEX = 1;
+    uint128 constant OTHER_TOKEN_INDEX = 1;
 
     // Uni V3
     uint24 constant UNIV3_FEE = 0.3e4;
@@ -241,12 +245,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             string.concat("Bad deployment mode: ", deploymentMode)
         );
 
+        uint256 epochStart = vm.envOr(
+            "EPOCH_START",
+            (block.chainid == 1 ? _latestUTCMidnightBetweenWednesdayAndThursday() : block.timestamp) - EPOCH_DURATION
+        );
+
         useTestnetPriceFeeds = vm.envOr("USE_TESTNET_PRICEFEEDS", false);
 
         _log("Deployer:               ", deployer.toHexString());
         _log("Deployer balance:       ", deployer.balance.decimal());
         _log("Deployment mode:        ", deploymentMode);
         _log("CREATE2 salt:           ", 'keccak256(bytes("', saltStr, '")) = ', uint256(SALT).toHexString());
+        _log("Governance epoch start: ", epochStart.toString());
         _log("Use testnet PriceFeeds: ", useTestnetPriceFeeds ? "yes" : "no");
 
         // Deploy Bold or pick up existing deployment
@@ -275,7 +285,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         if (block.chainid == 1) {
             // mainnet
             WETH = IWETH(WETH_ADDRESS);
-            USDC = IERC20(USDC_ADDRESS);
+            USDC = IERC20Metadata(USDC_ADDRESS);
             curveStableswapFactory = curveStableswapFactoryMainnet;
             uniV3Router = uniV3RouterMainnet;
             uniV3Quoter = uniV3QuoterMainnet;
@@ -324,6 +334,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collSymbols[1] = "rETH";
 
         DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
+            epochStart: epochStart,
             deployer: deployer,
             salt: SALT,
             stakingV1: stakingV1,
@@ -384,9 +395,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // );
         }
 
+        ICurveStableswapNGPool lusdCurvePool;
+        if (block.chainid == 1) {
+            lusdCurvePool = _deployCurvePool(deployed.boldToken, IERC20Metadata(LUSD_ADDRESS));
+        }
+
         // Governance
-        (address governanceAddress, string memory governanceManifest) =
-            deployGovernance(deployGovernanceParams, address(curveStableswapFactory), address(deployed.usdcCurvePool));
+        (address governanceAddress, string memory governanceManifest) = deployGovernance(
+            deployGovernanceParams,
+            address(curveStableswapFactory),
+            address(deployed.usdcCurvePool),
+            address(lusdCurvePool)
+        );
         address computedGovernanceAddress = computeGovernanceAddress(deployGovernanceParams);
         assert(governanceAddress == computedGovernanceAddress);
 
@@ -509,7 +529,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         r.boldToken = BoldToken(_deployGovernanceParams.bold);
 
         // USDC and USDC-BOLD pool
-        r.usdcCurvePool = _deployCurveBoldUsdcPool(r.boldToken);
+        r.usdcCurvePool = _deployCurvePool(r.boldToken, USDC);
 
         r.contractsArray = new LiquityContracts[](vars.numCollaterals);
         vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
@@ -598,7 +618,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             USDC,
             WETH,
             r.usdcCurvePool,
-            USDC_INDEX, // USDC Curve pool index
+            OTHER_TOKEN_INDEX, // USDC Curve pool index
             BOLD_TOKEN_INDEX, // BOLD Curve pool index
             UNIV3_FEE_USDC_WETH,
             UNIV3_FEE_WETH_COLL,
@@ -748,7 +768,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             USDC,
             WETH,
             _usdcCurvePool,
-            USDC_INDEX, // USDC Curve pool index
+            OTHER_TOKEN_INDEX, // USDC Curve pool index
             BOLD_TOKEN_INDEX, // BOLD Curve pool index
             UNIV3_FEE_USDC_WETH,
             UNIV3_FEE_WETH_COLL,
@@ -780,7 +800,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         return leverageZapperHybrid;
     }
 
-    function _deployCurveBoldUsdcPool(IBoldToken _boldToken) internal returns (ICurveStableswapNGPool) {
+    function _deployCurvePool(IBoldToken _boldToken, IERC20Metadata _otherToken)
+        internal
+        returns (ICurveStableswapNGPool)
+    {
         if (block.chainid == 31337) {
             // local
             return ICurveStableswapNGPool(address(0));
@@ -789,23 +812,24 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         // deploy Curve StableswapNG pool
         address[] memory coins = new address[](2);
         coins[BOLD_TOKEN_INDEX] = address(_boldToken);
-        coins[USDC_INDEX] = address(USDC);
+        coins[OTHER_TOKEN_INDEX] = address(_otherToken);
         uint8[] memory assetTypes = new uint8[](2); // 0: standard
         bytes4[] memory methodIds = new bytes4[](2);
         address[] memory oracles = new address[](2);
-        ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool(
-            "USDC-BOLD",
-            "USDCBOLD",
-            coins,
-            200, // A
-            1000000, // fee
-            20000000000, // _offpeg_fee_multiplier
-            865, // _ma_exp_time
-            0, // implementation id
-            assetTypes,
-            methodIds,
-            oracles
-        );
+
+        ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool({
+            name: string.concat("BOLD/", _otherToken.symbol(), " Pool"),
+            symbol: string.concat("BOLD", _otherToken.symbol()),
+            coins: coins,
+            A: 100,
+            fee: 4000000,
+            offpeg_fee_multiplier: 20000000000,
+            ma_exp_time: 866,
+            implementation_id: 0,
+            asset_types: assetTypes,
+            method_ids: methodIds,
+            oracles: oracles
+        });
 
         return curvePool;
     }
