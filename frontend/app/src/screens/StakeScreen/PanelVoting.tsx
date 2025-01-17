@@ -3,6 +3,7 @@ import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocation, VoteAllo
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
@@ -12,6 +13,7 @@ import { useGovernanceState, useInitiatives, useInitiativesStates } from "@/src/
 import { useAccount } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useGovernanceUser } from "@/src/subgraph-hooks";
+import { jsonStringifyWithBigInt } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import {
   AnchorTextButton,
@@ -48,6 +50,29 @@ function initiativeStatusLabel(status: InitiativeStatus) {
   return "";
 }
 
+function filterVoteAllocationsForSubmission(
+  voteAllocations: VoteAllocations,
+  initiativesStates: Record<Address, { status: InitiativeStatus }>,
+) {
+  const voteAllocationsFiltered = { ...voteAllocations };
+
+  for (const [address, data] of Object.entries(voteAllocations) as Entries<VoteAllocations>) {
+    // Filter out allocations with null or zero values. No need to explicitly set them to 0,
+    // as allocated initiatives always get reset when allocating new votes.
+    if (data.vote === null || dn.eq(data.value, 0)) {
+      delete voteAllocationsFiltered[address];
+    }
+
+    // filter out invalid initiatives
+    const initiativeStatus = initiativesStates[address]?.status;
+    if (!isInitiativeStatusActive(initiativeStatus ?? "nonexistent")) {
+      delete voteAllocationsFiltered[address];
+    }
+  }
+
+  return voteAllocationsFiltered;
+}
+
 export function PanelVoting() {
   const txFlow = useTransactionFlow();
 
@@ -58,9 +83,6 @@ export function PanelVoting() {
   const initiativesStates = useInitiativesStates(initiatives.data?.map((i) => i.address) ?? []);
 
   const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
-
-  // vote allocations to be submitted
-  const [inputVoteAllocations, setInputVoteAllocations] = useState<VoteAllocations>({});
 
   // current vote allocations
   const voteAllocations = useMemo(() => {
@@ -83,11 +105,13 @@ export function PanelVoting() {
     return allocations;
   }, [governanceUser.data?.allocations]);
 
+  // vote allocations from user input
+  const [inputVoteAllocations, setInputVoteAllocations] = useState<VoteAllocations>({});
+
   // fill input vote allocations from user data
   useEffect(() => {
-    const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
-
     const allocations: VoteAllocations = {};
+    const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
     for (const allocation of governanceUser.data?.allocations ?? []) {
       const vote = allocation.voteLQTY > 0n
         ? "for" as const
@@ -111,19 +135,50 @@ export function PanelVoting() {
         vote,
       };
     }
+
     setInputVoteAllocations(allocations);
   }, [governanceUser.status]);
+
+  const hasAnyAllocationChange = useMemo(() => {
+    if (!governanceUser.data || !initiativesStates.data) {
+      return false;
+    }
+
+    const serialize = (allocations: VoteAllocations) => (
+      jsonStringifyWithBigInt(
+        Object.entries(allocations).sort(([a], [b]) => a.localeCompare(b)),
+      )
+    );
+
+    // filter the current vote allocations − taking care of removing
+    // disabled + allocated initiatives as removing them doesn’t count as a change
+    const voteAllocationsFiltered = filterVoteAllocationsForSubmission(
+      voteAllocations,
+      initiativesStates.data,
+    );
+
+    const voteAllocationsToSubmit = filterVoteAllocationsForSubmission(
+      inputVoteAllocations,
+      initiativesStates.data,
+    );
+
+    return serialize(voteAllocationsFiltered) !== serialize(voteAllocationsToSubmit);
+  }, [voteAllocations, inputVoteAllocations, initiativesStates.data]);
 
   const isCutoff = governanceState.data?.period === "cutoff";
 
   const hasAnyAllocations = (governanceUser.data?.allocations ?? []).length > 0;
 
-  const remainingVotingPower = Object.values(inputVoteAllocations).reduce(
-    (remaining, voteData) => {
-      if (voteData.vote !== null) {
-        return dn.sub(remaining, voteData.value);
+  const remainingVotingPower = Object.entries(inputVoteAllocations).reduce(
+    (remaining, [initiative, voteData]) => {
+      if (voteData.vote === null) {
+        return remaining;
       }
-      return remaining;
+      const initiativeState = initiativesStates.data?.[initiative as Address];
+      if (!isInitiativeStatusActive(initiativeState?.status ?? "nonexistent")) {
+        return remaining;
+      }
+      return dn.sub(remaining, voteData.value);
     },
     dn.from(1, 18),
   );
@@ -157,7 +212,9 @@ export function PanelVoting() {
   };
 
   const allowSubmit = dn.lt(remainingVotingPower, 1) && (
-    hasAnyAllocations || dn.gte(remainingVotingPower, 0)
+    hasAnyAllocations
+    || dn.gte(remainingVotingPower, 0)
+    || hasAnyAllocationChange
   );
 
   const cutoffStartDate = governanceState.data && new Date(
@@ -168,11 +225,33 @@ export function PanelVoting() {
   );
 
   if (
-    governanceState.status === "pending"
-    || initiatives.status === "pending"
-    || governanceUser.status === "pending"
+    governanceState.status !== "success"
+    || initiatives.status !== "success"
+    || initiativesStates.status !== "success"
+    || governanceUser.status !== "success"
   ) {
-    return null;
+    return (
+      <div
+        className={css({
+          height: 200,
+          paddingTop: 40,
+        })}
+      >
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            fontSize: 18,
+            userSelect: "none",
+          })}
+        >
+          <Spinner size={18} />
+          Loading
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -506,26 +585,15 @@ export function PanelVoting() {
           size="large"
           wide
           onClick={() => {
-            const voteAllocationsFiltered = { ...inputVoteAllocations };
-            for (const [address, data] of Object.entries(inputVoteAllocations) as Entries<VoteAllocations>) {
-              // filter out allocations with no vote or zero value
-              if (data.vote === null || dn.eq(data.value, 0)) {
-                delete voteAllocationsFiltered[address];
-              }
-
-              // filter out invalid initiatives
-              const initiativeStatus = initiativesStates.data?.[address]?.status;
-              if (!isInitiativeStatusActive(initiativeStatus ?? "nonexistent")) {
-                delete voteAllocationsFiltered[address];
-              }
-            }
-
             txFlow.start({
               flowId: "allocateVotingPower",
               backLink: ["/stake/voting", "Back"],
               successLink: ["/stake/voting", "Back to overview"],
               successMessage: "Your voting power has been allocated.",
-              voteAllocations: voteAllocationsFiltered,
+              voteAllocations: filterVoteAllocationsForSubmission(
+                inputVoteAllocations,
+                initiativesStates.data ?? {},
+              ),
             });
           }}
         />
@@ -576,9 +644,6 @@ function InitiativeRow({
               paddingTop: 6,
               gap: 4,
             })}
-            style={{
-              height: editMode ? "auto" : 26 + 6 + 4,
-            }}
           >
             <div
               className={css({
@@ -669,7 +734,6 @@ function InitiativeRow({
                   }}
                   disabled={disabled}
                   share={dn.div(voteAllocation?.value ?? [0n, 18], totalStaked)}
-                  quantity={voteAllocation?.value ?? [0n, 18]}
                   vote={voteAllocation?.vote ?? null}
                 />
               )
@@ -683,13 +747,11 @@ function InitiativeRow({
 function Vote({
   onEdit,
   disabled,
-  quantity,
   share,
   vote,
 }: {
   onEdit?: () => void;
   disabled: boolean;
-  quantity: Dnum;
   share: Dnum;
   vote: Vote;
 }) {
@@ -697,8 +759,8 @@ function Vote({
     <div
       className={css({
         display: "flex",
-        flexDirection: "column",
-        gap: 4,
+        alignItems: "center",
+        height: 34,
       })}
     >
       <div
@@ -709,25 +771,32 @@ function Vote({
           gap: 8,
         })}
       >
-        {vote === "for" && <IconUpvote size={20} />}
-        {vote === "against" && <IconDownvote size={20} />}
-        {fmtnum(share, 2, 100)}%
-        {!disabled && (
-          <Button
-            size="mini"
-            title="Change"
-            label={<IconEdit size={16} />}
-            onClick={onEdit}
-          />
-        )}
-      </div>
-      <div
-        className={css({
-          color: "contentAlt",
-          fontSize: 12,
-        })}
-      >
-        {fmtnum(quantity, 2)} LQTY {vote === "for" ? "for" : "against"}
+        <div
+          title={`${fmtnum(share, 2, 100)}% of your voting power has been allocated to ${
+            vote === "for" ? "upvote" : "downvote"
+          } this initiative`}
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          })}
+        >
+          {vote === "for" && <IconUpvote size={24} />}
+          {vote === "against" && <IconDownvote size={24} />}
+          <div>
+            {fmtnum(share, 2, 100)}%
+          </div>
+        </div>
+        <Button
+          disabled={disabled}
+          size="mini"
+          title="Change"
+          label={<IconEdit size={20} />}
+          onClick={onEdit}
+          className={css({
+            height: "34px!",
+          })}
+        />
       </div>
     </div>
   );
