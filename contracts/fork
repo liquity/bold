@@ -40,6 +40,10 @@ init_env() {
   [ -n "$FORK_BLOCK_NUMBER" ] || FORK_BLOCK_NUMBER=$(cast block-number --rpc-url "$FORK_URL")
   [ -n "$FORK_CHAIN_ID" ] || FORK_CHAIN_ID=$(cast chain-id --rpc-url "$FORK_URL")
   [ -n "$DEPLOYER" ] || DEPLOYER=$anvil_account_0
+
+  if [ ${#DEPLOYER} = 42 ]; then
+    impersonating=yes
+  fi
 }
 
 ensure_not_running() {
@@ -58,6 +62,10 @@ start() {
       --fork-chain-id "$FORK_CHAIN_ID"
       --chain-id "$FORK_CHAIN_ID"
   )
+
+  if [ "$impersonating" = yes ]; then
+    anvil+=( --auto-impersonate )
+  fi
 
   nohup "${anvil[@]}" &> "$logfile" &
   echo $! > "$pidfile"
@@ -94,6 +102,10 @@ deploy() {
       # --verifier sourcify
       # --verifier-url "http://localhost:$sourcify_port"
   )
+
+  if [ "$impersonating" = yes ]; then
+    deploy+=( --unlocked )
+  fi
 
   # sourcify_start
   "${deploy[@]}" "$@"

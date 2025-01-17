@@ -39,6 +39,9 @@ Options:
                                            salt instead of block timestamp.
   --slow                                   Only send a transaction after the previous
                                            one has been confirmed.
+  --unlocked                               Used when the deployer account is unlocked
+                                           in the client (i.e. no private key or
+                                           Ledger device needed).
   --use-testnet-pricefeeds                 Use testnet PriceFeeds instead of real
                                            oracles when deploying to mainnet.
   --verify                                 Verify contracts after deployment.
@@ -64,6 +67,7 @@ const argv = minimist(process.argv.slice(2), {
     "verify",
     "dry-run",
     "slow",
+    "unlocked",
     "use-testnet-pricefeeds",
   ],
   string: [
@@ -172,12 +176,16 @@ export async function main() {
     }
   }
 
-  // Ledger signing
   if (options.deployer.startsWith("0x") && options.deployer.length === 42) {
-    forgeArgs.push("--ledger");
-    if (options.ledgerPath) {
-      forgeArgs.push("--hd-paths");
-      forgeArgs.push(options.ledgerPath);
+    if (options.unlocked) {
+      forgeArgs.push("--unlocked");
+    } else {
+      // Ledger signing
+      forgeArgs.push("--ledger");
+      if (options.ledgerPath) {
+        forgeArgs.push("--hd-paths");
+        forgeArgs.push(options.ledgerPath);
+      }
     }
   }
 
@@ -307,6 +315,13 @@ function safeParseInt(value: string) {
   return isNaN(parsed) ? undefined : parsed;
 }
 
+function envBool(name: string): boolean {
+  return process.env[name] !== undefined
+    && process.env[name].length > 0
+    && process.env[name] !== "false"
+    && process.env[name] !== "no";
+}
+
 async function parseArgs() {
   const options = {
     chainId: safeParseInt(argv["chain-id"]),
@@ -321,6 +336,7 @@ async function parseArgs() {
     rpcUrl: argv["rpc-url"],
     dryRun: argv["dry-run"],
     slow: argv["slow"],
+    unlocked: argv["unlocked"],
     verify: argv["verify"],
     verifier: argv["verifier"],
     verifierUrl: argv["verifier-url"],
@@ -331,24 +347,17 @@ async function parseArgs() {
   const [networkPreset] = argv._;
 
   options.chainId ??= safeParseInt(process.env.CHAIN_ID ?? "");
-  options.debug ??= Boolean(
-    process.env.DEBUG && process.env.DEBUG !== "false",
-  );
+  options.debug ||= envBool("DEBUG");
   options.deployer ??= process.env.DEPLOYER;
   options.etherscanApiKey ??= process.env.ETHERSCAN_API_KEY;
   options.ledgerPath ??= process.env.LEDGER_PATH;
   options.mode ??= process.env.DEPLOYMENT_MODE;
-  options.openDemoTroves ??= Boolean(
-    process.env.OPEN_DEMO_TROVES && process.env.OPEN_DEMO_TROVES !== "false",
-  );
+  options.openDemoTroves ||= envBool("OPEN_DEMO_TROVES");
   options.rpcUrl ??= process.env.RPC_URL;
   options.salt ??= process.env.SALT;
-  options.useTestnetPricefeeds ??= Boolean(
-    process.env.USE_TESTNET_PRICEFEEDS && process.env.USE_TESTNET_PRICEFEEDS !== "false",
-  );
-  options.verify ??= Boolean(
-    process.env.VERIFY && process.env.VERIFY !== "false",
-  );
+  options.unlocked ||= envBool("UNLOCKED");
+  options.useTestnetPricefeeds ||= envBool("USE_TESTNET_PRICEFEEDS");
+  options.verify ||= envBool("VERIFY");
   options.verifier ??= process.env.VERIFIER;
   options.verifierUrl ??= process.env.VERIFIER_URL;
 
