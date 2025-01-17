@@ -25,6 +25,7 @@ import {
   CONTRACT_LUSD_TOKEN,
   WALLET_CONNECT_PROJECT_ID,
 } from "@/src/env";
+import { getSafeStatus } from "@/src/safe-utils";
 import { noop } from "@/src/utils";
 import { isCollateralSymbol, useTheme } from "@liquity2/uikit";
 import {
@@ -42,7 +43,7 @@ import {
   safeWallet,
   walletConnectWallet,
 } from "@rainbow-me/rainbowkit/wallets";
-
+import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { match } from "ts-pattern";
 import { erc20Abi } from "viem";
@@ -73,6 +74,7 @@ export function useAccount():
     connect: () => void;
     disconnect: () => void;
     ensName: string | undefined;
+    safeStatus: Awaited<ReturnType<typeof getSafeStatus>> | null;
   }
 {
   const demoMode = useDemoMode();
@@ -80,11 +82,30 @@ export function useAccount():
   const { openConnectModal } = useConnectModal();
   const { openAccountModal } = useAccountModal();
   const ensName = useEnsName({ address: account?.address });
-  return demoMode.enabled ? demoMode.account : {
+
+  const safeStatus = useQuery({
+    queryKey: ["safeStatus", account.address],
+    enabled: Boolean(account.address),
+    queryFn: () => {
+      if (!account.address) {
+        throw new Error("No account address");
+      }
+      return getSafeStatus(account.address);
+    },
+    staleTime: Infinity,
+    refetchInterval: false,
+  });
+
+  if (demoMode.enabled) {
+    return demoMode.account;
+  }
+
+  return {
     ...account,
     connect: openConnectModal || noop,
     disconnect: account.isConnected && openAccountModal || noop,
     ensName: ensName.data ?? undefined,
+    safeStatus: safeStatus.data ?? null,
   };
 }
 

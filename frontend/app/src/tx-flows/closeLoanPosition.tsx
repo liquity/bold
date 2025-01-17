@@ -137,8 +137,8 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         });
       },
 
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
 
@@ -207,8 +207,8 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ request, wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
 
         const prefixedTroveId = getPrefixedTroveId(
           request.loan.collIndex,

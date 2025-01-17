@@ -211,8 +211,8 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         });
       },
 
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
 

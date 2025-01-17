@@ -105,8 +105,8 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
         });
       },
 
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
   },

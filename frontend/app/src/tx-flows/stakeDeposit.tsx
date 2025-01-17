@@ -79,8 +79,8 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         });
       },
 
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
 
@@ -106,8 +106,8 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         });
       },
 
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
 
@@ -174,8 +174,8 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         });
       },
 
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
 
@@ -219,8 +219,8 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         });
       },
 
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
   },
