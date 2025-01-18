@@ -60,7 +60,9 @@ const argv = minimist(process.argv.slice(2), {
   alias: {
     h: "help",
   },
-  boolean: [
+  // We don't explicitly declare any options as boolean, so that we may tell the difference between an option missing
+  // or it being explicitly set to false
+  string: [
     "debug",
     "help",
     "open-demo-troves",
@@ -69,8 +71,6 @@ const argv = minimist(process.argv.slice(2), {
     "slow",
     "unlocked",
     "use-testnet-pricefeeds",
-  ],
-  string: [
     "chain-id",
     "deployer",
     "etherscan-api-key",
@@ -315,11 +315,15 @@ function safeParseInt(value: string) {
   return isNaN(parsed) ? undefined : parsed;
 }
 
-function envBool(name: string): boolean {
-  return process.env[name] !== undefined
-    && process.env[name].length > 0
-    && process.env[name] !== "false"
-    && process.env[name] !== "no";
+function parseBool(optionValue: string | undefined, envVar: string): boolean {
+  const envValue = process.env[envVar];
+  const coalescedValue = optionValue ?? envValue;
+
+  return coalescedValue !== undefined
+    && coalescedValue !== ""
+    && coalescedValue !== "false"
+    && coalescedValue !== "no"
+    && coalescedValue !== "0";
 }
 
 async function parseArgs() {
@@ -347,17 +351,17 @@ async function parseArgs() {
   const [networkPreset] = argv._;
 
   options.chainId ??= safeParseInt(process.env.CHAIN_ID ?? "");
-  options.debug ||= envBool("DEBUG");
+  options.debug = parseBool(options.debug, "DEBUG");
   options.deployer ??= process.env.DEPLOYER;
   options.etherscanApiKey ??= process.env.ETHERSCAN_API_KEY;
   options.ledgerPath ??= process.env.LEDGER_PATH;
   options.mode ??= process.env.DEPLOYMENT_MODE;
-  options.openDemoTroves ||= envBool("OPEN_DEMO_TROVES");
+  options.openDemoTroves = parseBool(options.openDemoTroves, "OPEN_DEMO_TROVES");
   options.rpcUrl ??= process.env.RPC_URL;
   options.salt ??= process.env.SALT;
-  options.unlocked ||= envBool("UNLOCKED");
-  options.useTestnetPricefeeds ||= envBool("USE_TESTNET_PRICEFEEDS");
-  options.verify ||= envBool("VERIFY");
+  options.unlocked = parseBool(options.unlocked, "UNLOCKED");
+  options.useTestnetPricefeeds = parseBool(options.useTestnetPricefeeds, "USE_TESTNET_PRICEFEEDS");
+  options.verify = parseBool(options.verify, "VERIFY");
   options.verifier ??= process.env.VERIFIER;
   options.verifierUrl ??= process.env.VERIFIER_URL;
 
