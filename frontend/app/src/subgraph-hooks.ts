@@ -15,6 +15,7 @@ import { isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import {
+  BorrowerInfoQuery,
   GovernanceInitiatives,
   GovernanceStats,
   GovernanceUser,
@@ -27,7 +28,6 @@ import {
   StabilityPoolQuery,
   TroveByIdQuery,
   TrovesByAccountQuery,
-  TrovesCountQuery,
 } from "./subgraph-queries";
 
 type Options = {
@@ -41,22 +41,23 @@ function prepareOptions(options?: Options) {
   };
 }
 
-export function useTrovesCount(
+export function useNextOwnerIndex(
   borrower: null | Address,
-  collIndex?: CollIndex,
+  collIndex: null | CollIndex,
   options?: Options,
 ) {
   let queryFn = async () => {
-    if (!borrower) {
+    if (!borrower || collIndex === null) {
       return null;
     }
+
     const { borrowerInfo } = await graphQuery(
-      TrovesCountQuery,
+      BorrowerInfoQuery,
       { id: borrower.toLowerCase() },
     );
-    return collIndex === undefined
-      ? borrowerInfo?.troves ?? 0
-      : borrowerInfo?.trovesByCollateral[collIndex] ?? null;
+
+    // if borrowerInfo doesn’t exist, start at 0
+    return borrowerInfo?.nextOwnerIndexes[collIndex] ?? 0;
   };
 
   if (DEMO_MODE) {
@@ -70,7 +71,7 @@ export function useTrovesCount(
   }
 
   return useQuery({
-    queryKey: ["TrovesCount", borrower, collIndex],
+    queryKey: ["NextTroveId", borrower, collIndex],
     queryFn,
     ...prepareOptions(options),
   });

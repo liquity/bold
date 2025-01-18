@@ -26,7 +26,7 @@ import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useTrovesCount } from "@/src/subgraph-hooks";
+import { useNextOwnerIndex } from "@/src/subgraph-hooks";
 import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -113,7 +113,7 @@ export function BorrowScreen() {
     throw new Error(`Unknown collateral symbol: ${collateral.symbol}`);
   }
 
-  const troveCount = useTrovesCount(account.address ?? null, collIndex);
+  const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, collIndex);
 
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
@@ -396,7 +396,12 @@ export function BorrowScreen() {
             size="large"
             wide
             onClick={() => {
-              if (deposit.parsed && debt.parsed && account.address) {
+              if (
+                deposit.parsed
+                && debt.parsed
+                && account.address
+                && typeof nextOwnerIndex.data === "number"
+              ) {
                 txFlow.start({
                   flowId: "openBorrowPosition",
                   backLink: ["/borrow", "Back to editing"],
@@ -405,7 +410,7 @@ export function BorrowScreen() {
 
                   collIndex,
                   owner: account.address,
-                  ownerIndex: troveCount.data ?? 0,
+                  ownerIndex: nextOwnerIndex.data,
                   collAmount: deposit.parsed,
                   boldAmount: debt.parsed,
                   upperHint: dnum18(0),
