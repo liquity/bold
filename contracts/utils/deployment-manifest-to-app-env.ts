@@ -44,7 +44,6 @@ const ZDeploymentManifest = z.object({
     LQTYToken: ZAddress,
     LQTYStaking: ZAddress.default(ZERO_ADDRESS),
     governance: ZAddress,
-    curveV2GaugeRewardsInitiative: ZAddress,
   }),
 
   branches: z.array(
@@ -219,10 +218,6 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_LQTY_STAKING`;
     case "governance":
       return `${prefix}_GOVERNANCE`;
-
-    // governance initiatives
-    case "curveV2GaugeRewardsInitiative":
-      return `${prefix}_CURVE_V2_GAUGE_REWARDS`;
   }
   return null;
 }
