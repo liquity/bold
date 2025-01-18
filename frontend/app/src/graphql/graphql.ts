@@ -2190,12 +2190,10 @@ export type TroveByIdQueryVariables = Exact<{
 
 export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null } | null };
 
-export type StabilityPoolQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
+export type StabilityPoolsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type StabilityPoolQuery = { __typename?: 'Query', stabilityPool?: { __typename?: 'StabilityPool', id: string, totalDeposited: bigint } | null };
+export type StabilityPoolsQuery = { __typename?: 'Query', stabilityPools: Array<{ __typename?: 'StabilityPool', id: string, totalDeposited: bigint }> };
 
 export type StabilityPoolDepositFragmentFragment = { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } } & { ' $fragmentName'?: 'StabilityPoolDepositFragmentFragment' };
 
@@ -2227,12 +2225,10 @@ export type InterestBatchQueryVariables = Exact<{
 
 export type InterestBatchQuery = { __typename?: 'Query', interestBatch?: { __typename?: 'InterestBatch', batchManager: string, debt: bigint, coll: bigint, annualInterestRate: bigint, annualManagementFee: bigint, collateral: { __typename?: 'Collateral', collIndex: number } } | null };
 
-export type InterestRateBracketsQueryVariables = Exact<{
-  collId: Scalars['String']['input'];
-}>;
+export type AllInterestRateBracketsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type InterestRateBracketsQuery = { __typename?: 'Query', interestRateBrackets: Array<{ __typename?: 'InterestRateBracket', rate: bigint, totalDebt: bigint }> };
+export type AllInterestRateBracketsQuery = { __typename?: 'Query', interestRateBrackets: Array<{ __typename?: 'InterestRateBracket', rate: bigint, totalDebt: bigint, collateral: { __typename?: 'Collateral', collIndex: number } }> };
 
 export type GovernanceInitiativesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2399,14 +2395,14 @@ export const TroveByIdDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<TroveByIdQuery, TroveByIdQueryVariables>;
-export const StabilityPoolDocument = new TypedDocumentString(`
-    query StabilityPool($id: ID!) {
-  stabilityPool(id: $id) {
+export const StabilityPoolsDocument = new TypedDocumentString(`
+    query StabilityPools {
+  stabilityPools {
     id
     totalDeposited
   }
 }
-    `) as unknown as TypedDocumentString<StabilityPoolQuery, StabilityPoolQueryVariables>;
+    `) as unknown as TypedDocumentString<StabilityPoolsQuery, StabilityPoolsQueryVariables>;
 export const StabilityPoolDepositsByAccountDocument = new TypedDocumentString(`
     query StabilityPoolDepositsByAccount($account: Bytes!) {
   stabilityPoolDeposits(where: {depositor: $account, deposit_gt: 0}) {
@@ -2468,14 +2464,17 @@ export const InterestBatchDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<InterestBatchQuery, InterestBatchQueryVariables>;
-export const InterestRateBracketsDocument = new TypedDocumentString(`
-    query InterestRateBrackets($collId: String!) {
-  interestRateBrackets(where: {collateral: $collId}, orderBy: rate) {
+export const AllInterestRateBracketsDocument = new TypedDocumentString(`
+    query AllInterestRateBrackets {
+  interestRateBrackets(orderBy: rate) {
+    collateral {
+      collIndex
+    }
     rate
     totalDebt
   }
 }
-    `) as unknown as TypedDocumentString<InterestRateBracketsQuery, InterestRateBracketsQueryVariables>;
+    `) as unknown as TypedDocumentString<AllInterestRateBracketsQuery, AllInterestRateBracketsQueryVariables>;
 export const GovernanceInitiativesDocument = new TypedDocumentString(`
     query GovernanceInitiatives {
   governanceInitiatives {
