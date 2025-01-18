@@ -15,17 +15,17 @@ import { isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import {
+  AllInterestRateBracketsQuery,
   BorrowerInfoQuery,
   GovernanceInitiatives,
   GovernanceStats,
   GovernanceUser,
   graphQuery,
   InterestBatchQuery,
-  InterestRateBracketsQuery,
   StabilityPoolDepositQuery,
   StabilityPoolDepositsByAccountQuery,
   StabilityPoolEpochScaleQuery,
-  StabilityPoolQuery,
+  StabilityPoolsQuery,
   TroveByIdQuery,
   TrovesByAccountQuery,
 } from "./subgraph-queries";
@@ -292,30 +292,42 @@ export function useStabilityPoolDeposit(
 }
 
 export function useStabilityPool(
-  collIndex?: number,
+  collIndex?: null | number,
   options?: Options,
 ) {
   let queryFn = async () => {
-    const { stabilityPool } = await graphQuery(
-      StabilityPoolQuery,
-      { id: `${collIndex}` },
+    const { stabilityPools } = await graphQuery(
+      StabilityPoolsQuery,
     );
-    return {
+    return stabilityPools.map((stabilityPool) => ({
+      collIndex: parseInt(stabilityPool.id, 10),
       apr: dnum18(0),
-      totalDeposited: dnum18(stabilityPool?.totalDeposited ?? 0),
-    };
+      totalDeposited: dnum18(stabilityPool.totalDeposited),
+    }));
   };
 
   if (DEMO_MODE) {
-    queryFn = async () => ({
-      apr: dnum18(0),
-      totalDeposited: dnum18(0),
-    });
+    queryFn = async () =>
+      Array.from({ length: 10 }, (_, collIndex) => ({
+        collIndex,
+        apr: dnum18(0),
+        totalDeposited: dnum18(0),
+      }));
   }
 
   return useQuery({
-    queryKey: ["StabilityPool", collIndex],
+    queryKey: ["StabilityPool"],
     queryFn,
+    select: (pools) => {
+      if (typeof collIndex !== "number") {
+        return null;
+      }
+      const pool = pools.find((pool) => pool.collIndex === collIndex);
+      if (pool === undefined) {
+        throw new Error(`Stability pool not found: ${collIndex}`);
+      }
+      return pool;
+    },
     ...prepareOptions(options),
   });
 }
@@ -379,27 +391,28 @@ export function useInterestRateBrackets(
   collIndex: null | CollIndex,
   options?: Options,
 ) {
-  let queryFn = async () => {
-    if (collIndex === null) return [];
-    const { interestRateBrackets } = await graphQuery(
-      InterestRateBracketsQuery,
-      { collId: String(collIndex) },
-    );
-    return [...interestRateBrackets]
-      .sort((a, b) => (a.rate > b.rate ? 1 : -1))
-      .map((bracket) => ({
-        rate: dnum18(bracket.rate),
-        totalDebt: dnum18(bracket.totalDebt),
-      }));
-  };
+  let queryFn = async () => (
+    (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
+  );
 
   if (DEMO_MODE) {
     queryFn = async () => [];
   }
 
   return useQuery({
-    queryKey: ["InterestRateBrackets", collIndex],
+    queryKey: ["AllInterestRateBrackets"],
     queryFn,
+    select: (brackets) => {
+      // only filter by collIndex in the select()
+      // so that we can query all the brackets at once
+      return brackets
+        .filter((bracket) => bracket.collateral.collIndex === collIndex)
+        .sort((a, b) => (a.rate > b.rate ? 1 : -1))
+        .map((bracket) => ({
+          rate: dnum18(bracket.rate),
+          totalDebt: dnum18(bracket.totalDebt),
+        }));
+    },
     ...prepareOptions(options),
   });
 }
