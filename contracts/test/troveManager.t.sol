@@ -5,6 +5,120 @@ pragma solidity 0.8.24;
 import "./TestContracts/DevTestSetup.sol";
 
 contract TroveManagerTest is DevTestSetup {
+    function testOnlyCollateralRegistryCanCallRedeem() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotCollateralRegistry.selector);
+        troveManager.redeemCollateral(A, 1, 2000e18, 1e16, 100);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallShutdown() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        troveManager.shutdown();
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnOpenTrove() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        TroveChange memory troveChange;
+        troveManager.onOpenTrove(A, addressToTroveId(A), troveChange, 5e16);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnOpenTroveAndJoinBatch() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        TroveChange memory troveChange;
+        troveManager.onOpenTroveAndJoinBatch(A, addressToTroveId(A), troveChange, B, 10000e18, 5000e18);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallSetTroveStatusToActive() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        troveManager.setTroveStatusToActive(addressToTroveId(A));
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnAdjustTroveInterestRate() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        TroveChange memory troveChange;
+        troveManager.onAdjustTroveInterestRate(addressToTroveId(A), 10000e18, 5000e18, 6e16, troveChange);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnAdjustTrove() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        TroveChange memory troveChange;
+        troveManager.onAdjustTrove(addressToTroveId(A), 10000e18, 5000e18, troveChange);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnCloseTrove() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        TroveChange memory troveChange;
+        troveManager.onCloseTrove(addressToTroveId(A), troveChange, B, 10000e18, 5000e18);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnAdjustTroveInsideBatch() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        TroveChange memory troveChange;
+        troveManager.onAdjustTroveInsideBatch(addressToTroveId(A), 10000e18, 5000e18, troveChange, B, 10000e18, 5000e18);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnApplyTroveInterest() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        TroveChange memory troveChange;
+        troveManager.onApplyTroveInterest(addressToTroveId(A), 10000e18, 5000e18, B, 10000e18, 5000e18, troveChange);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnRegisterBatchManager() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        troveManager.onRegisterBatchManager(A, 5e16, 5e14);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnLowerBatchManagerAnnualFee() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        troveManager.onLowerBatchManagerAnnualFee(A, 10000e18, 5000e18, 5e14);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnSetBatchManagerAnnualInterestRate() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        troveManager.onSetBatchManagerAnnualInterestRate(A, 10000e18, 5000e18, 5e14, 100e18);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnSetInterestBatchManager() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        TroveManager.OnSetInterestBatchManagerParams memory params;
+        troveManager.onSetInterestBatchManager(params);
+        vm.stopPrank();
+    }
+
+    function testOnlyBorrowerOperationsCanCallOnRemoveFromBatch() public {
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.CallerNotBorrowerOperations.selector);
+        TroveChange memory troveChange;
+        troveManager.onRemoveFromBatch(addressToTroveId(A), 10000e18, 5000e18, troveChange, B, 10000e18, 5000e18, 5e14);
+        vm.stopPrank();
+    }
+
     function testLiquidateLastTroveReverts() public {
         priceFeed.setPrice(2_000e18);
         uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 100_000e18, 1e17);

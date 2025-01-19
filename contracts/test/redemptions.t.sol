@@ -467,6 +467,32 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer after");
     }
 
+    function testZombieTrovePointerGetsResetIfTroveIsClosedFromABatch() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterestInBatch();
+
+        _redeemAndCreateZombieTrovesAAndB(troveIDs);
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer before");
+
+        // Get B debt before 2nd redeem
+        uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
+        assertGt(debt_B, 0, "B debt should be non zero");
+
+        deal(address(boldToken), B, debt_B);
+        closeTrove(B, troveIDs.B);
+
+        // Check B is closed
+        assertEq(
+            uint8(troveManager.getTroveStatus(troveIDs.B)),
+            uint8(ITroveManager.Status.closedByOwner),
+            "B trove should be closed"
+        );
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer after");
+    }
+
     function testZombieTrovePointerGetsResetIfTroveIsLiquidated() public {
         (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
 
