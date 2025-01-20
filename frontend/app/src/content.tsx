@@ -84,7 +84,7 @@ export default {
         </>
       ),
       footerLink: {
-        href: "https://github.com/liquity/bold#bold-redemptions",
+        href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation",
         label: "Learn more",
       },
     },
@@ -115,7 +115,7 @@ export default {
     ],
     learnMore: {
       text: "Learn more about redemptions",
-      href: "https://github.com/liquity/bold#bold-redemptions",
+      href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation",
     },
   },
 
@@ -443,7 +443,7 @@ export default {
       intro: (
         <>
           Direct incentives from Liquity V2 protocol revenues towards liquidity providers for BOLD. Upvote from Thursday
-          to Tuesday. Downvote all week. <Link href="https://github.com/liquity/V2-gov">Learn more</Link>
+          to Tuesday. Downvote all week. <Link href="https://docs.liquity.org/v2-faq/lqty-staking">Learn more</Link>
         </>
       ),
     },

@@ -388,7 +388,7 @@ export function StakePositionSummary({
                             </div>
                           ),
                           footerLink: {
-                            href: "https://github.com/liquity/V2-gov#staking",
+                            href: "https://docs.liquity.org/v2-faq/lqty-staking",
                             label: "Learn more",
                           },
                         }}
