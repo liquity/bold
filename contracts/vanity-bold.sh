@@ -11,7 +11,8 @@ while [ "$i" -le 100000 ]; do
     echo $i
 
     export START_INDEX=$((i * ITERATIONS))
-    forge script script/VanityBold.s.sol --chain-id 1 --rpc-url http://localhost:8545
+    #forge script script/VanityBold.s.sol --chain-id 1 --rpc-url http://localhost:8545
+    forge script script/VanityBold.s.sol --chain-id $CHAIN_ID --rpc-url $ETH_RPC_URL
 
     grep -i b01d ./bold-address.json
     R=$?
