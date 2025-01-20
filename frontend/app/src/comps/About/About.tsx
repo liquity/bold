@@ -10,6 +10,8 @@ import { css } from "@/styled-system/css";
 import { AnchorTextButton, Button, Modal } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
 import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import Link from "next/link";
 import { createContext, useContext, useState } from "react";
 
 const ENV_EXCLUDE: (keyof typeof env)[] = [
@@ -171,6 +173,38 @@ export function About({ children }: { children: ReactNode }) {
                   />
                 ),
                 "Contracts hash": contractsHash.data ?? "",
+                "Price data": (
+                  <div
+                    className={css({
+                      display: "flex",
+                      justifyContent: "flex-end",
+                    })}
+                  >
+                    <Link
+                      rel="noopener noreferrer"
+                      target="_blank"
+                      href="https://www.coingecko.com/"
+                      title="By CoinGecko"
+                      className={css({
+                        display: "flex",
+                        gap: 8,
+                        whiteSpace: "nowrap",
+                      })}
+                    >
+                      by
+                      <Image
+                        alt="CoinGecko"
+                        src="/coingecko.png"
+                        width={714}
+                        height={192}
+                        className={css({
+                          width: "auto",
+                          height: 20,
+                        })}
+                      />
+                    </Link>
+                  </div>
+                ),
               }}
             />
           </section>
