@@ -373,7 +373,7 @@ export const BorrowerOperations = [
   {
     "type": "function",
     "name": "shutdownFromOracleFailure",
-    "inputs": [{ "name": "_failedOracleAddr", "type": "address", "internalType": "address" }],
+    "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable",
   },
@@ -480,12 +480,6 @@ export const BorrowerOperations = [
   },
   {
     "type": "event",
-    "name": "ShutDownFromOracleFailure",
-    "inputs": [{ "name": "_oracleAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
     "name": "SortedTrovesAddressChanged",
     "inputs": [{ "name": "_sortedTrovesAddress", "type": "address", "indexed": false, "internalType": "address" }],
     "anonymous": false,
@@ -537,6 +531,7 @@ export const BorrowerOperations = [
   { "type": "error", "name": "TroveNotInBatch", "inputs": [] },
   { "type": "error", "name": "TroveNotOpen", "inputs": [] },
   { "type": "error", "name": "TroveNotZombie", "inputs": [] },
+  { "type": "error", "name": "TroveWithZeroDebt", "inputs": [] },
   { "type": "error", "name": "UpfrontFeeTooHigh", "inputs": [] },
   { "type": "error", "name": "ZeroAdjustment", "inputs": [] },
 ] as const;

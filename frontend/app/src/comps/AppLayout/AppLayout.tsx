@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { useAbout } from "@/src/comps/About/About";
 import { ProtocolStats } from "@/src/comps/ProtocolStats/ProtocolStats";
 import { TopBar } from "@/src/comps/TopBar/TopBar";
-import * as env from "@/src/env";
 import { css } from "@/styled-system/css";
 import { TextButton } from "@liquity2/uikit";
 
@@ -90,8 +89,8 @@ function BuildInfo() {
       })}
     >
       <TextButton
-        label={`${about.fullVersion} (${about.contractsHash})`}
-        title={`About Liquity V2 App v${env.APP_VERSION}-${env.COMMIT_HASH} (contracts hash: ${about.contractsHash})`}
+        label={about.fullVersion}
+        title={`About Liquity V2 App ${about.fullVersion}`}
         onClick={() => {
           about.openModal();
         }}

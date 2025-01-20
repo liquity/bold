@@ -79,7 +79,7 @@ export const CollSurplusPool = [{
 }, {
   "type": "event",
   "name": "CollSent",
-  "inputs": [{ "name": "_to", "type": "address", "indexed": false, "internalType": "address" }, {
+  "inputs": [{ "name": "_to", "type": "address", "indexed": true, "internalType": "address" }, {
     "name": "_amount",
     "type": "uint256",
     "indexed": false,

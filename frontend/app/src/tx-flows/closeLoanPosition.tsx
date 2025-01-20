@@ -12,7 +12,6 @@ import { usePrice } from "@/src/services/Prices";
 import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
 import { sleep } from "@/src/utils";
 import { vPositionLoanCommited } from "@/src/valibot-utils";
-import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
@@ -194,18 +193,12 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           throw new Error("The flash loan amount could not be calculated.");
         }
 
-        const closeParams = {
-          troveId: BigInt(loan.troveId),
-          flashLoanAmount: closeFlashLoanAmount,
-          receiver: ADDRESS_ZERO,
-        };
-
         // repay with collateral => get ETH
         if (coll.symbol === "ETH") {
           return writeContract(wagmiConfig, {
             ...coll.contracts.LeverageWETHZapper,
             functionName: "closeTroveFromCollateral",
-            args: [closeParams],
+            args: [BigInt(loan.troveId), closeFlashLoanAmount],
           });
         }
 
@@ -213,7 +206,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         return writeContract(wagmiConfig, {
           ...coll.contracts.LeverageLSTZapper,
           functionName: "closeTroveFromCollateral",
-          args: [closeParams],
+          args: [BigInt(loan.troveId), closeFlashLoanAmount],
         });
       },
 

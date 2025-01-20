@@ -52,7 +52,7 @@ export const LeverageLSTZapper = [
   },
   {
     "type": "function",
-    "name": "adjustUnredeemableTrove",
+    "name": "adjustZombieTrove",
     "inputs": [
       { "name": "_troveId", "type": "uint256", "internalType": "uint256" },
       { "name": "_collChange", "type": "uint256", "internalType": "uint256" },
@@ -83,15 +83,10 @@ export const LeverageLSTZapper = [
   {
     "type": "function",
     "name": "closeTroveFromCollateral",
-    "inputs": [{
-      "name": "_params",
-      "type": "tuple",
-      "internalType": "struct IZapper.CloseTroveParams",
-      "components": [{ "name": "troveId", "type": "uint256", "internalType": "uint256" }, {
-        "name": "flashLoanAmount",
-        "type": "uint256",
-        "internalType": "uint256",
-      }, { "name": "receiver", "type": "address", "internalType": "address" }],
+    "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }, {
+      "name": "_flashLoanAmount",
+      "type": "uint256",
+      "internalType": "uint256",
     }],
     "outputs": [],
     "stateMutability": "nonpayable",
