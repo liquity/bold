@@ -315,15 +315,29 @@ function safeParseInt(value: string) {
   return isNaN(parsed) ? undefined : parsed;
 }
 
-function parseBool(optionValue: string | undefined, envVar: string): boolean {
-  const envValue = process.env[envVar];
-  const coalescedValue = optionValue ?? envValue;
+function parseBoolValue(value: string): boolean {
+  return value !== "false"
+    && value !== "no"
+    && value !== "0";
+}
 
-  return coalescedValue !== undefined
-    && coalescedValue !== ""
-    && coalescedValue !== "false"
-    && coalescedValue !== "no"
-    && coalescedValue !== "0";
+// Passing an empty string for a bool parameter through the environment should count as not passing the parameter at all
+function parseBoolEnv(value: string | undefined): boolean | undefined {
+  if (value === undefined || value === "") return undefined;
+  return parseBoolValue(value);
+}
+
+// Passing a bool option without an explicit value (e.g. `--debug`) should count as true
+// In this case, value will be an empty string
+function parseBoolOption(value: string | undefined): boolean | undefined {
+  if (value == undefined) return undefined;
+  return value === "" || parseBoolValue(value);
+}
+
+function parseBool(optionValue: string | undefined, envValue?: string | undefined): boolean {
+  return parseBoolOption(optionValue)
+    ?? parseBoolEnv(envValue)
+    ?? false;
 }
 
 async function parseArgs() {
@@ -348,22 +362,29 @@ async function parseArgs() {
     useTestnetPricefeeds: argv["use-testnet-pricefeeds"],
   };
 
+  console.log(options);
+
   const [networkPreset] = argv._;
 
   options.chainId ??= safeParseInt(process.env.CHAIN_ID ?? "");
-  options.debug = parseBool(options.debug, "DEBUG");
+  options.debug = parseBool(options.debug, process.env.DEBUG);
   options.deployer ??= process.env.DEPLOYER;
+  options.dryRun = parseBool(options.dryRun, process.env.DRY_RUN);
   options.etherscanApiKey ??= process.env.ETHERSCAN_API_KEY;
+  options.help = parseBool(options.help);
   options.ledgerPath ??= process.env.LEDGER_PATH;
   options.mode ??= process.env.DEPLOYMENT_MODE;
-  options.openDemoTroves = parseBool(options.openDemoTroves, "OPEN_DEMO_TROVES");
+  options.openDemoTroves = parseBool(options.openDemoTroves, process.env.OPEN_DEMO_TROVES);
   options.rpcUrl ??= process.env.RPC_URL;
   options.salt ??= process.env.SALT;
-  options.unlocked = parseBool(options.unlocked, "UNLOCKED");
-  options.useTestnetPricefeeds = parseBool(options.useTestnetPricefeeds, "USE_TESTNET_PRICEFEEDS");
-  options.verify = parseBool(options.verify, "VERIFY");
+  options.slow = parseBool(options.slow, process.env.SLOW);
+  options.unlocked = parseBool(options.unlocked, process.env.UNLOCKED);
+  options.useTestnetPricefeeds = parseBool(options.useTestnetPricefeeds, process.env.USE_TESTNET_PRICEFEEDS);
+  options.verify = parseBool(options.verify, process.env.VERIFY);
   options.verifier ??= process.env.VERIFIER;
   options.verifierUrl ??= process.env.VERIFIER_URL;
+
+  console.log(options);
 
   return { options, networkPreset };
 }
