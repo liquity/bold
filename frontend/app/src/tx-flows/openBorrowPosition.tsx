@@ -15,7 +15,7 @@ import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
 import { ADDRESS_ZERO, shortenAddress } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { parseEventLogs } from "viem";
+import { maxUint256, parseEventLogs } from "viem";
 import { readContract, writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
@@ -179,9 +179,18 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
         }
         return `Approve ${collateral.symbol}`;
       },
-      Status: TransactionStatus,
-
-      async commit({ contracts, request, wagmiConfig }) {
+      Status: (props) => (
+        <TransactionStatus
+          {...props}
+          approval="approve-only"
+        />
+      ),
+      async commit({
+        contracts,
+        request,
+        wagmiConfig,
+        preferredApproveMethod,
+      }) {
         const collateral = contracts.collaterals[request.collIndex];
         if (!collateral) {
           throw new Error(`Invalid collateral index: ${request.collIndex}`);
@@ -193,11 +202,12 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
           functionName: "approve",
           args: [
             LeverageLSTZapper.address,
-            request.collAmount[0],
+            preferredApproveMethod === "approve-infinite"
+              ? maxUint256 // infinite approval
+              : request.collAmount[0], // exact amount
           ],
         });
       },
-
       async verify({ wagmiConfig, isSafe }, hash) {
         await verifyTransaction(wagmiConfig, hash, isSafe);
       },

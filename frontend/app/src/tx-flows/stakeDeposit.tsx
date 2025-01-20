@@ -155,9 +155,9 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
           functionName: "approve",
           args: [
             userProxyAddress,
-            preferredApproveMethod === "approve-amount"
-              ? request.lqtyAmount[0] // exact amount
-              : maxUint256, // infinite approval
+            preferredApproveMethod === "approve-infinite"
+              ? maxUint256 // infinite approval
+              : request.lqtyAmount[0], // exact amount
           ],
         });
       },
