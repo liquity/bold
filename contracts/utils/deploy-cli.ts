@@ -1,4 +1,4 @@
-import { $, chalk, echo, fs, minimist } from "zx";
+import { $, chalk, echo, fs, minimist, question } from "zx";
 
 const HELP = `
 deploy - deploy the Liquity contracts.
@@ -37,6 +37,7 @@ Options:
   --rpc-url <RPC_URL>                      RPC URL to use.
   --salt <SALT>                            Use keccak256(bytes(SALT)) as CREATE2
                                            salt instead of block timestamp.
+  --skip-confirmation                      Run non-interactively (skip confirmation).
   --slow                                   Only send a transaction after the previous
                                            one has been confirmed.
   --unlocked                               Used when the deployer account is unlocked
@@ -77,6 +78,7 @@ const argv = minimist(process.argv.slice(2), {
     "ledger-path",
     "mode",
     "salt",
+    "skip-confirmation",
     "rpc-url",
     "verifier",
     "verifier-url",
@@ -205,6 +207,12 @@ Deploying Liquity contracts with the following settings:
   VERIFIER:               ${options.verifier}
   VERIFIER_URL:           ${options.verifierUrl}
 `;
+
+  // User confirmation
+  if (!options.skipConfirmation) {
+    const confirmation = await question("Does that look good? (y/n) ");
+    if (confirmation !== "y") { return 1 };
+  }
 
   process.env.DEPLOYER = options.deployer;
   process.env.DEPLOYMENT_MODE = options.mode;
@@ -353,6 +361,7 @@ async function parseArgs() {
     openDemoTroves: argv["open-demo-troves"],
     rpcUrl: argv["rpc-url"],
     dryRun: argv["dry-run"],
+    skipConfirmation: argv["skip-confirmation"],
     slow: argv["slow"],
     unlocked: argv["unlocked"],
     verify: argv["verify"],
@@ -375,6 +384,7 @@ async function parseArgs() {
   options.openDemoTroves = parseBool(options.openDemoTroves, process.env.OPEN_DEMO_TROVES);
   options.rpcUrl ??= process.env.RPC_URL;
   options.salt ??= process.env.SALT;
+  options.skipConfirmation = parseBool(options.skipConfirmation, process.env.SKIP_CONFIRMATION);
   options.slow = parseBool(options.slow, process.env.SLOW);
   options.unlocked = parseBool(options.unlocked, process.env.UNLOCKED);
   options.useTestnetPricefeeds = parseBool(options.useTestnetPricefeeds, process.env.USE_TESTNET_PRICEFEEDS);

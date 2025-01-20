@@ -60,7 +60,7 @@ jobs:
 
       - name: Run deployment tool
         working-directory: ./contracts
-        run: ./deploy liquity-testnet --debug --verify
+        run: ./deploy liquity-testnet --debug --verify --skip-confirmation
         timeout-minutes: 10
         env:
           DEPLOYER: ${{ secrets.DEPLOYER }}
