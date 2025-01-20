@@ -12,6 +12,7 @@ import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
+import { maxUint256 } from "viem";
 import { readContract, writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction, verifyTroveUpdate } from "./shared";
 
@@ -134,9 +135,18 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
   steps: {
     approveBold: {
       name: () => "Approve BOLD",
-      Status: TransactionStatus,
-
-      async commit({ contracts, request, wagmiConfig }) {
+      Status: (props) => (
+        <TransactionStatus
+          {...props}
+          approval="approve-only"
+        />
+      ),
+      async commit({
+        contracts,
+        request,
+        wagmiConfig,
+        preferredApproveMethod,
+      }) {
         const debtChange = getDebtChange(request.loan, request.prevLoan);
         const collateral = contracts.collaterals[request.loan.collIndex];
         if (!collateral) {
@@ -149,10 +159,14 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         return writeContract(wagmiConfig, {
           ...contracts.BoldToken,
           functionName: "approve",
-          args: [Controller.address, dn.abs(debtChange)[0]],
+          args: [
+            Controller.address,
+            preferredApproveMethod === "approve-infinite"
+              ? maxUint256 // infinite approval
+              : dn.abs(debtChange)[0], // exact amount
+          ],
         });
       },
-
       async verify({ wagmiConfig, isSafe }, hash) {
         await verifyTransaction(wagmiConfig, hash, isSafe);
       },
@@ -166,9 +180,18 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         }
         return `Approve ${coll.symbol}`;
       },
-      Status: TransactionStatus,
-
-      async commit({ contracts, request, wagmiConfig }) {
+      Status: (props) => (
+        <TransactionStatus
+          {...props}
+          approval="approve-only"
+        />
+      ),
+      async commit({
+        contracts,
+        request,
+        wagmiConfig,
+        preferredApproveMethod,
+      }) {
         const collChange = getCollChange(request.loan, request.prevLoan);
 
         const collateral = contracts.collaterals[request.loan.collIndex];
@@ -181,10 +204,14 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         return writeContract(wagmiConfig, {
           ...collateral.contracts.CollToken,
           functionName: "approve",
-          args: [Controller.address, dn.abs(collChange)[0]],
+          args: [
+            Controller.address,
+            preferredApproveMethod === "approve-infinite"
+              ? maxUint256 // infinite approval
+              : dn.abs(collChange)[0], // exact amount
+          ],
         });
       },
-
       async verify({ wagmiConfig, isSafe }, hash) {
         await verifyTransaction(wagmiConfig, hash, isSafe);
       },

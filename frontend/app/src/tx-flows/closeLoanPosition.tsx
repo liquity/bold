@@ -14,6 +14,7 @@ import { sleep } from "@/src/utils";
 import { vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
+import { maxUint256 } from "viem";
 import { readContract, writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
@@ -107,9 +108,18 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
   steps: {
     approveBold: {
       name: () => "Approve BOLD",
-      Status: TransactionStatus,
-
-      async commit({ contracts, request, wagmiConfig }) {
+      Status: (props) => (
+        <TransactionStatus
+          {...props}
+          approval="approve-only"
+        />
+      ),
+      async commit({
+        contracts,
+        request,
+        wagmiConfig,
+        preferredApproveMethod,
+      }) {
         const { loan } = request;
         const coll = contracts.collaterals[loan.collIndex];
         if (!coll) {
@@ -130,12 +140,12 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           functionName: "approve",
           args: [
             Zapper.address,
-            // TODO: calculate the amount to approve in a more precise way
-            dn.mul([entireDebt, 18], 1.1)[0],
+            preferredApproveMethod === "approve-infinite"
+              ? maxUint256 // infinite approval
+              : dn.mul([entireDebt, 18], 1.1)[0], // exact amount (TODO: better estimate)
           ],
         });
       },
-
       async verify({ wagmiConfig, isSafe }, hash) {
         await verifyTransaction(wagmiConfig, hash, isSafe);
       },

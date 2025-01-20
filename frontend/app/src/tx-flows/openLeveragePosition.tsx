@@ -17,7 +17,7 @@ import { vPositionLoanUncommited } from "@/src/valibot-utils";
 import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { parseEventLogs } from "viem";
+import { maxUint256, parseEventLogs } from "viem";
 import { readContract, writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
@@ -130,9 +130,18 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
         const collToken = getCollToken(request.loan.collIndex);
         return `Approve ${collToken?.name ?? ""}`;
       },
-      Status: TransactionStatus,
-
-      async commit({ contracts, request, wagmiConfig }) {
+      Status: (props) => (
+        <TransactionStatus
+          {...props}
+          approval="approve-only"
+        />
+      ),
+      async commit({
+        contracts,
+        request,
+        wagmiConfig,
+        preferredApproveMethod,
+      }) {
         const { loan } = request;
         const initialDeposit = dn.div(loan.deposit, request.leverageFactor);
         const collateral = contracts.collaterals[loan.collIndex];
@@ -146,11 +155,12 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
           functionName: "approve",
           args: [
             LeverageLSTZapper.address,
-            initialDeposit[0],
+            preferredApproveMethod === "approve-infinite"
+              ? maxUint256 // infinite approval
+              : initialDeposit[0], // exact amount
           ],
         });
       },
-
       async verify({ wagmiConfig, isSafe }, hash) {
         await verifyTransaction(wagmiConfig, hash, isSafe);
       },
