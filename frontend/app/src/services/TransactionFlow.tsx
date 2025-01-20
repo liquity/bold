@@ -160,6 +160,7 @@ export type FlowParams<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = 
   account: Address | null;
   contracts: Contracts;
   isSafe: boolean;
+  preferredApproveMethod: "permit" | "approve-amount" | "approve-infinite";
   request: FlowRequest;
   steps: FlowStep[] | null;
   storedState: ReturnType<typeof useStoredState>;
@@ -205,6 +206,7 @@ export function getFlowDeclaration<K extends keyof FlowRequestMap>(
 type TransactionFlowContext<
   FlowRequest extends FlowRequestMap[keyof FlowRequestMap] = FlowRequestMap[keyof FlowRequestMap],
 > = {
+  clearError: () => void;
   currentStep: FlowStep | null;
   currentStepIndex: number;
   discard: () => void;
@@ -216,6 +218,7 @@ type TransactionFlowContext<
 };
 
 const TransactionFlowContext = createContext<TransactionFlowContext>({
+  clearError: noop,
   currentStep: null,
   currentStepIndex: -1,
   discard: noop,
@@ -237,13 +240,14 @@ export function TransactionFlow({
   const wagmiConfig = useWagmiConfig();
 
   const {
+    clearError,
+    commit,
     currentStep,
     currentStepIndex,
     discardFlow,
     flow,
     flowDeclaration,
     startFlow,
-    commit,
   } = useFlowManager(account.address ?? null, account.safeStatus !== null);
 
   const start: TransactionFlowContext["start"] = useCallback((request) => {
@@ -258,11 +262,11 @@ export function TransactionFlow({
   return (
     <TransactionFlowContext.Provider
       value={{
+        clearError,
+        commit,
         currentStep,
         currentStepIndex,
         discard: discardFlow,
-        commit,
-        start,
         flow,
         flowDeclaration,
         flowParams: flow && account.address
@@ -271,10 +275,12 @@ export function TransactionFlow({
             account: account.address,
             contracts: getContracts(),
             isSafe: account.safeStatus !== null,
+            preferredApproveMethod: storedState.preferredApproveMethod,
             storedState,
             wagmiConfig,
           }
           : null,
+        start,
       }}
     >
       {children}
@@ -311,6 +317,7 @@ function useSteps(
         account: account.address,
         contracts: getContracts(),
         isSafe: account.safeStatus !== null,
+        preferredApproveMethod: storedState.preferredApproveMethod,
         request: flow.request,
         steps: flow.steps,
         storedState,
@@ -360,6 +367,7 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
         account,
         contracts: getContracts(),
         isSafe,
+        preferredApproveMethod: storedState.preferredApproveMethod,
         request: flow.request,
         steps: flow.steps,
         storedState,
@@ -486,6 +494,17 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
     await startStep(stepDef, currentStepIndex);
   }, [flow, flowDeclaration, currentStep, currentStepIndex, startStep]);
 
+  const clearError = useCallback(() => {
+    if (!flow?.steps || currentStepIndex === -1) return;
+    if (flow.steps[currentStepIndex]?.status === "error") {
+      updateFlowStep(currentStepIndex, {
+        status: "idle",
+        artifact: null,
+        error: null,
+      });
+    }
+  }, [flow, currentStepIndex, updateFlowStep]);
+
   const isFlowComplete = useMemo(
     () => flow?.steps?.at(-1)?.status === "confirmed",
     [flow],
@@ -512,6 +531,7 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
   useResetQueriesOnPathChange(isFlowComplete);
 
   return {
+    clearError,
     currentStep,
     currentStepIndex,
     discardFlow,

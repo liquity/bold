@@ -17,12 +17,18 @@ export const StoredStateSchema = v.object({
       v.literal("multiply"),
     ]),
   ),
+  preferredApproveMethod: v.union([
+    v.literal("permit"),
+    v.literal("approve-amount"),
+    v.literal("approve-infinite"),
+  ]),
 });
 
 type StoredStateType = v.InferOutput<typeof StoredStateSchema>;
 
 const defaultState: StoredStateType = {
   loanModes: {},
+  preferredApproveMethod: "permit",
 };
 
 type StoredStateContext = StoredStateType & {
