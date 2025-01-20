@@ -260,12 +260,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -303,12 +298,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -361,12 +351,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -416,12 +401,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
   },
