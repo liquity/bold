@@ -262,12 +262,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -299,12 +294,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -337,12 +327,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -374,12 +359,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -411,12 +391,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
   },
