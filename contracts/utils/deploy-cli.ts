@@ -153,15 +153,15 @@ export async function main() {
     forgeArgs.push(options.gasPrice);
   }
 
+  // Etherscan API key
+  if (options.etherscanApiKey) {
+    forgeArgs.push("--etherscan-api-key");
+    forgeArgs.push(options.etherscanApiKey);
+  }
+
   // verify
   if (options.verify) {
     forgeArgs.push("--verify");
-
-    // Etherscan API key
-    if (options.etherscanApiKey) {
-      forgeArgs.push("--etherscan-api-key");
-      forgeArgs.push(options.etherscanApiKey);
-    }
 
     // verifier
     if (options.verifier) {
@@ -362,8 +362,6 @@ async function parseArgs() {
     useTestnetPricefeeds: argv["use-testnet-pricefeeds"],
   };
 
-  console.log(options);
-
   const [networkPreset] = argv._;
 
   options.chainId ??= safeParseInt(process.env.CHAIN_ID ?? "");
@@ -383,8 +381,6 @@ async function parseArgs() {
   options.verify = parseBool(options.verify, process.env.VERIFY);
   options.verifier ??= process.env.VERIFIER;
   options.verifierUrl ??= process.env.VERIFIER_URL;
-
-  console.log(options);
 
   return { options, networkPreset };
 }
