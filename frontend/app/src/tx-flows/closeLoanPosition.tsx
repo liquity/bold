@@ -12,7 +12,6 @@ import { usePrice } from "@/src/services/Prices";
 import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
 import { sleep } from "@/src/utils";
 import { vPositionLoanCommited } from "@/src/valibot-utils";
-import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { readContract, writeContract } from "wagmi/actions";
