@@ -13,6 +13,8 @@ export const CollateralSymbolSchema = v.union([
 export const EnvSchema = v.pipe(
   v.object({
     APP_VERSION: v.string(),
+    APP_COMMIT_HASH: v.string(),
+    CONTRACTS_COMMIT_HASH: v.string(),
     BLOCKING_LIST: v.optional(vAddress()),
     BLOCKING_VPNAPI: v.pipe(
       v.optional(v.string(), ""),
@@ -52,7 +54,6 @@ export const EnvSchema = v.pipe(
     CHAIN_CONTRACT_ENS_REGISTRY: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_ENS_RESOLVER: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_MULTICALL: vAddress(),
-    COMMIT_HASH: v.string(),
     COINGECKO_API_KEY: v.pipe(
       v.optional(v.string(), ""),
       v.rawTransform(({ dataset, addIssue, NEVER }) => {
@@ -204,7 +205,21 @@ export const EnvSchema = v.pipe(
 export type Env = v.InferOutput<typeof EnvSchema>;
 
 const parsedEnv = v.safeParse(EnvSchema, {
-  APP_VERSION: process.env.APP_VERSION, // set in next.config.js
+  APP_VERSION: (
+    process.env.NEXT_PUBLIC_APP_VERSION
+      // APP_VERSION_FROM_BUILD is set in next.config.js
+      ?? process.env.APP_VERSION_FROM_BUILD
+  ),
+  APP_COMMIT_HASH: (
+    process.env.NEXT_PUBLIC_APP_COMMIT_HASH
+      // APP_COMMIT_HASH_FROM_BUILD is set in next.config.js
+      ?? process.env.APP_COMMIT_HASH_FROM_BUILD
+  ),
+  CONTRACTS_COMMIT_HASH: (
+    process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_HASH
+      // CONTRACTS_COMMIT_HASH_FROM_BUILD is set in next.config.js
+      ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD
+  ),
   BLOCKING_LIST: process.env.NEXT_PUBLIC_BLOCKING_LIST,
   BLOCKING_VPNAPI: process.env.NEXT_PUBLIC_BLOCKING_VPNAPI,
   CHAIN_BLOCK_EXPLORER: process.env.NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER,
@@ -216,7 +231,6 @@ const parsedEnv = v.safeParse(EnvSchema, {
   CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
   CHAIN_RPC_URL: process.env.NEXT_PUBLIC_CHAIN_RPC_URL,
   COINGECKO_API_KEY: process.env.NEXT_PUBLIC_COINGECKO_API_KEY,
-  COMMIT_HASH: process.env.COMMIT_HASH, // set in next.config.js
   DELEGATE_AUTO: process.env.NEXT_PUBLIC_DELEGATE_AUTO,
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
   DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
@@ -288,6 +302,7 @@ if (!parsedEnv.success) {
 }
 
 export const {
+  APP_COMMIT_HASH,
   APP_VERSION,
   BLOCKING_LIST,
   BLOCKING_VPNAPI,
@@ -301,7 +316,7 @@ export const {
   CHAIN_RPC_URL,
   COINGECKO_API_KEY,
   COLLATERAL_CONTRACTS,
-  COMMIT_HASH,
+  CONTRACTS_COMMIT_HASH,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
   CONTRACT_EXCHANGE_HELPERS,
