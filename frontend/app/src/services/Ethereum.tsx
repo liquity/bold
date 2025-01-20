@@ -22,7 +22,6 @@ import {
   CHAIN_RPC_URL,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_LQTY_TOKEN,
-  CONTRACT_LUSD_TOKEN,
   WALLET_CONNECT_PROJECT_ID,
 } from "@/src/env";
 import { getSafeStatus } from "@/src/safe-utils";
@@ -129,7 +128,6 @@ export function useBalance(
     )
     .with("BOLD", () => CONTRACT_BOLD_TOKEN)
     .with("LQTY", () => CONTRACT_LQTY_TOKEN)
-    .with("LUSD", () => CONTRACT_LUSD_TOKEN)
     .otherwise(() => null);
 
   const tokenBalance = useReadContract({
