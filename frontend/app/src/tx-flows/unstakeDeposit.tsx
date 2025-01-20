@@ -61,7 +61,7 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
   steps: {
     // reset allocations
     resetAllocations: {
-      name: () => "Reset Allocations",
+      name: () => "Reset Votes",
       Status: TransactionStatus,
 
       async commit({ account, contracts, wagmiConfig }) {

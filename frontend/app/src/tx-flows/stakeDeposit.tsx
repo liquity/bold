@@ -81,7 +81,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
     },
 
     resetAllocations: {
-      name: () => "Reset Allocations",
+      name: () => "Reset Votes",
       Status: TransactionStatus,
       async commit({ account, contracts, wagmiConfig }) {
         if (!account) {
