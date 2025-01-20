@@ -5,7 +5,6 @@ import type { ReactNode } from "react";
 import { useAbout } from "@/src/comps/About/About";
 import { ProtocolStats } from "@/src/comps/ProtocolStats/ProtocolStats";
 import { TopBar } from "@/src/comps/TopBar/TopBar";
-import * as env from "@/src/env";
 import { css } from "@/styled-system/css";
 import { TextButton } from "@liquity2/uikit";
 
