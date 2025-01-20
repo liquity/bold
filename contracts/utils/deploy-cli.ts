@@ -1,4 +1,5 @@
 import { $, chalk, echo, fs, minimist, question } from "zx";
+import { bytesToHex, hexToBytes, privateToAddress } from "@ethereumjs/util";
 
 const HELP = `
 deploy - deploy the Liquity contracts.
@@ -195,7 +196,8 @@ export async function main() {
 Deploying Liquity contracts with the following settings:
 
   CHAIN_ID:               ${options.chainId}
-  DEPLOYER:               ${options.deployer}
+  MODE:                   ${options.mode}
+  DEPLOYER:               ${bytesToHex(privateToAddress(hexToBytes(options.deployer)))}
   DEPLOYMENT_MODE:        ${options.mode}
   SALT:                   ${options.salt ? options.salt : chalk.yellow("block.timestamp will be used !!")}
   ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}
