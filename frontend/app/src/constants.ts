@@ -20,7 +20,7 @@ export const MAX_ANNUAL_INTEREST_RATE = dn.from(2.5, 18); // 250% see contracts/
 
 export const INTEREST_RATE_MIN = 0.5; // 0.5% annualized
 export const INTEREST_RATE_MAX = 25; // 25% annualized
-export const INTEREST_RATE_DEFAULT = 4;
+export const INTEREST_RATE_DEFAULT = 8;
 export const INTEREST_RATE_INCREMENT = 0.1;
 
 export const ONE_DAY_IN_SECONDS = 24n * 60n * 60n;
