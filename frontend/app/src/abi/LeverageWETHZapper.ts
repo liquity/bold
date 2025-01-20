@@ -79,15 +79,10 @@ export const LeverageWETHZapper = [
   {
     "type": "function",
     "name": "closeTroveFromCollateral",
-    "inputs": [{
-      "name": "_params",
-      "type": "tuple",
-      "internalType": "struct IZapper.CloseTroveParams",
-      "components": [{ "name": "troveId", "type": "uint256", "internalType": "uint256" }, {
-        "name": "flashLoanAmount",
-        "type": "uint256",
-        "internalType": "uint256",
-      }, { "name": "receiver", "type": "address", "internalType": "address" }],
+    "inputs": [{ "name": "troveId", "type": "uint256", "internalType": "uint256" }, {
+      "name": "flashLoanAmount",
+      "type": "uint256",
+      "internalType": "uint256",
     }],
     "outputs": [],
     "stateMutability": "nonpayable",
