@@ -184,18 +184,12 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           throw new Error("The flash loan amount could not be calculated.");
         }
 
-        const closeParams = {
-          troveId: BigInt(loan.troveId),
-          flashLoanAmount: closeFlashLoanAmount,
-          receiver: ADDRESS_ZERO,
-        };
-
         // repay with collateral => get ETH
         if (coll.symbol === "ETH") {
           return writeContract(wagmiConfig, {
             ...coll.contracts.LeverageWETHZapper,
             functionName: "closeTroveFromCollateral",
-            args: [closeParams],
+            args: [BigInt(loan.troveId), closeFlashLoanAmount],
           });
         }
 
@@ -203,7 +197,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         return writeContract(wagmiConfig, {
           ...coll.contracts.LeverageLSTZapper,
           functionName: "closeTroveFromCollateral",
-          args: [closeParams],
+          args: [BigInt(loan.troveId), closeFlashLoanAmount],
         });
       },
 
