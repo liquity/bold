@@ -60,7 +60,7 @@ export const LeverageWETHZapper = [
       { "name": "_maxUpfrontFee", "type": "uint256", "internalType": "uint256" },
     ],
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
   },
   {
     "type": "function",
@@ -79,8 +79,8 @@ export const LeverageWETHZapper = [
   {
     "type": "function",
     "name": "closeTroveFromCollateral",
-    "inputs": [{ "name": "troveId", "type": "uint256", "internalType": "uint256" }, {
-      "name": "flashLoanAmount",
+    "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }, {
+      "name": "_flashLoanAmount",
       "type": "uint256",
       "internalType": "uint256",
     }],

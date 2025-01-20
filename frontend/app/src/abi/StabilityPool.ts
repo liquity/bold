@@ -177,7 +177,7 @@ export const StabilityPool = [
   },
   {
     "type": "function",
-    "name": "lastBoldLossError_Offset",
+    "name": "lastBoldLossErrorByP_Offset",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
