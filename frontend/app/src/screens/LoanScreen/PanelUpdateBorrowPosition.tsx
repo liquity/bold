@@ -389,7 +389,9 @@ export function PanelUpdateBorrowPosition({
               {
                 label: <abbr title="Loan-to-value ratio">LTV</abbr>,
                 before: <Amount value={loanDetails.ltv} percentage />,
-                after: <Amount value={newLoanDetails.ltv} percentage />,
+                after: newLoanDetails.ltv && dn.gt(newLoanDetails.ltv, 0)
+                  ? <Amount value={newLoanDetails.ltv} percentage />
+                  : "N/A",
               },
               {
                 label: "Liquidation price",
