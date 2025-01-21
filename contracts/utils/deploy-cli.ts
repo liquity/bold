@@ -204,9 +204,8 @@ export async function main() {
 Deploying Liquity contracts with the following settings:
 
   CHAIN_ID:               ${options.chainId}
-  MODE:                   ${options.mode}
-  DEPLOYER (address):     ${deployerAddress}
   DEPLOYMENT_MODE:        ${options.mode}
+  DEPLOYER (address):     ${deployerAddress}
   SALT:                   ${options.salt ? options.salt : chalk.yellow("block.timestamp will be used !!")}
   ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}
   LEDGER_PATH:            ${options.ledgerPath}
