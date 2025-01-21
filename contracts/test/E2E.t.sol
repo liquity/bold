@@ -3,31 +3,15 @@ pragma solidity 0.8.24;
 
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {stdJson} from "forge-std/StdJson.sol";
 import {IERC20Metadata as IERC20} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
-import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {MockStakingV1} from "V2-gov/test/mocks/MockStakingV1.sol";
-import {IUserProxy} from "V2-gov/src/interfaces/IUserProxy.sol";
-import {IUserProxyFactory} from "V2-gov/src/interfaces/IUserProxyFactory.sol";
 import {CurveV2GaugeRewards} from "V2-gov/src/CurveV2GaugeRewards.sol";
 import {Governance} from "V2-gov/src/Governance.sol";
 import {ILeverageZapper} from "src/Zappers/Interfaces/ILeverageZapper.sol";
 import {IZapper} from "src/Zappers/Interfaces/IZapper.sol";
 import {Ownable} from "src/Dependencies/Ownable.sol";
-import {IActivePool} from "src/Interfaces/IActivePool.sol";
-import {IAddressesRegistry} from "src/Interfaces/IAddressesRegistry.sol";
-import {IBoldToken} from "src/Interfaces/IBoldToken.sol";
-import {IBorrowerOperations} from "src/Interfaces/IBorrowerOperations.sol";
-import {ICollateralRegistry} from "src/Interfaces/ICollateralRegistry.sol";
-import {IDefaultPool} from "src/Interfaces/IDefaultPool.sol";
-import {IHintHelpers} from "src/Interfaces/IHintHelpers.sol";
-import {ISortedTroves} from "src/Interfaces/ISortedTroves.sol";
-import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
-import {ITroveNFT} from "src/Interfaces/ITroveNFT.sol";
 import {IPriceFeed} from "src/Interfaces/IPriceFeed.sol";
-import {IStabilityPool} from "src/Interfaces/IStabilityPool.sol";
-import {IWETH} from "src/Interfaces/IWETH.sol";
 import {ICurveStableSwapNG} from "./Interfaces/Curve/ICurveStableSwapNG.sol";
 import {ILiquidityGaugeV6} from "./Interfaces/Curve/ILiquidityGaugeV6.sol";
 import {IBorrowerOperationsV1} from "./Interfaces/LiquityV1/IBorrowerOperationsV1.sol";
@@ -36,6 +20,7 @@ import {ISortedTrovesV1} from "./Interfaces/LiquityV1/ISortedTrovesV1.sol";
 import {ITroveManagerV1} from "./Interfaces/LiquityV1/ITroveManagerV1.sol";
 import {ERC20Faucet} from "./TestContracts/ERC20Faucet.sol";
 import {StringEquality} from "./Utils/StringEquality.sol";
+import {UseDeployment} from "./Utils/UseDeployment.sol";
 
 uint256 constant PRICE_TOLERANCE = 0.02 ether;
 
@@ -112,66 +97,17 @@ library SideEffectFreeGetPrice {
     }
 }
 
-contract E2ETest is Test {
+contract E2ETest is Test, UseDeployment {
     using SideEffectFreeGetPrice for IPriceFeed;
     using SideEffectFreeGetPrice for IPriceFeedV1;
-    using Strings for uint256;
-    using stdJson for string;
     using StringEquality for string;
-
-    struct BranchContracts {
-        IERC20 collToken;
-        IAddressesRegistry addressesRegistry;
-        IPriceFeed priceFeed;
-        ITroveNFT troveNFT;
-        ITroveManager troveManager;
-        IBorrowerOperations borrowerOperations;
-        ISortedTroves sortedTroves;
-        IActivePool activePool;
-        IDefaultPool defaultPool;
-        IStabilityPool stabilityPool;
-        ILeverageZapper leverageZapper;
-        IZapper zapper;
-    }
 
     struct Initiative {
         address addr;
         ILiquidityGaugeV6 gauge; // optional
     }
 
-    address WETH;
-    address WSTETH;
-    address RETH;
-    address BOLD;
-    address USDC;
-    address LQTY;
-    address LUSD;
-
-    uint256 ETH_GAS_COMPENSATION;
-    uint256 MIN_DEBT;
-    uint256 EPOCH_START;
-    uint256 EPOCH_DURATION;
-    uint256 REGISTRATION_FEE;
-
-    IWETH weth;
-    IERC20 usdc;
-    IERC20 lqty;
-    IERC20 lusd;
-
     mapping(address token => address) providerOf;
-
-    ICollateralRegistry collateralRegistry;
-    IBoldToken boldToken;
-    IHintHelpers hintHelpers;
-    Governance governance;
-    ICurveStableSwapNG curveUsdcBold;
-    ILiquidityGaugeV6 curveUsdcBoldGauge;
-    CurveV2GaugeRewards curveUsdcBoldInitiative;
-    ICurveStableSwapNG curveLusdBold;
-    ILiquidityGaugeV6 curveLusdBoldGauge;
-    CurveV2GaugeRewards curveLusdBoldInitiative;
-    address defiCollectiveInitiative;
-    BranchContracts[] branches;
 
     address[] ownables;
 
@@ -183,94 +119,7 @@ contract E2ETest is Test {
     function setUp() external {
         vm.skip(vm.envOr("FOUNDRY_PROFILE", string("")).notEq("e2e"));
         vm.createSelectFork(vm.envString("E2E_RPC_URL"));
-
-        string memory json = vm.readFile("deployment-manifest.json");
-        collateralRegistry = ICollateralRegistry(json.readAddress(".collateralRegistry"));
-        boldToken = IBoldToken(BOLD = json.readAddress(".boldToken"));
-        hintHelpers = IHintHelpers(json.readAddress(".hintHelpers"));
-        governance = Governance(json.readAddress(".governance.governance"));
-        curveUsdcBold = ICurveStableSwapNG(json.readAddress(".governance.curveUsdcBoldPool"));
-        curveUsdcBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.curveUsdcBoldGauge"));
-        curveUsdcBoldInitiative = CurveV2GaugeRewards(json.readAddress(".governance.curveUsdcBoldInitiative"));
-        curveLusdBold = ICurveStableSwapNG(json.readAddress(".governance.curveLusdBoldPool"));
-        curveLusdBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.curveLusdBoldGauge"));
-        curveLusdBoldInitiative = CurveV2GaugeRewards(json.readAddress(".governance.curveLusdBoldInitiative"));
-        defiCollectiveInitiative = json.readAddress(".governance.defiCollectiveInitiative");
-
-        vm.label(address(collateralRegistry), "CollateralRegistry");
-        vm.label(address(hintHelpers), "HintHelpers");
-        vm.label(address(governance), "Governance");
-        vm.label(address(curveUsdcBold), "CurveStableSwapNG");
-        vm.label(address(curveUsdcBoldGauge), "LiquidityGaugeV6");
-        vm.label(address(curveUsdcBoldInitiative), "CurveV2GaugeRewards");
-
-        ETH_GAS_COMPENSATION = json.readUint(".constants.ETH_GAS_COMPENSATION");
-        MIN_DEBT = json.readUint(".constants.MIN_DEBT");
-        EPOCH_START = json.readUint(".governance.constants.EPOCH_START");
-        EPOCH_DURATION = json.readUint(".governance.constants.EPOCH_DURATION");
-        REGISTRATION_FEE = json.readUint(".governance.constants.REGISTRATION_FEE");
-        LQTY = json.readAddress(".governance.LQTYToken");
-        USDC = curveUsdcBold.coins(0) != BOLD ? curveUsdcBold.coins(0) : curveUsdcBold.coins(1);
-        LUSD = address(IUserProxy(governance.userProxyImplementation()).lusd());
-
-        for (uint256 i = 0; i < collateralRegistry.totalCollaterals(); ++i) {
-            string memory branch = string.concat(".branches[", i.toString(), "]");
-
-            branches.push() = BranchContracts({
-                collToken: IERC20(json.readAddress(string.concat(branch, ".collToken"))),
-                addressesRegistry: IAddressesRegistry(json.readAddress(string.concat(branch, ".addressesRegistry"))),
-                priceFeed: IPriceFeed(json.readAddress(string.concat(branch, ".priceFeed"))),
-                troveNFT: ITroveNFT(json.readAddress(string.concat(branch, ".troveNFT"))),
-                troveManager: ITroveManager(json.readAddress(string.concat(branch, ".troveManager"))),
-                borrowerOperations: IBorrowerOperations(json.readAddress(string.concat(branch, ".borrowerOperations"))),
-                sortedTroves: ISortedTroves(json.readAddress(string.concat(branch, ".sortedTroves"))),
-                activePool: IActivePool(json.readAddress(string.concat(branch, ".activePool"))),
-                defaultPool: IDefaultPool(json.readAddress(string.concat(branch, ".defaultPool"))),
-                stabilityPool: IStabilityPool(json.readAddress(string.concat(branch, ".stabilityPool"))),
-                leverageZapper: ILeverageZapper(json.readAddress(string.concat(branch, ".leverageZapper"))),
-                zapper: IZapper(
-                    coalesce(
-                        json.readAddress(string.concat(branch, ".wethZapper")),
-                        json.readAddress(string.concat(branch, ".gasCompZapper"))
-                    )
-                )
-            });
-
-            vm.label(address(branches[i].priceFeed), "PriceFeed");
-            vm.label(address(branches[i].troveNFT), "TroveNFT");
-            vm.label(address(branches[i].troveManager), "TroveManager");
-            vm.label(address(branches[i].borrowerOperations), "BorrowerOperations");
-            vm.label(address(branches[i].sortedTroves), "SortedTroves");
-            vm.label(address(branches[i].activePool), "ActivePool");
-            vm.label(address(branches[i].defaultPool), "DefaultPool");
-            vm.label(address(branches[i].stabilityPool), "StabilityPool");
-            vm.label(address(branches[i].leverageZapper), "LeverageZapper");
-            vm.label(address(branches[i].zapper), "Zapper");
-
-            string memory collSymbol = branches[i].collToken.symbol();
-            if (collSymbol.eq("WETH")) {
-                WETH = address(branches[i].collToken);
-            } else if (collSymbol.eq("wstETH")) {
-                WSTETH = address(branches[i].collToken);
-            } else if (collSymbol.eq("rETH")) {
-                RETH = address(branches[i].collToken);
-            } else {
-                revert(string.concat("Unexpected collateral ", collSymbol));
-            }
-        }
-
-        vm.label(WETH, "WETH");
-        vm.label(WSTETH, "wstETH");
-        vm.label(RETH, "rETH");
-        vm.label(BOLD, "BOLD");
-        vm.label(USDC, "USDC");
-        vm.label(LQTY, "LQTY");
-        vm.label(LUSD, "LUSD");
-
-        weth = IWETH(WETH);
-        usdc = IERC20(USDC);
-        lqty = IERC20(LQTY);
-        lusd = IERC20(LUSD);
+        _loadDeploymentFromManifest("deployment-manifest.json");
 
         vm.label(ETH_WHALE, "ETH_WHALE");
         vm.label(WETH_WHALE, "WETH_WHALE");
@@ -451,8 +300,7 @@ contract E2ETest is Test {
         address coin1
     ) internal {
         uint256[] memory amounts = new uint256[](2);
-        (amounts[0], amounts[1]) =
-            curveUsdcBold.coins(0) == coin0 ? (coin0Amount, coin1Amount) : (coin1Amount, coin0Amount);
+        (amounts[0], amounts[1]) = pool.coins(0) == coin0 ? (coin0Amount, coin1Amount) : (coin1Amount, coin0Amount);
 
         deal(coin0, liquidityProvider, coin0Amount);
         deal(coin1, liquidityProvider, coin1Amount);
@@ -491,7 +339,7 @@ contract E2ETest is Test {
         deal(LQTY, voter, amount);
 
         vm.startPrank(voter);
-        lqty.approve(IUserProxyFactory(address(governance)).deriveUserProxyAddress(voter), amount);
+        lqty.approve(governance.deriveUserProxyAddress(voter), amount);
         governance.depositLQTY(amount);
         vm.stopPrank();
     }
