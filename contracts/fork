@@ -98,6 +98,7 @@ deploy() {
       --rpc-url "$E2E_RPC_URL"
       --chain-id "$FORK_CHAIN_ID"
       --deployer "$DEPLOYER"
+      --skip-confirmation
       # --verify
       # --verifier sourcify
       # --verifier-url "http://localhost:$sourcify_port"
