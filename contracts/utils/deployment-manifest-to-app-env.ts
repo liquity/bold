@@ -214,7 +214,7 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
     // governance contracts
     case "LQTYToken":
       return `${prefix}_LQTY_TOKEN`;
-    case "LQTYStaking":
+    case "stakingV1":
       return `${prefix}_LQTY_STAKING`;
     case "governance":
       return `${prefix}_GOVERNANCE`;
