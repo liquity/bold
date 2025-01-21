@@ -121,14 +121,24 @@ export function PanelUpdateBorrowPosition({
 
   const isBelowMinDebt = debtChange.parsed && !debtChange.isEmpty && newDebt && dn.lt(newDebt, MIN_DEBT);
 
-  const allowSubmit = (
-    account.isConnected
-  ) && (
-    !dn.eq(loanDetails.deposit ?? dnum18(0), newLoanDetails.deposit ?? dnum18(0))
-    || !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0))
-  ) && (
-    !isBelowMinDebt
-  );
+  const insufficientBold = debtMode === "remove"
+    && debtChange.parsed
+    && !debtChange.isEmpty
+    && boldBalance.data
+    && dn.gt(debtChange.parsed, boldBalance.data);
+
+  const allowSubmit = account.isConnected
+    // above min. debt
+    && !isBelowMinDebt
+    // the new deposit must be positive
+    && dn.gt(newLoanDetails.deposit ?? dnum18(0), 0)
+    // the account must have enough BOLD
+    && !insufficientBold
+    // there should be a change in the deposit or debt
+    && (
+      !dn.eq(loanDetails.deposit ?? dnum18(0), newLoanDetails.deposit ?? dnum18(0))
+      || !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0))
+    );
 
   return (
     <>
@@ -204,11 +214,20 @@ export function PanelUpdateBorrowPosition({
                 }
                 value={
                   <HFlex alignItems="center" gap={8}>
-                    <Amount
-                      format={2}
-                      suffix={` ${collToken.name}`}
-                      value={newLoanDetails.deposit}
-                    />
+                    <div
+                      className={css({
+                        "--color-error": "token(colors.negativeStrong)",
+                      })}
+                      style={{
+                        color: dn.lt(newLoanDetails.deposit, 0) ? "var(--color-error)" : "inherit",
+                      }}
+                    >
+                      <Amount
+                        format={2}
+                        suffix={` ${collToken.name}`}
+                        value={newLoanDetails.deposit}
+                      />
+                    </div>
                     <InfoTooltip heading="Collateral update">
                       <div>
                         Before:{" "}
@@ -262,6 +281,8 @@ export function PanelUpdateBorrowPosition({
               }
               drawer={!debtChange.isFocused && isBelowMinDebt
                 ? { mode: "error", message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+                : insufficientBold
+                ? { mode: "error", message: "Insufficient BOLD balance." }
                 : null}
               label={{
                 start: debtMode === "remove"
@@ -368,12 +389,16 @@ export function PanelUpdateBorrowPosition({
               {
                 label: <abbr title="Loan-to-value ratio">LTV</abbr>,
                 before: <Amount value={loanDetails.ltv} percentage />,
-                after: <Amount value={newLoanDetails.ltv} percentage />,
+                after: newLoanDetails.ltv && dn.gt(newLoanDetails.ltv, 0)
+                  ? <Amount value={newLoanDetails.ltv} percentage />
+                  : "N/A",
               },
               {
                 label: "Liquidation price",
-                before: <Amount value={loanDetails.liquidationPrice} />,
-                after: <Amount value={newLoanDetails.liquidationPrice} />,
+                before: <Amount prefix="$" value={loanDetails.liquidationPrice} />,
+                after: newLoanDetails.liquidationPrice
+                  ? <Amount prefix="$" value={newLoanDetails.liquidationPrice} />
+                  : "N/A",
               },
             ]}
           />
