@@ -395,8 +395,10 @@ export function PanelUpdateBorrowPosition({
               },
               {
                 label: "Liquidation price",
-                before: <Amount value={loanDetails.liquidationPrice} />,
-                after: <Amount value={newLoanDetails.liquidationPrice} />,
+                before: <Amount prefix="$" value={loanDetails.liquidationPrice} />,
+                after: newLoanDetails.liquidationPrice
+                  ? <Amount prefix="$" value={newLoanDetails.liquidationPrice} />
+                  : "N/A",
               },
             ]}
           />
