@@ -9,6 +9,8 @@ import "./utils/bauhaus.sol";
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
+import "../Dependencies/Ownable.sol";
+
 import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
 
 interface IMetadataNFT {
@@ -26,14 +28,23 @@ interface IMetadataNFT {
     function uri(TroveData memory _troveData) external view returns (string memory);
 }
 
-contract MetadataNFT is IMetadataNFT {
-    FixedAssetReader public immutable assetReader;
+contract MetadataNFT is IMetadataNFT, Ownable {
+    FixedAssetReader public assetReader;
 
-    string public constant name = "Liquity V2 Trove";
-    string public constant description = "Liquity V2 Trove position";
+    event AssetReaderUpdated(address indexed _assetReader);
 
-    constructor(FixedAssetReader _assetReader) {
+    address public constant OWNER = 0x263b03BbA0BbbC320928B6026f5eAAFAD9F1ddeb;
+
+    string public constant name = "USA.D Trove";
+    string public constant description = "USA.D Trove position";
+
+    constructor(FixedAssetReader _assetReader) Ownable(OWNER) {
         assetReader = _assetReader;
+    }
+
+    function updateAssetReader(FixedAssetReader _assetReader) external onlyOwner {
+        assetReader = _assetReader;
+        emit AssetReaderUpdated(address(_assetReader));
     }
 
     function uri(TroveData memory _troveData) public view returns (string memory) {
