@@ -12,16 +12,14 @@ Before you begin, ensure you have the following tools installed:
 
 ## Getting started
 
-### 1. Clone the repository
+Clone the repository:
 
 ```bash
 git clone git@github.com:liquity/bold.git
 cd bold
 ```
 
-### 2. Install the dependencies
-
-First, install the npm dependencies for all the packages in the repo:
+Install the npm dependencies for all the packages in the repo:
 
 ```bash
 pnpm install
