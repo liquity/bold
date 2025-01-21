@@ -104,8 +104,6 @@ contract OraclesMainnet is TestAccounts {
         mockRethToken = new RETHTokenMock();
         mockWstethToken = new WSTETHTokenMock();
 
-      
-
         // Record contracts
         for (uint256 c = 0; c < vars.numCollaterals; c++) {
             contractsArray.push(result.contractsArray[c]);
@@ -348,8 +346,6 @@ contract OraclesMainnet is TestAccounts {
 
         assertLt(relativeDelta, 1e16);
     }
-
-
 
     // // --- Basic actions ---
 
@@ -2093,15 +2089,12 @@ contract OraclesMainnet is TestAccounts {
         // Etch gas guzzler to the LST
         etchGasGuzzlerMockToRethToken(address(gasGuzzlerToken).code);
 
-        // After etching the gas guzzler to the LST, confirm the same call with 500k gas now reverts due to OOG 
+        // After etching the gas guzzler to the LST, confirm the same call with 500k gas now reverts due to OOG
         vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
         // just catch return val to suppress warning
         (success,) = address(rethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
         assertFalse(success);
     }
-
-
-
 
     // - More basic actions tests (adjust, close, etc)
     // - liq tests (manipulate aggregator stored price)
