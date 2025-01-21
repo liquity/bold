@@ -413,8 +413,6 @@ export function BorrowScreen() {
                   ownerIndex: nextOwnerIndex.data,
                   collAmount: deposit.parsed,
                   boldAmount: debt.parsed,
-                  upperHint: dnum18(0),
-                  lowerHint: dnum18(0),
                   annualInterestRate: interestRate,
                   maxUpfrontFee: dnum18(maxUint256),
                   interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate ? null : [

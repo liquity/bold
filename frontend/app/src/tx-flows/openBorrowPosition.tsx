@@ -4,7 +4,12 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken, getPrefixedTroveId, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
+import {
+  getCollToken,
+  getPrefixedTroveId,
+  getTroveOperationHints,
+  usePredictOpenTroveUpfrontFee,
+} from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -27,8 +32,6 @@ const RequestSchema = createRequestSchema(
     ownerIndex: v.number(),
     collAmount: vDnum(),
     boldAmount: vDnum(),
-    upperHint: vDnum(),
-    lowerHint: vDnum(),
     annualInterestRate: vDnum(),
     maxUpfrontFee: vDnum(),
     interestRateDelegate: v.union([
@@ -223,17 +226,24 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
         if (!collateral) {
           throw new Error(`Invalid collateral index: ${request.collIndex}`);
         }
-        const { LeverageLSTZapper } = collateral.contracts;
+
+        const { upperHint, lowerHint } = await getTroveOperationHints({
+          wagmiConfig,
+          contracts,
+          collIndex: request.collIndex,
+          interestRate: request.annualInterestRate[0],
+        });
+
         return writeContract(wagmiConfig, {
-          ...LeverageLSTZapper,
+          ...collateral.contracts.LeverageLSTZapper,
           functionName: "openTroveWithRawETH" as const,
           args: [{
             owner: request.owner,
             ownerIndex: BigInt(request.ownerIndex),
             collAmount: request.collAmount[0],
             boldAmount: request.boldAmount[0],
-            upperHint: request.upperHint[0],
-            lowerHint: request.lowerHint[0],
+            upperHint,
+            lowerHint,
             annualInterestRate: request.interestRateDelegate
               ? 0n
               : request.annualInterestRate[0],
@@ -295,17 +305,24 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
         if (!collateral) {
           throw new Error(`Invalid collateral index: ${request.collIndex}`);
         }
-        const { LeverageWETHZapper } = collateral.contracts;
+
+        const { upperHint, lowerHint } = await getTroveOperationHints({
+          wagmiConfig,
+          contracts,
+          collIndex: request.collIndex,
+          interestRate: request.annualInterestRate[0],
+        });
+
         return writeContract(wagmiConfig, {
-          ...LeverageWETHZapper,
+          ...collateral.contracts.LeverageWETHZapper,
           functionName: "openTroveWithRawETH",
           args: [{
             owner: request.owner,
             ownerIndex: BigInt(request.ownerIndex),
             collAmount: 0n,
             boldAmount: request.boldAmount[0],
-            upperHint: request.upperHint[0],
-            lowerHint: request.lowerHint[0],
+            upperHint,
+            lowerHint,
             annualInterestRate: request.interestRateDelegate
               ? 0n
               : request.annualInterestRate[0],

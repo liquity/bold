@@ -1,6 +1,8 @@
+import type { Contracts } from "@/src/contracts";
 import type { StabilityPoolDepositQuery } from "@/src/graphql/graphql";
 import type { CollIndex, Dnum, PositionEarn, PositionStake, PrefixedTroveId, TroveId } from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
+import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
@@ -25,6 +27,7 @@ import * as dn from "dnum";
 import { useMemo } from "react";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useReadContract, useReadContracts } from "wagmi";
+import { readContract } from "wagmi/actions";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -424,4 +427,53 @@ export function usePredictAdjustInterestRateUpfrontFee(
       select: dnum18,
     },
   });
+}
+
+// from https://github.com/liquity/bold/blob/204a3dec54a0e8689120ca48faf4ece5cf8ccd22/README.md#example-opentrove-transaction-with-hints
+export async function getTroveOperationHints({
+  wagmiConfig,
+  contracts,
+  collIndex,
+  interestRate,
+}: {
+  wagmiConfig: WagmiConfig;
+  contracts: Contracts;
+  collIndex: number;
+  interestRate: bigint;
+}): Promise<{
+  upperHint: bigint;
+  lowerHint: bigint;
+}> {
+  const collateral = contracts.collaterals[collIndex];
+  if (!collateral) {
+    throw new Error(`Invalid collateral index: ${collIndex}`);
+  }
+
+  const numTroves = await readContract(wagmiConfig, {
+    ...collateral.contracts.SortedTroves,
+    functionName: "getSize",
+  });
+
+  const [approxHint] = await readContract(wagmiConfig, {
+    ...contracts.HintHelpers,
+    functionName: "getApproxHint",
+    args: [
+      BigInt(collIndex),
+      interestRate,
+      15n * numTroves, // (15 * troves) gives a hint close to the right position
+      42n, // random seed
+    ],
+  });
+
+  const [upperHint, lowerHint] = await readContract(wagmiConfig, {
+    ...collateral.contracts.SortedTroves,
+    functionName: "findInsertPosition",
+    args: [
+      interestRate,
+      approxHint,
+      approxHint,
+    ],
+  });
+
+  return { upperHint, lowerHint };
 }
