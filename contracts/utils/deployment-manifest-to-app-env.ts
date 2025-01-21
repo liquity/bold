@@ -42,7 +42,7 @@ const ZDeploymentManifest = z.object({
 
   governance: z.object({
     LQTYToken: ZAddress,
-    LQTYStaking: ZAddress.default(ZERO_ADDRESS),
+    stakingV1: ZAddress,
     governance: ZAddress,
   }),
 
