@@ -1,5 +1,5 @@
+import { privateKeyToAccount } from "viem/accounts";
 import { $, chalk, echo, fs, minimist, question } from "zx";
-import { bytesToHex, hexToBytes, privateToAddress } from "@ethereumjs/util";
 
 const HELP = `
 deploy - deploy the Liquity contracts.
@@ -179,7 +179,12 @@ export async function main() {
     }
   }
 
+  let deployerAddress: string;
+
   if (options.deployer.startsWith("0x") && options.deployer.length === 42) {
+    // DEPLOYER is an address
+    deployerAddress = options.deployer;
+
     if (options.unlocked) {
       forgeArgs.push("--unlocked");
     } else {
@@ -190,6 +195,9 @@ export async function main() {
         forgeArgs.push(options.ledgerPath);
       }
     }
+  } else {
+    // DEPLOYER is a private key, get its address
+    deployerAddress = privateKeyToAccount(options.deployer).address;
   }
 
   echo`
@@ -197,7 +205,7 @@ Deploying Liquity contracts with the following settings:
 
   CHAIN_ID:               ${options.chainId}
   MODE:                   ${options.mode}
-  DEPLOYER:               ${bytesToHex(privateToAddress(hexToBytes(options.deployer)))}
+  DEPLOYER (address):     ${deployerAddress}
   DEPLOYMENT_MODE:        ${options.mode}
   SALT:                   ${options.salt ? options.salt : chalk.yellow("block.timestamp will be used !!")}
   ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}

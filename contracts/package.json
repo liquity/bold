@@ -24,7 +24,6 @@
   "bugs": "https://github.com/liquity/bold/issues",
   "homepage": "https://github.com/liquity/bold#readme",
   "devDependencies": {
-    "@ethereumjs/util": "^9.1.0",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
     "@nomicfoundation/hardhat-foundry": "^1.0.1",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
