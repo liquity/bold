@@ -214,11 +214,20 @@ export function PanelUpdateBorrowPosition({
                 }
                 value={
                   <HFlex alignItems="center" gap={8}>
-                    <Amount
-                      format={2}
-                      suffix={` ${collToken.name}`}
-                      value={newLoanDetails.deposit}
-                    />
+                    <div
+                      className={css({
+                        "--color-error": "token(colors.negativeStrong)",
+                      })}
+                      style={{
+                        color: dn.lt(newLoanDetails.deposit, 0) ? "var(--color-error)" : "inherit",
+                      }}
+                    >
+                      <Amount
+                        format={2}
+                        suffix={` ${collToken.name}`}
+                        value={newLoanDetails.deposit}
+                      />
+                    </div>
                     <InfoTooltip heading="Collateral update">
                       <div>
                         Before:{" "}
