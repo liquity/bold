@@ -84,7 +84,7 @@ export default {
         </>
       ),
       footerLink: {
-        href: "https://github.com/liquity/bold#bold-redemptions",
+        href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation",
         label: "Learn more",
       },
     },
@@ -115,7 +115,7 @@ export default {
     ],
     learnMore: {
       text: "Learn more about redemptions",
-      href: "https://github.com/liquity/bold#bold-redemptions",
+      href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation",
     },
   },
 
@@ -191,20 +191,20 @@ export default {
     myPositionsTitle: "My positions",
     actions: {
       borrow: {
-        title: "Borrow BOLD",
-        description: "Set your own interest rate and borrow BOLD against ETH and staked ETH.",
+        title: "Borrow",
+        description: "Mint BOLD against your collateral at whatever interest rate you want",
       },
       multiply: {
-        title: "Multiply ETH",
-        description: "Set your own interest rate and increase your exposure to ETH and staked ETH.",
+        title: "Multiply",
+        description: "Increase your exposure to ETH and its staking yield with a single click",
       },
       earn: {
         title: "Earn with BOLD",
-        description: "Cover liquidations to earn BOLD and collateral assets.",
+        description: "Deposit BOLD to earn protocol revenues and liquidation proceeds",
       },
       stake: {
         title: "Stake LQTY",
-        description: "Accrue voting power by staking your LQTY without a minimum lockup period.",
+        description: "Direct protocol incentives with LQTY while earning from Liquity V1",
       },
     },
     statsBar: {
@@ -443,7 +443,7 @@ export default {
       intro: (
         <>
           Direct incentives from Liquity V2 protocol revenues towards liquidity providers for BOLD. Upvote from Thursday
-          to Tuesday. Downvote all week. <Link href="https://github.com/liquity/V2-gov">Learn more</Link>
+          to Tuesday. Downvote all week. <Link href="https://docs.liquity.org/v2-faq/lqty-staking">Learn more</Link>
         </>
       ),
     },

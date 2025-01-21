@@ -12,6 +12,16 @@ export const PriceFeed = [{
   "stateMutability": "view",
 }, {
   "type": "function",
+  "name": "fetchRedemptionPrice",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }, {
+    "name": "",
+    "type": "bool",
+    "internalType": "bool",
+  }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
   "name": "getEthUsdStalenessThreshold",
   "inputs": [],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],

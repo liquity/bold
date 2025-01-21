@@ -220,7 +220,8 @@ contract MulticollateralTest is DevTestSetup {
             collateralRegistry.getRedemptionRate(),
             INITIAL_BASE_RATE / 16 + REDEMPTION_FEE_FLOOR + redeemAmount * DECIMAL_PRECISION / initialBoldSupply,
             1e5,
-            "Wrong redemption rate");
+            "Wrong redemption rate"
+        );
 
         // Check bold balance
         assertApproxEqAbs(boldToken.balanceOf(A), 14400e18, 10, "Wrong Bold balance after redemption");

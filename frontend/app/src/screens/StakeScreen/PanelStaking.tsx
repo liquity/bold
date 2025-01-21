@@ -133,7 +133,7 @@ export function PanelStaking() {
                 ? (
                   lqtyBalance.data && dn.gt(lqtyBalance.data, 0) && (
                     <TextButton
-                      label={`Max. ${(fmtnum(lqtyBalance.data))} LQTY`}
+                      label={`Max. ${(fmtnum(lqtyBalance.data, 2))} LQTY`}
                       onClick={() => {
                         setValue(dn.toString(lqtyBalance.data));
                       }}
@@ -249,7 +249,7 @@ export function PanelStaking() {
               txFlow.start({
                 flowId: mode === "deposit" ? "stakeDeposit" : "unstakeDeposit",
                 backLink: ["/stake", "Back to stake position"],
-                successLink: ["/stake/voting", "Allocate voting power"],
+                successLink: ["/stake/voting", "Go to Voting"],
                 successMessage: "The stake position has been updated successfully.",
 
                 lqtyAmount: dn.abs(depositDifference),

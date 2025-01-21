@@ -9,7 +9,8 @@ import * as env from "@/src/env";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, Button, Modal } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
-import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import Link from "next/link";
 import { createContext, useContext, useState } from "react";
 
 const ENV_EXCLUDE: (keyof typeof env)[] = [
@@ -19,6 +20,9 @@ const ENV_EXCLUDE: (keyof typeof env)[] = [
   "VERCEL_ANALYTICS",
   "COINGECKO_API_KEY",
   "DEMO_MODE",
+  "APP_COMMIT_HASH",
+  "CONTRACTS_COMMIT_HASH",
+  "APP_VERSION",
 ];
 
 // split the env vars into 3 groups:
@@ -74,33 +78,14 @@ function getEnvGroups() {
   return { config: configFinal, contracts, branches };
 }
 
-function useContractsHash(envGroups: ReturnType<typeof getEnvGroups>) {
-  return useQuery({
-    queryKey: ["contractsHash"],
-    queryFn: async () => {
-      const encoder = new TextEncoder();
-      const hashBuffer = await crypto.subtle.digest(
-        "SHA-256",
-        encoder.encode(JSON.stringify([
-          envGroups.contracts,
-          envGroups.branches,
-        ])),
-      );
-      return Array.from(new Uint8Array(hashBuffer))
-        .slice(0, 4)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    },
-    staleTime: Infinity,
-  });
-}
-
 const AboutContext = createContext<{
-  contractsHash?: string;
+  appCommit: string;
+  contractsCommit: string;
   fullVersion: string;
   openModal: () => void;
 }>({
-  contractsHash: "",
+  appCommit: "",
+  contractsCommit: "",
   fullVersion: "",
   openModal: () => {},
 });
@@ -112,15 +97,15 @@ export function useAbout() {
 const envGroups = getEnvGroups();
 
 export function About({ children }: { children: ReactNode }) {
-  const contractsHash = useContractsHash(envGroups);
   const [visible, setVisible] = useState(false);
   const copyTransition = useFlashTransition();
   return (
     <AboutContext.Provider
       value={{
+        appCommit: env.APP_COMMIT_HASH,
+        contractsCommit: env.CONTRACTS_COMMIT_HASH,
+        fullVersion: `v${env.APP_VERSION}-${env.APP_COMMIT_HASH}`,
         openModal: () => setVisible(true),
-        fullVersion: `v${env.APP_VERSION}-${env.COMMIT_HASH}`,
-        contractsHash: contractsHash.data,
       }}
     >
       {children}
@@ -163,14 +148,52 @@ export function About({ children }: { children: ReactNode }) {
                     label={`v${env.APP_VERSION}`}
                   />
                 ),
-                "Commit": (
+                "Commit (app)": (
                   <AnchorTextButton
                     external
-                    href={`https://github.com/liquity/bold/tree/${env.COMMIT_HASH}`}
-                    label={env.COMMIT_HASH}
+                    href={`https://github.com/liquity/bold/tree/${env.APP_COMMIT_HASH}`}
+                    label={env.APP_COMMIT_HASH}
                   />
                 ),
-                "Contracts hash": contractsHash.data ?? "",
+                "Commit (contracts)": (
+                  <AnchorTextButton
+                    external
+                    href={`https://github.com/liquity/bold/tree/${env.CONTRACTS_COMMIT_HASH}`}
+                    label={env.CONTRACTS_COMMIT_HASH}
+                  />
+                ),
+                "Price data": (
+                  <div
+                    className={css({
+                      display: "flex",
+                      justifyContent: "flex-end",
+                    })}
+                  >
+                    <Link
+                      rel="noopener noreferrer"
+                      target="_blank"
+                      href="https://www.coingecko.com/"
+                      title="By CoinGecko"
+                      className={css({
+                        display: "flex",
+                        gap: 8,
+                        whiteSpace: "nowrap",
+                      })}
+                    >
+                      by
+                      <Image
+                        alt="CoinGecko"
+                        src="/coingecko.png"
+                        width={714}
+                        height={192}
+                        className={css({
+                          width: "auto",
+                          height: 20,
+                        })}
+                      />
+                    </Link>
+                  </div>
+                ),
               }}
             />
           </section>
@@ -231,7 +254,15 @@ export function About({ children }: { children: ReactNode }) {
             </div>
             <AboutTable title="Config" entries={envGroups.config} />
             <AboutTable
-              title={`Liquity V2 contracts (${contractsHash.data})`}
+              title={
+                <>
+                  Liquity V2 contracts (<AnchorTextButton
+                    external
+                    href={`https://github.com/liquity/bold/tree/${env.CONTRACTS_COMMIT_HASH}`}
+                    label={`${env.CONTRACTS_COMMIT_HASH}`}
+                  />)
+                </>
+              }
               entries={envGroups.contracts}
             />
             {envGroups.branches.map(({ collIndex, symbol, contracts }) => (
@@ -319,7 +350,7 @@ function AboutTable({
   title,
 }: {
   entries: Record<string, ReactNode>;
-  title?: string;
+  title?: ReactNode;
 }) {
   return (
     <div

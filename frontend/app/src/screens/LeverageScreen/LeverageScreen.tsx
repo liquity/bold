@@ -29,7 +29,7 @@ import { getCollIndexFromSymbol } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useTrovesCount } from "@/src/subgraph-hooks";
+import { useNextOwnerIndex } from "@/src/subgraph-hooks";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -85,7 +85,8 @@ export function LeverageScreen() {
     [symbol, useBalance(account.address, symbol)] as const
   )));
 
-  const troveCount = useTrovesCount(account.address ?? null, collIndex);
+  const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, collIndex);
+
   const collPrice = usePrice(collToken.symbol);
 
   const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
@@ -147,7 +148,7 @@ export function LeverageScreen() {
     collIndex,
     initialDeposit: depositPreLeverage.parsed,
     leverageFactor: leverageField.leverageFactor,
-    ownerIndex: troveCount.data ?? null,
+    ownerIndex: nextOwnerIndex.data ?? null,
   });
 
   const leverageSlippageElements = useSlippageElements(
@@ -373,14 +374,19 @@ export function LeverageScreen() {
               size="large"
               wide
               onClick={() => {
-                if (depositPreLeverage.parsed && leverageField.debt && account.address) {
+                if (
+                  depositPreLeverage.parsed
+                  && leverageField.debt
+                  && account.address
+                  && typeof nextOwnerIndex.data === "number"
+                ) {
                   txFlow.start({
                     flowId: "openLeveragePosition",
                     backLink: ["/multiply", "Back to editing"],
                     successLink: ["/", "Go to the Dashboard"],
                     successMessage: "The leveraged position has been created successfully.",
 
-                    ownerIndex: troveCount.data ?? 0,
+                    ownerIndex: nextOwnerIndex.data,
                     leverageFactor: leverageField.leverageFactor,
                     loan: newLoan,
                   });

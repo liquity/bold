@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 
 import {Script} from "forge-std/Script.sol";
 
-import {ICurveStableswapFactoryNG} from "V2-gov/src/interfaces/ICurveStableswapFactoryNG.sol";
-import {ICurveStableswapNG} from "V2-gov/src/interfaces/ICurveStableswapNG.sol";
-import {ILiquidityGauge} from "V2-gov/src/interfaces/ILiquidityGauge.sol";
+import {ICurveStableSwapFactoryNG} from "test/Interfaces/Curve/ICurveStableSwapFactoryNG.sol";
+import {ICurveStableSwapNG} from "test/Interfaces/Curve/ICurveStableSwapNG.sol";
+import {ILiquidityGaugeV6} from "test/Interfaces/Curve/ILiquidityGaugeV6.sol";
 
 import {IGovernance} from "V2-gov/src/interfaces/IGovernance.sol";
 
@@ -20,9 +19,20 @@ import "forge-std/console2.sol";
 contract DeployGovernance is Script {
     using Strings for *;
 
-    // Environment Constants
-    address internal lqty;
-    address internal stakingV1;
+    struct DeployGovernanceParams {
+        uint256 epochStart;
+        address deployer;
+        bytes32 salt;
+        address stakingV1;
+        address lqty;
+        address lusd;
+        address bold;
+    }
+
+    address constant LUSD = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0;
+    address constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
+    address constant FUNDS_SAFE = 0xF06016D822943C42e3Cb7FC3a6A3B1889C1045f8;
+    address constant DEFI_COLLECTIVE_GRANTS_ADDRESS = 0xDc6f869d2D34E4aee3E89A51f2Af6D54F0F7f690;
 
     // Governance Constants
     uint128 private constant REGISTRATION_FEE = 1000e18;
@@ -32,12 +42,8 @@ contract DeployGovernance is Script {
     uint128 private constant VOTING_THRESHOLD_FACTOR = 0.02e18;
     uint88 private constant MIN_CLAIM = 0;
     uint88 private constant MIN_ACCRUAL = 0;
-    uint32 private constant EPOCH_DURATION = 7 days;
+    uint32 internal constant EPOCH_DURATION = 7 days;
     uint32 private constant EPOCH_VOTING_CUTOFF = 6 days;
-
-    // UniV4Donations Constants
-    uint24 private constant FEE = 400;
-    int24 constant MAX_TICK_SPACING = 32767;
 
     // CurveV2GaugeRewards Constants
     uint256 private constant DURATION = 7 days;
@@ -45,63 +51,69 @@ contract DeployGovernance is Script {
     // Contracts
     Governance private governance;
     address[] private initialInitiatives;
-    CurveV2GaugeRewards private curveV2GaugeRewards;
-    ILiquidityGauge private gauge;
+
+    ICurveStableSwapNG private curveUsdcBoldPool;
+    ILiquidityGaugeV6 private curveUsdcBoldGauge;
+    CurveV2GaugeRewards private curveUsdcBoldInitiative;
+
+    ICurveStableSwapNG private curveLusdBoldPool;
+    ILiquidityGaugeV6 private curveLusdBoldGauge;
+    CurveV2GaugeRewards private curveLusdBoldInitiative;
 
     function deployGovernance(
-        address _deployer,
-        bytes32 _salt,
-        IERC20 _boldToken,
+        DeployGovernanceParams memory p,
         address _curveFactoryAddress,
-        address _curvePoolAddress
+        address _curveUsdcBoldPoolAddress,
+        address _curveLusdBoldPoolAddress
     ) internal returns (address, string memory) {
         (address governanceAddress, IGovernance.Configuration memory governanceConfiguration) =
-            computeGovernanceAddressAndConfig(_deployer, _salt, _boldToken, initialInitiatives);
+            computeGovernanceAddressAndConfig(p);
 
-        governance = new Governance{salt: _salt}(
-            lqty,
-            address(_boldToken),
-            stakingV1,
-            address(_boldToken),
-            governanceConfiguration,
-            _deployer,
-            initialInitiatives
+        governance = new Governance{salt: p.salt}(
+            p.lqty, p.lusd, p.stakingV1, p.bold, governanceConfiguration, p.deployer, initialInitiatives
         );
 
-        //console2.log("");
-        //console2.log(governance.owner(), "governance.owner()");
-        //console2.log(address(governance), "address(governance)");
-        //console2.log(governanceAddress, "governanceAddress");
         assert(governanceAddress == address(governance));
 
-        // Curve initiative
+        curveUsdcBoldPool = ICurveStableSwapNG(_curveUsdcBoldPoolAddress);
+        curveLusdBoldPool = ICurveStableSwapNG(_curveLusdBoldPoolAddress);
+
         if (block.chainid == 1) {
             // mainnet
-            deployCurveV2GaugeRewards(governance, _boldToken, _curveFactoryAddress, _curvePoolAddress);
+            (curveUsdcBoldGauge, curveUsdcBoldInitiative) = deployCurveV2GaugeRewards({
+                _governance: governance,
+                _bold: p.bold,
+                _curveFactoryAddress: _curveFactoryAddress,
+                _curvePool: curveUsdcBoldPool
+            });
+
+            (curveLusdBoldGauge, curveLusdBoldInitiative) = deployCurveV2GaugeRewards({
+                _governance: governance,
+                _bold: p.bold,
+                _curveFactoryAddress: _curveFactoryAddress,
+                _curvePool: curveLusdBoldPool
+            });
+
+            initialInitiatives.push(address(curveUsdcBoldInitiative));
+            initialInitiatives.push(address(curveLusdBoldInitiative));
+            initialInitiatives.push(DEFI_COLLECTIVE_GRANTS_ADDRESS);
         }
 
         governance.registerInitialInitiatives{gas: 600000}(initialInitiatives);
 
-        return (governanceAddress, _getGovernanceManifestJson(_curvePoolAddress));
+        return (governanceAddress, _getGovernanceManifestJson(p));
     }
 
-    function computeGovernanceAddress(
-        address _deployer,
-        bytes32 _salt,
-        IERC20 _boldToken,
-        address[] memory _initialInitiatives
-    ) internal view returns (address) {
-        (address governanceAddress,) =
-            computeGovernanceAddressAndConfig(_deployer, _salt, _boldToken, _initialInitiatives);
+    function computeGovernanceAddress(DeployGovernanceParams memory p) internal pure returns (address) {
+        (address governanceAddress,) = computeGovernanceAddressAndConfig(p);
         return governanceAddress;
     }
 
-    function computeGovernanceAddressAndConfig(
-        address _deployer,
-        bytes32 _salt,
-        IERC20 _boldToken,
-        address[] memory _initialInitiatives
-    ) internal view returns (address, IGovernance.Configuration memory) {
+    function computeGovernanceAddressAndConfig(DeployGovernanceParams memory p)
+        internal
+        pure
+        returns (address, IGovernance.Configuration memory)
+    {
         IGovernance.Configuration memory governanceConfiguration = IGovernance.Configuration({
             registrationFee: REGISTRATION_FEE,
             registrationThresholdFactor: REGISTRATION_THRESHOLD_FACTOR,
@@ -110,84 +122,80 @@ contract DeployGovernance is Script {
             votingThresholdFactor: VOTING_THRESHOLD_FACTOR,
             minClaim: MIN_CLAIM,
             minAccrual: MIN_ACCRUAL,
-            epochStart: block.timestamp - EPOCH_DURATION,
-            /// @audit Ensures that `initialInitiatives` can be voted on
+            epochStart: p.epochStart,
             epochDuration: EPOCH_DURATION,
             epochVotingCutoff: EPOCH_VOTING_CUTOFF
         });
-        //console2.log(lqty, "lqty");
-        //console2.log(address(_boldToken), "address(_boldToken)");
-        //console2.log(stakingV1, "stakingV1");
-        //console2.log(_initialInitiatives.length, "_initialInitiatives");
+
         bytes memory bytecode = abi.encodePacked(
             type(Governance).creationCode,
-            abi.encode(
-                lqty,
-                address(_boldToken),
-                stakingV1,
-                address(_boldToken),
-                governanceConfiguration,
-                _deployer,
-                _initialInitiatives
-            )
+            abi.encode(p.lqty, p.lusd, p.stakingV1, p.bold, governanceConfiguration, p.deployer, new address[](0))
         );
 
-        address governanceAddress = vm.computeCreate2Address(_salt, keccak256(bytecode));
-
+        address governanceAddress = vm.computeCreate2Address(p.salt, keccak256(bytecode));
         return (governanceAddress, governanceConfiguration);
     }
 
     function deployCurveV2GaugeRewards(
         IGovernance _governance,
-        IERC20 _boldToken,
+        address _bold,
         address _curveFactoryAddress,
-        address _curvePoolAddress
-    ) private {
-        ICurveStableswapFactoryNG curveFactory = ICurveStableswapFactoryNG(_curveFactoryAddress);
-        ICurveStableswapNG curvePool = ICurveStableswapNG(_curvePoolAddress);
-        gauge = ILiquidityGauge(curveFactory.deploy_gauge(address(curvePool)));
-
-        curveV2GaugeRewards =
-            new CurveV2GaugeRewards(address(_governance), address(_boldToken), lqty, address(gauge), DURATION);
+        ICurveStableSwapNG _curvePool
+    ) private returns (ILiquidityGaugeV6 gauge, CurveV2GaugeRewards curveV2GaugeRewards) {
+        ICurveStableSwapFactoryNG curveFactory = ICurveStableSwapFactoryNG(_curveFactoryAddress);
+        gauge = ILiquidityGaugeV6(curveFactory.deploy_gauge(address(_curvePool)));
+        curveV2GaugeRewards = new CurveV2GaugeRewards(address(_governance), _bold, CRV, address(gauge), DURATION);
 
         // add BOLD as reward token
-        gauge.add_reward(address(_boldToken), address(curveV2GaugeRewards));
+        gauge.add_reward(_bold, address(curveV2GaugeRewards));
 
-        initialInitiatives.push(address(curveV2GaugeRewards));
+        // add LUSD as reward token to be distributed by the Funds Safe
+        gauge.add_reward(LUSD, FUNDS_SAFE);
+
+        // renounce gauge manager role
+        gauge.set_gauge_manager(address(0));
     }
 
-    function _getGovernanceDeploymentConstants() internal pure returns (string memory) {
+    function _getGovernanceDeploymentConstants(DeployGovernanceParams memory p) internal pure returns (string memory) {
         return string.concat(
             "{",
             string.concat(
-                string.concat('"REGISTRATION_FEE":"', uint256(REGISTRATION_FEE).toString(), '",'),
-                string.concat(
-                    '"REGISTRATION_THRESHOLD_FACTOR":"', uint256(REGISTRATION_THRESHOLD_FACTOR).toString(), '",'
-                ),
-                string.concat(
-                    '"UNREGISTRATION_THRESHOLD_FACTOR":"', uint256(UNREGISTRATION_THRESHOLD_FACTOR).toString(), '",'
-                ),
-                string.concat('"UNREGISTRATION_AFTER_EPOCHS":"', uint256(UNREGISTRATION_AFTER_EPOCHS).toString(), '",'),
-                string.concat('"VOTING_THRESHOLD_FACTOR":"', uint256(VOTING_THRESHOLD_FACTOR).toString(), '",'),
-                string.concat('"MIN_CLAIM":"', uint256(MIN_CLAIM).toString(), '",'),
-                string.concat('"MIN_ACCRUAL":"', uint256(MIN_ACCRUAL).toString(), '",'),
-                string.concat('"EPOCH_DURATION":"', uint256(EPOCH_DURATION).toString(), '",'),
-                string.concat('"EPOCH_VOTING_CUTOFF":"', uint256(EPOCH_VOTING_CUTOFF).toString(), '" ') // no comma
+                string.concat('"REGISTRATION_FEE":"', REGISTRATION_FEE.toString(), '",'),
+                string.concat('"REGISTRATION_THRESHOLD_FACTOR":"', REGISTRATION_THRESHOLD_FACTOR.toString(), '",'),
+                string.concat('"UNREGISTRATION_THRESHOLD_FACTOR":"', UNREGISTRATION_THRESHOLD_FACTOR.toString(), '",'),
+                string.concat('"UNREGISTRATION_AFTER_EPOCHS":"', UNREGISTRATION_AFTER_EPOCHS.toString(), '",'),
+                string.concat('"VOTING_THRESHOLD_FACTOR":"', VOTING_THRESHOLD_FACTOR.toString(), '",'),
+                string.concat('"MIN_CLAIM":"', MIN_CLAIM.toString(), '",'),
+                string.concat('"MIN_ACCRUAL":"', MIN_ACCRUAL.toString(), '",'),
+                string.concat('"EPOCH_START":"', p.epochStart.toString(), '",')
+            ),
+            string.concat(
+                string.concat('"EPOCH_DURATION":"', EPOCH_DURATION.toString(), '",'),
+                string.concat('"EPOCH_VOTING_CUTOFF":"', EPOCH_VOTING_CUTOFF.toString(), '",'),
+                string.concat('"FUNDS_SAFE":"', FUNDS_SAFE.toHexString(), '"') // no comma
             ),
             "}"
         );
     }
 
-    function _getGovernanceManifestJson(address _curvePoolAddress) internal view returns (string memory) {
+    function _getGovernanceManifestJson(DeployGovernanceParams memory p) internal view returns (string memory) {
         return string.concat(
             "{",
             string.concat(
-                string.concat('"constants":', _getGovernanceDeploymentConstants(), ","),
+                string.concat('"constants":', _getGovernanceDeploymentConstants(p), ","),
                 string.concat('"governance":"', address(governance).toHexString(), '",'),
-                string.concat('"curveV2GaugeRewardsInitiative":"', address(curveV2GaugeRewards).toHexString(), '",'),
-                string.concat('"curvePool":"', _curvePoolAddress.toHexString(), '",'),
-                string.concat('"gauge":"', address(gauge).toHexString(), '",'),
-                string.concat('"LQTYToken":"', lqty.toHexString(), '" ') // no comma
+                string.concat('"curveUsdcBoldPool":"', address(curveUsdcBoldPool).toHexString(), '",'),
+                string.concat('"curveUsdcBoldGauge":"', address(curveUsdcBoldGauge).toHexString(), '",'),
+                string.concat('"curveUsdcBoldInitiative":"', address(curveUsdcBoldInitiative).toHexString(), '",'),
+                string.concat('"curveLusdBoldPool":"', address(curveLusdBoldPool).toHexString(), '",'),
+                string.concat('"curveLusdBoldGauge":"', address(curveLusdBoldGauge).toHexString(), '",'),
+                string.concat('"curveLusdBoldInitiative":"', address(curveLusdBoldInitiative).toHexString(), '",')
+            ),
+            string.concat(
+                string.concat('"defiCollectiveInitiative":"', DEFI_COLLECTIVE_GRANTS_ADDRESS.toHexString(), '",'),
+                string.concat('"stakingV1":"', p.stakingV1.toHexString(), '",'),
+                string.concat('"LQTYToken":"', p.lqty.toHexString(), '",'),
+                string.concat('"LUSDToken":"', p.lusd.toHexString(), '"') // no comma
             ),
             "}"
         );

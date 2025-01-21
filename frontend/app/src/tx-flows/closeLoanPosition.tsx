@@ -12,9 +12,9 @@ import { usePrice } from "@/src/services/Prices";
 import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
 import { sleep } from "@/src/utils";
 import { vPositionLoanCommited } from "@/src/valibot-utils";
-import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
+import { maxUint256 } from "viem";
 import { readContract, writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
@@ -108,9 +108,18 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
   steps: {
     approveBold: {
       name: () => "Approve BOLD",
-      Status: TransactionStatus,
-
-      async commit({ contracts, request, wagmiConfig }) {
+      Status: (props) => (
+        <TransactionStatus
+          {...props}
+          approval="approve-only"
+        />
+      ),
+      async commit({
+        contracts,
+        request,
+        wagmiConfig,
+        preferredApproveMethod,
+      }) {
         const { loan } = request;
         const coll = contracts.collaterals[loan.collIndex];
         if (!coll) {
@@ -131,14 +140,14 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           functionName: "approve",
           args: [
             Zapper.address,
-            // TODO: calculate the amount to approve in a more precise way
-            dn.mul([entireDebt, 18], 1.1)[0],
+            preferredApproveMethod === "approve-infinite"
+              ? maxUint256 // infinite approval
+              : dn.mul([entireDebt, 18], 1.1)[0], // exact amount (TODO: better estimate)
           ],
         });
       },
-
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
 
@@ -184,18 +193,12 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           throw new Error("The flash loan amount could not be calculated.");
         }
 
-        const closeParams = {
-          troveId: BigInt(loan.troveId),
-          flashLoanAmount: closeFlashLoanAmount,
-          receiver: ADDRESS_ZERO,
-        };
-
         // repay with collateral => get ETH
         if (coll.symbol === "ETH") {
           return writeContract(wagmiConfig, {
             ...coll.contracts.LeverageWETHZapper,
             functionName: "closeTroveFromCollateral",
-            args: [closeParams],
+            args: [BigInt(loan.troveId), closeFlashLoanAmount],
           });
         }
 
@@ -203,12 +206,12 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         return writeContract(wagmiConfig, {
           ...coll.contracts.LeverageLSTZapper,
           functionName: "closeTroveFromCollateral",
-          args: [closeParams],
+          args: [BigInt(loan.troveId), closeFlashLoanAmount],
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ request, wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
 
         const prefixedTroveId = getPrefixedTroveId(
           request.loan.collIndex,

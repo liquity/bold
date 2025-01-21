@@ -180,7 +180,9 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         // Set batch manager (B)
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.InterestRateTooHigh.selector);
-        borrowerOperations.setInterestIndividualDelegate(troveId, C, 1e16, 101e16, 0, 0, 0, 10000e18, 0);
+        borrowerOperations.setInterestIndividualDelegate(
+            troveId, C, 1e16, uint128(MAX_ANNUAL_INTEREST_RATE) + 1, 0, 0, 0, 10000e18, 0
+        );
         vm.stopPrank();
     }
 
@@ -247,7 +249,7 @@ contract InterestIndividualDelegationTest is DevTestSetup {
         vm.stopPrank();
 
         // Try to switch to individual delegate (C) along with new interest
-        uint256 newAnnualInterestRate = 101e16;
+        uint256 newAnnualInterestRate = MAX_ANNUAL_INTEREST_RATE + 1;
         vm.startPrank(A);
         vm.expectRevert(BorrowerOperations.InterestRateTooHigh.selector);
         borrowerOperations.setInterestIndividualDelegate(

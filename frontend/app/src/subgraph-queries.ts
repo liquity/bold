@@ -32,9 +32,10 @@ export async function graphQuery<TResult, TVariables>(
   return result.data as TResult;
 }
 
-export const TrovesCountQuery = graphql(`
-  query TrovesCount($id: ID!) {
+export const BorrowerInfoQuery = graphql(`
+  query BorrowerInfo($id: ID!) {
     borrowerInfo(id: $id) {
+      nextOwnerIndexes
       troves
       trovesByCollateral
     }
@@ -148,9 +149,9 @@ export const TroveByIdQuery = graphql(`
   }
 `);
 
-export const StabilityPoolQuery = graphql(`
-  query StabilityPool($id: ID!) {
-    stabilityPool(id: $id) {
+export const StabilityPoolsQuery = graphql(`
+  query StabilityPools {
+    stabilityPools {
       id
       totalDeposited
     }
@@ -240,9 +241,12 @@ export const InterestBatchQuery = graphql(`
   }
 `);
 
-export const InterestRateBracketsQuery = graphql(`
-  query InterestRateBrackets($collId: String!) {
-    interestRateBrackets(where: { collateral: $collId }, orderBy: rate) {
+export const AllInterestRateBracketsQuery = graphql(`
+  query AllInterestRateBrackets {
+    interestRateBrackets(orderBy: rate) {
+      collateral {
+        collIndex
+      }
       rate
       totalDebt
     }

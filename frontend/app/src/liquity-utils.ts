@@ -207,7 +207,6 @@ export function useStakePosition(address: null | Address) {
       refetchInterval: DATA_REFRESH_INTERVAL,
       select: ([depositResult, totalStakedResult]): PositionStake | null => {
         if (depositResult.status === "failure" || totalStakedResult.status === "failure") {
-          console.log("useStakePosition", depositResult.error, totalStakedResult.error);
           return null;
         }
         const deposit = dnum18(depositResult.result);

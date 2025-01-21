@@ -16,6 +16,7 @@ import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
+import { maxUint256 } from "viem";
 import { readContract, writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction, verifyTroveUpdate } from "./shared";
 
@@ -188,9 +189,18 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         const token = getCollToken(request.loan.collIndex);
         return `Approve ${token?.name ?? ""}`;
       },
-      Status: TransactionStatus,
-
-      async commit({ contracts, request, wagmiConfig }) {
+      Status: (props) => (
+        <TransactionStatus
+          {...props}
+          approval="approve-only"
+        />
+      ),
+      async commit({
+        contracts,
+        request,
+        wagmiConfig,
+        preferredApproveMethod,
+      }) {
         if (!request.depositChange) {
           throw new Error("Invalid step: depositChange is required with approveLst");
         }
@@ -206,13 +216,14 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           functionName: "approve",
           args: [
             Zapper.address,
-            request.depositChange[0],
+            preferredApproveMethod === "approve-infinite"
+              ? maxUint256 // infinite approval
+              : request.depositChange[0], // exact amount
           ],
         });
       },
-
-      async verify({ wagmiConfig }, hash) {
-        await verifyTransaction(wagmiConfig, hash);
+      async verify({ wagmiConfig, isSafe }, hash) {
+        await verifyTransaction(wagmiConfig, hash, isSafe);
       },
     },
 
@@ -249,12 +260,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -292,12 +298,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -350,12 +351,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -405,12 +401,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
   },

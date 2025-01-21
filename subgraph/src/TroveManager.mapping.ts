@@ -1,11 +1,12 @@
 import { Address, BigInt, Bytes, dataSource } from "@graphprotocol/graph-ts";
-import { BorrowerInfo, Collateral, InterestBatch, InterestRateBracket, Trove } from "../generated/schema";
+import { Collateral, InterestBatch, InterestRateBracket, Trove } from "../generated/schema";
 import {
   BatchUpdated as BatchUpdatedEvent,
   TroveManager as TroveManagerContract,
   TroveOperation as TroveOperationEvent,
 } from "../generated/templates/TroveManager/TroveManager";
 import { TroveNFT as TroveNFTContract } from "../generated/templates/TroveManager/TroveNFT";
+import { BorrowerTrovesCountUpdate, updateBorrowerTrovesCount } from "./shared";
 
 // decides whether to update the flag indicating
 // that a trove might be leveraged or not.
@@ -38,13 +39,18 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   let timestamp = event.block.timestamp;
   let troveId = event.params._troveId;
   let collId = dataSource.context().getString("collId");
+  let collateral = Collateral.load(collId);
+
+  if (!collateral) {
+    throw new Error("Collateral not found: " + collId);
+  }
 
   let operation = event.params._operation;
   let tm = TroveManagerContract.bind(event.address);
   let trove: Trove | null = null;
 
   if (operation === OP_OPEN_TROVE) {
-    updateTrove(tm, troveId, timestamp, getLeverageUpdate(event), true);
+    trove = updateTrove(tm, troveId, timestamp, getLeverageUpdate(event), true);
     return;
   }
 
@@ -99,6 +105,13 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
     if (trove.interestBatch !== null) {
       leaveBatch(collId, troveId, BigInt.fromI32(0));
     }
+
+    updateBorrowerTrovesCount(
+      BorrowerTrovesCountUpdate.remove,
+      Address.fromBytes(trove.borrower),
+      collateral.collIndex,
+    );
+
     trove.closedAt = timestamp;
     trove.status = "closed";
     trove.save();
@@ -269,22 +282,11 @@ function createTrove(
     dataSource.context().getBytes("address:troveNft"),
   )).ownerOf(troveId);
 
-  // create borrower info if needed
-  let borrowerInfo = BorrowerInfo.load(borrower.toHexString());
-  if (!borrowerInfo) {
-    borrowerInfo = new BorrowerInfo(borrower.toHexString());
-    borrowerInfo.troves = 0;
-
-    let totalCollaterals = dataSource.context().getI32("totalCollaterals");
-    borrowerInfo.trovesByCollateral = (new Array<i32>(totalCollaterals)).fill(0);
-  }
-
-  // update borrower info
-  let trovesByColl = borrowerInfo.trovesByCollateral;
-  trovesByColl[collateral.collIndex] += 1;
-  borrowerInfo.trovesByCollateral = trovesByColl;
-  borrowerInfo.troves += 1;
-  borrowerInfo.save();
+  updateBorrowerTrovesCount(
+    BorrowerTrovesCountUpdate.add,
+    borrower,
+    collateral.collIndex,
+  );
 
   // create trove
   trove = new Trove(troveFullId);

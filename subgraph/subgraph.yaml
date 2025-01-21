@@ -6,8 +6,8 @@ dataSources:
     name: BoldToken
     source:
       abi: BoldToken
-      address: "0x6ecf96d1f30cd98c0b58d6b12ea8ae014c52464d"
-      startBlock: 7279144
+      address: "0x0a69fa2a565bd6fa9c3890ecaa30b149aaf99136"
+      startBlock: 7314166
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -38,8 +38,8 @@ dataSources:
     name: Governance
     source:
       abi: Governance
-      address: "0xd7eae81178b97e49e6471f398f0486a7c2e43721"
-      startBlock: 7279317
+      address: "0x7eedda08119826757c98a4680e94f3b5e1f33af6"
+      startBlock: 7314318
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -53,18 +53,18 @@ dataSources:
         - name: Governance
           file: ../contracts/out/Governance.sol/Governance.json
       eventHandlers:
-        - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,bool)
+        - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,uint8)
           handler: handleAllocateLQTY
-        - event: ClaimForInitiative(indexed address,uint256,uint256,bool)
+        - event: ClaimForInitiative(indexed address,uint256,uint256,uint8)
           handler: handleClaimForInitiative
         - event: DepositLQTY(indexed
             address,address,uint256,uint256,uint256,uint256,uint256)
           handler: handleDepositLQTY
-        - event: RegisterInitiative(address,address,uint256,bool)
+        - event: RegisterInitiative(address,address,uint256,uint8)
           handler: handleRegisterInitiative
         - event: SnapshotVotesForInitiative(indexed address,uint256,uint256,uint256)
           handler: handleSnapshotVotesForInitiative
-        - event: UnregisterInitiative(address,uint256,bool)
+        - event: UnregisterInitiative(address,uint256,uint8)
           handler: handleUnregisterInitiative
         - event: WithdrawLQTY(indexed
             address,address,uint256,uint256,uint256,uint256,uint256,uint256)

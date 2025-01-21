@@ -12,7 +12,7 @@ import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/Transact
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { vPositionLoanCommited } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
-import { ADDRESS_ZERO } from "@liquity2/uikit";
+import { ADDRESS_ZERO, InfoTooltip } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
@@ -133,17 +133,41 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
               ]}
             />
           )}
-          <TransactionDetailsRow
-            label="Interest rate adjustment fee"
-            value={[
-              <Amount
-                key="start"
-                fallback="…"
-                value={upfrontFee.data}
-                suffix=" BOLD"
-              />,
-            ]}
-          />
+          {upfrontFee.data && dn.gt(upfrontFee.data, 0) && (
+            <TransactionDetailsRow
+              label={
+                <div
+                  className={css({
+                    display: "flex",
+                    gap: 4,
+                  })}
+                >
+                  <div>Interest rate adjustment fee</div>
+                  <InfoTooltip
+                    content={{
+                      heading: null,
+                      body: `
+                        A fee equal to 7 days of average interest applies when modifying rates less than 7 days after the
+                        last adjustment. This prevents rate manipulation and ensures fair redemption distribution.
+                      `,
+                      footerLink: {
+                        href: "https://docs.liquity.org/v2-faq/borrowing-and-liquidations#can-i-adjust-the-rate",
+                        label: "Learn more",
+                      },
+                    }}
+                  />
+                </div>
+              }
+              value={[
+                <Amount
+                  key="start"
+                  fallback="…"
+                  value={upfrontFee.data}
+                  suffix=" BOLD"
+                />,
+              ]}
+            />
+          )}
         </>
       );
   },
@@ -177,12 +201,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -217,12 +236,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
 
@@ -253,12 +267,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
       },
 
       async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(
-          wagmiConfig,
-          hash,
-          request.loan.collIndex,
-          request.loan.updatedAt,
-        );
+        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
       },
     },
   },

@@ -51,8 +51,6 @@ export function StakePositionSummary({
 
   const votingPowerRef = useRef<HTMLDivElement>(null);
   const votingPowerTooltipRef = useRef<HTMLDivElement>(null);
-  const votingPowerTooltipShareRef = useRef<HTMLDivElement>(null);
-  const votingPowerTooltipTotalRef = useRef<HTMLDivElement>(null);
 
   useRaf(() => {
     if (!votingPowerRef.current) {
@@ -93,14 +91,8 @@ export function StakePositionSummary({
     votingPowerRef.current.innerHTML = sharePctRoundedFormatted;
     votingPowerRef.current.title = sharePctFormatted;
 
-    if (
-      votingPowerTooltipRef.current
-      && votingPowerTooltipShareRef.current
-      && votingPowerTooltipTotalRef.current
-    ) {
-      votingPowerTooltipRef.current.innerHTML = fmtnum(Number(userVpLive / 10n ** 15n), 0);
-      votingPowerTooltipTotalRef.current.innerHTML = fmtnum(Number(totalVpLive / 10n ** 15n), 0);
-      votingPowerTooltipShareRef.current.innerHTML = sharePctFormatted;
+    if (votingPowerTooltipRef.current) {
+      votingPowerTooltipRef.current.innerHTML = sharePctFormatted;
     }
   }, 30);
 
@@ -314,101 +306,135 @@ export function StakePositionSummary({
               </HFlex>
             </HFlex>
           </div>
-          <div>
-            <div
-              className={css({
-                color: "token(colors.strongSurfaceContentAlt)",
-              })}
-            >
-              Voting power
-            </div>
+          {!txPreviewMode && (
+            <div>
+              <div
+                className={css({
+                  color: "token(colors.strongSurfaceContentAlt)",
+                })}
+              >
+                Voting power
+              </div>
 
-            {appear((style, show) => (
-              show && (
-                <a.div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                  })}
-                  style={style}
-                >
-                  <div
-                    ref={votingPowerRef}
+              {appear((style, show) => (
+                show && (
+                  <a.div
                     className={css({
-                      fontVariantNumeric: "tabular-nums",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
                     })}
-                    style={{
-                      color: txPreviewMode
-                          && prevStakePosition
-                          && stakePosition?.share
-                          && !dn.eq(prevStakePosition.share, stakePosition.share)
-                        ? "var(--update-color)"
-                        : "inherit",
-                    }}
+                    style={style}
                   >
-                  </div>
-                  {prevStakePosition && stakePosition && !dn.eq(prevStakePosition.share, stakePosition.share) && (
                     <div
+                      ref={votingPowerRef}
                       className={css({
-                        color: "contentAlt",
-                        textDecoration: "line-through",
+                        fontVariantNumeric: "tabular-nums",
                       })}
+                      style={{
+                        color: txPreviewMode
+                            && prevStakePosition
+                            && stakePosition?.share
+                            && !dn.eq(prevStakePosition.share, stakePosition.share)
+                          ? "var(--update-color)"
+                          : "inherit",
+                      }}
                     >
-                      <Amount
-                        percentage
-                        value={prevStakePosition?.share ?? 0}
-                      />
                     </div>
-                  )}
-                  <InfoTooltip
-                    content={{
-                      heading: null,
-                      body: (
-                        <div
-                          className={css({
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 16,
-                          })}
-                        >
-                          <p>
-                            Voting power increases over time based on the total amount of LQTY staked.
-                          </p>
-                          {account.address && (
+                    {prevStakePosition
+                      && stakePosition
+                      && !dn.eq(prevStakePosition.share, stakePosition.share) && (
+                      <div
+                        className={css({
+                          color: "contentAlt",
+                          textDecoration: "line-through",
+                        })}
+                      >
+                        <Amount
+                          percentage
+                          value={prevStakePosition?.share ?? 0}
+                        />
+                      </div>
+                    )}
+                    {!txPreviewMode && (
+                      <InfoTooltip
+                        content={{
+                          heading: null,
+                          body: (
                             <div
                               className={css({
                                 display: "flex",
                                 flexDirection: "column",
-                                gap: 8,
+                                gap: 16,
                               })}
                             >
-                              <TooltipRow
-                                label="All voting power"
-                                value={<div ref={votingPowerTooltipTotalRef} />}
-                              />
-                              <TooltipRow
-                                label="Your voting power"
-                                value={<div ref={votingPowerTooltipRef} />}
-                              />
-                              <TooltipRow
-                                label="Your voting share"
-                                value={<div ref={votingPowerTooltipShareRef} />}
-                              />
+                              <p>
+                                Voting power increases over time based on the total amount of LQTY staked.
+                              </p>
+                              {account.address && (
+                                <div
+                                  className={css({
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 8,
+                                  })}
+                                >
+                                  <TooltipRow
+                                    label="Your voting power"
+                                    value={<div ref={votingPowerTooltipRef} />}
+                                  />
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      ),
-                      footerLink: {
-                        href: "https://github.com/liquity/V2-gov#staking",
-                        label: "Learn more",
-                      },
-                    }}
-                  />
-                </a.div>
-              )
-            ))}
-          </div>
+                          ),
+                          footerLink: {
+                            href: "https://docs.liquity.org/v2-faq/lqty-staking",
+                            label: "Learn more",
+                          },
+                        }}
+                      />
+                    )}
+                  </a.div>
+                )
+              ))}
+            </div>
+          )}
+          {!txPreviewMode && (
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+              })}
+            >
+              <div
+                className={css({
+                  color: "token(colors.strongSurfaceContentAlt)",
+                })}
+              >
+                Allocated
+              </div>
+              <div
+                title={`${fmtnum([govUser.data?.allocatedLQTY ?? 0n, 18], "full")} LQTY`}
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                })}
+              >
+                <Amount
+                  title={null}
+                  format="compact"
+                  value={[govUser.data?.allocatedLQTY ?? 0n, 18]}
+                />
+                <TokenIcon
+                  title={null}
+                  symbol="LQTY"
+                  size="mini"
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

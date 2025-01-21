@@ -3,7 +3,7 @@
 import type { ReactElement, ReactNode } from "react";
 import type { CSSProperties } from "react";
 
-import { autoUpdate, offset, shift, useFloating } from "@floating-ui/react-dom";
+import { autoUpdate, computePosition, offset, shift, useFloating } from "@floating-ui/react-dom";
 import { a, useTransition } from "@react-spring/web";
 import { isValidElement, useEffect, useId, useRef, useState } from "react";
 import { css, cx } from "../../styled-system/css";
@@ -32,6 +32,8 @@ type NormalizedGroup = {
 
 export function Dropdown({
   buttonDisplay = "normal",
+  customButton,
+  floatingUpdater,
   items,
   menuPlacement = "start",
   menuWidth,
@@ -48,8 +50,18 @@ export function Dropdown({
       icon?: ReactNode;
       label: ReactNode;
     });
+  customButton?: (ctx: {
+    item: DropdownItem | null;
+    index: number;
+    menuVisible: boolean;
+  }) => ReactElement;
+  floatingUpdater?: (args: {
+    computePosition: typeof computePosition;
+    referenceElement: HTMLElement;
+    floatingElement: HTMLElement;
+  }) => () => Promise<void>;
   items: DropdownItem[] | DropdownGroup[];
-  menuPlacement?: "start" | "end";
+  menuPlacement?: "start" | "end" | "top-start" | "top-end";
   menuWidth?: number;
   onSelect: (index: number) => void;
   placeholder?: ReactNode | Exclude<DropdownItem, "value">;
@@ -58,14 +70,25 @@ export function Dropdown({
 }) {
   const { groups, flatItems } = normalizeGroups(items);
 
+  let placement = menuPlacement === "start" || menuPlacement === "end"
+    ? `bottom-${menuPlacement}` as const
+    : menuPlacement;
+
   const { refs: floatingRefs, floatingStyles } = useFloating<HTMLButtonElement>({
-    placement: `bottom-${menuPlacement}`,
-    whileElementsMounted: (referenceEl, floatingEl, update) => (
-      autoUpdate(referenceEl, floatingEl, update, {
+    placement,
+    whileElementsMounted: (refEl, floatingEl, update) => {
+      const updateFromProps = refEl instanceof HTMLElement
+        ? floatingUpdater?.({
+          computePosition,
+          referenceElement: refEl,
+          floatingElement: floatingEl,
+        })
+        : null;
+      return autoUpdate(refEl, floatingEl, updateFromProps ?? update, {
         layoutShift: false,
         animationFrame: false,
-      })
-    ),
+      });
+    },
     middleware: [
       offset(8),
       shift(),
@@ -169,12 +192,16 @@ export function Dropdown({
       return placeholder;
     }
 
-    return placeholder
-      ? { label: placeholder }
-      : null;
+    return placeholder ? { label: placeholder } : null;
   })();
 
-  const customButton = isValidElement(buttonDisplay) ? buttonDisplay : null;
+  const customButton_ = customButton?.({
+    item: buttonItem,
+    index: selected,
+    menuVisible: showMenu,
+  }) ?? (
+    isValidElement(buttonDisplay) ? buttonDisplay : null
+  );
 
   return (
     <>
@@ -199,68 +226,70 @@ export function Dropdown({
             cursor: "pointer",
           }),
         )}
-        style={customButton ? {} : {
+        style={customButton_ ? {} : {
           height: size === "small" ? 32 : 40,
           fontSize: size === "small" ? 16 : 24,
         }}
       >
-        {customButton ?? (buttonItem && (
-          <div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              padding: "0 10px 0 16px",
-              height: "100%",
-              whiteSpace: "nowrap",
-              borderWidth: "1px 1px 0 1px",
-              borderStyle: "solid",
-              borderColor: "#F5F6F8",
-              boxShadow: `
-                0 2px 2px rgba(0, 0, 0, 0.1),
-                0 4px 10px rgba(18, 27, 68, 0.05),
-                inset 0 -1px 4px rgba(0, 0, 0, 0.05)
-              `,
-              borderRadius: 90,
-              cursor: "pointer",
-
-              "--color-normal": "token(colors.content)",
-              "--color-placeholder": "token(colors.accentContent)",
-              "--background-normal": "token(colors.controlSurface)",
-              "--background-placeholder": "token(colors.accent)",
-
-              _groupActive: {
-                translate: "0 1px",
-                boxShadow: `0 1px 1px rgba(0, 0, 0, 0.1)`,
-              },
-              _groupFocusVisible: {
-                outline: "2px solid token(colors.focused)",
-              },
-            })}
-            style={{
-              gap: size === "small" ? 6 : 8,
-              color: `var(--color-${buttonItem === placeholder ? "placeholder" : "normal"})`,
-              background: `var(--background-${buttonItem === placeholder ? "placeholder" : "normal"})`,
-            } as CSSProperties}
-          >
-            {buttonItem.icon && buttonDisplay !== "label-only" && (
-              <div style={{ marginLeft: -6 }}>
-                {buttonItem.icon}
-              </div>
-            )}
+        {customButton_ ?? (
+          buttonItem && (
             <div
               className={css({
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                padding: "0 10px 0 16px",
+                height: "100%",
+                whiteSpace: "nowrap",
+                borderWidth: "1px 1px 0 1px",
+                borderStyle: "solid",
+                borderColor: "#F5F6F8",
+                boxShadow: `
+                0 2px 2px rgba(0, 0, 0, 0.1),
+                0 4px 10px rgba(18, 27, 68, 0.05),
+                inset 0 -1px 4px rgba(0, 0, 0, 0.05)
+              `,
+                borderRadius: 90,
+                cursor: "pointer",
+
+                "--color-normal": "token(colors.content)",
+                "--color-placeholder": "token(colors.accentContent)",
+                "--background-normal": "token(colors.controlSurface)",
+                "--background-placeholder": "token(colors.accent)",
+
+                _groupActive: {
+                  translate: "0 1px",
+                  boxShadow: `0 1px 1px rgba(0, 0, 0, 0.1)`,
+                },
+                _groupFocusVisible: {
+                  outline: "2px solid token(colors.focused)",
+                },
               })}
+              style={{
+                gap: size === "small" ? 6 : 8,
+                color: `var(--color-${buttonItem === placeholder ? "placeholder" : "normal"})`,
+                background: `var(--background-${buttonItem === placeholder ? "placeholder" : "normal"})`,
+              } as CSSProperties}
             >
-              {buttonItem.label}
+              {buttonItem.icon && buttonDisplay !== "label-only" && (
+                <div style={{ marginLeft: -6 }}>
+                  {buttonItem.icon}
+                </div>
+              )}
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                })}
+              >
+                {buttonItem.label}
+              </div>
+              <div>
+                <IconChevronDown size={size === "small" ? 16 : 24} />
+              </div>
             </div>
-            <div>
-              <IconChevronDown size={size === "small" ? 16 : 24} />
-            </div>
-          </div>
-        ))}
+          )
+        )}
       </button>
       <Root>
         {menuVisibility((appearStyles, { groups }) => (

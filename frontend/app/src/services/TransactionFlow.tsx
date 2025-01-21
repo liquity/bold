@@ -8,6 +8,7 @@ import type { Config as WagmiConfig } from "wagmi";
 import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { getContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { useAccount } from "@/src/services/Ethereum";
 import { useStoredState } from "@/src/services/StoredState";
 import { noop } from "@/src/utils";
 import { vAddress } from "@/src/valibot-utils";
@@ -15,7 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as v from "valibot";
-import { useAccount, useConfig as useWagmiConfig } from "wagmi";
+import { useConfig as useWagmiConfig } from "wagmi";
 
 /* flows registration */
 
@@ -158,6 +159,8 @@ export type Flowstate<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
 export type FlowParams<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
   account: Address | null;
   contracts: Contracts;
+  isSafe: boolean;
+  preferredApproveMethod: "permit" | "approve-amount" | "approve-infinite";
   request: FlowRequest;
   steps: FlowStep[] | null;
   storedState: ReturnType<typeof useStoredState>;
@@ -203,6 +206,7 @@ export function getFlowDeclaration<K extends keyof FlowRequestMap>(
 type TransactionFlowContext<
   FlowRequest extends FlowRequestMap[keyof FlowRequestMap] = FlowRequestMap[keyof FlowRequestMap],
 > = {
+  clearError: () => void;
   currentStep: FlowStep | null;
   currentStepIndex: number;
   discard: () => void;
@@ -214,6 +218,7 @@ type TransactionFlowContext<
 };
 
 const TransactionFlowContext = createContext<TransactionFlowContext>({
+  clearError: noop,
   currentStep: null,
   currentStepIndex: -1,
   discard: noop,
@@ -235,14 +240,15 @@ export function TransactionFlow({
   const wagmiConfig = useWagmiConfig();
 
   const {
+    clearError,
+    commit,
     currentStep,
     currentStepIndex,
     discardFlow,
     flow,
     flowDeclaration,
     startFlow,
-    commit,
-  } = useFlowManager(account.address ?? null);
+  } = useFlowManager(account.address ?? null, account.safeStatus !== null);
 
   const start: TransactionFlowContext["start"] = useCallback((request) => {
     if (account.address) {
@@ -256,22 +262,25 @@ export function TransactionFlow({
   return (
     <TransactionFlowContext.Provider
       value={{
+        clearError,
+        commit,
         currentStep,
         currentStepIndex,
         discard: discardFlow,
-        commit,
-        start,
         flow,
         flowDeclaration,
         flowParams: flow && account.address
           ? {
             ...flow,
-            contracts: getContracts(),
             account: account.address,
+            contracts: getContracts(),
+            isSafe: account.safeStatus !== null,
+            preferredApproveMethod: storedState.preferredApproveMethod,
             storedState,
             wagmiConfig,
           }
           : null,
+        start,
       }}
     >
       {children}
@@ -304,21 +313,21 @@ function useSteps(
         throw new Error("Flow declaration not found: " + flow.request.flowId);
       }
 
-      const context = {
+      return flowDeclaration.getSteps({
         account: account.address,
         contracts: getContracts(),
+        isSafe: account.safeStatus !== null,
+        preferredApproveMethod: storedState.preferredApproveMethod,
         request: flow.request,
         steps: flow.steps,
         storedState,
         wagmiConfig,
-      };
-
-      return flowDeclaration.getSteps(context);
+      });
     },
   });
 }
 
-function useFlowManager(account: Address | null) {
+function useFlowManager(account: Address | null, isSafe: boolean = false) {
   const [flow, setFlow] = useState<Flowstate<FlowRequestMap[keyof FlowRequestMap]> | null>(null);
   const wagmiConfig = useWagmiConfig();
   const storedState = useStoredState();
@@ -357,6 +366,8 @@ function useFlowManager(account: Address | null) {
       const params: FlowParams<FlowRequestMap[keyof FlowRequestMap]> = {
         account,
         contracts: getContracts(),
+        isSafe,
+        preferredApproveMethod: storedState.preferredApproveMethod,
         request: flow.request,
         steps: flow.steps,
         storedState,
@@ -483,6 +494,17 @@ function useFlowManager(account: Address | null) {
     await startStep(stepDef, currentStepIndex);
   }, [flow, flowDeclaration, currentStep, currentStepIndex, startStep]);
 
+  const clearError = useCallback(() => {
+    if (!flow?.steps || currentStepIndex === -1) return;
+    if (flow.steps[currentStepIndex]?.status === "error") {
+      updateFlowStep(currentStepIndex, {
+        status: "idle",
+        artifact: null,
+        error: null,
+      });
+    }
+  }, [flow, currentStepIndex, updateFlowStep]);
+
   const isFlowComplete = useMemo(
     () => flow?.steps?.at(-1)?.status === "confirmed",
     [flow],
@@ -509,6 +531,7 @@ function useFlowManager(account: Address | null) {
   useResetQueriesOnPathChange(isFlowComplete);
 
   return {
+    clearError,
     currentStep,
     currentStepIndex,
     discardFlow,

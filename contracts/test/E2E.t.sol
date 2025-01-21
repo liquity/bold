@@ -7,9 +7,11 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {IERC20Metadata as IERC20} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {IGovernance} from "V2-gov/src/interfaces/IGovernance.sol";
+import {MockStakingV1} from "V2-gov/test/mocks/MockStakingV1.sol";
+import {IUserProxy} from "V2-gov/src/interfaces/IUserProxy.sol";
 import {IUserProxyFactory} from "V2-gov/src/interfaces/IUserProxyFactory.sol";
 import {CurveV2GaugeRewards} from "V2-gov/src/CurveV2GaugeRewards.sol";
+import {Governance} from "V2-gov/src/Governance.sol";
 import {ILeverageZapper} from "src/Zappers/Interfaces/ILeverageZapper.sol";
 import {IZapper} from "src/Zappers/Interfaces/IZapper.sol";
 import {Ownable} from "src/Dependencies/Ownable.sol";
@@ -28,7 +30,14 @@ import {IStabilityPool} from "src/Interfaces/IStabilityPool.sol";
 import {IWETH} from "src/Interfaces/IWETH.sol";
 import {ICurveStableSwapNG} from "./Interfaces/Curve/ICurveStableSwapNG.sol";
 import {ILiquidityGaugeV6} from "./Interfaces/Curve/ILiquidityGaugeV6.sol";
+import {IBorrowerOperationsV1} from "./Interfaces/LiquityV1/IBorrowerOperationsV1.sol";
+import {IPriceFeedV1} from "./Interfaces/LiquityV1/IPriceFeedV1.sol";
+import {ISortedTrovesV1} from "./Interfaces/LiquityV1/ISortedTrovesV1.sol";
+import {ITroveManagerV1} from "./Interfaces/LiquityV1/ITroveManagerV1.sol";
 import {ERC20Faucet} from "./TestContracts/ERC20Faucet.sol";
+import {StringEquality} from "./Utils/StringEquality.sol";
+
+uint256 constant PRICE_TOLERANCE = 0.02 ether;
 
 address constant ETH_WHALE = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // Anvil account #1
 address constant WETH_WHALE = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC; // Anvil account #2
@@ -36,6 +45,13 @@ address constant WSTETH_WHALE = 0xd85351181b3F264ee0FDFa94518464d7c3DefaDa;
 address constant RETH_WHALE = 0xE76af4a9A3E71681F4C9BE600A0BA8D9d249175b;
 address constant USDC_WHALE = 0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341;
 address constant LQTY_WHALE = 0xA78f19D7f331247212C6d9C0F27D3d9464D3604D;
+address constant LUSD_WHALE = 0xcd6Eb888e76450eF584E8B51bB73c76ffBa21FF2;
+
+IBorrowerOperationsV1 constant mainnet_V1_borrowerOperations =
+    IBorrowerOperationsV1(0x24179CD81c9e782A4096035f7eC97fB8B783e007);
+IPriceFeedV1 constant mainnet_V1_priceFeed = IPriceFeedV1(0x4c517D4e2C851CA76d7eC94B805269Df0f2201De);
+ISortedTrovesV1 constant mainnet_V1_sortedTroves = ISortedTrovesV1(0x8FdD3fbFEb32b28fb73555518f8b361bCeA741A6);
+ITroveManagerV1 constant mainnet_V1_troveManager = ITroveManagerV1(0xA39739EF8b0231DbFA0DcdA07d7e29faAbCf4bb2);
 
 function coalesce(address a, address b) pure returns (address) {
     return a != address(0) ? a : b;
@@ -51,6 +67,10 @@ contract SideEffectFreeGetPriceHelper {
     function throwPrice(IPriceFeed priceFeed) external {
         (uint256 price,) = priceFeed.fetchPrice();
         _revert(abi.encode(price));
+    }
+
+    function throwPriceV1(IPriceFeedV1 priceFeed) external {
+        _revert(abi.encode(priceFeed.fetchPrice()));
     }
 }
 
@@ -80,20 +100,21 @@ library SideEffectFreeGetPrice {
             return abi.decode(revertData, (uint256));
         }
     }
-}
 
-library StringEquality {
-    function eq(string memory a, string memory b) internal pure returns (bool) {
-        return keccak256(bytes(a)) == keccak256(bytes(b));
-    }
+    function getPrice(IPriceFeedV1 priceFeed) internal returns (uint256) {
+        deploy();
 
-    function notEq(string memory a, string memory b) internal pure returns (bool) {
-        return !eq(a, b);
+        try helper.throwPriceV1(priceFeed) {
+            revert("SideEffectFreeGetPrice: throwPriceV1() should have reverted");
+        } catch (bytes memory revertData) {
+            return abi.decode(revertData, (uint256));
+        }
     }
 }
 
 contract E2ETest is Test {
     using SideEffectFreeGetPrice for IPriceFeed;
+    using SideEffectFreeGetPrice for IPriceFeedV1;
     using Strings for uint256;
     using stdJson for string;
     using StringEquality for string;
@@ -113,39 +134,51 @@ contract E2ETest is Test {
         IZapper zapper;
     }
 
+    struct Initiative {
+        address addr;
+        ILiquidityGaugeV6 gauge; // optional
+    }
+
     address WETH;
     address WSTETH;
     address RETH;
     address BOLD;
     address USDC;
     address LQTY;
+    address LUSD;
 
     uint256 ETH_GAS_COMPENSATION;
     uint256 MIN_DEBT;
+    uint256 EPOCH_START;
     uint256 EPOCH_DURATION;
     uint256 REGISTRATION_FEE;
 
     IWETH weth;
     IERC20 usdc;
     IERC20 lqty;
+    IERC20 lusd;
 
     mapping(address token => address) providerOf;
 
     ICollateralRegistry collateralRegistry;
     IBoldToken boldToken;
     IHintHelpers hintHelpers;
-    IGovernance governance;
+    Governance governance;
     ICurveStableSwapNG curveUsdcBold;
     ILiquidityGaugeV6 curveUsdcBoldGauge;
     CurveV2GaugeRewards curveUsdcBoldInitiative;
+    ICurveStableSwapNG curveLusdBold;
+    ILiquidityGaugeV6 curveLusdBoldGauge;
+    CurveV2GaugeRewards curveLusdBoldInitiative;
+    address defiCollectiveInitiative;
     BranchContracts[] branches;
 
     address[] ownables;
 
-    address[] initiativesToReset;
-    address[] initiatives;
-    int256[] votes;
-    int256[] vetos;
+    address[] _allocateLQTY_initiativesToReset;
+    address[] _allocateLQTY_initiatives;
+    int256[] _allocateLQTY_votes;
+    int256[] _allocateLQTY_vetos;
 
     function setUp() external {
         vm.skip(vm.envOr("FOUNDRY_PROFILE", string("")).notEq("e2e"));
@@ -155,10 +188,14 @@ contract E2ETest is Test {
         collateralRegistry = ICollateralRegistry(json.readAddress(".collateralRegistry"));
         boldToken = IBoldToken(BOLD = json.readAddress(".boldToken"));
         hintHelpers = IHintHelpers(json.readAddress(".hintHelpers"));
-        governance = IGovernance(json.readAddress(".governance.governance"));
-        curveUsdcBold = ICurveStableSwapNG(json.readAddress(".governance.curvePool"));
-        curveUsdcBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.gauge"));
-        curveUsdcBoldInitiative = CurveV2GaugeRewards(json.readAddress(".governance.curveV2GaugeRewardsInitiative"));
+        governance = Governance(json.readAddress(".governance.governance"));
+        curveUsdcBold = ICurveStableSwapNG(json.readAddress(".governance.curveUsdcBoldPool"));
+        curveUsdcBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.curveUsdcBoldGauge"));
+        curveUsdcBoldInitiative = CurveV2GaugeRewards(json.readAddress(".governance.curveUsdcBoldInitiative"));
+        curveLusdBold = ICurveStableSwapNG(json.readAddress(".governance.curveLusdBoldPool"));
+        curveLusdBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.curveLusdBoldGauge"));
+        curveLusdBoldInitiative = CurveV2GaugeRewards(json.readAddress(".governance.curveLusdBoldInitiative"));
+        defiCollectiveInitiative = json.readAddress(".governance.defiCollectiveInitiative");
 
         vm.label(address(collateralRegistry), "CollateralRegistry");
         vm.label(address(hintHelpers), "HintHelpers");
@@ -169,10 +206,12 @@ contract E2ETest is Test {
 
         ETH_GAS_COMPENSATION = json.readUint(".constants.ETH_GAS_COMPENSATION");
         MIN_DEBT = json.readUint(".constants.MIN_DEBT");
+        EPOCH_START = json.readUint(".governance.constants.EPOCH_START");
         EPOCH_DURATION = json.readUint(".governance.constants.EPOCH_DURATION");
         REGISTRATION_FEE = json.readUint(".governance.constants.REGISTRATION_FEE");
         LQTY = json.readAddress(".governance.LQTYToken");
         USDC = curveUsdcBold.coins(0) != BOLD ? curveUsdcBold.coins(0) : curveUsdcBold.coins(1);
+        LUSD = address(IUserProxy(governance.userProxyImplementation()).lusd());
 
         for (uint256 i = 0; i < collateralRegistry.totalCollaterals(); ++i) {
             string memory branch = string.concat(".branches[", i.toString(), "]");
@@ -226,10 +265,12 @@ contract E2ETest is Test {
         vm.label(BOLD, "BOLD");
         vm.label(USDC, "USDC");
         vm.label(LQTY, "LQTY");
+        vm.label(LUSD, "LUSD");
 
         weth = IWETH(WETH);
         usdc = IERC20(USDC);
         lqty = IERC20(LQTY);
+        lusd = IERC20(LUSD);
 
         vm.label(ETH_WHALE, "ETH_WHALE");
         vm.label(WETH_WHALE, "WETH_WHALE");
@@ -237,19 +278,21 @@ contract E2ETest is Test {
         vm.label(RETH_WHALE, "RETH_WHALE");
         vm.label(USDC_WHALE, "USDC_WHALE");
         vm.label(LQTY_WHALE, "LQTY_WHALE");
+        vm.label(LUSD_WHALE, "LUSD_WHALE");
 
         providerOf[WETH] = WETH_WHALE;
         providerOf[WSTETH] = WSTETH_WHALE;
         providerOf[RETH] = RETH_WHALE;
         providerOf[USDC] = USDC_WHALE;
         providerOf[LQTY] = LQTY_WHALE;
+        providerOf[LUSD] = LUSD_WHALE;
 
         vm.prank(WETH_WHALE);
         weth.deposit{value: WETH_WHALE.balance}();
 
         // Testnet
         if (block.chainid != 1) {
-            address[4] memory coins = [WSTETH, RETH, USDC, LQTY];
+            address[5] memory coins = [WSTETH, RETH, USDC, LQTY, LUSD];
 
             for (uint256 i = 0; i < coins.length; ++i) {
                 ERC20Faucet faucet = ERC20Faucet(coins[i]);
@@ -324,7 +367,7 @@ contract E2ETest is Test {
         vm.startPrank(owner);
         zapper.closeTroveFromCollateral({
             _troveId: troveId,
-            _flashLoanAmount: debt * 1.01 ether / branches[i].priceFeed.getPrice()
+            _flashLoanAmount: debt * (1 ether + PRICE_TOLERANCE) / branches[i].priceFeed.getPrice()
         });
         vm.stopPrank();
 
@@ -342,7 +385,7 @@ contract E2ETest is Test {
         p.ownerIndex = ownerIndex;
         p.boldAmount = boldAmount;
         p.collAmount = boldAmount * 0.5 ether / price;
-        p.flashLoanAmount = boldAmount * 0.99 ether / price;
+        p.flashLoanAmount = boldAmount * (1 ether - PRICE_TOLERANCE) / price;
         p.annualInterestRate = 0.1 ether;
         p.maxUpfrontFee = hintHelpers.predictOpenTroveUpfrontFee(i, boldAmount, p.annualInterestRate);
 
@@ -370,7 +413,7 @@ contract E2ETest is Test {
         ILeverageZapper.LeverUpTroveParams memory p = ILeverageZapper.LeverUpTroveParams({
             troveId: troveId,
             boldAmount: boldAmount,
-            flashLoanAmount: boldAmount * 0.99 ether / branches[i].priceFeed.getPrice(),
+            flashLoanAmount: boldAmount * (1 ether - PRICE_TOLERANCE) / branches[i].priceFeed.getPrice(),
             maxUpfrontFee: hintHelpers.predictAdjustTroveUpfrontFee(i, troveId, boldAmount)
         });
 
@@ -390,7 +433,7 @@ contract E2ETest is Test {
         ILeverageZapper.LeverDownTroveParams memory p = ILeverageZapper.LeverDownTroveParams({
             troveId: troveId,
             minBoldAmount: boldAmount,
-            flashLoanAmount: boldAmount * 1.01 ether / branches[i].priceFeed.getPrice()
+            flashLoanAmount: boldAmount * (1 ether + PRICE_TOLERANCE) / branches[i].priceFeed.getPrice()
         });
 
         vm.prank(owner);
@@ -458,30 +501,108 @@ contract E2ETest is Test {
     }
 
     function _allocateLQTY_reset(address initiative) internal {
-        initiativesToReset.push(initiative);
+        _allocateLQTY_initiativesToReset.push(initiative);
     }
 
     function _allocateLQTY_vote(address initiative, int256 lqtyAmount) internal {
-        initiatives.push(initiative);
-        votes.push(lqtyAmount);
-        vetos.push();
+        _allocateLQTY_initiatives.push(initiative);
+        _allocateLQTY_votes.push(lqtyAmount);
+        _allocateLQTY_vetos.push();
     }
 
     function _allocateLQTY_veto(address initiative, int256 lqtyAmount) internal {
-        initiatives.push(initiative);
-        votes.push();
-        vetos.push(lqtyAmount);
+        _allocateLQTY_initiatives.push(initiative);
+        _allocateLQTY_votes.push();
+        _allocateLQTY_vetos.push(lqtyAmount);
     }
 
     function _allocateLQTY_end() internal {
-        governance.allocateLQTY(initiativesToReset, initiatives, votes, vetos);
+        governance.allocateLQTY(
+            _allocateLQTY_initiativesToReset, _allocateLQTY_initiatives, _allocateLQTY_votes, _allocateLQTY_vetos
+        );
 
-        delete initiativesToReset;
-        delete initiatives;
-        delete votes;
-        delete vetos;
+        delete _allocateLQTY_initiativesToReset;
+        delete _allocateLQTY_initiatives;
+        delete _allocateLQTY_votes;
+        delete _allocateLQTY_vetos;
 
         vm.stopPrank();
+    }
+
+    function _mainnet_V1_openTroveAtTail(address owner, uint256 lusdAmount) internal returns (uint256 borrowingFee) {
+        uint256 price = mainnet_V1_priceFeed.getPrice();
+        address lastTrove = mainnet_V1_sortedTroves.getLast();
+        assertGeDecimal(mainnet_V1_troveManager.getCurrentICR(lastTrove, price), 1.1 ether, 18, "last ICR < MCR");
+
+        uint256 borrowingRate = mainnet_V1_troveManager.getBorrowingRateWithDecay();
+        borrowingFee = lusdAmount * borrowingRate / 1 ether;
+        uint256 debt = lusdAmount + borrowingFee + 200 ether;
+        uint256 collAmount = Math.ceilDiv(debt * 1.1 ether, price);
+        deal(owner, collAmount);
+
+        vm.startPrank(owner);
+        mainnet_V1_borrowerOperations.openTrove{value: collAmount}({
+            _LUSDAmount: lusdAmount,
+            _maxFeePercentage: borrowingRate,
+            _upperHint: lastTrove,
+            _lowerHint: address(0)
+        });
+        vm.stopPrank();
+
+        assertEq(mainnet_V1_sortedTroves.getLast(), owner, "last Trove != new Trove");
+    }
+
+    function _mainnet_V1_redeemCollateralFromTroveAtTail(address redeemer, uint256 lusdAmount)
+        internal
+        returns (uint256 redemptionFee)
+    {
+        address lastTrove = mainnet_V1_sortedTroves.getLast();
+        address prevTrove = mainnet_V1_sortedTroves.getPrev(lastTrove);
+        (uint256 lastTroveDebt, uint256 lastTroveColl,,) = mainnet_V1_troveManager.getEntireDebtAndColl(lastTrove);
+        assertLeDecimal(lusdAmount, lastTroveDebt - 2_000 ether, 18, "lusdAmount > redeemable from last Trove");
+
+        uint256 price = mainnet_V1_priceFeed.getPrice();
+        uint256 collAmount = lusdAmount * 1 ether / price;
+        uint256 balanceBefore = redeemer.balance;
+
+        vm.startPrank(redeemer);
+        mainnet_V1_troveManager.redeemCollateral({
+            _LUSDamount: lusdAmount,
+            _maxFeePercentage: 1 ether,
+            _maxIterations: 1,
+            _firstRedemptionHint: lastTrove,
+            _upperPartialRedemptionHint: prevTrove,
+            _lowerPartialRedemptionHint: prevTrove,
+            _partialRedemptionHintNICR: (lastTroveColl - collAmount) * 100 ether / (lastTroveDebt - lusdAmount)
+        });
+        vm.stopPrank();
+
+        redemptionFee = collAmount * mainnet_V1_troveManager.getBorrowingRateWithDecay() / 1 ether;
+        assertEqDecimal(redeemer.balance - balanceBefore, collAmount - redemptionFee, 18, "coll received != expected");
+    }
+
+    function _generateStakingRewards() internal returns (uint256 lusdAmount, uint256 ethAmount) {
+        if (block.chainid == 1) {
+            address stakingRewardGenerator = makeAddr("stakingRewardGenerator");
+            lusdAmount = _mainnet_V1_openTroveAtTail(stakingRewardGenerator, 1e6 ether);
+            ethAmount = _mainnet_V1_redeemCollateralFromTroveAtTail(stakingRewardGenerator, 1_000 ether);
+        } else {
+            // Testnet
+            lusdAmount = 10_000 ether;
+            ethAmount = 1 ether;
+
+            MockStakingV1 stakingV1 = MockStakingV1(address(governance.stakingV1()));
+            address owner = stakingV1.owner();
+
+            deal(LUSD, owner, lusdAmount);
+            deal(owner, ethAmount);
+
+            vm.startPrank(owner);
+            lusd.approve(address(stakingV1), lusdAmount);
+            stakingV1.mock_addLUSDGain(lusdAmount);
+            stakingV1.mock_addETHGain{value: ethAmount}();
+            vm.stopPrank();
+        }
     }
 
     function test_OwnershipRenounced() external {
@@ -499,15 +620,29 @@ contract E2ETest is Test {
                 string.concat("Ownership of ", vm.getLabel(ownables[i]), " should have been renounced")
             );
         }
+
+        ILiquidityGaugeV6[2] memory gauges = [curveUsdcBoldGauge, curveLusdBoldGauge];
+
+        for (uint256 i = 0; i < gauges.length; ++i) {
+            address gaugeManager = gauges[i].manager();
+            assertEq(gaugeManager, address(0), "Gauge manager role should have been renounced");
+        }
+    }
+
+    function _epoch(uint256 n) internal view returns (uint256) {
+        return EPOCH_START + (n - 1) * EPOCH_DURATION;
     }
 
     function test_Initially_NewInitiativeCannotBeRegistered() external {
-        vm.skip(governance.epoch() != 2);
+        vm.skip(governance.epoch() > 2);
 
         address registrant = makeAddr("registrant");
         address newInitiative = makeAddr("newInitiative");
 
         _openTrove(0, registrant, 0, Math.max(REGISTRATION_FEE, MIN_DEBT));
+
+        uint256 epoch2 = _epoch(2);
+        if (block.timestamp < epoch2) vm.warp(epoch2);
 
         vm.startPrank(registrant);
         {
@@ -519,14 +654,15 @@ contract E2ETest is Test {
     }
 
     function test_AfterOneEpoch_NewInitiativeCanBeRegistered() external {
-        vm.skip(governance.epoch() != 2);
+        vm.skip(governance.epoch() > 2);
 
         address registrant = makeAddr("registrant");
         address newInitiative = makeAddr("newInitiative");
 
         _openTrove(0, registrant, 0, Math.max(REGISTRATION_FEE, MIN_DEBT));
 
-        skip(EPOCH_DURATION);
+        uint256 epoch3 = _epoch(3);
+        if (block.timestamp < epoch3) vm.warp(epoch3);
 
         vm.startPrank(registrant);
         {
@@ -553,6 +689,10 @@ contract E2ETest is Test {
             assertEqDecimal(borrowed, 0, 18, "Mainnet deployment script should not have borrowed anything");
             assertNotEq(address(curveUsdcBoldGauge), address(0), "Mainnet should have USDC-BOLD gauge");
             assertNotEq(address(curveUsdcBoldInitiative), address(0), "Mainnet should have USDC-BOLD initiative");
+            assertNotEq(address(curveLusdBold), address(0), "Mainnet should have LUSD-BOLD pool");
+            assertNotEq(address(curveLusdBoldGauge), address(0), "Mainnet should have LUSD-BOLD gauge");
+            assertNotEq(address(curveLusdBoldInitiative), address(0), "Mainnet should have LUSD-BOLD initiative");
+            assertNotEq(address(defiCollectiveInitiative), address(0), "Mainnet should have DeFi Collective initiative");
         }
 
         address borrower = providerOf[BOLD] = makeAddr("borrower");
@@ -560,7 +700,7 @@ contract E2ETest is Test {
         for (uint256 j = 0; j < 5; ++j) {
             for (uint256 i = 0; i < branches.length; ++i) {
                 skip(5 minutes);
-                borrowed += _openTrove(i, borrower, j, 10_000 ether);
+                borrowed += _openTrove(i, borrower, j, 20_000 ether);
             }
         }
 
@@ -568,13 +708,25 @@ contract E2ETest is Test {
         {
             skip(5 minutes);
 
-            uint256 boldAmount = boldToken.balanceOf(borrower) * 4 / 5;
+            uint256 boldAmount = boldToken.balanceOf(borrower) * 2 / 5;
             uint256 usdcAmount = boldAmount * 10 ** usdc.decimals() / 10 ** boldToken.decimals();
+            uint256 lusdAmount = boldAmount;
+
             _addCurveLiquidity(liquidityProvider, curveUsdcBold, boldAmount, BOLD, usdcAmount, USDC);
+
+            if (address(curveLusdBold) != address(0)) {
+                _addCurveLiquidity(liquidityProvider, curveLusdBold, boldAmount, BOLD, lusdAmount, LUSD);
+            }
 
             if (address(curveUsdcBoldGauge) != address(0)) {
                 _depositIntoCurveGauge(
                     liquidityProvider, curveUsdcBoldGauge, curveUsdcBold.balanceOf(liquidityProvider)
+                );
+            }
+
+            if (address(curveLusdBoldGauge) != address(0)) {
+                _depositIntoCurveGauge(
+                    liquidityProvider, curveLusdBoldGauge, curveLusdBold.balanceOf(liquidityProvider)
                 );
             }
         }
@@ -613,14 +765,58 @@ contract E2ETest is Test {
             repaid += _closeTroveFromCollateral(i, borrower, 0);
         }
 
-        if (address(curveUsdcBoldInitiative) != address(0)) {
-            address voter = makeAddr("voter");
+        skip(5 minutes);
+
+        uint256 numInitiatives;
+        Initiative[3] memory initiatives = [
+            Initiative({addr: address(curveUsdcBoldInitiative), gauge: curveUsdcBoldGauge}),
+            Initiative({addr: address(curveLusdBoldInitiative), gauge: curveLusdBoldGauge}),
+            Initiative({addr: defiCollectiveInitiative, gauge: ILiquidityGaugeV6(address(0))})
+        ];
+
+        for (uint256 i = 0; i < initiatives.length; ++i) {
+            if (initiatives[i].addr != address(0)) {
+                ++numInitiatives;
+            }
+        }
+
+        address staker = makeAddr("staker");
+        {
+            uint256 lqtyStake = 30_000 ether;
+            _depositLQTY(staker, lqtyStake);
+
             skip(5 minutes);
 
-            _depositLQTY(voter, 10_000 ether);
-            _allocateLQTY_begin(voter);
-            _allocateLQTY_vote(address(curveUsdcBoldInitiative), 10_000 ether);
-            _allocateLQTY_end();
+            (uint256 lusdAmount, uint256 ethAmount) = _generateStakingRewards();
+            uint256 totalLQTYStaked = governance.stakingV1().totalLQTYStaked();
+
+            skip(5 minutes);
+
+            vm.prank(staker);
+            governance.claimFromStakingV1(staker);
+
+            assertApproxEqAbsDecimal(
+                lusd.balanceOf(staker), lusdAmount * lqtyStake / totalLQTYStaked, 1e5, 18, "LUSD reward"
+            );
+            assertApproxEqAbsDecimal(staker.balance, ethAmount * lqtyStake / totalLQTYStaked, 1e5, 18, "ETH reward");
+
+            skip(5 minutes);
+
+            if (numInitiatives > 0) {
+                // Voting on initial initiatives opens in epoch #2
+                uint256 votingStart = _epoch(2);
+                if (block.timestamp < votingStart) vm.warp(votingStart);
+
+                _allocateLQTY_begin(staker);
+
+                for (uint256 i = 0; i < initiatives.length; ++i) {
+                    if (initiatives[i].addr != address(0)) {
+                        _allocateLQTY_vote(initiatives[i].addr, int256(lqtyStake / numInitiatives));
+                    }
+                }
+
+                _allocateLQTY_end();
+            }
         }
 
         skip(EPOCH_DURATION);
@@ -631,39 +827,67 @@ contract E2ETest is Test {
         }
 
         uint256 interest = boldToken.totalSupply() + repaid - borrowed;
-        uint256 spReward = boldToken.balanceOf(stabilityDepositor);
-        uint256 governanceReward = boldToken.balanceOf(address(governance));
+        uint256 spShareOfInterest = boldToken.balanceOf(stabilityDepositor);
+        uint256 governanceShareOfInterest = boldToken.balanceOf(address(governance));
 
         assertApproxEqRelDecimal(
             interest,
-            spReward + governanceReward,
+            spShareOfInterest + governanceShareOfInterest,
             1e-16 ether,
             18,
             "Stability depositor and Governance should have received the interest"
         );
 
-        if (address(curveUsdcBoldGauge) != address(0)) {
-            governance.claimForInitiative(address(curveUsdcBoldInitiative));
-            uint256 gaugeReward = boldToken.balanceOf(address(curveUsdcBoldGauge));
+        if (numInitiatives > 0) {
+            uint256 initiativeShareOfInterest;
+
+            for (uint256 i = 0; i < initiatives.length; ++i) {
+                if (initiatives[i].addr != address(0)) {
+                    governance.claimForInitiative(initiatives[i].addr);
+                    initiativeShareOfInterest +=
+                        boldToken.balanceOf(coalesce(address(initiatives[i].gauge), initiatives[i].addr));
+                }
+            }
 
             assertApproxEqRelDecimal(
-                boldToken.totalSupply() + repaid - borrowed,
-                spReward + gaugeReward,
-                1e-16 ether,
+                governanceShareOfInterest,
+                initiativeShareOfInterest,
+                1e-15 ether,
                 18,
-                "Stability depositor and Curve gauge should have earned the interest"
+                "Initiatives should have received the interest from Governance"
             );
 
-            skip(curveUsdcBoldInitiative.duration());
-            _claimRewardsFromCurveGauge(liquidityProvider, curveUsdcBoldGauge);
+            uint256 numGauges;
+            uint256 maxGaugeDuration;
 
-            assertApproxEqRelDecimal(
-                boldToken.balanceOf(liquidityProvider),
-                gaugeReward,
-                1e-14 ether,
-                18,
-                "Liquidity provider should have earned the reward from Curve gauge"
-            );
+            for (uint256 i = 0; i < initiatives.length; ++i) {
+                if (address(initiatives[i].gauge) != address(0)) {
+                    assertNotEq(initiatives[i].addr, address(0), "Gauge should imply addr");
+                    maxGaugeDuration = Math.max(maxGaugeDuration, CurveV2GaugeRewards(initiatives[i].addr).duration());
+                    ++numGauges;
+                }
+            }
+
+            skip(maxGaugeDuration);
+
+            if (numGauges > 0) {
+                uint256 gaugeShareOfInterest;
+
+                for (uint256 i = 0; i < initiatives.length; ++i) {
+                    if (address(initiatives[i].gauge) != address(0)) {
+                        gaugeShareOfInterest += boldToken.balanceOf(address(initiatives[i].gauge));
+                        _claimRewardsFromCurveGauge(liquidityProvider, initiatives[i].gauge);
+                    }
+                }
+
+                assertApproxEqRelDecimal(
+                    boldToken.balanceOf(liquidityProvider),
+                    gaugeShareOfInterest,
+                    1e-13 ether,
+                    18,
+                    "Liquidity provider should have earned the rewards from the Curve gauges"
+                );
+            }
         }
     }
 
@@ -702,8 +926,12 @@ contract E2ETest is Test {
         }
     }
 
-    function test_ManagerOfCurveGauge_CanReassignRewardDistributor() external {
+    function test_ManagerOfCurveGauge_UnlessRenounced_CanReassignRewardDistributor() external {
         vm.skip(address(curveUsdcBoldGauge) == address(0));
+
+        address manager = curveUsdcBoldGauge.manager();
+        vm.skip(manager == address(0));
+        vm.label(manager, "manager");
 
         address newRewardDistributor = makeAddr("newRewardDistributor");
         uint256 rewardAmount = 10_000 ether;
@@ -715,8 +943,6 @@ contract E2ETest is Test {
         curveUsdcBoldGauge.deposit_reward_token(BOLD, rewardAmount, 7 days);
         vm.stopPrank();
 
-        address manager = curveUsdcBoldGauge.manager();
-        vm.label(manager, "manager");
         vm.prank(manager);
         curveUsdcBoldGauge.set_reward_distributor(BOLD, newRewardDistributor);
 
