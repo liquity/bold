@@ -121,14 +121,24 @@ export function PanelUpdateBorrowPosition({
 
   const isBelowMinDebt = debtChange.parsed && !debtChange.isEmpty && newDebt && dn.lt(newDebt, MIN_DEBT);
 
-  const allowSubmit = (
-    account.isConnected
-  ) && (
-    !dn.eq(loanDetails.deposit ?? dnum18(0), newLoanDetails.deposit ?? dnum18(0))
-    || !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0))
-  ) && (
-    !isBelowMinDebt
-  );
+  const insufficientBold = debtMode === "remove"
+    && debtChange.parsed
+    && !debtChange.isEmpty
+    && boldBalance.data
+    && dn.gt(debtChange.parsed, boldBalance.data);
+
+  const allowSubmit = account.isConnected
+    // above min. debt
+    && !isBelowMinDebt
+    // the new deposit must be positive
+    && dn.gt(newLoanDetails.deposit ?? dnum18(0), 0)
+    // the account must have enough BOLD
+    && !insufficientBold
+    // there should be a change in the deposit or debt
+    && (
+      !dn.eq(loanDetails.deposit ?? dnum18(0), newLoanDetails.deposit ?? dnum18(0))
+      || !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0))
+    );
 
   return (
     <>
@@ -262,6 +272,8 @@ export function PanelUpdateBorrowPosition({
               }
               drawer={!debtChange.isFocused && isBelowMinDebt
                 ? { mode: "error", message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+                : insufficientBold
+                ? { mode: "error", message: "Insufficient BOLD balance." }
                 : null}
               label={{
                 start: debtMode === "remove"
