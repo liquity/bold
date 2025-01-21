@@ -25,6 +25,8 @@ Options:
                                            when DEPLOYER is an address).
   --dry-run                                Don't broadcast transaction, only
                                            simulate execution.
+  --epoch-start <EPOCH_START>              Unix timestamp for the start of the first
+                                           Governance epoch.
   --etherscan-api-key <ETHERSCAN_API_KEY>  Etherscan API key to verify the contracts
                                            (required when verifying with Etherscan).
   --gas-price <GAS_PRICE>                  Max fee per gas to use in transactions.
@@ -75,6 +77,7 @@ const argv = minimist(process.argv.slice(2), {
     "use-testnet-pricefeeds",
     "chain-id",
     "deployer",
+    "epoch-start",
     "etherscan-api-key",
     "ledger-path",
     "mode",
@@ -207,6 +210,7 @@ Deploying Liquity contracts with the following settings:
   DEPLOYMENT_MODE:        ${options.mode}
   DEPLOYER (address):     ${deployerAddress}
   SALT:                   ${options.salt ? options.salt : chalk.yellow("block.timestamp will be used !!")}
+  EPOCH_START:            ${options.epochStart ? options.epochStart : chalk.yellow("auto based on block.timestamp will be used !!")}
   ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}
   LEDGER_PATH:            ${options.ledgerPath}
   OPEN_DEMO_TROVES:       ${options.openDemoTroves ? "yes" : "no"}
@@ -237,6 +241,7 @@ Deploying Liquity contracts with the following settings:
   process.env.DEPLOYER = options.deployer;
   process.env.DEPLOYMENT_MODE = options.mode;
   process.env.SALT = options.salt;
+  process.env.EPOCH_START = String(options.epochStart);
 
   if (options.openDemoTroves) {
     process.env.OPEN_DEMO_TROVES = "true";
@@ -373,6 +378,7 @@ async function parseArgs() {
     chainId: safeParseInt(argv["chain-id"]),
     debug: argv["debug"],
     deployer: argv["deployer"],
+    epochStart: safeParseInt(argv["epoch-start"]),
     etherscanApiKey: argv["etherscan-api-key"],
     help: argv["help"],
     ledgerPath: argv["ledger-path"],
@@ -397,6 +403,7 @@ async function parseArgs() {
   options.debug = parseBool(options.debug, process.env.DEBUG);
   options.deployer ??= process.env.DEPLOYER;
   options.dryRun = parseBool(options.dryRun, process.env.DRY_RUN);
+  options.epochStart ??= safeParseInt(process.env.EPOCH_START ?? "");
   options.etherscanApiKey ??= process.env.ETHERSCAN_API_KEY;
   options.help = parseBool(options.help);
   options.ledgerPath ??= process.env.LEDGER_PATH;
