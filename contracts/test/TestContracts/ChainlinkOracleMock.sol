@@ -6,7 +6,6 @@ import "src/Dependencies/AggregatorV3Interface.sol";
 
 // Mock Chainlink oracle that returns a stale price answer.
 // this contract code is etched over mainnet oracle addresses in mainnet fork tests.
-// As such, we use bools for staleness and decimals to save us having to set some contract state each time after etching.
 contract ChainlinkOracleMock is AggregatorV3Interface {
     uint8 decimal;
 
