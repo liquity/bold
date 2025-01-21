@@ -43,7 +43,7 @@ cd frontend/app
 cp .env .env.local
 ```
 
-Edit the newly created `.env.local` to set the app [environment variables](./frontend/app/README.md).
+Edit the newly created `.env.local` to set the app [environment variables](./frontend/app/README.md#environment).
 
 ### Generate a new set of contract addresses (optional)
 
