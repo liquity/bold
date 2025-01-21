@@ -1,4 +1,4 @@
-# Building & Deploying the Liquity V2 App & Contracts
+# Liquity V2 Development & Deployment Guide
 
 This guide will walk you through setting up, building, and deploying the Liquity application locally.
 
