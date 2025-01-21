@@ -2,6 +2,14 @@
 
 pragma solidity 0.8.24;
 
+// This abstract contract provides storage padding for the proxy
+import { CustomSuperTokenBase } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/CustomSuperTokenBase.sol";
+// Implementation of UUPSProxy (see https://eips.ethereum.org/EIPS/eip-1822)
+import { UUPSProxy } from "@superfluid-finance/ethereum-contracts/contracts/upgradability/UUPSProxy.sol";
+// Superfluid framework interfaces we need
+import { ISuperToken, ISuperTokenFactory, IERC20 } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+
+
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "./Dependencies/Ownable.sol";
 import "./Interfaces/IBoldToken.sol";
@@ -16,7 +24,12 @@ import "./Interfaces/IBoldToken.sol";
  * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move Bold tokens between Liquity <-> user.
  */
 
-contract BoldToken is Ownable, IBoldToken, ERC20Permit {
+ //TODO double check the erc20 the proxy is using implements permit. Add just the permit function without the rest of erc20.
+ //TODO: remove erc20 from constructor. Ask bold if removing permit breaks anything else.
+ //INFO: permit involves approve, so invoke safeApproveFor in supertoken
+
+contract BoldToken is Ownable, IBoldToken, CustomSuperTokenBase, UUPSProxy {
+
     string internal constant _NAME = "Bold Stablecoin";
     string internal constant _SYMBOL = "Bold";
 
@@ -35,7 +48,23 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
     event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
     event ActivePoolAddressAdded(address _newActivePoolAddress);
 
-    constructor(address _owner) Ownable(_owner) ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {}
+    //TODO update deployment script for new constructor params.
+    //TODO move supertoken init to another function possibley.
+    //TODO lookup address of factory deployment and include that in the deployment scripts to int the factory.
+    constructor(address _owner, ISuperTokenFactory factory) Ownable(_owner) {
+        // This call to the factory invokes `UUPSProxy.initialize`, which connects the proxy to the canonical SuperToken implementation.
+		// It also emits an event which facilitates discovery of this token.
+		ISuperTokenFactory(factory).initializeCustomSuperToken(address(this));
+
+		// This initializes the token storage and sets the `initialized` flag of OpenZeppelin Initializable.
+		// This makes sure that it will revert if invoked more than once.
+		ISuperToken(address(this)).initialize(
+			IERC20(address(0)),
+			18,
+			"USD Nerite",
+			"USDN"
+		);
+    }
 
     function setBranchAddresses(
         address _troveManagerAddress,
@@ -67,39 +96,26 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
 
     function mint(address _account, uint256 _amount) external override {
         _requireCallerIsBOorAP();
-        _mint(_account, _amount);
+        ISuperToken(address(this)).selfMint(_account, _amount, "");
     }
 
     function burn(address _account, uint256 _amount) external override {
         _requireCallerIsCRorBOorTMorSP();
-        _burn(_account, _amount);
+        ISuperToken(address(this)).selfBurn(_account, _amount, "");
     }
 
+    //TODO verify spender is correct when making pool calls.
     function sendToPool(address _sender, address _poolAddress, uint256 _amount) external override {
         _requireCallerIsStabilityPool();
-        _transfer(_sender, _poolAddress, _amount);
+        ISuperToken(address(this)).selfTransferFrom(_sender, _sender, _poolAddress, _amount);
     }
 
     function returnFromPool(address _poolAddress, address _receiver, uint256 _amount) external override {
         _requireCallerIsStabilityPool();
-        _transfer(_poolAddress, _receiver, _amount);
+        ISuperToken(address(this)).selfTransferFrom(_poolAddress, _poolAddress, _receiver, _amount);
     }
 
-    // --- External functions ---
-
-    function transfer(address recipient, uint256 amount) public override(ERC20, IERC20) returns (bool) {
-        _requireValidRecipient(recipient);
-        return super.transfer(recipient, amount);
-    }
-
-    function transferFrom(address sender, address recipient, uint256 amount)
-        public
-        override(ERC20, IERC20)
-        returns (bool)
-    {
-        _requireValidRecipient(recipient);
-        return super.transferFrom(sender, recipient, amount);
-    }
+    // TODO: check that SF already checks for no sending to 0 or this contract.
 
     // --- 'require' functions ---
 
