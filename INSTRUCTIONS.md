@@ -45,9 +45,7 @@ cp .env .env.local
 
 Edit the newly created `.env.local` to set the app [environment variables](./frontend/app/README.md#environment).
 
-### Generate a new set of contract addresses (optional)
-
-You can generate a set of contract addresses for the `.env.local` file by running the following command:
+Optional: you can generate a set of contract addresses for the `.env.local` file by running the following command:
 
 ```bash
 # Replace the address file with the one you want to use
@@ -56,8 +54,6 @@ pnpm tsx ./utils/deployment-manifest-to-app-env.ts ./addresses/11155111.json
 ```
 
 This is useful if you want to use a different set of contracts than the ones provided in the default `.env` file.
-
-### Build
 
 You can now build the app for production:
 
