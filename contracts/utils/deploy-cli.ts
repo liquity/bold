@@ -220,8 +220,19 @@ Deploying Liquity contracts with the following settings:
 
   // User confirmation
   if (!options.skipConfirmation) {
-    const confirmation = await question("Does that look good? (y/n) ");
-    if (confirmation !== "y") { return 1 };
+    for (;;) {
+      const answer = (await question("Does that look good? (y/N) ")).toLowerCase();
+
+      if (answer === "y") {
+        echo("");
+        break;
+      }
+
+      if (answer === "" || answer === "n") {
+        echo("Deployment aborted.");
+        process.exit(1);
+      }
+    }
   }
 
   process.env.DEPLOYER = options.deployer;
