@@ -4,7 +4,7 @@ import type { TokenSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Logo } from "@/src/comps/Logo/Logo";
-import { LIQUITY_STATS_URL } from "@/src/env";
+import { ACCOUNT_SCREEN, LIQUITY_STATS_URL } from "@/src/env";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { css } from "@/styled-system/css";
@@ -101,7 +101,7 @@ export function ProtocolStats() {
               symbol={symbol}
             />
           ))}
-          {account.address && (
+          {account.address && ACCOUNT_SCREEN && (
             <Link
               id="footer-account-button"
               href={`/account?address=${account.address}`}
