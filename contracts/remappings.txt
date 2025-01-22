@@ -1,1 +1,3 @@
+@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
 openzeppelin/=lib/V2-gov/lib/openzeppelin-contracts/
+@superfluid-finance/ethereum-contracts/=lib/superfluid-protocol-monorepo/packages/ethereum-contracts/

@@ -8,6 +8,6 @@ contract BoldTokenTester is BoldToken {
     constructor(address _owner) BoldToken(_owner) {}
 
     function unprotectedMint(address _account, uint256 _amount) external {
-        _mint(_account, _amount);
+         ISuperToken(address(this)).selfMint(_account, _amount, "");(_account, _amount);
     }
 }
