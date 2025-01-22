@@ -60,9 +60,17 @@ export function PanelUpdateDeposit({
 
   const collateral = getCollToken(collIndex);
 
+  const insufficientBalance = mode === "add" && boldBalance.data && dn.lt(boldBalance.data, parsedValue ?? DNUM_0);
+
+  const withdrawOutOfRange = mode === "remove" && dn.gte(position?.deposit ?? DNUM_0, parsedValue ?? DNUM_0);
+
+  const userDeposited = dn.gt(position?.deposit ?? DNUM_0, 0);
+
   const allowSubmit = account.isConnected
     && parsedValue
-    && dn.gt(parsedValue, 0);
+    && dn.gt(parsedValue, 0)
+    && !insufficientBalance
+    && !withdrawOutOfRange;
 
   return (
     <div
@@ -77,7 +85,24 @@ export function PanelUpdateDeposit({
       <Field
         field={
           <InputField
-            contextual={
+          drawer={insufficientBalance
+            ? {
+              mode: "error",
+              message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0)} BOLD.`,
+            }
+            : withdrawOutOfRange
+              ? userDeposited ?
+                {
+                  mode: "error",
+                  message: `You can’t withdraw more than you have deposited.`,
+                }
+                :
+                {
+                  mode: "error",
+                  message: `No BOLD deposited.`,
+                }
+            : null}
+          contextual={
               <InputTokenBadge
                 background={false}
                 icon={<TokenIcon symbol="BOLD" />}
