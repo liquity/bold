@@ -85,11 +85,11 @@ export const stakeClaimRewards: FlowDeclaration<StakeClaimRewardsRequest> = {
       name: () => "Claim rewards",
       Status: TransactionStatus,
 
-      async commit({ contracts, wagmiConfig }) {
+      async commit({ contracts, wagmiConfig, request }) {
         return writeContract(wagmiConfig, {
-          ...contracts.LqtyStaking,
-          functionName: "unstake",
-          args: [0n],
+          ...contracts.Governance,
+          functionName: "claimFromStakingV1",
+          args: [request.stakePosition.owner],
         });
       },
 

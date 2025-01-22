@@ -26,16 +26,16 @@ export function PanelRewards() {
   const ethPrice = usePrice("ETH");
 
   const stakePosition = useStakePosition(account.address ?? null);
-  const LqtyStaking = getProtocolContract("LqtyStaking");
+  const Governance = getProtocolContract("Governance");
 
   const gasEstimate = useEstimateGas({
     account: account.address,
     data: encodeFunctionData({
-      abi: LqtyStaking.abi,
-      functionName: "unstake",
-      args: [0n],
+      abi: Governance.abi,
+      functionName: "claimFromStakingV1",
+      args: [account.address ?? "0x"],
     }),
-    to: LqtyStaking.address,
+    to: Governance.address,
   });
 
   const gasPrice = useGasPrice();
