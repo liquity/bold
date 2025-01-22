@@ -41,7 +41,7 @@ cd frontend/app
 cp .env .env.local
 ```
 
-Edit the newly created `.env.local` to set the app [environment variables](./frontend/app/README.md#environment).
+Edit the newly created `.env.local` to set the app [environment variables](./frontend/app/README.md#environment). The `NEXT_PUBLIC_SUBGRAPH_URL` need to be set manually. You might want to create a [GraphSeer](https://beta.graphseer.com/) account to get an API key.
 
 Optional: you can generate a set of contract addresses for the `.env.local` file by running the following command:
 
