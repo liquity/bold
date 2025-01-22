@@ -1,0 +1,1 @@
+boldToken = BoldToken(payable(boldAddress)); 

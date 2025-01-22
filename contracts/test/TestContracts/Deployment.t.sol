@@ -294,12 +294,15 @@ contract TestDeployer is MetadataDeployment {
             Zappers[] memory zappersArray
         )
     {
+        //setup SF factories.
+        ISuperTokenFactory superTokenFactory = ISuperTokenFactory(0x0000000000000000000000000000000000000000);
+
         DeploymentVarsDev memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         // Deploy Bold
-        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
+        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this), superTokenFactory));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        boldToken = new BoldToken{salt: SALT}(address(this));
+        boldToken = new BoldToken{salt: SALT}(address(this), superTokenFactory);
         assert(address(boldToken) == vars.boldTokenAddress);
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
@@ -504,6 +507,10 @@ contract TestDeployer is MetadataDeployment {
         public
         returns (DeploymentResultMainnet memory result)
     {
+
+        //setup SF factories.
+        ISuperTokenFactory superTokenFactory = ISuperTokenFactory(0x0000000000000000000000000000000000000000);
+
         DeploymentVarsMainnet memory vars;
 
         result.externalAddresses.ETHOracle = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
@@ -554,9 +561,9 @@ contract TestDeployer is MetadataDeployment {
         );
 
         // Deploy Bold
-        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
+        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this), superTokenFactory));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        result.boldToken = new BoldToken{salt: SALT}(address(this));
+        result.boldToken = new BoldToken{salt: SALT}(address(this), superTokenFactory);
         assert(address(result.boldToken) == vars.boldTokenAddress);
 
         // WETH
