@@ -47,7 +47,7 @@ Optional: you can generate a set of contract addresses for the `.env.local` file
 
 ```bash
 # Replace the address file with the one you want to use
-cd ../contracts
+cd ../../contracts
 pnpm tsx ./utils/deployment-manifest-to-app-env.ts ./addresses/11155111.json
 ```
 
