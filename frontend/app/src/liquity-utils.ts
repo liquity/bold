@@ -6,7 +6,7 @@ import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
+import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import {
   calculateStabilityPoolApr,
@@ -333,8 +333,7 @@ export function useInterestRateChartData(collIndex: null | CollIndex) {
     queryKey: [
       "useInterestRateChartData",
       collIndex,
-      brackets.status,
-      brackets.dataUpdatedAt,
+      jsonStringifyWithDnum(brackets.data),
     ],
     queryFn: () => {
       if (!brackets.isSuccess) {
