@@ -5,7 +5,12 @@ import { ETH_GAS_COMPENSATION, MAX_UPFRONT_FEE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { getOpenLeveragedTroveParams } from "@/src/liquity-leverage";
-import { getCollToken, getPrefixedTroveId, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
+import {
+  getCollToken,
+  getPrefixedTroveId,
+  getTroveOperationHints,
+  usePredictOpenTroveUpfrontFee,
+} from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
@@ -186,14 +191,21 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
           wagmiConfig,
         );
 
+        const { upperHint, lowerHint } = await getTroveOperationHints({
+          wagmiConfig,
+          contracts,
+          collIndex: loan.collIndex,
+          interestRate: loan.interestRate[0],
+        });
+
         const txParams = {
           owner: loan.borrower,
           ownerIndex: BigInt(request.ownerIndex),
           collAmount: initialDeposit[0],
           flashLoanAmount: openLeveragedParams.flashLoanAmount,
           boldAmount: openLeveragedParams.effectiveBoldAmount,
-          upperHint: 0n,
-          lowerHint: 0n,
+          upperHint,
+          lowerHint,
           annualInterestRate: loan.batchManager ? 0n : loan.interestRate[0],
           batchManager: loan.batchManager ?? ADDRESS_ZERO,
           maxUpfrontFee: MAX_UPFRONT_FEE,
