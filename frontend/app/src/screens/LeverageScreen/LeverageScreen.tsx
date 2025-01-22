@@ -368,7 +368,7 @@ export function LeverageScreen() {
             })}
           >
             <Button
-              disabled={true}
+              disabled={true || !allowSubmit}
               label={"Coming Soon"}
               mode="primary"
               size="large"

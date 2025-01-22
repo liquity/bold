@@ -384,7 +384,7 @@ function LoanCard({
     >
       {cardTransition((style, {
         mode,
-        onLeverageModeChange,
+        // onLeverageModeChange,
         loan,
         loanDetails,
         collateral,
