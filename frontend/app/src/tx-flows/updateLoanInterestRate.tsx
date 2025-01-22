@@ -146,10 +146,12 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                   <InfoTooltip
                     content={{
                       heading: null,
-                      body: `
-                        A fee equal to 7 days of average interest applies when modifying rates less than 7 days after the
-                        last adjustment. This prevents rate manipulation and ensures fair redemption distribution.
-                      `,
+                      body: (
+                        <>
+                          This fee is charged when you change the interest rate within less than 7 days since the last
+                          adjustment of your loan. You can thus adjust your interest rate for free once every 7 days.
+                        </>
+                      ),
                       footerLink: {
                         href: "https://docs.liquity.org/v2-faq/borrowing-and-liquidations#can-i-adjust-the-rate",
                         label: "Learn more",

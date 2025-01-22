@@ -17,7 +17,8 @@ import { usePrice } from "@/src/services/Prices";
 import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
 import { sleep } from "@/src/utils";
 import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
-import { ADDRESS_ZERO, shortenAddress } from "@liquity2/uikit";
+import { css } from "@/styled-system/css";
+import { ADDRESS_ZERO, InfoTooltip, shortenAddress } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { maxUint256, parseEventLogs } from "viem";
@@ -118,13 +119,25 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
               value={boldAmountWithFee}
               suffix=" BOLD"
             />,
-            <Amount
-              key="end"
-              fallback="…"
-              prefix="Incl. "
-              value={upfrontFee.data}
-              suffix=" BOLD interest rate adjustment fee"
-            />,
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              })}
+            >
+              <Amount
+                key="end"
+                fallback="…"
+                prefix="Incl. "
+                value={upfrontFee.data}
+                suffix=" BOLD creation fee"
+              />
+              <InfoTooltip heading="BOLD Creation Fee">
+                This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of average
+                interest for the respective collateral asset.
+              </InfoTooltip>
+            </div>,
           ]}
         />
         <TransactionDetailsRow

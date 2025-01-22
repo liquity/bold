@@ -153,8 +153,8 @@ export function PanelUpdateRate({
                   <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
                 </>
               ),
-              before: <Amount value={boldInterestPerYearPrev} suffix="BOLD" />,
-              after: <Amount value={boldInterestPerYear} suffix="BOLD" />,
+              before: <Amount value={boldInterestPerYearPrev} suffix=" BOLD" />,
+              after: <Amount value={boldInterestPerYear} suffix=" BOLD" />,
             },
           ]}
         />
