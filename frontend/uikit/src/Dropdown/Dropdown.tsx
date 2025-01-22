@@ -442,6 +442,7 @@ export function Dropdown({
                                       className={css({
                                         fontSize: 11,
                                         textTransform: "uppercase",
+                                        whiteSpace: "nowrap",
                                       })}
                                     >
                                       {item.disabledReason ?? "Disabled"}
