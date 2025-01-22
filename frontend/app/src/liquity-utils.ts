@@ -487,7 +487,8 @@ export async function getTroveOperationHints({
     args: [
       BigInt(collIndex),
       interestRate,
-      BigInt(10 * Math.sqrt(Number(numTroves))), // (10 * sqrt(troves)) gives a hint close to the right position
+      // (10 * sqrt(troves)) gives a hint close to the right position
+      10n * BigInt(Math.ceil(Math.sqrt(Number(numTroves)))),
       42n, // random seed
     ],
   });
