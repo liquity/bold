@@ -719,7 +719,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             WETH: WETH
         });
         contracts.addressesRegistry.setAddresses(addressVars);
-        contracts.priceFeed.setAddresses(addresses.borrowerOperations);
+        // contracts.priceFeed.setAddresses(addresses.borrowerOperations);
 
         contracts.borrowerOperations = new BorrowerOperations{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);

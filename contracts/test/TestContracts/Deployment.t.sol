@@ -723,7 +723,7 @@ contract TestDeployer is MetadataDeployment {
         );
 
         // TODO: remove this and set address in constructor as per the CREATE2 approach above
-        _params.priceFeed.setAddresses(addresses.borrowerOperations);
+        // _params.priceFeed.setAddresses(addresses.borrowerOperations);
 
         // deploy zappers
         _deployZappers(

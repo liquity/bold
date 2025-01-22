@@ -166,7 +166,7 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
         console2.log(deployer, "deployer");
         console2.log(deployer.balance, "deployer balance");
 
-        // @todo -- update params -- handle weth oracle thingy
+        // @todo -- update params
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](6);
         troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // scrvUSD
         troveManagerParamsArray[1] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sDAI
