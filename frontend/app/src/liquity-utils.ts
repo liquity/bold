@@ -24,7 +24,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
-import { useReadContract, useReadContracts } from "wagmi";
+import { useBalance, useReadContract, useReadContracts } from "wagmi";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -181,6 +181,7 @@ function earnPositionFromGraph(
 
 export function useStakePosition(address: null | Address) {
   const LqtyStaking = getProtocolContract("LqtyStaking");
+  const LusdToken = getProtocolContract("LusdToken");
   const Governance = getProtocolContract("Governance");
 
   const userProxyAddress = useReadContract({
@@ -188,6 +189,11 @@ export function useStakePosition(address: null | Address) {
     functionName: "deriveUserProxyAddress",
     args: [address ?? "0x"],
     query: { enabled: Boolean(address) },
+  });
+
+  const userProxyBalance = useBalance({
+    address: userProxyAddress.data ?? "0x",
+    query: { enabled: Boolean(address) && userProxyAddress.isSuccess },
   });
 
   return useReadContracts({
@@ -201,12 +207,33 @@ export function useStakePosition(address: null | Address) {
         ...LqtyStaking,
         functionName: "totalLQTYStaked",
       },
+      {
+        ...LqtyStaking,
+        functionName: "getPendingETHGain",
+        args: [userProxyAddress.data ?? "0x"],
+      },
+      {
+        ...LqtyStaking,
+        functionName: "getPendingLUSDGain",
+        args: [userProxyAddress.data ?? "0x"],
+      },
+      {
+        ...LusdToken,
+        functionName: "balanceOf",
+        args: [userProxyAddress.data ?? "0x"],
+      },
     ],
     query: {
-      enabled: Boolean(address) && userProxyAddress.isSuccess,
+      enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
       refetchInterval: DATA_REFRESH_INTERVAL,
-      select: ([depositResult, totalStakedResult]): PositionStake | null => {
-        if (depositResult.status === "failure" || totalStakedResult.status === "failure") {
+      select: (
+        [depositResult, totalStakedResult, pendingEthGainResult, pendingLusdGainResult, lusdBalanceResult],
+      ): PositionStake | null => {
+        if (
+          depositResult.status === "failure" || totalStakedResult.status === "failure"
+          || pendingEthGainResult.status === "failure" || pendingLusdGainResult.status === "failure"
+          || lusdBalanceResult.status === "failure"
+        ) {
           return null;
         }
         const deposit = dnum18(depositResult.result);
@@ -217,8 +244,8 @@ export function useStakePosition(address: null | Address) {
           owner: address ?? "0x",
           totalStaked,
           rewards: {
-            eth: dnum18(0),
-            lusd: dnum18(0),
+            eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
+            lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
           },
           share: dn.gt(totalStaked, 0) ? dn.div(deposit, totalStaked) : dnum18(0),
         };
