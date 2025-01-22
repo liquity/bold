@@ -620,8 +620,8 @@ Hints allow cheaper Trove operations for the user, at the expense of a slightly 
   const BOLDAmount = toBN(toWei('2500')) // borrower wants to withdraw 2500 BOLD
   const colll = toBN(toWei('5')) // borrower wants to lock 5 collateral tokens
   const interestRate = toBn(toWei(‘7’) // Borrower wants a 7% annual interest rate
-  
-  // Get an approximate address hint from the deployed HintHelper contract. Use (15 * number of troves) trials 
+
+  // Get an approximate address hint from the deployed HintHelper contract. Use (15 * sqrt(number of troves)) trials
   // to get an approx. hint that is close to the right position.
   let numTroves = await sortedTroves.getSize()
   let numTrials = numTroves.mul(toBN('15'))
