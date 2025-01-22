@@ -15,7 +15,7 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { encodeFunctionData } from "viem";
+import { encodeFunctionData, zeroAddress } from "viem";
 import { useEstimateGas, useGasPrice } from "wagmi";
 
 export function PanelRewards() {
@@ -33,7 +33,7 @@ export function PanelRewards() {
     data: encodeFunctionData({
       abi: Governance.abi,
       functionName: "claimFromStakingV1",
-      args: [account.address ?? "0x"], // address to receive the payout
+      args: [account.address ?? zeroAddress], // address to receive the payout
     }),
     to: Governance.address,
   });
