@@ -37,7 +37,7 @@ export function PanelUpdateDeposit({
   const [focused, setFocused] = useState(false);
   const [claimRewards, setClaimRewards] = useState(false);
 
-  const hasDeposit = position?.deposit && dn.gt(position.deposit, 0);
+  const hasDeposit = dn.gt(position?.deposit ?? DNUM_0, 0);
 
   const parsedValue = parseInputFloat(value);
 
@@ -60,17 +60,20 @@ export function PanelUpdateDeposit({
 
   const collateral = getCollToken(collIndex);
 
-  const insufficientBalance = mode === "add" && boldBalance.data && dn.lt(boldBalance.data, parsedValue ?? DNUM_0);
+  const insufficientBalance = mode === "add"
+    && parsedValue
+    && boldBalance.data
+    && dn.lt(boldBalance.data, parsedValue);
 
-  const withdrawOutOfRange = mode === "remove" && dn.gte(position?.deposit ?? DNUM_0, parsedValue ?? DNUM_0);
-
-  const userDeposited = dn.gt(position?.deposit ?? DNUM_0, 0);
+  const withdrawAboveDeposit = mode === "remove"
+    && parsedValue
+    && dn.gt(parsedValue, position?.deposit ?? DNUM_0);
 
   const allowSubmit = account.isConnected
     && parsedValue
     && dn.gt(parsedValue, 0)
     && !insufficientBalance
-    && !withdrawOutOfRange;
+    && !withdrawAboveDeposit;
 
   return (
     <div
@@ -85,24 +88,20 @@ export function PanelUpdateDeposit({
       <Field
         field={
           <InputField
-          drawer={insufficientBalance
-            ? {
-              mode: "error",
-              message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0)} BOLD.`,
-            }
-            : withdrawOutOfRange
-              ? userDeposited ?
-                {
-                  mode: "error",
-                  message: `You can’t withdraw more than you have deposited.`,
-                }
-                :
-                {
-                  mode: "error",
-                  message: `No BOLD deposited.`,
-                }
-            : null}
-          contextual={
+            drawer={insufficientBalance
+              ? {
+                mode: "error",
+                message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0)} BOLD.`,
+              }
+              : withdrawAboveDeposit
+              ? {
+                mode: "error",
+                message: hasDeposit
+                  ? `You can’t withdraw more than you have deposited.`
+                  : `No BOLD deposited.`,
+              }
+              : null}
+            contextual={
               <InputTokenBadge
                 background={false}
                 icon={<TokenIcon symbol="BOLD" />}
