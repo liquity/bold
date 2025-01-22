@@ -41,8 +41,9 @@ const ZDeploymentManifest = z.object({
   exchangeHelpers: ZAddress,
 
   governance: z.object({
+    LUSDToken: ZAddress,
     LQTYToken: ZAddress,
-    LQTYStaking: ZAddress.default(ZERO_ADDRESS),
+    stakingV1: ZAddress,
     governance: ZAddress,
   }),
 
@@ -212,9 +213,11 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_TROVE_NFT`;
 
     // governance contracts
+    case "LUSDToken":
+      return `${prefix}_LUSD_TOKEN`;
     case "LQTYToken":
       return `${prefix}_LQTY_TOKEN`;
-    case "LQTYStaking":
+    case "stakingV1":
       return `${prefix}_LQTY_STAKING`;
     case "governance":
       return `${prefix}_GOVERNANCE`;

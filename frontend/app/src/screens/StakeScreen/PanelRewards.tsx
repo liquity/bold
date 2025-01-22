@@ -130,13 +130,7 @@ export function PanelRewards() {
               successLink: ["/", "Go to the Dashboard"],
               successMessage: "The rewards have been claimed successfully.",
 
-              stakePosition: {
-                ...stakePosition.data,
-                rewards: {
-                  eth: dn.from(0, 18),
-                  lusd: dn.from(0, 18),
-                },
-              },
+              stakePosition: stakePosition.data,
               prevStakePosition: stakePosition.data,
             });
           }

@@ -5,12 +5,7 @@ export const LqtyStaking = [{
   "type": "event",
 }, {
   "anonymous": false,
-  "inputs": [{
-    "indexed": false,
-    "internalType": "address",
-    "name": "_borrowerOperationsAddress",
-    "type": "address",
-  }],
+  "inputs": [{ "indexed": false, "internalType": "address", "name": "_borrowerOperationsAddress", "type": "address" }],
   "name": "BorrowerOperationsAddressSet",
   "type": "event",
 }, {
@@ -130,6 +125,18 @@ export const LqtyStaking = [{
   "stateMutability": "view",
   "type": "function",
 }, {
+  "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+  "name": "getPendingETHGain",
+  "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+  "stateMutability": "view",
+  "type": "function",
+}, {
+  "inputs": [{ "internalType": "address", "name": "_user", "type": "address" }],
+  "name": "getPendingLUSDGain",
+  "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+  "stateMutability": "view",
+  "type": "function",
+}, {
   "inputs": [{ "internalType": "uint256", "name": "_ETHFee", "type": "uint256" }],
   "name": "increaseF_ETH",
   "outputs": [],
@@ -150,7 +157,13 @@ export const LqtyStaking = [{
 }, {
   "inputs": [],
   "name": "lqtyToken",
-  "outputs": [{ "internalType": "contract IERC20", "name": "", "type": "address" }],
+  "outputs": [{ "internalType": "contract ILQTYToken", "name": "", "type": "address" }],
+  "stateMutability": "view",
+  "type": "function",
+}, {
+  "inputs": [],
+  "name": "lusdToken",
+  "outputs": [{ "internalType": "contract ILUSDToken", "name": "", "type": "address" }],
   "stateMutability": "view",
   "type": "function",
 }, {
@@ -160,7 +173,13 @@ export const LqtyStaking = [{
   "stateMutability": "view",
   "type": "function",
 }, {
-  "inputs": [{ "internalType": "address", "name": "_lqtyTokenAddress", "type": "address" }],
+  "inputs": [
+    { "internalType": "address", "name": "_lqtyTokenAddress", "type": "address" },
+    { "internalType": "address", "name": "_lusdTokenAddress", "type": "address" },
+    { "internalType": "address", "name": "_troveManagerAddress", "type": "address" },
+    { "internalType": "address", "name": "_borrowerOperationsAddress", "type": "address" },
+    { "internalType": "address", "name": "_activePoolAddress", "type": "address" },
+  ],
   "name": "setAddresses",
   "outputs": [],
   "stateMutability": "nonpayable",

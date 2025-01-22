@@ -73,8 +73,8 @@ export function PanelStaking() {
       && !insufficientBalance,
   );
 
-  const rewardsLusd = dn.from(0, 18);
-  const rewardsEth = dn.from(0, 18);
+  const rewardsLusd = stakePosition.data?.rewards.lusd ?? dn.from(0, 18);
+  const rewardsEth = stakePosition.data?.rewards.eth ?? dn.from(0, 18);
 
   return (
     <>
