@@ -561,16 +561,13 @@ function LoanCard({
                       selected={0}
                       onSelect={(index) => {
                         if (index === 0) {
-                          onLeverageModeChange(mode === "multiply" ? "borrow" : "multiply");
-                        }
-                        if (index === 1) {
                           navigator.clipboard.writeText(window.location.href);
                           copyTransition.flash();
                         }
-                        if (index === 2) {
+                        if (index === 1) {
                           window.open(`${CHAIN_BLOCK_EXPLORER?.url}address/${loan.borrower}`);
                         }
-                        if (index === 3 && nftUrl) {
+                        if (index === 2 && nftUrl) {
                           window.open(nftUrl);
                         }
                       }}
