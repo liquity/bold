@@ -85,7 +85,7 @@ export function PanelStaking() {
             drawer={insufficientBalance
               ? {
                 mode: "error",
-                message: `Insufficient balance. You have ${fmtnum(lqtyBalance.data ?? 0)} LQTY.`,
+                message: `Insufficient balance. You have ${fmtnum(lqtyBalance.data ?? 0, 2)} LQTY.`,
               }
               : withdrawOutOfRange
               ? {
