@@ -44,7 +44,7 @@ export function fmtnum(
   // replace values rounded to 0.0…0 with 0.0…1 so they don't look like 0
   if (typeof options?.digits === "number" && options.digits > 0 && value[0] > 0n) {
     if (formatted === `0.${"0".repeat(options.digits)}`) {
-      return `0.${"0".repeat(options.digits - 1)}1`;
+      return `<0.${"0".repeat(options.digits - 1)}1`;
     }
   }
 
