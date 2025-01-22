@@ -89,7 +89,7 @@ export const stakeClaimRewards: FlowDeclaration<StakeClaimRewardsRequest> = {
         return writeContract(wagmiConfig, {
           ...contracts.Governance,
           functionName: "claimFromStakingV1",
-          args: [request.stakePosition.owner],
+          args: [request.stakePosition.owner], // address to receive the payout
         });
       },
 

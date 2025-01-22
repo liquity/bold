@@ -33,7 +33,7 @@ export function PanelRewards() {
     data: encodeFunctionData({
       abi: Governance.abi,
       functionName: "claimFromStakingV1",
-      args: [account.address ?? "0x"],
+      args: [account.address ?? "0x"], // address to receive the payout
     }),
     to: Governance.address,
   });
