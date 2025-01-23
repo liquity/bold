@@ -46,9 +46,9 @@ Edit the newly created `.env.local` to set the app [environment variables](./fro
 Optional: you can generate a set of contract addresses for the `.env.local` file by running the following command:
 
 ```bash
-cd contracts
+cd ../../contracts
 # Replace the address file with the one you want to use
-pnpm tsx ./utils/deployment-manifest-to-app-env.ts ./addresses/11155111.json
+pnpm tsx ./utils/deployment-manifest-to-app-env.ts ./addresses/11155111.json > ../frontend/app/.env.local
 ```
 
 This is useful if you want to use a different set of contracts than the ones provided in the default `.env` file.
