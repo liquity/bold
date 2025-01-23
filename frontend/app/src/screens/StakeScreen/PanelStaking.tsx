@@ -242,7 +242,7 @@ export function PanelStaking() {
           size="large"
           wide
           onClick={() => {
-            if (account.address && updatedShare) {
+            if (account.address) {
               txFlow.start({
                 flowId: mode === "deposit" ? "stakeDeposit" : "unstakeDeposit",
                 backLink: ["/stake", "Back to stake position"],
@@ -254,7 +254,7 @@ export function PanelStaking() {
                   type: "stake",
                   owner: account.address,
                   deposit: updatedDeposit,
-                  share: updatedShare,
+                  share: updatedShare ?? dn.from(0, 18),
                   totalStaked: dn.add(
                     stakePosition.data?.totalStaked ?? dn.from(0, 18),
                     depositDifference,
