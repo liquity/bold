@@ -246,9 +246,7 @@ export function useKnownInitiatives() {
       if (KNOWN_INITIATIVES_URL === undefined) {
         throw new Error("KNOWN_INITIATIVES_URL is not defined");
       }
-      const response = await fetch(KNOWN_INITIATIVES_URL, {
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await fetch(KNOWN_INITIATIVES_URL);
       return v.parse(KnownInitiativesSchema, await response.json());
     },
     enabled: KNOWN_INITIATIVES_URL !== undefined,
