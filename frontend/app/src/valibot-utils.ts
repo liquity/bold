@@ -60,7 +60,7 @@ export function vPrefixedTroveId() {
 }
 
 // Env var link, e.g. Etherscan|https://etherscan.io
-export function vEnvLink() {
+export function vEnvLink(addFinalSlash = false) {
   return v.pipe(
     v.string(),
     v.trim(),
@@ -69,7 +69,10 @@ export function vEnvLink() {
       name: string;
       url: string;
     }>((value) => {
-      const [name, url] = value.split("|") as [string, string];
+      let [name, url] = value.split("|") as [string, string];
+      if (addFinalSlash && !url.endsWith("/")) {
+        url += "/";
+      }
       return { name, url };
     }),
   );
