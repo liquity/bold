@@ -51,7 +51,7 @@ export const EnvSchema = v.pipe(
     CHAIN_NAME: v.string(),
     CHAIN_CURRENCY: vEnvCurrency(),
     CHAIN_RPC_URL: v.pipe(v.string(), v.url()),
-    CHAIN_BLOCK_EXPLORER: v.optional(vEnvLink()),
+    CHAIN_BLOCK_EXPLORER: v.optional(vEnvLink(true)),
     CHAIN_CONTRACT_ENS_REGISTRY: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_ENS_RESOLVER: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_MULTICALL: vAddress(),
