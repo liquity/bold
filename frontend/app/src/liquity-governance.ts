@@ -67,7 +67,7 @@ export function useGovernanceState() {
         const epochStart = epochStart_.result ?? 0n;
         const epochDuration = GOVERNANCE_EPOCH_DURATION.result ?? 0n;
         const epochVotingCutoff = GOVERNANCE_EPOCH_VOTING_CUTOFF.result ?? 0n;
-        const cutoffStart = (epochStart + epochDuration) - epochVotingCutoff;
+        const cutoffStart = epochStart + epochVotingCutoff;
 
         const period: "cutoff" | "voting" = (secondsWithinEpoch.result ?? 0n) > epochVotingCutoff
           ? "cutoff"
