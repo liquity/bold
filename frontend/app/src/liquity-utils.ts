@@ -8,7 +8,6 @@ import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTE
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
 import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
-import { fmtnum } from "@/src/formatting";
 import {
   calculateStabilityPoolApr,
   getCollGainFromSnapshots,
@@ -24,10 +23,10 @@ import {
   useStabilityPoolEpochScale,
 } from "@/src/subgraph-hooks";
 import { isCollIndex, isTroveId } from "@/src/types";
-import { COLLATERALS, isAddress, useRaf } from "@liquity2/uikit";
+import { COLLATERALS, isAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useBalance, useReadContract, useReadContracts } from "wagmi";
 import { readContract } from "wagmi/actions";
