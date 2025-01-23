@@ -5,7 +5,7 @@ import content from "@/src/content";
 import { dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { useStakePosition } from "@/src/liquity-utils";
+import { useAccountVotingPower, useStakePosition } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -37,19 +37,16 @@ export function PanelStaking() {
     mode === "withdraw" ? -1 : 1,
   );
 
+  const updatedShare = useAccountVotingPower(
+    account.address ?? null,
+    depositDifference[0],
+  );
+
   const updatedDeposit = stakePosition.data?.deposit
     ? dnumMax(
       dn.add(stakePosition.data?.deposit, depositDifference),
       dn.from(0, 18),
     )
-    : dn.from(0, 18);
-
-  const updatedTotalStaked = stakePosition.data?.totalStaked
-    ? dn.add(stakePosition.data.totalStaked, depositDifference)
-    : null;
-
-  const updatedShare = updatedTotalStaked && dn.gt(updatedTotalStaked, 0)
-    ? dn.div(updatedDeposit, updatedTotalStaked)
     : dn.from(0, 18);
 
   const lqtyBalance = useBalance(account.address, "LQTY");
@@ -156,7 +153,7 @@ export function PanelStaking() {
           />
         }
         footer={{
-          start: (
+          start: null, /* (
             <Field.FooterInfo
               label="New voting power"
               value={
@@ -170,7 +167,7 @@ export function PanelStaking() {
                 </HFlex>
               }
             />
-          ),
+          )*/
         }}
       />
       <div
@@ -245,7 +242,7 @@ export function PanelStaking() {
           size="large"
           wide
           onClick={() => {
-            if (account.address) {
+            if (account.address && updatedShare) {
               txFlow.start({
                 flowId: mode === "deposit" ? "stakeDeposit" : "unstakeDeposit",
                 backLink: ["/stake", "Back to stake position"],
