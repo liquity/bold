@@ -17,7 +17,6 @@ import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
-import { readContract, writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction, verifyTroveUpdate } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -195,35 +194,30 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           approval="approve-only"
         />
       ),
-      async commit({
-        contracts,
-        request,
-        wagmiConfig,
-        preferredApproveMethod,
-      }) {
-        if (!request.depositChange) {
+      async commit(ctx) {
+        if (!ctx.request.depositChange) {
           throw new Error("Invalid step: depositChange is required with approveLst");
         }
 
-        const collateral = contracts.collaterals[request.loan.collIndex];
+        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
         if (!collateral) {
-          throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+          throw new Error(`Invalid collateral index: ${ctx.request.loan.collIndex}`);
         }
         const Zapper = collateral.contracts.LeverageLSTZapper;
 
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.CollToken,
           functionName: "approve",
           args: [
             Zapper.address,
-            preferredApproveMethod === "approve-infinite"
+            ctx.preferredApproveMethod === "approve-infinite"
               ? maxUint256 // infinite approval
-              : request.depositChange[0], // exact amount
+              : ctx.request.depositChange[0], // exact amount
           ],
         });
       },
-      async verify({ wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -231,36 +225,36 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       name: () => "Increase Deposit",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        if (!request.depositChange) {
+      async commit(ctx) {
+        if (!ctx.request.depositChange) {
           throw new Error("Invalid step: depositChange is required with increaseDeposit");
         }
 
-        const collateral = contracts.collaterals[request.loan.collIndex];
+        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
         if (!collateral) {
-          throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+          throw new Error(`Invalid collateral index: ${ctx.request.loan.collIndex}`);
         }
 
         // add ETH
         if (collateral.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
+          return ctx.writeContract({
             ...collateral.contracts.LeverageWETHZapper,
             functionName: "addCollWithRawETH",
-            args: [BigInt(request.loan.troveId)],
-            value: request.depositChange[0],
+            args: [BigInt(ctx.request.loan.troveId)],
+            value: ctx.request.depositChange[0],
           });
         }
 
         // add LST
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.LeverageLSTZapper,
           functionName: "addColl",
-          args: [BigInt(request.loan.troveId), request.depositChange[0]],
+          args: [BigInt(ctx.request.loan.troveId), ctx.request.depositChange[0]],
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
+      async verify(ctx, hash) {
+        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
       },
     },
 
@@ -268,21 +262,24 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       name: () => "Decrease Deposit",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        if (!request.depositChange) {
+      async commit(ctx) {
+        if (!ctx.request.depositChange) {
           throw new Error("Invalid step: depositChange is required with decreaseDeposit");
         }
 
-        const collateral = contracts.collaterals[request.loan.collIndex];
+        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
         if (!collateral) {
-          throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+          throw new Error(`Invalid collateral index: ${ctx.request.loan.collIndex}`);
         }
 
-        const args = [BigInt(request.loan.troveId), request.depositChange[0] * -1n] as const;
+        const args = [
+          BigInt(ctx.request.loan.troveId),
+          ctx.request.depositChange[0] * -1n,
+        ] as const;
 
         // withdraw ETH
         if (collateral.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
+          return ctx.writeContract({
             ...collateral.contracts.LeverageWETHZapper,
             functionName: "withdrawCollToRawETH",
             args,
@@ -290,15 +287,15 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }
 
         // withdraw LST
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.LeverageLSTZapper,
           functionName: "withdrawColl",
           args,
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
+      async verify(ctx, hash) {
+        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
       },
     },
 
@@ -306,28 +303,28 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       name: () => "Increase Multiplier",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        if (!request.leverageFactorChange) {
+      async commit(ctx) {
+        if (!ctx.request.leverageFactorChange) {
           throw new Error("Invalid step: leverageFactorChange is required with leverUpTrove");
         }
 
         const params = await getLeverUpTroveParams(
-          request.loan.collIndex,
-          request.loan.troveId,
-          request.leverageFactorChange[1],
-          wagmiConfig,
+          ctx.request.loan.collIndex,
+          ctx.request.loan.troveId,
+          ctx.request.leverageFactorChange[1],
+          ctx.wagmiConfig,
         );
         if (!params) {
           throw new Error("Couldn't fetch trove lever up params");
         }
 
-        const collateral = contracts.collaterals[request.loan.collIndex];
+        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
         if (!collateral) {
-          throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+          throw new Error(`Invalid collateral index: ${ctx.request.loan.collIndex}`);
         }
 
         const args = [{
-          troveId: BigInt(request.loan.troveId),
+          troveId: BigInt(ctx.request.loan.troveId),
           flashLoanAmount: params.flashLoanAmount,
           boldAmount: params.effectiveBoldAmount,
           maxUpfrontFee: MAX_UPFRONT_FEE,
@@ -335,7 +332,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
 
         // leverage up ETH trove
         if (collateral.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
+          return ctx.writeContract({
             ...collateral.contracts.LeverageWETHZapper,
             functionName: "leverUpTrove",
             args,
@@ -343,15 +340,15 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }
 
         // leverage up LST trove
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.LeverageLSTZapper,
           functionName: "leverUpTrove",
           args,
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
+      async verify(ctx, hash) {
+        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
       },
     },
 
@@ -359,57 +356,57 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       name: () => "Decrease Multiplier",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        if (!request.leverageFactorChange) {
+      async commit(ctx) {
+        if (!ctx.request.leverageFactorChange) {
           throw new Error("Invalid step: leverageFactorChange is required with leverDownTrove");
         }
 
         const params = await getLeverDownTroveParams(
-          request.loan.collIndex,
-          request.loan.troveId,
-          request.leverageFactorChange[1],
-          wagmiConfig,
+          ctx.request.loan.collIndex,
+          ctx.request.loan.troveId,
+          ctx.request.leverageFactorChange[1],
+          ctx.wagmiConfig,
         );
         if (!params) {
           throw new Error("Couldn't fetch trove lever down params");
         }
 
-        const collateral = contracts.collaterals[request.loan.collIndex];
+        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
         if (!collateral) {
-          throw new Error(`Invalid collateral index: ${request.loan.collIndex}`);
+          throw new Error(`Invalid collateral index: ${ctx.request.loan.collIndex}`);
         }
 
         const args = [{
-          troveId: BigInt(request.loan.troveId),
+          troveId: BigInt(ctx.request.loan.troveId),
           flashLoanAmount: params.flashLoanAmount,
           minBoldAmount: params.minBoldAmount,
         }] as const;
 
         if (collateral.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
+          return ctx.writeContract({
             ...collateral.contracts.LeverageWETHZapper,
             functionName: "leverDownTrove",
             args,
           });
         }
 
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.LeverageLSTZapper,
           functionName: "leverDownTrove",
           args,
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
+      async verify(ctx, hash) {
+        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
       },
     },
   },
 
-  async getSteps({ account, contracts, request, wagmiConfig }) {
-    const { depositChange, leverageFactorChange, loan } = request;
+  async getSteps(ctx) {
+    const { depositChange, leverageFactorChange, loan } = ctx.request;
 
-    const collateral = contracts.collaterals[loan.collIndex];
+    const collateral = ctx.contracts.collaterals[loan.collIndex];
     if (!collateral) {
       throw new Error(`Invalid collateral index: ${loan.collIndex}`);
     }
@@ -420,10 +417,10 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
     if (collateral.symbol !== "ETH" && depositChange && dn.gt(depositChange, 0)) {
       const { LeverageLSTZapper, CollToken } = collateral.contracts;
       const allowance = dnum18(
-        await readContract(wagmiConfig, {
+        await ctx.readContract({
           ...CollToken,
           functionName: "allowance",
-          args: [account ?? ADDRESS_ZERO, LeverageLSTZapper.address],
+          args: [ctx.account ?? ADDRESS_ZERO, LeverageLSTZapper.address],
         }),
       );
 

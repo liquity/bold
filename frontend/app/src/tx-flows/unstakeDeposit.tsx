@@ -10,7 +10,6 @@ import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -64,25 +63,25 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
       name: () => "Reset Votes",
       Status: TransactionStatus,
 
-      async commit({ account, contracts, wagmiConfig }) {
-        if (!account) {
+      async commit(ctx) {
+        if (!ctx.account) {
           throw new Error("Account address is required");
         }
 
         const allocated = await graphQuery(
           GovernanceUserAllocated,
-          { id: account.toLowerCase() },
+          { id: ctx.account.toLowerCase() },
         );
 
-        return writeContract(wagmiConfig, {
-          ...contracts.Governance,
+        return ctx.writeContract({
+          ...ctx.contracts.Governance,
           functionName: "resetAllocations",
           args: [(allocated.governanceUser?.allocated ?? []) as Address[], true],
         });
       },
 
-      async verify({ wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -90,17 +89,17 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
       name: () => "Unstake",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        const { Governance } = contracts;
-        return writeContract(wagmiConfig, {
+      async commit(ctx) {
+        const { Governance } = ctx.contracts;
+        return ctx.writeContract({
           ...Governance,
           functionName: "withdrawLQTY",
-          args: [request.lqtyAmount[0]],
+          args: [ctx.request.lqtyAmount[0]],
         });
       },
 
-      async verify({ wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
   },

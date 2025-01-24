@@ -3,9 +3,11 @@
 import type { Contracts } from "@/src/contracts";
 import type { Address } from "@/src/types";
 import type { ComponentType, ReactNode } from "react";
+import type { Abi, ContractFunctionArgs, ContractFunctionName, ReadContractReturnType } from "viem";
 import type { Config as WagmiConfig } from "wagmi";
+import type { ReadContractOptions } from "wagmi/query";
 
-import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
+import { GAS_MIN_HEADROOM, GAS_RELATIVE_HEADROOM, LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { getContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useAccount } from "@/src/services/Ethereum";
@@ -16,7 +18,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as v from "valibot";
+import { encodeFunctionData } from "viem";
 import { useConfig as useWagmiConfig } from "wagmi";
+import { estimateGas, readContract, writeContract } from "wagmi/actions";
 
 /* flows registration */
 
@@ -161,11 +165,52 @@ export type FlowParams<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = 
   contracts: Contracts;
   isSafe: boolean;
   preferredApproveMethod: "permit" | "approve-amount" | "approve-infinite";
+  readContract: ReturnType<typeof getReadContract>;
   request: FlowRequest;
   steps: FlowStep[] | null;
   storedState: ReturnType<typeof useStoredState>;
   wagmiConfig: WagmiConfig;
+  writeContract: ReturnType<typeof getWriteContract>;
 };
+
+function getReadContract(config: WagmiConfig) {
+  return <
+    const A extends Abi,
+    const F extends ContractFunctionName<A, "pure" | "view">,
+    const Args extends ContractFunctionArgs<A, "pure" | "view", F>,
+  >(options: ReadContractOptions<A, F, Args, WagmiConfig>) => {
+    return readContract(config, options as any) as Promise<
+      ReadContractReturnType<A, F, Args>
+    >;
+  };
+}
+
+function getWriteContract(config: WagmiConfig, account: Address) {
+  return async (
+    params: Omit<Parameters<typeof writeContract>[1], "value"> & {
+      value?: bigint;
+    },
+    gasMinHeadroom: number = GAS_MIN_HEADROOM,
+  ) => {
+    const gasEstimate = Number(
+      await estimateGas(config, {
+        account,
+        data: encodeFunctionData({
+          abi: params.abi,
+          functionName: params.functionName,
+          args: params.args,
+        }),
+        to: params.address,
+        value: params.value,
+      }),
+    );
+    const gas = BigInt(
+      gasEstimate + Math.max(gasMinHeadroom, gasEstimate * GAS_RELATIVE_HEADROOM),
+    );
+
+    return writeContract(config, { ...params, gas } as any);
+  };
+}
 
 // flow state as stored in local storage
 const FlowStateSchema = v.object({
@@ -276,8 +321,10 @@ export function TransactionFlow({
             contracts: getContracts(),
             isSafe: account.safeStatus !== null,
             preferredApproveMethod: storedState.preferredApproveMethod,
+            readContract: getReadContract(wagmiConfig),
             storedState,
             wagmiConfig,
+            writeContract: getWriteContract(wagmiConfig, account.address),
           }
           : null,
         start,
@@ -318,10 +365,12 @@ function useSteps(
         contracts: getContracts(),
         isSafe: account.safeStatus !== null,
         preferredApproveMethod: storedState.preferredApproveMethod,
+        readContract: getReadContract(wagmiConfig),
         request: flow.request,
         steps: flow.steps,
         storedState,
         wagmiConfig,
+        writeContract: getWriteContract(wagmiConfig, account.address),
       });
     },
   });
@@ -364,6 +413,7 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
       runningStepRef.current = stepKey;
 
       const params: FlowParams<FlowRequestMap[keyof FlowRequestMap]> = {
+        readContract: getReadContract(wagmiConfig),
         account,
         contracts: getContracts(),
         isSafe,
@@ -372,6 +422,7 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
         steps: flow.steps,
         storedState,
         wagmiConfig,
+        writeContract: getWriteContract(wagmiConfig, account),
       };
 
       let artifact = currentArtifact;
