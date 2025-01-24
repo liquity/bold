@@ -3,6 +3,7 @@ import type { Address, Dnum, Initiative, VoteAllocation } from "@/src/types";
 
 import { AddressLink } from "@/src/comps/AddressLink/AddressLink";
 import { Amount } from "@/src/comps/Amount/Amount";
+import { GAS_ALLOCATE_LQTY_MIN_HEADROOM } from "@/src/constants";
 import { getUserStates, useInitiatives } from "@/src/liquity-governance";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -10,11 +11,9 @@ import { useGovernanceUser } from "@/src/subgraph-hooks";
 import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
 import { vVoteAllocations } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
-import { IconDownvote, IconUpvote } from "@liquity2/uikit";
-import { IconStake } from "@liquity2/uikit";
+import { IconDownvote, IconStake, IconUpvote } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -177,13 +176,13 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
       name: () => "Cast votes",
       Status: TransactionStatus,
 
-      async commit({ request, account, wagmiConfig, contracts }) {
-        if (!account) {
+      async commit(ctx) {
+        if (!ctx.account) {
           throw new Error("Account address is required");
         }
-        const userStates = await getUserStates(wagmiConfig, account);
+        const userStates = await getUserStates(ctx.wagmiConfig, ctx.account);
 
-        const { voteAllocations } = request;
+        const { voteAllocations } = ctx.request;
         const { stakedLQTY } = userStates;
 
         const initiativeAddresses = Object.keys(voteAllocations) as Address[];
@@ -211,11 +210,11 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
 
         const allocated = await graphQuery(
           GovernanceUserAllocated,
-          { id: account.toLowerCase() },
+          { id: ctx.account.toLowerCase() },
         );
 
-        return writeContract(wagmiConfig, {
-          ...contracts.Governance,
+        return ctx.writeContract({
+          ...ctx.contracts.Governance,
           functionName: "allocateLQTY",
           args: [
             (allocated.governanceUser?.allocated ?? []) as Address[],
@@ -223,11 +222,11 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
             allocationArgs.votes,
             allocationArgs.vetos,
           ],
-        });
+        }, GAS_ALLOCATE_LQTY_MIN_HEADROOM);
       },
 
-      async verify({ wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
   },

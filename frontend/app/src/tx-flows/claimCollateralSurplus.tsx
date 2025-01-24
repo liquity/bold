@@ -11,7 +11,6 @@ import { shortenAddress, TokenIcon } from "@liquity2/uikit";
 import { blo } from "blo";
 import Image from "next/image";
 import * as v from "valibot";
-import { writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -176,22 +175,22 @@ export const claimCollateralSurplus: FlowDeclaration<ClaimCollateralSurplusReque
       name: () => "Claim remaining collateral",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        const { collIndex } = request;
-        const collateral = contracts.collaterals[collIndex];
+      async commit(ctx) {
+        const { collIndex } = ctx.request;
+        const collateral = ctx.contracts.collaterals[collIndex];
         if (!collateral) {
           throw new Error("Invalid collateral index: " + collIndex);
         }
         const { BorrowerOperations } = collateral.contracts;
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...BorrowerOperations,
           functionName: "claimCollateral",
           args: [],
         });
       },
 
-      async verify({ wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
   },

@@ -5,6 +5,10 @@ import type { CollateralSymbol, RiskLevel } from "@/src/types";
 import { norm } from "@liquity2/uikit";
 import * as dn from "dnum";
 
+export const GAS_MIN_HEADROOM = 100_000;
+export const GAS_RELATIVE_HEADROOM = 0.25;
+export const GAS_ALLOCATE_LQTY_MIN_HEADROOM = 350_000;
+
 export const LOCAL_STORAGE_PREFIX = "liquity2:";
 
 export const LEVERAGE_FACTOR_MIN = 1.1;
