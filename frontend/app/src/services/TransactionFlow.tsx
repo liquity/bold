@@ -205,7 +205,7 @@ function getWriteContract(config: WagmiConfig, account: Address) {
       }),
     );
     const gas = BigInt(
-      gasEstimate + Math.max(gasMinHeadroom, gasEstimate * GAS_RELATIVE_HEADROOM),
+      Math.ceil(gasEstimate + Math.max(gasMinHeadroom, gasEstimate * GAS_RELATIVE_HEADROOM)),
     );
 
     return writeContract(config, { ...params, gas } as any);
