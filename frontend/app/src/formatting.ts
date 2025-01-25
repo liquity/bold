@@ -4,24 +4,25 @@ import { DNUM_0, DNUM_1 } from "@/src/dnum-utils";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 
-// Dnum formatting options
-const dnFormatOptions = {
+// dnum formatting presets
+const dnFormatPresets = {
   "1z": { digits: 1, trailingZeros: true },
   "2z": { digits: 2, trailingZeros: true },
+  "12z": { digits: 12, trailingZeros: true },
   "2diff": { digits: 2, signDisplay: "exceptZero" },
   "4diff": { digits: 4, signDisplay: "exceptZero" },
   "compact": { compact: true, digits: 2 },
   "full": undefined, // dnum defaults
 } as const;
 
-function isDnFormatName(value: unknown): value is keyof typeof dnFormatOptions {
-  return typeof value === "string" && value in dnFormatOptions;
+function isDnFormatPresetName(value: unknown): value is keyof typeof dnFormatPresets {
+  return typeof value === "string" && value in dnFormatPresets;
 }
 
 export function fmtnum(
   value: Dnum | number | null | undefined,
   optionsOrFormatName:
-    | keyof typeof dnFormatOptions
+    | keyof typeof dnFormatPresets
     | Parameters<typeof dn.format>[1] = "2z",
   scale = 1, // pass 100 here to format as percentage
 ) {
@@ -35,11 +36,20 @@ export function fmtnum(
     value = dn.mul(value, scale);
   }
 
-  const options: Exclude<Parameters<typeof dn.format>[1], number> = isDnFormatName(optionsOrFormatName)
-    ? dnFormatOptions[optionsOrFormatName]
-    : optionsOrFormatName;
+  let options: Exclude<Parameters<typeof dn.format>[1], number> = (
+    isDnFormatPresetName(optionsOrFormatName)
+      ? dnFormatPresets[optionsOrFormatName]
+      : optionsOrFormatName
+  ) ?? {};
 
-  const formatted = dn.format(value, options);
+  if (typeof options === "number") {
+    options = { digits: options };
+  }
+
+  const formatted = dn.format(value, {
+    ...options,
+    locale: "en-US",
+  });
 
   // replace values rounded to 0.0…0 with 0.0…1 so they don't look like 0
   if (typeof options?.digits === "number" && options.digits > 0 && value[0] > 0n) {
