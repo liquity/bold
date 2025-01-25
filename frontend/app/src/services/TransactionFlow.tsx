@@ -109,7 +109,7 @@ export type FlowStep = {
   // artifact is the result of a step,
   // e.g. a transaction hash or a signed message
   artifact: string | null;
-  error: string | null;
+  error: { name: string | null; message: string } | null;
   id: string;
   status: FlowStepStatus;
 };
@@ -131,7 +131,11 @@ export type FlowStepDeclaration<FlowRequest extends BaseFlowRequest = BaseFlowRe
     | { status: "idle" }
     | { status: "awaiting-commit"; onRetry: () => void }
     | { status: "awaiting-verify" | "confirmed"; artifact: string }
-    | { status: "error"; error: string; artifact?: string }
+    | {
+      status: "error";
+      error: { name: string | null; message: string };
+      artifact?: string;
+    }
   >;
 };
 
@@ -226,18 +230,26 @@ const FlowStateSchema = v.object({
   }),
   steps: v.union([
     v.null(),
-    v.array(v.object({
-      id: v.string(),
-      status: v.union([
-        v.literal("idle"),
-        v.literal("awaiting-commit"),
-        v.literal("awaiting-verify"),
-        v.literal("confirmed"),
-        v.literal("error"),
-      ]),
-      artifact: v.union([v.string(), v.null()]),
-      error: v.union([v.string(), v.null()]),
-    })),
+    v.array(
+      v.object({
+        id: v.string(),
+        status: v.union([
+          v.literal("idle"),
+          v.literal("awaiting-commit"),
+          v.literal("awaiting-verify"),
+          v.literal("confirmed"),
+          v.literal("error"),
+        ]),
+        artifact: v.union([v.string(), v.null()]),
+        error: v.union([
+          v.null(),
+          v.object({
+            name: v.union([v.string(), v.null()]),
+            message: v.string(),
+          }),
+        ]),
+      }),
+    ),
   ]),
 });
 
@@ -457,8 +469,14 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
       updateFlowStep(stepIndex, {
         status: "error",
         artifact: currentArtifact,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error
+          ? {
+            name: error.name.toLowerCase().trim() === "error" ? null : error.name,
+            message: error.message,
+          }
+          : { name: null, message: String(error) },
       });
+      console.error(`Error at step ${stepIndex}:`, error);
     } finally {
       runningStepRef.current = null;
     }
