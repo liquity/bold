@@ -35,8 +35,8 @@ contract MetadataNFT is IMetadataNFT, Ownable {
 
     address public constant OWNER = 0x263b03BbA0BbbC320928B6026f5eAAFAD9F1ddeb;
 
-    string public constant name = "USA.D Trove";
-    string public constant description = "USA.D Trove position";
+    string public constant name = "USA.d Trove";
+    string public constant description = "USA.d Trove position";
 
     constructor(FixedAssetReader _assetReader) Ownable(OWNER) {
         assetReader = _assetReader;

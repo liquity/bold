@@ -427,8 +427,8 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
         bytes4[] memory methodIds = new bytes4[](2);
         address[] memory oracles = new address[](2);
         ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool(
-            "USDC-USA.D",
-            "USDCUSA.D",
+            "USDC-USA.d",
+            "USDCUSA.d",
             coins,
             100, // A
             1000000, // fee

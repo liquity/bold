@@ -20,8 +20,8 @@ contract TroveNFT is ERC721, ITroveNFT {
 
     constructor(IAddressesRegistry _addressesRegistry)
         ERC721(
-            string.concat("Asymmetry USA.D Trove - ", _addressesRegistry.collToken().name()),
-            string.concat("AsymUSA.DT_", _addressesRegistry.collToken().symbol())
+            string.concat("Asymmetry USA.d Trove - ", _addressesRegistry.collToken().name()),
+            string.concat("AsymUSA.dT_", _addressesRegistry.collToken().symbol())
         )
     {
         troveManager = _addressesRegistry.troveManager();
