@@ -7,8 +7,8 @@ contract WbtcOracle is BaseOracle {
 
     AggregatorV3Interface public immutable FALLBACK_ORACLE;
 
-    uint256 private constant CL_WBTC_BTC_HEARTBEAT = _24_HOURS;
-    uint256 private constant CL_BTC_USD_HEARTBEAT = _1_HOUR;
+    uint256 private constant _CL_WBTC_BTC_HEARTBEAT = _24_HOURS;
+    uint256 private constant _CL_BTC_USD_HEARTBEAT = _1_HOUR;
 
     AggregatorV3Interface public constant CL_WBTC_BTC_PRICE_FEED = AggregatorV3Interface(0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23);
     AggregatorV3Interface public constant CL_BTC_USD_PRICE_FEED = AggregatorV3Interface(0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c);
@@ -41,7 +41,7 @@ contract WbtcOracle is BaseOracle {
             uint256 wbtcBtcUpdatedAt,
             uint80 wbtcBtcAnsweredInRound
         ) = CL_WBTC_BTC_PRICE_FEED.latestRoundData();
-        if (_isStale(wbtcBtcPrice, wbtcBtcUpdatedAt, CL_WBTC_BTC_HEARTBEAT)) {
+        if (_isStale(wbtcBtcPrice, wbtcBtcUpdatedAt, _CL_WBTC_BTC_HEARTBEAT)) {
             return (0, 0, 0, 0, 0);
         }
 
@@ -52,7 +52,7 @@ contract WbtcOracle is BaseOracle {
             uint256 btcUsdUpdatedAt,
             uint80 btcUsdAnsweredInRound
         ) = CL_BTC_USD_PRICE_FEED.latestRoundData();
-        if (_isStale(btcUsdPrice, btcUsdUpdatedAt, CL_BTC_USD_HEARTBEAT)) {
+        if (_isStale(btcUsdPrice, btcUsdUpdatedAt, _CL_BTC_USD_HEARTBEAT)) {
             return (0, 0, 0, 0, 0);
         }
 

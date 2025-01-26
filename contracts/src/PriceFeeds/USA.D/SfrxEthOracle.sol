@@ -9,16 +9,16 @@ interface ISfrxETHDualOracle {
 
 contract SfrxEthOracle is BaseOracle {
 
-    uint256 private constant MAX_ORACLE_DEVIATION = 5e3; // 5%
-    uint256 private constant DEVIATION_PRECISION = 1e5;
+    uint256 private constant _MAX_ORACLE_DEVIATION = 5e3; // 5%
+    uint256 private constant _DEVIATION_PRECISION = 1e5;
 
-    uint256 private constant CL_ETH_USD_HEARTBEAT = _1_HOUR;
+    uint256 private constant _CL_ETH_USD_HEARTBEAT = _1_HOUR;
 
     AggregatorV3Interface public immutable FALLBACK_ORACLE;
 
     AggregatorV3Interface public constant CL_ETH_USD_PRICE_FEED = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
 
-    ISfrxETHDualOracle constant public SFRX_ETH_ORACLE = ISfrxETHDualOracle(0x584902BCe4282003E420Cf5b7ae5063D6C1c182a);
+    ISfrxETHDualOracle public constant SFRX_ETH_ORACLE = ISfrxETHDualOracle(0x584902BCe4282003E420Cf5b7ae5063D6C1c182a);
 
     constructor(address _fallback) BaseOracle("sfrxETH / USD") {
         FALLBACK_ORACLE = AggregatorV3Interface(_fallback);
@@ -44,7 +44,7 @@ contract SfrxEthOracle is BaseOracle {
     {
         (bool isBadData, uint256 sfrxEthEthPriceLow, uint256 sfrxEthEthPriceHigh) = SFRX_ETH_ORACLE.getPrices();
         bool isDeviationTooHigh =
-            (DEVIATION_PRECISION * (sfrxEthEthPriceHigh - sfrxEthEthPriceLow)) / sfrxEthEthPriceHigh > MAX_ORACLE_DEVIATION;
+            (_DEVIATION_PRECISION * (sfrxEthEthPriceHigh - sfrxEthEthPriceLow)) / sfrxEthEthPriceHigh > _MAX_ORACLE_DEVIATION;
         if (isBadData || isDeviationTooHigh) return (0, 0, 0, 0, 0);
 
         (
@@ -54,9 +54,9 @@ contract SfrxEthOracle is BaseOracle {
             uint256 ethUsdUpdatedAt,
             uint80 ethUsdAnsweredInRound
         ) = CL_ETH_USD_PRICE_FEED.latestRoundData();
-        if (_isStale(ethUsdPrice, ethUsdUpdatedAt, CL_ETH_USD_HEARTBEAT)) return (0, 0, 0, 0, 0);
+        if (_isStale(ethUsdPrice, ethUsdUpdatedAt, _CL_ETH_USD_HEARTBEAT)) return (0, 0, 0, 0, 0);
 
-        int256 sfrxEthUsdPrice = int256(sfrxEthEthPriceHigh) * ethUsdPrice / int256(WAD);
+        int256 sfrxEthUsdPrice = int256(sfrxEthEthPriceHigh) * ethUsdPrice / int256(_WAD);
 
         return (ethUsdRoundId, sfrxEthUsdPrice, ethUsdStartedAt, ethUsdUpdatedAt, ethUsdAnsweredInRound);
     }

@@ -39,7 +39,6 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed {
 
     IBorrowerOperations borrowerOperations;
 
-    // constructor(address _owner, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold) Ownable(_owner) {
     constructor(address _borrowOperationsAddress, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold) {
         // Store ETH-USD oracle
         ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
@@ -50,13 +49,6 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed {
 
         assert(ethUsdOracle.decimals == 8);
     }
-
-    // // TODO: remove this and set address in constructor, since we'll use CREATE2
-    // function setAddresses(address _borrowOperationsAddress) external onlyOwner {
-    //     borrowerOperations = IBorrowerOperations(_borrowOperationsAddress);
-
-    //     _renounceOwnership();
-    // }
 
     function _getOracleAnswer(Oracle memory _oracle) internal view returns (uint256, bool) {
         ChainlinkResponse memory chainlinkResponse = _getCurrentChainlinkResponse(_oracle.aggregator);

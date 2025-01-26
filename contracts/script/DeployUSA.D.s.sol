@@ -42,12 +42,10 @@ import {IWETH} from "src/Interfaces/IWETH.sol";
 import {InterestRouter} from "src/InterestRouter.sol";
 import {ScrvUsdOracle} from "src/PriceFeeds/USA.D/ScrvUsdOracle.sol";
 import {SdaiOracle} from "src/PriceFeeds/USA.D/SdaiOracle.sol";
-import {SfraxOracle} from "src/PriceFeeds/USA.D/SfraxOracle.sol";
 import {SfrxEthOracle} from "src/PriceFeeds/USA.D/SfrxEthOracle.sol";
 import {TbtcOracle} from "src/PriceFeeds/USA.D/TbtcOracle.sol";
 import {WbtcOracle} from "src/PriceFeeds/USA.D/WbtcOracle.sol";
 import {CrvUsdFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/CrvUsdFallbackOracle.sol";
-import {FraxFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/FraxFallbackOracle.sol";
 import {SfrxEthFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/SfrxEthFallbackOracle.sol";
 import {TbtcFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/TbtcFallbackOracle.sol";
 import {WbtcFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/WbtcFallbackOracle.sol";
@@ -71,6 +69,11 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
     address deployer;
 
     uint256 lastTroveIndex;
+
+    CrvUsdFallbackOracle scrvUsdFallbackOracle;
+    SfrxEthFallbackOracle sfrxEthFallbackOracle;
+    TbtcFallbackOracle tbtcFallbackOracle;
+    WbtcFallbackOracle wbtcFallbackOracle;
 
     struct LiquityContractsTestnet {
         IAddressesRegistry addressesRegistry;
@@ -150,7 +153,6 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
     address constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address constant SCRVUSD = 0x0655977FEb2f289A4aB78af67BAB0d17aAb84367;
     address constant SDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
-    address constant SFRAX = 0xA663B02CF0a4b149d2aD41910CB81e23e1c41c32;
     address constant SFRXETH = 0xac3E018457B222d93114458476f3E3416Abbe38F;
     address constant TBTC = 0x18084fbA666a33d37592fA2633fD49a74DD93a88;
     address constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
@@ -166,30 +168,27 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
         console2.log(deployer, "deployer");
         console2.log(deployer.balance, "deployer balance");
 
-        // @todo -- update params
-        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](6);
+        // @todo -- update params -- waiting for LR
+        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](5);
         troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // scrvUSD
         troveManagerParamsArray[1] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sDAI
-        troveManagerParamsArray[2] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sFRAX
-        troveManagerParamsArray[3] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sfrxETH
-        troveManagerParamsArray[4] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // tBTC
-        troveManagerParamsArray[5] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WBTC
+        troveManagerParamsArray[2] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sfrxETH
+        troveManagerParamsArray[3] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // tBTC
+        troveManagerParamsArray[4] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WBTC
 
 
-        string[] memory collNames = new string[](6);
-        string[] memory collSymbols = new string[](6);
+        string[] memory collNames = new string[](5);
+        string[] memory collSymbols = new string[](5);
         collNames[0] = "Savings crvUSD";
         collNames[1] = "Savings DAI";
-        collNames[2] = "Staked FRAX";
-        collNames[3] = "Staked Frax Ether";
-        collNames[4] = "tBTC v2";
-        collNames[5] = "Wrapped BTC";
+        collNames[2] = "Staked Frax Ether";
+        collNames[3] = "tBTC v2";
+        collNames[4] = "Wrapped BTC";
         collSymbols[0] = "scrvUSD";
         collSymbols[1] = "sDAI";
-        collSymbols[2] = "sFRAX";
-        collSymbols[3] = "sfrxETH";
-        collSymbols[4] = "tBTC";
-        collSymbols[5] = "WBTC";
+        collSymbols[2] = "sfrxETH";
+        collSymbols[3] = "tBTC";
+        collSymbols[4] = "WBTC";
 
         deployed =
             _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols);
@@ -232,10 +231,9 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
 
         vars.collaterals[0] = IERC20Metadata(SCRVUSD);
         vars.collaterals[1] = IERC20Metadata(SDAI);
-        vars.collaterals[2] = IERC20Metadata(SFRAX);
-        vars.collaterals[3] = IERC20Metadata(SFRXETH);
-        vars.collaterals[4] = IERC20Metadata(TBTC);
-        vars.collaterals[5] = IERC20Metadata(WBTC);
+        vars.collaterals[2] = IERC20Metadata(SFRXETH);
+        vars.collaterals[3] = IERC20Metadata(TBTC);
+        vars.collaterals[4] = IERC20Metadata(WBTC);
 
         // Deploy AddressesRegistries and get TroveManager addresses
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
@@ -318,25 +316,25 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
             _stalenessThreshold = _24_HOURS; // CL crvUSD/USD heartbeat. Fallback is block.timestamp
             CrvUsdFallbackOracle fallbackOracle = new CrvUsdFallbackOracle();
             contracts.oracle = address(new ScrvUsdOracle(address(fallbackOracle)));
+            scrvUsdFallbackOracle = fallbackOracle;
         } else if (address(_collToken) == SDAI) {
             _stalenessThreshold = _1_HOUR; // CL DAI/USD heartbeat. No Fallback
             contracts.oracle = address(new SdaiOracle());
-        } else if (address(_collToken) == SFRAX) {
-            _stalenessThreshold = _24_HOURS; // CL FRAX/USD heartbeat. Fallback is block.timestamp
-            FraxFallbackOracle fallbackOracle = new FraxFallbackOracle();
-            contracts.oracle = address(new SfraxOracle(address(fallbackOracle)));
         } else if (address(_collToken) == SFRXETH) {
             _stalenessThreshold = _24_HOURS; // CL FRAX/ETH heartbeat (Fallback). Primary FRAX/USD is 1 hour, but falls back
             SfrxEthFallbackOracle fallbackOracle = new SfrxEthFallbackOracle();
             contracts.oracle = address(new SfrxEthOracle(address(fallbackOracle)));
+            sfrxEthFallbackOracle = fallbackOracle;
         } else if (address(_collToken) == TBTC) {
             _stalenessThreshold = _24_HOURS; // CL tBTC/USD heartbeat. Fallback is block.timestamp
             TbtcFallbackOracle fallbackOracle = new TbtcFallbackOracle();
             contracts.oracle = address(new TbtcOracle(address(fallbackOracle)));
+            tbtcFallbackOracle = fallbackOracle;
         } else if (address(_collToken) == WBTC) {
             _stalenessThreshold = _24_HOURS; // CL WBTC/BTC heartbeat. Fallback is block.timestamp
             WbtcFallbackOracle fallbackOracle = new WbtcFallbackOracle();
             contracts.oracle = address(new WbtcOracle(address(fallbackOracle)));
+            wbtcFallbackOracle = fallbackOracle;
         } else {
             revert("Collateral not supported");
         }

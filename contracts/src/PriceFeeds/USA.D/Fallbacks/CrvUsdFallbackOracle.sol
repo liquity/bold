@@ -5,7 +5,7 @@ import {BaseFallbackOracle} from "./BaseFallbackOracle.sol";
 
 contract CrvUsdFallbackOracle is BaseFallbackOracle {
 
-    address private constant CRVUSD_USD_AGG = 0x18672b1b0c623a30089A280Ed9256379fb0E4E62;
+    address private constant _CRVUSD_USD_AGG = 0x18672b1b0c623a30089A280Ed9256379fb0E4E62;
 
-    constructor() BaseFallbackOracle("crvUSD / USD", CRVUSD_USD_AGG) {}
+    constructor() BaseFallbackOracle("crvUSD / USD", _CRVUSD_USD_AGG) {}
 }

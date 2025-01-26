@@ -7,7 +7,7 @@ abstract contract BaseOracle is AggregatorV3Interface {
     
     string public description;
 
-    uint256 internal constant WAD = 1e18;
+    uint256 internal constant _WAD = 1e18;
     uint256 internal constant _24_HOURS = 86400;
     uint256 internal constant _1_HOUR = 3600;
 

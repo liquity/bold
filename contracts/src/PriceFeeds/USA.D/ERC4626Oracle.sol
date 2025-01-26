@@ -20,11 +20,14 @@ abstract contract ERC4626Oracle is BaseOracle {
             TOKEN = IERC4626(_token);
             PRIMARY_ORACLE = AggregatorV3Interface(_primary);
             require(PRIMARY_ORACLE.decimals() == 8, "!primary");
-            FALLBACK_ORACLE = AggregatorV3Interface(_fallback);
-            require(FALLBACK_ORACLE.decimals() == 8, "!fallback");
+
+            if (_fallback != address(0)) {
+                FALLBACK_ORACLE = AggregatorV3Interface(_fallback);
+                require(FALLBACK_ORACLE.decimals() == 8, "!fallback");
+            }
     }
 
-    // assuming PRIMARY_ORACLE will never revert
+    // assuming PRIMARY_ORACLE will never revert. If it does, the branch will be shut down
     function latestRoundData()
         external
         view
@@ -36,7 +39,7 @@ abstract contract ERC4626Oracle is BaseOracle {
         if (_isStale(answer, updatedAt, PRIMARY_ORACLE_HEARTBEAT) && address(FALLBACK_ORACLE) != address(0)) {
             (roundId, answer, startedAt, updatedAt, answeredInRound) = FALLBACK_ORACLE.latestRoundData();
         }
-        answer = answer * int256(TOKEN.convertToAssets(WAD)) / int256(WAD);
+        answer = answer * int256(TOKEN.convertToAssets(_WAD)) / int256(_WAD);
         return (roundId, answer, startedAt, updatedAt, answeredInRound);
     }
 }
