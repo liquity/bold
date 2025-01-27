@@ -242,9 +242,12 @@ export const FooterInfoLoanToValue = memo(
                     fontVariantNumeric: "tabular-nums",
                   })}
                 >
-                  {higherThanMax && ">"}
-                  {fmtnum(higherThanMax ? maxLtvRatio : ltvRatio, "pct2z")}
-                  {"%"}
+                  {fmtnum(higherThanMax ? maxLtvRatio : ltvRatio, {
+                    dust: false,
+                    prefix: higherThanMax ? ">" : "",
+                    preset: "pct2z",
+                    suffix: "%",
+                  })}
                 </span>
               )
               : "−"}
@@ -269,7 +272,7 @@ export const FooterInfoLiquidationPrice = memo(
         value={
           <HFlex gap={4}>
             {liquidationPrice
-              ? `$${fmtnum(liquidationPrice)}`
+              ? fmtnum(liquidationPrice, { prefix: "$", preset: "2z" })
               : "−"}
             <InfoTooltip
               {...infoTooltipProps(content.generalInfotooltips.loanLiquidationPrice)}
@@ -317,7 +320,7 @@ export const FooterInfoCollPrice = memo(
                 fontVariantNumeric: "tabular-nums",
               })}
             >
-              ${fmtnum(collPriceUsd)}
+              {fmtnum(collPriceUsd, { prefix: "$", preset: "2z" })}
             </span>
             <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.ethPrice)} />
           </HFlex>

@@ -29,15 +29,16 @@ export function Amount({
 
   const showFallback = value === null || value === undefined;
 
-  const content = showFallback ? fallback : prefix + fmtnum(value, {
-    preset: typeof format === "number" ? undefined : format,
+  const content = showFallback ? fallback : fmtnum(value, {
     digits: typeof format === "number" ? format : undefined,
+    prefix,
+    preset: typeof format === "number" ? undefined : format,
     scale,
   }) + suffix;
 
   const title = showFallback ? undefined : (
     titleProp === undefined
-      ? prefix + fmtnum(value, { preset: "full", scale }) + suffix
+      ? fmtnum(value, { prefix, preset: "full", scale }) + suffix
       : titleProp
   );
 

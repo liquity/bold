@@ -39,9 +39,18 @@ test("fmtnum() works", () => {
   expect(fmtnum(dn.from(123.456), 1)).toBe("123.5");
   expect(fmtnum(dn.from(123.456), 3)).toBe("123.456");
 
+  // prefix / suffix
+  expect(fmtnum(dn.from(123.456), { prefix: "$" })).toBe("$123.456");
+  expect(fmtnum(dn.from(123.456), { suffix: " BOLD" })).toBe("123.456 BOLD");
+
   // dust
-  expect(fmtnum(dn.from(0.0000001), "2z")).toBe("0.01");
-  expect(fmtnum(dn.from(0.0000001), 4)).toBe("0.0001");
+  expect(fmtnum(dn.from(0.0000001), "2z")).toBe("<0.01");
+  expect(fmtnum(dn.from(0.0000001), 4)).toBe("<0.0001");
+  expect(fmtnum(dn.from(0.0000001), "full")).toBe("0.0000001");
+  // override preset
+  expect(fmtnum(dn.from(0.0000001), { preset: "2z", dust: false })).toBe("0.00");
+  // with prefix
+  expect(fmtnum(dn.from(0.0000001), { preset: "2z", prefix: "$" })).toBe("<$0.01");
 
   // preset & dnum options combined
   expect(fmtnum(dn.from(123.456), { preset: "2z", digits: 3 })).toBe("123.456");

@@ -232,7 +232,7 @@ export function LeverageScreen() {
               label={content.leverageScreen.depositField.label}
               placeholder="0.00"
               secondary={{
-                start: depositUsd && `$${fmtnum(depositUsd, "2z")}`,
+                start: fmtnum(depositUsd, { prefix: "$", preset: "2z" }),
                 end: maxAmount
                   ? (
                     <TextButton

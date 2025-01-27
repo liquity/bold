@@ -731,7 +731,7 @@ function LoanCard({
                       )}
                     <GridItem label="Liq. price" title="Liquidation price">
                       <Value negative={ltv && dn.gt(ltv, maxLtv)}>
-                        ${fmtnum(loanDetails.liquidationPrice)}
+                        {fmtnum(loanDetails.liquidationPrice, { preset: "2z", prefix: "$" })}
                       </Value>
                     </GridItem>
                     <GridItem label="Interest rate">

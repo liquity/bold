@@ -77,7 +77,10 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
           label="Initial deposit"
           value={[
             `${fmtnum(initialDeposit)} ${collToken.name}`,
-            collPrice.data && `$${fmtnum(dn.mul(initialDeposit, collPrice.data))}`,
+            collPrice.data && fmtnum(
+              dn.mul(initialDeposit, collPrice.data),
+              { preset: "2z", prefix: "$" },
+            ),
           ]}
         />
         <TransactionDetailsRow
@@ -112,7 +115,11 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
               value={[
                 <AccountButton key="start" address={loan.batchManager} />,
                 <div key="end">
-                  {fmtnum(loan.interestRate, "pctfull")}% (~{fmtnum(yearlyBoldInterest, 4)} BOLD per year)
+                  {fmtnum(loan.interestRate, "pctfull")}% ({fmtnum(yearlyBoldInterest, {
+                    digits: 4,
+                    dust: false,
+                    prefix: "~",
+                  })} BOLD per year)
                 </div>,
               ]}
             />

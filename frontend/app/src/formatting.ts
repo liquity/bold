@@ -19,18 +19,26 @@ const fmtnumPresets = {
   "full": {},
 } satisfies Record<
   string,
-  Exclude<DnumFormatOptions & { scale?: number }, number>
+  Exclude<DnumFormatOptions, number> & FmtnumExclusiveOptions
 >;
 
-type DnumFormatOptions = number | Parameters<typeof dn.format>[1];
+type DnumFormatOptions =
+  | number
+  | Parameters<typeof dn.format>[1];
 
 export type FmtnumPresetName = keyof typeof fmtnumPresets;
-export type FmtNumOptions =
-  | FmtnumPresetName
-  | DnumFormatOptions & {
-    preset?: FmtnumPresetName;
-    scale?: number; // pass e.g. 100 to format as percentage
-  };
+
+export type FmtnumExclusiveOptions = {
+  dust?: boolean;
+  prefix?: string;
+  preset?: FmtnumPresetName;
+  scale?: number; // pass e.g. 100 to format as percentage
+  suffix?: string;
+};
+
+export type FmtnumOptions =
+  | FmtnumPresetName // alias for { preset: FmtnumPresetName }
+  | (DnumFormatOptions & FmtnumExclusiveOptions);
 
 function isFmtnumPresetName(value: unknown): value is FmtnumPresetName {
   return typeof value === "string" && value in fmtnumPresets;
@@ -38,7 +46,7 @@ function isFmtnumPresetName(value: unknown): value is FmtnumPresetName {
 
 export function fmtnum(
   value: Dnum | number | null | undefined,
-  optionsOrPreset: FmtNumOptions = "2z",
+  optionsOrPreset: FmtnumOptions = "2z",
 ) {
   if (value === null || value === undefined) {
     return "";
@@ -65,32 +73,39 @@ export function fmtnum(
     };
   }
 
-  // apply scale
-  if (optionsOrPreset.scale !== undefined && optionsOrPreset.scale > 1) {
-    value = dn.mul(value, optionsOrPreset.scale);
-  }
+  const {
+    dust = true,
+    prefix = "",
+    preset,
+    scale = 1,
+    suffix = "",
+    ...dnOptions
+  } = optionsOrPreset;
 
-  const { preset, scale, ...dnOptions } = optionsOrPreset;
+  // apply scale
+  if (scale !== 1) {
+    value = dn.mul(value, scale);
+  }
 
   const formatted = dn.format(value, {
     ...dnOptions,
     locale: "en-US",
   });
 
-  // replace values rounded to 0.0…0 with 0.0…1 so they don't look like 0
+  // show eg. 0.0001 as <0.01 rather than 0.00
   if (
-    dnOptions.digits !== undefined
-    && dnOptions.digits > 0
-    && value[0] > 0n
-    && (
-      formatted === "0"
-      || formatted === `0.${"0".repeat(dnOptions.digits)}`
-    )
+    dust
+    && dnOptions.signDisplay === undefined // don’t use with +- signs
+    && dnOptions.digits !== undefined // don’t use with full precision
+    && dnOptions.compact !== true // don’t use with compact
+    && dnOptions.digits > 0 // no dust for integers
+    && value[0] > 0n // only positive numbers
+    && (formatted === "0" || formatted === `0.${"0".repeat(dnOptions.digits)}`)
   ) {
-    return `0.${"0".repeat(dnOptions.digits - 1)}1`;
+    return `<${prefix}0.${"0".repeat(dnOptions.digits - 1)}1${suffix}`;
   }
 
-  return formatted;
+  return prefix + formatted + suffix;
 }
 
 export function formatLiquidationRisk(liquidationRisk: RiskLevel | null) {
