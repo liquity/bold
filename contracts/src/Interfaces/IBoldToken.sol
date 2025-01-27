@@ -6,7 +6,13 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "openzeppelin-contracts/contracts/interfaces/IERC5267.sol";
 
-interface IBoldToken is IERC20Metadata, IERC20Permit, IERC5267 {
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+
+
+interface IBoldTokenCustom is IERC20Permit, IERC5267 {
+    function collateralRegistryAddress() external view returns (address);
+    
+
     function setBranchAddresses(
         address _troveManagerAddress,
         address _stabilityPoolAddress,
@@ -24,3 +30,5 @@ interface IBoldToken is IERC20Metadata, IERC20Permit, IERC5267 {
 
     function returnFromPool(address poolAddress, address user, uint256 _amount) external;
 }
+
+interface IBoldToken is IBoldTokenCustom, ISuperToken {}

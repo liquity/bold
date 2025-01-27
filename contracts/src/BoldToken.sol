@@ -13,7 +13,6 @@ import { ISuperToken, ISuperTokenFactory, IERC20 } from "@superfluid-finance/eth
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "./Dependencies/Ownable.sol";
 import "./Interfaces/IBoldToken.sol";
-import "@superfluid-finance/ethereum-contracts/contracts/upgradability/UUPSProxiable.sol";
 
 /*
  * --- Functionality added specific to the BoldToken ---
@@ -29,7 +28,7 @@ import "@superfluid-finance/ethereum-contracts/contracts/upgradability/UUPSProxi
  //TODO: remove erc20 from constructor. Ask bold if removing permit breaks anything else.
  //INFO: permit involves approve, so invoke safeApproveFor in supertoken
 
-contract BoldToken is Ownable, IBoldToken, CustomSuperTokenBase, UUPSProxy, UUPSProxiable {
+contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy {
 
     string internal constant _NAME = "Nerite Stablecoin";
     string internal constant _SYMBOL = "USDN";
@@ -54,7 +53,10 @@ contract BoldToken is Ownable, IBoldToken, CustomSuperTokenBase, UUPSProxy, UUPS
     //TODO move supertoken init to another function possibley.
     //TODO lookup address of factory deployment and include that in the deployment scripts to int the factory.
     //TODO BOLD token now has a payable fallback function. verify this is not a problem.
-    constructor(address _owner, ISuperTokenFactory factory) Ownable(_owner) {
+    //TODO clean up construtor and update tests that use the constructor to not have the factory param.
+    constructor(address _owner, ISuperTokenFactory factory) Ownable(_owner) {}
+
+    function initialize(ISuperTokenFactory factory) external {
         // This call to the factory invokes `UUPSProxy.initialize`, which connects the proxy to the canonical SuperToken implementation.
 		// It also emits an event which facilitates discovery of this token.
 		ISuperTokenFactory(factory).initializeCustomSuperToken(address(this));
@@ -64,8 +66,8 @@ contract BoldToken is Ownable, IBoldToken, CustomSuperTokenBase, UUPSProxy, UUPS
 		ISuperToken(address(this)).initialize(
 			IERC20(address(0)),
 			18,
-			"USD Nerite",
-			"USDN"
+			_NAME,
+			_SYMBOL
 		);
     }
 
@@ -149,12 +151,8 @@ contract BoldToken is Ownable, IBoldToken, CustomSuperTokenBase, UUPSProxy, UUPS
     }
 
     //[================================]
-    //interface implementation functions 
+    //Permit functions
     //[================================]
-
-    function name() external view override returns (string memory) {
-        return _NAME;
-    }
 
     /// @dev Returns the EIP-712 domain separator for the EIP-2612 permit.
     // Required to implement ERC20Permit.
@@ -171,28 +169,12 @@ contract BoldToken is Ownable, IBoldToken, CustomSuperTokenBase, UUPSProxy, UUPS
         );
     }
 
-    function balanceOf(address account) external view returns (uint256){
-        return ISuperToken(address(this)).balanceOf(account);
-    }
-
-    function allowance(address owner, address spender) external view override returns (uint256) {
-        return ISuperToken(address(this)).allowance(owner, spender);
-    }
-
-    function approve(address spender, uint256 amount) external override returns (bool) {
-       return ISuperToken(address(this)).approve(spender, amount);
-    }
-
-    function decimals() external pure override returns (uint8) {
-        return 18; // SuperTokens always use 18 decimals
-    }
-
     // Storage slot for nonces (from ERC20Permit)
     mapping(address => uint256) private _nonces;
 
     function eip712Domain() external view override returns (
         bytes1 fields,
-        string memory name,
+        string memory name712,
         string memory version,
         uint256 chainId,
         address verifyingContract,
@@ -249,32 +231,7 @@ contract BoldToken is Ownable, IBoldToken, CustomSuperTokenBase, UUPSProxy, UUPS
         if (signer != owner) revert("INVALID_SIGNER");
 
         // Finally, approve the spender
-        ISuperToken(address(this)).approve(spender, value);
+        ISuperToken(address(this)).selfApproveFor(owner, spender, value);
     }
 
-    function proxiableUUID() public view override returns (bytes32) {
-        return keccak256("org.superfluid-finance.contracts.SuperToken.implementation");
-    }
-
-    function symbol() external view override returns (string memory) {
-        return ISuperToken(address(this)).symbol();
-    }
-
-    function totalSupply() external view override returns (uint256) {
-        return ISuperToken(address(this)).totalSupply();
-    }
-
-    function transfer(address to, uint256 amount) external override returns (bool) {
-        ISuperToken(address(this)).transfer(to, amount);
-        return true;
-    }
-
-    function transferFrom(address from, address to, uint256 amount) external override returns (bool) {
-        ISuperToken(address(this)).transferFrom(from, to, amount);
-        return true;
-    }
-
-    function updateCode(address newAddress) external override {
-        return;
-    }
 }
