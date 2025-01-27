@@ -84,9 +84,8 @@ export function StakePositionSummary({
     // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
     const share = dn.div([userVpLive, 18], [totalVpLive, 18]);
 
-    const sharePct = dn.mul(share, 100);
-    const sharePctFormatted = dn.format(sharePct, { digits: 12, trailingZeros: true }) + "%";
-    const sharePctRoundedFormatted = fmtnum(sharePct, { digits: 2, trailingZeros: true }) + "%";
+    const sharePctFormatted = fmtnum(share, "12z", 100) + "%";
+    const sharePctRoundedFormatted = fmtnum(share, "2z", 100) + "%";
 
     votingPowerRef.current.innerHTML = sharePctRoundedFormatted;
     votingPowerRef.current.title = sharePctFormatted;
@@ -371,7 +370,7 @@ export function StakePositionSummary({
                               <p>
                                 Voting power increases over time based on the total amount of LQTY staked.
                               </p>
-                              {account.address && (
+                              {account.address && (govUser.data?.stakedLQTY ?? 0n) > 0n && (
                                 <div
                                   className={css({
                                     display: "flex",
