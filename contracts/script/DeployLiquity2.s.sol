@@ -265,18 +265,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         // Deploy Bold or pick up existing deployment
         bytes memory boldBytecode = bytes.concat(type(BoldToken).creationCode, abi.encode(deployer));
         address boldAddress = vm.computeCreate2Address(SALT, keccak256(boldBytecode));
-        BoldToken boldToken;
+        IBoldToken boldToken;
 
         if (deploymentMode.eq(DEPLOYMENT_MODE_USE_EXISTING_BOLD)) {
             require(boldAddress.code.length > 0, string.concat("BOLD not found at ", boldAddress.toHexString()));
-            boldToken = BoldToken(payable(boldAddress));
+            boldToken = IBoldToken(payable(boldAddress));
 
             // Check BOLD is untouched
             require(boldToken.totalSupply() == 0, "Some BOLD has been minted!");
             require(boldToken.collateralRegistryAddress() == address(0), "Collateral registry already set");
-            require(boldToken.owner() == deployer, "Not BOLD owner");
+            require(BoldToken(payable(address(boldToken))).owner() == deployer, "Not BOLD owner");
         } else {
-            boldToken = new BoldToken{salt: SALT}(deployer, superTokenFactory);
+            boldToken = IBoldToken(address(new BoldToken{salt: SALT}(deployer, superTokenFactory)));
             assert(address(boldToken) == boldAddress);
         }
 
@@ -529,7 +529,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         DeploymentVars memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
-        r.boldToken = BoldToken(payable(_deployGovernanceParams.bold));
+        r.boldToken = IBoldToken(payable(_deployGovernanceParams.bold));
 
         // USDC and USDC-BOLD pool
         r.usdcCurvePool = _deployCurvePool(r.boldToken, USDC);

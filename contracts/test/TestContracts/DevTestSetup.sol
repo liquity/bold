@@ -4,6 +4,10 @@ pragma solidity 0.8.24;
 import "./BaseTest.sol";
 import {TestDeployer} from "./Deployment.t.sol";
 
+import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.t.sol";
+import { ERC1820RegistryCompiled } from "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
+
 contract DevTestSetup is BaseTest {
     function giveAndApproveColl(address _account, uint256 _amount) public {
         return giveAndApproveCollateral(collToken, _account, _amount, address(borrowerOperations));
@@ -30,6 +34,19 @@ contract DevTestSetup is BaseTest {
         assertEq(_token.allowance(_account, _borrowerOperationsAddress), _amount);
     }
 
+    
+    address constant internal _OWNER = address(0x1);
+	//BoldToken internal _superBoldToken;
+	SuperfluidFrameworkDeployer.Framework internal _sf;
+    
+
+    function setupSuperToken() public {
+        vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);
+		SuperfluidFrameworkDeployer sfDeployer = new SuperfluidFrameworkDeployer();
+		sfDeployer.deployTestFramework();
+		_sf = sfDeployer.getFramework();
+    }
+
     function setUp() public virtual {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -46,6 +63,8 @@ contract DevTestSetup is BaseTest {
             accountsList[5],
             accountsList[6]
         );
+
+        setupSuperToken();
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev memory contracts;

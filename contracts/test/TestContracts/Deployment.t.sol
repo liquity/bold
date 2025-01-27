@@ -302,7 +302,7 @@ contract TestDeployer is MetadataDeployment {
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this), superTokenFactory));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        boldToken = new BoldToken{salt: SALT}(address(this), superTokenFactory);
+        boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), superTokenFactory)));
         assert(address(boldToken) == vars.boldTokenAddress);
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
@@ -563,7 +563,7 @@ contract TestDeployer is MetadataDeployment {
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this), superTokenFactory));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        result.boldToken = new BoldToken{salt: SALT}(address(this), superTokenFactory);
+        result.boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), superTokenFactory)));
         assert(address(result.boldToken) == vars.boldTokenAddress);
 
         // WETH
