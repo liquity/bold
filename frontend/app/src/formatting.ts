@@ -15,15 +15,18 @@ const dnFormatPresets = {
   "full": undefined, // dnum defaults
 } as const;
 
-function isDnFormatPresetName(value: unknown): value is keyof typeof dnFormatPresets {
+type DnFormatPresetName = keyof typeof dnFormatPresets;
+type DnumFormatOptions = number | Parameters<typeof dn.format>[1];
+
+function isDnFormatPresetName(value: unknown): value is DnFormatPresetName {
   return typeof value === "string" && value in dnFormatPresets;
 }
 
 export function fmtnum(
   value: Dnum | number | null | undefined,
   optionsOrFormatName:
-    | keyof typeof dnFormatPresets
-    | Parameters<typeof dn.format>[1] = "2z",
+    | DnFormatPresetName
+    | DnumFormatOptions = "2z",
   scale = 1, // pass 100 here to format as percentage
 ) {
   if (value === null || value === undefined) {
@@ -36,7 +39,7 @@ export function fmtnum(
     value = dn.mul(value, scale);
   }
 
-  let options: Exclude<Parameters<typeof dn.format>[1], number> = (
+  let options: DnumFormatOptions = (
     isDnFormatPresetName(optionsOrFormatName)
       ? dnFormatPresets[optionsOrFormatName]
       : optionsOrFormatName
