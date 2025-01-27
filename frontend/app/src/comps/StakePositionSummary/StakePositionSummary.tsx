@@ -370,7 +370,7 @@ export function StakePositionSummary({
                               <p>
                                 Voting power increases over time based on the total amount of LQTY staked.
                               </p>
-                              {account.address && govUser.data?.stakedLQTY && govUser.data?.stakedLQTY > 0n && (
+                              {account.address && (govUser.data?.stakedLQTY ?? 0n) > 0n && (
                                 <div
                                   className={css({
                                     display: "flex",
