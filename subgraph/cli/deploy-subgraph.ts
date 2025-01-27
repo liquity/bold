@@ -87,12 +87,9 @@ export async function main() {
     options.network ??= "sepolia";
   }
 
-  if (networkPreset === "liquity-testnet") {
-    // TODO: implement
-  }
-
   if (networkPreset === "mainnet") {
-    // TODO: implement
+    options.name ??= "liquity2-mainnet";
+    options.network ??= "mainnet";
   }
 
   if (!options.name) {

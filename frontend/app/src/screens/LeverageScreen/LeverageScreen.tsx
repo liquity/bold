@@ -5,7 +5,7 @@ import type { Address, PositionLoanUncommitted } from "@/src/types";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+// import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
@@ -357,7 +357,7 @@ export function LeverageScreen() {
             width: "100%",
           })}
         >
-          <ConnectWarningBox />
+          {/*<ConnectWarningBox />*/}
           <div
             className={css({
               display: "flex",
@@ -368,8 +368,8 @@ export function LeverageScreen() {
             })}
           >
             <Button
-              disabled={!allowSubmit}
-              label={content.leverageScreen.action}
+              disabled={true || !allowSubmit}
+              label="Coming Soon"
               mode="primary"
               size="large"
               wide
@@ -394,7 +394,8 @@ export function LeverageScreen() {
               }}
             />
 
-            {leverageSlippageElements.mode === "error"
+            {
+              /*leverageSlippageElements.mode === "error"
               ? (
                 <div
                   className={css({
@@ -408,7 +409,8 @@ export function LeverageScreen() {
                 <div>
                   {leverageSlippageElements.message}
                 </div>
-              )}
+              )*/
+            }
           </div>
         </div>
       </div>

@@ -8,7 +8,6 @@ import { usePrice } from "@/src/services/Prices";
 import { vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -85,16 +84,16 @@ export const stakeClaimRewards: FlowDeclaration<StakeClaimRewardsRequest> = {
       name: () => "Claim rewards",
       Status: TransactionStatus,
 
-      async commit({ contracts, wagmiConfig }) {
-        return writeContract(wagmiConfig, {
-          ...contracts.LqtyStaking,
-          functionName: "unstake",
-          args: [0n],
+      async commit(ctx) {
+        return ctx.writeContract({
+          ...ctx.contracts.Governance,
+          functionName: "claimFromStakingV1",
+          args: [ctx.request.stakePosition.owner], // address to receive the payout
         });
       },
 
-      async verify({ wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
   },

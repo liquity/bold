@@ -141,9 +141,11 @@ export function PanelClosePosition({
                           whiteSpace: "nowrap",
                         })}
                       >
-                        {TOKENS_BY_SYMBOL[symbol].name} {symbol === "BOLD" ? "(account)" : "(loan collateral)"}
+                        {TOKENS_BY_SYMBOL[symbol].name} {symbol === "BOLD" ? "(account)" : "(collateral)"}
                       </div>
                     ),
+                    disabled: symbol !== "BOLD",
+                    disabledReason: symbol !== "BOLD" ? "Coming soon" : undefined,
                     value: symbol === "BOLD" ? fmtnum(boldBalance.data) : null,
                   }))}
                   menuWidth={300}

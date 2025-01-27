@@ -67,7 +67,7 @@ export function useGovernanceState() {
         const epochStart = epochStart_.result ?? 0n;
         const epochDuration = GOVERNANCE_EPOCH_DURATION.result ?? 0n;
         const epochVotingCutoff = GOVERNANCE_EPOCH_VOTING_CUTOFF.result ?? 0n;
-        const cutoffStart = (epochStart + epochDuration) - epochVotingCutoff;
+        const cutoffStart = epochStart + epochVotingCutoff;
 
         const period: "cutoff" | "voting" = (secondsWithinEpoch.result ?? 0n) > epochVotingCutoff
           ? "cutoff"
@@ -246,9 +246,7 @@ export function useKnownInitiatives() {
       if (KNOWN_INITIATIVES_URL === undefined) {
         throw new Error("KNOWN_INITIATIVES_URL is not defined");
       }
-      const response = await fetch(KNOWN_INITIATIVES_URL, {
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await fetch(KNOWN_INITIATIVES_URL);
       return v.parse(KnownInitiativesSchema, await response.json());
     },
     enabled: KNOWN_INITIATIVES_URL !== undefined,

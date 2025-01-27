@@ -13,7 +13,6 @@ import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
-import { readContract, writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction, verifyTroveUpdate } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -141,34 +140,29 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
           approval="approve-only"
         />
       ),
-      async commit({
-        contracts,
-        request,
-        wagmiConfig,
-        preferredApproveMethod,
-      }) {
-        const debtChange = getDebtChange(request.loan, request.prevLoan);
-        const collateral = contracts.collaterals[request.loan.collIndex];
+      async commit(ctx) {
+        const debtChange = getDebtChange(ctx.request.loan, ctx.request.prevLoan);
+        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
         if (!collateral) {
-          throw new Error("Invalid collateral index: " + request.loan.collIndex);
+          throw new Error("Invalid collateral index: " + ctx.request.loan.collIndex);
         }
         const Controller = collateral.symbol === "ETH"
           ? collateral.contracts.LeverageWETHZapper
           : collateral.contracts.LeverageLSTZapper;
 
-        return writeContract(wagmiConfig, {
-          ...contracts.BoldToken,
+        return ctx.writeContract({
+          ...ctx.contracts.BoldToken,
           functionName: "approve",
           args: [
             Controller.address,
-            preferredApproveMethod === "approve-infinite"
+            ctx.preferredApproveMethod === "approve-infinite"
               ? maxUint256 // infinite approval
               : dn.abs(debtChange)[0], // exact amount
           ],
         });
       },
-      async verify({ wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -186,34 +180,29 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
           approval="approve-only"
         />
       ),
-      async commit({
-        contracts,
-        request,
-        wagmiConfig,
-        preferredApproveMethod,
-      }) {
-        const collChange = getCollChange(request.loan, request.prevLoan);
+      async commit(ctx) {
+        const collChange = getCollChange(ctx.request.loan, ctx.request.prevLoan);
 
-        const collateral = contracts.collaterals[request.loan.collIndex];
+        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
         if (!collateral) {
-          throw new Error("Invalid collateral index: " + request.loan.collIndex);
+          throw new Error("Invalid collateral index: " + ctx.request.loan.collIndex);
         }
 
         const Controller = collateral.contracts.LeverageLSTZapper;
 
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.CollToken,
           functionName: "approve",
           args: [
             Controller.address,
-            preferredApproveMethod === "approve-infinite"
+            ctx.preferredApproveMethod === "approve-infinite"
               ? maxUint256 // infinite approval
               : dn.abs(collChange)[0], // exact amount
           ],
         });
       },
-      async verify({ wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -222,32 +211,19 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       name: () => "Update Position",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        const { loan, maxUpfrontFee } = request;
-        const collChange = getCollChange(loan, request.prevLoan);
-        const debtChange = getDebtChange(loan, request.prevLoan);
-        const collateral = contracts.collaterals[loan.collIndex];
+      async commit(ctx) {
+        const { loan, maxUpfrontFee } = ctx.request;
+        const collChange = getCollChange(loan, ctx.request.prevLoan);
+        const debtChange = getDebtChange(loan, ctx.request.prevLoan);
+        const collateral = ctx.contracts.collaterals[loan.collIndex];
         if (!collateral) {
           throw new Error("Invalid collateral index: " + loan.collIndex);
         }
-
         if (collateral.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
-            ...collateral.contracts.LeverageWETHZapper,
-            functionName: "adjustTroveWithRawETH",
-            args: [
-              BigInt(loan.troveId),
-              dn.abs(collChange)[0],
-              !dn.lt(collChange, 0n),
-              dn.abs(debtChange)[0],
-              !dn.lt(debtChange, 0n),
-              maxUpfrontFee[0],
-            ],
-            value: dn.gt(collChange, 0n) ? collChange[0] : 0n,
-          });
+          throw new Error("ETH collateral not supported for adjustTrove");
         }
 
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.LeverageLSTZapper,
           functionName: "adjustTrove",
           args: [
@@ -261,57 +237,57 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
+      async verify(ctx, hash) {
+        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
       },
     },
 
     depositBold: {
-      name: () => "Update Position",
+      name: () => "Repay BOLD",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        const { loan } = request;
-        const debtChange = getDebtChange(loan, request.prevLoan);
-        const collateral = contracts.collaterals[loan.collIndex];
+      async commit(ctx) {
+        const { loan } = ctx.request;
+        const debtChange = getDebtChange(loan, ctx.request.prevLoan);
+        const collateral = ctx.contracts.collaterals[loan.collIndex];
         if (!collateral) {
           throw new Error("Invalid collateral index: " + loan.collIndex);
         }
 
         if (collateral.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
+          return ctx.writeContract({
             ...collateral.contracts.LeverageWETHZapper,
             functionName: "repayBold",
             args: [BigInt(loan.troveId), dn.abs(debtChange)[0]],
           });
         }
 
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.LeverageLSTZapper,
           functionName: "repayBold",
           args: [BigInt(loan.troveId), dn.abs(debtChange)[0]],
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
+      async verify(ctx, hash) {
+        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
       },
     },
 
     depositColl: {
-      name: () => "Update Position",
+      name: () => "Deposit Collateral",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        const { loan } = request;
-        const collChange = getCollChange(loan, request.prevLoan);
-        const collateral = contracts.collaterals[loan.collIndex];
+      async commit(ctx) {
+        const { loan } = ctx.request;
+        const collChange = getCollChange(loan, ctx.request.prevLoan);
+        const collateral = ctx.contracts.collaterals[loan.collIndex];
         if (!collateral) {
           throw new Error("Invalid collateral index: " + loan.collIndex);
         }
 
         if (collateral.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
+          return ctx.writeContract({
             ...collateral.contracts.LeverageWETHZapper,
             functionName: "addCollWithRawETH",
             args: [BigInt(loan.troveId)],
@@ -319,114 +295,117 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
           });
         }
 
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.LeverageLSTZapper,
           functionName: "addColl",
           args: [BigInt(loan.troveId), dn.abs(collChange)[0]],
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
+      async verify(ctx, hash) {
+        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
       },
     },
 
     withdrawBold: {
-      name: () => "Update Position",
+      name: () => "Borrow BOLD",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        const { loan, maxUpfrontFee } = request;
-        const debtChange = getDebtChange(loan, request.prevLoan);
-        const collateral = contracts.collaterals[loan.collIndex];
+      async commit(ctx) {
+        const { loan, maxUpfrontFee } = ctx.request;
+        const debtChange = getDebtChange(loan, ctx.request.prevLoan);
+        const collateral = ctx.contracts.collaterals[loan.collIndex];
         if (!collateral) {
           throw new Error("Invalid collateral index: " + loan.collIndex);
         }
 
         if (collateral.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
+          return ctx.writeContract({
             ...collateral.contracts.LeverageWETHZapper,
             functionName: "withdrawBold",
             args: [BigInt(loan.troveId), dn.abs(debtChange)[0], maxUpfrontFee[0]],
           });
         }
 
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.LeverageLSTZapper,
           functionName: "withdrawBold",
           args: [BigInt(loan.troveId), dn.abs(debtChange)[0], maxUpfrontFee[0]],
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
+      async verify(ctx, hash) {
+        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
       },
     },
 
     withdrawColl: {
-      name: () => "Update Position",
+      name: () => "Withdraw Collateral",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        const { loan } = request;
-        const collChange = getCollChange(loan, request.prevLoan);
-        const collateral = contracts.collaterals[loan.collIndex];
+      async commit(ctx) {
+        const { loan } = ctx.request;
+        const collChange = getCollChange(loan, ctx.request.prevLoan);
+        const collateral = ctx.contracts.collaterals[loan.collIndex];
         if (!collateral) {
           throw new Error("Invalid collateral index: " + loan.collIndex);
         }
 
         if (collateral.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
+          return ctx.writeContract({
             ...collateral.contracts.LeverageWETHZapper,
             functionName: "withdrawCollToRawETH",
             args: [BigInt(loan.troveId), dn.abs(collChange)[0]],
           });
         }
 
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...collateral.contracts.LeverageLSTZapper,
           functionName: "withdrawColl",
           args: [BigInt(loan.troveId), dn.abs(collChange)[0]],
         });
       },
 
-      async verify({ request, wagmiConfig }, hash) {
-        await verifyTroveUpdate(wagmiConfig, hash, request.loan);
+      async verify(ctx, hash) {
+        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
       },
     },
   },
 
-  async getSteps({ account, contracts, request, wagmiConfig }) {
-    const debtChange = getDebtChange(request.loan, request.prevLoan);
-    const collChange = getCollChange(request.loan, request.prevLoan);
-    const coll = contracts.collaterals[request.loan.collIndex];
+  async getSteps(ctx) {
+    if (!ctx.account) {
+      throw new Error("Account address is required");
+    }
+
+    const debtChange = getDebtChange(ctx.request.loan, ctx.request.prevLoan);
+    const collChange = getCollChange(ctx.request.loan, ctx.request.prevLoan);
+    const coll = ctx.contracts.collaterals[ctx.request.loan.collIndex];
     if (!coll) {
-      throw new Error("Invalid collateral index: " + request.loan.collIndex);
+      throw new Error("Invalid collateral index: " + ctx.request.loan.collIndex);
     }
 
     const Controller = coll.symbol === "ETH"
       ? coll.contracts.LeverageWETHZapper
       : coll.contracts.LeverageLSTZapper;
 
-    if (!account) {
-      throw new Error("Account address is required");
-    }
-
-    const isBoldApproved = !dn.lt(debtChange, 0) || !dn.gt(dn.abs(debtChange), [
-      await readContract(wagmiConfig, {
-        ...contracts.BoldToken,
-        functionName: "allowance",
-        args: [account, Controller.address],
-      }) ?? 0n,
-      18,
-    ]);
+    const isBoldApproved = !dn.lt(debtChange, 0) || !dn.gt(
+      dn.abs(debtChange),
+      [
+        await ctx.readContract({
+          ...ctx.contracts.BoldToken,
+          functionName: "allowance",
+          args: [ctx.account, Controller.address],
+        }) ?? 0n,
+        18,
+      ],
+    );
 
     // Collateral token needs to be approved if collChange > 0 and collToken != "ETH" (no LeverageWETHZapper)
     const isCollApproved = coll.symbol === "ETH" || !dn.gt(collChange, 0) || !dn.gt(collChange, [
-      await readContract(wagmiConfig, {
+      await ctx.readContract({
         ...coll.contracts.CollToken,
         functionName: "allowance",
-        args: [account, Controller.address],
+        args: [ctx.account, Controller.address],
       }) ?? 0n,
       18,
     ]);
@@ -436,9 +415,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     if (!isBoldApproved) steps.push("approveBold");
     if (!isCollApproved) steps.push("approveColl");
 
-    steps.push(getFinalStep(request));
-
-    return steps;
+    return steps.concat(getFinalSteps(ctx.request, coll.symbol));
   },
 
   parseRequest(request) {
@@ -460,26 +437,34 @@ function getCollChange(
   return dn.sub(loan.deposit, prevLoan.deposit);
 }
 
-function getFinalStep(
+function getFinalSteps(
   request: UpdateBorrowPositionRequest,
-): "adjustTrove" | "depositBold" | "depositColl" | "withdrawBold" | "withdrawColl" {
+  collSymbol: string,
+): ("adjustTrove" | "depositBold" | "depositColl" | "withdrawBold" | "withdrawColl")[] {
   const collChange = getCollChange(request.loan, request.prevLoan);
   const debtChange = getDebtChange(request.loan, request.prevLoan);
 
   // both coll and debt change => adjust trove
-  if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) return "adjustTrove";
+  if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) {
+    if (collSymbol === "ETH") {
+      return dn.gt(collChange, 0)
+        ? ["depositColl", dn.gt(debtChange, 0) ? "withdrawBold" : "depositBold"]
+        : [dn.gt(debtChange, 0) ? "withdrawBold" : "depositBold", "withdrawColl"];
+    }
+    return ["adjustTrove"];
+  }
 
   // coll increases => deposit
-  if (dn.gt(collChange, 0)) return "depositColl";
+  if (dn.gt(collChange, 0)) return ["depositColl"];
 
   // coll decreases => withdraw
-  if (dn.lt(collChange, 0)) return "withdrawColl";
+  if (dn.lt(collChange, 0)) return ["withdrawColl"];
 
   // debt increases => withdraw BOLD (borrow)
-  if (dn.gt(debtChange, 0)) return "withdrawBold";
+  if (dn.gt(debtChange, 0)) return ["withdrawBold"];
 
   // debt decreases => deposit BOLD (repay)
-  if (dn.lt(debtChange, 0)) return "depositBold";
+  if (dn.lt(debtChange, 0)) return ["depositBold"];
 
   throw new Error("Invalid request");
 }

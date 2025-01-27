@@ -12,6 +12,7 @@ export const CollateralSymbolSchema = v.union([
 
 export const EnvSchema = v.pipe(
   v.object({
+    ACCOUNT_SCREEN: v.optional(vEnvFlag(), "false"),
     APP_VERSION: v.string(),
     APP_COMMIT_HASH: v.string(),
     CONTRACTS_COMMIT_HASH: v.string(),
@@ -50,7 +51,7 @@ export const EnvSchema = v.pipe(
     CHAIN_NAME: v.string(),
     CHAIN_CURRENCY: vEnvCurrency(),
     CHAIN_RPC_URL: v.pipe(v.string(), v.url()),
-    CHAIN_BLOCK_EXPLORER: v.optional(vEnvLink()),
+    CHAIN_BLOCK_EXPLORER: v.optional(vEnvLink(true)),
     CHAIN_CONTRACT_ENS_REGISTRY: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_ENS_RESOLVER: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_MULTICALL: vAddress(),
@@ -80,7 +81,6 @@ export const EnvSchema = v.pipe(
       v.optional(v.string(), ""),
       v.transform((value) => value.trim()),
     ),
-    INITIATIVE_UNI_V4_DONATIONS: vAddress(),
     KNOWN_INITIATIVES_URL: v.optional(v.pipe(v.string(), v.url())),
     LIQUITY_STATS_URL: v.pipe(v.string(), v.url()),
     SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
@@ -97,6 +97,7 @@ export const EnvSchema = v.pipe(
     CONTRACT_HINT_HELPERS: vAddress(),
     CONTRACT_LQTY_STAKING: vAddress(),
     CONTRACT_LQTY_TOKEN: vAddress(),
+    CONTRACT_LUSD_TOKEN: vAddress(),
     CONTRACT_MULTI_TROVE_GETTER: vAddress(),
     CONTRACT_WETH: vAddress(),
 
@@ -205,6 +206,7 @@ export const EnvSchema = v.pipe(
 export type Env = v.InferOutput<typeof EnvSchema>;
 
 const parsedEnv = v.safeParse(EnvSchema, {
+  ACCOUNT_SCREEN: process.env.NEXT_PUBLIC_ACCOUNT_SCREEN,
   APP_VERSION: (
     process.env.NEXT_PUBLIC_APP_VERSION
       // APP_VERSION_FROM_BUILD is set in next.config.js
@@ -234,7 +236,6 @@ const parsedEnv = v.safeParse(EnvSchema, {
   DELEGATE_AUTO: process.env.NEXT_PUBLIC_DELEGATE_AUTO,
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
   DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
-  INITIATIVE_UNI_V4_DONATIONS: process.env.NEXT_PUBLIC_INITIATIVE_UNI_V4_DONATIONS,
   KNOWN_INITIATIVES_URL: process.env.NEXT_PUBLIC_KNOWN_INITIATIVES_URL,
   LIQUITY_STATS_URL: process.env.NEXT_PUBLIC_LIQUITY_STATS_URL,
   SAFE_API_URL: process.env.NEXT_PUBLIC_SAFE_API_URL,
@@ -249,6 +250,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   CONTRACT_HINT_HELPERS: process.env.NEXT_PUBLIC_CONTRACT_HINT_HELPERS,
   CONTRACT_LQTY_STAKING: process.env.NEXT_PUBLIC_CONTRACT_LQTY_STAKING,
   CONTRACT_LQTY_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_LQTY_TOKEN,
+  CONTRACT_LUSD_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_LUSD_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER: process.env.NEXT_PUBLIC_CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH: process.env.NEXT_PUBLIC_CONTRACT_WETH,
 
@@ -302,6 +304,7 @@ if (!parsedEnv.success) {
 }
 
 export const {
+  ACCOUNT_SCREEN,
   APP_COMMIT_HASH,
   APP_VERSION,
   BLOCKING_LIST,
@@ -324,12 +327,12 @@ export const {
   CONTRACT_HINT_HELPERS,
   CONTRACT_LQTY_STAKING,
   CONTRACT_LQTY_TOKEN,
+  CONTRACT_LUSD_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
   DELEGATE_AUTO,
   DEMO_MODE,
   DEPLOYMENT_FLAVOR,
-  INITIATIVE_UNI_V4_DONATIONS,
   KNOWN_INITIATIVES_URL,
   LIQUITY_STATS_URL,
   SAFE_API_URL,

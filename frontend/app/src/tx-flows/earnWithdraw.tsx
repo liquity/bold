@@ -8,7 +8,6 @@ import { usePrice } from "@/src/services/Prices";
 import { vCollIndex, vPositionEarn } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { writeContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -69,27 +68,27 @@ export const earnWithdraw: FlowDeclaration<EarnWithdrawRequest> = {
       name: () => "Withdraw",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        const collateral = contracts.collaterals[request.collIndex];
+      async commit(ctx) {
+        const collateral = ctx.contracts.collaterals[ctx.request.collIndex];
         if (!collateral) {
-          throw new Error("Invalid collateral index: " + request.collIndex);
+          throw new Error("Invalid collateral index: " + ctx.request.collIndex);
         }
         const { StabilityPool } = collateral.contracts;
 
         const boldAmount = dn.abs(dn.sub(
-          request.earnPosition.deposit,
-          request.prevEarnPosition.deposit,
+          ctx.request.earnPosition.deposit,
+          ctx.request.prevEarnPosition.deposit,
         ));
 
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...StabilityPool,
           functionName: "withdrawFromSP",
-          args: [boldAmount[0], request.claim],
+          args: [boldAmount[0], ctx.request.claim],
         });
       },
 
-      async verify({ wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
   },

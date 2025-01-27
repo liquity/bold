@@ -4,14 +4,16 @@ pragma solidity 0.8.24;
 
 import "src/Dependencies/AggregatorV3Interface.sol";
 
-// Mock Chainlink oracle that returns a stale price answer.
+// Mock oracle that consumes all gas in the price getter.
 // this contract code is etched over mainnet oracle addresses in mainnet fork tests.
-contract ChainlinkOracleMock is AggregatorV3Interface {
+contract GasGuzzlerOracle is AggregatorV3Interface {
     uint8 decimal;
 
     int256 price;
 
     uint256 lastUpdateTime;
+
+    uint256 pointlessStorageVar = 42;
 
     // We use 8 decimals unless set to 18
     function decimals() external view returns (uint8) {
@@ -23,9 +25,11 @@ contract ChainlinkOracleMock is AggregatorV3Interface {
         view
         returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
-        // console2.log(lastUpdateTime, "lastUpdateTime");
-        // console2.log(block.timestamp, "block.timestamp");
-        // console2.log(price, "price returned by oracle");
+        // Expensive SLOAD loop that hits the block gas limit before completing
+        for (uint256 i = 0; i < 1000000; i++) {
+            uint256 unusedVar = pointlessStorageVar + i;
+        }
+
         return (0, price, 0, lastUpdateTime, 0);
     }
 

@@ -384,7 +384,7 @@ function LoanCard({
     >
       {cardTransition((style, {
         mode,
-        onLeverageModeChange,
+        // onLeverageModeChange,
         loan,
         loanDetails,
         collateral,
@@ -507,22 +507,6 @@ function LoanCard({
                                 color: "accent",
                               })}
                             >
-                              {mode === "multiply"
-                                ? <IconBorrow size={16} />
-                                : <IconLeverage size={16} />}
-                            </div>
-                          ),
-                          label: mode === "multiply"
-                            ? "Convert to BOLD loan"
-                            : "Convert to Multiply position",
-                        },
-                        {
-                          icon: (
-                            <div
-                              className={css({
-                                color: "accent",
-                              })}
-                            >
                               <IconCopy size={16} />
                             </div>
                           ),
@@ -577,16 +561,13 @@ function LoanCard({
                       selected={0}
                       onSelect={(index) => {
                         if (index === 0) {
-                          onLeverageModeChange(mode === "multiply" ? "borrow" : "multiply");
-                        }
-                        if (index === 1) {
                           navigator.clipboard.writeText(window.location.href);
                           copyTransition.flash();
                         }
-                        if (index === 2) {
+                        if (index === 1) {
                           window.open(`${CHAIN_BLOCK_EXPLORER?.url}address/${loan.borrower}`);
                         }
-                        if (index === 3 && nftUrl) {
+                        if (index === 2 && nftUrl) {
                           window.open(nftUrl);
                         }
                       }}

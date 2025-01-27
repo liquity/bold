@@ -103,7 +103,7 @@ export function PositionCardBorrow({
                 alignItems: "cente",
               })}
             >
-              Backed by {deposit ? dn.format(deposit, 2) : "−"} {token.name}
+              Backed by {deposit ? fmtnum(deposit, 2) : "−"} {token.name}
               <TokenIcon size="small" symbol={token.symbol} />
             </div>
           ),
@@ -141,7 +141,7 @@ export function PositionCardBorrow({
                           : "var(--status-negative)",
                       }}
                     >
-                      {dn.format(dn.mul(ltv, 100), 2)}%
+                      {fmtnum(ltv, 2, 100)}%
                     </div>
                   )}
                 </div>
@@ -191,7 +191,7 @@ export function PositionCardBorrow({
                       color: "positionContent",
                     })}
                   >
-                    {dn.format(dn.mul(interestRate, 100), 2)}%
+                    {fmtnum(interestRate, 2, 100)}%
                   </div>
                   {batchManager && (
                     <div

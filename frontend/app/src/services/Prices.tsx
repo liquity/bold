@@ -27,11 +27,11 @@ function useCollateralPrice(symbol: null | CollateralSymbol): UseQueryResult<Dnu
 
   return useReadContract({
     ...PriceFeed,
-    functionName: "lastGoodPrice",
+    functionName: "fetchPrice",
     query: {
       enabled: symbol !== null,
       refetchInterval: PRICE_REFRESH_INTERVAL,
-      select: dnum18,
+      select: ([price]) => dnum18(price),
     },
   });
 }

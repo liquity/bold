@@ -9,6 +9,7 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import content from "@/src/content";
 import { useInputFieldValue } from "@/src/form-utils";
+import { fmtnum } from "@/src/formatting";
 import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import { getCollToken } from "@/src/liquity-utils";
@@ -38,10 +39,10 @@ export function PanelUpdateRate({
 
   const collPrice = usePrice(collToken.symbol);
 
-  const deposit = useInputFieldValue((value) => `${dn.format(value)} ${collToken.symbol}`, {
+  const deposit = useInputFieldValue((value) => `${fmtnum(value, "full")} ${collToken.symbol}`, {
     defaultValue: dn.toString(loan.deposit),
   });
-  const debt = useInputFieldValue((value) => `${dn.format(value)} BOLD`, {
+  const debt = useInputFieldValue((value) => `${fmtnum(value, "full")} BOLD`, {
     defaultValue: dn.toString(loan.borrowed),
   });
 
@@ -153,8 +154,8 @@ export function PanelUpdateRate({
                   <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
                 </>
               ),
-              before: <Amount value={boldInterestPerYearPrev} suffix="BOLD" />,
-              after: <Amount value={boldInterestPerYear} suffix="BOLD" />,
+              before: <Amount value={boldInterestPerYearPrev} suffix=" BOLD" />,
+              after: <Amount value={boldInterestPerYear} suffix=" BOLD" />,
             },
           ]}
         />

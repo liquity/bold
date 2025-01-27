@@ -1,10 +1,12 @@
+import type { Contracts } from "@/src/contracts";
 import type { StabilityPoolDepositQuery } from "@/src/graphql/graphql";
 import type { CollIndex, Dnum, PositionEarn, PositionStake, PrefixedTroveId, TroveId } from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
+import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
+import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import {
   calculateStabilityPoolApr,
@@ -13,6 +15,8 @@ import {
   useSpYieldGainParameters,
 } from "@/src/liquity-stability-pool";
 import {
+  useGovernanceStats,
+  useGovernanceUser,
   useInterestRateBrackets,
   useStabilityPool,
   useStabilityPoolDeposit,
@@ -24,7 +28,8 @@ import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
-import { useReadContract, useReadContracts } from "wagmi";
+import { useBalance, useReadContract, useReadContracts } from "wagmi";
+import { readContract } from "wagmi/actions";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -179,8 +184,33 @@ function earnPositionFromGraph(
   };
 }
 
+export function useAccountVotingPower(account: Address | null, lqtyDiff: bigint = 0n) {
+  const govUser = useGovernanceUser(account);
+  const govStats = useGovernanceStats();
+
+  return useMemo(() => {
+    if (!govStats.data || !govUser.data) {
+      return null;
+    }
+
+    const t = BigInt(Math.floor(Date.now() / 1000));
+
+    const { totalLQTYStaked, totalOffset } = govStats.data;
+    const totalVp = (BigInt(totalLQTYStaked) + lqtyDiff) * t - BigInt(totalOffset);
+
+    const { stakedLQTY, stakedOffset } = govUser.data;
+    const userVp = (BigInt(stakedLQTY) + lqtyDiff) * t - BigInt(stakedOffset);
+
+    // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
+    return dn.div([userVp, 18], [totalVp, 18]);
+  }, [govUser.data, govStats.data, lqtyDiff]);
+}
+
 export function useStakePosition(address: null | Address) {
+  const votingPower = useAccountVotingPower(address);
+
   const LqtyStaking = getProtocolContract("LqtyStaking");
+  const LusdToken = getProtocolContract("LusdToken");
   const Governance = getProtocolContract("Governance");
 
   const userProxyAddress = useReadContract({
@@ -190,7 +220,12 @@ export function useStakePosition(address: null | Address) {
     query: { enabled: Boolean(address) },
   });
 
-  return useReadContracts({
+  const userProxyBalance = useBalance({
+    address: userProxyAddress.data ?? "0x",
+    query: { enabled: Boolean(address) && userProxyAddress.isSuccess },
+  });
+
+  const stakePosition = useReadContracts({
     contracts: [
       {
         ...LqtyStaking,
@@ -201,12 +236,33 @@ export function useStakePosition(address: null | Address) {
         ...LqtyStaking,
         functionName: "totalLQTYStaked",
       },
+      {
+        ...LqtyStaking,
+        functionName: "getPendingETHGain",
+        args: [userProxyAddress.data ?? "0x"],
+      },
+      {
+        ...LqtyStaking,
+        functionName: "getPendingLUSDGain",
+        args: [userProxyAddress.data ?? "0x"],
+      },
+      {
+        ...LusdToken,
+        functionName: "balanceOf",
+        args: [userProxyAddress.data ?? "0x"],
+      },
     ],
     query: {
-      enabled: Boolean(address) && userProxyAddress.isSuccess,
+      enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
       refetchInterval: DATA_REFRESH_INTERVAL,
-      select: ([depositResult, totalStakedResult]): PositionStake | null => {
-        if (depositResult.status === "failure" || totalStakedResult.status === "failure") {
+      select: (
+        [depositResult, totalStakedResult, pendingEthGainResult, pendingLusdGainResult, lusdBalanceResult],
+      ): PositionStake | null => {
+        if (
+          depositResult.status === "failure" || totalStakedResult.status === "failure"
+          || pendingEthGainResult.status === "failure" || pendingLusdGainResult.status === "failure"
+          || lusdBalanceResult.status === "failure"
+        ) {
           return null;
         }
         const deposit = dnum18(depositResult.result);
@@ -217,14 +273,18 @@ export function useStakePosition(address: null | Address) {
           owner: address ?? "0x",
           totalStaked,
           rewards: {
-            eth: dnum18(0),
-            lusd: dnum18(0),
+            eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
+            lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
           },
-          share: dn.gt(totalStaked, 0) ? dn.div(deposit, totalStaked) : dnum18(0),
+          share: dnum18(0),
         };
       },
     },
   });
+
+  return stakePosition.data && votingPower
+    ? { ...stakePosition, data: { ...stakePosition.data, share: votingPower } }
+    : stakePosition;
 }
 
 export function useTroveNftUrl(collIndex: null | CollIndex, troveId: null | TroveId) {
@@ -303,8 +363,7 @@ export function useInterestRateChartData(collIndex: null | CollIndex) {
     queryKey: [
       "useInterestRateChartData",
       collIndex,
-      brackets.status,
-      brackets.dataUpdatedAt,
+      jsonStringifyWithDnum(brackets.data),
     ],
     queryFn: () => {
       if (!brackets.isSuccess) {
@@ -424,4 +483,54 @@ export function usePredictAdjustInterestRateUpfrontFee(
       select: dnum18,
     },
   });
+}
+
+// from https://github.com/liquity/bold/blob/204a3dec54a0e8689120ca48faf4ece5cf8ccd22/README.md#example-opentrove-transaction-with-hints
+export async function getTroveOperationHints({
+  wagmiConfig,
+  contracts,
+  collIndex,
+  interestRate,
+}: {
+  wagmiConfig: WagmiConfig;
+  contracts: Contracts;
+  collIndex: number;
+  interestRate: bigint;
+}): Promise<{
+  upperHint: bigint;
+  lowerHint: bigint;
+}> {
+  const collateral = contracts.collaterals[collIndex];
+  if (!collateral) {
+    throw new Error(`Invalid collateral index: ${collIndex}`);
+  }
+
+  const numTroves = await readContract(wagmiConfig, {
+    ...collateral.contracts.SortedTroves,
+    functionName: "getSize",
+  });
+
+  const [approxHint] = await readContract(wagmiConfig, {
+    ...contracts.HintHelpers,
+    functionName: "getApproxHint",
+    args: [
+      BigInt(collIndex),
+      interestRate,
+      // (10 * sqrt(troves)) gives a hint close to the right position
+      10n * BigInt(Math.ceil(Math.sqrt(Number(numTroves)))),
+      42n, // random seed
+    ],
+  });
+
+  const [upperHint, lowerHint] = await readContract(wagmiConfig, {
+    ...collateral.contracts.SortedTroves,
+    functionName: "findInsertPosition",
+    args: [
+      interestRate,
+      approxHint,
+      approxHint,
+    ],
+  });
+
+  return { upperHint, lowerHint };
 }

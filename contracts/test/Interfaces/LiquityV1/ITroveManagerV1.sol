@@ -19,4 +19,6 @@ interface ITroveManagerV1 {
         uint256 _maxIterations,
         uint256 _maxFeePercentage
     ) external;
+
+    function liquidateTroves(uint256 _n) external;
 }

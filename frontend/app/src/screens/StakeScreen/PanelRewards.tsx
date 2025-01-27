@@ -15,7 +15,7 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { encodeFunctionData } from "viem";
+import { encodeFunctionData, zeroAddress } from "viem";
 import { useEstimateGas, useGasPrice } from "wagmi";
 
 export function PanelRewards() {
@@ -26,16 +26,16 @@ export function PanelRewards() {
   const ethPrice = usePrice("ETH");
 
   const stakePosition = useStakePosition(account.address ?? null);
-  const LqtyStaking = getProtocolContract("LqtyStaking");
+  const Governance = getProtocolContract("Governance");
 
   const gasEstimate = useEstimateGas({
     account: account.address,
     data: encodeFunctionData({
-      abi: LqtyStaking.abi,
-      functionName: "unstake",
-      args: [0n],
+      abi: Governance.abi,
+      functionName: "claimFromStakingV1",
+      args: [account.address ?? zeroAddress], // address to receive the payout
     }),
-    to: LqtyStaking.address,
+    to: Governance.address,
   });
 
   const gasPrice = useGasPrice();
@@ -130,13 +130,7 @@ export function PanelRewards() {
               successLink: ["/", "Go to the Dashboard"],
               successMessage: "The rewards have been claimed successfully.",
 
-              stakePosition: {
-                ...stakePosition.data,
-                rewards: {
-                  eth: dn.from(0, 18),
-                  lusd: dn.from(0, 18),
-                },
-              },
+              stakePosition: stakePosition.data,
               prevStakePosition: stakePosition.data,
             });
           }
