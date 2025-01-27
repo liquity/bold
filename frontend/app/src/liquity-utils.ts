@@ -6,7 +6,7 @@ import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
+import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import {
   calculateStabilityPoolApr,
@@ -15,6 +15,8 @@ import {
   useSpYieldGainParameters,
 } from "@/src/liquity-stability-pool";
 import {
+  useGovernanceStats,
+  useGovernanceUser,
   useInterestRateBrackets,
   useStabilityPool,
   useStabilityPoolDeposit,
@@ -182,7 +184,31 @@ function earnPositionFromGraph(
   };
 }
 
+export function useAccountVotingPower(account: Address | null, lqtyDiff: bigint = 0n) {
+  const govUser = useGovernanceUser(account);
+  const govStats = useGovernanceStats();
+
+  return useMemo(() => {
+    if (!govStats.data || !govUser.data) {
+      return null;
+    }
+
+    const t = BigInt(Math.floor(Date.now() / 1000));
+
+    const { totalLQTYStaked, totalOffset } = govStats.data;
+    const totalVp = (BigInt(totalLQTYStaked) + lqtyDiff) * t - BigInt(totalOffset);
+
+    const { stakedLQTY, stakedOffset } = govUser.data;
+    const userVp = (BigInt(stakedLQTY) + lqtyDiff) * t - BigInt(stakedOffset);
+
+    // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
+    return dn.div([userVp, 18], [totalVp, 18]);
+  }, [govUser.data, govStats.data, lqtyDiff]);
+}
+
 export function useStakePosition(address: null | Address) {
+  const votingPower = useAccountVotingPower(address);
+
   const LqtyStaking = getProtocolContract("LqtyStaking");
   const LusdToken = getProtocolContract("LusdToken");
   const Governance = getProtocolContract("Governance");
@@ -199,7 +225,7 @@ export function useStakePosition(address: null | Address) {
     query: { enabled: Boolean(address) && userProxyAddress.isSuccess },
   });
 
-  return useReadContracts({
+  const stakePosition = useReadContracts({
     contracts: [
       {
         ...LqtyStaking,
@@ -250,11 +276,15 @@ export function useStakePosition(address: null | Address) {
             eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
             lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
           },
-          share: dn.gt(totalStaked, 0) ? dn.div(deposit, totalStaked) : dnum18(0),
+          share: dnum18(0),
         };
       },
     },
   });
+
+  return stakePosition.data && votingPower
+    ? { ...stakePosition, data: { ...stakePosition.data, share: votingPower } }
+    : stakePosition;
 }
 
 export function useTroveNftUrl(collIndex: null | CollIndex, troveId: null | TroveId) {
@@ -333,8 +363,7 @@ export function useInterestRateChartData(collIndex: null | CollIndex) {
     queryKey: [
       "useInterestRateChartData",
       collIndex,
-      brackets.status,
-      brackets.dataUpdatedAt,
+      jsonStringifyWithDnum(brackets.data),
     ],
     queryFn: () => {
       if (!brackets.isSuccess) {
@@ -487,7 +516,8 @@ export async function getTroveOperationHints({
     args: [
       BigInt(collIndex),
       interestRate,
-      BigInt(10 * Math.sqrt(Number(numTroves))), // (10 * sqrt(troves)) gives a hint close to the right position
+      // (10 * sqrt(troves)) gives a hint close to the right position
+      10n * BigInt(Math.ceil(Math.sqrt(Number(numTroves)))),
       42n, // random seed
     ],
   });

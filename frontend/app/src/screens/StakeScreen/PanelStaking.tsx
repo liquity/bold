@@ -5,7 +5,7 @@ import content from "@/src/content";
 import { dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { useStakePosition } from "@/src/liquity-utils";
+import { useAccountVotingPower, useStakePosition } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -30,11 +30,16 @@ export function PanelStaking() {
 
   const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0))
     ? value
-    : `${dn.format(parsedValue)}`;
+    : `${fmtnum(parsedValue, "full")}`;
 
   const depositDifference = dn.mul(
     parsedValue ?? dn.from(0, 18),
     mode === "withdraw" ? -1 : 1,
+  );
+
+  const updatedShare = useAccountVotingPower(
+    account.address ?? null,
+    depositDifference[0],
   );
 
   const updatedDeposit = stakePosition.data?.deposit
@@ -42,14 +47,6 @@ export function PanelStaking() {
       dn.add(stakePosition.data?.deposit, depositDifference),
       dn.from(0, 18),
     )
-    : dn.from(0, 18);
-
-  const updatedTotalStaked = stakePosition.data?.totalStaked
-    ? dn.add(stakePosition.data.totalStaked, depositDifference)
-    : null;
-
-  const updatedShare = updatedTotalStaked && dn.gt(updatedTotalStaked, 0)
-    ? dn.div(updatedDeposit, updatedTotalStaked)
     : dn.from(0, 18);
 
   const lqtyBalance = useBalance(account.address, "LQTY");
@@ -85,7 +82,7 @@ export function PanelStaking() {
             drawer={insufficientBalance
               ? {
                 mode: "error",
-                message: `Insufficient balance. You have ${fmtnum(lqtyBalance.data ?? 0)} LQTY.`,
+                message: `Insufficient balance. You have ${fmtnum(lqtyBalance.data ?? 0, 2)} LQTY.`,
               }
               : withdrawOutOfRange
               ? {
@@ -128,7 +125,7 @@ export function PanelStaking() {
             value={value_}
             placeholder="0.00"
             secondary={{
-              start: parsedValue && lqtyPrice.data ? `$${dn.format(dn.mul(parsedValue, lqtyPrice.data), 2)}` : null,
+              start: parsedValue && lqtyPrice.data ? `$${fmtnum(dn.mul(parsedValue, lqtyPrice.data), 2)}` : null,
               end: mode === "deposit"
                 ? (
                   lqtyBalance.data && dn.gt(lqtyBalance.data, 0) && (
@@ -156,7 +153,7 @@ export function PanelStaking() {
           />
         }
         footer={{
-          start: (
+          start: null, /* (
             <Field.FooterInfo
               label="New voting power"
               value={
@@ -170,7 +167,7 @@ export function PanelStaking() {
                 </HFlex>
               }
             />
-          ),
+          )*/
         }}
       />
       <div
@@ -257,7 +254,7 @@ export function PanelStaking() {
                   type: "stake",
                   owner: account.address,
                   deposit: updatedDeposit,
-                  share: updatedShare,
+                  share: updatedShare ?? dn.from(0, 18),
                   totalStaked: dn.add(
                     stakePosition.data?.totalStaked ?? dn.from(0, 18),
                     depositDifference,

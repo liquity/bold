@@ -14,6 +14,7 @@ import { sleep } from "@/src/utils";
 import { isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
+import { useCallback } from "react";
 import {
   AllInterestRateBracketsQuery,
   BorrowerInfoQuery,
@@ -402,7 +403,7 @@ export function useInterestRateBrackets(
   return useQuery({
     queryKey: ["AllInterestRateBrackets"],
     queryFn,
-    select: (brackets) => {
+    select: useCallback((brackets: Awaited<ReturnType<typeof queryFn>>) => {
       // only filter by collIndex in the select()
       // so that we can query all the brackets at once
       return brackets
@@ -412,7 +413,7 @@ export function useInterestRateBrackets(
           rate: dnum18(bracket.rate),
           totalDebt: dnum18(bracket.totalDebt),
         }));
-    },
+    }, []),
     ...prepareOptions(options),
   });
 }

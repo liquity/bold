@@ -62,7 +62,7 @@ export function PanelUpdateLeveragePosition({
 
   // deposit change
   const [depositMode, setDepositMode] = useState<"add" | "remove">("add");
-  const depositChange = useInputFieldValue((value) => dn.format(value));
+  const depositChange = useInputFieldValue((value) => fmtnum(value, "full"));
   const [userLeverageFactor, setUserLeverageFactor] = useState(
     initialLoanDetails.leverageFactor ?? 1,
   );

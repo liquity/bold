@@ -61,7 +61,7 @@ export function PanelUpdateBorrowPosition({
 
   // deposit change
   const [depositMode, setDepositMode] = useState<ValueUpdateMode>("add");
-  const depositChange = useInputFieldValue((value) => dn.format(value));
+  const depositChange = useInputFieldValue((value) => fmtnum(value, "full"));
 
   // deposit update
   const newDeposit = depositChange.parsed && (
@@ -72,7 +72,7 @@ export function PanelUpdateBorrowPosition({
 
   // debt change
   const [debtMode, setDebtMode] = useState<ValueUpdateMode>("add");
-  const debtChange = useInputFieldValue((value) => dn.format(value));
+  const debtChange = useInputFieldValue((value) => fmtnum(value, "full"));
 
   const newDebt = debtChange.parsed && (
     debtMode === "remove"

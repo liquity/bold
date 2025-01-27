@@ -12,6 +12,7 @@ export const CollateralSymbolSchema = v.union([
 
 export const EnvSchema = v.pipe(
   v.object({
+    ACCOUNT_SCREEN: v.optional(vEnvFlag(), "false"),
     APP_VERSION: v.string(),
     APP_COMMIT_HASH: v.string(),
     CONTRACTS_COMMIT_HASH: v.string(),
@@ -50,7 +51,7 @@ export const EnvSchema = v.pipe(
     CHAIN_NAME: v.string(),
     CHAIN_CURRENCY: vEnvCurrency(),
     CHAIN_RPC_URL: v.pipe(v.string(), v.url()),
-    CHAIN_BLOCK_EXPLORER: v.optional(vEnvLink()),
+    CHAIN_BLOCK_EXPLORER: v.optional(vEnvLink(true)),
     CHAIN_CONTRACT_ENS_REGISTRY: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_ENS_RESOLVER: v.optional(vEnvAddressAndBlock()),
     CHAIN_CONTRACT_MULTICALL: vAddress(),
@@ -205,6 +206,7 @@ export const EnvSchema = v.pipe(
 export type Env = v.InferOutput<typeof EnvSchema>;
 
 const parsedEnv = v.safeParse(EnvSchema, {
+  ACCOUNT_SCREEN: process.env.NEXT_PUBLIC_ACCOUNT_SCREEN,
   APP_VERSION: (
     process.env.NEXT_PUBLIC_APP_VERSION
       // APP_VERSION_FROM_BUILD is set in next.config.js
@@ -302,6 +304,7 @@ if (!parsedEnv.success) {
 }
 
 export const {
+  ACCOUNT_SCREEN,
   APP_COMMIT_HASH,
   APP_VERSION,
   BLOCKING_LIST,

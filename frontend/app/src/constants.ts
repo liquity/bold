@@ -5,6 +5,10 @@ import type { CollateralSymbol, RiskLevel } from "@/src/types";
 import { norm } from "@liquity2/uikit";
 import * as dn from "dnum";
 
+export const GAS_MIN_HEADROOM = 100_000;
+export const GAS_RELATIVE_HEADROOM = 0.25;
+export const GAS_ALLOCATE_LQTY_MIN_HEADROOM = 350_000;
+
 export const LOCAL_STORAGE_PREFIX = "liquity2:";
 
 export const LEVERAGE_FACTOR_MIN = 1.1;
@@ -27,7 +31,7 @@ export const ONE_DAY_IN_SECONDS = 24n * 60n * 60n;
 export const ONE_YEAR_IN_SECONDS = 365n * ONE_DAY_IN_SECONDS;
 export const UPFRONT_INTEREST_PERIOD = 7n * ONE_DAY_IN_SECONDS;
 
-export const SP_YIELD_SPLIT = 72n * 10n ** 16n; // 72%
+export const SP_YIELD_SPLIT = 75n * 10n ** 16n; // 75%
 
 export const DATA_REFRESH_INTERVAL = 30_000;
 export const PRICE_REFRESH_INTERVAL = 60_000;

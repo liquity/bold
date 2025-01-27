@@ -9,6 +9,8 @@ import "src/PriceFeeds/WETHPriceFeed.sol";
 
 import "./TestContracts/Accounts.sol";
 import "./TestContracts/ChainlinkOracleMock.sol";
+import "./TestContracts/GasGuzzlerOracle.sol";
+import "./TestContracts/GasGuzzlerToken.sol";
 import "./TestContracts/RETHTokenMock.sol";
 import "./TestContracts/WSTETHTokenMock.sol";
 import "./TestContracts/Deployment.t.sol";
@@ -29,6 +31,8 @@ contract OraclesMainnet is TestAccounts {
     AggregatorV3Interface rethOracle;
 
     ChainlinkOracleMock mockOracle;
+    GasGuzzlerToken gasGuzzlerToken;
+    GasGuzzlerOracle gasGuzzlerOracle;
 
     IMainnetPriceFeed wethPriceFeed;
     IRETHPriceFeed rethPriceFeed;
@@ -93,6 +97,8 @@ contract OraclesMainnet is TestAccounts {
         stethOracle = AggregatorV3Interface(result.externalAddresses.STETHOracle);
 
         mockOracle = new ChainlinkOracleMock();
+        gasGuzzlerToken = new GasGuzzlerToken();
+        gasGuzzlerOracle = new GasGuzzlerOracle();
 
         rethToken = IRETHToken(result.externalAddresses.RETHToken);
 
@@ -187,6 +193,49 @@ contract OraclesMainnet is TestAccounts {
         mock.setPrice(2000e8);
         // Make it stale
         mock.setUpdatedAt(block.timestamp - 7 days);
+    }
+
+    function etchGasGuzzlerToEthOracle(bytes memory _mockOracleCode) internal {
+        // Etch the mock code to the ETH-USD oracle address
+        vm.etch(address(ethOracle), _mockOracleCode);
+        GasGuzzlerOracle mock = GasGuzzlerOracle(address(ethOracle));
+        mock.setDecimals(8);
+        // Fake ETH-USD price of 2000 USD
+        mock.setPrice(2000e8);
+        mock.setUpdatedAt(block.timestamp);
+    }
+
+
+    function etchGasGuzzlerToRethOracle(bytes memory _mockOracleCode) internal {
+        // Etch the mock code to the RETH-ETH oracle address
+        vm.etch(address(rethOracle), _mockOracleCode);
+        // Wrap so we can use the mock's setters
+        GasGuzzlerOracle mock = GasGuzzlerOracle(address(rethOracle));
+        mock.setDecimals(18);
+        // Set 1 RETH = 1.1 ETH
+        mock.setPrice(11e17);
+        mock.setUpdatedAt(block.timestamp);
+    }
+
+    function etchGasGuzzlerToStethOracle(bytes memory _mockOracleCode) internal {
+        // Etch the mock code to the STETH-USD oracle address
+        vm.etch(address(stethOracle), _mockOracleCode);
+        // Wrap so we can use the mock's setters
+        GasGuzzlerOracle mock = GasGuzzlerOracle(address(stethOracle));
+        mock.setDecimals(8);
+        // Set 1 STETH =  2000 USD
+        mock.setPrice(2000e8);
+        mock.setUpdatedAt(block.timestamp);
+    }
+
+    function etchGasGuzzlerMockToRethToken(bytes memory _mockTokenCode) internal {
+        // Etch the mock code to the RETH token address
+        vm.etch(address(rethToken), _mockTokenCode);
+    }
+
+    function etchGasGuzzlerMockToWstethToken(bytes memory _mockTokenCode) internal {
+        // Etch the mock code to the RETH token address
+        vm.etch(address(wstETH), _mockTokenCode);
     }
 
     // --- lastGoodPrice set on deployment ---
@@ -293,6 +342,41 @@ contract OraclesMainnet is TestAccounts {
     function testStethUsdStalenessThresholdSetWSTETH() public view {
         (, uint256 storedStEthUsdStaleness,) = wstethPriceFeed.stEthUsdOracle();
         assertEq(storedStEthUsdStaleness, _24_HOURS);
+    }
+
+    // --- LST exchange rates and market price oracle sanity checks ---
+
+    function testRETHExchangeRateBetween1And2() public {
+        uint256 rate = rethToken.getExchangeRate();
+        assertGt(rate, 1e18);
+        assertLt(rate, 2e18);
+    }
+
+    function testWSTETHExchangeRateBetween1And2() public {
+        uint256 rate = wstETH.stEthPerToken();
+        assertGt(rate, 1e18);
+        assertLt(rate, 2e18);
+    }
+
+    function testRETHOracleAnswerBetween1And2() public {
+        uint256 answer = _getLatestAnswerFromOracle(rethOracle);
+        assertGt(answer, 1e18);
+        assertLt(answer, 2e18);
+    }
+
+    function testSTETHOracleAnswerWithin1PctOfETHOracleAnswer() public {
+        uint256 stethUsd = _getLatestAnswerFromOracle(stethOracle);
+        uint256 ethUsd = _getLatestAnswerFromOracle(ethOracle);
+
+        uint256 relativeDelta;
+
+        if (stethUsd > ethUsd) {
+            relativeDelta = (stethUsd - ethUsd) * 1e18 / ethUsd;
+        } else {
+            relativeDelta = (ethUsd - stethUsd) * 1e18 / stethUsd;
+        }
+
+        assertLt(relativeDelta, 1e16);
     }
 
     // // --- Basic actions ---
@@ -1988,28 +2072,78 @@ contract OraclesMainnet is TestAccounts {
         assertEq(contractsArray[1].collToken.balanceOf(A), A_collBefore + expectedCollDelta, "A's coll didn't change");
     }
 
-    // --- Low gas reverts ---
+    // --- Low gas market oracle reverts ---
 
-    // --- Call these functions with 10k gas - i.e. enough to run out of gas in the Chainlink calls ---
-    function testRevertLowGasWSTETH() public {
+    function testRevertLowGasSTETHOracle() public {
+        // Confirm call to the real external contracts succeeds with sufficient gas i.e. 500k
+        (bool success,) = address(wstethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
+        assertTrue(success);
+
+        // Etch gas guzzler to the oracle
+        etchGasGuzzlerToStethOracle(address(gasGuzzlerOracle).code);
+
+        // After etching the gas guzzler to the oracle, confirm the same call with 500k gas now reverts due to OOG
         vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
-        // just catch return val to suppress warning
-        (bool success,) = address(wstethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
-        assertFalse(success);
+        (bool revertAsExpected,) = address(wstethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
+        assertTrue(revertAsExpected);
     }
 
-    function testRevertLowGasRETH() public {
+    function testRevertLowGasRETHOracle() public {
+        // Confirm call to the real external contracts succeeds with sufficient gas i.e. 500k
+        (bool success,) = address(rethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
+        assertTrue(success);
+
+        // Etch gas guzzler to the oracle
+        etchGasGuzzlerToRethOracle(address(gasGuzzlerOracle).code);
+
+        // After etching the gas guzzler to the oracle, confirm the same call with 500k gas now reverts due to OOG
         vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
-        // just catch return val to suppress warning
-        (bool success,) = address(rethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
-        assertFalse(success);
+        (bool revertAsExpected,) = address(rethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
+        assertTrue(revertAsExpected);
     }
 
-    function testRevertLowGasWETH() public {
+     function testRevertLowGasETHOracle() public {
+        // Confirm call to the real external contracts succeeds with sufficient gas i.e. 500k
+        (bool success,) = address(wethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
+        assertTrue(success);
+
+        // Etch gas guzzler to the oracle
+        etchGasGuzzlerToEthOracle(address(gasGuzzlerOracle).code);
+
+        // After etching the gas guzzler to the oracle, confirm the same call with 500k gas now reverts due to OOG
         vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
-        // just catch return val to suppress warning
-        (bool success,) = address(wethPriceFeed).call{gas: 10000}(abi.encodeWithSignature("fetchPrice()"));
-        assertFalse(success);
+        (bool revertAsExpected,) = address(wethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
+        assertTrue(revertAsExpected);
+    }
+
+    // --- Test with a gas guzzler token, and confirm revert ---
+
+    function testRevertLowGasWSTETHToken() public {
+        // Confirm call to the real external contracts succeeds with sufficient gas i.e. 500k
+        (bool success,) = address(wstethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
+        assertTrue(success);
+
+        // Etch gas guzzler to the LST
+        etchGasGuzzlerMockToWstethToken(address(gasGuzzlerToken).code);
+
+        // After etching the gas guzzler to the LST, confirm the same call with 500k gas now reverts due to OOG
+        vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
+        (bool revertsAsExpected,) = address(wstethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
+        assertTrue(revertsAsExpected);
+    }
+
+    function testRevertLowGasRETHToken() public {
+        // Confirm call to the real external contracts succeeds with sufficient gas i.e. 500k
+        (bool success,) = address(rethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
+        assertTrue(success);
+
+        // Etch gas guzzler to the LST
+        etchGasGuzzlerMockToRethToken(address(gasGuzzlerToken).code);
+
+        // After etching the gas guzzler to the LST, confirm the same call with 500k gas now reverts due to OOG
+        vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
+        (bool revertsAsExpected,) = address(rethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
+        assertTrue(revertsAsExpected);
     }
 
     // - More basic actions tests (adjust, close, etc)

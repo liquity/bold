@@ -448,7 +448,7 @@ function CustomDelegateModalContent({
                       <div>
                         The address is not a valid{" "}
                         <AnchorTextButton
-                          label="batch interest manager"
+                          label="delegate"
                           href="https://docs.liquity.org/v2-faq/redemptions-and-delegation#what-is-delegation-of-interest-rates"
                           external
                         />.
@@ -458,15 +458,26 @@ function CustomDelegateModalContent({
             </div>
           )
           : (
-            <div>
-              Please enter a valid{" "}
-              <AnchorTextButton
-                label="batch interest manager"
-                href="https://docs.liquity.org/v2-faq/redemptions-and-delegation#what-is-delegation-of-interest-rates"
-                external
-              />{" "}
-              address.
-            </div>
+            <>
+              <div>
+                Set a valid{" "}
+                <AnchorTextButton
+                  label="delegate"
+                  href="https://docs.liquity.org/v2-faq/redemptions-and-delegation#what-is-delegation-of-interest-rates"
+                  external
+                />{" "}
+                address.
+              </div>
+
+              <div>
+                Delegate addresses can be found{"  "}
+                <AnchorTextButton
+                  label="here"
+                  href="https://docs.liquity.org/v2-faq/redemptions-and-delegation#docs-internal-guid-441d8c3f-7fff-4efa-6319-4ba00d908597"
+                  external
+                />.
+              </div>
+            </>
           )}
       </div>
     </>

@@ -15,7 +15,7 @@ import { vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
-import { readContract, writeContract } from "wagmi/actions";
+import { readContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -114,18 +114,13 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           approval="approve-only"
         />
       ),
-      async commit({
-        contracts,
-        request,
-        wagmiConfig,
-        preferredApproveMethod,
-      }) {
-        const { loan } = request;
-        const coll = contracts.collaterals[loan.collIndex];
+      async commit(ctx) {
+        const { loan } = ctx.request;
+        const coll = ctx.contracts.collaterals[loan.collIndex];
         if (!coll) {
           throw new Error("Invalid collateral index: " + loan.collIndex);
         }
-        const { entireDebt } = await readContract(wagmiConfig, {
+        const { entireDebt } = await readContract(ctx.wagmiConfig, {
           ...coll.contracts.TroveManager,
           functionName: "getLatestTroveData",
           args: [BigInt(loan.troveId)],
@@ -135,19 +130,19 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           ? coll.contracts.LeverageWETHZapper
           : coll.contracts.LeverageLSTZapper;
 
-        return writeContract(wagmiConfig, {
-          ...contracts.BoldToken,
+        return ctx.writeContract({
+          ...ctx.contracts.BoldToken,
           functionName: "approve",
           args: [
             Zapper.address,
-            preferredApproveMethod === "approve-infinite"
+            ctx.preferredApproveMethod === "approve-infinite"
               ? maxUint256 // infinite approval
               : dn.mul([entireDebt, 18], 1.1)[0], // exact amount (TODO: better estimate)
           ],
         });
       },
-      async verify({ wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -156,16 +151,16 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       name: () => "Close loan",
       Status: TransactionStatus,
 
-      async commit({ contracts, request, wagmiConfig }) {
-        const { loan } = request;
-        const coll = contracts.collaterals[loan.collIndex];
+      async commit(ctx) {
+        const { loan } = ctx.request;
+        const coll = ctx.contracts.collaterals[loan.collIndex];
         if (!coll) {
           throw new Error("Invalid collateral index: " + loan.collIndex);
         }
 
         // repay with BOLD => get ETH
-        if (!request.repayWithCollateral && coll.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
+        if (!ctx.request.repayWithCollateral && coll.symbol === "ETH") {
+          return ctx.writeContract({
             ...coll.contracts.LeverageWETHZapper,
             functionName: "closeTroveToRawETH",
             args: [BigInt(loan.troveId)],
@@ -173,8 +168,8 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         }
 
         // repay with BOLD => get LST
-        if (!request.repayWithCollateral) {
-          return writeContract(wagmiConfig, {
+        if (!ctx.request.repayWithCollateral) {
+          return ctx.writeContract({
             ...coll.contracts.LeverageLSTZapper,
             functionName: "closeTroveToRawETH",
             args: [BigInt(loan.troveId)],
@@ -186,7 +181,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         const closeFlashLoanAmount = await getCloseFlashLoanAmount(
           loan.collIndex,
           loan.troveId,
-          wagmiConfig,
+          ctx.wagmiConfig,
         );
 
         if (closeFlashLoanAmount === null) {
@@ -195,7 +190,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
 
         // repay with collateral => get ETH
         if (coll.symbol === "ETH") {
-          return writeContract(wagmiConfig, {
+          return ctx.writeContract({
             ...coll.contracts.LeverageWETHZapper,
             functionName: "closeTroveFromCollateral",
             args: [BigInt(loan.troveId), closeFlashLoanAmount],
@@ -203,19 +198,19 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         }
 
         // repay with collateral => get LST
-        return writeContract(wagmiConfig, {
+        return ctx.writeContract({
           ...coll.contracts.LeverageLSTZapper,
           functionName: "closeTroveFromCollateral",
           args: [BigInt(loan.troveId), closeFlashLoanAmount],
         });
       },
 
-      async verify({ request, wagmiConfig, isSafe }, hash) {
-        await verifyTransaction(wagmiConfig, hash, isSafe);
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
 
         const prefixedTroveId = getPrefixedTroveId(
-          request.loan.collIndex,
-          request.loan.troveId,
+          ctx.request.loan.collIndex,
+          ctx.request.loan.troveId,
         );
 
         // wait for the trove to be seen as closed in the subgraph
@@ -230,14 +225,14 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
     },
   },
 
-  async getSteps({ account, contracts, request, wagmiConfig }) {
-    if (!account) {
+  async getSteps(ctx) {
+    if (!ctx.account) {
       throw new Error("Account address is required");
     }
 
-    const { loan } = request;
+    const { loan } = ctx.request;
 
-    const coll = contracts.collaterals[loan.collIndex];
+    const coll = ctx.contracts.collaterals[loan.collIndex];
     if (!coll) {
       throw new Error("Invalid collateral index: " + loan.collIndex);
     }
@@ -246,17 +241,17 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       ? coll.contracts.LeverageWETHZapper
       : coll.contracts.LeverageLSTZapper;
 
-    const { entireDebt } = await readContract(wagmiConfig, {
+    const { entireDebt } = await ctx.readContract({
       ...coll.contracts.TroveManager,
       functionName: "getLatestTroveData",
       args: [BigInt(loan.troveId)],
     });
 
-    const isBoldApproved = request.repayWithCollateral || !dn.gt(entireDebt, [
-      await readContract(wagmiConfig, {
-        ...contracts.BoldToken,
+    const isBoldApproved = ctx.request.repayWithCollateral || !dn.gt(entireDebt, [
+      await ctx.readContract({
+        ...ctx.contracts.BoldToken,
         functionName: "allowance",
-        args: [account, Zapper.address],
+        args: [ctx.account, Zapper.address],
       }) ?? 0n,
       18,
     ]);

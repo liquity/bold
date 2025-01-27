@@ -6,8 +6,8 @@ dataSources:
     name: BoldToken
     source:
       abi: BoldToken
-      address: "0x0a69fa2a565bd6fa9c3890ecaa30b149aaf99136"
-      startBlock: 7314166
+      address: "0xb01dd87b29d187f3e3a4bf6cdaebfb97f3d9ab98"
+      startBlock: 21640111
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -33,13 +33,13 @@ dataSources:
         - event: CollateralRegistryAddressChanged(address)
           handler: handleCollateralRegistryAddressChanged
       file: ./src/BoldToken.mapping.ts
-    network: sepolia
+    network: mainnet
   - kind: ethereum/contract
     name: Governance
     source:
       abi: Governance
-      address: "0x7eedda08119826757c98a4680e94f3b5e1f33af6"
-      startBlock: 7314318
+      address: "0x636deb767cd7d0f15ca4ab8ea9a9b26e98b426ac"
+      startBlock: 21640111
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -70,11 +70,11 @@ dataSources:
             address,address,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleWithdrawLQTY
       file: ./src/Governance.mapping.ts
-    network: sepolia
+    network: mainnet
 templates:
   - name: TroveManager
     kind: ethereum/contract
-    network: sepolia
+    network: mainnet
     source:
       abi: TroveManager
     mapping:
@@ -103,7 +103,7 @@ templates:
           handler: handleBatchUpdated
   - name: TroveNFT
     kind: ethereum/contract
-    network: sepolia
+    network: mainnet
     source:
       abi: TroveNFT
     mapping:
@@ -122,7 +122,7 @@ templates:
           handler: handleTransfer
   - name: StabilityPool
     kind: ethereum/contract
-    network: sepolia
+    network: mainnet
     source:
       abi: StabilityPool
     mapping:

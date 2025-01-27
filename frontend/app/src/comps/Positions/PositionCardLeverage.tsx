@@ -2,6 +2,7 @@ import type { PositionLoanCommitted } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { formatRedemptionRisk } from "@/src/formatting";
+import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
 import { getCollToken } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
@@ -78,7 +79,7 @@ export function PositionCardLeverage({
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              {deposit ? dn.format(deposit, 2) : "−"}
+              {deposit ? fmtnum(deposit, 2) : "−"}
               <TokenIcon size={24} symbol={token.symbol} />
             </HFlex>
           ),
@@ -117,7 +118,7 @@ export function PositionCardLeverage({
                           : "var(--status-negative)",
                       }}
                     >
-                      {dn.format(dn.mul(ltv, 100), 2)}%
+                      {fmtnum(ltv, 2, 100)}%
                     </div>
                   )}
                 </div>
@@ -169,7 +170,7 @@ export function PositionCardLeverage({
                       color: "positionContent",
                     })}
                   >
-                    {dn.format(dn.mul(interestRate, 100), 2)}%
+                    {fmtnum(interestRate, 2, 100)}%
                   </div>
                 </div>
               }
