@@ -118,7 +118,7 @@ export function PositionCardLeverage({
                           : "var(--status-negative)",
                       }}
                     >
-                      {fmtnum(ltv, 2, 100)}%
+                      {fmtnum(ltv, "pct2")}%
                     </div>
                   )}
                 </div>
@@ -170,7 +170,7 @@ export function PositionCardLeverage({
                       color: "positionContent",
                     })}
                   >
-                    {fmtnum(interestRate, 2, 100)}%
+                    {fmtnum(interestRate, "pct2")}%
                   </div>
                 </div>
               }

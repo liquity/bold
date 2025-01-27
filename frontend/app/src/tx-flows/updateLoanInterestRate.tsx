@@ -85,7 +85,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
           value={[
             <AccountButton key="start" address={loan.batchManager} />,
             <div key="end">
-              {fmtnum(loan.interestRate, "full", 100)}% (~{fmtnum(yearlyBoldInterest, 4)} BOLD per year)
+              {fmtnum(loan.interestRate, "pctfull")}% (~{fmtnum(yearlyBoldInterest, 4)} BOLD per year)
             </div>,
           ]}
         />
@@ -96,7 +96,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
             label="New interest rate"
             value={[
               <div key="start">
-                {fmtnum(loan.interestRate, "full", 100)}%
+                {fmtnum(loan.interestRate, "pctfull")}%
               </div>,
               <div
                 key="end"
@@ -124,7 +124,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                     textDecoration: "line-through",
                   })}
                 >
-                  {fmtnum(prevLoan.interestRate, "full", 100)}% (~{fmtnum(
+                  {fmtnum(prevLoan.interestRate, "pctfull")}% (~{fmtnum(
                     dn.mul(prevLoan.borrowed, prevLoan.interestRate),
                     4,
                   )} BOLD per year)

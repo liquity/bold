@@ -4,30 +4,41 @@ import { DNUM_0, DNUM_1 } from "@/src/dnum-utils";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 
-// dnum formatting presets
-const dnFormatPresets = {
+// formatting presets
+const fmtnumPresets = {
   "1z": { digits: 1, trailingZeros: true },
   "2z": { digits: 2, trailingZeros: true },
   "12z": { digits: 12, trailingZeros: true },
   "2diff": { digits: 2, signDisplay: "exceptZero" },
   "4diff": { digits: 4, signDisplay: "exceptZero" },
+  "pct1z": { scale: 100, digits: 1, trailingZeros: true },
+  "pct2": { scale: 100, digits: 2 },
+  "pct2z": { scale: 100, digits: 2, trailingZeros: true },
+  "pctfull": { scale: 100, digits: undefined },
   "compact": { compact: true, digits: 2 },
-  "full": undefined, // dnum defaults
-} as const;
+  "full": {},
+} satisfies Record<
+  string,
+  Exclude<DnumFormatOptions & { scale?: number }, number>
+>;
 
-type DnFormatPresetName = keyof typeof dnFormatPresets;
 type DnumFormatOptions = number | Parameters<typeof dn.format>[1];
 
-function isDnFormatPresetName(value: unknown): value is DnFormatPresetName {
-  return typeof value === "string" && value in dnFormatPresets;
+export type FmtnumPresetName = keyof typeof fmtnumPresets;
+export type FmtNumOptions =
+  | FmtnumPresetName
+  | DnumFormatOptions & {
+    preset?: FmtnumPresetName;
+    scale?: number; // pass e.g. 100 to format as percentage
+  };
+
+function isFmtnumPresetName(value: unknown): value is FmtnumPresetName {
+  return typeof value === "string" && value in fmtnumPresets;
 }
 
 export function fmtnum(
   value: Dnum | number | null | undefined,
-  optionsOrFormatName:
-    | DnFormatPresetName
-    | DnumFormatOptions = "2z",
-  scale = 1, // pass 100 here to format as percentage
+  optionsOrPreset: FmtNumOptions = "2z",
 ) {
   if (value === null || value === undefined) {
     return "";
@@ -35,30 +46,48 @@ export function fmtnum(
   if (typeof value === "number") {
     value = dn.from(value);
   }
-  if (scale > 1) {
-    value = dn.mul(value, scale);
+
+  // resolve alias for options.digits
+  if (typeof optionsOrPreset === "number") {
+    optionsOrPreset = { digits: optionsOrPreset };
   }
 
-  let options: DnumFormatOptions = (
-    isDnFormatPresetName(optionsOrFormatName)
-      ? dnFormatPresets[optionsOrFormatName]
-      : optionsOrFormatName
-  ) ?? {};
-
-  if (typeof options === "number") {
-    options = { digits: options };
+  // resolve alias for options.preset
+  if (isFmtnumPresetName(optionsOrPreset)) {
+    optionsOrPreset = { preset: optionsOrPreset };
   }
+
+  // apply options.preset
+  if (optionsOrPreset.preset) {
+    optionsOrPreset = {
+      ...fmtnumPresets[optionsOrPreset.preset],
+      ...optionsOrPreset,
+    };
+  }
+
+  // apply scale
+  if (optionsOrPreset.scale !== undefined && optionsOrPreset.scale > 1) {
+    value = dn.mul(value, optionsOrPreset.scale);
+  }
+
+  const { preset, scale, ...dnOptions } = optionsOrPreset;
 
   const formatted = dn.format(value, {
-    ...options,
+    ...dnOptions,
     locale: "en-US",
   });
 
   // replace values rounded to 0.0…0 with 0.0…1 so they don't look like 0
-  if (typeof options?.digits === "number" && options.digits > 0 && value[0] > 0n) {
-    if (formatted === `0.${"0".repeat(options.digits)}`) {
-      return `<0.${"0".repeat(options.digits - 1)}1`;
-    }
+  if (
+    dnOptions.digits !== undefined
+    && dnOptions.digits > 0
+    && value[0] > 0n
+    && (
+      formatted === "0"
+      || formatted === `0.${"0".repeat(dnOptions.digits)}`
+    )
+  ) {
+    return `0.${"0".repeat(dnOptions.digits - 1)}1`;
   }
 
   return formatted;

@@ -84,8 +84,8 @@ export function StakePositionSummary({
     // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
     const share = dn.div([userVpLive, 18], [totalVpLive, 18]);
 
-    const sharePctFormatted = fmtnum(share, "12z", 100) + "%";
-    const sharePctRoundedFormatted = fmtnum(share, "2z", 100) + "%";
+    const sharePctFormatted = fmtnum(share, { preset: "12z", scale: 100 }) + "%";
+    const sharePctRoundedFormatted = fmtnum(share, "pct2z") + "%";
 
     votingPowerRef.current.innerHTML = sharePctRoundedFormatted;
     votingPowerRef.current.title = sharePctFormatted;

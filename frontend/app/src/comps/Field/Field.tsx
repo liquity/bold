@@ -243,7 +243,7 @@ export const FooterInfoLoanToValue = memo(
                   })}
                 >
                   {higherThanMax && ">"}
-                  {fmtnum(higherThanMax ? maxLtvRatio : ltvRatio, "2z", 100)}
+                  {fmtnum(higherThanMax ? maxLtvRatio : ltvRatio, "pct2z")}
                   {"%"}
                 </span>
               )
@@ -340,7 +340,7 @@ export const FooterInfoMaxLtv = memo(
         value={
           <HFlex gap={4}>
             <div>
-              {fmtnum(maxLtv, "2z", 100)}%
+              {fmtnum(maxLtv, "pct2z")}%
             </div>
             <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.loanMaxLtv)} />
           </HFlex>

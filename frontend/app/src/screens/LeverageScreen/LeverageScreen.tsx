@@ -491,9 +491,8 @@ function useSlippageElements(
       <>
         Slippage too high: {fmtnum(
           leverageSlippage.data,
-          2,
-          100,
-        )}% (max {fmtnum(LEVERAGE_MAX_SLIPPAGE, 2, 100)}%)
+          "pct2",
+        )}% (max {fmtnum(LEVERAGE_MAX_SLIPPAGE, "pct2")}%)
       </>
     );
     return {
