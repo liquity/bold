@@ -8,11 +8,16 @@ import {SuperfluidFrameworkDeployer} from
     "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.t.sol";
 import {ERC1820RegistryCompiled} from
     "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+
+using SuperTokenV1Library for IBoldToken;
 
 contract SFBold is Test {
     string internal constant _NAME = "TestToken";
     address internal constant _OWNER = address(0x1);
     uint256 internal constant _PERMIT_SIGNER_PK = 0xA11CE;
+    address internal constant _ALICE = address(0x4242);
+    address internal constant _BOB = address(0x4243);
     address internal _permitSigner;
     IBoldToken internal _boldToken;
     SuperfluidFrameworkDeployer.Framework internal _sf;
@@ -33,7 +38,8 @@ contract SFBold is Test {
         // Fund the signer with some tokens
         vm.startPrank(_OWNER);
         _boldToken.setBranchAddresses(_OWNER, _OWNER, _OWNER, _OWNER);
-        _boldToken.mint(_permitSigner, 500);
+        _boldToken.mint(_permitSigner, 500 ether);
+        _boldToken.mint(_ALICE, 500 ether);
         vm.stopPrank();
     }
 
@@ -85,6 +91,30 @@ contract SFBold is Test {
         // Verify results
         assertEq(_boldToken.nonces(_permitSigner), 1, "Nonce should be incremented");
         assertEq(_boldToken.allowance(_permitSigner, spender), value, "Allowance should be set");
+    }
+
+    function testFlow() public {
+        int96 flowRate = 1e12;
+        uint256 duration = 3600;
+
+        uint256 aliceInitialBalance = _boldToken.balanceOf(_ALICE);
+        assertEq(_boldToken.balanceOf(_BOB), 0, "Bob should start with balance 0");
+
+        vm.startPrank(_ALICE);
+        _boldToken.createFlow(_BOB, flowRate);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + duration);
+
+        uint256 flowAmount = uint96(flowRate) * duration;
+        assertEq(_boldToken.balanceOf(_BOB), flowAmount, "Bob unexpected balance");
+
+        vm.startPrank(_ALICE);
+        _boldToken.deleteFlow(_ALICE, _BOB);
+        vm.stopPrank();
+
+        assertEq(_boldToken.balanceOf(_BOB), flowAmount, "Bob unexpected balance");
+        assertEq(_boldToken.balanceOf(_ALICE), aliceInitialBalance - flowAmount, "Alice unexpected balance");
     }
 
     // ============================ Internal Functions ============================
