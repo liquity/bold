@@ -8,7 +8,8 @@
   "scripts": {
     "build": "pnpm build-deps && next build",
     "build-analyze": "ANALYZE=true pnpm build",
-    "build-deps": "pnpm build-graphql && pnpm build-uikit && pnpm build-panda",
+    "build-banner": "test -f ./Banner.tsx || cp ./Banner.example.tsx ./Banner.tsx",
+    "build-deps": "pnpm build-graphql && pnpm build-uikit && pnpm build-banner && pnpm build-panda",
     "build-graphql": "pnpm graphql-codegen --config graphql-codegen.ts",
     "build-panda": "panda codegen --silent",
     "build-uikit": "cd ../uikit && pnpm build",
