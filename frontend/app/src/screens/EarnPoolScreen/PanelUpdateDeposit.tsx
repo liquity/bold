@@ -117,8 +117,8 @@ export function PanelUpdateDeposit({
                 <Tabs
                   compact
                   items={[
-                    { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
-                    { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
+                    { label: "Increase Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
+                    { label: "Decrease Deposit", panelId: "panel-withdraw", tabId: "tab-withdraw" },
                   ]}
                   onSelect={(index, { origin, event }) => {
                     setMode(index === 1 ? "remove" : "add");
