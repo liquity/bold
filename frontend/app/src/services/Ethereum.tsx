@@ -172,8 +172,8 @@ export function useWagmiConfig() {
       currency: CHAIN_CURRENCY,
       rpcUrl: CHAIN_RPC_URL,
       blockExplorer: CHAIN_BLOCK_EXPLORER,
-      contractEnsRegistry: CHAIN_CONTRACT_ENS_REGISTRY,
-      contractEnsResolver: CHAIN_CONTRACT_ENS_RESOLVER,
+      contractEnsRegistry: CHAIN_CONTRACT_ENS_REGISTRY ?? undefined,
+      contractEnsResolver: CHAIN_CONTRACT_ENS_RESOLVER ?? undefined,
       contractMulticall: { address: CHAIN_CONTRACT_MULTICALL },
     });
     return getDefaultConfig({

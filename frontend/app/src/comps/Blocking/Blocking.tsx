@@ -82,7 +82,7 @@ export function Blocking({
 // blocking list contract
 export function useIsAccountInBlockingList(account: Address | null) {
   return useReadContract({
-    address: BLOCKING_LIST,
+    address: BLOCKING_LIST ?? undefined,
     abi: [{
       "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
       "name": "isBlacklisted",
