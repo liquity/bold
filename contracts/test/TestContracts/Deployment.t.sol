@@ -45,6 +45,14 @@ import "src/PriceFeeds/WETHPriceFeed.sol";
 import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
 
+import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+import {SuperfluidFrameworkDeployer} from
+    "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.t.sol";
+import {ERC1820RegistryCompiled} from
+    "@superfluid-finance/ethereum-contracts/contracts/libs/ERC1820RegistryCompiled.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
+
+
 import "forge-std/console2.sol";
 
 uint256 constant _24_HOURS = 86400;
@@ -62,6 +70,9 @@ contract TestDeployer is MetadataDeployment {
     uint128 constant BOLD_TOKEN_INDEX = 0;
     uint256 constant COLL_TOKEN_INDEX = 1;
     uint128 constant USDC_INDEX = 1;
+
+    // Superfluid
+    SuperfluidFrameworkDeployer.Framework _sf;
 
     // UniV3
     ISwapRouter constant uniV3Router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
@@ -295,15 +306,21 @@ contract TestDeployer is MetadataDeployment {
         )
     {
         //setup SF factories.
-        ISuperTokenFactory superTokenFactory = ISuperTokenFactory(0x0000000000000000000000000000000000000000);
+        vm.etch(ERC1820RegistryCompiled.at, ERC1820RegistryCompiled.bin);
+        SuperfluidFrameworkDeployer sfDeployer = new SuperfluidFrameworkDeployer();
+        sfDeployer.deployTestFramework();
+        _sf = sfDeployer.getFramework();
 
         DeploymentVarsDev memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         // Deploy Bold
-        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this), superTokenFactory));
+        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this), _sf.superTokenFactory));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), superTokenFactory)));
+        boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), _sf.superTokenFactory)));
         assert(address(boldToken) == vars.boldTokenAddress);
+
+        // Initialize the BoldToken
+        BoldToken(payable(address(boldToken))).initialize(_sf.superTokenFactory);
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
         zappersArray = new Zappers[](vars.numCollaterals);
