@@ -370,7 +370,7 @@ export function BorrowScreen() {
                 })}
               >
                 <IconSuggestion size={16} />
-                <>The interest rate can be adjusted</>
+                <>You can adjust this rate at any time</>
                 <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateAdjustment)} />
               </span>
             ),
