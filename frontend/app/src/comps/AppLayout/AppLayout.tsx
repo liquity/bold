@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { Banner } from "@/Banner";
 import { useAbout } from "@/src/comps/About/About";
 import { ProtocolStats } from "@/src/comps/ProtocolStats/ProtocolStats";
 import { TopBar } from "@/src/comps/TopBar/TopBar";
@@ -17,63 +18,66 @@ export function AppLayout({
   children: ReactNode;
 }) {
   return (
-    <div
-      className={css({
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "flex-start",
-        width: "100%",
-        minHeight: "100vh",
-        margin: "0 auto",
-        background: "background",
-      })}
-      style={{
-        minWidth: `${MIN_WIDTH}px`,
-        maxWidth: `${LAYOUT_WIDTH + 24 * 2}px`,
-      }}
-    >
+    <>
+      <Banner />
       <div
         className={css({
-          width: "100%",
-          flexGrow: 0,
-          flexShrink: 0,
-          paddingBottom: 48,
-        })}
-      >
-        <TopBar />
-      </div>
-      <div
-        className={css({
-          flexGrow: 1,
           display: "flex",
           flexDirection: "column",
+          alignItems: "flex-start",
+          width: "100%",
+          minHeight: "100vh",
+          margin: "0 auto",
+          background: "background",
         })}
         style={{
-          width: `${LAYOUT_WIDTH + 24 * 2}px`,
+          minWidth: `${MIN_WIDTH}px`,
+          maxWidth: `${LAYOUT_WIDTH + 24 * 2}px`,
         }}
       >
+        <div
+          className={css({
+            width: "100%",
+            flexGrow: 0,
+            flexShrink: 0,
+            paddingBottom: 48,
+          })}
+        >
+          <TopBar />
+        </div>
         <div
           className={css({
             flexGrow: 1,
             display: "flex",
             flexDirection: "column",
-            width: "100%",
-            padding: "0 24px",
           })}
+          style={{
+            width: `${LAYOUT_WIDTH + 24 * 2}px`,
+          }}
         >
-          {children}
-        </div>
-        <div
-          className={css({
-            width: "100%",
-            padding: "48px 24px 0",
-          })}
-        >
-          <BuildInfo />
-          <ProtocolStats />
+          <div
+            className={css({
+              flexGrow: 1,
+              display: "flex",
+              flexDirection: "column",
+              width: "100%",
+              padding: "0 24px",
+            })}
+          >
+            {children}
+          </div>
+          <div
+            className={css({
+              width: "100%",
+              padding: "48px 24px 0",
+            })}
+          >
+            <BuildInfo />
+            <ProtocolStats />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
