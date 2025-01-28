@@ -45,6 +45,7 @@ import {SdaiOracle} from "src/PriceFeeds/USA.D/SdaiOracle.sol";
 import {SfrxEthOracle} from "src/PriceFeeds/USA.D/SfrxEthOracle.sol";
 import {TbtcOracle} from "src/PriceFeeds/USA.D/TbtcOracle.sol";
 import {WbtcOracle} from "src/PriceFeeds/USA.D/WbtcOracle.sol";
+import {SusdsOracle} from "src/PriceFeeds/USA.D/SusdsOracle.sol";
 import {CrvUsdFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/CrvUsdFallbackOracle.sol";
 import {SfrxEthFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/SfrxEthFallbackOracle.sol";
 import {TbtcFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/TbtcFallbackOracle.sol";
@@ -157,6 +158,7 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
     address constant TBTC = 0x18084fbA666a33d37592fA2633fD49a74DD93a88;
     address constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant SUSDS = 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD;
 
     function run() public returns (DeploymentResult memory deployed) {
         SALT = keccak256(abi.encodePacked(block.timestamp));
@@ -169,26 +171,29 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
         console2.log(deployer.balance, "deployer balance");
 
         // @todo -- update params -- waiting for LR
-        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](5);
+        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](6);
         troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // scrvUSD
         troveManagerParamsArray[1] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sDAI
         troveManagerParamsArray[2] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sfrxETH
         troveManagerParamsArray[3] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // tBTC
         troveManagerParamsArray[4] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WBTC
+        troveManagerParamsArray[5] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sUSDS
 
 
-        string[] memory collNames = new string[](5);
-        string[] memory collSymbols = new string[](5);
+        string[] memory collNames = new string[](6);
+        string[] memory collSymbols = new string[](6);
         collNames[0] = "Savings crvUSD";
         collNames[1] = "Savings DAI";
         collNames[2] = "Staked Frax Ether";
         collNames[3] = "tBTC v2";
         collNames[4] = "Wrapped BTC";
+        collNames[5] = "Savings USDS";
         collSymbols[0] = "scrvUSD";
         collSymbols[1] = "sDAI";
         collSymbols[2] = "sfrxETH";
         collSymbols[3] = "tBTC";
         collSymbols[4] = "WBTC";
+        collSymbols[5] = "sUSDS";
 
         deployed =
             _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols);
@@ -234,6 +239,8 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
         vars.collaterals[2] = IERC20Metadata(SFRXETH);
         vars.collaterals[3] = IERC20Metadata(TBTC);
         vars.collaterals[4] = IERC20Metadata(WBTC);
+        vars.collaterals[5] = IERC20Metadata(SUSDS);
+
 
         // Deploy AddressesRegistries and get TroveManager addresses
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
@@ -335,6 +342,9 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
             WbtcFallbackOracle fallbackOracle = new WbtcFallbackOracle();
             contracts.oracle = address(new WbtcOracle(address(fallbackOracle)));
             wbtcFallbackOracle = fallbackOracle;
+        } else if (address(_collToken) == SUSDS) {
+            _stalenessThreshold = _1_HOUR; // CL DAI/USD heartbeat. No Fallback
+            contracts.oracle = address(new SusdsOracle());
         } else {
             revert("Collateral not supported");
         }

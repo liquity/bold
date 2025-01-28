@@ -134,4 +134,21 @@ contract OraclesTest is Base {
         assertEq(_priceShutdown, _priceFallback, "testWbtcOracle: E5");
         assertTrue(_isOracleDownShutdown, "testWbtcOracle: E6");
     }
+
+    function testSusdsOracle() public {
+        DeploymentResult memory _deployment = deploy();
+        LiquityContractsTestnet memory _contracts = _deployment.contractsArray[5];
+
+        // Primary
+        (uint256 _pricePrimary, bool _isOracleDownPrimary) = _contracts.priceFeed.fetchPrice();
+        assertGt(_pricePrimary, 1 ether, "testSusdsOracle: E0");
+        assertFalse(_isOracleDownPrimary, "testSusdsOracle: E1");
+        console2.log(_pricePrimary, "sUSD price primary");
+
+        // Shutdown
+        vm.warp(block.timestamp + 2 hours);
+        (uint256 _priceShutdown, bool _isOracleDownShutdown) = _contracts.priceFeed.fetchPrice();
+        assertEq(_priceShutdown, _pricePrimary, "testSusdsOracle: E2");
+        assertTrue(_isOracleDownShutdown, "testSusdsOracle: E3");
+    }
 }
