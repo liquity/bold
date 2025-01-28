@@ -192,16 +192,14 @@ test("getLoanDetails() correctly calculates isUnderwater and isLiquidatable in l
   const healthyLoan = loan(10, 10000, 2000);
   expect(healthyLoan.ltv).toEqual(0.5);
   expect(healthyLoan.leverageFactor).toBe(2);
-  expect(healthyLoan.isUnderwater).toBe(false);
-  expect(healthyLoan.isLiquidatable).toBe(false);
+  expect(healthyLoan.status).toBe("healthy");
 
   // almost liquidatable (90% LTV)
   const almostLiquidatableLoan = loan(10, 18000, 2000);
   expect(almostLiquidatableLoan.ltv).toEqual(0.9);
   expect(almostLiquidatableLoan.leverageFactor).toBeCloseTo(10);
   expect(almostLiquidatableLoan.depositPreLeverage).toEqual(d(999999999999999800n)); // ~1 ETH
-  expect(almostLiquidatableLoan.isUnderwater).toBe(false);
-  expect(almostLiquidatableLoan.isLiquidatable).toBe(false);
+  expect(almostLiquidatableLoan.status).toBe("at-risk");
   expect(almostLiquidatableLoan.ltv && dn.lt(almostLiquidatableLoan.ltv, almostLiquidatableLoan.maxLtv)).toBe(true);
 
   // liquidatable (91% LTV)
@@ -209,8 +207,7 @@ test("getLoanDetails() correctly calculates isUnderwater and isLiquidatable in l
   expect(liquidatableLoan.ltv).toEqual(0.91);
   expect(liquidatableLoan.leverageFactor).toBeCloseTo(11.11);
   expect(liquidatableLoan.depositPreLeverage).toEqual(d(899999999999999766n)); // ~0.9 ETH
-  expect(liquidatableLoan.isUnderwater).toBe(false);
-  expect(liquidatableLoan.isLiquidatable).toBe(true);
+  expect(liquidatableLoan.status).toBe("liquidatable");
   expect(liquidatableLoan.ltv && dn.gt(liquidatableLoan.ltv, liquidatableLoan.maxLtv)).toBe(true);
 
   // exactly at 100% LTV
@@ -218,8 +215,11 @@ test("getLoanDetails() correctly calculates isUnderwater and isLiquidatable in l
   expect(oneHundredPercentLtvLoan.ltv).toEqual(1);
   expect(oneHundredPercentLtvLoan.leverageFactor).toBe(Number.POSITIVE_INFINITY);
   expect(oneHundredPercentLtvLoan.depositPreLeverage).toEqual(null);
-  expect(oneHundredPercentLtvLoan.isUnderwater).toBe(true);
-  expect(oneHundredPercentLtvLoan.isLiquidatable).toBe(true);
+  expect(oneHundredPercentLtvLoan.status).toBe("liquidatable");
+
+  // underwater (>100% LTV)
+  const oneHundredPercentLtvPlusLoan = loan(10, 20000.00000000001, 2000);
+  expect(oneHundredPercentLtvPlusLoan.status).toBe("underwater");
 
   // underwater (125% LTV)
   const underwaterLoan = loan(10, 25000, 2000);
@@ -228,6 +228,5 @@ test("getLoanDetails() correctly calculates isUnderwater and isLiquidatable in l
   expect(underwaterLoan.depositPreLeverage).toEqual(-2.5); // -2.5 ETH missing to recover
   expect(underwaterLoan.depositToZero).toEqual(2.5); // 2.5 ETH to zero out the position
   expect(underwaterLoan.deposit).toEqual(10);
-  expect(underwaterLoan.isUnderwater).toBe(true);
-  expect(underwaterLoan.isLiquidatable).toBe(true);
+  expect(underwaterLoan.status).toBe("underwater");
 });
