@@ -7,13 +7,8 @@ import type { Config as WagmiConfig } from "wagmi";
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
 import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
-import {
-  calculateStabilityPoolApr,
-  getCollGainFromSnapshots,
-  useContinuousBoldGains,
-  useSpYieldGainParameters,
-} from "@/src/liquity-stability-pool";
+import { CHAIN_BLOCK_EXPLORER, DUNE_API_KEY, DUNE_POOLS_APY_URL } from "@/src/env";
+import { getCollGainFromSnapshots, useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
   useGovernanceStats,
   useGovernanceUser,
@@ -23,10 +18,11 @@ import {
   useStabilityPoolEpochScale,
 } from "@/src/subgraph-hooks";
 import { isCollIndex, isTroveId } from "@/src/types";
-import { COLLATERALS, isAddress } from "@liquity2/uikit";
+import { COLLATERALS, isAddress, isCollateralSymbol } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
+import * as v from "valibot";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useBalance, useReadContract, useReadContracts } from "wagmi";
 import { readContract } from "wagmi/actions";
@@ -85,11 +81,86 @@ export function getCollIndexFromSymbol(symbol: CollateralSymbol | null): CollInd
   return isCollIndex(collIndex) ? collIndex : null;
 }
 
+function vDunePoolsApyQuery(count: number) {
+  return v.pipe(
+    v.object({
+      result: v.object({
+        rows: v.pipe(
+          v.array(
+            v.object({
+              apr: v.number(),
+              avg_supply: v.number(),
+              bold_supply: v.number(),
+              collateral_type: v.string(),
+              day: v.string(),
+              period_apy: v.number(),
+              rewards: v.number(),
+              total_apr: v.number(),
+              total_rewards: v.number(),
+            }),
+          ),
+          v.length(count),
+        ),
+      }),
+    }),
+    v.transform(({ result }) => (
+      Object.fromEntries(
+        result.rows.map((row) => {
+          let symbol = row.collateral_type.toUpperCase();
+          if (symbol === "WETH") symbol = "ETH";
+          return isCollateralSymbol(symbol)
+            ? [symbol, {
+              apr: dn.from(row.apr, 18),
+              avgSupply: dn.from(row.avg_supply, 18),
+              boldSupply: dn.from(row.bold_supply, 18),
+              day: new Date(row.day),
+              rewards: dn.from(row.rewards, 18),
+              totalRewards: dn.from(row.total_rewards, 18),
+            }]
+            : null;
+        }).filter((v) => v !== null),
+      ) as Record<CollateralSymbol, {
+        apr: Dnum;
+        avgSupply: Dnum;
+        boldSupply: Dnum;
+        day: Date;
+        rewards: Dnum;
+        totalRewards: Dnum;
+      }>
+    )),
+  );
+}
+
 export function useEarnPool(collIndex: null | CollIndex) {
   const collateral = getCollToken(collIndex);
   const pool = useStabilityPool(collIndex ?? undefined);
-  const { data: spYieldGainParams } = useSpYieldGainParameters(collateral?.symbol ?? null);
-  const apr = spYieldGainParams && calculateStabilityPoolApr(spYieldGainParams);
+
+  const aprs = useQuery({
+    queryKey: ["dunePoolsApy"],
+    queryFn: async () => {
+      if (!DUNE_POOLS_APY_URL || !DUNE_API_KEY) {
+        return null;
+      }
+      try {
+        const colls = getContracts().collaterals.length;
+        const response = await fetch(DUNE_POOLS_APY_URL, {
+          headers: { "X-Dune-API-Key": DUNE_API_KEY },
+        });
+        return v.parse(
+          vDunePoolsApyQuery(colls),
+          await response.json(),
+        );
+      } catch (e) {
+        console.error(e);
+        return null;
+      }
+    },
+    refetchInterval: 10 * 60 * 1000, // 10 minutes
+    enabled: Boolean(DUNE_POOLS_APY_URL && DUNE_API_KEY),
+  });
+
+  const apr = collateral?.symbol && aprs.data?.[collateral.symbol]?.apr;
+
   return {
     ...pool,
     data: {
@@ -255,9 +326,13 @@ export function useStakePosition(address: null | Address) {
     query: {
       enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
       refetchInterval: DATA_REFRESH_INTERVAL,
-      select: (
-        [depositResult, totalStakedResult, pendingEthGainResult, pendingLusdGainResult, lusdBalanceResult],
-      ): PositionStake | null => {
+      select: ([
+        depositResult,
+        totalStakedResult,
+        pendingEthGainResult,
+        pendingLusdGainResult,
+        lusdBalanceResult,
+      ]): PositionStake | null => {
         if (
           depositResult.status === "failure" || totalStakedResult.status === "failure"
           || pendingEthGainResult.status === "failure" || pendingLusdGainResult.status === "failure"
