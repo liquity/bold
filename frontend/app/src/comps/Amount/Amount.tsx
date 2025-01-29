@@ -1,4 +1,4 @@
-import type { FmtnumPresetName } from "@/src/formatting";
+import type { FmtnumOptions, FmtnumPresetName } from "@/src/formatting";
 
 import { fmtnum } from "@/src/formatting";
 import { css } from "@/styled-system/css";
@@ -29,12 +29,14 @@ export function Amount({
 
   const showFallback = value === null || value === undefined;
 
-  const content = showFallback ? fallback : fmtnum(value, {
-    digits: typeof format === "number" ? format : undefined,
-    prefix,
-    preset: typeof format === "number" ? undefined : format,
-    scale,
-  }) + suffix;
+  const fmtOptions: FmtnumOptions = { prefix, scale, suffix };
+  if (typeof format === "number") {
+    fmtOptions.digits = format;
+  } else if (typeof format === "string") {
+    fmtOptions.preset = format;
+  }
+
+  const content = showFallback ? fallback : fmtnum(value, fmtOptions);
 
   const title = showFallback ? undefined : (
     titleProp === undefined
