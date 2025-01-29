@@ -50,7 +50,7 @@ export function PositionCardBorrow({
       `Loan ID: ${shortenTroveId(troveId)}…`,
       `Borrowed: ${fmtnum(borrowed, "full")} BOLD`,
       `Collateral: ${fmtnum(deposit, "full")} ${token.name}`,
-      `Interest rate: ${fmtnum(interestRate, "full", 100)}%`,
+      `Interest rate: ${fmtnum(interestRate, "pctfull")}%`,
     ]
     : [];
 
@@ -103,7 +103,7 @@ export function PositionCardBorrow({
                 alignItems: "cente",
               })}
             >
-              Backed by {deposit ? fmtnum(deposit, 2) : "−"} {token.name}
+              Backed by {deposit ? fmtnum(deposit) : "−"} {token.name}
               <TokenIcon size="small" symbol={token.symbol} />
             </div>
           ),
@@ -141,7 +141,7 @@ export function PositionCardBorrow({
                           : "var(--status-negative)",
                       }}
                     >
-                      {fmtnum(ltv, 2, 100)}%
+                      {fmtnum(ltv, "pct2")}%
                     </div>
                   )}
                 </div>
@@ -191,7 +191,7 @@ export function PositionCardBorrow({
                       color: "positionContent",
                     })}
                   >
-                    {fmtnum(interestRate, 2, 100)}%
+                    {fmtnum(interestRate, "pct2")}%
                   </div>
                   {batchManager && (
                     <div

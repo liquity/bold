@@ -666,7 +666,7 @@ function LoanCard({
                       {fmtnum(loan.deposit)} {collateral.name}
                     </GridItem>
                     <GridItem label="Interest rate">
-                      {fmtnum(loan.interestRate, 2, 100)}%
+                      {fmtnum(loan.interestRate, "pct2")}%
                     </GridItem>
                     <GridItem label="Redemption risk">
                       <HFlex gap={8} alignItems="center" justifyContent="flex-start">
@@ -731,11 +731,11 @@ function LoanCard({
                       )}
                     <GridItem label="Liq. price" title="Liquidation price">
                       <Value negative={ltv && dn.gt(ltv, maxLtv)}>
-                        ${fmtnum(loanDetails.liquidationPrice)}
+                        {fmtnum(loanDetails.liquidationPrice, { preset: "2z", prefix: "$" })}
                       </Value>
                     </GridItem>
                     <GridItem label="Interest rate">
-                      {fmtnum(loan.interestRate, 2, 100)}%
+                      {fmtnum(loan.interestRate, "pct2")}%
                       {loan.batchManager && (
                         <div
                           title={`Interest rate delegate: ${loan.batchManager}`}
@@ -771,7 +771,7 @@ function LoanCard({
                             : "var(--status-negative)",
                         }}
                       >
-                        {fmtnum(ltv, "2z", 100)}%
+                        {fmtnum(ltv, "pct2z")}%
                       </div>
                     </GridItem>
                     <GridItem label="Liquidation risk">

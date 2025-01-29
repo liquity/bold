@@ -232,7 +232,7 @@ export function LeverageScreen() {
               label={content.leverageScreen.depositField.label}
               placeholder="0.00"
               secondary={{
-                start: depositUsd && `$${fmtnum(depositUsd, "2z")}`,
+                start: fmtnum(depositUsd, { prefix: "$", preset: "2z" }),
                 end: maxAmount
                   ? (
                     <TextButton
@@ -491,9 +491,8 @@ function useSlippageElements(
       <>
         Slippage too high: {fmtnum(
           leverageSlippage.data,
-          2,
-          100,
-        )}% (max {fmtnum(LEVERAGE_MAX_SLIPPAGE, 2, 100)}%)
+          "pct2",
+        )}% (max {fmtnum(LEVERAGE_MAX_SLIPPAGE, "pct2")}%)
       </>
     );
     return {

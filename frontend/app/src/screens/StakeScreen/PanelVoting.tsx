@@ -772,7 +772,7 @@ function Vote({
         })}
       >
         <div
-          title={`${fmtnum(share, 2, 100)}% of your voting power has been allocated to ${
+          title={`${fmtnum(share, "pct2")}% of your voting power has been allocated to ${
             vote === "for" ? "upvote" : "downvote"
           } this initiative`}
           className={css({
@@ -784,7 +784,7 @@ function Vote({
           {vote === "for" && <IconUpvote size={24} />}
           {vote === "against" && <IconDownvote size={24} />}
           <div>
-            {fmtnum(share, 2, 100)}%
+            {fmtnum(share, "pct2")}%
           </div>
         </div>
         <Button

@@ -222,7 +222,7 @@ export const InterestRateField = memo(
               <HFlex gap={4}>
                 <div>
                   {boldInterestPerYear && (mode === "manual" || delegate !== null)
-                    ? fmtnum(boldInterestPerYear, 2)
+                    ? fmtnum(boldInterestPerYear)
                     : "−"} BOLD / year
                 </div>
                 <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
@@ -272,8 +272,7 @@ export const InterestRateField = memo(
                   >
                     {(mode === "manual" || delegate !== null) && fmtnum(
                       interestRate,
-                      "1z",
-                      100,
+                      "pct1z",
                     )}
                   </span>
                   <span
@@ -652,7 +651,7 @@ function DelegateBox({
               })}
             >
               <MiniChart />
-              {fmtnum(delegate.interestRate, "1z", 100)}%
+              {fmtnum(delegate.interestRate, "pct1z")}%
             </div>
           </div>
           <div
@@ -711,9 +710,9 @@ function DelegateBox({
           >
             <div>Interest rate range</div>
             <div>
-              {fmtnum(delegate.interestRateChange[0], 2, 100)}
+              {fmtnum(delegate.interestRateChange[0], "pct2")}
               <span>-</span>
-              {fmtnum(delegate.interestRateChange[1], 2, 100)}%
+              {fmtnum(delegate.interestRateChange[1], "pct2")}%
             </div>
           </div>
           {delegate.fee && (
@@ -729,8 +728,8 @@ function DelegateBox({
               <div>
                 Fees <abbr title="per annum">p.a.</abbr>
               </div>
-              <div title={`${fmtnum(delegate.fee, 18, 100)}%`}>
-                {fmtnum(delegate.fee, 4, 100)}%
+              <div title={`${fmtnum(delegate.fee, "pctfull")}%`}>
+                {fmtnum(delegate.fee, { digits: 4, scale: 100 })}%
               </div>
             </div>
           )}

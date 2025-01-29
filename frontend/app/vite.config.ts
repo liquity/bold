@@ -6,7 +6,10 @@ export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   test: {
     coverage: {
-      include: ["src/liquity-math.ts"],
+      include: [
+        "src/formatting.ts",
+        "src/liquity-math.ts",
+      ],
     },
     server: {
       deps: {
@@ -21,6 +24,7 @@ export default defineConfig({
           "object-assign",
           "focus-trap",
           "tabbable",
+          "blo",
         ],
       },
     },
