@@ -158,7 +158,7 @@ export function PanelClosePosition({
             footer={{
               start: (
                 <Field.FooterInfo
-                  label={`$${fmtnum(amountToRepayUsd)}`}
+                  label={fmtnum(amountToRepayUsd, { preset: "2z", prefix: "$" })}
                   value={null}
                 />
               ),
@@ -209,7 +209,7 @@ export function PanelClosePosition({
           footer={{
             start: (
               <Field.FooterInfo
-                label={`$${fmtnum(collToReclaimUsd)}`}
+                label={fmtnum(collToReclaimUsd, { preset: "2z", prefix: "$" })}
                 value={null}
               />
             ),

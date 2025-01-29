@@ -30,7 +30,7 @@ export function PanelStaking() {
 
   const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0))
     ? value
-    : `${fmtnum(parsedValue, "full")}`;
+    : fmtnum(parsedValue, "full");
 
   const depositDifference = dn.mul(
     parsedValue ?? dn.from(0, 18),
@@ -125,7 +125,9 @@ export function PanelStaking() {
             value={value_}
             placeholder="0.00"
             secondary={{
-              start: parsedValue && lqtyPrice.data ? `$${fmtnum(dn.mul(parsedValue, lqtyPrice.data), 2)}` : null,
+              start: parsedValue && lqtyPrice.data
+                ? fmtnum(dn.mul(parsedValue, lqtyPrice.data), { digits: 2, prefix: "$" })
+                : null,
               end: mode === "deposit"
                 ? (
                   lqtyBalance.data && dn.gt(lqtyBalance.data, 0) && (

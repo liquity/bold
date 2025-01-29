@@ -335,7 +335,7 @@ function ClaimCollateralSurplus({
         footer={{
           start: (
             <Field.FooterInfo
-              label={`$${fmtnum(collSurplusUsd)}`}
+              label={fmtnum(collSurplusUsd, { preset: "2z", prefix: "$" })}
               value={null}
             />
           ),

@@ -206,9 +206,12 @@ export function PanelUpdateLeveragePosition({
               placeholder="0.00"
               secondary={{
                 start: collPrice.data && (
-                  depositChange.parsed
-                    ? "$" + fmtnum(dn.mul(depositChange.parsed, collPrice.data))
-                    : "$0.00"
+                  fmtnum(
+                    depositChange.parsed
+                      ? dn.mul(depositChange.parsed, collPrice.data)
+                      : 0,
+                    { preset: "2z", prefix: "$" },
+                  )
                 ),
                 end: collMax && dn.gt(collMax, 0) && (
                   <TextButton
@@ -283,11 +286,9 @@ export function PanelUpdateLeveragePosition({
               end: (
                 <ValueUpdate
                   fontSize={14}
-                  before={initialLoanDetails.liquidationPrice && (
-                    `$${fmtnum(initialLoanDetails.liquidationPrice)}`
-                  )}
+                  before={fmtnum(initialLoanDetails.liquidationPrice, { preset: "2z", prefix: "$" })}
                   after={liquidationPrice && newLoanDetails.deposit && dn.gt(newLoanDetails.deposit, 0)
-                    ? `$${fmtnum(liquidationPrice)}`
+                    ? fmtnum(liquidationPrice, { preset: "2z", prefix: "$" })
                     : "N/A"}
                 />
               ),
@@ -439,7 +440,7 @@ export function PanelUpdateLeveragePosition({
               <WarningBox>
                 <div>
                   The maximum <abbr title="Loan-to-value ratio">LTV</abbr> for the position is{" "}
-                  {fmtnum(dn.mul(newLoanDetails.maxLtv, 100))}%. Your updated position is close and is at risk of being
+                  {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. Your updated position is close and is at risk of being
                   liquidated.
                 </div>
                 <label
