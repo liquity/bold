@@ -59,6 +59,31 @@ export function vPrefixedTroveId() {
   );
 }
 
+// accepts a URL or a vEnvFlag to use the default or disable
+export function vEnvUrlOrDefault(defaultValue: `https://${string}`) {
+  return v.pipe(
+    // true = use default
+    // false = disable
+    // string = custom URL
+    v.optional(
+      v.union([
+        v.pipe(v.string(), v.url()),
+        vEnvFlag(),
+      ]),
+      "true",
+    ),
+    v.transform((value) => {
+      if (typeof value === "string") {
+        if (value.startsWith("https://")) {
+          return value;
+        }
+        throw new Error(`URL must start with "https://", got "${value}"`);
+      }
+      return value ? defaultValue : null;
+    }),
+  );
+}
+
 // Env var link, e.g. Etherscan|https://etherscan.io
 export function vEnvLink(addFinalSlash = false) {
   return v.pipe(

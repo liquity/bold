@@ -45,7 +45,8 @@ export function TransactionsScreen() {
     config: boxTransitionConfig,
   });
 
-  const errorBoxTransition = useTransition(Boolean(step?.error), {
+  const errorBoxTransition = useTransition(step?.error, {
+    keys: (error) => String(Boolean(error)),
     from: { height: 0, opacity: 0, transform: "scale(0.97)" },
     enter: [
       { height: 48, opacity: 1, transform: "scale(1)" },
@@ -92,7 +93,7 @@ export function TransactionsScreen() {
       status: "error",
     }, (s) => ({
       status: s.status,
-      error: s.error ?? "Unknown error",
+      error: s.error ?? { name: null, message: "Unknown error" },
     }))
     .with(
       { status: "idle" },
@@ -228,16 +229,19 @@ export function TransactionsScreen() {
           </div>
         </div>
 
-        {errorBoxTransition((style, show) => (
-          show && (
+        {errorBoxTransition((style, error) => (
+          error && (
             <a.div
               style={{
                 ...style,
                 opacity: style.opacity.to([0, 0.5, 1], [0, 0, 1]),
               }}
             >
-              <ErrorBox title="Error">
-                {step.error}
+              <ErrorBox title={error.name ? `Error: ${error.name}` : "Error"}>
+                {error.message}
+                <br />
+                <br />
+                Please open your browser console for more information.
               </ErrorBox>
             </a.div>
           )
@@ -354,7 +358,7 @@ function FlowSteps({
 }: {
   currentStep: number;
   steps: Array<{
-    error: string | null;
+    error: { name: string | null; message: string } | null;
     id: string;
     label: string;
     status: FlowStepStatus;

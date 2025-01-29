@@ -13,17 +13,20 @@ import Image from "next/image";
 import Link from "next/link";
 import { createContext, useContext, useState } from "react";
 
-const ENV_EXCLUDE: (keyof typeof env)[] = [
-  "CollateralSymbolSchema",
-  "EnvSchema",
-  "WALLET_CONNECT_PROJECT_ID",
-  "VERCEL_ANALYTICS",
-  "COINGECKO_API_KEY",
-  "DEMO_MODE",
+const ENV_EXCLUDE: Set<keyof typeof env> = new Set([
   "APP_COMMIT_HASH",
-  "CONTRACTS_COMMIT_HASH",
+  "APP_COMMIT_URL",
   "APP_VERSION",
-];
+  "APP_VERSION_URL",
+  "COINGECKO_API_KEY",
+  "CONTRACTS_COMMIT_HASH",
+  "CONTRACTS_COMMIT_URL",
+  "CollateralSymbolSchema",
+  "DEMO_MODE",
+  "EnvSchema",
+  "VERCEL_ANALYTICS",
+  "WALLET_CONNECT_PROJECT_ID",
+]);
 
 // split the env vars into 3 groups:
 // - config: base config vars (excluding ENV_EXCLUDE)
@@ -54,14 +57,15 @@ function getEnvGroups() {
       symbol,
       contracts: Object
         .entries(contracts)
-        .map(([name, address]) => [name, String(address)]),
+        .map(([name, address]) => [name, address]),
     });
   }
+
   delete config["COLLATERAL_CONTRACTS" as keyof typeof config];
 
   const configFinal = Object.fromEntries(
     Object.entries(config)
-      .filter(([key]) => !ENV_EXCLUDE.includes(key as keyof typeof env))
+      .filter(([key]) => !ENV_EXCLUDE.has(key as keyof typeof env))
       .map(([key, value]) => {
         if (key === "CHAIN_BLOCK_EXPLORER") {
           const { name, url } = value as { name: string; url: string };
@@ -71,7 +75,7 @@ function getEnvGroups() {
           const { name, symbol, decimals } = value as { name: string; symbol: string; decimals: number };
           return [key, `${name}|${symbol}|${decimals}`];
         }
-        return [key, String(value)];
+        return [key, value === null || value === undefined ? null : String(value)];
       }),
   );
 
@@ -141,27 +145,33 @@ export function About({ children }: { children: ReactNode }) {
             </h1>
             <AboutTable
               entries={{
-                "Release": (
-                  <AnchorTextButton
-                    external
-                    href={`https://github.com/liquity/bold/releases/tag/%40liquity2%2Fapp-v${env.APP_VERSION}`}
-                    label={`v${env.APP_VERSION}`}
-                  />
-                ),
-                "Commit (app)": (
-                  <AnchorTextButton
-                    external
-                    href={`https://github.com/liquity/bold/tree/${env.APP_COMMIT_HASH}`}
-                    label={env.APP_COMMIT_HASH}
-                  />
-                ),
-                "Commit (contracts)": (
-                  <AnchorTextButton
-                    external
-                    href={`https://github.com/liquity/bold/tree/${env.CONTRACTS_COMMIT_HASH}`}
-                    label={env.CONTRACTS_COMMIT_HASH}
-                  />
-                ),
+                "Release": env.APP_VERSION_URL
+                  ? (
+                    <AnchorTextButton
+                      external
+                      href={env.APP_VERSION_URL.replace(/\{version\}/, env.APP_VERSION)}
+                      label={`v${env.APP_VERSION}`}
+                    />
+                  )
+                  : `v${env.APP_VERSION}`,
+                "Commit (app)": env.APP_COMMIT_URL
+                  ? (
+                    <AnchorTextButton
+                      external
+                      href={env.APP_COMMIT_URL.replace(/\{commit\}/, env.APP_COMMIT_HASH)}
+                      label={env.APP_COMMIT_HASH}
+                    />
+                  )
+                  : env.APP_COMMIT_HASH,
+                "Commit (contracts)": env.CONTRACTS_COMMIT_URL
+                  ? (
+                    <AnchorTextButton
+                      external
+                      href={env.CONTRACTS_COMMIT_URL.replace(/\{commit\}/, env.CONTRACTS_COMMIT_HASH)}
+                      label={env.CONTRACTS_COMMIT_HASH}
+                    />
+                  )
+                  : env.CONTRACTS_COMMIT_HASH,
                 "Price data": (
                   <div
                     className={css({
@@ -256,11 +266,15 @@ export function About({ children }: { children: ReactNode }) {
             <AboutTable
               title={
                 <>
-                  Liquity V2 contracts (<AnchorTextButton
-                    external
-                    href={`https://github.com/liquity/bold/tree/${env.CONTRACTS_COMMIT_HASH}`}
-                    label={`${env.CONTRACTS_COMMIT_HASH}`}
-                  />)
+                  Liquity V2 contracts ({env.CONTRACTS_COMMIT_URL
+                    ? (
+                      <AnchorTextButton
+                        external
+                        href={env.CONTRACTS_COMMIT_URL.replace(/\{commit\}/, env.CONTRACTS_COMMIT_HASH)}
+                        label={env.CONTRACTS_COMMIT_HASH}
+                      />
+                    )
+                    : env.CONTRACTS_COMMIT_HASH})
                 </>
               }
               entries={envGroups.contracts}
@@ -402,7 +416,18 @@ function AboutTable({
                     overflowWrap: "anywhere",
                   })}
                 >
-                  {value}
+                  {value === null
+                    ? (
+                      <span
+                        className={css({
+                          color: "contentAlt2",
+                          userSelect: "none",
+                        })}
+                      >
+                        not set
+                      </span>
+                    )
+                    : value}
                 </div>
               </td>
             </tr>

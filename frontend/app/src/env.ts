@@ -1,8 +1,11 @@
 import type { Address, CollIndex } from "@/src/types";
 
 import { isCollIndex } from "@/src/types";
-import { vAddress, vEnvAddressAndBlock, vEnvCurrency, vEnvFlag, vEnvLink } from "@/src/valibot-utils";
+import { vAddress, vEnvAddressAndBlock, vEnvCurrency, vEnvFlag, vEnvLink, vEnvUrlOrDefault } from "@/src/valibot-utils";
 import * as v from "valibot";
+
+const DEFAULT_COMMIT_URL = "https://github.com/liquity/bold/tree/{commit}";
+const DEFAULT_VERSION_URL = "https://github.com/liquity/bold/releases/tag/%40liquity2%2Fapp-v{version}";
 
 export const CollateralSymbolSchema = v.union([
   v.literal("ETH"),
@@ -13,10 +16,26 @@ export const CollateralSymbolSchema = v.union([
 export const EnvSchema = v.pipe(
   v.object({
     ACCOUNT_SCREEN: v.optional(vEnvFlag(), "false"),
-    APP_VERSION: v.string(),
     APP_COMMIT_HASH: v.string(),
-    CONTRACTS_COMMIT_HASH: v.string(),
-    BLOCKING_LIST: v.optional(vAddress()),
+    APP_COMMIT_URL: v.pipe(
+      vEnvUrlOrDefault(DEFAULT_COMMIT_URL),
+      v.check(
+        (value) => value === null || value.includes("{commit}"),
+        `Invalid APP_COMMIT_URL (must contain "{commit}")`,
+      ),
+    ),
+    APP_VERSION: v.string(),
+    APP_VERSION_URL: v.pipe(
+      vEnvUrlOrDefault(DEFAULT_VERSION_URL),
+      v.check(
+        (value) => value === null || value.includes("{version}"),
+        `Invalid APP_VERSION_URL (must contain "{version}")`,
+      ),
+    ),
+    BLOCKING_LIST: v.optional(
+      v.union([vAddress(), v.null()]),
+      null,
+    ),
     BLOCKING_VPNAPI: v.pipe(
       v.optional(v.string(), ""),
       v.transform((value) => {
@@ -52,8 +71,14 @@ export const EnvSchema = v.pipe(
     CHAIN_CURRENCY: vEnvCurrency(),
     CHAIN_RPC_URL: v.pipe(v.string(), v.url()),
     CHAIN_BLOCK_EXPLORER: v.optional(vEnvLink(true)),
-    CHAIN_CONTRACT_ENS_REGISTRY: v.optional(vEnvAddressAndBlock()),
-    CHAIN_CONTRACT_ENS_RESOLVER: v.optional(vEnvAddressAndBlock()),
+    CHAIN_CONTRACT_ENS_REGISTRY: v.optional(
+      v.union([v.null(), vEnvAddressAndBlock()]),
+      null,
+    ),
+    CHAIN_CONTRACT_ENS_RESOLVER: v.optional(
+      v.union([v.null(), vEnvAddressAndBlock()]),
+      null,
+    ),
     CHAIN_CONTRACT_MULTICALL: vAddress(),
     COINGECKO_API_KEY: v.pipe(
       v.optional(v.string(), ""),
@@ -76,19 +101,33 @@ export const EnvSchema = v.pipe(
         };
       }),
     ),
+    CONTRACTS_COMMIT_HASH: v.string(),
+    CONTRACTS_COMMIT_URL: v.pipe(
+      vEnvUrlOrDefault(DEFAULT_COMMIT_URL),
+      v.check(
+        (value) => value === null || value.includes("{commit}"),
+        `Invalid CONTRACTS_COMMIT_URL (must contain "{commit}")`,
+      ),
+    ),
+    DELEGATE_AUTO: vAddress(),
     DEMO_MODE: v.optional(vEnvFlag(), "false"),
     DEPLOYMENT_FLAVOR: v.pipe(
       v.optional(v.string(), ""),
-      v.transform((value) => value.trim()),
+      v.transform((value) => value.trim() || null),
     ),
     KNOWN_INITIATIVES_URL: v.optional(v.pipe(v.string(), v.url())),
     LIQUITY_STATS_URL: v.pipe(v.string(), v.url()),
     SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
-    WALLET_CONNECT_PROJECT_ID: v.string(),
-
-    DELEGATE_AUTO: vAddress(),
+    WALLET_CONNECT_PROJECT_ID: v.pipe(
+      v.string(),
+      v.transform((value) => value.trim()),
+      v.check(
+        (value) => value.length > 0,
+        "WALLET_CONNECT_PROJECT_ID must be set",
+      ),
+    ),
 
     CONTRACT_BOLD_TOKEN: vAddress(),
     CONTRACT_COLLATERAL_REGISTRY: vAddress(),
@@ -208,19 +247,21 @@ export type Env = v.InferOutput<typeof EnvSchema>;
 const parsedEnv = v.safeParse(EnvSchema, {
   ACCOUNT_SCREEN: process.env.NEXT_PUBLIC_ACCOUNT_SCREEN,
   APP_VERSION: (
+    // APP_VERSION_FROM_BUILD is set at build time (see next.config.js)
+    // and gets overridden by NEXT_PUBLIC_APP_VERSION if set.
     process.env.NEXT_PUBLIC_APP_VERSION
-      // APP_VERSION_FROM_BUILD is set in next.config.js
       ?? process.env.APP_VERSION_FROM_BUILD
   ),
+  // APP_COMMIT_HASH_FROM_BUILD is set at build time (see next.config.js)
+  // and gets overridden by NEXT_PUBLIC_APP_COMMIT_HASH if set.
   APP_COMMIT_HASH: (
     process.env.NEXT_PUBLIC_APP_COMMIT_HASH
-      // APP_COMMIT_HASH_FROM_BUILD is set in next.config.js
       ?? process.env.APP_COMMIT_HASH_FROM_BUILD
   ),
-  CONTRACTS_COMMIT_HASH: (
-    process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_HASH
-      // CONTRACTS_COMMIT_HASH_FROM_BUILD is set in next.config.js
-      ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD
+  APP_COMMIT_URL: process.env.NEXT_PUBLIC_APP_COMMIT_URL,
+  APP_VERSION_URL: (
+    process.env.NEXT_PUBLIC_APP_VERSION_URL
+      ?? DEFAULT_VERSION_URL
   ),
   BLOCKING_LIST: process.env.NEXT_PUBLIC_BLOCKING_LIST,
   BLOCKING_VPNAPI: process.env.NEXT_PUBLIC_BLOCKING_VPNAPI,
@@ -233,6 +274,13 @@ const parsedEnv = v.safeParse(EnvSchema, {
   CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
   CHAIN_RPC_URL: process.env.NEXT_PUBLIC_CHAIN_RPC_URL,
   COINGECKO_API_KEY: process.env.NEXT_PUBLIC_COINGECKO_API_KEY,
+  CONTRACTS_COMMIT_HASH: (
+    // CONTRACTS_COMMIT_HASH_FROM_BUILD is set at build time (see next.config.js)
+    // and gets overridden by NEXT_PUBLIC_CONTRACTS_COMMIT_HASH if set.
+    process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_HASH
+      ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD
+  ),
+  CONTRACTS_COMMIT_URL: process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_URL,
   DELEGATE_AUTO: process.env.NEXT_PUBLIC_DELEGATE_AUTO,
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
   DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
@@ -298,15 +346,23 @@ const parsedEnv = v.safeParse(EnvSchema, {
 if (!parsedEnv.success) {
   console.error(
     "Invalid environment variable(s):",
-    v.flatten<typeof EnvSchema>(parsedEnv.issues),
+    v.flatten<typeof EnvSchema>(parsedEnv.issues).nested,
   );
-  throw new Error("Invalid environment variable(s)");
+  throw new Error(
+    `Invalid environment variable(s): ${
+      JSON.stringify(
+        v.flatten<typeof EnvSchema>(parsedEnv.issues).nested,
+      )
+    }`,
+  );
 }
 
 export const {
   ACCOUNT_SCREEN,
   APP_COMMIT_HASH,
+  APP_COMMIT_URL,
   APP_VERSION,
+  APP_VERSION_URL,
   BLOCKING_LIST,
   BLOCKING_VPNAPI,
   CHAIN_BLOCK_EXPLORER,
@@ -320,6 +376,7 @@ export const {
   COINGECKO_API_KEY,
   COLLATERAL_CONTRACTS,
   CONTRACTS_COMMIT_HASH,
+  CONTRACTS_COMMIT_URL,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
   CONTRACT_EXCHANGE_HELPERS,
