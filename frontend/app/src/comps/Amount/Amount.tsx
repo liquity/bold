@@ -26,6 +26,9 @@ export function Amount({
   if (percentage && !suffix) {
     suffix = "%";
   }
+  if (percentage && !format) {
+    format = "pct2z";
+  }
 
   const showFallback = value === null || value === undefined;
 
