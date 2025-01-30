@@ -1,7 +1,16 @@
 import type { Contracts } from "@/src/contracts";
 import type { StabilityPoolDepositQuery } from "@/src/graphql/graphql";
-import type { CollIndex, Dnum, PositionEarn, PositionStake, PrefixedTroveId, TroveId } from "@/src/types";
+import type {
+  CollIndex,
+  Dnum,
+  PositionEarn,
+  PositionLoanCommitted,
+  PositionStake,
+  PrefixedTroveId,
+  TroveId,
+} from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
+import type { UseQueryResult } from "@tanstack/react-query";
 import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
@@ -634,17 +643,35 @@ export function useLoanLiveDebt(collIndex: CollIndex, troveId: TroveId) {
   };
 }
 
-export function useLoan(collIndex: CollIndex, troveId: TroveId) {
+export function useLoan(collIndex: CollIndex, troveId: TroveId): UseQueryResult<PositionLoanCommitted | null> {
   const liveDebt = useLoanLiveDebt(collIndex, troveId);
   const loan = useLoanById(getPrefixedTroveId(collIndex, troveId));
-  if (liveDebt.data && loan.data) {
+
+  if (liveDebt.status === "pending" || loan.status === "pending") {
     return {
       ...loan,
-      data: {
-        ...loan.data,
-        borrowed: dnum18(liveDebt.data),
-      },
+      data: undefined,
+      error: null,
+      isError: false,
+      isFetching: true,
+      isLoading: true,
+      isLoadingError: false,
+      isPending: true,
+      isRefetchError: false,
+      isSuccess: false,
+      status: "pending",
     };
   }
-  return loan;
+
+  if (!loan.data) {
+    return loan;
+  }
+
+  return {
+    ...loan,
+    data: {
+      ...loan.data,
+      borrowed: liveDebt.data ? dnum18(liveDebt.data) : loan.data.borrowed,
+    },
+  };
 }

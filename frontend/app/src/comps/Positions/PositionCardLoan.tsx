@@ -31,7 +31,7 @@ export function PositionCardLoan(
   return (
     <Card
       {...props}
-      borrowed={loan.data?.borrowed ?? props.borrowed}
+      debt={loan.data?.borrowed ?? null}
       statusTag={props.status === "liquidated"
         ? <LoanStatusTag status="liquidated" />
         : props.status === "redeemed"
