@@ -71,27 +71,59 @@ export function PositionCardEarn({
                 <div
                   className={css({
                     display: "flex",
-                    gap: 8,
+                    gap: 12,
                     fontSize: 14,
                   })}
                 >
                   <div
                     className={css({
-                      color: "positionContentAlt",
+                      display: "flex",
+                      gap: 8,
                     })}
                   >
-                    Current APR
+                    <div
+                      className={css({
+                        color: "positionContentAlt",
+                      })}
+                    >
+                      APR
+                    </div>
+                    <div
+                      className={css({
+                        color: "positionContent",
+                      })}
+                    >
+                      <Amount
+                        fallback="−"
+                        percentage
+                        value={earnPool.data.apr}
+                      />
+                    </div>
                   </div>
                   <div
                     className={css({
-                      color: "positionContent",
+                      display: "flex",
+                      gap: 8,
                     })}
                   >
-                    <Amount
-                      fallback="−"
-                      percentage
-                      value={earnPool.data.apr}
-                    />
+                    <div
+                      className={css({
+                        color: "positionContentAlt",
+                      })}
+                    >
+                      7d APR
+                    </div>
+                    <div
+                      className={css({
+                        color: "positionContent",
+                      })}
+                    >
+                      <Amount
+                        fallback="−"
+                        percentage
+                        value={earnPool.data.apr7d}
+                      />
+                    </div>
                   </div>
                 </div>
               }
