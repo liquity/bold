@@ -138,6 +138,7 @@ contract TestDeployer is MetadataDeployment {
         uint256 SCR;
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
+        uint256 debtLimit;
     }
 
     struct DeploymentVarsDev {
@@ -211,6 +212,8 @@ contract TestDeployer is MetadataDeployment {
         return address(uint160(uint256(hash)));
     }
 
+    uint256 public MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
     function deployAndConnectContracts()
         external
         returns (
@@ -223,7 +226,7 @@ contract TestDeployer is MetadataDeployment {
             Zappers memory zappers
         )
     {
-        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16));
+        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16, MAX_INT));
     }
 
     function deployAndConnectContracts(TroveManagerParams memory troveManagerParams)
@@ -331,7 +334,7 @@ contract TestDeployer is MetadataDeployment {
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers);
+        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, msg.sender);
         hintHelpers = new HintHelpers(collateralRegistry);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 

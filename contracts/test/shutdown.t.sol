@@ -8,6 +8,8 @@ contract ShutdownTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 4;
     TestDeployer.LiquityContractsDev[] public contractsArray;
 
+    uint256 public MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
     function setUp() public override {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -27,10 +29,10 @@ contract ShutdownTest is DevTestSetup {
 
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
-        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
-        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
-        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 125e16, 5e16, 10e16);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16, MAX_INT);
+        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT);
+        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT);
+        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 125e16, 5e16, 10e16, MAX_INT);
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _contractsArray;

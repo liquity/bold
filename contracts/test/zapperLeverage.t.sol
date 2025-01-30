@@ -124,11 +124,13 @@ contract ZapperLeverageMainnet is DevTestSetup {
 
         WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
+        uint256 MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16, MAX_INT);
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
-            troveManagerParamsArray[c] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
+            troveManagerParamsArray[c] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT);
         }
 
         TestDeployer deployer = new TestDeployer();

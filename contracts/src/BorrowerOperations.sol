@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.24;
 
+import {console} from "forge-std/console.sol";
+
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./Interfaces/IBorrowerOperations.sol";
@@ -311,6 +313,14 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
+        console.log("debt limit: ", troveManager.getDebtLimit());
+        console.log("entire system debt: ", troveManager.getEntireSystemDebt());
+        console.log("bold amount being minted: ", _boldAmount);
+        console.log("debt limit + bold amount: ", troveManager.getDebtLimit() + _boldAmount);
+
+        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + _boldAmount, "BorrowerOperations: Debt limit exceeded.");
+        
+
         vars.price = _requireOraclesLive();
 
         // --- Checks ---
@@ -402,6 +412,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external override {
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsActive(troveManagerCached, _troveId);
+
+        require(troveManagerCached.getDebtLimit() >= troveManagerCached.getEntireSystemDebt() + _boldAmount, "BorrowerOperations: Debt limit exceeded.");
 
         TroveChange memory troveChange;
         troveChange.debtIncrease = _boldAmount;
@@ -1220,6 +1232,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         IBoldToken _boldToken,
         IActivePool _activePool
     ) internal {
+        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + _troveChange.debtIncrease, "BorrowerOperations: Debt limit exceeded.");
+
         if (_troveChange.debtIncrease > 0) {
             _boldToken.mint(withdrawalReceiver, _troveChange.debtIncrease);
         } else if (_troveChange.debtDecrease > 0) {

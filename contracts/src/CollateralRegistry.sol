@@ -39,6 +39,8 @@ contract CollateralRegistry is ICollateralRegistry {
 
     IBoldToken public immutable boldToken;
 
+    address public governor;
+
     uint256 public baseRate;
 
     // The timestamp of the latest fee operation (redemption or new Bold issuance)
@@ -47,7 +49,7 @@ contract CollateralRegistry is ICollateralRegistry {
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
 
-    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers) {
+    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers, address _governor) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens <= 10, "Collateral list too long");
@@ -80,6 +82,8 @@ contract CollateralRegistry is ICollateralRegistry {
         // Initialize the baseRate state variable
         baseRate = INITIAL_BASE_RATE;
         emit BaseRateUpdated(INITIAL_BASE_RATE);
+
+        governor = _governor;
     }
 
     struct RedemptionTotals {
@@ -301,5 +305,28 @@ contract CollateralRegistry is ICollateralRegistry {
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
         require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
+    }
+
+    // Update the debt limit for a specific TroveManager
+    function updateDebtLimit(uint256 _indexTroveManager, uint256 _newDebtLimit) external onlyGovernor {
+        //limited to increasing by 2x at a time, maximum. Decrease by any amount.
+        uint256 currentDebtLimit = getTroveManager(_indexTroveManager).getDebtLimit();
+        if (_newDebtLimit > currentDebtLimit) {
+            require(_newDebtLimit <= currentDebtLimit * 2, "CollateralRegistry: Debt limit increase by more than 2x is not allowed");
+        }
+        getTroveManager(_indexTroveManager).setDebtLimit(_newDebtLimit);
+    }
+
+    function getDebtLimit(uint256 _indexTroveManager) external view returns (uint256) {
+        return getTroveManager(_indexTroveManager).getDebtLimit();
+    }
+
+    function updateGovernor(address _newGovernor) external onlyGovernor {
+        governor = _newGovernor;
+    }
+
+    modifier onlyGovernor() {
+        require(msg.sender == governor, "CollateralRegistry: Only governor can call this function");
+        _;
     }
 }

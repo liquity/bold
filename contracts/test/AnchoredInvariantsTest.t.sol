@@ -14,16 +14,18 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
     using Strings for uint256;
     using StringFormatting for uint256;
 
+    uint256 public MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
     InvariantsTestHandler handler;
 
     function setUp() public override {
         super.setUp();
 
         TestDeployer.TroveManagerParams[] memory p = new TestDeployer.TroveManagerParams[](4);
-        p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 1.01 ether, 0.05 ether, 0.1 ether, MAX_INT);
+        p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether, MAX_INT);
+        p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.01 ether, 0.05 ether, 0.1 ether, MAX_INT);
+        p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 1.01 ether, 0.05 ether, 0.1 ether, MAX_INT);
         TestDeployer deployer = new TestDeployer();
         Contracts memory contracts;
         (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth,)
