@@ -26,8 +26,13 @@ export function Amount({
   if (percentage && !suffix) {
     suffix = "%";
   }
-  if (percentage && !format) {
-    format = "pct2z";
+
+  if (format === undefined) {
+    if (percentage) {
+      format = "pct2z";
+    } else {
+      format = "2z";
+    }
   }
 
   const showFallback = value === null || value === undefined;
