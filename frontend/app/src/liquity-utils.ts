@@ -6,14 +6,14 @@ import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
-import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { dnumOrNull } from "@/src/dnum-utils";
+import { dnum18, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, LIQUITY_STATS_URL } from "@/src/env";
 import { getCollGainFromSnapshots, useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
   useGovernanceStats,
   useGovernanceUser,
   useInterestRateBrackets,
+  useLoanById,
   useStabilityPool,
   useStabilityPoolDeposit,
   useStabilityPoolEpochScale,
@@ -609,4 +609,42 @@ export function useLiquityStats() {
     },
     enabled: Boolean(LIQUITY_STATS_URL),
   });
+}
+
+export function useLatestTroveData(collIndex: CollIndex, troveId: TroveId) {
+  const TroveManager = getCollateralContract(collIndex, "TroveManager");
+  if (!TroveManager) {
+    throw new Error(`Invalid collateral index: ${collIndex}`);
+  }
+  return useReadContract({
+    ...TroveManager,
+    functionName: "getLatestTroveData",
+    args: [BigInt(troveId)],
+    query: {
+      refetchInterval: DATA_REFRESH_INTERVAL,
+    },
+  });
+}
+
+export function useLoanLiveDebt(collIndex: CollIndex, troveId: TroveId) {
+  const latestTroveData = useLatestTroveData(collIndex, troveId);
+  return {
+    ...latestTroveData,
+    data: latestTroveData.data?.entireDebt ?? null,
+  };
+}
+
+export function useLoan(collIndex: CollIndex, troveId: TroveId) {
+  const liveDebt = useLoanLiveDebt(collIndex, troveId);
+  const loan = useLoanById(getPrefixedTroveId(collIndex, troveId));
+  if (liveDebt.data && loan.data) {
+    return {
+      ...loan,
+      data: {
+        ...loan.data,
+        borrowed: dnum18(liveDebt.data),
+      },
+    };
+  }
+  return loan;
 }
