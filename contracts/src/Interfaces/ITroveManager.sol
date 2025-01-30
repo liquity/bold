@@ -13,6 +13,8 @@ import "../Types/LatestBatchData.sol";
 
 // Common interface for the Trove Manager.
 interface ITroveManager is ILiquityBase {
+
+    
     enum Status {
         nonExistent,
         active,
@@ -169,6 +171,9 @@ interface ITroveManager is ILiquityBase {
         uint256 _newBatchDebt, // entire, with interest and batch fee
         uint256 _newAnnualInterestRate
     ) external;
+
+    function setDebtLimit(uint256 _newDebtLimit) external;
+    function getDebtLimit() external view returns (uint256);
 
     // -- end of permissioned functions --
 }

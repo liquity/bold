@@ -35,6 +35,9 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     // Minimum collateral ratio for individual troves
     uint256 public immutable MCR;
 
+    // Debt limit for the system
+    uint256 public debtLimit;
+
     // Liquidation penalty for troves offset to the SP
     uint256 public immutable LIQUIDATION_PENALTY_SP;
     // Liquidation penalty for troves redistributed
@@ -43,6 +46,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     error InvalidCCR();
     error InvalidMCR();
     error InvalidSCR();
+    error InvalidDebtLimit();
     error SPPenaltyTooLow();
     error SPPenaltyGtRedist();
     error RedistPenaltyTooHigh();
@@ -71,12 +75,14 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         uint256 _ccr,
         uint256 _mcr,
         uint256 _scr,
+        uint256 _debtLimit,
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution
     ) Ownable(_owner) {
         if (_ccr <= 1e18 || _ccr >= 2e18) revert InvalidCCR();
         if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR();
         if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();
+        if (_debtLimit <= 0) revert InvalidDebtLimit();
         if (_liquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) revert SPPenaltyTooLow();
         if (_liquidationPenaltySP > _liquidationPenaltyRedistribution) revert SPPenaltyGtRedist();
         if (_liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) revert RedistPenaltyTooHigh();
@@ -84,6 +90,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         CCR = _ccr;
         SCR = _scr;
         MCR = _mcr;
+        debtLimit = _debtLimit;
         LIQUIDATION_PENALTY_SP = _liquidationPenaltySP;
         LIQUIDATION_PENALTY_REDISTRIBUTION = _liquidationPenaltyRedistribution;
     }
