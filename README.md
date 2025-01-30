@@ -1626,7 +1626,7 @@ Two informational issues are present in the oracle code which have no impact on 
 
 -The `RETHPriceFeed` contains a misnamed variable on L39 and L60. `rEthPerEth` should rather be named `ethPerReth`. However, its _value_ is assigned correctly from the external call to `getExchangeRate` (which returns an ETH per RETH value). It is also _used_ correctly, as per the arithmetic in comment on L59. It is only named incorrectly.
 
-### 17. Path dependence of redistributions - sequential vs batch liquidations
+### 17.  Path dependence of redistributions - sequential vs batch liquidations
 
 Liquidations via redistribution in `batchLiquidateTroves` do not distribute liquidated collateral and debt to the other Troves liquidated inside the liquidation loop. They only distribute collateral and debt to the active Troves which remain in the system after all liquidations in the loop have been resolved.
 
@@ -1720,7 +1720,7 @@ The impact of redistributions on the remaining active Troves is that they see th
 
 Past simulation has shown that this potential knock-on drag-down effect is minor, though does depend on the system state - i.e. the distribution of ICRs and collateral sizes.
 
-### 18. TODOs in code comments
+### 18.  TODOs in code comments
 
 A number of TODOs remain in comments in core smart contracts:
 
