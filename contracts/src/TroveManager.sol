@@ -187,6 +187,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         CCR = _addressesRegistry.CCR();
         MCR = _addressesRegistry.MCR();
         SCR = _addressesRegistry.SCR();
+        debtLimit = _addressesRegistry.debtLimit();
         LIQUIDATION_PENALTY_SP = _addressesRegistry.LIQUIDATION_PENALTY_SP();
         LIQUIDATION_PENALTY_REDISTRIBUTION = _addressesRegistry.LIQUIDATION_PENALTY_REDISTRIBUTION();
 
