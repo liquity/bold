@@ -65,10 +65,10 @@ export function HomeScreen() {
           icon={<IconEarn />}
           columns={[
             "Pool",
-            <abbr title="Current Annual Percentage Rate">APR</abbr>,
-            <span title="Annual Percentage Rate over the last 7 days">
+            <abbr title="Annual Percentage Rate over the last 24 hours">APR</abbr>,
+            <abbr title="Annual Percentage Rate over the last 7 days">
               7d APR
-            </span>,
+            </abbr>,
             "Pool size",
             null,
           ] as const}
