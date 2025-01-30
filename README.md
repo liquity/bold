@@ -104,7 +104,7 @@
    - [13 - Trove Adjustments May Be Griefed by Sandwich Raising the Average Interest Rate](#13---trove-adjustments-may-be-griefed-by-sandwich-raising-the-average-interest-rate)
    - [14 - Stability Pool Claiming and Compounding Yield Can Be Used to Gain a Slightly Higher Rate of Rewards](#14---stability-pool-claiming-and-compounding-yield-can-be-used-to-gain-a-slightly-higher-rate-of-rewards)
    - [15 - Urgent Redemptions Premium Can Worsen the ICR](#15---urgent-redemptions-premium-can-worsen-the-icr)
-   - [16 - Oracle code nitpicks](#16--oracle-code-nitpicks)
+   - [16 - Oracle code nitpicks](#16---oracle-code-nitpicks)
    - [17 - Path dependence of redistributions](#17---path-dependence-of-redistributions---sequential-vs-batch-liquidations)
    - [18 - TODOs left in code comments](#18---todos-in-code-comments)
 
@@ -1581,20 +1581,20 @@ sum(debt_i)
 
 While this wouldn't result in the most accurate estimation of the average interest rate either — considering we'd be using outdated debt values sampled at different times for each Trove as weights — at least we would have consistent weights in the numerator and denominator of our weighted average. To implement this though, we'd have to keep track of this modified sum (i.e. the sum of recorded Trove debts) in `ActivePool`, which we currently don't do.
 
-### 12. TroveManager can make troves liquidatable by changing the batch interest rate
+### 12 - TroveManager can make troves liquidatable by changing the batch interest rate
 Users that add their Trove to a Batch are allowing the BatchManager to charge a lot of fees by simply adjusting the interest rate as soon as they can via `setBatchManagerAnnualInterestRate`.
 
 This change cannot result in triggering the critical threshold, however it can make any trove in the batch liquidatable
 
 Thus BatchManagers should be considered benign trusted actors
 
-### 13. Trove Adjustments may be griefed by sandwich raising the average interest rate
+### 13 - Trove Adjustments may be griefed by sandwich raising the average interest rate
 
 Borrowing requires accepting an upfront fee. This is effectively a percentage of the debt change (not necessarily of TCR due to price changes). Due to this, it is possible for other ordinary operations to grief a Trove adjustments by changing the `avgInterestRate`.
 
 To mitigate this, users should use tight but not exact checks for the `_maxUpfrontFee`.
 
-### 14. Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards
+### 14 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards
 The StabilityPool doesn't automatically compound Bold yield gains to depositors
 
 All deposits are added to `totalBoldDeposits`.
@@ -1618,7 +1618,7 @@ Liquidations already carry a collateral premium to the caller and to the liquida
 
 Redemptions at this CR may allow for a bit more bad debt to be redistributed which could cause a liquidation cascade, however the difference doesn't seem particularly meaningful when compared to how high the Liquidation Premium tends to be for liquidations.
 
-### 16.  Oracle code nitpicks
+### 16 - Oracle code nitpicks
 
 Two informational issues are present in the oracle code which have no impact on core system operation or logic.
 
@@ -1626,7 +1626,7 @@ Two informational issues are present in the oracle code which have no impact on 
 
 -The `RETHPriceFeed` contains a misnamed variable on L39 and L60. `rEthPerEth` should rather be named `ethPerReth`. However, its _value_ is assigned correctly from the external call to `getExchangeRate` (which returns an ETH per RETH value). It is also _used_ correctly, as per the arithmetic in comment on L59. It is only named incorrectly.
 
-### 17.  Path dependence of redistributions - sequential vs batch liquidations
+### 17 - Path dependence of redistributions - sequential vs batch liquidations
 
 Liquidations via redistribution in `batchLiquidateTroves` do not distribute liquidated collateral and debt to the other Troves liquidated inside the liquidation loop. They only distribute collateral and debt to the active Troves which remain in the system after all liquidations in the loop have been resolved.
 
@@ -1720,7 +1720,7 @@ The impact of redistributions on the remaining active Troves is that they see th
 
 Past simulation has shown that this potential knock-on drag-down effect is minor, though does depend on the system state - i.e. the distribution of ICRs and collateral sizes.
 
-### 18.  TODOs in code comments
+### 18 - TODOs in code comments
 
 A number of TODOs remain in comments in core smart contracts:
 
