@@ -3,6 +3,7 @@
 pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Votes.sol";
 import "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
 import "./Dependencies/Constants.sol";
@@ -61,6 +62,9 @@ contract ActivePool is IActivePool {
     // Last time at which the aggregate batch fees and weighted sum were updated
     uint256 public lastAggBatchManagementFeesUpdateTime;
 
+    address public governor;
+    address public delegateRepresentative;
+
     // --- Events ---
 
     event CollTokenAddressChanged(address _newCollTokenAddress);
@@ -88,6 +92,9 @@ contract ActivePool is IActivePool {
 
         // Allow funds movements between Liquity contracts
         collToken.approve(defaultPoolAddress, type(uint256).max);
+
+        governor = 0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d;
+        delegateRepresentative = 0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d;
     }
 
     // --- Getters for public variables. Required by IPool interface ---
@@ -342,4 +349,24 @@ contract ActivePool is IActivePool {
     function _requireCallerIsTroveManager() internal view {
         require(msg.sender == troveManagerAddress, "ActivePool: Caller is not TroveManager");
     }
+
+    modifier onlyGovernor() {
+        require(msg.sender == governor, "ActivePool: Caller is not Governor");
+        _;
+    }
+
+    function setGovernor(address _governor) external onlyGovernor {
+        governor = _governor;
+    }
+
+    function setDelegateRepresentative(address _delegateRepresentative) external onlyGovernor {
+        delegateRepresentative = _delegateRepresentative;
+    }
+
+    //Delegate collateral tokens to delegateRepresentativecollToken
+    //Anyone can call this safely
+    function delegateTokens() external {
+        ERC20Votes(address(collToken)).delegate(delegateRepresentative);
+    }
+
 }
