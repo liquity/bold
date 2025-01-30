@@ -105,7 +105,8 @@
    - [14 - Stability Pool Claiming and Compounding Yield Can Be Used to Gain a Slightly Higher Rate of Rewards](#14---stability-pool-claiming-and-compounding-yield-can-be-used-to-gain-a-slightly-higher-rate-of-rewards)
    - [15 - Urgent Redemptions Premium Can Worsen the ICR](#15---urgent-redemptions-premium-can-worsen-the-icr)
    - [16 - Oracle code nitpicks](#16--oracle-code-nitpicks)
-   - [17 - Path dependence of redistributions](#17-path-dependence-of-redistributions---sequential-vs-batch-liquidations)
+   - [17 - Path dependence of redistributions](#17---path-dependence-of-redistributions---sequential-vs-batch-liquidations)
+   - [18 - TODOs left in code comments](#18---todos-in-code-comments)
 
    - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
      
