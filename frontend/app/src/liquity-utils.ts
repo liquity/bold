@@ -637,14 +637,28 @@ export function useLoanLiveDebt(collIndex: CollIndex, troveId: TroveId) {
 export function useLoan(collIndex: CollIndex, troveId: TroveId) {
   const liveDebt = useLoanLiveDebt(collIndex, troveId);
   const loan = useLoanById(getPrefixedTroveId(collIndex, troveId));
-  if (liveDebt.data && loan.data) {
+
+  if (liveDebt.status === "pending" || loan.status === "pending") {
     return {
       ...loan,
-      data: {
-        ...loan.data,
-        borrowed: dnum18(liveDebt.data),
-      },
+      status: "pending",
+      data: null,
     };
   }
-  return loan;
+
+  if (liveDebt.status === "error" || loan.status === "error") {
+    return {
+      ...loan,
+      status: "error",
+      data: null,
+      error: liveDebt.error ?? loan.error,
+    };
+  }
+
+  return {
+    ...loan,
+    data: liveDebt.data
+      ? { ...loan.data, borrowed: dnum18(liveDebt.data) }
+      : loan.data,
+  };
 }
