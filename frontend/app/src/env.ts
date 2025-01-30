@@ -116,7 +116,7 @@ export const EnvSchema = v.pipe(
       v.transform((value) => value.trim() || null),
     ),
     KNOWN_INITIATIVES_URL: v.optional(v.pipe(v.string(), v.url())),
-    LIQUITY_STATS_URL: v.pipe(v.string(), v.url()),
+    LIQUITY_STATS_URL: v.optional(v.pipe(v.string(), v.url())),
     SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
