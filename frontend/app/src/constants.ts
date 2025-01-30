@@ -27,10 +27,6 @@ export const INTEREST_RATE_MAX = 25; // 25% annualized
 export const INTEREST_RATE_DEFAULT = 10;
 export const INTEREST_RATE_INCREMENT = 0.1;
 
-export const ONE_DAY_IN_SECONDS = 24n * 60n * 60n;
-export const ONE_YEAR_IN_SECONDS = 365n * ONE_DAY_IN_SECONDS;
-export const UPFRONT_INTEREST_PERIOD = 7n * ONE_DAY_IN_SECONDS;
-
 export const SP_YIELD_SPLIT = 75n * 10n ** 16n; // 75%
 
 export const DATA_REFRESH_INTERVAL = 30_000;
