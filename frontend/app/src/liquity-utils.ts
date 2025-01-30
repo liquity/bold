@@ -337,38 +337,6 @@ export function useAverageInterestRate(collIndex: null | CollIndex) {
   };
 }
 
-const EMPTY_TROVE_CHANGE = {
-  appliedRedistBoldDebtGain: 0n,
-  appliedRedistCollGain: 0n,
-  collIncrease: 0n,
-  collDecrease: 0n,
-  debtIncrease: 0n,
-  debtDecrease: 0n,
-  newWeightedRecordedDebt: 0n,
-  oldWeightedRecordedDebt: 0n,
-  upfrontFee: 0n,
-  batchAccruedManagementFee: 0n,
-  newWeightedRecordedBatchManagementFee: 0n,
-  oldWeightedRecordedBatchManagementFee: 0n,
-} as const;
-
-export function useAverageInterestRateFromActivePool(collIndex: null | CollIndex) {
-  const ActivePool = getCollateralContract(collIndex, "ActivePool");
-  const result = useReadContract(
-    !ActivePool ? {} : {
-      address: ActivePool.address,
-      abi: ActivePool.abi,
-      functionName: "getNewApproxAvgInterestRateFromTroveChange",
-      args: [EMPTY_TROVE_CHANGE],
-      query: {
-        enabled: ActivePool !== null,
-        refetchInterval: DATA_REFRESH_INTERVAL,
-      },
-    },
-  );
-  return result;
-}
-
 export function useInterestRateChartData(collIndex: null | CollIndex) {
   const brackets = useInterestRateBrackets(collIndex);
 
