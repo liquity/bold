@@ -1,9 +1,20 @@
-import type { Dnum } from "dnum";
+import type { Dnum, Numberish } from "dnum";
 
 import * as dn from "dnum";
 
 export function dnum18(value: string | bigint | number): Dnum {
   return [BigInt(value), 18];
+}
+
+export function dnumOrNull(value: Numberish | null | undefined, decimals: number): Dnum | null {
+  if (value == null || value === undefined) {
+    return null;
+  }
+  try {
+    return dn.from(value, decimals);
+  } catch {
+    return null;
+  }
 }
 
 export function dnumMax(a: Dnum, ...rest: Dnum[]) {

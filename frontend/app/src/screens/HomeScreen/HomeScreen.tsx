@@ -42,7 +42,16 @@ export function HomeScreen() {
           title="Borrow BOLD against ETH and staked ETH"
           subtitle="You can adjust your loans, including your interest rate, at any time"
           icon={<IconBorrow />}
-          columns={["Collateral", "Avg rate, p.a.", "Max LTV", null] as const}
+          columns={[
+            "Collateral",
+            <span title="Average interest rate, per annum">
+              Avg rate, p.a.
+            </span>,
+            <span title="Maximum Loan-to-Value ratio">
+              Max LTV
+            </span>,
+            null,
+          ] as const}
           rows={collSymbols.map((symbol) => (
             <BorrowingRow
               key={symbol}
@@ -54,13 +63,16 @@ export function HomeScreen() {
           title="Earn rewards with BOLD"
           subtitle="Earn BOLD & (staked) ETH rewards by putting your BOLD in a stability pool"
           icon={<IconEarn />}
-          columns={["Pool", "Current APR", "Pool size", null] as const}
-          rows={collSymbols.map((symbol) => (
-            <EarnRewardsRow
-              key={symbol}
-              symbol={symbol}
-            />
-          ))}
+          columns={[
+            "Pool",
+            <abbr title="Current Annual Percentage Rate">APR</abbr>,
+            <span title="Annual Percentage Rate over the last 7 days">
+              7d APR
+            </span>,
+            "Pool size",
+            null,
+          ] as const}
+          rows={collSymbols.map((symbol) => <EarnRewardsRow key={symbol} symbol={symbol} />)}
         />
       </div>
     </div>
@@ -192,7 +204,14 @@ function EarnRewardsRow({
         <Amount
           fallback="…"
           percentage
-          value={earnPool.data?.apr}
+          value={earnPool.data.apr}
+        />
+      </td>
+      <td>
+        <Amount
+          fallback="…"
+          percentage
+          value={earnPool.data.apr7d}
         />
       </td>
       <td>

@@ -20,8 +20,7 @@ export function ProtocolStats() {
   const account = useAccount();
   const stats = useLiquityStats();
 
-  const tvl = stats.data?.total_value_locked;
-  const tvlNum = parseFloat(tvl ?? "0");
+  const tvl = stats.data?.totalValueLocked;
 
   return (
     <div
@@ -45,12 +44,12 @@ export function ProtocolStats() {
           <Logo size={16} />
           <span>TVL</span>{" "}
           <span>
-            {tvlNum && !isNaN(tvlNum) && (
+            {tvl && (
               <Amount
                 fallback="…"
                 format="compact"
                 prefix="$"
-                value={tvlNum}
+                value={tvl}
               />
             )}
           </span>
