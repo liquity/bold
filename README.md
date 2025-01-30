@@ -1719,5 +1719,15 @@ The impact of redistributions on the remaining active Troves is that they see th
 
 Past simulation has shown that this potential knock-on drag-down effect is minor, though does depend on the system state - i.e. the distribution of ICRs and collateral sizes.
 
+### 18. TODOs in code comments
+
+A number of TODOs remain in comments in core smart contracts:
+
+- TroveManager L1276: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/TroveManager.sol#L1276  This `assert` always holds true since the encapsulating function is only called when a Trove is opened.
+
+- StabilityPool L372: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/StabilityPool.sol#L372  This `assert` is always true since the encapsulating function triggerBoldRewards is only ever called when there is non-zero BOLD yield for the SP - see ActivePool L258: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/ActivePool.sol#L258.
+
+- MainnetPriceFeedBase L52: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/PriceFeeds/MainnetPriceFeedBase.sol#L52  This is irrelevant now that contracts have been deployed.
+
 ### Issues identified in audits requiring no fix
 A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/labels/wontfix).
