@@ -150,12 +150,37 @@ export function EarnPositionSummary({
           >
             {txPreviewMode ? <TagPreview /> : (
               <>
-                <div>
-                  <Amount
-                    fallback="-%"
-                    format="1z"
-                    percentage
-                    value={earnPool.data?.apr}
+                <div
+                  className={css({
+                    display: "flex",
+                    gap: 6,
+                  })}
+                >
+                  <div
+                    className={css({
+                      color: "contentAlt2",
+                    })}
+                  >
+                    APR
+                  </div>
+                  <div>
+                    <Amount
+                      fallback="-%"
+                      format="1z"
+                      percentage
+                      value={earnPool.data?.apr}
+                    />
+                  </div>
+                  <InfoTooltip
+                    content={{
+                      heading: "Current APR",
+                      body: "The annualized rate this stability pool’s "
+                        + "deposits earned over the last 24 hours.",
+                      footerLink: {
+                        label: "Check Dune for more details",
+                        href: "https://dune.com/liquity/liquity-v2",
+                      },
+                    }}
                   />
                 </div>
                 <div
@@ -164,14 +189,31 @@ export function EarnPositionSummary({
                     gap: 4,
                     fontSize: 14,
                   })}
-                  style={{
-                    color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
-                  }}
                 >
-                  <div>Current APR</div>
-                  <InfoTooltip heading="Annual Percentage Rate (APR)">
-                    The annualized rate this stability pool’s deposits earned over the past 7 days.
-                  </InfoTooltip>
+                  <div
+                    className={css({
+                      color: "contentAlt2",
+                    })}
+                  >
+                    7d APR
+                  </div>
+                  <Amount
+                    fallback="-%"
+                    format="1z"
+                    percentage
+                    value={earnPool.data?.apr7d}
+                  />
+                  <InfoTooltip
+                    content={{
+                      heading: "APR (last 7 days)",
+                      body: "The annualized percentage rate this stability pool’s "
+                        + "deposits earned over the past 7 days.",
+                      footerLink: {
+                        label: "Check Dune for more details",
+                        href: "https://dune.com/liquity/liquity-v2",
+                      },
+                    }}
+                  />
                 </div>
               </>
             )}

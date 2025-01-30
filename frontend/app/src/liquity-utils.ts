@@ -7,13 +7,8 @@ import type { Config as WagmiConfig } from "wagmi";
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
 import { dnum18, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
-import {
-  calculateStabilityPoolApr,
-  getCollGainFromSnapshots,
-  useContinuousBoldGains,
-  useSpYieldGainParameters,
-} from "@/src/liquity-stability-pool";
+import { CHAIN_BLOCK_EXPLORER, LIQUITY_STATS_URL } from "@/src/env";
+import { getCollGainFromSnapshots, useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
   useGovernanceStats,
   useGovernanceUser,
@@ -90,12 +85,15 @@ export function getCollIndexFromSymbol(symbol: CollateralSymbol | null): CollInd
 export function useEarnPool(collIndex: null | CollIndex) {
   const collateral = getCollToken(collIndex);
   const pool = useStabilityPool(collIndex ?? undefined);
-  const { data: spYieldGainParams } = useSpYieldGainParameters(collateral?.symbol ?? null);
-  const apr = spYieldGainParams && calculateStabilityPoolApr(spYieldGainParams);
+  const stats = useLiquityStats();
+
+  const branchStats = collateral && stats.data?.branch[collateral?.symbol];
+
   return {
     ...pool,
     data: {
-      apr: apr ?? null,
+      apr: dnumOrNull(branchStats?.spApyAvg1d, 18),
+      apr7d: dnumOrNull(branchStats?.spApyAvg7d, 18),
       collateral,
       totalDeposited: pool.data?.totalDeposited ?? null,
     },
@@ -257,9 +255,13 @@ export function useStakePosition(address: null | Address) {
     query: {
       enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
       refetchInterval: DATA_REFRESH_INTERVAL,
-      select: (
-        [depositResult, totalStakedResult, pendingEthGainResult, pendingLusdGainResult, lusdBalanceResult],
-      ): PositionStake | null => {
+      select: ([
+        depositResult,
+        totalStakedResult,
+        pendingEthGainResult,
+        pendingLusdGainResult,
+        lusdBalanceResult,
+      ]): PositionStake | null => {
         if (
           depositResult.status === "failure" || totalStakedResult.status === "failure"
           || pendingEthGainResult.status === "failure" || pendingLusdGainResult.status === "failure"

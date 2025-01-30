@@ -26,7 +26,6 @@ export function Amount({
   if (percentage && !suffix) {
     suffix = "%";
   }
-
   if (format === undefined) {
     if (percentage) {
       format = "pct2z";
