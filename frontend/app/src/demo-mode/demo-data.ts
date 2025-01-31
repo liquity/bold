@@ -394,6 +394,3 @@ export const IC_STRATEGIES: Delegate[] = [
     fee: dn.from(0.00003, 18),
   },
 ];
-
-// Delegates + IC strategies
-export const DELEGATES_FULL = DELEGATES.concat(IC_STRATEGIES);

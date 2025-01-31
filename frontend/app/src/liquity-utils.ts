@@ -1,5 +1,5 @@
 import type { Contracts } from "@/src/contracts";
-import type { StabilityPoolDepositQuery } from "@/src/graphql/graphql";
+import type { StabilityPoolDepositQuery as StabilityPoolDepositQueryType } from "@/src/graphql/graphql";
 import type {
   CollIndex,
   Dnum,
@@ -28,14 +28,15 @@ import {
   useStabilityPoolEpochScale,
 } from "@/src/subgraph-hooks";
 import { isCollIndex, isTroveId } from "@/src/types";
-import { COLLATERALS, isAddress } from "@liquity2/uikit";
+import { COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
-import { useBalance, useReadContract, useReadContracts } from "wagmi";
+import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract } from "wagmi/actions";
+import { graphQuery, InterestBatchQuery } from "./subgraph-queries";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -174,7 +175,9 @@ export function useEarnPosition(
 }
 
 function earnPositionFromGraph(
-  spDeposit: NonNullable<StabilityPoolDepositQuery["stabilityPoolDeposit"]>,
+  spDeposit: NonNullable<
+    StabilityPoolDepositQueryType["stabilityPoolDeposit"]
+  >,
   rewards: { bold: Dnum; coll: Dnum },
 ): PositionEarn {
   const collIndex = spDeposit.collateral.collIndex;
@@ -642,4 +645,62 @@ export function useLoan(collIndex: CollIndex, troveId: TroveId): UseQueryResult<
       borrowed: liveDebt.data ? dnum18(liveDebt.data) : loan.data.borrowed,
     },
   };
+}
+
+export function useInterestBatchDelegate(
+  collIndex: null | CollIndex,
+  address: null | Address,
+) {
+  const BorrowerOperations = getCollateralContract(collIndex, "BorrowerOperations");
+  if (!BorrowerOperations) {
+    throw new Error(`Invalid collateral index: ${collIndex}`);
+  }
+
+  const wagmiConfig = useWagmiConfig();
+
+  const id = address && collIndex !== null
+    ? `${collIndex}:${address.toLowerCase()}`
+    : null;
+
+  let queryFn = async () => {
+    if (!id || !address) return null;
+
+    const [{ interestBatch: batch }, batchFromChain] = await Promise.all([
+      graphQuery(InterestBatchQuery, { id }),
+      readContract(wagmiConfig, {
+        ...BorrowerOperations,
+        functionName: "getInterestBatchManager",
+        args: [address],
+      }),
+    ]);
+
+    if (!isAddress(batch?.batchManager)) {
+      return null;
+    }
+
+    return {
+      id: batch.batchManager,
+      address: batch.batchManager,
+      name: shortenAddress(batch.batchManager, 4),
+      interestRate: dnum18(batch.annualInterestRate),
+      boldAmount: dnum18(batch.debt),
+      interestRateChange: [
+        dnum18(batchFromChain.minInterestRate),
+        dnum18(batchFromChain.maxInterestRate),
+      ],
+      fee: dnum18(batch.annualManagementFee),
+
+      // not available in the subgraph yet
+      followers: 0,
+      lastDays: 0,
+      redemptions: dnum18(0),
+    };
+  };
+
+  return useQuery({
+    queryKey: ["InterestBatch", id],
+    queryFn,
+    refetchInterval: DATA_REFRESH_INTERVAL,
+    enabled: id !== null,
+  });
 }

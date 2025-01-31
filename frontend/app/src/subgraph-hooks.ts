@@ -1,9 +1,11 @@
+// TODO: Remove this file and move the hooks into liquity-*.ts files instead,
+// since some need to do more than just fetch data from the subgraph.
+
 import type {
-  InterestBatchQuery as InterestBatchQueryType,
   StabilityPoolDepositQuery as StabilityPoolDepositQueryType,
   TrovesByAccountQuery as TrovesByAccountQueryType,
 } from "@/src/graphql/graphql";
-import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
+import type { Address, CollIndex, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
@@ -11,9 +13,8 @@ import { dnum18 } from "@/src/dnum-utils";
 import { DEMO_MODE } from "@/src/env";
 import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { sleep } from "@/src/utils";
-import { isAddress, shortenAddress } from "@liquity2/uikit";
+import { isAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
-import * as dn from "dnum";
 import { useCallback } from "react";
 import {
   AllInterestRateBracketsQuery,
@@ -22,7 +23,6 @@ import {
   GovernanceStats,
   GovernanceUser,
   graphQuery,
-  InterestBatchQuery,
   StabilityPoolDepositQuery,
   StabilityPoolDepositsByAccountQuery,
   StabilityPoolEpochScaleQuery,
@@ -102,59 +102,6 @@ export function useLoansByAccount(
     queryKey: ["TrovesByAccount", account],
     queryFn,
     ...prepareOptions(options),
-  });
-}
-
-function subgraphBatchToDelegate(
-  batch: NonNullable<
-    InterestBatchQueryType["interestBatch"]
-  >,
-): Delegate {
-  if (!isAddress(batch.batchManager)) {
-    throw new Error(`Invalid batch manager: ${batch.batchManager}`);
-  }
-  return {
-    id: batch.batchManager,
-    address: batch.batchManager,
-    name: shortenAddress(batch.batchManager, 4),
-    interestRate: dnum18(batch.annualInterestRate),
-    boldAmount: dnum18(batch.debt),
-    interestRateChange: [dn.from(0.015), dn.from(0.05)],
-    fee: dnum18(batch.annualManagementFee),
-
-    // not available in the subgraph yet
-    followers: 0,
-    lastDays: 0,
-    redemptions: dnum18(0),
-  };
-}
-
-export function useInterestBatchDelegate(
-  collIndex: null | CollIndex,
-  address: null | Address,
-  options?: Options,
-) {
-  const id = address && collIndex !== null
-    ? `${collIndex}:${address.toLowerCase()}`
-    : null;
-
-  let queryFn = async () => {
-    if (!id) return null;
-    const { interestBatch } = await graphQuery(InterestBatchQuery, { id });
-    return isAddress(interestBatch?.batchManager)
-      ? subgraphBatchToDelegate(interestBatch)
-      : null;
-  };
-
-  if (DEMO_MODE) {
-    queryFn = async () => null;
-  }
-
-  return useQuery({
-    queryKey: ["InterestBatch", id],
-    queryFn,
-    ...prepareOptions(options),
-    enabled: id !== null,
   });
 }
 

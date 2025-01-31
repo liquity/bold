@@ -13,6 +13,25 @@ export const CollateralSymbolSchema = v.union([
   v.literal("WSTETH"),
 ]);
 
+function vCollateralEnvVars(collIndex: CollIndex) {
+  const prefix = `COLL_${collIndex}`;
+  return v.object({
+    [`${prefix}_CONTRACT_ACTIVE_POOL`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_BORROWER_OPERATIONS`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_COLL_SURPLUS_POOL`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_COLL_TOKEN`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_DEFAULT_POOL`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_LEVERAGE_ZAPPER`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_PRICE_FEED`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_SORTED_TROVES`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_STABILITY_POOL`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_TROVE_MANAGER`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_TROVE_NFT`]: v.optional(vAddress()),
+    [`${prefix}_DELEGATE_AUTO`]: v.optional(vAddress()),
+    [`${prefix}_TOKEN_ID`]: v.optional(CollateralSymbolSchema),
+  });
+}
+
 export const EnvSchema = v.pipe(
   v.object({
     ACCOUNT_SCREEN: v.optional(vEnvFlag(), "false"),
@@ -109,7 +128,6 @@ export const EnvSchema = v.pipe(
         `Invalid CONTRACTS_COMMIT_URL (must contain "{commit}")`,
       ),
     ),
-    DELEGATE_AUTO: vAddress(),
     DEMO_MODE: v.optional(vEnvFlag(), "false"),
     DEPLOYMENT_FLAVOR: v.pipe(
       v.optional(v.string(), ""),
@@ -140,44 +158,9 @@ export const EnvSchema = v.pipe(
     CONTRACT_MULTI_TROVE_GETTER: vAddress(),
     CONTRACT_WETH: vAddress(),
 
-    COLL_0_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
-    COLL_0_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
-    COLL_0_CONTRACT_COLL_SURPLUS_POOL: v.optional(vAddress()),
-    COLL_0_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
-    COLL_0_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
-    COLL_0_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
-    COLL_0_CONTRACT_PRICE_FEED: v.optional(vAddress()),
-    COLL_0_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
-    COLL_0_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
-    COLL_0_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
-    COLL_0_CONTRACT_TROVE_NFT: v.optional(vAddress()),
-    COLL_0_TOKEN_ID: v.optional(CollateralSymbolSchema),
-
-    COLL_1_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
-    COLL_1_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
-    COLL_1_CONTRACT_COLL_SURPLUS_POOL: v.optional(vAddress()),
-    COLL_1_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
-    COLL_1_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
-    COLL_1_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
-    COLL_1_CONTRACT_PRICE_FEED: v.optional(vAddress()),
-    COLL_1_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
-    COLL_1_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
-    COLL_1_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
-    COLL_1_CONTRACT_TROVE_NFT: v.optional(vAddress()),
-    COLL_1_TOKEN_ID: v.optional(CollateralSymbolSchema),
-
-    COLL_2_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
-    COLL_2_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
-    COLL_2_CONTRACT_COLL_SURPLUS_POOL: v.optional(vAddress()),
-    COLL_2_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
-    COLL_2_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
-    COLL_2_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
-    COLL_2_CONTRACT_PRICE_FEED: v.optional(vAddress()),
-    COLL_2_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
-    COLL_2_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
-    COLL_2_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
-    COLL_2_CONTRACT_TROVE_NFT: v.optional(vAddress()),
-    COLL_2_TOKEN_ID: v.optional(CollateralSymbolSchema),
+    ...vCollateralEnvVars(0).entries,
+    ...vCollateralEnvVars(1).entries,
+    ...vCollateralEnvVars(2).entries,
   }),
   v.transform((data) => {
     const env = { ...data };
@@ -200,12 +183,13 @@ export const EnvSchema = v.pipe(
 
     const collateralContracts: Array<{
       collIndex: CollIndex;
-      symbol: v.InferOutput<typeof CollateralSymbolSchema>;
       contracts: Record<ContractEnvName, Address>;
+      delegateAuto: Address | null;
+      symbol: v.InferOutput<typeof CollateralSymbolSchema>;
     }> = [];
 
     for (const index of Array(10).keys()) {
-      const collEnvName = `COLL_${index}`;
+      const collEnvName = `COLL_${index}` as const;
       const contracts: Partial<Record<ContractEnvName, Address>> = {};
 
       for (const name of contractsEnvNames) {
@@ -231,6 +215,7 @@ export const EnvSchema = v.pipe(
       collateralContracts[index] = {
         collIndex: index,
         contracts: contracts as Record<ContractEnvName, Address>,
+        delegateAuto: (env[`${collEnvName}_DELEGATE_AUTO` as keyof typeof env] ?? null) as Address | null,
         symbol: env[`${collEnvName}_TOKEN_ID` as keyof typeof env] as v.InferOutput<typeof CollateralSymbolSchema>,
       };
     }
@@ -281,7 +266,6 @@ const parsedEnv = v.safeParse(EnvSchema, {
       ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD
   ),
   CONTRACTS_COMMIT_URL: process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_URL,
-  DELEGATE_AUTO: process.env.NEXT_PUBLIC_DELEGATE_AUTO,
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
   DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
   KNOWN_INITIATIVES_URL: process.env.NEXT_PUBLIC_KNOWN_INITIATIVES_URL,
@@ -305,6 +289,10 @@ const parsedEnv = v.safeParse(EnvSchema, {
   COLL_0_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_0_TOKEN_ID,
   COLL_1_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_1_TOKEN_ID,
   COLL_2_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_2_TOKEN_ID,
+
+  COLL_0_DELEGATE_AUTO: process.env.NEXT_PUBLIC_COLL_0_DELEGATE_AUTO,
+  COLL_1_DELEGATE_AUTO: process.env.NEXT_PUBLIC_COLL_1_DELEGATE_AUTO,
+  COLL_2_DELEGATE_AUTO: process.env.NEXT_PUBLIC_COLL_2_DELEGATE_AUTO,
 
   COLL_0_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_ACTIVE_POOL,
   COLL_0_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_BORROWER_OPERATIONS,
@@ -387,7 +375,6 @@ export const {
   CONTRACT_LUSD_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
-  DELEGATE_AUTO,
   DEMO_MODE,
   DEPLOYMENT_FLAVOR,
   KNOWN_INITIATIVES_URL,
