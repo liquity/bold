@@ -56,7 +56,7 @@ contract WbtcOracle is BaseOracle {
             return (0, 0, 0, 0, 0);
         }
 
-        int256 wbtcUsdPrice = btcUsdPrice * int256(10 ** decimals()) / wbtcBtcPrice;
+        int256 wbtcUsdPrice = wbtcBtcPrice * btcUsdPrice / int256(1e8);
 
         return
             wbtcBtcUpdatedAt < btcUsdUpdatedAt ?
