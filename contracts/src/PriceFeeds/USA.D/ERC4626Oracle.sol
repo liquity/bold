@@ -39,6 +39,8 @@ abstract contract ERC4626Oracle is BaseOracle {
         if (_isStale(answer, updatedAt, PRIMARY_ORACLE_HEARTBEAT) && address(FALLBACK_ORACLE) != address(0)) {
             (roundId, answer, startedAt, updatedAt, answeredInRound) = FALLBACK_ORACLE.latestRoundData();
         }
+
+        // assumes that `TOKEN` has 18 decimals
         answer = answer * int256(TOKEN.convertToAssets(_WAD)) / int256(_WAD);
         return (roundId, answer, startedAt, updatedAt, answeredInRound);
     }
