@@ -63,6 +63,12 @@ pnpm build
 
 The app will be built in the `out/` directory which can be deployed to any static hosting service.
 
+Note: your server must be configured to serve .html files by default. If you are using Vercel, this is done automatically. If your server does not support this, you can build the app with a separate directory for each route:
+
+```bash
+NEXT_TRAILING_SLASH=1 pnpm build
+```
+
 ## Local development setup
 
 Follow these steps to set up your local development environment:
