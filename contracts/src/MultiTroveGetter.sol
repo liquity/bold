@@ -126,7 +126,7 @@ contract MultiTroveGetter is IMultiTroveGetter {
         assert(address(sortedTroves) != address(0));
 
         data = new DebtPerInterestRate[](_maxIterations);
-        currId = sortedTroves.getPrev(_startId);
+        currId = _startId == 0 ? sortedTroves.getLast() : _startId;
 
         for (uint256 i = 0; i < _maxIterations; ++i) {
             if (currId == 0) break;
