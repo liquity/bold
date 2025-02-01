@@ -328,7 +328,7 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
             _stalenessThreshold = _1_HOUR; // CL DAI/USD heartbeat. No Fallback
             contracts.oracle = address(new SdaiOracle());
         } else if (address(_collToken) == SFRXETH) {
-            _stalenessThreshold = _24_HOURS; // CL FRAX/ETH heartbeat (Fallback). Primary FRAX/USD is 1 hour, but falls back
+            _stalenessThreshold = _1_HOUR; // CL ETH/USD heartbeat. Fallback is block.timestamp
             SfrxEthFallbackOracle fallbackOracle = new SfrxEthFallbackOracle();
             contracts.oracle = address(new SfrxEthOracle(address(fallbackOracle)));
             sfrxEthFallbackOracle = fallbackOracle;
