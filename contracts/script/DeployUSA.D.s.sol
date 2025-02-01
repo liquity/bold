@@ -170,14 +170,13 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
         console2.log(deployer, "deployer");
         console2.log(deployer.balance, "deployer balance");
 
-        // @todo -- update params -- waiting for LR
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](6);
-        troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // scrvUSD
-        troveManagerParamsArray[1] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sDAI
-        troveManagerParamsArray[2] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sfrxETH
-        troveManagerParamsArray[3] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // tBTC
-        troveManagerParamsArray[4] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WBTC
-        troveManagerParamsArray[5] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // sUSDS
+        troveManagerParamsArray[0] = TroveManagerParams(120e16, 110e16, 105e16, 5e16, 10e16); // scrvUSD
+        troveManagerParamsArray[1] = TroveManagerParams(120e16, 110e16, 105e16, 5e16, 10e16); // sDAI
+        troveManagerParamsArray[2] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // sfrxETH
+        troveManagerParamsArray[3] = TroveManagerParams(150e16, 125e16, 115e16, 5e16, 10e16); // tBTC
+        troveManagerParamsArray[4] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // WBTC
+        troveManagerParamsArray[5] = TroveManagerParams(120e16, 110e16, 105e16, 5e16, 10e16); // sUSDS
 
 
         string[] memory collNames = new string[](6);
