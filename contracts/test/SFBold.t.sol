@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 import { BoldToken, IBoldToken } from "../src/BoldToken.sol";
 
 import {Test} from "forge-std/Test.sol";
-import {ISuperToken} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
+import {ISuperTokenFactory} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 import {SuperfluidFrameworkDeployer} from
     "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.t.sol";
 import {ERC1820RegistryCompiled} from
@@ -117,6 +117,11 @@ contract SFBold is Test {
         assertEq(_boldToken.balanceOf(_ALICE), aliceInitialBalance - flowAmount, "Alice unexpected balance");
     }
 
+    function testStorageLayout() public {
+        SFBoldStorageLayoutTest testContract = new SFBoldStorageLayoutTest(_OWNER, _sf.superTokenFactory);
+        testContract.validateStorageLayout();
+    }
+
     // ============================ Internal Functions ============================
 
     function _createPermitDigest(address owner, address spender, uint256 value, uint256 nonce, uint256 deadline)
@@ -132,5 +137,35 @@ contract SFBold is Test {
         bytes32 DOMAIN_SEPARATOR = _boldToken.DOMAIN_SEPARATOR();
 
         return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, structHash));
+    }
+}
+
+/// Validation of the storage layout
+contract SFBoldStorageLayoutTest is BoldToken {
+
+    constructor(address _owner, ISuperTokenFactory factory) BoldToken(_owner, factory) {}
+    error STORAGE_LOCATION_CHANGED(string _name);
+
+    function validateStorageLayout() public pure {
+        uint256 slot;
+        uint256 offset;
+
+        // storage slots 0-31 are reserved for SuperToken logic via CustomSuperTokenBase
+        // storage slot 32: Ownable | address _owner
+
+        assembly { slot := collateralRegistryAddress.slot offset := collateralRegistryAddress.offset }
+        if (slot != 33 || offset != 0) revert STORAGE_LOCATION_CHANGED("collateralRegistryAddress");
+
+        assembly { slot := troveManagerAddresses.slot offset := troveManagerAddresses.offset }
+        if (slot != 34 || offset != 0) revert STORAGE_LOCATION_CHANGED("troveManagerAddresses");
+
+        assembly { slot := stabilityPoolAddresses.slot offset := stabilityPoolAddresses.offset }
+        if (slot != 35 || offset != 0) revert STORAGE_LOCATION_CHANGED("stabilityPoolAddresses");
+
+        assembly { slot := borrowerOperationsAddresses.slot offset := borrowerOperationsAddresses.offset }
+        if (slot != 36 || offset != 0) revert STORAGE_LOCATION_CHANGED("borrowerOperationsAddresses");
+
+        assembly { slot := activePoolAddresses.slot offset := activePoolAddresses.offset }
+        if (slot != 37 || offset != 0) revert STORAGE_LOCATION_CHANGED("activePoolAddresses");
     }
 }
