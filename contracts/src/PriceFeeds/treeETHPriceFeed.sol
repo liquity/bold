@@ -2,49 +2,61 @@
 
 pragma solidity 0.8.24;
 
-interface ITreeETHOracle {
-    function getExchangeRate() external view returns (uint256);
-}
 
-import "./MainnetPriceFeedBase.sol";
+import "./CompositePriceFeed.sol";
+import "../Interfaces/ITreeETHToken.sol";
+import "../Interfaces/ITreeETHPriceFeed.sol";
 
-contract TreeETHPriceFeed is MainnetPriceFeedBase {
+
+contract TreeETHPriceFeed is CompositePriceFeed, ITreeETHPriceFeed {
     constructor(
-        address _owner, 
-        address _ethUsdOracleAddress, 
-        uint256 _ethUsdStalenessThreshold
-        ) MainnetPriceFeedBase(
-            _owner, 
-            _ethUsdOracleAddress, 
-            _ethUsdStalenessThreshold) 
-        {
+        address _owner,
+        address _ethUsdOracleAddress,
+        address _treeEthEthOracleAddress,
+        address _treeEthTokenAddress,
+        uint256 _ethUsdStalenessThreshold,
+        uint256 _treeEthEthStalenessThreshold
+    ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _treeEthTokenAddress, _ethUsdStalenessThreshold) {
+        // Store TreeETH-ETH oracle
+        treeEthEthOracle.aggregator = AggregatorV3Interface(_treeEthEthOracleAddress);
+        treeEthEthOracle.stalenessThreshold = _treeEthEthStalenessThreshold;
+        treeEthEthOracle.decimals = treeEthEthOracle.aggregator.decimals();
 
-        }
+        _fetchPricePrimary(false);
 
-    Oracle public treeEthOracle;
-    
-    uint256 public constant TREE_ETH_DEVIATION_THRESHOLD = 2e16; // 2%
+        // Check the oracle didn't already fail
+        assert(priceSource == PriceSource.primary);
+    }
+
+    Oracle public treeEthEthOracle;
+
+    uint256 public constant TREEETH_ETH_DEVIATION_THRESHOLD = 2e16; // 2%
 
     function _fetchPricePrimary(bool _isRedemption) internal override returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
-        (uint256 treeEthPrice, bool treeEthOracleDown) = _getOracleAnswer(treeEthOracle);
+        (uint256 treeEthEthPrice, bool treeEthEthOracleDown) = _getOracleAnswer(treeEthEthOracle);
+        (uint256 treeEthPerEth, bool exchangeRateIsDown) = _getCanonicalRate();
 
-        //If either the ETH-USD feed or the treeETH-ETH oracle is down, shut down and switch to the last good price
-        //seen by the system since we need both for primary and fallback price calcs
+        // If either the ETH-USD feed or exchange rate is down, shut down and switch to the last good price
+        // seen by the system since we need both for primary and fallback price calcs
         if (ethUsdOracleDown) {
             return (_shutDownAndSwitchToLastGoodPrice(address(ethUsdOracle.aggregator)), true);
         }
-        if (treeEthOracleDown) {
-            return (_shutDownAndSwitchToLastGoodPrice(address(treeEthOracle.aggregator)), true);
+        if (exchangeRateIsDown) {
+            return (_shutDownAndSwitchToLastGoodPrice(rateProviderAddress), true);
+        }
+        // If the ETH-USD feed is live but the TreeETH-ETH oracle is down, shutdown and substitute TreeETH-ETH with the canonical rate
+        if (treeEthEthOracleDown) {
+            return (_shutDownAndSwitchToETHUSDxCanonical(address(treeEthEthOracle.aggregator), ethUsdPrice), true);
         }
 
         // Otherwise, use the primary price calculation:
 
-        // Calculate the market RETH-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 treeEthUsdMarketPrice = ethUsdPrice * treeEthPrice / 1e18;
+        // Calculate the market TreeETH-USD price: USD_per_TreeETH = USD_per_ETH * ETH_per_TreeETH
+        uint256 treeEthUsdMarketPrice = ethUsdPrice * treeEthEthPrice / 1e18;
 
-        // Calculate the canonical LST-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
+        // Calculate the canonical LST-USD price: USD_per_TreeETH = USD_per_ETH * ETH_per_TreeETH
         uint256 treeEthUsdCanonicalPrice = ethUsdPrice * treeEthPerEth / 1e18;
 
         uint256 treeEthUsdPrice;
@@ -52,9 +64,9 @@ contract TreeETHPriceFeed is MainnetPriceFeedBase {
         // If it's a redemption and canonical is within 2% of market, use the max to mitigate unwanted redemption oracle arb
         if (
             _isRedemption
-                && _withinDeviationThreshold(xvsUsdMarketPrice, xvsUsdCanonicalPrice, XVS_ETH_DEVIATION_THRESHOLD)
+                && _withinDeviationThreshold(treeEthUsdMarketPrice, treeEthUsdCanonicalPrice, TREEETH_ETH_DEVIATION_THRESHOLD)
         ) {
-             treeEthUsdPrice = LiquityMath._max(treeEthUsdMarketPrice, treeEthUsdCanonicalPrice);
+            treeEthUsdPrice = LiquityMath._max(treeEthUsdMarketPrice, treeEthUsdCanonicalPrice);
         } else {
             // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
             // Assumes a deviation between market <> canonical of >2% represents a legitimate market price difference.
@@ -64,23 +76,23 @@ contract TreeETHPriceFeed is MainnetPriceFeedBase {
         lastGoodPrice = treeEthUsdPrice;
 
         return (treeEthUsdPrice, false);
-    } 
+    }
 
-     function _getCanonicalRate() internal view override returns (uint256, bool) {
+    function _getCanonicalRate() internal view override returns (uint256, bool) {
         uint256 gasBefore = gasleft();
 
-        try ITreeETHOracle(treeEthOracle.aggregator).getExchangeRate() returns (uint256 treeEthPerEth) {
-            //If rate is 0, return true
-            if (treeEthPerEth == 0) return (0, true);
+        try ITreeETHToken(rateProviderAddress).getExchangeRate() returns (uint256 ethPerTreeEth) {
+            // If rate is 0, return true
+            if (ethPerTreeEth == 0) return (0, true);
 
-            return (treeEthPerEth, false);
+            return (ethPerTreeEth, false);
         } catch {
-            //Require that enough gas was provided to prevent an OOG revert in the external call
-            //causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
-            //in the check itself.
+            // Require that enough gas was provided to prevent an OOG revert in the external call
+            // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
+            // in the check itself.
             if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
 
-            //If call to exchange rate reverts, return true
+            // If call to exchange rate reverts, return true
             return (0, true);
         }
     }

@@ -1,88 +1,49 @@
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.8.24;
+ 
+import "./TokenPriceFeedBase.sol";
 
-interface ItBTCOracle {
-    function getExchangeRate() external view returns (uint256);
-}
+contract tBTCPriceFeed is TokenPriceFeedBase {
+    constructor(address _owner, address _tBTCUsdOracleAddress, uint256 _tBTCUsdStalenessThreshold)
+        TokenPriceFeedBase(_owner, _tBTCUsdOracleAddress, _tBTCUsdStalenessThreshold)
+    {
+        _fetchPricePrimary();
 
-import "./MainnetPriceFeedBase.sol";
-
-contract tBTCPriceFeed is MainnetPriceFeedBase {
-    constructor(
-        address _owner, 
-        address _ethUsdOracleAddress, 
-        uint256 _ethUsdStalenessThreshold
-        ) MainnetPriceFeedBase(
-            _owner, 
-            _ethUsdOracleAddress, 
-            _ethUsdStalenessThreshold) 
-        {
-
-        }
-
-    Oracle public tBTCETHOracle;
-    
-    uint256 public constant tBTC_ETH_DEVIATION_THRESHOLD = 2e16; // 2%
-
-    function _fetchPricePrimary(bool _isRedemption) internal override returns (uint256, bool) {
+        // Check the oracle didn't already fail
         assert(priceSource == PriceSource.primary);
-        (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
-        (uint256 tBTCETHPrice, bool tBTCETHOracleDown) = _getOracleAnswer(tBTCETHOracle);
+    }
 
-        //If either the ETH-USD feed or the tBTC-ETH oracle is down, shut down and switch to the last good price
-        //seen by the system since we need both for primary and fallback price calcs
-        if (ethUsdOracleDown) {
-            return (_shutDownAndSwitchToLastGoodPrice(address(ethUsdOracle.aggregator)), true);
-        }
-        if (tBTCETHOracleDown) {
-            return (_shutDownAndSwitchToLastGoodPrice(address(tBTCETHOracle.aggregator)), true);
-        }
+    function fetchPrice() public returns (uint256, bool) {
+        // If branch is live and the primary oracle setup has been working, try to use it
+        if (priceSource == PriceSource.primary) return _fetchPricePrimary();
 
-        // Otherwise, use the primary price calculation:
+        // Otherwise if branch is shut down and already using the lastGoodPrice, continue with it
+        assert(priceSource == PriceSource.lastGoodPrice);
+        return (lastGoodPrice, false);
+    }
 
-        // Calculate the market RETH-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 tBTCUsdMarketPrice = ethUsdPrice * tBTCETHPrice / 1e18;
+    function fetchRedemptionPrice() external returns (uint256, bool) {
+        // Use same price for redemption as all other ops in tBTC branch
+        return fetchPrice();    
+    }
 
-        // Calculate the canonical LST-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 tBTCUsdCanonicalPrice = ethUsdPrice * tBTCPerEth / 1e18;
+    //  _fetchPricePrimary returns:
+    // - The price
+    // - A bool indicating whether a new oracle failure was detected in the call
+    function _fetchPricePrimary(bool /* _isRedemption */ ) internal virtual returns (uint256, bool) {
+        return _fetchPricePrimary();
+    }
 
-        uint256 tBTCUsdPrice;
+    function _fetchPricePrimary() internal returns (uint256, bool) {
+        assert(priceSource == PriceSource.primary);
+        (uint256 tokenUsdPrice, bool tokenUsdOracleDown) = _getOracleAnswer(tokenUsdOracle);
 
-        // If it's a redemption and canonical is within 2% of market, use the max to mitigate unwanted redemption oracle arb
-        if (
-            _isRedemption
-                && _withinDeviationThreshold(tBTCUsdMarketPrice, tBTCUsdCanonicalPrice, tBTC_ETH_DEVIATION_THRESHOLD)
-        ) {
-             tBTCUsdPrice = LiquityMath._max(tBTCUsdMarketPrice, tBTCUsdCanonicalPrice);
-        } else {
-            // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
-            // Assumes a deviation between market <> canonical of >2% represents a legitimate market price difference.
-            tBTCUsdPrice = LiquityMath._min(tBTCUsdMarketPrice, tBTCUsdCanonicalPrice);
-        }
+        // If the tBTC-USD Chainlink response was invalid in this transaction, return the last good tBTC-USD price calculated
+        if (tokenUsdOracleDown) return (_shutDownAndSwitchToLastGoodPrice(address(tokenUsdOracle.aggregator)), true);
 
-        lastGoodPrice = tBTCUsdPrice;
-
-        return (tBTCUsdPrice, false);
-    } 
-
-     function _getCanonicalRate() internal view override returns (uint256, bool) {
-        uint256 gasBefore = gasleft();
-
-        try ItBTCOracle(tBTCETHOracle.aggregator).getExchangeRate() returns (uint256 tBTCPerEth) {
-            //If rate is 0, return true
-            if (tBTCPerEth == 0) return (0, true);
-
-            return (tBTCPerEth, false);
-        } catch {
-            //Require that enough gas was provided to prevent an OOG revert in the external call
-            //causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
-            //in the check itself.
-            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
-
-            //If call to exchange rate reverts, return true
-            return (0, true);
-        }
+        lastGoodPrice = tokenUsdPrice;
+        return (tokenUsdPrice, false);
     }
 }   
 
