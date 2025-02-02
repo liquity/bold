@@ -8,8 +8,8 @@ import "./utils/baseSVG.sol";
 import "./utils/bauhaus.sol";
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
-import "../Dependencies/Ownable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 
 import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
 
@@ -28,7 +28,7 @@ interface IMetadataNFT {
     function uri(TroveData memory _troveData) external view returns (string memory);
 }
 
-contract MetadataNFT is IMetadataNFT, Ownable {
+contract MetadataNFT is IMetadataNFT, Ownable, UUPSUpgradeable {
     FixedAssetReader public assetReader;
 
     event AssetReaderUpdated(address indexed _assetReader);
@@ -38,9 +38,18 @@ contract MetadataNFT is IMetadataNFT, Ownable {
     string public constant name = "USA.d Trove";
     string public constant description = "USA.d Trove position";
 
-    constructor(FixedAssetReader _assetReader) Ownable(OWNER) {
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(FixedAssetReader _assetReader) external initializer {
+        __UUPSUpgradeable_init();
+        _initializeOwner(OWNER);
         assetReader = _assetReader;
     }
+
+    /// @dev Allows the owner of the contract to upgrade to *any* new address.
+    function _authorizeUpgrade(address /* newImplementation */ ) internal view override onlyOwner {}
 
     function updateAssetReader(FixedAssetReader _assetReader) external onlyOwner {
         assetReader = _assetReader;

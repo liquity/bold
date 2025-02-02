@@ -7,6 +7,11 @@ import "src/NFTMetadata/MetadataNFT.sol";
 import "src/NFTMetadata/utils/Utils.sol";
 import "src/NFTMetadata/utils/FixedAssets.sol";
 
+interface ISimpleProxyFactory {
+    function deployDeterministic(bytes32 salt, address initialImplementation, bytes memory initCall) external payable returns (address proxy);
+    function predictDeterministicAddress(bytes32 salt) external view returns (address addr);
+}
+
 contract MetadataDeployment is Script /* , StdAssertions */ {
     struct File {
         bytes data;
@@ -25,9 +30,37 @@ contract MetadataDeployment is Script /* , StdAssertions */ {
         _storeFile();
         _deployFixedAssetReader(_salt);
 
-        MetadataNFT metadataNFT = new MetadataNFT{salt: _salt}(initializedFixedAssetReader);
+        MetadataNFT metadataNFT = _deployMetadata();
 
         return metadataNFT;
+    }
+
+    function _deployMetadata() internal returns (MetadataNFT _metadataNFT) {
+        ISimpleProxyFactory _factory = ISimpleProxyFactory(0x156e0382068C3f96a629f51dcF99cEA5250B9eda);
+
+        uint256 _pk = vm.envUint("DEPLOYER_PRIVATE_KEY");
+        address _deployer = vm.addr(_pk);
+
+        // Set salt values
+        bytes32 _salt = bytes32(abi.encodePacked(_deployer, uint96(0x012345)));
+
+        // Sanity check
+        address _proxyAddr = _factory.predictDeterministicAddress(_salt);
+        require(_proxyAddr != address(0), "!ADDRESS");
+
+        // Deploy implementation
+        address __implementation = address(new MetadataNFT());
+
+        // Deploy proxy
+        address _proxy = _factory.deployDeterministic(
+            _salt,
+            __implementation,
+            ""
+        );
+        require(_proxy == _proxyAddr, "!PREDICT");
+
+        _metadataNFT = MetadataNFT(_proxy);
+        _metadataNFT.initialize(initializedFixedAssetReader);
     }
 
     function _loadFiles() internal {

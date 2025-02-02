@@ -22,7 +22,7 @@ import "src/TroveManager.sol";
 import "src/StabilityPool.sol";
 import "src/TroveNFT.sol";
 import "src/CollateralRegistry.sol";
-import "test/TestContracts/MetadataDeployment.sol";
+import {MetadataDeployment, MetadataNFT} from "test/TestContracts/MetadataDeployment.sol";
 import "src/Zappers/WETHZapper.sol";
 import "src/Zappers/GasCompZapper.sol";
 import "src/Zappers/LeverageLSTZapper.sol";
@@ -308,10 +308,7 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
 
         // Deploy Metadata
         contracts.metadataNFT = metadataNFT;
-        addresses.metadataNFT = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)))
-        );
-        assert(address(contracts.metadataNFT) == addresses.metadataNFT && address(contracts.metadataNFT) != address(0));
+        addresses.metadataNFT = address(metadataNFT);
 
         addresses.borrowerOperations = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry)))

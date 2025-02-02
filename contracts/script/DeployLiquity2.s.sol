@@ -29,7 +29,7 @@ import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/CollateralRegistry.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
-import "test/TestContracts/MetadataDeployment.sol";
+import {MetadataDeployment, MetadataNFT} from "test/TestContracts/MetadataDeployment.sol";
 import "test/Utils/Logging.sol";
 import "test/Utils/StringEquality.sol";
 import "src/Zappers/WETHZapper.sol";
