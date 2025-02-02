@@ -2,88 +2,51 @@
 
 pragma solidity 0.8.24;
 
-interface ICOMPOracle {
-    function getExchangeRate() external view returns (uint256);
-}
 
-import "./MainnetPriceFeedBase.sol";
+import "./TokenPriceFeedBase.sol";
 
-contract COMPPriceFeed is MainnetPriceFeedBase {
-    constructor(
-        address _owner, 
-        address _ethUsdOracleAddress, 
-        uint256 _ethUsdStalenessThreshold
-        ) MainnetPriceFeedBase(
-            _owner, 
-            _ethUsdOracleAddress, 
-            _ethUsdStalenessThreshold) 
-        {
+contract COMPPriceFeed is TokenPriceFeedBase {
+    constructor(address _owner, address _compUsdOracleAddress, uint256 _compUsdStalenessThreshold)
+        TokenPriceFeedBase(_owner, _compUsdOracleAddress, _compUsdStalenessThreshold)
+    {
+        _fetchPricePrimary();
 
-        }
-
-    Oracle public compEthOracle;
-    
-    uint256 public constant COMP_ETH_DEVIATION_THRESHOLD = 2e16; // 2%
-
-    function _fetchPricePrimary(bool _isRedemption) internal override returns (uint256, bool) {
+        // Check the oracle didn't already fail
         assert(priceSource == PriceSource.primary);
-        (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
-        (uint256 compEthPrice, bool compEthOracleDown) = _getOracleAnswer(compEthOracle);
-
-        //If either the ETH-USD feed or the COMP-ETH oracle is down, shut down and switch to the last good price
-        //seen by the system since we need both for primary and fallback price calcs
-        if (ethUsdOracleDown) {
-            return (_shutDownAndSwitchToLastGoodPrice(address(ethUsdOracle.aggregator)), true);
-        }
-        if (compEthOracleDown) {
-            return (_shutDownAndSwitchToLastGoodPrice(address(compEthOracle.aggregator)), true);
-        }
-
-        // Otherwise, use the primary price calculation:
-
-        // Calculate the market RETH-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 compUsdMarketPrice = ethUsdPrice * compEthPrice / 1e18;
-
-        // Calculate the canonical LST-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 compUsdCanonicalPrice = ethUsdPrice * compPerEth / 1e18;
-
-        uint256 compUsdPrice;
-
-        // If it's a redemption and canonical is within 2% of market, use the max to mitigate unwanted redemption oracle arb
-        if (
-            _isRedemption
-                && _withinDeviationThreshold(compUsdMarketPrice, compUsdCanonicalPrice, COMP_ETH_DEVIATION_THRESHOLD)
-        ) {
-             compUsdPrice = LiquityMath._max(compUsdMarketPrice, compUsdCanonicalPrice);
-        } else {
-            // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
-            // Assumes a deviation between market <> canonical of >2% represents a legitimate market price difference.
-            compUsdPrice = LiquityMath._min(compUsdMarketPrice, compUsdCanonicalPrice);
-        }
-
-        lastGoodPrice = compUsdPrice;
-    
-        return (compUsdPrice, false);
-    } 
-
-     function _getCanonicalRate() internal view override returns (uint256, bool) {
-        uint256 gasBefore = gasleft();
-
-        try ICOMPOracle(compEthOracle.aggregator).getExchangeRate() returns (uint256 compPerEth) {
-            //If rate is 0, return true
-            if (compPerEth == 0) return (0, true);
-
-            return (compPerEth, false);
-        } catch {
-            //Require that enough gas was provided to prevent an OOG revert in the external call
-            //causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
-            //in the check itself.
-            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
-
-            //If call to exchange rate reverts, return true
-            return (0, true);
-        }
     }
+
+    function fetchPrice() public returns (uint256, bool) {
+        // If branch is live and the primary oracle setup has been working, try to use it
+        if (priceSource == PriceSource.primary) return _fetchPricePrimary();
+
+        // Otherwise if branch is shut down and already using the lastGoodPrice, continue with it
+        assert(priceSource == PriceSource.lastGoodPrice);
+        return (lastGoodPrice, false);
+    }
+
+    function fetchRedemptionPrice() external returns (uint256, bool) {
+        // Use same price for redemption as all other ops in COMP branch
+        return fetchPrice();
+    }
+
+    //  _fetchPricePrimary returns:
+    // - The price
+    // - A bool indicating whether a new oracle failure was detected in the call
+    function _fetchPricePrimary(bool /* _isRedemption */ ) internal virtual returns (uint256, bool) {
+        return _fetchPricePrimary();
+    }
+
+    function _fetchPricePrimary() internal returns (uint256, bool) {
+        assert(priceSource == PriceSource.primary);
+        (uint256 tokenUsdPrice, bool tokenUsdOracleDown) = _getOracleAnswer(tokenUsdOracle);
+
+        // If the COMP-USD Chainlink response was invalid in this transaction, return the last good COMP-USD price calculated
+        if (tokenUsdOracleDown) return (_shutDownAndSwitchToLastGoodPrice(address(tokenUsdOracle)), true);
+
+        lastGoodPrice = tokenUsdPrice;
+        return (tokenUsdPrice, false);
+    }
+    
 }   
 
 

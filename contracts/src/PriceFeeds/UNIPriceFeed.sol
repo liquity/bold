@@ -2,87 +2,48 @@
 
 pragma solidity 0.8.24;
 
-interface IUNIOracle {
-    function getExchangeRate() external view returns (uint256);
-}
+import "./TokenPriceFeedBase.sol";
 
-import "./MainnetPriceFeedBase.sol";
+contract UNIPriceFeed is TokenPriceFeedBase {
+   constructor(address _owner, address _uniUsdOracleAddress, uint256 _uniUsdStalenessThreshold)
+        TokenPriceFeedBase(_owner, _uniUsdOracleAddress, _uniUsdStalenessThreshold)
+    {
+        _fetchPricePrimary();
 
-contract UNIPriceFeed is MainnetPriceFeedBase {
-    constructor(
-        address _owner, 
-        address _ethUsdOracleAddress, 
-        uint256 _ethUsdStalenessThreshold
-        ) MainnetPriceFeedBase(
-            _owner, 
-            _ethUsdOracleAddress, 
-            _ethUsdStalenessThreshold) 
-        {
-
-        }
-
-    Oracle public uniEthOracle;
-    
-    uint256 public constant UNI_ETH_DEVIATION_THRESHOLD = 2e16; // 2%
-
-    function _fetchPricePrimary(bool _isRedemption) internal override returns (uint256, bool) {
+        // Check the oracle didn't already fail
         assert(priceSource == PriceSource.primary);
-        (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
-        (uint256 uniEthPrice, bool uniEthOracleDown) = _getOracleAnswer(uniEthOracle);
+    }
 
-        //If either the ETH-USD feed or the UNI-ETH oracle is down, shut down and switch to the last good price
-        //seen by the system since we need both for primary and fallback price calcs
-        if (ethUsdOracleDown) {
-            return (_shutDownAndSwitchToLastGoodPrice(address(ethUsdOracle.aggregator)), true);
-        }
-        if (uniEthOracleDown) {
-            return (_shutDownAndSwitchToLastGoodPrice(address(uniEthOracle.aggregator)), true);
-        }
+    function fetchPrice() public returns (uint256, bool) {
+        // If branch is live and the primary oracle setup has been working, try to use it
+        if (priceSource == PriceSource.primary) return _fetchPricePrimary();
 
-        // Otherwise, use the primary price calculation:
+        // Otherwise if branch is shut down and already using the lastGoodPrice, continue with it
+        assert(priceSource == PriceSource.lastGoodPrice);
+        return (lastGoodPrice, false);
+    }
 
-        // Calculate the market RETH-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 uniUsdMarketPrice = ethUsdPrice * uniEthPrice / 1e18;
+    function fetchRedemptionPrice() external returns (uint256, bool) {
+        // Use same price for redemption as all other ops in UNI branch
+        return fetchPrice();
+    }
 
-        // Calculate the canonical LST-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 uniUsdCanonicalPrice = ethUsdPrice * uniPerEth / 1e18;
+    //  _fetchPricePrimary returns:
+    // - The price
+    // - A bool indicating whether a new oracle failure was detected in the call
+    function _fetchPricePrimary(bool /* _isRedemption */ ) internal virtual returns (uint256, bool) {
+        return _fetchPricePrimary();
+    }
 
-        uint256 uniUsdPrice;
+    function _fetchPricePrimary() internal returns (uint256, bool) {
+        assert(priceSource == PriceSource.primary);
+        (uint256 tokenUsdPrice, bool tokenUsdOracleDown) = _getOracleAnswer(tokenUsdOracle);
 
-        // If it's a redemption and canonical is within 2% of market, use the max to mitigate unwanted redemption oracle arb
-        if (
-            _isRedemption
-                && _withinDeviationThreshold(uniUsdMarketPrice, uniUsdCanonicalPrice, UNI_ETH_DEVIATION_THRESHOLD)
-        ) {
-             uniUsdPrice = LiquityMath._max(uniUsdMarketPrice, uniUsdCanonicalPrice);
-        } else {
-            // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
-            // Assumes a deviation between market <> canonical of >2% represents a legitimate market price difference.
-            uniUsdPrice = LiquityMath._min(uniUsdMarketPrice, uniUsdCanonicalPrice);
-        }
+        // If the UNI-USD Chainlink response was invalid in this transaction, return the last good UNI-USD price calculated
+        if (tokenUsdOracleDown) return (_shutDownAndSwitchToLastGoodPrice(address(tokenUsdOracle)), true);
 
-        lastGoodPrice = uniUsdPrice;
-
-        return (uniUsdPrice, false);
-    } 
-
-     function _getCanonicalRate() internal view override returns (uint256, bool) {
-        uint256 gasBefore = gasleft();
-
-        try IUNIOracle(uniEthOracle.aggregator).getExchangeRate() returns (uint256 uniPerEth) {
-            //If rate is 0, return true
-            if (uniPerEth == 0) return (0, true);
-
-            return (uniPerEth, false);
-        } catch {
-            //Require that enough gas was provided to prevent an OOG revert in the external call
-            //causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
-            //in the check itself.
-            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
-
-            //If call to exchange rate reverts, return true
-            return (0, true);
-        }
+        lastGoodPrice = tokenUsdPrice;
+        return (tokenUsdPrice, false);
     }
 }   
 
