@@ -26,6 +26,7 @@ export default defineConfig({
   include: [
     "../uikit/src/**/*.tsx",
     "./src/**/*.{ts,tsx}",
+    "./*.tsx",
   ],
   globalCss: defineGlobalStyles({
     "html, body": {

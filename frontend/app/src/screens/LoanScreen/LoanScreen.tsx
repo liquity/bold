@@ -8,12 +8,11 @@ import content from "@/src/content";
 import { getCollateralContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId } from "@/src/liquity-utils";
+import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId, useLoan } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useStoredState } from "@/src/services/StoredState";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useLoanById } from "@/src/subgraph-hooks";
 import { isPrefixedtroveId } from "@/src/types";
 import { css } from "@/styled-system/css";
 import { Button, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
@@ -50,15 +49,17 @@ export function LoanScreen() {
   if (!isPrefixedtroveId(paramPrefixedId)) {
     notFound();
   }
+  const { troveId, collIndex } = parsePrefixedTroveId(paramPrefixedId);
 
-  const loan = useLoanById(paramPrefixedId);
+  const loan = useLoan(collIndex, troveId);
   const loanMode = storedState.loanModes[paramPrefixedId] ?? loan.data?.type ?? "borrow";
 
   const collToken = getCollToken(loan.data?.collIndex ?? null);
   const collPriceUsd = usePrice(collToken?.symbol ?? null);
 
-  const { troveId } = parsePrefixedTroveId(paramPrefixedId);
-  const fullyRedeemed = loan.data && loan.data.status === "redeemed" && dn.eq(loan.data.borrowed, 0);
+  const fullyRedeemed = loan.data
+    && loan.data.status === "redeemed"
+    && dn.eq(loan.data.borrowed, 0);
 
   const loadingState = match([loan, collPriceUsd.data ?? null])
     .returnType<LoanLoadingState>()
@@ -335,7 +336,7 @@ function ClaimCollateralSurplus({
         footer={{
           start: (
             <Field.FooterInfo
-              label={`$${fmtnum(collSurplusUsd)}`}
+              label={fmtnum(collSurplusUsd, { preset: "2z", prefix: "$" })}
               value={null}
             />
           ),

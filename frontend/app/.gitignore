@@ -26,3 +26,6 @@ next-env.d.ts
 
 # graphclient
 /.graphclient/
+
+# custom banner
+/Banner.tsx

@@ -126,10 +126,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
                 fallback="…"
                 value={depositChange}
                 suffix={` ${collateral.name}`}
-                format={{
-                  digits: 2,
-                  signDisplay: "exceptZero",
-                }}
+                format="2diff"
               />,
               <Amount
                 key="end"

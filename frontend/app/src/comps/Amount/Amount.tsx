@@ -1,3 +1,5 @@
+import type { FmtnumOptions, FmtnumPresetName } from "@/src/formatting";
+
 import { fmtnum } from "@/src/formatting";
 import { css } from "@/styled-system/css";
 import { a, useTransition } from "@react-spring/web";
@@ -12,7 +14,7 @@ export function Amount({
   value,
 }: {
   fallback?: string;
-  format?: Parameters<typeof fmtnum>[1];
+  format?: FmtnumPresetName | number;
   percentage?: boolean;
   prefix?: string;
   suffix?: string;
@@ -24,12 +26,29 @@ export function Amount({
   if (percentage && !suffix) {
     suffix = "%";
   }
+  if (format === undefined) {
+    if (percentage) {
+      format = "pct2z";
+    } else {
+      format = "2z";
+    }
+  }
 
   const showFallback = value === null || value === undefined;
 
-  const content = showFallback ? fallback : prefix + fmtnum(value, format, scale) + suffix;
+  const fmtOptions: FmtnumOptions = { prefix, scale, suffix };
+  if (typeof format === "number") {
+    fmtOptions.digits = format;
+  } else if (typeof format === "string") {
+    fmtOptions.preset = format;
+  }
+
+  const content = showFallback ? fallback : fmtnum(value, fmtOptions);
+
   const title = showFallback ? undefined : (
-    titleProp === undefined ? prefix + fmtnum(value, "full", scale) + suffix : titleProp
+    titleProp === undefined
+      ? fmtnum(value, { prefix, preset: "full", scale }) + suffix
+      : titleProp
   );
 
   const fallbackTransition = useTransition([{ content, title, showFallback }], {

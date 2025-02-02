@@ -22,6 +22,7 @@ import {
   CHAIN_RPC_URL,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_LQTY_TOKEN,
+  CONTRACT_LUSD_TOKEN,
   WALLET_CONNECT_PROJECT_ID,
 } from "@/src/env";
 import { getSafeStatus } from "@/src/safe-utils";
@@ -126,6 +127,7 @@ export function useBalance(
         return collateral?.contracts.CollToken.address ?? null;
       },
     )
+    .with("LUSD", () => CONTRACT_LUSD_TOKEN)
     .with("BOLD", () => CONTRACT_BOLD_TOKEN)
     .with("LQTY", () => CONTRACT_LQTY_TOKEN)
     .otherwise(() => null);
@@ -172,8 +174,8 @@ export function useWagmiConfig() {
       currency: CHAIN_CURRENCY,
       rpcUrl: CHAIN_RPC_URL,
       blockExplorer: CHAIN_BLOCK_EXPLORER,
-      contractEnsRegistry: CHAIN_CONTRACT_ENS_REGISTRY,
-      contractEnsResolver: CHAIN_CONTRACT_ENS_RESOLVER,
+      contractEnsRegistry: CHAIN_CONTRACT_ENS_REGISTRY ?? undefined,
+      contractEnsResolver: CHAIN_CONTRACT_ENS_RESOLVER ?? undefined,
       contractMulticall: { address: CHAIN_CONTRACT_MULTICALL },
     });
     return getDefaultConfig({

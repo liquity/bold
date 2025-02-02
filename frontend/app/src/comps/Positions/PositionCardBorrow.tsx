@@ -1,6 +1,8 @@
 import type { PositionLoanCommitted } from "@/src/types";
+import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
+import { Amount } from "@/src/comps/Amount/Amount";
 import { formatLiquidationRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
@@ -16,7 +18,7 @@ import { CardRow, CardRows } from "./shared";
 
 export function PositionCardBorrow({
   batchManager,
-  borrowed,
+  debt,
   collIndex,
   deposit,
   interestRate,
@@ -26,20 +28,21 @@ export function PositionCardBorrow({
   & Pick<
     PositionLoanCommitted,
     | "batchManager"
-    | "borrowed"
     | "collIndex"
     | "deposit"
     | "interestRate"
     | "troveId"
   >
   & {
+    debt: null | Dnum;
     statusTag?: ReactNode;
   })
 {
   const token = getCollToken(collIndex);
   const collateralPriceUsd = usePrice(token?.symbol ?? null);
 
-  const ltv = collateralPriceUsd.data && getLtv(deposit, borrowed, collateralPriceUsd.data);
+  const ltv = debt && collateralPriceUsd.data
+    && getLtv(deposit, debt, collateralPriceUsd.data);
   const redemptionRisk = getRedemptionRisk(interestRate);
 
   const maxLtv = token && dn.from(1 / token.collateralRatio, 18);
@@ -48,9 +51,9 @@ export function PositionCardBorrow({
   const title = token
     ? [
       `Loan ID: ${shortenTroveId(troveId)}…`,
-      `Borrowed: ${fmtnum(borrowed, "full")} BOLD`,
+      `Debt: ${fmtnum(debt, "full")} BOLD`,
       `Collateral: ${fmtnum(deposit, "full")} ${token.name}`,
-      `Interest rate: ${fmtnum(interestRate, "full", 100)}%`,
+      `Interest rate: ${fmtnum(interestRate, "pctfull")}%`,
     ]
     : [];
 
@@ -87,7 +90,7 @@ export function PositionCardBorrow({
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              {fmtnum(borrowed)}
+              <Amount value={debt} fallback="−" />
               <TokenIcon
                 size={24}
                 symbol="BOLD"
@@ -103,7 +106,7 @@ export function PositionCardBorrow({
                 alignItems: "cente",
               })}
             >
-              Backed by {deposit ? fmtnum(deposit, 2) : "−"} {token.name}
+              Backed by {deposit ? fmtnum(deposit) : "−"} {token.name}
               <TokenIcon size="small" symbol={token.symbol} />
             </div>
           ),
@@ -141,7 +144,7 @@ export function PositionCardBorrow({
                           : "var(--status-negative)",
                       }}
                     >
-                      {fmtnum(ltv, 2, 100)}%
+                      {fmtnum(ltv, "pct2")}%
                     </div>
                   )}
                 </div>
@@ -191,7 +194,7 @@ export function PositionCardBorrow({
                       color: "positionContent",
                     })}
                   >
-                    {fmtnum(interestRate, 2, 100)}%
+                    {fmtnum(interestRate, "pct2")}%
                   </div>
                   {batchManager && (
                     <div

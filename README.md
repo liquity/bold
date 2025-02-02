@@ -104,7 +104,12 @@
    - [13 - Trove Adjustments May Be Griefed by Sandwich Raising the Average Interest Rate](#13---trove-adjustments-may-be-griefed-by-sandwich-raising-the-average-interest-rate)
    - [14 - Stability Pool Claiming and Compounding Yield Can Be Used to Gain a Slightly Higher Rate of Rewards](#14---stability-pool-claiming-and-compounding-yield-can-be-used-to-gain-a-slightly-higher-rate-of-rewards)
    - [15 - Urgent Redemptions Premium Can Worsen the ICR](#15---urgent-redemptions-premium-can-worsen-the-icr)
+   - [16 - Oracle code nitpicks](#16---oracle-code-nitpicks)
+   - [17 - Path dependence of redistributions](#17---path-dependence-of-redistributions---sequential-vs-batch-liquidations)
+   - [18 - TODOs left in code comments](#18---todos-in-code-comments)
+
    - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
+     
 
 27. [Requirements](#requirements)
 
@@ -1576,20 +1581,20 @@ sum(debt_i)
 
 While this wouldn't result in the most accurate estimation of the average interest rate either — considering we'd be using outdated debt values sampled at different times for each Trove as weights — at least we would have consistent weights in the numerator and denominator of our weighted average. To implement this though, we'd have to keep track of this modified sum (i.e. the sum of recorded Trove debts) in `ActivePool`, which we currently don't do.
 
-### 12. TroveManager can make troves liquidatable by changing the batch interest rate
+### 12 - TroveManager can make troves liquidatable by changing the batch interest rate
 Users that add their Trove to a Batch are allowing the BatchManager to charge a lot of fees by simply adjusting the interest rate as soon as they can via `setBatchManagerAnnualInterestRate`.
 
 This change cannot result in triggering the critical threshold, however it can make any trove in the batch liquidatable
 
 Thus BatchManagers should be considered benign trusted actors
 
-### 13. Trove Adjustments may be griefed by sandwich raising the average interest rate
+### 13 - Trove Adjustments may be griefed by sandwich raising the average interest rate
 
 Borrowing requires accepting an upfront fee. This is effectively a percentage of the debt change (not necessarily of TCR due to price changes). Due to this, it is possible for other ordinary operations to grief a Trove adjustments by changing the `avgInterestRate`.
 
 To mitigate this, users should use tight but not exact checks for the `_maxUpfrontFee`.
 
-### 14. Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards
+### 14 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards
 The StabilityPool doesn't automatically compound Bold yield gains to depositors
 
 All deposits are added to `totalBoldDeposits`.
@@ -1612,6 +1617,118 @@ This may be used to lock in a bit more bad debt.
 Liquidations already carry a collateral premium to the caller and to the liquidators.
 
 Redemptions at this CR may allow for a bit more bad debt to be redistributed which could cause a liquidation cascade, however the difference doesn't seem particularly meaningful when compared to how high the Liquidation Premium tends to be for liquidations.
+
+### 16 - Oracle code nitpicks
+
+Two informational issues are present in the oracle code which have no impact on core system operation or logic.
+
+- The `WETHPriceFeed` contains one unused internal function - `_fetchPricePrimary(bool _isRedemption)`. Unlike the LST feeds, this PriceFeed in fact does not need to know whether the operation is a redemption, since it uses the ETH-USD market price for all operations via the internal function `_fetchPricePrimary()`.  
+
+-The `RETHPriceFeed` contains a misnamed variable on L39 and L60. `rEthPerEth` should rather be named `ethPerReth`. However, its _value_ is assigned correctly from the external call to `getExchangeRate` (which returns an ETH per RETH value). It is also _used_ correctly, as per the arithmetic in comment on L59. It is only named incorrectly.
+
+### 17 - Path dependence of redistributions - sequential vs batch liquidations
+
+Liquidations via redistribution in `batchLiquidateTroves` do not distribute liquidated collateral and debt to the other Troves liquidated inside the liquidation loop. They only distribute collateral and debt to the active Troves which remain in the system after all liquidations in the loop have been resolved.
+
+#### Consequences
+
+All else equal, this leads to a slightly different end state when comparing the redistribution of a given set of Troves by a single batch liquidation to separate redistributions of those same Troves.
+
+Consider a system of Troves A,B,C,D,E.  A,B,C have `ICR < MCR` and are thus liquidateable.  D and E have `ICR > MCR` and are healthy.
+
+
+#### Scenario 1 - batch redistribution
+
+If A,B and C are redistributed in one `batchLiquidateTroves` call, the collateral and debt of A,B, and C is given purely to D and E (sans the collateral gas compensation of each).
+
+#### Scenario 2 - sequential redistribution
+
+However, if A, B and C are redistributed by sequential liquidation calls, then, collateral and debt is first “rolled” forward to the next Trove in the sequence, before finally being distributed to remaining active Troves D and E. That is:
+
+
+```
+batchLiquidateTroves(A)
+-> B,C,D,E receive A’s debt and coll proportionally
+batchLiquidateTroves(B)
+-> C,D,E receive B’s debt and coll proportionally
+batchLiquidateTroves(C)
+-> D,E receive C’s debt and coll proportionally
+```
+
+The end result is _almost_ the same: D and E receive all debt and coll of A,B and C sans collateral gas compensation. However, the total gas compensation paid out differs between scenario 1 and 2 - and thus the total collateral D and E receive differs slightly too.
+
+#### Scenario 1 gas compensation
+
+In scenario 1, gas compensation for each liquidated Trove i is computed based on the Trove’s collateral **prior** to the `batchLiquidateTroves` call i.e. `coll_i`. Gas compensation is summed over all liquidated Troves and paid at the end.
+
+For simplicity let `gas_comp()` be the function that determines the collateral gas compensation of a given Trove. The formula is:
+
+gas_comp(coll_i) = `0.0375 WETH + min(0.5% * coll_i, 2_units_of_LST).`
+
+i.e. it is linearly increasing with trove collateral up to the point where `coll_i == 400_units_of_LST`, beyond which it is constant.
+
+So in scenario 1:
+
+
+`total_gas_comp_1  = gas_comp(coll_A) + gas_comp(coll_B) + gas_comp(coll_C)`
+
+#### Scenario 2 gas compensation
+
+In scenario 2, the collateral of all remaining Troves increases after each sequential liquidation.
+
+Since A is liquidated first it receives no redistribution shares, so A’s liquidated collateral is the same as in scenario 1, i.e. `coll_A`.
+
+However B and C’s collateral does increase before they get liquidiated. Let:
+
+
+coll_B’ denote B’s increased collateral after liquidation of A, so  `coll_B’ > coll_B`
+coll_C’ denote C’s increased collateral after liquidation of A, so `coll_C’ > coll_C`
+
+In the sequence:
+
+
+```
+liquidate(A)
+-> pay gas compensation to liquidator. B and C’s collateral increases by their shares of A’s collateral
+liquidate(B)
+-> pay gas compensation to liquidator based on B’s increased collateral, coll_B’
+liquidate(C)
+-> D,E receive C’s debt and coll proportionally
+```
+
+Here, the total gas comp paid is:
+
+`total_gas_comp_2  = gas_comp(coll_A) + gas_comp(coll_B’) + gas_comp(coll_C’)`
+
+And since `gas_comp()` is a linear increasing function of collateral (for troves under 400 units of LST collateral), then it can be that `total_gas_comp_2 > total_gas_comp_1`.
+
+#### Impact summary
+
+In a batch liquidation where 1 or more Troves somewhere in the middle of (i.e. not first or last) the `batchLiquidateTroves` loop have under 400 units of LST collateral, then the remaining active Troves after the call receive slightly **less** collateral from the redistribution than in the case where the Troves are liquidated individually and sequentially. Accordingly,  the liquidator also receives slightly **more** gas compensation.
+
+#### Design choice: no rolling redistributions inside `batchLiquidateTroves`
+
+The choice to make `batchLiquidateTroves` behave as it does - i.e. to not roll debt and collateral shares through to other Troves inside its liquidation loop - was conscious and deliberate.
+
+The current approach is more gas efficient and makes the code simpler to reason about than inner rolling liquidations.
+
+The discrepancy between batch and sequential liquidation gas compensation is minor, and does not have negative consequences for the system. Collateral gas compensation is in any case an arbitrary design choice in the first place.
+
+#### Knock on drag-down of healthy Troves below MCR
+
+The impact of redistributions on the remaining active Troves is that they see their ICRs reduced. It’s possible that this ICR reduction causes them to fall below the MCR and thus also become liquidateable - however this knock-on “drag-down” effect can occur as a result of either batch or sequential liquidations, is a known dynamic of the system, and was also present in Liquity v1.
+
+Past simulation has shown that this potential knock-on drag-down effect is minor, though does depend on the system state - i.e. the distribution of ICRs and collateral sizes.
+
+### 18 - TODOs in code comments
+
+A number of TODOs remain in comments in core smart contracts:
+
+- TroveManager L1276: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/TroveManager.sol#L1276  This `assert` always holds true since the encapsulating function is only called when a Trove is opened.
+
+- StabilityPool L372: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/StabilityPool.sol#L372  This `assert` is always true since the encapsulating function triggerBoldRewards is only ever called when there is non-zero BOLD yield for the SP - see ActivePool L258: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/ActivePool.sol#L258.
+
+- MainnetPriceFeedBase L52: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/PriceFeeds/MainnetPriceFeedBase.sol#L52  This is irrelevant now that contracts have been deployed.
 
 ### Issues identified in audits requiring no fix
 A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/labels/wontfix).

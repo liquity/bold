@@ -242,7 +242,7 @@ export function LoanCard({
                     })}
                   >
                     <Value negative={ltv && dn.gt(ltv, maxLtv)}>
-                      ${fmtnum(liquidationPrice)}
+                      {fmtnum(liquidationPrice, { preset: "2z", prefix: "$" })}
                     </Value>
                     {liquidationPrice
                       && prevLoanDetails?.liquidationPrice
@@ -254,7 +254,7 @@ export function LoanCard({
                             textDecoration: "line-through",
                           })}
                         >
-                          ${fmtnum(prevLoanDetails.liquidationPrice)}
+                          {fmtnum(prevLoanDetails.liquidationPrice, { preset: "2z", prefix: "$" })}
                         </div>
                       )}
                   </div>
@@ -268,7 +268,7 @@ export function LoanCard({
                     })}
                   >
                     <div>
-                      {fmtnum(dn.mul(loan.interestRate, 100))}%
+                      {fmtnum(loan.interestRate, "pct2z")}%
                     </div>
                     {loan.batchManager && (
                       <div
@@ -296,7 +296,7 @@ export function LoanCard({
                           textDecoration: "line-through",
                         })}
                       >
-                        {fmtnum(dn.mul(prevLoan.interestRate, 100))}%
+                        {fmtnum(prevLoan.interestRate, "pct2z")}%
                       </div>
                     )}
                   </div>
@@ -323,7 +323,7 @@ export function LoanCard({
                           : "var(--status-negative)",
                       }}
                     >
-                      {ltv && fmtnum(dn.mul(ltv, 100))}%
+                      {fmtnum(ltv, "pct2z")}%
                     </div>
                     {ltv
                       && prevLoanDetails?.ltv
@@ -335,7 +335,7 @@ export function LoanCard({
                             textDecoration: "line-through",
                           })}
                         >
-                          {prevLoanDetails.ltv && fmtnum(dn.mul(prevLoanDetails.ltv, 100))}%
+                          {fmtnum(prevLoanDetails.ltv, "pct2z")}%
                         </div>
                       )}
                   </div>

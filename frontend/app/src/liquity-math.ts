@@ -1,13 +1,7 @@
 import type { LoanDetails, RiskLevel } from "@/src/types";
 import type { Dnum } from "dnum";
 
-import {
-  LTV_RISK,
-  MAX_LTV_ALLOWED_RATIO,
-  ONE_YEAR_IN_SECONDS,
-  REDEMPTION_RISK,
-  UPFRONT_INTEREST_PERIOD,
-} from "@/src/constants";
+import { LTV_RISK, MAX_LTV_ALLOWED_RATIO, REDEMPTION_RISK } from "@/src/constants";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 
@@ -183,14 +177,4 @@ export function getLoanDetails(
     redemptionRisk,
     status,
   };
-}
-
-// from LiquityBase.sol’s _calcInterest()
-export function calcInterest(weightedDebt: bigint, period: bigint): bigint {
-  return weightedDebt * period / ONE_YEAR_IN_SECONDS / (10n ** 18n);
-}
-
-// from BorrowerOperations.sol’s _calcUpfrontFee()
-export function calcUpfrontFee(debt: bigint, avgInterestRate: bigint): bigint {
-  return calcInterest(debt * avgInterestRate, UPFRONT_INTEREST_PERIOD);
 }

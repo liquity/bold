@@ -344,13 +344,13 @@ export default {
       claim: "Claim rewards",
     },
     depositPanel: {
-      label: "Deposit",
+      label: "Increase deposit",
       shareLabel: "Pool share",
       claimCheckbox: "Claim rewards",
       action: "Next: Summary",
     },
     withdrawPanel: {
-      label: "Withdraw",
+      label: "Decrease deposit",
       claimCheckbox: "Claim rewards",
       action: "Next: Summary",
     },

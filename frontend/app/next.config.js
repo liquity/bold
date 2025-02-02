@@ -23,6 +23,7 @@ export default withBundleAnalyzer({
   output: "export",
   reactStrictMode: false,
   images: { unoptimized: true },
+  trailingSlash: flag(process.env.NEXT_TRAILING_SLASH),
   env: {
     APP_VERSION_FROM_BUILD,
     APP_COMMIT_HASH_FROM_BUILD,
@@ -50,3 +51,11 @@ export default withBundleAnalyzer({
     ];
   },
 });
+
+function flag(value) {
+  if (typeof value !== "string") {
+    return false;
+  }
+  value = value.trim();
+  return value === "true" || value === "1" || value === "yes";
+}
