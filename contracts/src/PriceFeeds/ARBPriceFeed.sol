@@ -41,7 +41,7 @@ contract ARBPriceFeed is TokenPriceFeedBase {
         (uint256 tokenUsdPrice, bool tokenUsdOracleDown) = _getOracleAnswer(tokenUsdOracle);
 
         // If the ARB-USD Chainlink response was invalid in this transaction, return the last good ARB-USD price calculated
-        if (tokenUsdOracleDown) return (_shutDownAndSwitchToLastGoodPrice(address(tokenUsdOracle)), true);
+        if (tokenUsdOracleDown) return (_shutDownAndSwitchToLastGoodPrice(address(tokenUsdOracle.aggregator)), true);
 
         lastGoodPrice = tokenUsdPrice;
         return (tokenUsdPrice, false);
