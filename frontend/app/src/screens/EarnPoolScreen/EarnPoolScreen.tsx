@@ -38,7 +38,7 @@ export function EarnPoolScreen() {
 
   const tab = TABS.find((tab) => tab.action === params.action) ?? TABS[0];
 
-  const loadingState = earnPool.isLoading || earnPosition.isLoading ? "loading" : "success";
+  const loadingState = earnPool.isLoading || earnPosition.status === "pending" ? "loading" : "success";
 
   const tabsTransition = useTransition(loadingState, {
     from: { opacity: 0 },
