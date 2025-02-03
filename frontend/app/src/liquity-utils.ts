@@ -141,7 +141,7 @@ export function useEarnPosition(
     getBoldGains,
     spDepositCompounded,
     spCollGain,
-  ].find((r) => r && r.status !== "success") ?? spCollGain;
+  ].find((r) => r && r.status !== "success") ?? yieldGainsInBold;
 
   if (
     !account || collIndex === null
@@ -149,7 +149,10 @@ export function useEarnPosition(
     || spCollGain?.status !== "success"
     || yieldGainsInBold.status !== "success"
   ) {
-    return { ...useQueryResultBase, data: null };
+    return {
+      ...useQueryResultBase,
+      data: null,
+    };
   }
 
   return {
@@ -160,7 +163,7 @@ export function useEarnPosition(
       deposit: dnum18(spDepositCompounded.result),
       collIndex,
       rewards: {
-        bold: yieldGainsInBold.data,
+        bold: yieldGainsInBold.data ?? dnum18(0),
         coll: dnum18(spCollGain.result),
       },
     },
