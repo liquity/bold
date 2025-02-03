@@ -11,12 +11,10 @@ import { CardRow, CardRows } from "./shared";
 export function PositionCardEarn({
   owner,
   collIndex,
-  deposit,
 }: Pick<
   PositionEarn,
   | "owner"
   | "collIndex"
-  | "deposit"
 >) {
   const token = getCollToken(collIndex);
   const earnPool = useEarnPool(collIndex);
@@ -54,7 +52,11 @@ export function PositionCardEarn({
         main={{
           value: (
             <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              <Amount value={deposit} format={2} />
+              <Amount
+                value={earnPosition.data?.deposit}
+                fallback="−"
+                format={2}
+              />
               <TokenIcon size="medium" symbol="BOLD" />
             </HFlex>
           ),
