@@ -104,6 +104,16 @@ export function useEarnPool(collIndex: null | CollIndex) {
   };
 }
 
+export function isEarnPositionActive(position: PositionEarn | null) {
+  return Boolean(
+    position && (
+      dn.gt(position.deposit, 0)
+      || dn.gt(position.rewards.bold, 0)
+      || dn.gt(position.rewards.coll, 0)
+    ),
+  );
+}
+
 export function useEarnPosition(
   collIndex: null | CollIndex,
   account: null | Address,

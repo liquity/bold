@@ -9,7 +9,7 @@ import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken } from "@/src/liquity-utils";
+import { getCollToken, isEarnPositionActive } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
@@ -38,6 +38,7 @@ export function PanelUpdateDeposit({
   const [claimRewards, setClaimRewards] = useState(false);
 
   const hasDeposit = dn.gt(position?.deposit ?? DNUM_0, 0);
+  const isActive = isEarnPositionActive(position ?? null);
 
   const parsedValue = parseInputFloat(value);
 
@@ -182,7 +183,7 @@ export function PanelUpdateDeposit({
           width: "100%",
         }}
       >
-        {hasDeposit && (
+        {isActive && (
           <HFlex justifyContent="space-between">
             <div
               className={css({
