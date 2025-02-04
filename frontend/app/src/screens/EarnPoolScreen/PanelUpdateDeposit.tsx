@@ -35,7 +35,7 @@ export function PanelUpdateDeposit({
   const [mode, setMode] = useState<ValueUpdateMode>("add");
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
-  const [claimRewards, setClaimRewards] = useState(false);
+  const [claimRewards, setClaimRewards] = useState(true);
 
   const hasDeposit = dn.gt(position?.deposit ?? DNUM_0, 0);
   const isActive = isEarnPositionActive(position ?? null);
