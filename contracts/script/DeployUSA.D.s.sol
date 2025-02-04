@@ -425,28 +425,28 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
     }
 
     function _deployCurveBoldUsdcPool(IBoldToken _boldToken, IERC20 _usdc) internal returns (ICurveStableswapNGPool) {
-        // deploy Curve StableswapNG pool
-        address[] memory coins = new address[](2);
-        coins[BOLD_TOKEN_INDEX] = address(_boldToken);
-        coins[USDC_INDEX] = address(_usdc);
-        uint8[] memory assetTypes = new uint8[](2); // 0: standard
-        bytes4[] memory methodIds = new bytes4[](2);
-        address[] memory oracles = new address[](2);
-        ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool(
-            "USDC-USA.d",
-            "USDCUSA.d",
-            coins,
-            100, // A
-            1000000, // fee
-            20000000000, // _offpeg_fee_multiplier
-            866, // _ma_exp_time
-            0, // implementation id
-            assetTypes,
-            methodIds,
-            oracles
-        );
+        // // deploy Curve StableswapNG pool
+        // address[] memory coins = new address[](2);
+        // coins[BOLD_TOKEN_INDEX] = address(_boldToken);
+        // coins[USDC_INDEX] = address(_usdc);
+        // uint8[] memory assetTypes = new uint8[](2); // 0: standard
+        // bytes4[] memory methodIds = new bytes4[](2);
+        // address[] memory oracles = new address[](2);
+        // ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool(
+        //     "USDC-USA.d",
+        //     "USDCUSA.d",
+        //     coins,
+        //     100, // A
+        //     1000000, // fee
+        //     20000000000, // _offpeg_fee_multiplier
+        //     866, // _ma_exp_time
+        //     0, // implementation id
+        //     assetTypes,
+        //     methodIds,
+        //     oracles
+        // );
 
-        return curvePool;
+        // return curvePool;
     }
 
     function _getBranchContractsJson(LiquityContractsTestnet memory c) internal pure returns (string memory) {
@@ -526,3 +526,5 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
         );
     }
 }
+
+// deployed: struct DeployUSADScript.DeploymentResult DeploymentResult({ contractsArray: [LiquityContractsTestnet({ addressesRegistry: 0x3249b3196798cAfc3a3fF023f719196410C7836e, activePool: 0xcB1db13418ff25217080F8feeE4E31d34f3F3040, borrowerOperations: 0x01646d82f996EBC90422c62BDD17689d57E3c30F, collSurplusPool: 0x8d901B07903a94dab90Dd323201466D630541ea4, defaultPool: 0x29fd891A5157b7C66703358C9E737056842A4b7A, sortedTroves: 0x54A14A67D584d579eb46c274F93277f4cefB3e04, stabilityPool: 0x8a7cDe8AaF70536810624b18Fb0e393Fa604CE61, troveManager: 0x13b86Eb24De4828611Dfa009f931830623Adf664, troveNFT: 0x7aE819f1cC95DD0AB70be8e0d565aE5d994E6334, metadataNFT: 0xb3B266eBCd5460e9385db31FcA92dAE362EEE26C, priceFeed: 0x37B2090bBd1ba4e46D803286E18775CbbaC86259, gasPool: 0x15EDc50a5C5d6656a7972D6490A481884C0d3dFf, interestRouter: 0xf5878971316acb5072f115A046D1F405D71E9173, collToken: 0x0655977FEb2f289A4aB78af67BAB0d17aAb84367, zapper: 0x2FE5E05B34aefc2a1d7eeaBad313872e963dec84, gasCompZapper: 0x0000000000000000000000000000000000000000, leverageZapper: 0x0000000000000000000000000000000000000000, oracle: 0xF121B5C4a37335fD1189aeA306b996487aae55B8 }), LiquityContractsTestnet({ addressesRegistry: 0x6b284E60B80682be76134b1b2a6CA85f6A360E81, activePool: 0x91B302BeDf3fc152B96912517CFbe262f30608b3, borrowerOperations: 0x925422EbBDd70c2EB9bfDdee5B3E80f663beC86A, collSurplusPool: 0xf1bF81fF146E71019eA321b75C0437842f6745BF, defaultPool: 0x34b31fF9D7001650BCD313cD5b0Eed55c88DD883, sortedTroves: 0x4De90a797d7680e8f03B740174DC3e542048E539, stabilityPool: 0x631330C8b8317aA58cF7cbC95BBbFe5b9CB1930e, troveManager: 0x165ff647c2674fdB519dB2490d586599c9C807a3, troveNFT: 0x16F4B80C1079c8d79bD37F7d22c2c438CE1CDCcB, metadataNFT: 0xb3B266eBCd5460e9385db31FcA92dAE362EEE26C, priceFeed: 0xEd07B701ED7b1B12Cecc0dFAEa27ee8Cc94D4ee0, gasPool: 0x479b11f447049f5e5Ba3F7fCBf8DFab9d2AE05a3, interestRouter: 0x7471760bd5B6F8778a69a7bdC5490A5Fac0c1fA4, collToken: 0x83F20F44975D03b1b09e64809B757c47f942BEeA, zapper: 0x90695d1A4eCF1821BE75bA954293E6dDdDB6273F, gasCompZapper: 0x0000000000000000000000000000000000000000, leverageZapper: 0x0000000000000000000000000000000000000000, oracle: 0x08E16cb013e06F9C7B1f915CcD560263398680E7 }), LiquityContractsTestnet({ addressesRegistry: 0x37C47dF67d664aBbC382D9D80B629678F3F83004, activePool: 0xDF083be7595564716349680Cc5D7525199BBBBCB, borrowerOperations: 0xdA8d4691C9C82c1c6635222195B669CF7E00A7a4, collSurplusPool: 0xE4A3B291B924eA690086ac7839A43F616bd47918, defaultPool: 0x447821d723ECAB9865dC2d8e3D49B4163025BD74, sortedTroves: 0x9eF10447165e3EfEE7042dA970B4Ee2949596200, stabilityPool: 0x4eE3751E853c550B8De2fCFA05bC41762970892A, troveManager: 0x972b5e84A9aC72B77fFCf4f00ACB80240b6437e4, troveNFT: 0x7d458EA4385C34004647dd7C7e83e6A52bE716E5, metadataNFT: 0xb3B266eBCd5460e9385db31FcA92dAE362EEE26C, priceFeed: 0xfE8cF186616e5B3e4dE0a5e2bdAD06167D53A621, gasPool: 0x9e9Cd432Bf62851431cDd647bdD0CAB5EBb88eB6, interestRouter: 0x3314E933182F0DCd2c032a1b70bD76e5E87Fc7A2, collToken: 0xac3E018457B222d93114458476f3E3416Abbe38F, zapper: 0xDbD0258DF0F0cE2899aed1540c5A9F175b7815BE, gasCompZapper: 0x0000000000000000000000000000000000000000, leverageZapper: 0x0000000000000000000000000000000000000000, oracle: 0x1d27f835B6201572B65dcA622aEa185B01fbA54A }), LiquityContractsTestnet({ addressesRegistry: 0x452eB8c3d70B343890A4B16f3971918DFDd96007, activePool: 0x69a90e48376CEa03F7e8a79ce45710C61EEF6968, borrowerOperations: 0x0F5e9FdF728Ea8CED48e57A42299A0909F89dFDd, collSurplusPool: 0x24B0EC88A9550cDa5eEDd0A94016cA9c032a00D6, defaultPool: 0x84067D80A190fc4d639B753c9BE3D6762e388fE5, sortedTroves: 0x287B28c9cD5aC5C3f15811429a3E1A0337206BeC, stabilityPool: 0x4bB3FA8ba566b62b4abF358f826a7a979263CCc4, troveManager: 0x8B22339221B8A5A78AdE6F4A3389EfA6C974BeF6, troveNFT: 0x12942Aa8758B6f78c362AeE84C45B00698bD74aE, metadataNFT: 0xb3B266eBCd5460e9385db31FcA92dAE362EEE26C, priceFeed: 0xfB8CB432FC736F24Ed198e49438361573fEe2571, gasPool: 0x75C959d58DEa777D8066a321750D7A1e1b564E57, interestRouter: 0x6845e84E422Eb97C2Cc2f65757cd0fC5F6E7d644, collToken: 0x18084fbA666a33d37592fA2633fD49a74DD93a88, zapper: 0x6ecf29c3A81471879e94ddCc0127F12164cb331D, gasCompZapper: 0x0000000000000000000000000000000000000000, leverageZapper: 0x0000000000000000000000000000000000000000, oracle: 0xF53A7E09512b5475bb9f34E0b27Faa3fDdC8E17D }), LiquityContractsTestnet({ addressesRegistry: 0x4FC2Cbc3417D6b0915BD768081c34A4537941BF6, activePool: 0xd31d245c75aaFF8221df5EB220bfA0CFCb0e96E6, borrowerOperations: 0x2A838a1976c40326F78c3Ae79E58DaC34B99dD09, collSurplusPool: 0xfA7A6f5fb5385Faf2E3C82bF53524a60686951FD, defaultPool: 0x441c948aD5857f5664a3F4574BdA41DD9f9350be, sortedTroves: 0x075D96b9F4684f0D238BF970d549130323058A13, stabilityPool: 0x1916CBB322456c40649579aee5C7f0c8b463cF3C, troveManager: 0x3318ba0fc72c6a76Db46edB6771F729B77CB9138, troveNFT: 0xbdE004753f9A68CAcB7400DE3220664898B3d7b4, metadataNFT: 0xb3B266eBCd5460e9385db31FcA92dAE362EEE26C, priceFeed: 0x963A4194E7EDFc1D644697048Fb21e4fCDe7a25E, gasPool: 0x36A4bdBb719A066566b0cFB5710b121DAf67a004, interestRouter: 0x5AF17540921cd9d388eAa9344c42c507f38490ce, collToken: 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599, zapper: 0x8387e72cccE6d2C6cEe66E164d1b744d83aD8fa9, gasCompZapper: 0x0000000000000000000000000000000000000000, leverageZapper: 0x0000000000000000000000000000000000000000, oracle: 0x8bee5807853A6e6A15Cfea8da4207D245C82966b }), LiquityContractsTestnet({ addressesRegistry: 0x84F899d30B440D4d1CFFFf08Cd400f07C592CBc1, activePool: 0x40647F2bbd226F74d197Ef6974A266773B24a63a, borrowerOperations: 0x972AD09A47D227172D0055AFfa0b88b1C8e460f0, collSurplusPool: 0x5b2fFA05E1Bf1AFBD669fa3a2204FaB8cf787D8c, defaultPool: 0x5Ad7B79370fD88732F8D5629FB8711f5E95fFa0f, sortedTroves: 0x2874940c308A8b6D47930C7C6da5506d3D079Ef1, stabilityPool: 0xda436f9192EC7468D1589d967B19d9E22A1fF13e, troveManager: 0xaAd0fC75D2B094e56b4298e50f7Faf1A22450D5B, troveNFT: 0xcb87f5AE4c7ef2f9030AE834a7Dc3C0EE37735A7, metadataNFT: 0xb3B266eBCd5460e9385db31FcA92dAE362EEE26C, priceFeed: 0xcd0BAd5D45495c07bcD771657eCA0df50baeD871, gasPool: 0x3367720F7B50396B92954527b5bC171bc7695f93, interestRouter: 0x69BCfAb2eE06458c8001E4e53E1E5D258D46d355, collToken: 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD, zapper: 0xa38f7a780820E5081Dd51DB94c5F359ca0d5CeEa, gasCompZapper: 0x0000000000000000000000000000000000000000, leverageZapper: 0x0000000000000000000000000000000000000000, oracle: 0xa8076d11890fEa2c400151DbB8377802f5e2aabA })], collateralRegistry: 0xd5D9C0D32890Be92D7680B65E785e4A95C366a35, boldToken: 0x7c6762f4b23317D5f7b51E79ec6Da9449b71C20c, usdc: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, usdcCurvePool: 0x0000000000000000000000000000000000000000, hintHelpers: 0x94F931867eE170b48673408fC51560C8712f3540, multiTroveGetter: 0x24c62ec7f0d0275934Ef6fC9432921Df87b17ee7, exchangeHelpers: 0x0000000000000000000000000000000000000000 })
