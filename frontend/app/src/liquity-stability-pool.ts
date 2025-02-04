@@ -59,7 +59,7 @@ export function useContinuousBoldGains(
     ],
     queryFn: () => {
       return (now: number) => {
-        // cant happen, see `enabled` above
+        // cant happen, see `enabled` below
         if (!spYieldGainParams.data || !depositParams) {
           throw new Error();
         }
