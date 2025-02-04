@@ -9,7 +9,6 @@ import { CHAIN_CONTRACT_MULTICALL } from "@/src/env";
 import { getCollToken } from "@/src/liquity-utils";
 import { useStabilityPoolDeposit, useStabilityPoolEpochScale } from "@/src/subgraph-hooks";
 import { useQuery } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
 import { serialize, useReadContracts } from "wagmi";
 
 const DECIMAL_PRECISION = 10n ** 18n;
