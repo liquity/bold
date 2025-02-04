@@ -5,7 +5,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import content from "@/src/content";
-import { getCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
+import { getCollIndexFromSymbol, isEarnPositionActive, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, isCollateralSymbol, Tabs } from "@liquity2/uikit";
@@ -34,7 +34,7 @@ export function EarnPoolScreen() {
   const earnPosition = useEarnPosition(collIndex, account.address ?? null);
   const earnPool = useEarnPool(collIndex);
 
-  const hasDeposit = earnPosition.data?.deposit && dn.gt(earnPosition.data.deposit, 0);
+  const active = isEarnPositionActive(earnPosition.data ?? null);
 
   const tab = TABS.find((tab) => tab.action === params.action) ?? TABS[0];
 
@@ -74,7 +74,7 @@ export function EarnPoolScreen() {
           {loadingState === "success"
             ? (
               <EarnPositionSummary
-                earnPosition={earnPosition.data}
+                earnPosition={earnPosition.data ?? null}
                 collIndex={collIndex}
               />
             )
@@ -129,7 +129,7 @@ export function EarnPoolScreen() {
               opacity: style.opacity,
             }}
           >
-            {hasDeposit
+            {active
               ? (
                 <Tabs
                   selected={TABS.indexOf(tab)}

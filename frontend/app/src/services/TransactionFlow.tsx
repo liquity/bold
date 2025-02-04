@@ -28,8 +28,7 @@ import { allocateVotingPower, type AllocateVotingPowerRequest } from "@/src/tx-f
 import { claimCollateralSurplus, type ClaimCollateralSurplusRequest } from "@/src/tx-flows/claimCollateralSurplus";
 import { closeLoanPosition, type CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import { earnClaimRewards, type EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
-import { earnDeposit, type EarnDepositRequest } from "@/src/tx-flows/earnDeposit";
-import { earnWithdraw, type EarnWithdrawRequest } from "@/src/tx-flows/earnWithdraw";
+import { earnUpdate, type EarnUpdateRequest } from "@/src/tx-flows/earnUpdate";
 import { openBorrowPosition, type OpenBorrowPositionRequest } from "@/src/tx-flows/openBorrowPosition";
 import { openLeveragePosition, type OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
 import { stakeClaimRewards, type StakeClaimRewardsRequest } from "@/src/tx-flows/stakeClaimRewards";
@@ -44,8 +43,7 @@ export type FlowRequestMap = {
   "claimCollateralSurplus": ClaimCollateralSurplusRequest;
   "closeLoanPosition": CloseLoanPositionRequest;
   "earnClaimRewards": EarnClaimRewardsRequest;
-  "earnDeposit": EarnDepositRequest;
-  "earnWithdraw": EarnWithdrawRequest;
+  "earnUpdate": EarnUpdateRequest;
   "openBorrowPosition": OpenBorrowPositionRequest;
   "openLeveragePosition": OpenLeveragePositionRequest;
   "stakeClaimRewards": StakeClaimRewardsRequest;
@@ -61,8 +59,7 @@ const FlowIdSchema = v.union([
   v.literal("claimCollateralSurplus"),
   v.literal("closeLoanPosition"),
   v.literal("earnClaimRewards"),
-  v.literal("earnDeposit"),
-  v.literal("earnWithdraw"),
+  v.literal("earnUpdate"),
   v.literal("openBorrowPosition"),
   v.literal("openLeveragePosition"),
   v.literal("stakeClaimRewards"),
@@ -78,8 +75,7 @@ export const flows: FlowsMap = {
   claimCollateralSurplus,
   closeLoanPosition,
   earnClaimRewards,
-  earnDeposit,
-  earnWithdraw,
+  earnUpdate,
   openBorrowPosition,
   openLeveragePosition,
   stakeClaimRewards,

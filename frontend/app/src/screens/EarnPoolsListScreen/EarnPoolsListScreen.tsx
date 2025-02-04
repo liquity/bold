@@ -78,7 +78,7 @@ function EarnPool({
   return (
     <EarnPositionSummary
       collIndex={collIndex}
-      earnPosition={earnPosition.data}
+      earnPosition={earnPosition.data ?? null}
       linkToScreen
     />
   );

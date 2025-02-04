@@ -1,4 +1,6 @@
 import type { Address, CollateralSymbol, CollIndex } from "@/src/types";
+import type { UseQueryResult } from "@tanstack/react-query";
+import type { Dnum } from "dnum";
 
 import { SP_YIELD_SPLIT } from "@/src/constants";
 import { getCollateralContract } from "@/src/contracts";
@@ -6,16 +8,18 @@ import { dnum18 } from "@/src/dnum-utils";
 import { CHAIN_CONTRACT_MULTICALL } from "@/src/env";
 import { getCollToken } from "@/src/liquity-utils";
 import { useStabilityPoolDeposit, useStabilityPoolEpochScale } from "@/src/subgraph-hooks";
-import { useCallback, useMemo } from "react";
-import { useReadContracts } from "wagmi";
+import { useQuery } from "@tanstack/react-query";
+import { serialize, useReadContracts } from "wagmi";
 
 const DECIMAL_PRECISION = 10n ** 18n;
 const SCALE_FACTOR = 10n ** 9n;
 const ONE_YEAR = 365n * 24n * 60n * 60n * 1000n;
 
-export function useContinuousBoldGains(account: null | Address, collIndex: null | CollIndex) {
+export function useContinuousBoldGains(
+  account: null | Address,
+  collIndex: null | CollIndex,
+): UseQueryResult<null | ((now: number) => null | Dnum)> {
   const collateral = getCollToken(collIndex);
-  const spYieldGainParams = useSpYieldGainParameters(collateral?.symbol ?? null);
   const deposit = useStabilityPoolDeposit(collIndex, account);
 
   const epochScale1 = useStabilityPoolEpochScale(
@@ -30,11 +34,8 @@ export function useContinuousBoldGains(account: null | Address, collIndex: null 
     deposit.data?.snapshot.scale ? deposit.data?.snapshot.scale + 1n : null,
   );
 
-  const depositParams = useMemo(() => {
-    if (!deposit.data || !epochScale1.data || !epochScale2.data) {
-      return null;
-    }
-    return {
+  const depositParams = deposit.data && epochScale1.data && epochScale2.data
+    ? {
       initialDeposit: deposit.data.deposit,
       snapshotsEpoch: deposit.data.snapshot.epoch,
       snapshotsScale: deposit.data.snapshot.scale,
@@ -42,33 +43,36 @@ export function useContinuousBoldGains(account: null | Address, collIndex: null 
       snapshotsP: deposit.data.snapshot.P,
       BFromEpochScale: epochScale1.data.B,
       BFromEpochScalePlusOne: epochScale2.data.B,
-    };
-  }, [deposit.data, epochScale1.data, epochScale2.data]);
-
-  const getBoldGains = useCallback((now: number) => {
-    if (!spYieldGainParams.data || !depositParams) {
-      return null;
     }
-    return dnum18(
-      getDepositorYieldGainWithPending(
-        depositParams,
-        spYieldGainParams.data,
-        BigInt(now),
-      ),
-    );
-  }, [depositParams, spYieldGainParams.data]);
+    : null;
 
-  const queryResultBase = [
-    spYieldGainParams,
-    deposit,
-    epochScale1,
-    epochScale2,
-  ].find((r) => r.status !== "success") ?? epochScale2;
+  const spYieldGainParams = useSpYieldGainParameters(collateral?.symbol ?? null);
 
-  return {
-    ...queryResultBase,
-    data: queryResultBase.status === "success" ? getBoldGains : null,
-  };
+  return useQuery({
+    queryKey: [
+      "continuousBoldGains",
+      account,
+      collIndex,
+      serialize(depositParams),
+      serialize(spYieldGainParams.data),
+    ],
+    queryFn: () => {
+      return (now: number) => {
+        // cant happen, see `enabled` below
+        if (!spYieldGainParams.data || !depositParams) {
+          throw new Error();
+        }
+        return dnum18(
+          getDepositorYieldGainWithPending(
+            depositParams,
+            spYieldGainParams.data,
+            BigInt(now),
+          ),
+        );
+      };
+    },
+    enabled: Boolean(spYieldGainParams.data && depositParams),
+  });
 }
 
 type SPYieldGainParameters = {
