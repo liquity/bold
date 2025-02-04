@@ -283,7 +283,7 @@ export function useStakePosition(address: null | Address) {
             eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
             lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
           },
-          share: dnum18(0),
+          share: DNUM_0,
         };
       },
     },
@@ -309,8 +309,8 @@ export function useAverageInterestRate(collIndex: null | CollIndex) {
       return null;
     }
 
-    let totalDebt = dnum18(0);
-    let totalWeightedRate = dnum18(0);
+    let totalDebt = DNUM_0;
+    let totalWeightedRate = DNUM_0;
 
     for (const bracket of brackets.data) {
       totalDebt = dn.add(totalDebt, bracket.totalDebt);
@@ -321,7 +321,7 @@ export function useAverageInterestRate(collIndex: null | CollIndex) {
     }
 
     return dn.eq(totalDebt, 0)
-      ? dnum18(0)
+      ? DNUM_0
       : dn.div(totalWeightedRate, totalDebt);
   }, [brackets.isSuccess, brackets.data]);
 
@@ -345,8 +345,8 @@ export function useInterestRateChartData(collIndex: null | CollIndex) {
         return [];
       }
 
-      let totalDebt = dnum18(0);
-      let highestDebt = dnum18(0);
+      let totalDebt = DNUM_0;
+      let highestDebt = DNUM_0;
       const debtByNonEmptyRateBrackets = new Map<number, Dnum>();
       for (const bracket of brackets.data) {
         const rate = dn.toNumber(dn.mul(bracket.rate, 100));
@@ -359,10 +359,10 @@ export function useInterestRateChartData(collIndex: null | CollIndex) {
         }
       }
 
-      let runningDebtTotal = dnum18(0);
+      let runningDebtTotal = DNUM_0;
       const chartData = Array.from({ length: RATE_STEPS }, (_, i) => {
         const rate = INTEREST_RATE_MIN + Math.floor(i * INTEREST_RATE_INCREMENT * 10) / 10;
-        const debt = debtByNonEmptyRateBrackets?.get(rate) ?? dnum18(0);
+        const debt = debtByNonEmptyRateBrackets?.get(rate) ?? DNUM_0;
         const debtInFront = runningDebtTotal;
         runningDebtTotal = dn.add(runningDebtTotal, debt);
         return {
