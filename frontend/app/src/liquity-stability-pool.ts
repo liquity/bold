@@ -13,34 +13,17 @@ const DECIMAL_PRECISION = 10n ** 18n;
 const SCALE_FACTOR = 10n ** 9n;
 const ONE_YEAR = 365n * 24n * 60n * 60n * 1000n;
 
-// This is an adaptation of getDepositorCollGain() and
-// _getCollGainFromSnapshots() from LiquityStabilityPool.sol
-export function getCollGainFromSnapshots(
-  initialDeposit: bigint,
-  snapshotsP: bigint,
-  snapshotsS: bigint,
-  epochScaleS1: bigint, // S corresponding to the snapshot epoch + scale
-  epochScaleS2: bigint, // S corresponding to the snapshot epoch + scale + 1
-): bigint {
-  if (initialDeposit === 0n) {
-    return 0n;
-  }
-
-  const firstPortion = epochScaleS1 - snapshotsS;
-  const secondPortion = epochScaleS2 / SCALE_FACTOR;
-
-  return (initialDeposit * (firstPortion + secondPortion)) / snapshotsP / DECIMAL_PRECISION;
-}
-
 export function useContinuousBoldGains(account: null | Address, collIndex: null | CollIndex) {
   const collateral = getCollToken(collIndex);
   const spYieldGainParams = useSpYieldGainParameters(collateral?.symbol ?? null);
   const deposit = useStabilityPoolDeposit(collIndex, account);
+
   const epochScale1 = useStabilityPoolEpochScale(
     collIndex,
     deposit.data?.snapshot.epoch ?? null,
     deposit.data?.snapshot.scale ?? null,
   );
+
   const epochScale2 = useStabilityPoolEpochScale(
     collIndex,
     deposit.data?.snapshot.epoch ?? null,

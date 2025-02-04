@@ -11,7 +11,7 @@
   "collateralRegistry": "0xd99de73b95236f69a559117ecd6f519af780f3f7",
   "boldToken": "0xb01dd87b29d187f3e3a4bf6cdaebfb97f3d9ab98",
   "hintHelpers": "0xe3bb97ee79ac4bdfc0c30a95ad82c243c9913ada",
-  "multiTroveGetter": "0xa4a99f8332527a799ac46f616942dbd0d270fc41",
+  "multiTroveGetter": "0x51f54b400d3114ff8abe8c44fc78e27e42571710",
   "exchangeHelpers": "0x28c9decfacee0e796409b4b63eb263610e5e38dc",
   "branches": [
     {
