@@ -2,6 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
+import { DNUM_0 } from "@/src/dnum-utils";
 import { getCollToken } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -30,7 +31,24 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
     return (
       <EarnPositionSummary
         collIndex={request.collIndex}
-        earnPosition={request.earnPosition}
+        earnPosition={{
+          ...request.earnPosition,
+
+          // compound BOLD rewards if not claiming
+          deposit: dn.add(
+            request.earnPosition.deposit,
+            request.claimRewards
+              ? DNUM_0
+              : request.earnPosition.rewards.bold,
+          ),
+          rewards: {
+            // BOLD rewards are claimed or compounded
+            bold: DNUM_0,
+            coll: request.claimRewards
+              ? DNUM_0
+              : request.earnPosition.rewards.coll,
+          },
+        }}
         prevEarnPosition={dn.eq(request.prevEarnPosition.deposit, 0)
           ? null
           : request.prevEarnPosition}
