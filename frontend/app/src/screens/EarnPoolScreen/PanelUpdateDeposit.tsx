@@ -260,49 +260,32 @@ export function PanelUpdateDeposit({
               return;
             }
 
-            const newPosition = position
-              ? { ...position, deposit: updatedDeposit }
-              : {
-                type: "earn" as const,
-                owner: account.address,
-                collIndex: collIndex,
+            const prevEarnPosition = position ?? {
+              type: "earn" as const,
+              owner: account.address,
+              collIndex,
+              deposit: DNUM_0,
+              rewards: { bold: DNUM_0, coll: DNUM_0 },
+            };
+
+            txFlow.start({
+              flowId: "earnUpdate",
+              backLink: [
+                `/earn/${collateral.name.toLowerCase()}`,
+                "Back to editing",
+              ],
+              successLink: ["/", "Go to the Dashboard"],
+              successMessage: mode === "remove"
+                ? "The withdrawal has been processed successfully."
+                : "The deposit has been processed successfully.",
+              collIndex,
+              prevEarnPosition,
+              earnPosition: {
+                ...prevEarnPosition,
                 deposit: updatedDeposit,
-                rewards: { bold: DNUM_0, coll: DNUM_0 },
-              };
-
-            if (mode === "remove" && position) {
-              txFlow.start({
-                flowId: "earnWithdraw",
-                backLink: [
-                  `/earn/${collateral.name.toLowerCase()}`,
-                  "Back to editing",
-                ],
-                successLink: ["/", "Go to the Dashboard"],
-                successMessage: "The withdrawal has been processed successfully.",
-                claim: claimRewards,
-                collIndex,
-                prevEarnPosition: position,
-                earnPosition: newPosition,
-              });
-              return;
-            }
-
-            if (mode === "add") {
-              txFlow.start({
-                flowId: "earnDeposit",
-                backLink: [
-                  `/earn/${collateral.name.toLowerCase()}`,
-                  "Back to editing",
-                ],
-                successLink: ["/", "Go to the Dashboard"],
-                successMessage: "The deposit has been processed successfully.",
-                claim: claimRewards,
-                collIndex,
-                prevEarnPosition: position ?? null,
-                earnPosition: newPosition,
-              });
-              return;
-            }
+              },
+              claimRewards,
+            });
           }}
         />
       </div>
