@@ -17,11 +17,11 @@ import "./BorrowerOperationsTester.t.sol";
 import "./TroveManagerTester.t.sol";
 import "./CollateralRegistryTester.sol";
 import "src/TroveNFT.sol";
-import "src/NFTMetadata/MetadataNFT.sol";
+import {MetadataNFT} from "src/NFTMetadata/MetadataNFT.sol";
 import "src/CollateralRegistry.sol";
 import "./MockInterestRouter.sol";
 import "./PriceFeedTestnet.sol";
-import "./MetadataDeployment.sol";
+import {MetadataDeployment} from "./MetadataDeployment.sol";
 import "src/Zappers/WETHZapper.sol";
 import "src/Zappers/GasCompZapper.sol";
 import "src/Zappers/LeverageLSTZapper.sol";
@@ -723,7 +723,7 @@ contract TestDeployer is MetadataDeployment {
         );
 
         // TODO: remove this and set address in constructor as per the CREATE2 approach above
-        _params.priceFeed.setAddresses(addresses.borrowerOperations);
+        // _params.priceFeed.setAddresses(addresses.borrowerOperations);
 
         // deploy zappers
         _deployZappers(

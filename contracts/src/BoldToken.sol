@@ -17,8 +17,8 @@ import "./Interfaces/IBoldToken.sol";
  */
 
 contract BoldToken is Ownable, IBoldToken, ERC20Permit {
-    string internal constant _NAME = "Bold Stablecoin";
-    string internal constant _SYMBOL = "Bold";
+    string internal constant _NAME = "U.S. Asymmetry Dollar";
+    string internal constant _SYMBOL = "USA.d";
 
     // --- Addresses ---
 

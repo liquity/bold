@@ -2,14 +2,13 @@
 
 pragma solidity 0.8.24;
 
-import "../Dependencies/Ownable.sol";
 import "../Dependencies/AggregatorV3Interface.sol";
 import "../Interfaces/IMainnetPriceFeed.sol";
 import "../BorrowerOperations.sol";
 
 // import "forge-std/console2.sol";
 
-abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
+abstract contract MainnetPriceFeedBase is IMainnetPriceFeed {
     // Determines where the PriceFeed sources data from. Possible states:
     // - primary: Uses the primary price calcuation, which depends on the specific feed
     // - ETHUSDxCanonical: Uses Chainlink's ETH-USD multiplied by the LST' canonical rate
@@ -40,20 +39,15 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
 
     IBorrowerOperations borrowerOperations;
 
-    constructor(address _owner, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold) Ownable(_owner) {
+    constructor(address _borrowOperationsAddress, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold) {
         // Store ETH-USD oracle
         ethUsdOracle.aggregator = AggregatorV3Interface(_ethUsdOracleAddress);
         ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
         ethUsdOracle.decimals = ethUsdOracle.aggregator.decimals();
 
-        assert(ethUsdOracle.decimals == 8);
-    }
-
-    // TODO: remove this and set address in constructor, since we'll use CREATE2
-    function setAddresses(address _borrowOperationsAddress) external onlyOwner {
         borrowerOperations = IBorrowerOperations(_borrowOperationsAddress);
 
-        _renounceOwnership();
+        assert(ethUsdOracle.decimals == 8);
     }
 
     function _getOracleAnswer(Oracle memory _oracle) internal view returns (uint256, bool) {
