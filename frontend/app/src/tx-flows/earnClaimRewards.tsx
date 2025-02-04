@@ -36,10 +36,6 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
   Details({ request }) {
     const collateral = getCollToken(request.earnPosition.collIndex);
 
-    if (!collateral) {
-      return null;
-    }
-
     const boldPrice = usePrice("BOLD");
     const collPrice = usePrice(collateral.symbol);
 

@@ -67,6 +67,9 @@ export function getPrefixedTroveId(collIndex: CollIndex, troveId: TroveId): Pref
   return `${collIndex}:${troveId}`;
 }
 
+export function getCollToken(collIndex: null): null;
+export function getCollToken(collIndex: CollIndex): CollateralToken;
+export function getCollToken(collIndex: CollIndex | null): CollateralToken | null;
 export function getCollToken(collIndex: CollIndex | null): CollateralToken | null {
   const { collaterals } = getContracts();
   if (collIndex === null) {
