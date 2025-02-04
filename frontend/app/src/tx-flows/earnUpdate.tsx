@@ -72,7 +72,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
         />
         {dn.gt(rewards.bold, 0) && (
           <TransactionDetailsRow
-            label={claimRewards ? "Claiming BOLD rewards" : "Compound BOLD rewards"}
+            label={claimRewards ? "Claim BOLD rewards" : "Compound BOLD rewards"}
             value={[
               <Amount
                 key="start"
@@ -89,7 +89,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
         )}
         {claimRewards && dn.gt(rewards.coll, 0) && (
           <TransactionDetailsRow
-            label={`Claiming ${collateral.name} rewards`}
+            label={`Claim ${collateral.name} rewards`}
             value={[
               <Amount
                 key="start"
