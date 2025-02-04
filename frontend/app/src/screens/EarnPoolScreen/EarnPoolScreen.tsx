@@ -74,7 +74,7 @@ export function EarnPoolScreen() {
           {loadingState === "success"
             ? (
               <EarnPositionSummary
-                earnPosition={earnPosition.data}
+                earnPosition={earnPosition.data ?? null}
                 collIndex={collIndex}
               />
             )
