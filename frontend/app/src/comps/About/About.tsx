@@ -46,14 +46,14 @@ function getEnvGroups() {
   }
 
   const branches: {
-    collIndex: number;
+    branchId: number;
     symbol: string;
     contracts: [string, string][];
   }[] = [];
 
-  for (const { collIndex, symbol, contracts } of config.COLLATERAL_CONTRACTS) {
+  for (const { branchId, symbol, contracts } of config.COLLATERAL_CONTRACTS) {
     branches.push({
-      collIndex,
+      branchId,
       symbol,
       contracts: Object
         .entries(contracts)
@@ -279,9 +279,9 @@ export function About({ children }: { children: ReactNode }) {
               }
               entries={envGroups.contracts}
             />
-            {envGroups.branches.map(({ collIndex, symbol, contracts }) => (
+            {envGroups.branches.map(({ branchId, symbol, contracts }) => (
               <AboutTable
-                key={collIndex}
+                key={branchId}
                 title={`Branch contracts: ${symbol}`}
                 entries={Object.fromEntries(contracts)}
               />

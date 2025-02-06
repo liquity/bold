@@ -1,4 +1,4 @@
-import type { Address, CollateralSymbol, CollIndex } from "@/src/types";
+import type { Address, CollateralSymbol, BranchId } from "@/src/types";
 
 import { SP_YIELD_SPLIT } from "@/src/constants";
 import { getCollateralContract } from "@/src/contracts";
@@ -13,19 +13,19 @@ const DECIMAL_PRECISION = 10n ** 18n;
 const SCALE_FACTOR = 10n ** 9n;
 const ONE_YEAR = 365n * 24n * 60n * 60n * 1000n;
 
-export function useContinuousBoldGains(account: null | Address, collIndex: null | CollIndex) {
-  const collateral = getCollToken(collIndex);
+export function useContinuousBoldGains(account: null | Address, branchId: null | BranchId) {
+  const collateral = getCollToken(branchId);
   const spYieldGainParams = useSpYieldGainParameters(collateral?.symbol ?? null);
-  const deposit = useStabilityPoolDeposit(collIndex, account);
+  const deposit = useStabilityPoolDeposit(branchId, account);
 
   const epochScale1 = useStabilityPoolEpochScale(
-    collIndex,
+    branchId,
     deposit.data?.snapshot.epoch ?? null,
     deposit.data?.snapshot.scale ?? null,
   );
 
   const epochScale2 = useStabilityPoolEpochScale(
-    collIndex,
+    branchId,
     deposit.data?.snapshot.epoch ?? null,
     deposit.data?.snapshot.scale ? deposit.data?.snapshot.scale + 1n : null,
   );

@@ -38,7 +38,7 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     deposit: dn.from(5.5, 18),
     interestRate: dn.from(0.067, 18),
     troveId: "0x01",
-    collIndex: 1,
+    branchId: 1,
     batchManager: null,
     createdAt: getTime(),
     updatedAt: getTime(),
@@ -51,7 +51,7 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     deposit: dn.from(19.20, 18), // 8 ETH @ 2.4 leverage
     interestRate: dn.from(0.045, 18),
     troveId: "0x02",
-    collIndex: 0,
+    branchId: 0,
     batchManager: null,
     createdAt: getTime(),
     updatedAt: getTime(),
@@ -59,7 +59,7 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
   {
     type: "earn",
     owner: DEMO_ACCOUNT,
-    collIndex: 0,
+    branchId: 0,
     deposit: dn.from(5_000, 18),
     rewards: {
       bold: dn.from(789.438, 18),
@@ -81,15 +81,15 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
 
 export const BORROW_STATS = {
   ETH: {
-    collIndex: 0,
+    branchId: 0,
     totalDeposited: dn.from(30_330.9548, 18),
   },
   RETH: {
-    collIndex: 1,
+    branchId: 1,
     totalDeposited: dn.from(22_330.9548, 18),
   },
   WSTETH: {
-    collIndex: 2,
+    branchId: 2,
     totalDeposited: dn.from(18_030.9548, 18),
   },
 } as const;

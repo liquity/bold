@@ -5,13 +5,13 @@ import type {
   StabilityPoolDepositQuery as StabilityPoolDepositQueryType,
   TrovesByAccountQuery as TrovesByAccountQueryType,
 } from "@/src/graphql/graphql";
-import type { Address, CollIndex, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
+import type { Address, BranchId, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { DEMO_MODE } from "@/src/env";
-import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
+import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { sleep } from "@/src/utils";
 import { isAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
@@ -44,11 +44,11 @@ function prepareOptions(options?: Options) {
 
 export function useNextOwnerIndex(
   borrower: null | Address,
-  collIndex: null | CollIndex,
+  branchId: null | BranchId,
   options?: Options,
 ) {
   let queryFn = async () => {
-    if (!borrower || collIndex === null) {
+    if (!borrower || branchId === null) {
       return null;
     }
 
@@ -58,7 +58,7 @@ export function useNextOwnerIndex(
     );
 
     // if borrowerInfo doesn’t exist, start at 0
-    return borrowerInfo?.nextOwnerIndexes[collIndex] ?? 0;
+    return borrowerInfo?.nextOwnerIndexes[branchId] ?? 0;
   };
 
   if (DEMO_MODE) {
@@ -72,7 +72,7 @@ export function useNextOwnerIndex(
   }
 
   return useQuery({
-    queryKey: ["NextTroveId", borrower, collIndex],
+    queryKey: ["NextTroveId", borrower, branchId],
     queryFn,
     ...prepareOptions(options),
   });
@@ -120,7 +120,7 @@ export function useLoanById(
       if (!isPrefixedtroveId(id)) return null;
       await sleep(500);
       for (const pos of ACCOUNT_POSITIONS) {
-        if (isPositionLoanCommitted(pos) && `${pos.collIndex}:${pos.troveId}` === id) {
+        if (isPositionLoanCommitted(pos) && `${pos.branchId}:${pos.troveId}` === id) {
           return pos;
         }
       }
@@ -166,11 +166,17 @@ export function useStabilityPoolDeposits(
       return ACCOUNT_POSITIONS
         .filter((position) => position.type === "earn")
         .map((position) => ({
-          id: `${position.collIndex}:${account}`.toLowerCase(),
-          collateral: { collIndex: position.collIndex },
+          id: `${position.branchId}:${account}`.toLowerCase(),
+          collateral: { collIndex: position.branchId },
           deposit: position.deposit[0],
           depositor: account.toLowerCase(),
-          snapshot: { B: 0n, P: 0n, S: 0n, epoch: 0n, scale: 0n },
+          snapshot: {
+            B: 0n,
+            P: 0n,
+            S: 0n,
+            epoch: 0n,
+            scale: 0n,
+          },
         }));
     };
   }
@@ -185,18 +191,18 @@ export function useStabilityPoolDeposits(
 }
 
 export function useStabilityPoolDeposit(
-  collIndex: null | number,
+  branchId: null | number,
   account: null | Address,
   options?: Options,
 ) {
   let queryFn = async () => {
-    if (account === null || collIndex === null) return null;
+    if (account === null || branchId === null) return null;
     const { stabilityPoolDeposit } = await graphQuery(StabilityPoolDepositQuery, {
-      id: `${collIndex}:${account}`.toLowerCase(),
+      id: `${branchId}:${account}`.toLowerCase(),
     });
     return !stabilityPoolDeposit ? null : {
-      id: `${collIndex}:${account}`.toLowerCase(),
-      collateral: { collIndex },
+      id: `${branchId}:${account}`.toLowerCase(),
+      collateral: { collIndex: branchId },
       deposit: BigInt(stabilityPoolDeposit.deposit),
       depositor: account.toLowerCase(),
       snapshot: {
@@ -211,18 +217,24 @@ export function useStabilityPoolDeposit(
 
   if (DEMO_MODE) {
     queryFn = async () => {
-      if (account === null || collIndex === null) return null;
+      if (account === null || branchId === null) return null;
       const position = ACCOUNT_POSITIONS.find(
         (position): position is PositionEarn => (
-          position.type === "earn" && position.collIndex === collIndex
+          position.type === "earn" && position.branchId === branchId
         ),
       );
       return !position ? null : {
-        id: `${collIndex}:${account}`.toLowerCase(),
-        collateral: { collIndex },
+        id: `${branchId}:${account}`.toLowerCase(),
+        collateral: { collIndex: branchId },
         deposit: position.deposit[0],
         depositor: account.toLowerCase(),
-        snapshot: { B: 0n, P: 0n, S: 0n, epoch: 0n, scale: 0n },
+        snapshot: {
+          B: 0n,
+          P: 0n,
+          S: 0n,
+          epoch: 0n,
+          scale: 0n,
+        },
       };
     };
   }
@@ -233,14 +245,14 @@ export function useStabilityPoolDeposit(
       StabilityPoolDepositQueryType["stabilityPoolDeposit"]
     >
   >({
-    queryKey: ["StabilityPoolDeposit", account, collIndex],
+    queryKey: ["StabilityPoolDeposit", account, branchId],
     queryFn,
     ...prepareOptions(options),
   });
 }
 
 export function useStabilityPool(
-  collIndex?: null | number,
+  branchId?: null | number,
   options?: Options,
 ) {
   let queryFn = async () => {
@@ -248,7 +260,7 @@ export function useStabilityPool(
       StabilityPoolsQuery,
     );
     return stabilityPools.map((stabilityPool) => ({
-      collIndex: parseInt(stabilityPool.id, 10),
+      branchId: parseInt(stabilityPool.id, 10),
       apr: dnum18(0),
       totalDeposited: dnum18(stabilityPool.totalDeposited),
     }));
@@ -256,8 +268,8 @@ export function useStabilityPool(
 
   if (DEMO_MODE) {
     queryFn = async () =>
-      Array.from({ length: 10 }, (_, collIndex) => ({
-        collIndex,
+      Array.from({ length: 10 }, (_, branchId) => ({
+        branchId,
         apr: dnum18(0),
         totalDeposited: dnum18(0),
       }));
@@ -267,12 +279,12 @@ export function useStabilityPool(
     queryKey: ["StabilityPool"],
     queryFn,
     select: (pools) => {
-      if (typeof collIndex !== "number") {
+      if (typeof branchId !== "number") {
         return null;
       }
-      const pool = pools.find((pool) => pool.collIndex === collIndex);
+      const pool = pools.find((pool) => pool.branchId === branchId);
       if (pool === undefined) {
-        throw new Error(`Stability pool not found: ${collIndex}`);
+        throw new Error(`Stability pool not found: ${branchId}`);
       }
       return pool;
     },
@@ -281,7 +293,7 @@ export function useStabilityPool(
 }
 
 export function useStabilityPoolEpochScale(
-  collIndex: null | number,
+  branchId: null | number,
   epoch: null | bigint,
   scale: null | bigint,
   options?: Options,
@@ -289,7 +301,7 @@ export function useStabilityPoolEpochScale(
   let queryFn = async () => {
     const { stabilityPoolEpochScale } = await graphQuery(
       StabilityPoolEpochScaleQuery,
-      { id: `${collIndex}:${epoch}:${scale}` },
+      { id: `${branchId}:${epoch}:${scale}` },
     );
     return {
       B: BigInt(stabilityPoolEpochScale?.B ?? 0n),
@@ -302,7 +314,7 @@ export function useStabilityPoolEpochScale(
   }
 
   return useQuery<{ B: bigint; S: bigint }>({
-    queryKey: ["StabilityPoolEpochScale", collIndex, String(epoch), String(scale)],
+    queryKey: ["StabilityPoolEpochScale", branchId, String(epoch), String(scale)],
     queryFn,
     ...prepareOptions(options),
   });
@@ -336,7 +348,7 @@ export function useEarnPositionsByAccount(
 }
 
 export function useInterestRateBrackets(
-  collIndex: null | CollIndex,
+  branchId: null | BranchId,
   options?: Options,
 ) {
   let queryFn = async () => (
@@ -351,10 +363,10 @@ export function useInterestRateBrackets(
     queryKey: ["AllInterestRateBrackets"],
     queryFn,
     select: useCallback((brackets: Awaited<ReturnType<typeof queryFn>>) => {
-      // only filter by collIndex in the select()
+      // only filter by branchId in the select()
       // so that we can query all the brackets at once
       return brackets
-        .filter((bracket) => bracket.collateral.collIndex === collIndex)
+        .filter((bracket) => bracket.collateral.collIndex === branchId)
         .sort((a, b) => (a.rate > b.rate ? 1 : -1))
         .map((bracket) => ({
           rate: dnum18(bracket.rate),
@@ -443,9 +455,9 @@ function subgraphTroveToLoan(
     throw new Error(`Invalid trove ID: ${trove.id} / ${trove.troveId}`);
   }
 
-  const collIndex = trove.collateral.collIndex;
-  if (!isCollIndex(collIndex)) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
+  const branchId = trove.collateral.id;
+  if (!isBranchId(branchId)) {
+    throw new Error(`Invalid branch: ${branchId}`);
   }
 
   if (!isAddress(trove.borrower)) {
@@ -459,7 +471,7 @@ function subgraphTroveToLoan(
       : null,
     borrowed: dnum18(trove.debt),
     borrower: trove.borrower,
-    collIndex,
+    branchId,
     createdAt: Number(trove.createdAt) * 1000,
     deposit: dnum18(trove.deposit),
     interestRate: dnum18(trove.interestBatch?.annualInterestRate ?? trove.interestRate),
@@ -474,9 +486,9 @@ function subgraphStabilityPoolDepositToEarnPosition(
     StabilityPoolDepositQueryType["stabilityPoolDeposit"]
   >,
 ): PositionEarn {
-  const collIndex = spDeposit.collateral.collIndex;
-  if (!isCollIndex(collIndex)) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
+  const branchId = spDeposit.collateral.collIndex;
+  if (!isBranchId(branchId)) {
+    throw new Error(`Invalid branch: ${branchId}`);
   }
   if (!isAddress(spDeposit.depositor)) {
     throw new Error(`Invalid depositor address: ${spDeposit.depositor}`);
@@ -484,7 +496,7 @@ function subgraphStabilityPoolDepositToEarnPosition(
   return {
     type: "earn",
     owner: spDeposit.depositor,
-    collIndex,
+    branchId,
     deposit: dnum18(0),
     rewards: {
       bold: dnum18(0),

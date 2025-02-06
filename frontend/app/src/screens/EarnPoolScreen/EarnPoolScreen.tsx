@@ -5,7 +5,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import content from "@/src/content";
-import { getCollIndexFromSymbol, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
+import { getBranch, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, isCollateralSymbol, Tabs } from "@liquity2/uikit";
@@ -22,21 +22,26 @@ const TABS = [
 ] as const;
 
 export function EarnPoolScreen() {
-  const router = useRouter();
   const params = useParams();
 
-  const account = useAccount();
-
   const collateralSymbol = String(params.pool).toUpperCase();
-  const isCollSymbolOk = isCollateralSymbol(collateralSymbol);
-  const collIndex = getCollIndexFromSymbol(isCollSymbolOk ? collateralSymbol : null);
-
-  const earnPosition = useEarnPosition(collIndex, account.address ?? null);
-  const earnPool = useEarnPool(collIndex);
-
-  const hasDeposit = earnPosition.data?.deposit && dn.gt(earnPosition.data.deposit, 0);
+  if (!isCollateralSymbol(collateralSymbol)) {
+    throw new Error("Invalid collateral symbol");
+  }
 
   const tab = TABS.find((tab) => tab.action === params.action) ?? TABS[0];
+  if (!tab) {
+    throw new Error("Invalid tab action: " + params.action);
+  }
+
+  const router = useRouter();
+  const account = useAccount();
+
+  const branch = getBranch(collateralSymbol);
+  const earnPosition = useEarnPosition(branch.id, account.address ?? null);
+  const earnPool = useEarnPool(branch.id);
+
+  const hasDeposit = earnPosition.data?.deposit && dn.gt(earnPosition.data.deposit, 0);
 
   const loadingState = earnPool.isLoading || earnPosition.status === "pending" ? "loading" : "success";
 
@@ -51,11 +56,7 @@ export function EarnPoolScreen() {
     },
   });
 
-  if (collIndex === null || !isCollSymbolOk) {
-    return null;
-  }
-
-  return earnPool.data && tab && (
+  return (
     <Screen
       ready={loadingState === "success"}
       back={{
@@ -75,7 +76,7 @@ export function EarnPoolScreen() {
             ? (
               <EarnPositionSummary
                 earnPosition={earnPosition.data}
-                collIndex={collIndex}
+                branchId={branch.id}
               />
             )
             : (
@@ -160,14 +161,14 @@ export function EarnPoolScreen() {
               )}
             {tab.action === "deposit" && (
               <PanelUpdateDeposit
-                collIndex={collIndex}
+                branchId={branch.id}
                 deposited={earnPool.data.totalDeposited ?? dn.from(0, 18)}
                 position={earnPosition.data ?? undefined}
               />
             )}
             {tab.action === "claim" && (
               <PanelClaimRewards
-                collIndex={collIndex}
+                branchId={branch.id}
                 position={earnPosition.data ?? undefined}
               />
             )}

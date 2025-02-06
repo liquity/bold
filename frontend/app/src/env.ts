@@ -1,6 +1,6 @@
-import type { Address, CollIndex } from "@/src/types";
+import type { Address, BranchId } from "@/src/types";
 
-import { isCollIndex } from "@/src/types";
+import { isBranchId } from "@/src/types";
 import { vAddress, vEnvAddressAndBlock, vEnvCurrency, vEnvFlag, vEnvLink, vEnvUrlOrDefault } from "@/src/valibot-utils";
 import * as v from "valibot";
 
@@ -13,8 +13,8 @@ export const CollateralSymbolSchema = v.union([
   v.literal("WSTETH"),
 ]);
 
-function vCollateralEnvVars(collIndex: CollIndex) {
-  const prefix = `COLL_${collIndex}`;
+function vCollateralEnvVars(branchId: BranchId) {
+  const prefix = `COLL_${branchId}`;
   return v.object({
     [`${prefix}_CONTRACT_ACTIVE_POOL`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_BORROWER_OPERATIONS`]: v.optional(vAddress()),
@@ -27,7 +27,22 @@ function vCollateralEnvVars(collIndex: CollIndex) {
     [`${prefix}_CONTRACT_STABILITY_POOL`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_TROVE_MANAGER`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_TROVE_NFT`]: v.optional(vAddress()),
-    [`${prefix}_DELEGATE_AUTO`]: v.optional(vAddress()),
+    [`${prefix}_IC_STRATEGIES`]: v.optional(
+      v.pipe(
+        v.string(),
+        v.regex(/^\s?([^:]+:0x[0-9a-fA-F]{40},?)+\s?$/),
+        v.transform((value) => {
+          value = value.trim();
+          if (value.endsWith(",")) {
+            value = value.slice(0, -1);
+          }
+          return value.split(",").map((s) => {
+            const [name, address] = s.split(":");
+            return { address, name };
+          });
+        }),
+      ),
+    ),
     [`${prefix}_TOKEN_ID`]: v.optional(CollateralSymbolSchema),
   });
 }
@@ -182,9 +197,9 @@ export const EnvSchema = v.pipe(
     type ContractEnvName = typeof contractsEnvNames[number];
 
     const collateralContracts: Array<{
-      collIndex: CollIndex;
+      branchId: BranchId;
       contracts: Record<ContractEnvName, Address>;
-      delegateAuto: Address | null;
+      strategies: Array<{ address: Address; name: string }>;
       symbol: v.InferOutput<typeof CollateralSymbolSchema>;
     }> = [];
 
@@ -208,14 +223,16 @@ export const EnvSchema = v.pipe(
         throw new Error(`Incomplete contracts for collateral ${index} (${contractsCount}/${contractsEnvNames.length})`);
       }
 
-      if (!isCollIndex(index)) {
-        throw new Error(`Invalid collateral index: ${index}`);
+      if (!isBranchId(index)) {
+        throw new Error(`Invalid branch: ${index}`);
       }
 
       collateralContracts[index] = {
-        collIndex: index,
+        branchId: index,
         contracts: contracts as Record<ContractEnvName, Address>,
-        delegateAuto: (env[`${collEnvName}_DELEGATE_AUTO` as keyof typeof env] ?? null) as Address | null,
+        strategies: (env[`${collEnvName}_IC_STRATEGIES` as keyof typeof env] ?? []) as Array<
+          { address: Address; name: string }
+        >,
         symbol: env[`${collEnvName}_TOKEN_ID` as keyof typeof env] as v.InferOutput<typeof CollateralSymbolSchema>,
       };
     }
@@ -290,9 +307,9 @@ const parsedEnv = v.safeParse(EnvSchema, {
   COLL_1_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_1_TOKEN_ID,
   COLL_2_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_2_TOKEN_ID,
 
-  COLL_0_DELEGATE_AUTO: process.env.NEXT_PUBLIC_COLL_0_DELEGATE_AUTO,
-  COLL_1_DELEGATE_AUTO: process.env.NEXT_PUBLIC_COLL_1_DELEGATE_AUTO,
-  COLL_2_DELEGATE_AUTO: process.env.NEXT_PUBLIC_COLL_2_DELEGATE_AUTO,
+  COLL_0_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_0_IC_STRATEGIES,
+  COLL_1_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_1_IC_STRATEGIES,
+  COLL_2_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_2_IC_STRATEGIES,
 
   COLL_0_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_ACTIVE_POOL,
   COLL_0_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_BORROWER_OPERATIONS,

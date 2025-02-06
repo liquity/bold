@@ -12,7 +12,7 @@ export function PositionCardLoan(
     | "type"
     | "batchManager"
     | "borrowed"
-    | "collIndex"
+    | "branchId"
     | "deposit"
     | "interestRate"
     | "status"
@@ -21,9 +21,9 @@ export function PositionCardLoan(
 ) {
   const storedState = useStoredState();
 
-  const loan = useLoan(props.collIndex, props.troveId);
+  const loan = useLoan(props.branchId, props.troveId);
 
-  const prefixedTroveId = getPrefixedTroveId(props.collIndex, props.troveId);
+  const prefixedTroveId = getPrefixedTroveId(props.branchId, props.troveId);
   const loanMode = storedState.loanModes[prefixedTroveId] ?? props.type;
 
   const Card = loanMode === "multiply" ? PositionCardLeverage : PositionCardBorrow;

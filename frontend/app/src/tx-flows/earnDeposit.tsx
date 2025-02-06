@@ -2,10 +2,11 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
+import { getBranch } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { vCollIndex, vPositionEarn } from "@/src/valibot-utils";
+import { vBranchId, vPositionEarn } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
@@ -18,7 +19,7 @@ const RequestSchema = createRequestSchema(
       vPositionEarn(),
     ]),
     earnPosition: vPositionEarn(),
-    collIndex: vCollIndex(),
+    branchId: vBranchId(),
     claim: v.boolean(),
   },
 );
@@ -31,7 +32,7 @@ export const earnDeposit: FlowDeclaration<EarnDepositRequest> = {
   Summary({ request }) {
     return (
       <EarnPositionSummary
-        collIndex={request.collIndex}
+        branchId={request.branchId}
         earnPosition={request.earnPosition}
         prevEarnPosition={request.prevEarnPosition}
         txPreviewMode
@@ -72,17 +73,13 @@ export const earnDeposit: FlowDeclaration<EarnDepositRequest> = {
       Status: TransactionStatus,
 
       async commit(ctx) {
-        const collateral = ctx.contracts.collaterals[ctx.request.collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + ctx.request.collIndex);
-        }
+        const branch = getBranch(ctx.request.branchId);
         const boldAmount = dn.sub(
           ctx.request.earnPosition.deposit,
           ctx.request.prevEarnPosition?.deposit ?? dn.from(0, 18),
         );
-
         return ctx.writeContract({
-          ...collateral.contracts.StabilityPool,
+          ...branch.contracts.StabilityPool,
           functionName: "provideToSP",
           args: [
             boldAmount[0],

@@ -5,7 +5,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { MAX_ANNUAL_INTEREST_RATE, MIN_ANNUAL_INTEREST_RATE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { usePredictAdjustInterestRateUpfrontFee } from "@/src/liquity-utils";
+import { getBranch, usePredictAdjustInterestRateUpfrontFee } from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
@@ -35,7 +35,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
   Summary({ request }) {
     const { loan, prevLoan } = request;
     const upfrontFee = usePredictAdjustInterestRateUpfrontFee(
-      loan.collIndex,
+      loan.branchId,
       loan.troveId,
       loan.batchManager ?? loan.interestRate,
       prevLoan.batchManager !== null,
@@ -70,7 +70,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
     const { loan, prevLoan } = request;
 
     const upfrontFee = usePredictAdjustInterestRateUpfrontFee(
-      loan.collIndex,
+      loan.branchId,
       loan.troveId,
       loan.batchManager ?? loan.interestRate,
       prevLoan.batchManager !== null,
@@ -192,16 +192,9 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
 
       async commit(ctx) {
         const { loan } = ctx.request;
-
-        const collateral = ctx.contracts.collaterals[loan.collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + loan.collIndex);
-        }
-
-        const { BorrowerOperations } = collateral.contracts;
-
+        const branch = getBranch(loan.branchId);
         return ctx.writeContract({
-          ...BorrowerOperations,
+          ...branch.contracts.BorrowerOperations,
           functionName: "adjustTroveInterestRate",
           args: [
             BigInt(loan.troveId),
@@ -224,19 +217,14 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
 
       async commit(ctx) {
         const { loan } = ctx.request;
-        const collateral = ctx.contracts.collaterals[loan.collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + loan.collIndex);
-        }
-
-        const { BorrowerOperations } = collateral.contracts;
 
         if (!loan.batchManager) {
           throw new Error("No batch manager provided");
         }
 
+        const branch = getBranch(loan.branchId);
         return ctx.writeContract({
-          ...BorrowerOperations,
+          ...branch.contracts.BorrowerOperations,
           functionName: "setInterestBatchManager",
           args: [
             BigInt(loan.troveId),
@@ -259,15 +247,9 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
 
       async commit(ctx) {
         const { loan } = ctx.request;
-        const collateral = ctx.contracts.collaterals[loan.collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + loan.collIndex);
-        }
-
-        const { BorrowerOperations } = collateral.contracts;
-
+        const branch = getBranch(loan.branchId);
         return ctx.writeContract({
-          ...BorrowerOperations,
+          ...branch.contracts.BorrowerOperations,
           functionName: "removeFromBatch",
           args: [
             BigInt(loan.troveId),
@@ -287,18 +269,14 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
 
   async getSteps(ctx) {
     const loan = ctx.request.loan;
-    const collateral = ctx.contracts.collaterals[loan.collIndex];
-    if (!collateral) {
-      throw new Error("Invalid collateral index: " + loan.collIndex);
-    }
-
     if (loan.batchManager) {
       return ["setInterestBatchManager"];
     }
 
+    const branch = getBranch(loan.branchId);
     const isInBatch = (
       await ctx.readContract({
-        ...collateral.contracts.BorrowerOperations,
+        ...branch.contracts.BorrowerOperations,
         functionName: "interestBatchManagerOf",
         args: [BigInt(loan.troveId)],
       })

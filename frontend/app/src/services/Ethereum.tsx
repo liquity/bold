@@ -7,7 +7,6 @@ import type { Address } from "@liquity2/uikit";
 import type { ComponentProps, ReactNode } from "react";
 import type { Chain } from "wagmi/chains";
 
-import { getContracts } from "@/src/contracts";
 import { ACCOUNT_BALANCES } from "@/src/demo-mode";
 import { useDemoMode } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
@@ -25,6 +24,7 @@ import {
   CONTRACT_LUSD_TOKEN,
   WALLET_CONNECT_PROJECT_ID,
 } from "@/src/env";
+import { getBranch } from "@/src/liquity-utils";
 import { getSafeStatus } from "@/src/safe-utils";
 import { noop } from "@/src/utils";
 import { isCollateralSymbol, useTheme } from "@liquity2/uikit";
@@ -114,7 +114,6 @@ export function useBalance(
   token: Token["symbol"] | undefined,
 ) {
   const demoMode = useDemoMode();
-  const contracts = getContracts();
 
   const tokenAddress = match(token)
     .when(
@@ -123,8 +122,7 @@ export function useBalance(
         if (!symbol || !isCollateralSymbol(symbol) || symbol === "ETH") {
           return null;
         }
-        const collateral = contracts.collaterals.find((c) => c.symbol === symbol);
-        return collateral?.contracts.CollToken.address ?? null;
+        return getBranch(symbol).contracts.CollToken.address;
       },
     )
     .with("LUSD", () => CONTRACT_LUSD_TOKEN)

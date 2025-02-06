@@ -1,4 +1,4 @@
-import type { CollIndex, TroveId } from "@/src/types";
+import type { BranchId, TroveId } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
 import { getPrefixedTroveId } from "@/src/liquity-utils";
@@ -55,7 +55,7 @@ export async function verifyTroveUpdate(
   wagmiConfig: WagmiConfig,
   hash: string,
   loan: {
-    collIndex: CollIndex;
+    branchId: BranchId;
     troveId: TroveId;
     updatedAt: number;
   },
@@ -63,7 +63,7 @@ export async function verifyTroveUpdate(
   await waitForTransactionReceipt(wagmiConfig, {
     hash: hash as `0x${string}`,
   });
-  const prefixedTroveId = getPrefixedTroveId(loan.collIndex, loan.troveId);
+  const prefixedTroveId = getPrefixedTroveId(loan.branchId, loan.troveId);
   while (true) {
     // wait for the trove to be updated in the subgraph
     const { trove } = await graphQuery(

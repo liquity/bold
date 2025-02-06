@@ -1,4 +1,4 @@
-import type { CollIndex, Dnum, TroveId } from "@/src/types";
+import type { BranchId, Dnum, TroveId } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
 import { CLOSE_FROM_COLLATERAL_SLIPPAGE, DATA_REFRESH_INTERVAL } from "@/src/constants";
@@ -14,15 +14,15 @@ import { readContract, readContracts } from "wagmi/actions";
 const DECIMAL_PRECISION = 10n ** 18n;
 
 export async function getLeverUpTroveParams(
-  collIndex: CollIndex,
+  branchId: BranchId,
   troveId: TroveId,
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const collContracts = getCollateralContracts(collIndex);
+  const collContracts = getCollateralContracts(branchId);
 
   if (!collContracts) {
-    throw new Error("Invalid collateral index: " + collIndex);
+    throw new Error("Invalid branch: " + branchId);
   }
 
   const { PriceFeed, TroveManager } = collContracts;
@@ -73,15 +73,15 @@ export async function getLeverUpTroveParams(
 }
 
 export async function getLeverDownTroveParams(
-  collIndex: CollIndex,
+  branchId: BranchId,
   troveId: TroveId,
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const collContracts = getCollateralContracts(collIndex);
+  const collContracts = getCollateralContracts(branchId);
 
   if (!collContracts) {
-    throw new Error("Invalid collateral index: " + collIndex);
+    throw new Error("Invalid branch: " + branchId);
   }
 
   const { PriceFeed, TroveManager } = collContracts;
@@ -133,15 +133,15 @@ export async function getLeverDownTroveParams(
 
 // from openLeveragedTroveWithIndex() in contracts/src/test/zapperLeverage.t.sol
 export async function getOpenLeveragedTroveParams(
-  collIndex: CollIndex,
+  branchId: BranchId,
   collAmount: bigint,
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const collContracts = getCollateralContracts(collIndex);
+  const collContracts = getCollateralContracts(branchId);
 
   if (!collContracts) {
-    throw new Error("Invalid collateral index: " + collIndex);
+    throw new Error("Invalid branch: " + branchId);
   }
 
   const { PriceFeed } = collContracts;
@@ -168,14 +168,14 @@ export async function getOpenLeveragedTroveParams(
 
 // from _getCloseFlashLoanAmount() in contracts/src/test/zapperLeverage.t.sol
 export async function getCloseFlashLoanAmount(
-  collIndex: CollIndex,
+  branchId: BranchId,
   troveId: TroveId,
   wagmiConfig: WagmiConfig,
 ): Promise<bigint | null> {
-  const collContracts = getCollateralContracts(collIndex);
+  const collContracts = getCollateralContracts(branchId);
 
   if (!collContracts) {
-    throw new Error("Invalid collateral index: " + collIndex);
+    throw new Error("Invalid branch: " + branchId);
   }
 
   const { PriceFeed, TroveManager } = collContracts;
@@ -216,12 +216,12 @@ function leverageRatioToCollateralRatio(inputRatio: bigint) {
 }
 
 export function useCheckLeverageSlippage({
-  collIndex,
+  branchId,
   initialDeposit,
   leverageFactor,
   ownerIndex,
 }: {
-  collIndex: CollIndex;
+  branchId: BranchId;
   initialDeposit: Dnum | null;
   leverageFactor: number;
   ownerIndex: number | null;
@@ -232,7 +232,7 @@ export function useCheckLeverageSlippage({
 
   const debouncedQueryKey = useDebouncedQueryKey([
     "openLeveragedTroveParams",
-    collIndex,
+    branchId,
     String(!initialDeposit || initialDeposit[0]),
     leverageFactor,
     ownerIndex,
@@ -242,7 +242,7 @@ export function useCheckLeverageSlippage({
     queryKey: debouncedQueryKey,
     queryFn: async () => {
       const params = initialDeposit && await getOpenLeveragedTroveParams(
-        collIndex,
+        branchId,
         initialDeposit[0],
         leverageFactor,
         wagmiConfig,

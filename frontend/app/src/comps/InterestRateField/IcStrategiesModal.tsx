@@ -1,8 +1,8 @@
-import type { CollIndex, Delegate } from "@/src/types";
+import type { BranchId, Delegate } from "@/src/types";
 
 import content from "@/src/content";
+import { getCollateralContracts } from "@/src/contracts";
 import { IC_STRATEGIES } from "@/src/demo-mode";
-import { COLLATERAL_CONTRACTS } from "@/src/env";
 import { css } from "@/styled-system/css";
 import { Modal, TextButton } from "@liquity2/uikit";
 import Image from "next/image";
@@ -13,25 +13,21 @@ import { ShadowBox } from "./ShadowBox";
 import icLogo from "./ic-logo.svg";
 
 export function IcStrategiesModal({
-  collIndex,
+  branchId,
   onClose,
   onSelectDelegate,
   visible,
 }: {
-  collIndex: CollIndex;
+  branchId: BranchId;
   onClose: () => void;
   onSelectDelegate: (delegate: Delegate) => void;
   visible: boolean;
 }) {
-  const collateral = COLLATERAL_CONTRACTS[collIndex];
-
-  if (!collateral) {
-    throw new Error(`No collateral for index ${collIndex}`);
-  }
+  const collateral = getCollateralContracts(branchId);
 
   const [displayedDelegates, setDisplayedDelegates] = useState(5);
 
-  console.log(collateral.delegateAuto);
+  console.log(collateral);
 
   return (
     <Modal

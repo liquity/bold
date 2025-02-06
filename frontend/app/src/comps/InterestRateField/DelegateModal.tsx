@@ -1,4 +1,4 @@
-import type { Address, CollIndex, Delegate } from "@/src/types";
+import type { Address, BranchId, Delegate } from "@/src/types";
 
 import content from "@/src/content";
 import { useInterestBatchDelegate } from "@/src/liquity-utils";
@@ -14,12 +14,12 @@ const DELEGATES_LIST_URL =
   "https://docs.liquity.org/v2-faq/redemptions-and-delegation#docs-internal-guid-441d8c3f-7fff-4efa-6319-4ba00d908597";
 
 export function DelegateModal({
-  collIndex,
+  branchId,
   onClose,
   onSelectDelegate,
   visible,
 }: {
-  collIndex: CollIndex;
+  branchId: BranchId;
   onClose: () => void;
   onSelectDelegate: (delegate: Delegate) => void;
   visible: boolean;
@@ -27,7 +27,7 @@ export function DelegateModal({
   const [delegateAddress, setDelegateAddress] = useState<null | Address>(null);
   const [delegateAddressValue, setDelegateAddressValue] = useState("");
 
-  const delegate = useInterestBatchDelegate(collIndex, delegateAddress);
+  const delegate = useInterestBatchDelegate(branchId, delegateAddress);
 
   return (
     <Modal

@@ -4,8 +4,8 @@ import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningB
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
-import { getContracts } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
+import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -22,19 +22,15 @@ export function PanelClosePosition({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const contracts = getContracts();
-  const collateral = contracts.collaterals[loan.collIndex];
-  if (!collateral) {
-    return null;
-  }
-  const collToken = TOKENS_BY_SYMBOL[collateral.symbol];
+  const branch = getBranch(loan.branchId);
+  const collateral = getCollToken(branch.id);
 
-  const collPriceUsd = usePrice(collToken.symbol);
+  const collPriceUsd = usePrice(collateral.symbol);
   const boldPriceUsd = usePrice("BOLD");
   const boldBalance = useBalance(account.address, "BOLD");
 
   const [repayDropdownIndex, setRepayDropdownIndex] = useState(0);
-  const repayToken = TOKENS_BY_SYMBOL[repayDropdownIndex === 0 ? "BOLD" : collToken.symbol];
+  const repayToken = TOKENS_BY_SYMBOL[repayDropdownIndex === 0 ? "BOLD" : collateral.symbol];
 
   // either in BOLD or in collateral
   const amountToRepay = repayToken.symbol === "BOLD"
@@ -133,7 +129,7 @@ export function PanelClosePosition({
                       </>
                     ),
                   })}
-                  items={(["BOLD", collToken.symbol] as const).map((symbol) => ({
+                  items={(["BOLD", collateral.symbol] as const).map((symbol) => ({
                     icon: <TokenIcon symbol={symbol} />,
                     label: (
                       <div
@@ -200,8 +196,8 @@ export function PanelClosePosition({
                     userSelect: "none",
                   })}
                 >
-                  <TokenIcon symbol={collToken.symbol} />
-                  <div>{collToken.name}</div>
+                  <TokenIcon symbol={collateral.symbol} />
+                  <div>{collateral.name}</div>
                 </div>
               </div>
             </div>
@@ -268,7 +264,7 @@ export function PanelClosePosition({
               txFlow.start({
                 flowId: "closeLoanPosition",
                 backLink: [
-                  `/loan/close?id=${loan.collIndex}:${loan.troveId}`,
+                  `/loan/close?id=${loan.branchId}:${loan.troveId}`,
                   "Back to editing",
                 ],
                 successLink: ["/", "Go to the dashboard"],

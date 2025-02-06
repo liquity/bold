@@ -1,4 +1,4 @@
-import type { CollateralSymbol, CollIndex } from "@/src/types";
+import type { Branch, BranchId, CollateralSymbol } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
 import { ActivePool } from "@/src/abi/ActivePool";
@@ -91,18 +91,12 @@ type Contract<T extends ContractName> = {
   address: Address;
 };
 
-type CollateralContracts = {
+export type BranchContracts = {
   [K in CollateralContractName]: Contract<K>;
 };
 
-type Collaterals = Array<{
-  collIndex: CollIndex;
-  contracts: CollateralContracts;
-  symbol: CollateralSymbol;
-}>;
-
 export type Contracts = ProtocolContractMap & {
-  collaterals: Collaterals;
+  branches: Branch[];
 };
 
 const CONTRACTS: Contracts = {
@@ -117,8 +111,9 @@ const CONTRACTS: Contracts = {
   MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
   WETH: { abi: abis.WETH, address: CONTRACT_WETH },
 
-  collaterals: COLLATERAL_CONTRACTS.map(({ collIndex, symbol, contracts }) => ({
-    collIndex,
+  branches: COLLATERAL_CONTRACTS.map(({ branchId, symbol, contracts }) => ({
+    id: branchId,
+    branchId,
     symbol,
     contracts: {
       ActivePool: { address: contracts.ACTIVE_POOL, abi: abis.ActivePool },
@@ -153,23 +148,31 @@ export function getProtocolContract<CN extends ProtocolContractName>(
   return CONTRACTS[name];
 }
 
+export function getCollateralContracts(branchIdOrSymbol: null): null;
+export function getCollateralContracts(branchIdOrSymbol: CollateralSymbol | BranchId): BranchContracts;
 export function getCollateralContracts(
-  collIndexOrSymbol: CollateralSymbol | CollIndex | null,
-): CollateralContracts | null {
-  if (collIndexOrSymbol === null) {
+  branchIdOrSymbol: CollateralSymbol | BranchId | null,
+): BranchContracts | null;
+export function getCollateralContracts(
+  branchIdOrSymbol: CollateralSymbol | BranchId | null,
+): BranchContracts | null {
+  if (branchIdOrSymbol === null) {
     return null;
   }
-  const { collaterals } = getContracts();
-  const collateral = typeof collIndexOrSymbol === "number"
-    ? collaterals[collIndexOrSymbol]
-    : collaterals.find((c) => c.symbol === collIndexOrSymbol);
-  return collateral?.contracts ?? null;
+  const { branches } = getContracts();
+  const collateral = typeof branchIdOrSymbol === "number"
+    ? branches[branchIdOrSymbol]
+    : branches.find((c) => c.symbol === branchIdOrSymbol);
+  if (collateral?.contracts) {
+    return collateral.contracts;
+  }
+  throw new Error(`No collateral for index or symbol ${branchIdOrSymbol}`);
 }
 
 export function getCollateralContract<CN extends CollateralContractName>(
-  collIndexOrSymbol: CollateralSymbol | CollIndex | null,
+  branchIdOrSymbol: CollateralSymbol | BranchId | null,
   contractName: CN,
 ): Contract<CN> | null {
-  const contracts = getCollateralContracts(collIndexOrSymbol);
+  const contracts = getCollateralContracts(branchIdOrSymbol);
   return contracts?.[contractName] ?? null;
 }

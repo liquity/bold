@@ -1,21 +1,21 @@
 "use client";
 
-import type { CollIndex } from "@/src/types";
+import type { BranchId } from "@/src/types";
 
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { getContracts } from "@/src/contracts";
-import { useEarnPosition } from "@/src/liquity-utils";
+import { getBranches, useEarnPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 
 export function EarnPoolsListScreen() {
-  const { collaterals } = getContracts();
+  const branches = getBranches();
+  const collSymbols = branches.map((b) => b.symbol);
 
-  const poolsTransition = useTransition(collaterals.map((c) => c.collIndex), {
+  const poolsTransition = useTransition(branches.map((c) => c.branchId), {
     from: { opacity: 0, transform: "scale(1.1) translateY(64px)" },
     enter: { opacity: 1, transform: "scale(1) translateY(0px)" },
     leave: { opacity: 0, transform: "scale(1) translateY(0px)" },
@@ -41,7 +41,7 @@ export function EarnPoolsListScreen() {
           >
             {content.earnHome.headline(
               <TokenIcon.Group>
-                {["BOLD" as const, ...collaterals.map((coll) => coll.symbol)].map((symbol) => (
+                {["BOLD" as const, ...collSymbols].map((symbol) => (
                   <TokenIcon
                     key={symbol}
                     symbol={symbol}
@@ -57,11 +57,9 @@ export function EarnPoolsListScreen() {
       width={67 * 8}
       gap={16}
     >
-      {poolsTransition((style, collIndex) => (
+      {poolsTransition((style, branchId) => (
         <a.div style={style}>
-          <EarnPool
-            collIndex={collIndex}
-          />
+          <EarnPool branchId={branchId} />
         </a.div>
       ))}
     </Screen>
@@ -69,15 +67,15 @@ export function EarnPoolsListScreen() {
 }
 
 function EarnPool({
-  collIndex,
+  branchId,
 }: {
-  collIndex: CollIndex;
+  branchId: BranchId;
 }) {
   const account = useAccount();
-  const earnPosition = useEarnPosition(collIndex, account.address ?? null);
+  const earnPosition = useEarnPosition(branchId, account.address ?? null);
   return (
     <EarnPositionSummary
-      collIndex={collIndex}
+      branchId={branchId}
       earnPosition={earnPosition.data}
       linkToScreen
     />

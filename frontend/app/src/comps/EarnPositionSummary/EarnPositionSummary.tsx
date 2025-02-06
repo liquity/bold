@@ -1,4 +1,4 @@
-import type { CollIndex, PositionEarn } from "@/src/types";
+import type { BranchId, PositionEarn } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -11,22 +11,22 @@ import * as dn from "dnum";
 import Link from "next/link";
 
 export function EarnPositionSummary({
-  collIndex,
+  branchId,
   prevEarnPosition,
   earnPosition,
   linkToScreen,
   title,
   txPreviewMode,
 }: {
-  collIndex: CollIndex;
+  branchId: BranchId;
   prevEarnPosition?: PositionEarn | null;
   earnPosition: PositionEarn | null;
   linkToScreen?: boolean;
   title?: ReactNode;
   txPreviewMode?: boolean;
 }) {
-  const collToken = getCollToken(collIndex);
-  const earnPool = useEarnPool(collIndex);
+  const collToken = getCollToken(branchId);
+  const earnPool = useEarnPool(branchId);
 
   const { totalDeposited: totalPoolDeposit } = earnPool.data;
 

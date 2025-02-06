@@ -1,5 +1,14 @@
 import type { Contracts } from "@/src/contracts";
-import type { CollIndex, Dnum, PositionLoanCommitted, PositionStake, PrefixedTroveId, TroveId } from "@/src/types";
+import type {
+  Branch,
+  BranchId,
+  Delegate,
+  Dnum,
+  PositionLoanCommitted,
+  PositionStake,
+  PrefixedTroveId,
+  TroveId,
+} from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { Config as WagmiConfig } from "wagmi";
@@ -16,7 +25,7 @@ import {
   useLoanById,
   useStabilityPool,
 } from "@/src/subgraph-hooks";
-import { isCollIndex, isTroveId } from "@/src/types";
+import { isBranchId, isTroveId } from "@/src/types";
 import { COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
@@ -42,48 +51,78 @@ export function getTroveId(owner: Address, ownerIndex: bigint | number) {
 }
 
 export function parsePrefixedTroveId(value: PrefixedTroveId): {
-  collIndex: CollIndex;
+  branchId: BranchId;
   troveId: TroveId;
 } {
-  const [collIndex_, troveId] = value.split(":");
-  if (!collIndex_ || !troveId) {
+  const [branchId_, troveId] = value.split(":");
+  if (!branchId_ || !troveId) {
     throw new Error(`Invalid prefixed trove ID: ${value}`);
   }
-  const collIndex = parseInt(collIndex_, 10);
-  if (!isCollIndex(collIndex) || !isTroveId(troveId)) {
+  const branchId = parseInt(branchId_, 10);
+  if (!isBranchId(branchId) || !isTroveId(troveId)) {
     throw new Error(`Invalid prefixed trove ID: ${value}`);
   }
-  return { collIndex, troveId };
+  return { branchId, troveId };
 }
 
-export function getPrefixedTroveId(collIndex: CollIndex, troveId: TroveId): PrefixedTroveId {
-  return `${collIndex}:${troveId}`;
+export function getPrefixedTroveId(branchId: BranchId, troveId: TroveId): PrefixedTroveId {
+  return `${branchId}:${troveId}`;
 }
 
-export function getCollToken(collIndex: CollIndex | null): CollateralToken | null {
-  const { collaterals } = getContracts();
-  if (collIndex === null) {
+export function getCollToken(branchId: null): null;
+export function getCollToken(branchId: BranchId): CollateralToken;
+export function getCollToken(branchId: BranchId | null): CollateralToken | null;
+export function getCollToken(branchId: BranchId | null): CollateralToken | null {
+  if (branchId === null) {
     return null;
   }
-  return collaterals.map(({ symbol }) => {
-    const collateral = COLLATERALS.find((c) => c.symbol === symbol);
-    if (!collateral) {
-      throw new Error(`Unknown collateral symbol: ${symbol}`);
-    }
-    return collateral;
-  })[collIndex] ?? null;
+  const branch = getBranch(branchId);
+  const token = COLLATERALS.find((c) => c.symbol === branch.symbol);
+  if (!token) {
+    throw new Error(`Unknown collateral symbol: ${branch.symbol}`);
+  }
+  return token;
 }
 
-export function getCollIndexFromSymbol(symbol: CollateralSymbol | null): CollIndex | null {
-  if (symbol === null) return null;
-  const { collaterals } = getContracts();
-  const collIndex = collaterals.findIndex((coll) => coll.symbol === symbol);
-  return isCollIndex(collIndex) ? collIndex : null;
+export function getBranchIdFromSymbol(symbol: null): null;
+export function getBranchIdFromSymbol(symbol: CollateralSymbol): BranchId;
+export function getBranchIdFromSymbol(symbol: CollateralSymbol | null): BranchId | null {
+  if (symbol === null) {
+    return null;
+  }
+  const branch = getBranch(symbol);
+  return branch.id;
 }
 
-export function useEarnPool(collIndex: null | CollIndex) {
-  const collateral = getCollToken(collIndex);
-  const pool = useStabilityPool(collIndex ?? undefined);
+export function getBranches(): Branch[] {
+  return getContracts().branches;
+}
+
+export function getBranch(idOrSymbol: null): null;
+export function getBranch(idOrSymbol: CollateralSymbol | BranchId): Branch;
+export function getBranch(
+  idOrSymbol: CollateralSymbol | BranchId | null,
+): Branch | null {
+  if (idOrSymbol === null) {
+    return null;
+  }
+
+  const branch = getBranches().find((b) => (
+    typeof idOrSymbol === "string"
+      ? b.symbol === idOrSymbol
+      : b.id === idOrSymbol
+  ));
+
+  if (!branch) {
+    throw new Error("Invalid branch ID or symbol: " + idOrSymbol);
+  }
+
+  return branch;
+}
+
+export function useEarnPool(branchId: null | BranchId) {
+  const collateral = getCollToken(branchId);
+  const pool = useStabilityPool(branchId ?? undefined);
   const stats = useLiquityStats();
   const branchStats = collateral && stats.data?.branch[collateral?.symbol];
   return {
@@ -98,10 +137,10 @@ export function useEarnPool(collIndex: null | CollIndex) {
 }
 
 export function useEarnPosition(
-  collIndex: null | CollIndex,
+  branchId: null | BranchId,
   account: null | Address,
 ) {
-  const getBoldGains = useContinuousBoldGains(account, collIndex);
+  const getBoldGains = useContinuousBoldGains(account, branchId);
 
   const getBoldGains_ = () => {
     return getBoldGains.data?.(Date.now()) ?? null;
@@ -109,14 +148,14 @@ export function useEarnPosition(
 
   const yieldGainsInBold = useQuery({
     queryFn: () => getBoldGains_(),
-    queryKey: ["useEarnPosition:getBoldGains", collIndex, account],
+    queryKey: ["useEarnPosition:getBoldGains", branchId, account],
     refetchInterval: 10_000,
     enabled: getBoldGains.status === "success",
   });
 
-  const StabilityPool = getCollateralContract(collIndex, "StabilityPool");
+  const StabilityPool = getCollateralContract(branchId, "StabilityPool");
   if (!StabilityPool) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
+    throw new Error(`Invalid branch: ${branchId}`);
   }
 
   const spContractReads = useReadContracts({
@@ -145,7 +184,7 @@ export function useEarnPosition(
   ].find((r) => r && r.status !== "success") ?? yieldGainsInBold;
 
   if (
-    !account || collIndex === null
+    !account || branchId === null
     || spDepositCompounded?.status !== "success"
     || spCollGain?.status !== "success"
     || yieldGainsInBold.status !== "success"
@@ -162,7 +201,7 @@ export function useEarnPosition(
       type: "earn" as const,
       owner: account,
       deposit: dnum18(spDepositCompounded.result),
-      collIndex,
+      branchId,
       rewards: {
         bold: yieldGainsInBold.data ?? dnum18(0),
         coll: dnum18(spCollGain.result),
@@ -278,15 +317,15 @@ export function useStakePosition(address: null | Address) {
     : stakePosition;
 }
 
-export function useTroveNftUrl(collIndex: null | CollIndex, troveId: null | TroveId) {
-  const TroveNft = getCollateralContract(collIndex, "TroveNFT");
+export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveId) {
+  const TroveNft = getCollateralContract(branchId, "TroveNFT");
   return TroveNft && troveId && `${CHAIN_BLOCK_EXPLORER?.url}nft/${TroveNft.address}/${BigInt(troveId)}`;
 }
 
 const RATE_STEPS = Math.round((INTEREST_RATE_MAX - INTEREST_RATE_MIN) / INTEREST_RATE_INCREMENT) + 1;
 
-export function useAverageInterestRate(collIndex: null | CollIndex) {
-  const brackets = useInterestRateBrackets(collIndex);
+export function useAverageInterestRate(branchId: null | BranchId) {
+  const brackets = useInterestRateBrackets(branchId);
 
   const data = useMemo(() => {
     if (!brackets.isSuccess) {
@@ -315,13 +354,13 @@ export function useAverageInterestRate(collIndex: null | CollIndex) {
   };
 }
 
-export function useInterestRateChartData(collIndex: null | CollIndex) {
-  const brackets = useInterestRateBrackets(collIndex);
+export function useInterestRateChartData(branchId: null | BranchId) {
+  const brackets = useInterestRateBrackets(branchId);
 
   const chartData = useQuery({
     queryKey: [
       "useInterestRateChartData",
-      collIndex,
+      branchId,
       jsonStringifyWithDnum(brackets.data),
     ],
     queryFn: () => {
@@ -370,7 +409,7 @@ export function useInterestRateChartData(collIndex: null | CollIndex) {
 }
 
 export function usePredictOpenTroveUpfrontFee(
-  collIndex: CollIndex,
+  branchId: BranchId,
   borrowedAmount: Dnum,
   interestRateOrBatch: Address | Dnum,
 ) {
@@ -382,8 +421,8 @@ export function usePredictOpenTroveUpfrontFee(
       ? "predictOpenTroveAndJoinBatchUpfrontFee"
       : "predictOpenTroveUpfrontFee",
     args: batch
-      ? [BigInt(collIndex), borrowedAmount[0], interestRateOrBatch]
-      : [BigInt(collIndex), borrowedAmount[0], interestRateOrBatch[0]],
+      ? [BigInt(branchId), borrowedAmount[0], interestRateOrBatch]
+      : [BigInt(branchId), borrowedAmount[0], interestRateOrBatch[0]],
     query: {
       refetchInterval: DATA_REFRESH_INTERVAL,
       select: dnum18,
@@ -392,7 +431,7 @@ export function usePredictOpenTroveUpfrontFee(
 }
 
 export function usePredictAdjustTroveUpfrontFee(
-  collIndex: CollIndex,
+  branchId: BranchId,
   troveId: TroveId,
   debtIncrease: Dnum,
 ) {
@@ -400,7 +439,7 @@ export function usePredictAdjustTroveUpfrontFee(
     ...getProtocolContract("HintHelpers"),
     functionName: "predictAdjustTroveUpfrontFee",
     args: [
-      BigInt(collIndex),
+      BigInt(branchId),
       BigInt(troveId),
       debtIncrease[0],
     ],
@@ -416,7 +455,7 @@ export function usePredictAdjustTroveUpfrontFee(
 // - joining a batch with a new interest rate (non-batch => batch or batch => batch)
 // - removing a trove from a batch (batch => non-batch)
 export function usePredictAdjustInterestRateUpfrontFee(
-  collIndex: CollIndex,
+  branchId: BranchId,
   troveId: TroveId,
   newInterestRateOrBatch: Address | Dnum,
   fromBatch: boolean,
@@ -431,7 +470,7 @@ export function usePredictAdjustInterestRateUpfrontFee(
     ...getProtocolContract("HintHelpers"),
     functionName,
     args: [
-      BigInt(collIndex),
+      BigInt(branchId),
       BigInt(troveId),
       typeof newInterestRateOrBatch === "string"
         ? newInterestRateOrBatch
@@ -448,24 +487,21 @@ export function usePredictAdjustInterestRateUpfrontFee(
 export async function getTroveOperationHints({
   wagmiConfig,
   contracts,
-  collIndex,
+  branchId,
   interestRate,
 }: {
   wagmiConfig: WagmiConfig;
   contracts: Contracts;
-  collIndex: number;
+  branchId: BranchId;
   interestRate: bigint;
 }): Promise<{
   upperHint: bigint;
   lowerHint: bigint;
 }> {
-  const collateral = contracts.collaterals[collIndex];
-  if (!collateral) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
-  }
+  const branch = getBranch(branchId);
 
   const numTroves = await readContract(wagmiConfig, {
-    ...collateral.contracts.SortedTroves,
+    ...branch.contracts.SortedTroves,
     functionName: "getSize",
   });
 
@@ -473,7 +509,7 @@ export async function getTroveOperationHints({
     ...contracts.HintHelpers,
     functionName: "getApproxHint",
     args: [
-      BigInt(collIndex),
+      BigInt(branchId),
       interestRate,
       // (10 * sqrt(troves)) gives a hint close to the right position
       10n * BigInt(Math.ceil(Math.sqrt(Number(numTroves)))),
@@ -482,7 +518,7 @@ export async function getTroveOperationHints({
   });
 
   const [upperHint, lowerHint] = await readContract(wagmiConfig, {
-    ...collateral.contracts.SortedTroves,
+    ...branch.contracts.SortedTroves,
     functionName: "findInsertPosition",
     args: [
       interestRate,
@@ -566,10 +602,10 @@ export function useLiquityStats() {
   });
 }
 
-export function useLatestTroveData(collIndex: CollIndex, troveId: TroveId) {
-  const TroveManager = getCollateralContract(collIndex, "TroveManager");
+export function useLatestTroveData(branchId: BranchId, troveId: TroveId) {
+  const TroveManager = getCollateralContract(branchId, "TroveManager");
   if (!TroveManager) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
+    throw new Error(`Invalid branch: ${branchId}`);
   }
   return useReadContract({
     ...TroveManager,
@@ -581,17 +617,17 @@ export function useLatestTroveData(collIndex: CollIndex, troveId: TroveId) {
   });
 }
 
-export function useLoanLiveDebt(collIndex: CollIndex, troveId: TroveId) {
-  const latestTroveData = useLatestTroveData(collIndex, troveId);
+export function useLoanLiveDebt(branchId: BranchId, troveId: TroveId) {
+  const latestTroveData = useLatestTroveData(branchId, troveId);
   return {
     ...latestTroveData,
     data: latestTroveData.data?.entireDebt ?? null,
   };
 }
 
-export function useLoan(collIndex: CollIndex, troveId: TroveId): UseQueryResult<PositionLoanCommitted | null> {
-  const liveDebt = useLoanLiveDebt(collIndex, troveId);
-  const loan = useLoanById(getPrefixedTroveId(collIndex, troveId));
+export function useLoan(branchId: BranchId, troveId: TroveId): UseQueryResult<PositionLoanCommitted | null> {
+  const liveDebt = useLoanLiveDebt(branchId, troveId);
+  const loan = useLoanById(getPrefixedTroveId(branchId, troveId));
 
   if (liveDebt.status === "pending" || loan.status === "pending") {
     return {
@@ -623,18 +659,18 @@ export function useLoan(collIndex: CollIndex, troveId: TroveId): UseQueryResult<
 }
 
 export function useInterestBatchDelegate(
-  collIndex: null | CollIndex,
+  branchId: null | BranchId,
   address: null | Address,
-) {
-  const BorrowerOperations = getCollateralContract(collIndex, "BorrowerOperations");
+): UseQueryResult<Delegate> {
+  const BorrowerOperations = getCollateralContract(branchId, "BorrowerOperations");
   if (!BorrowerOperations) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
+    throw new Error(`Invalid branch: ${branchId}`);
   }
 
   const wagmiConfig = useWagmiConfig();
 
-  const id = address && collIndex !== null
-    ? `${collIndex}:${address.toLowerCase()}`
+  const id = address && branchId !== null
+    ? `${branchId}:${address.toLowerCase()}`
     : null;
 
   let queryFn = async () => {

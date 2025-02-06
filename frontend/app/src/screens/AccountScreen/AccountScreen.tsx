@@ -6,9 +6,10 @@ import type { ReactNode } from "react";
 import { ERC20Faucet } from "@/src/abi/ERC20Faucet";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
+import { getCollateralContract, getProtocolContract } from "@/src/contracts";
 import { CHAIN_ID } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
+import { getBranches } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { css } from "@/styled-system/css";
 import {
@@ -30,7 +31,7 @@ export function AccountScreen({
   address: Address;
 }) {
   const account = useAccount();
-  const collSymbols = getContracts().collaterals.map((coll) => coll.symbol);
+  const branches = getBranches();
   const tapEnabled = CHAIN_ID !== 1;
   return (
     <Screen>
@@ -126,7 +127,7 @@ export function AccountScreen({
                 tokenSymbol="LUSD"
               />
             </GridItem>
-            {collSymbols.map((symbol) => (
+            {branches.map(({ symbol }) => (
               <GridItem
                 key={symbol}
                 label={`${symbol} balance`}

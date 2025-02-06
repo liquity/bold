@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 
 import { getCollateralContract } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken } from "@/src/liquity-utils";
+import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { vAddress, vCollIndex, vDnum } from "@/src/valibot-utils";
+import { vAddress, vBranchId, vDnum } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { shortenAddress, TokenIcon } from "@liquity2/uikit";
 import { blo } from "blo";
@@ -18,7 +18,7 @@ const RequestSchema = createRequestSchema(
   {
     borrower: vAddress(),
     collSurplus: vDnum(),
-    collIndex: vCollIndex(),
+    branchId: vBranchId(),
   },
 );
 
@@ -28,16 +28,16 @@ export const claimCollateralSurplus: FlowDeclaration<ClaimCollateralSurplusReque
   title: "Review & Send Transaction",
 
   Summary({ request }) {
-    const { collIndex, collSurplus, borrower } = request;
+    const { branchId, collSurplus, borrower } = request;
 
-    const collToken = getCollToken(collIndex);
+    const collToken = getCollToken(branchId);
     if (!collToken) {
-      throw new Error("Invalid collateral index: " + collIndex);
+      throw new Error("Invalid branch: " + branchId);
     }
 
-    const csp = getCollateralContract(collIndex, "CollSurplusPool");
+    const csp = getCollateralContract(branchId, "CollSurplusPool");
     if (!csp) {
-      throw new Error("Collateral surplus pool not found for collateral index: " + collIndex);
+      throw new Error("Collateral surplus pool not found for branch: " + branchId);
     }
 
     return (
@@ -157,8 +157,8 @@ export const claimCollateralSurplus: FlowDeclaration<ClaimCollateralSurplusReque
   },
 
   Details({ request }) {
-    const { collIndex } = request;
-    const collateral = getCollToken(collIndex);
+    const { branchId } = request;
+    const collateral = getCollToken(branchId);
 
     return (
       <div className="p-4">
@@ -176,14 +176,10 @@ export const claimCollateralSurplus: FlowDeclaration<ClaimCollateralSurplusReque
       Status: TransactionStatus,
 
       async commit(ctx) {
-        const { collIndex } = ctx.request;
-        const collateral = ctx.contracts.collaterals[collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + collIndex);
-        }
-        const { BorrowerOperations } = collateral.contracts;
+        const { branchId } = ctx.request;
+        const branch = getBranch(branchId);
         return ctx.writeContract({
-          ...BorrowerOperations,
+          ...branch.contracts.BorrowerOperations,
           functionName: "claimCollateral",
           args: [],
         });

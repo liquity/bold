@@ -17,7 +17,7 @@ import { CardRow, CardRows } from "./shared";
 
 export function PositionCardLeverage({
   debt,
-  collIndex,
+  branchId,
   deposit,
   interestRate,
   statusTag,
@@ -25,7 +25,7 @@ export function PositionCardLeverage({
 }:
   & Pick<
     PositionLoanCommitted,
-    | "collIndex"
+    | "branchId"
     | "deposit"
     | "interestRate"
     | "troveId"
@@ -35,9 +35,9 @@ export function PositionCardLeverage({
     statusTag?: ReactNode;
   })
 {
-  const token = getCollToken(collIndex);
+  const token = getCollToken(branchId);
   if (!token) {
-    throw new Error(`Collateral token not found for index ${collIndex}`);
+    throw new Error(`Collateral token not found for index ${branchId}`);
   }
 
   const collateralPriceUsd = usePrice(token.symbol);
@@ -50,7 +50,7 @@ export function PositionCardLeverage({
 
   return (
     <Link
-      href={`/loan?id=${collIndex}:${troveId}`}
+      href={`/loan?id=${branchId}:${troveId}`}
       legacyBehavior
       passHref
     >

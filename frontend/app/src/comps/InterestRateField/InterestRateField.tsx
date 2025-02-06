@@ -1,4 +1,4 @@
-import type { Address, CollIndex, Delegate } from "@/src/types";
+import type { Address, BranchId, Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { INTEREST_RATE_DEFAULT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
@@ -41,7 +41,7 @@ const DELEGATE_MODES: DelegateMode[] = [
 
 export const InterestRateField = memo(
   function InterestRateField({
-    collIndex,
+    branchId,
     debt,
     delegate,
     inputId: inputIdFromProps,
@@ -51,7 +51,7 @@ export const InterestRateField = memo(
     onDelegateChange,
     onModeChange = noop,
   }: {
-    collIndex: CollIndex;
+    branchId: BranchId;
     debt: Dnum | null;
     delegate: Address | null;
     inputId?: string;
@@ -81,7 +81,7 @@ export const InterestRateField = memo(
 
     const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
 
-    const interestChartData = useInterestRateChartData(collIndex);
+    const interestChartData = useInterestRateChartData(branchId);
 
     const interestRateNumber = interestRate && dn.toNumber(
       dn.mul(interestRate, 100),
@@ -286,7 +286,7 @@ export const InterestRateField = memo(
           }
         />
         <DelegateModal
-          collIndex={collIndex}
+          branchId={branchId}
           onClose={() => {
             setDelegatePicker(null);
           }}
@@ -294,7 +294,7 @@ export const InterestRateField = memo(
           visible={delegatePicker === "delegate"}
         />
         <IcStrategiesModal
-          collIndex={collIndex}
+          branchId={branchId}
           onClose={() => {
             setDelegatePicker(null);
           }}

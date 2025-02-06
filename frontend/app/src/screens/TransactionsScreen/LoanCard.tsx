@@ -38,11 +38,11 @@ export function LoanCard({
   prevLoan?: PositionLoan | null;
   txPreviewMode?: boolean;
 }) {
-  const collIndex = loan?.collIndex ?? prevLoan?.collIndex ?? null;
-  const collToken = getCollToken(collIndex);
+  const branchId = loan?.branchId ?? prevLoan?.branchId ?? null;
+  const collToken = getCollToken(branchId);
 
   if (!collToken) {
-    throw new Error(`Collateral token not found: ${collIndex}`);
+    throw new Error(`Collateral token not found: ${branchId}`);
   }
 
   const collPriceUsd = usePrice(collToken.symbol);
@@ -467,7 +467,7 @@ function LeveragedExposure({
   loanDetails: ReturnType<typeof getLoanDetails>;
   prevLoanDetails: null | ReturnType<typeof getLoanDetails>;
 }) {
-  const collToken = getCollToken(loan.collIndex);
+  const collToken = getCollToken(loan.branchId);
   if (!collToken) {
     return null;
   }
