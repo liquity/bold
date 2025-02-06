@@ -4,6 +4,7 @@ import type {
   BranchId,
   Delegate,
   Dnum,
+  PositionEarn,
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
@@ -15,7 +16,7 @@ import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
-import { dnum18, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, LIQUITY_STATS_URL } from "@/src/env";
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
@@ -136,18 +137,24 @@ export function useEarnPool(branchId: null | BranchId) {
   };
 }
 
+export function isEarnPositionActive(position: PositionEarn | null) {
+  return Boolean(
+    position && (
+      dn.gt(position.deposit, 0)
+      || dn.gt(position.rewards.bold, 0)
+      || dn.gt(position.rewards.coll, 0)
+    ),
+  );
+}
+
 export function useEarnPosition(
   branchId: null | BranchId,
   account: null | Address,
-) {
+): UseQueryResult<PositionEarn | null> {
   const getBoldGains = useContinuousBoldGains(account, branchId);
 
-  const getBoldGains_ = () => {
-    return getBoldGains.data?.(Date.now()) ?? null;
-  };
-
   const yieldGainsInBold = useQuery({
-    queryFn: () => getBoldGains_(),
+    queryFn: () => getBoldGains.data?.(Date.now()) ?? null,
     queryKey: ["useEarnPosition:getBoldGains", branchId, account],
     refetchInterval: 10_000,
     enabled: getBoldGains.status === "success",
@@ -158,7 +165,7 @@ export function useEarnPosition(
     throw new Error(`Invalid branch: ${branchId}`);
   }
 
-  const spContractReads = useReadContracts({
+  const spReads = useReadContracts({
     contracts: [{
       ...StabilityPool,
       functionName: "getCompoundedBoldDeposit",
@@ -167,47 +174,47 @@ export function useEarnPosition(
       ...StabilityPool,
       functionName: "getDepositorCollGain",
       args: [account ?? "0x"],
+    }, {
+      ...StabilityPool,
+      functionName: "stashedColl",
+      args: [account ?? "0x"],
     }],
+    allowFailure: false,
     query: {
+      select: ([deposit, collGain, stashedColl]) => ({
+        spDeposit: dnum18(deposit),
+        spCollGain: dnum18(collGain),
+        spStashedColl: dnum18(stashedColl),
+      }),
       enabled: account !== null,
     },
   });
 
-  const spDepositCompounded = spContractReads.data?.[0];
-  const spCollGain = spContractReads.data?.[1];
-
-  const useQueryResultBase = [
-    yieldGainsInBold,
-    getBoldGains,
-    spDepositCompounded,
-    spCollGain,
-  ].find((r) => r && r.status !== "success") ?? yieldGainsInBold;
-
-  if (
-    !account || branchId === null
-    || spDepositCompounded?.status !== "success"
-    || spCollGain?.status !== "success"
-    || yieldGainsInBold.status !== "success"
-  ) {
-    return {
-      ...useQueryResultBase,
-      data: null,
-    };
-  }
-
-  return {
-    ...useQueryResultBase,
-    data: {
-      type: "earn" as const,
-      owner: account,
-      deposit: dnum18(spDepositCompounded.result),
-      branchId,
-      rewards: {
-        bold: yieldGainsInBold.data ?? dnum18(0),
-        coll: dnum18(spCollGain.result),
-      },
+  return useQuery({
+    queryKey: ["useEarnPosition", branchId, account],
+    queryFn: () => {
+      return {
+        type: "earn" as const,
+        owner: account,
+        deposit: spReads.data?.spDeposit ?? DNUM_0,
+        branchId,
+        rewards: {
+          bold: yieldGainsInBold.data ?? DNUM_0,
+          coll: dn.add(
+            spReads.data?.spCollGain ?? DNUM_0,
+            spReads.data?.spStashedColl ?? DNUM_0,
+          ),
+        },
+      };
     },
-  };
+    enabled: Boolean(
+      account
+        && branchId !== null
+        && yieldGainsInBold.status === "success"
+        && getBoldGains.status === "success"
+        && spReads.status === "success",
+    ),
+  });
 }
 
 export function useAccountVotingPower(account: Address | null, lqtyDiff: bigint = 0n) {
@@ -306,7 +313,7 @@ export function useStakePosition(address: null | Address) {
             eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
             lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
           },
-          share: dnum18(0),
+          share: DNUM_0,
         };
       },
     },
@@ -332,8 +339,8 @@ export function useAverageInterestRate(branchId: null | BranchId) {
       return null;
     }
 
-    let totalDebt = dnum18(0);
-    let totalWeightedRate = dnum18(0);
+    let totalDebt = DNUM_0;
+    let totalWeightedRate = DNUM_0;
 
     for (const bracket of brackets.data) {
       totalDebt = dn.add(totalDebt, bracket.totalDebt);
@@ -344,7 +351,7 @@ export function useAverageInterestRate(branchId: null | BranchId) {
     }
 
     return dn.eq(totalDebt, 0)
-      ? dnum18(0)
+      ? DNUM_0
       : dn.div(totalWeightedRate, totalDebt);
   }, [brackets.isSuccess, brackets.data]);
 
@@ -368,8 +375,8 @@ export function useInterestRateChartData(branchId: null | BranchId) {
         return [];
       }
 
-      let totalDebt = dnum18(0);
-      let highestDebt = dnum18(0);
+      let totalDebt = DNUM_0;
+      let highestDebt = DNUM_0;
       const debtByNonEmptyRateBrackets = new Map<number, Dnum>();
       for (const bracket of brackets.data) {
         const rate = dn.toNumber(dn.mul(bracket.rate, 100));
@@ -382,10 +389,10 @@ export function useInterestRateChartData(branchId: null | BranchId) {
         }
       }
 
-      let runningDebtTotal = dnum18(0);
+      let runningDebtTotal = DNUM_0;
       const chartData = Array.from({ length: RATE_STEPS }, (_, i) => {
         const rate = INTEREST_RATE_MIN + Math.floor(i * INTEREST_RATE_INCREMENT * 10) / 10;
-        const debt = debtByNonEmptyRateBrackets?.get(rate) ?? dnum18(0);
+        const debt = debtByNonEmptyRateBrackets?.get(rate) ?? DNUM_0;
         const debtInFront = runningDebtTotal;
         runningDebtTotal = dn.add(runningDebtTotal, debt);
         return {

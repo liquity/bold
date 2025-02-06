@@ -76,7 +76,7 @@ function EarnPool({
   return (
     <EarnPositionSummary
       branchId={branchId}
-      earnPosition={earnPosition.data}
+      earnPosition={earnPosition.data ?? null}
       linkToScreen
     />
   );

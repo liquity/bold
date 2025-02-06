@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken, useEarnPool } from "@/src/liquity-utils";
+import { getCollToken, isEarnPositionActive, useEarnPool } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconArrowRight, IconPlus, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -41,11 +41,7 @@ export function EarnPositionSummary({
     }
   }
 
-  // true if the user has any deposit
-  // in the pool or in tx preview mode.
-  const active = txPreviewMode || Boolean(
-    earnPosition?.deposit && dn.gt(earnPosition.deposit, 0),
-  );
+  const active = txPreviewMode || isEarnPositionActive(earnPosition);
 
   return collToken && (
     <div

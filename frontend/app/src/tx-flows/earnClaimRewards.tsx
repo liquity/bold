@@ -36,10 +36,6 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
   Details({ request }) {
     const collateral = getCollToken(request.earnPosition.branchId);
 
-    if (!collateral) {
-      return null;
-    }
-
     const boldPrice = usePrice("BOLD");
     const collPrice = usePrice(collateral.symbol);
 
@@ -51,7 +47,7 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
     return (
       <>
         <TransactionDetailsRow
-          label="Claiming BOLD rewards"
+          label="Claim BOLD rewards"
           value={[
             <Amount
               key="start"
@@ -66,7 +62,7 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
           ]}
         />
         <TransactionDetailsRow
-          label={`Claiming ${collateral.name} rewards`}
+          label={`Claim ${collateral.name} rewards`}
           value={[
             <Amount
               key="start"
