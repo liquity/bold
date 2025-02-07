@@ -595,6 +595,18 @@ const StatsSchema = v.pipe(
   })),
 );
 
+export function useBranchDebt(branchId: BranchId) {
+  const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
+  return useReadContract({
+    ...BorrowerOperations,
+    functionName: "getEntireSystemDebt",
+    query: {
+      refetchInterval: DATA_REFRESH_INTERVAL,
+      select: dnum18,
+    },
+  });
+}
+
 export function useLiquityStats() {
   return useQuery({
     queryKey: ["liquity-stats"],
