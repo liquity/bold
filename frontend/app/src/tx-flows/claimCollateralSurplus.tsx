@@ -1,7 +1,6 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import type { ReactNode } from "react";
 
-import { getCollateralContract } from "@/src/contracts";
 import { fmtnum } from "@/src/formatting";
 import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -29,17 +28,7 @@ export const claimCollateralSurplus: FlowDeclaration<ClaimCollateralSurplusReque
 
   Summary({ request }) {
     const { branchId, collSurplus, borrower } = request;
-
     const collToken = getCollToken(branchId);
-    if (!collToken) {
-      throw new Error("Invalid branch: " + branchId);
-    }
-
-    const csp = getCollateralContract(branchId, "CollSurplusPool");
-    if (!csp) {
-      throw new Error("Collateral surplus pool not found for branch: " + branchId);
-    }
-
     return (
       <div
         className={css({

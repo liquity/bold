@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { ERC20Faucet } from "@/src/abi/ERC20Faucet";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { getCollateralContract, getProtocolContract } from "@/src/contracts";
+import { getBranchContract, getProtocolContract } from "@/src/contracts";
 import { CHAIN_ID } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
 import { getBranches } from "@/src/liquity-utils";
@@ -166,7 +166,7 @@ function Balance({
   const balance = useBalance(address, tokenSymbol);
 
   const LqtyToken = getProtocolContract("LqtyToken");
-  const CollToken = getCollateralContract(
+  const CollToken = getBranchContract(
     isCollateralSymbol(tokenSymbol) ? tokenSymbol : null,
     "CollToken",
   );

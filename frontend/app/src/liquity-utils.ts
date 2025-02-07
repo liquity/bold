@@ -15,7 +15,7 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
-import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
+import { getBranchContract, getContracts, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, LIQUITY_STATS_URL } from "@/src/env";
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
@@ -160,7 +160,7 @@ export function useEarnPosition(
     enabled: getBoldGains.status === "success",
   });
 
-  const StabilityPool = getCollateralContract(branchId, "StabilityPool");
+  const StabilityPool = getBranchContract(branchId, "StabilityPool");
   if (!StabilityPool) {
     throw new Error(`Invalid branch: ${branchId}`);
   }
@@ -325,7 +325,7 @@ export function useStakePosition(address: null | Address) {
 }
 
 export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveId) {
-  const TroveNft = getCollateralContract(branchId, "TroveNFT");
+  const TroveNft = getBranchContract(branchId, "TroveNFT");
   return TroveNft && troveId && `${CHAIN_BLOCK_EXPLORER?.url}nft/${TroveNft.address}/${BigInt(troveId)}`;
 }
 
@@ -610,7 +610,7 @@ export function useLiquityStats() {
 }
 
 export function useLatestTroveData(branchId: BranchId, troveId: TroveId) {
-  const TroveManager = getCollateralContract(branchId, "TroveManager");
+  const TroveManager = getBranchContract(branchId, "TroveManager");
   if (!TroveManager) {
     throw new Error(`Invalid branch: ${branchId}`);
   }
@@ -669,7 +669,7 @@ export function useInterestBatchDelegate(
   branchId: null | BranchId,
   address: null | Address,
 ): UseQueryResult<Delegate> {
-  const BorrowerOperations = getCollateralContract(branchId, "BorrowerOperations");
+  const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
   if (!BorrowerOperations) {
     throw new Error(`Invalid branch: ${branchId}`);
   }

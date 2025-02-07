@@ -148,31 +148,46 @@ export function getProtocolContract<CN extends ProtocolContractName>(
   return CONTRACTS[name];
 }
 
-export function getCollateralContracts(branchIdOrSymbol: null): null;
-export function getCollateralContracts(branchIdOrSymbol: CollateralSymbol | BranchId): BranchContracts;
-export function getCollateralContracts(
+export function getBranchContracts(branchIdOrSymbol: null): null;
+export function getBranchContracts(branchIdOrSymbol: CollateralSymbol | BranchId): BranchContracts;
+export function getBranchContracts(
   branchIdOrSymbol: CollateralSymbol | BranchId | null,
 ): BranchContracts | null;
-export function getCollateralContracts(
+export function getBranchContracts(
   branchIdOrSymbol: CollateralSymbol | BranchId | null,
 ): BranchContracts | null {
   if (branchIdOrSymbol === null) {
     return null;
   }
   const { branches } = getContracts();
-  const collateral = typeof branchIdOrSymbol === "number"
+  const branch = typeof branchIdOrSymbol === "number"
     ? branches[branchIdOrSymbol]
     : branches.find((c) => c.symbol === branchIdOrSymbol);
-  if (collateral?.contracts) {
-    return collateral.contracts;
+  if (branch?.contracts) {
+    return branch.contracts;
   }
   throw new Error(`No collateral for index or symbol ${branchIdOrSymbol}`);
 }
 
-export function getCollateralContract<CN extends CollateralContractName>(
+export function getBranchContract(branchIdOrSymbol: null, contractName: CollateralContractName): null;
+export function getBranchContract<CN extends CollateralContractName>(
+  branchIdOrSymbol: CollateralSymbol | BranchId,
+  contractName: CN,
+): Contract<CN>;
+export function getBranchContract<CN extends CollateralContractName>(
+  branchIdOrSymbol: CollateralSymbol | BranchId | null,
+  contractName: CN,
+): Contract<CN> | null;
+export function getBranchContract<CN extends CollateralContractName>(
   branchIdOrSymbol: CollateralSymbol | BranchId | null,
   contractName: CN,
 ): Contract<CN> | null {
-  const contracts = getCollateralContracts(branchIdOrSymbol);
-  return contracts?.[contractName] ?? null;
+  if (branchIdOrSymbol === null) {
+    return null;
+  }
+  const contracts = getBranchContracts(branchIdOrSymbol);
+  if (contracts[contractName]) {
+    return contracts[contractName];
+  }
+  throw new Error(`No contract ${contractName} for branch ${branchIdOrSymbol}`);
 }

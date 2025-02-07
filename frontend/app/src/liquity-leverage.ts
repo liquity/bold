@@ -3,7 +3,7 @@ import type { Config as WagmiConfig } from "wagmi";
 
 import { CLOSE_FROM_COLLATERAL_SLIPPAGE, DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { getProtocolContract } from "@/src/contracts";
-import { getCollateralContracts } from "@/src/contracts";
+import { getBranchContracts } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { useDebouncedQueryKey } from "@/src/react-utils";
 import { useWagmiConfig } from "@/src/services/Ethereum";
@@ -19,14 +19,7 @@ export async function getLeverUpTroveParams(
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const collContracts = getCollateralContracts(branchId);
-
-  if (!collContracts) {
-    throw new Error("Invalid branch: " + branchId);
-  }
-
-  const { PriceFeed, TroveManager } = collContracts;
-
+  const { PriceFeed, TroveManager } = getBranchContracts(branchId);
   const [priceResult, troveDataResult] = await readContracts(wagmiConfig, {
     contracts: [{
       abi: PriceFeed.abi,
@@ -78,14 +71,7 @@ export async function getLeverDownTroveParams(
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const collContracts = getCollateralContracts(branchId);
-
-  if (!collContracts) {
-    throw new Error("Invalid branch: " + branchId);
-  }
-
-  const { PriceFeed, TroveManager } = collContracts;
-
+  const { PriceFeed, TroveManager } = getBranchContracts(branchId);
   const [priceResult, troveDataResult] = await readContracts(wagmiConfig, {
     contracts: [{
       abi: PriceFeed.abi,
@@ -138,14 +124,7 @@ export async function getOpenLeveragedTroveParams(
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const collContracts = getCollateralContracts(branchId);
-
-  if (!collContracts) {
-    throw new Error("Invalid branch: " + branchId);
-  }
-
-  const { PriceFeed } = collContracts;
-
+  const { PriceFeed } = getBranchContracts(branchId);
   const [price] = await readContract(wagmiConfig, {
     abi: PriceFeed.abi,
     address: PriceFeed.address,
@@ -172,14 +151,7 @@ export async function getCloseFlashLoanAmount(
   troveId: TroveId,
   wagmiConfig: WagmiConfig,
 ): Promise<bigint | null> {
-  const collContracts = getCollateralContracts(branchId);
-
-  if (!collContracts) {
-    throw new Error("Invalid branch: " + branchId);
-  }
-
-  const { PriceFeed, TroveManager } = collContracts;
-
+  const { PriceFeed, TroveManager } = getBranchContracts(branchId);
   const [priceResult, latestTroveDataResult] = await readContracts(wagmiConfig, {
     contracts: [
       {

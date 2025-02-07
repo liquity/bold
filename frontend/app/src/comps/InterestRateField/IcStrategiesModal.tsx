@@ -1,7 +1,7 @@
 import type { BranchId, Delegate } from "@/src/types";
 
 import content from "@/src/content";
-import { getCollateralContracts } from "@/src/contracts";
+import { getBranchContracts } from "@/src/contracts";
 import { IC_STRATEGIES } from "@/src/demo-mode";
 import { css } from "@/styled-system/css";
 import { Modal, TextButton } from "@liquity2/uikit";
@@ -23,11 +23,11 @@ export function IcStrategiesModal({
   onSelectDelegate: (delegate: Delegate) => void;
   visible: boolean;
 }) {
-  const collateral = getCollateralContracts(branchId);
+  const branchContracts = getBranchContracts(branchId);
 
   const [displayedDelegates, setDisplayedDelegates] = useState(5);
 
-  console.log(collateral);
+  console.log(branchContracts);
 
   return (
     <Modal

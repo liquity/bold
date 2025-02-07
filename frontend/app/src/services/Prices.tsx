@@ -5,7 +5,7 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import type { Dnum } from "dnum";
 
 import { PRICE_REFRESH_INTERVAL } from "@/src/constants";
-import { getCollateralContract } from "@/src/contracts";
+import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { COINGECKO_API_KEY } from "@/src/env";
 import { isCollateralSymbol } from "@liquity2/uikit";
@@ -19,7 +19,7 @@ type PriceToken = "LQTY" | "BOLD" | "LUSD" | CollateralSymbol;
 function useCollateralPrice(symbol: null | CollateralSymbol): UseQueryResult<Dnum> {
   // "ETH" is a fallback when null is passed, so we can return a standard
   // query object from the PriceFeed ABI, while the query stays disabled
-  const PriceFeed = getCollateralContract(symbol ?? "ETH", "PriceFeed");
+  const PriceFeed = getBranchContract(symbol ?? "ETH", "PriceFeed");
 
   if (!PriceFeed) {
     throw new Error(`Price feed contract not found for ${symbol}`);

@@ -5,7 +5,7 @@ import type { PositionLoanCommitted } from "@/src/types";
 import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { getCollateralContract } from "@/src/contracts";
+import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId, useLoan } from "@/src/liquity-utils";
@@ -225,19 +225,10 @@ function ClaimCollateralSurplus({
   const account = useAccount();
   const txFlow = useTransactionFlow();
   const collToken = getCollToken(loan.branchId);
-  if (!collToken) {
-    throw new Error(`collToken not found for index ${loan.branchId}`);
-  }
-
-  const csp = getCollateralContract(loan.branchId, "CollSurplusPool");
-  if (!csp) {
-    throw new Error("Collateral surplus pool not found for branch: " + loan.branchId);
-  }
-
   const collPriceUsd = usePrice(collToken.symbol);
 
   const collSurplus = useReadContract({
-    ...csp,
+    ...getBranchContract(loan.branchId, "CollSurplusPool"),
     functionName: "getCollateral",
     args: [loan.borrower],
     query: {

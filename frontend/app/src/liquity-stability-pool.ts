@@ -3,7 +3,7 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import type { Dnum } from "dnum";
 
 import { SP_YIELD_SPLIT } from "@/src/constants";
-import { getCollateralContract } from "@/src/contracts";
+import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { CHAIN_CONTRACT_MULTICALL } from "@/src/env";
 import { getCollToken } from "@/src/liquity-utils";
@@ -97,8 +97,8 @@ type DepositParameters = {
 };
 
 function useSpYieldGainParameters(symbol: CollateralSymbol | null) {
-  const ActivePool = getCollateralContract(symbol, "ActivePool");
-  const StabilityPool = getCollateralContract(symbol, "StabilityPool");
+  const ActivePool = getBranchContract(symbol, "ActivePool");
+  const StabilityPool = getBranchContract(symbol, "StabilityPool");
 
   const AP = ActivePool as NonNullable<typeof ActivePool>;
   const SP = StabilityPool as NonNullable<typeof StabilityPool>;
