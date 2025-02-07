@@ -238,11 +238,11 @@ contract USAZapper is BaseZapper {
         require(success, "GCZ: Sending ETH failed");
     }
 
-    function _pullColl(uint256 _amount) internal {
+    function _pullColl(uint256 _amount) virtual internal {
         IERC20(collToken).safeTransferFrom(msg.sender, address(this), _amount);
     }
 
-    function _sendColl(address _receiver, uint256 _amount) internal {
+    function _sendColl(address _receiver, uint256 _amount) virtual internal {
         IERC20(collToken).safeTransfer(_receiver, _amount);
     }
 

@@ -51,6 +51,8 @@ import {SfrxEthFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/SfrxEthFallb
 import {TbtcFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/TbtcFallbackOracle.sol";
 import {WbtcFallbackOracle} from "src/PriceFeeds/USA.D/Fallbacks/WbtcFallbackOracle.sol";
 import {USAZapper} from "src/Zappers/USAZapper.sol";
+import {WrappedWbtc} from "src/WrappedWbtc.sol";
+import {WbtcZapper} from "src/Zappers/WbtcZapper.sol";
 
 // ---- Usage ----
 
@@ -148,6 +150,7 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
     }
 
     MetadataNFT metadataNFT;
+    WrappedWbtc wrappedWbtc;
 
     uint256 constant _24_HOURS = 86400;
     uint256 constant _1_HOUR = 3600;
@@ -185,14 +188,16 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
         collNames[1] = "Savings DAI";
         collNames[2] = "Staked Frax Ether";
         collNames[3] = "tBTC v2";
-        collNames[4] = "Wrapped BTC";
+        collNames[4] = "Wrapped WBTC";
         collNames[5] = "Savings USDS";
         collSymbols[0] = "scrvUSD";
         collSymbols[1] = "sDAI";
         collSymbols[2] = "sfrxETH";
         collSymbols[3] = "tBTC";
-        collSymbols[4] = "WBTC";
+        collSymbols[4] = "WWBTC";
         collSymbols[5] = "sUSDS";
+
+        wrappedWbtc = new WrappedWbtc();
 
         deployed =
             _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols);
@@ -237,7 +242,7 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
         vars.collaterals[1] = IERC20Metadata(SDAI);
         vars.collaterals[2] = IERC20Metadata(SFRXETH);
         vars.collaterals[3] = IERC20Metadata(TBTC);
-        vars.collaterals[4] = IERC20Metadata(WBTC);
+        vars.collaterals[4] = IERC20Metadata(wrappedWbtc);
         vars.collaterals[5] = IERC20Metadata(SUSDS);
 
 
@@ -333,7 +338,7 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
             TbtcFallbackOracle fallbackOracle = new TbtcFallbackOracle();
             contracts.oracle = address(new TbtcOracle(address(fallbackOracle)));
             tbtcFallbackOracle = fallbackOracle;
-        } else if (address(_collToken) == WBTC) {
+        } else if (address(_collToken) == address(wrappedWbtc)) {
             _stalenessThreshold = _24_HOURS; // CL WBTC/BTC heartbeat. Fallback is block.timestamp
             WbtcFallbackOracle fallbackOracle = new WbtcFallbackOracle();
             contracts.oracle = address(new WbtcOracle(address(fallbackOracle)));
@@ -421,7 +426,11 @@ contract DeployUSADScript is StdCheats, MetadataDeployment {
             address(contracts.activePool)
         );
 
-        contracts.zapper = address(new USAZapper(contracts.addressesRegistry));
+        if (address(_collToken) == address(wrappedWbtc)) {
+            contracts.zapper = address(new WbtcZapper(contracts.addressesRegistry));
+        } else {
+            contracts.zapper = address(new USAZapper(contracts.addressesRegistry));
+        }
     }
 
     function _deployCurveBoldUsdcPool(IBoldToken _boldToken, IERC20 _usdc) internal returns (ICurveStableswapNGPool) {

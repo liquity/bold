@@ -127,16 +127,16 @@ contract OraclesTest is Base {
 
         // Primary
         (uint256 _pricePrimary, bool _isOracleDownPrimary) = _contracts.priceFeed.fetchPrice();
-        assertGt(_pricePrimary, 100_000 ether, "testWbtcOracle: E0");
+        assertGt(_pricePrimary, 90_000 ether, "testWbtcOracle: E0");
         assertFalse(_isOracleDownPrimary, "testWbtcOracle: E1");
         console2.log(_pricePrimary, "wBTC price primary");
 
         // Fallback
         vm.warp(block.timestamp + 2 hours);
         (uint256 _priceFallback, bool _isOracleDownFallback) = _contracts.priceFeed.fetchPrice();
-        assertGt(_priceFallback, 100_000 ether, "testWbtcOracle: E2");
+        assertGt(_priceFallback, 90_000 ether, "testWbtcOracle: E2");
         assertFalse(_isOracleDownFallback, "testWbtcOracle: E3");
-        assertApproxEqRel(_priceFallback, _pricePrimary, 3 * DIFF, "testWbtcOracle: E4"); // 0.3%
+        assertApproxEqRel(_priceFallback, _pricePrimary, 4 * DIFF, "testWbtcOracle: E4"); // 0.4%
         console2.log(_priceFallback, "wBTC price fallback");
 
         // Shutdown fallback

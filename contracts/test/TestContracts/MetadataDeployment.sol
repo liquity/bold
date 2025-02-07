@@ -42,7 +42,7 @@ contract MetadataDeployment is Script /* , StdAssertions */ {
         address _deployer = vm.addr(_pk);
 
         // Set salt values
-        bytes32 _salt = bytes32(abi.encodePacked(_deployer, uint96(0x012345)));
+        bytes32 _salt = bytes32(abi.encodePacked(_deployer, uint96(0x0123456)));
 
         // Sanity check
         address _proxyAddr = _factory.predictDeterministicAddress(_salt);
