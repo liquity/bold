@@ -15,7 +15,7 @@ import { useStoredState } from "@/src/services/StoredState";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { isPrefixedtroveId } from "@/src/types";
 import { css } from "@/styled-system/css";
-import { Button, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
+import { addressesEqual, Button, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
@@ -250,8 +250,11 @@ function ClaimCollateralSurplus({
     ? dn.mul(collSurplus.data, collPriceUsd.data)
     : null;
 
-  // const isOwner = account.address && addressesEqual(account.address, loan.borrower);
-  const isOwner = true;
+  const isOwner = account.address && addressesEqual(account.address, loan.borrower);
+
+  if (!collSurplus.data || dn.eq(collSurplus.data, 0)) {
+    return null;
+  }
 
   return (
     <div
@@ -358,7 +361,6 @@ function ClaimCollateralSurplus({
                 ],
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The loan position has been closed successfully.",
-
                 borrower: loan.borrower,
                 collIndex: loan.collIndex,
                 collSurplus: collSurplus.data ?? dnum18(0),
