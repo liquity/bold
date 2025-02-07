@@ -568,7 +568,7 @@ const StatsSchema = v.pipe(
   })),
 );
 
-export function useBranchDebt(collIndex: CollIndex) {
+export function useBranchDebt(collIndex: CollIndex | null) {
   const BorrowerOperations = getCollateralContract(collIndex, "BorrowerOperations");
   if (!BorrowerOperations) {
     throw new Error(`Invalid collateral index: ${collIndex}`);
