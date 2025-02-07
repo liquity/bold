@@ -455,7 +455,7 @@ function subgraphTroveToLoan(
     throw new Error(`Invalid trove ID: ${trove.id} / ${trove.troveId}`);
   }
 
-  const branchId = trove.collateral.id;
+  const branchId = trove.collateral.collIndex;
   if (!isBranchId(branchId)) {
     throw new Error(`Invalid branch: ${branchId}`);
   }
