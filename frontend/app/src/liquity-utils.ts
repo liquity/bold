@@ -568,6 +568,21 @@ const StatsSchema = v.pipe(
   })),
 );
 
+export function useBranchDebt(collIndex: CollIndex | null) {
+  const BorrowerOperations = getCollateralContract(collIndex, "BorrowerOperations");
+  if (!BorrowerOperations) {
+    throw new Error(`Invalid collateral index: ${collIndex}`);
+  }
+  return useReadContract({
+    ...BorrowerOperations,
+    functionName: "getEntireSystemDebt",
+    query: {
+      refetchInterval: DATA_REFRESH_INTERVAL,
+      select: dnum18,
+    },
+  });
+}
+
 export function useLiquityStats() {
   return useQuery({
     queryKey: ["liquity-stats"],
