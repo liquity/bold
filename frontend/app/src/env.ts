@@ -1,4 +1,4 @@
-import type { Address, BranchId } from "@/src/types";
+import type { Address, Branch, BranchId } from "@/src/types";
 
 import { isBranchId } from "@/src/types";
 import { vAddress, vEnvAddressAndBlock, vEnvCurrency, vEnvFlag, vEnvLink, vEnvUrlOrDefault } from "@/src/valibot-utils";
@@ -195,13 +195,11 @@ export const EnvSchema = v.pipe(
     ] as const;
 
     type ContractEnvName = typeof contractsEnvNames[number];
-
-    const collateralContracts: Array<{
-      branchId: BranchId;
+    type BranchEnv = Omit<Branch, "contracts"> & {
       contracts: Record<ContractEnvName, Address>;
-      strategies: Array<{ address: Address; name: string }>;
-      symbol: v.InferOutput<typeof CollateralSymbolSchema>;
-    }> = [];
+    };
+
+    const branches: BranchEnv[] = [];
 
     for (const index of Array(10).keys()) {
       const collEnvName = `COLL_${index}` as const;
@@ -227,7 +225,8 @@ export const EnvSchema = v.pipe(
         throw new Error(`Invalid branch: ${index}`);
       }
 
-      collateralContracts[index] = {
+      branches[index] = {
+        id: index,
         branchId: index,
         contracts: contracts as Record<ContractEnvName, Address>,
         strategies: (env[`${collEnvName}_IC_STRATEGIES` as keyof typeof env] ?? []) as Array<
@@ -239,7 +238,7 @@ export const EnvSchema = v.pipe(
 
     return {
       ...env,
-      COLLATERAL_CONTRACTS: collateralContracts,
+      BRANCHES: branches,
     };
   }),
 );
@@ -379,7 +378,7 @@ export const {
   CHAIN_NAME,
   CHAIN_RPC_URL,
   COINGECKO_API_KEY,
-  COLLATERAL_CONTRACTS,
+  BRANCHES,
   CONTRACTS_COMMIT_HASH,
   CONTRACTS_COMMIT_URL,
   CONTRACT_BOLD_TOKEN,

@@ -1,8 +1,8 @@
 import type { BranchId, Delegate } from "@/src/types";
 
 import content from "@/src/content";
-import { getBranchContracts } from "@/src/contracts";
 import { IC_STRATEGIES } from "@/src/demo-mode";
+import { getBranch } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { Modal, TextButton } from "@liquity2/uikit";
 import Image from "next/image";
@@ -23,11 +23,11 @@ export function IcStrategiesModal({
   onSelectDelegate: (delegate: Delegate) => void;
   visible: boolean;
 }) {
-  const branchContracts = getBranchContracts(branchId);
+  const branch = getBranch(branchId);
 
   const [displayedDelegates, setDisplayedDelegates] = useState(5);
 
-  console.log(branchContracts);
+  console.log(branch);
 
   return (
     <Modal

@@ -15,7 +15,7 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
-import { getBranchContract, getContracts, getProtocolContract } from "@/src/contracts";
+import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, LIQUITY_STATS_URL } from "@/src/env";
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
@@ -85,18 +85,14 @@ export function getCollToken(branchId: BranchId | null): CollateralToken | null 
   return token;
 }
 
-export function getBranchIdFromSymbol(symbol: null): null;
-export function getBranchIdFromSymbol(symbol: CollateralSymbol): BranchId;
-export function getBranchIdFromSymbol(symbol: CollateralSymbol | null): BranchId | null {
-  if (symbol === null) {
-    return null;
-  }
-  const branch = getBranch(symbol);
-  return branch.id;
-}
-
 export function getBranches(): Branch[] {
-  return getContracts().branches;
+  return CONTRACTS.branches.map((branchContracts) => ({
+    id: branchContracts.branchId,
+    branchId: branchContracts.branchId,
+    contracts: branchContracts.contracts,
+    symbol: branchContracts.symbol,
+    strategies: [],
+  }));
 }
 
 export function getBranch(idOrSymbol: null): null;

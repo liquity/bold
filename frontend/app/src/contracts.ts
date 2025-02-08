@@ -1,4 +1,4 @@
-import type { Branch, BranchId, CollateralSymbol } from "@/src/types";
+import type { BranchId, CollateralSymbol } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
 import { ActivePool } from "@/src/abi/ActivePool";
@@ -20,7 +20,7 @@ import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import { TroveNFT } from "@/src/abi/TroveNFT";
 import {
-  COLLATERAL_CONTRACTS,
+  BRANCHES,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
   CONTRACT_EXCHANGE_HELPERS,
@@ -96,29 +96,48 @@ export type BranchContracts = {
 };
 
 export type Contracts = ProtocolContractMap & {
-  branches: Branch[];
+  branches: Array<{
+    id: BranchId;
+    branchId: BranchId;
+    contracts: BranchContracts;
+    symbol: CollateralSymbol;
+  }>;
 };
 
-const CONTRACTS: Contracts = {
+export const CONTRACTS: Contracts = {
   BoldToken: { abi: abis.BoldToken, address: CONTRACT_BOLD_TOKEN },
-  CollateralRegistry: { abi: abis.CollateralRegistry, address: CONTRACT_COLLATERAL_REGISTRY },
+  CollateralRegistry: {
+    abi: abis.CollateralRegistry,
+    address: CONTRACT_COLLATERAL_REGISTRY,
+  },
   Governance: { abi: abis.Governance, address: CONTRACT_GOVERNANCE },
-  ExchangeHelpers: { abi: abis.ExchangeHelpers, address: CONTRACT_EXCHANGE_HELPERS },
+  ExchangeHelpers: {
+    abi: abis.ExchangeHelpers,
+    address: CONTRACT_EXCHANGE_HELPERS,
+  },
   HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
   LqtyStaking: { abi: abis.LqtyStaking, address: CONTRACT_LQTY_STAKING },
   LqtyToken: { abi: abis.LqtyToken, address: CONTRACT_LQTY_TOKEN },
   LusdToken: { abi: abis.LusdToken, address: CONTRACT_LUSD_TOKEN },
-  MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
+  MultiTroveGetter: {
+    abi: abis.MultiTroveGetter,
+    address: CONTRACT_MULTI_TROVE_GETTER,
+  },
   WETH: { abi: abis.WETH, address: CONTRACT_WETH },
-
-  branches: COLLATERAL_CONTRACTS.map(({ branchId, symbol, contracts }) => ({
+  branches: BRANCHES.map(({ branchId, symbol, contracts }) => ({
     id: branchId,
     branchId,
     symbol,
     contracts: {
       ActivePool: { address: contracts.ACTIVE_POOL, abi: abis.ActivePool },
-      BorrowerOperations: { address: contracts.BORROWER_OPERATIONS, abi: abis.BorrowerOperations },
-      CollSurplusPool: { address: contracts.COLL_SURPLUS_POOL, abi: abis.CollSurplusPool },
+      BorrowerOperations: {
+        address: contracts.BORROWER_OPERATIONS,
+        abi: abis.BorrowerOperations,
+      },
+      CollSurplusPool: {
+        address: contracts.COLL_SURPLUS_POOL,
+        abi: abis.CollSurplusPool,
+      },
       CollToken: { address: contracts.COLL_TOKEN, abi: abis.CollToken },
       DefaultPool: { address: contracts.DEFAULT_POOL, abi: abis.DefaultPool },
       LeverageLSTZapper: {
@@ -131,45 +150,26 @@ const CONTRACTS: Contracts = {
       },
       PriceFeed: { address: contracts.PRICE_FEED, abi: abis.PriceFeed },
       SortedTroves: { address: contracts.SORTED_TROVES, abi: abis.SortedTroves },
-      StabilityPool: { address: contracts.STABILITY_POOL, abi: abis.StabilityPool },
+      StabilityPool: {
+        address: contracts.STABILITY_POOL,
+        abi: abis.StabilityPool,
+      },
       TroveManager: { address: contracts.TROVE_MANAGER, abi: abis.TroveManager },
       TroveNFT: { address: contracts.TROVE_NFT, abi: abis.TroveNFT },
     },
   })),
 };
 
-export function getContracts(): Contracts {
-  return CONTRACTS;
-}
-
-export function getProtocolContract<CN extends ProtocolContractName>(
-  name: CN,
-): ProtocolContractMap[CN] {
+export function getProtocolContract<
+  CN extends ProtocolContractName,
+>(name: CN): ProtocolContractMap[CN] {
   return CONTRACTS[name];
 }
 
-export function getBranchContracts(branchIdOrSymbol: null): null;
-export function getBranchContracts(branchIdOrSymbol: CollateralSymbol | BranchId): BranchContracts;
-export function getBranchContracts(
-  branchIdOrSymbol: CollateralSymbol | BranchId | null,
-): BranchContracts | null;
-export function getBranchContracts(
-  branchIdOrSymbol: CollateralSymbol | BranchId | null,
-): BranchContracts | null {
-  if (branchIdOrSymbol === null) {
-    return null;
-  }
-  const { branches } = getContracts();
-  const branch = typeof branchIdOrSymbol === "number"
-    ? branches[branchIdOrSymbol]
-    : branches.find((c) => c.symbol === branchIdOrSymbol);
-  if (branch?.contracts) {
-    return branch.contracts;
-  }
-  throw new Error(`No collateral for index or symbol ${branchIdOrSymbol}`);
-}
-
-export function getBranchContract(branchIdOrSymbol: null, contractName: CollateralContractName): null;
+export function getBranchContract(
+  branchIdOrSymbol: null,
+  contractName: CollateralContractName,
+): null;
 export function getBranchContract<CN extends CollateralContractName>(
   branchIdOrSymbol: CollateralSymbol | BranchId,
   contractName: CN,
@@ -185,9 +185,19 @@ export function getBranchContract<CN extends CollateralContractName>(
   if (branchIdOrSymbol === null) {
     return null;
   }
-  const contracts = getBranchContracts(branchIdOrSymbol);
-  if (contracts[contractName]) {
-    return contracts[contractName];
+  const { branches } = CONTRACTS;
+
+  const branch = typeof branchIdOrSymbol === "number"
+    ? branches[branchIdOrSymbol]
+    : branches.find((c) => c.symbol === branchIdOrSymbol);
+  if (!branch) {
+    throw new Error(`No branch for index or symbol ${branchIdOrSymbol}`);
   }
-  throw new Error(`No contract ${contractName} for branch ${branchIdOrSymbol}`);
+
+  const contract = branch.contracts[contractName];
+  if (!contract) {
+    throw new Error(`No contract ${contractName} for branch ${branchIdOrSymbol}`);
+  }
+
+  return contract;
 }

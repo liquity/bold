@@ -17,7 +17,10 @@ export type Branch = {
   contracts: BranchContracts;
   branchId: BranchId; // to be removed, use `id` instead
   symbol: CollateralSymbol;
+  strategies: Array<{ address: Address; name: string }>;
 };
+
+export type EnvBranch = Omit<Branch, "contracts">;
 
 export function isBranchId(value: unknown): value is BranchId {
   return typeof value === "number" && value >= 0 && value <= 9;

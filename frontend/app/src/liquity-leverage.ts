@@ -3,8 +3,8 @@ import type { Config as WagmiConfig } from "wagmi";
 
 import { CLOSE_FROM_COLLATERAL_SLIPPAGE, DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { getProtocolContract } from "@/src/contracts";
-import { getBranchContracts } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
+import { getBranch } from "@/src/liquity-utils";
 import { useDebouncedQueryKey } from "@/src/react-utils";
 import { useWagmiConfig } from "@/src/services/Ethereum";
 import { useQuery } from "@tanstack/react-query";
@@ -19,7 +19,7 @@ export async function getLeverUpTroveParams(
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const { PriceFeed, TroveManager } = getBranchContracts(branchId);
+  const { PriceFeed, TroveManager } = getBranch(branchId).contracts;
   const [priceResult, troveDataResult] = await readContracts(wagmiConfig, {
     contracts: [{
       abi: PriceFeed.abi,
@@ -71,7 +71,7 @@ export async function getLeverDownTroveParams(
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const { PriceFeed, TroveManager } = getBranchContracts(branchId);
+  const { PriceFeed, TroveManager } = getBranch(branchId).contracts;
   const [priceResult, troveDataResult] = await readContracts(wagmiConfig, {
     contracts: [{
       abi: PriceFeed.abi,
@@ -124,7 +124,7 @@ export async function getOpenLeveragedTroveParams(
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const { PriceFeed } = getBranchContracts(branchId);
+  const { PriceFeed } = getBranch(branchId).contracts;
   const [price] = await readContract(wagmiConfig, {
     abi: PriceFeed.abi,
     address: PriceFeed.address,
@@ -151,21 +151,18 @@ export async function getCloseFlashLoanAmount(
   troveId: TroveId,
   wagmiConfig: WagmiConfig,
 ): Promise<bigint | null> {
-  const { PriceFeed, TroveManager } = getBranchContracts(branchId);
+  const { PriceFeed, TroveManager } = getBranch(branchId).contracts;
   const [priceResult, latestTroveDataResult] = await readContracts(wagmiConfig, {
-    contracts: [
-      {
-        abi: PriceFeed.abi,
-        address: PriceFeed.address,
-        functionName: "fetchPrice",
-      },
-      {
-        abi: TroveManager.abi,
-        address: TroveManager.address,
-        functionName: "getLatestTroveData",
-        args: [BigInt(troveId)],
-      },
-    ],
+    contracts: [{
+      abi: PriceFeed.abi,
+      address: PriceFeed.address,
+      functionName: "fetchPrice",
+    }, {
+      abi: TroveManager.abi,
+      address: TroveManager.address,
+      functionName: "getLatestTroveData",
+      args: [BigInt(troveId)],
+    }],
   });
 
   const [price] = priceResult.result ?? [];
