@@ -20,7 +20,6 @@ import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import { TroveNFT } from "@/src/abi/TroveNFT";
 import {
-  BRANCHES,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
   CONTRACT_EXCHANGE_HELPERS,
@@ -31,6 +30,7 @@ import {
   CONTRACT_LUSD_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
+  ENV_BRANCHES,
 } from "@/src/env";
 import { erc20Abi, zeroAddress } from "viem";
 
@@ -124,7 +124,7 @@ export const CONTRACTS: Contracts = {
     address: CONTRACT_MULTI_TROVE_GETTER,
   },
   WETH: { abi: abis.WETH, address: CONTRACT_WETH },
-  branches: BRANCHES.map(({ branchId, symbol, contracts }) => ({
+  branches: ENV_BRANCHES.map(({ branchId, symbol, contracts }) => ({
     id: branchId,
     branchId,
     symbol,

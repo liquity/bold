@@ -17,7 +17,7 @@ import type { Config as WagmiConfig } from "wagmi";
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER, LIQUITY_STATS_URL } from "@/src/env";
+import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
   useGovernanceStats,
@@ -86,13 +86,19 @@ export function getCollToken(branchId: BranchId | null): CollateralToken | null 
 }
 
 export function getBranches(): Branch[] {
-  return CONTRACTS.branches.map((branchContracts) => ({
-    id: branchContracts.branchId,
-    branchId: branchContracts.branchId,
-    contracts: branchContracts.contracts,
-    symbol: branchContracts.symbol,
-    strategies: [],
-  }));
+  return ENV_BRANCHES.map((branch) => {
+    const contracts = CONTRACTS.branches.find((b) => b.id === branch.id);
+    if (!contracts) {
+      throw new Error(`Contracts not found for branch: ${branch.id}`);
+    }
+    return {
+      id: branch.id,
+      branchId: branch.id,
+      contracts: contracts.contracts,
+      symbol: branch.symbol,
+      strategies: branch.strategies,
+    };
+  });
 }
 
 export function getBranch(idOrSymbol: null): null;

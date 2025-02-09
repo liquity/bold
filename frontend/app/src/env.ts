@@ -13,7 +13,26 @@ export const CollateralSymbolSchema = v.union([
   v.literal("WSTETH"),
 ]);
 
-function vCollateralEnvVars(branchId: BranchId) {
+const contractsEnvNames = [
+  "ACTIVE_POOL",
+  "BORROWER_OPERATIONS",
+  "COLL_SURPLUS_POOL",
+  "COLL_TOKEN",
+  "DEFAULT_POOL",
+  "LEVERAGE_ZAPPER",
+  "PRICE_FEED",
+  "SORTED_TROVES",
+  "STABILITY_POOL",
+  "TROVE_MANAGER",
+  "TROVE_NFT",
+] as const;
+
+type ContractEnvName = typeof contractsEnvNames[number];
+type BranchEnv = Omit<Branch, "contracts"> & {
+  contracts: Record<ContractEnvName, Address>;
+};
+
+function vBranchEnvVars(branchId: BranchId) {
   const prefix = `COLL_${branchId}`;
   return v.object({
     [`${prefix}_CONTRACT_ACTIVE_POOL`]: v.optional(vAddress()),
@@ -173,33 +192,14 @@ export const EnvSchema = v.pipe(
     CONTRACT_MULTI_TROVE_GETTER: vAddress(),
     CONTRACT_WETH: vAddress(),
 
-    ...vCollateralEnvVars(0).entries,
-    ...vCollateralEnvVars(1).entries,
-    ...vCollateralEnvVars(2).entries,
+    ...vBranchEnvVars(0).entries,
+    ...vBranchEnvVars(1).entries,
+    ...vBranchEnvVars(2).entries,
   }),
   v.transform((data) => {
     const env = { ...data };
 
-    const contractsEnvNames = [
-      "ACTIVE_POOL",
-      "BORROWER_OPERATIONS",
-      "COLL_SURPLUS_POOL",
-      "COLL_TOKEN",
-      "DEFAULT_POOL",
-      "LEVERAGE_ZAPPER",
-      "PRICE_FEED",
-      "SORTED_TROVES",
-      "STABILITY_POOL",
-      "TROVE_MANAGER",
-      "TROVE_NFT",
-    ] as const;
-
-    type ContractEnvName = typeof contractsEnvNames[number];
-    type BranchEnv = Omit<Branch, "contracts"> & {
-      contracts: Record<ContractEnvName, Address>;
-    };
-
-    const branches: BranchEnv[] = [];
+    const envBranches: BranchEnv[] = [];
 
     for (const index of Array(10).keys()) {
       const collEnvName = `COLL_${index}` as const;
@@ -225,21 +225,20 @@ export const EnvSchema = v.pipe(
         throw new Error(`Invalid branch: ${index}`);
       }
 
-      branches[index] = {
+      envBranches[index] = {
         id: index,
         branchId: index,
         contracts: contracts as Record<ContractEnvName, Address>,
-        strategies: (env[`${collEnvName}_IC_STRATEGIES` as keyof typeof env] ?? []) as Array<
-          { address: Address; name: string }
-        >,
-        symbol: env[`${collEnvName}_TOKEN_ID` as keyof typeof env] as v.InferOutput<typeof CollateralSymbolSchema>,
+        strategies: (
+          env[`${collEnvName}_IC_STRATEGIES` as keyof typeof env] ?? []
+        ) as Array<{ address: Address; name: string }>,
+        symbol: (
+          env[`${collEnvName}_TOKEN_ID` as keyof typeof env]
+        ) as v.InferOutput<typeof CollateralSymbolSchema>,
       };
     }
 
-    return {
-      ...env,
-      BRANCHES: branches,
-    };
+    return { ...env, ENV_BRANCHES: envBranches };
   }),
 );
 
@@ -378,7 +377,7 @@ export const {
   CHAIN_NAME,
   CHAIN_RPC_URL,
   COINGECKO_API_KEY,
-  BRANCHES,
+  ENV_BRANCHES,
   CONTRACTS_COMMIT_HASH,
   CONTRACTS_COMMIT_URL,
   CONTRACT_BOLD_TOKEN,
