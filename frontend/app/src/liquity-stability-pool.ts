@@ -58,20 +58,21 @@ export function useContinuousBoldGains(
     ],
     queryFn: () => {
       return (now: number) => {
-        // cant happen, see `enabled` below
-        if (!spYieldGainParams.data || !depositParams) {
-          throw new Error();
-        }
         return dnum18(
-          getDepositorYieldGainWithPending(
-            depositParams,
-            spYieldGainParams.data,
-            BigInt(now),
-          ),
+          (!spYieldGainParams.data || !depositParams)
+            ? 0
+            : getDepositorYieldGainWithPending(
+              depositParams,
+              spYieldGainParams.data,
+              BigInt(now),
+            ),
         );
       };
     },
-    enabled: Boolean(spYieldGainParams.data && depositParams),
+    enabled: !deposit.isLoading
+      && !epochScale1.isLoading
+      && !epochScale2.isLoading
+      && !spYieldGainParams.isLoading,
   });
 }
 
