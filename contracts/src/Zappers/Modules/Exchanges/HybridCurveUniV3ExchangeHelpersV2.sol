@@ -46,7 +46,10 @@ contract HybridCurveUniV3ExchangeHelpersV2 is IExchangeHelpersV2 {
         uniV3Quoter = _uniV3Quoter;
     }
 
-    function getDy(uint256 _dx, bool _collToBold, address _collToken) external returns (uint256 dy) {
+    function quoteExactInput(uint256 _inputAmount, bool _collToBold, address _collToken)
+        external
+        returns (uint256 outputAmount)
+    {
         if (_collToBold) {
             // (Coll ->) WETH -> USDC?
             bytes memory path;
@@ -56,13 +59,13 @@ contract HybridCurveUniV3ExchangeHelpersV2 is IExchangeHelpersV2 {
                 path = abi.encodePacked(_collToken, feeWethColl, WETH, feeUsdcWeth, USDC);
             }
 
-            (uint256 uniDy,,,) = uniV3Quoter.quoteExactInput(path, _dx);
+            (uint256 intermediateAmount,,,) = uniV3Quoter.quoteExactInput(path, _inputAmount);
 
             // USDC -> BOLD?
-            dy = curvePool.get_dy(USDC_INDEX, BOLD_TOKEN_INDEX, uniDy);
+            outputAmount = curvePool.get_dy(USDC_INDEX, BOLD_TOKEN_INDEX, intermediateAmount);
         } else {
             // BOLD -> USDC?
-            uint256 curveDy = curvePool.get_dy(BOLD_TOKEN_INDEX, USDC_INDEX, _dx);
+            uint256 intermediateAmount = curvePool.get_dy(BOLD_TOKEN_INDEX, USDC_INDEX, _inputAmount);
 
             // USDC -> WETH (-> Coll)?
             bytes memory path;
@@ -72,14 +75,17 @@ contract HybridCurveUniV3ExchangeHelpersV2 is IExchangeHelpersV2 {
                 path = abi.encodePacked(USDC, feeUsdcWeth, WETH, feeWethColl, _collToken);
             }
 
-            (dy,,,) = uniV3Quoter.quoteExactInput(path, curveDy);
+            (outputAmount,,,) = uniV3Quoter.quoteExactInput(path, intermediateAmount);
         }
     }
 
-    function getDx(uint256 _dy, bool _collToBold, address _collToken) external returns (uint256 dx) {
+    function quoteExactOutput(uint256 _outputAmount, bool _collToBold, address _collToken)
+        external
+        returns (uint256 inputAmount)
+    {
         if (_collToBold) {
             // USDC? -> BOLD
-            uint256 curveDx = curvePool.get_dx(USDC_INDEX, BOLD_TOKEN_INDEX, _dy);
+            uint256 intermediateAmount = curvePool.get_dx(USDC_INDEX, BOLD_TOKEN_INDEX, _outputAmount);
 
             // Uniswap expects path to be reversed when quoting exact output
             // USDC <- WETH (<- Coll)?
@@ -90,7 +96,7 @@ contract HybridCurveUniV3ExchangeHelpersV2 is IExchangeHelpersV2 {
                 path = abi.encodePacked(USDC, feeUsdcWeth, WETH, feeWethColl, _collToken);
             }
 
-            (dx,,,) = uniV3Quoter.quoteExactOutput(path, curveDx);
+            (inputAmount,,,) = uniV3Quoter.quoteExactOutput(path, intermediateAmount);
         } else {
             // Uniswap expects path to be reversed when quoting exact output
             // (Coll <-) WETH <- USDC?
@@ -101,10 +107,10 @@ contract HybridCurveUniV3ExchangeHelpersV2 is IExchangeHelpersV2 {
                 path = abi.encodePacked(_collToken, feeWethColl, WETH, feeUsdcWeth, USDC);
             }
 
-            (uint256 uniDx,,,) = uniV3Quoter.quoteExactOutput(path, _dy);
+            (uint256 intermediateAmount,,,) = uniV3Quoter.quoteExactOutput(path, _outputAmount);
 
             // BOLD? -> USDC
-            dx = curvePool.get_dx(BOLD_TOKEN_INDEX, USDC_INDEX, uniDx);
+            inputAmount = curvePool.get_dx(BOLD_TOKEN_INDEX, USDC_INDEX, intermediateAmount);
         }
     }
 }

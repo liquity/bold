@@ -166,7 +166,7 @@ contract ExchangeHelpersTest is Test, UseDeployment {
             dyExpected = bound(dyExpected, 0.001 ether, 100 ether);
         }
 
-        uint256 dx = exchangeHelpersV2_getDx(dyExpected, collToBold, collToken);
+        uint256 dx = exchangeHelpersV2_quoteExactOutput(dyExpected, collToBold, collToken);
         uint256 balance0 = IERC20(outputToken).balanceOf(address(this));
         deal(inputToken, address(this), dx);
         IERC20(inputToken).approve(address(exchange[collToken]), dx);
@@ -192,7 +192,7 @@ contract ExchangeHelpersTest is Test, UseDeployment {
             dx = bound(dx, 1 ether, 100_000 ether);
         }
 
-        uint256 dyExpected = exchangeHelpersV2_getDy(dx, collToBold, collToken);
+        uint256 dyExpected = exchangeHelpersV2_quoteExactInput(dx, collToBold, collToken);
         uint256 balance0 = IERC20(outputToken).balanceOf(address(this));
         deal(inputToken, address(this), dx);
         IERC20(inputToken).approve(address(exchange[collToken]), dx);
@@ -235,24 +235,30 @@ contract ExchangeHelpersTest is Test, UseDeployment {
         }
     }
 
-    function exchangeHelpersV2_getDx_throw(uint256 dy, bool collToBold, address collToken) external {
-        revert QuoteResult(exchangeHelpersV2.getDx(dy, collToBold, collToken));
+    function exchangeHelpersV2_quoteExactOutput_throw(uint256 dy, bool collToBold, address collToken) external {
+        revert QuoteResult(exchangeHelpersV2.quoteExactOutput(dy, collToBold, collToken));
     }
 
-    function exchangeHelpersV2_getDx(uint256 dy, bool collToBold, address collToken) internal returns (uint256) {
-        try this.exchangeHelpersV2_getDx_throw(dy, collToBold, collToken) {
+    function exchangeHelpersV2_quoteExactOutput(uint256 dy, bool collToBold, address collToken)
+        internal
+        returns (uint256)
+    {
+        try this.exchangeHelpersV2_quoteExactOutput_throw(dy, collToBold, collToken) {
             revert("Should have reverted");
         } catch (bytes memory revertData) {
             return _decodeQuoteResult(revertData);
         }
     }
 
-    function exchangeHelpersV2_getDy_throw(uint256 dx, bool collToBold, address collToken) external {
-        revert QuoteResult(exchangeHelpersV2.getDy(dx, collToBold, collToken));
+    function exchangeHelpersV2_quoteExactInput_throw(uint256 dx, bool collToBold, address collToken) external {
+        revert QuoteResult(exchangeHelpersV2.quoteExactInput(dx, collToBold, collToken));
     }
 
-    function exchangeHelpersV2_getDy(uint256 dx, bool collToBold, address collToken) internal returns (uint256) {
-        try this.exchangeHelpersV2_getDy_throw(dx, collToBold, collToken) {
+    function exchangeHelpersV2_quoteExactInput(uint256 dx, bool collToBold, address collToken)
+        internal
+        returns (uint256)
+    {
+        try this.exchangeHelpersV2_quoteExactInput_throw(dx, collToBold, collToken) {
             revert("Should have reverted");
         } catch (bytes memory revertData) {
             return _decodeQuoteResult(revertData);

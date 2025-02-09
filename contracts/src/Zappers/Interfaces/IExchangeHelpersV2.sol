@@ -3,6 +3,11 @@
 pragma solidity ^0.8.0;
 
 interface IExchangeHelpersV2 {
-    function getDy(uint256 _dx, bool _collToBold, address _collToken) external returns (uint256 dy);
-    function getDx(uint256 _dy, bool _collToBold, address _collToken) external returns (uint256 dx);
+    function quoteExactInput(uint256 _inputAmount, bool _collToBold, address _collToken)
+        external
+        returns (uint256 outputAmount);
+
+    function quoteExactOutput(uint256 _outputAmount, bool _collToBold, address _collToken)
+        external
+        returns (uint256 inputAmount);
 }
