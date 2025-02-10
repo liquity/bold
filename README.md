@@ -107,7 +107,8 @@
    - [16 - Oracle code nitpicks](#16---oracle-code-nitpicks)
    - [17 - Path dependence of redistributions](#17---path-dependence-of-redistributions---sequential-vs-batch-liquidations)
    - [18 - TODOs left in code comments](#18---todos-in-code-comments)
-
+   - [19 - Potential minor insolvency in StabilityPool](#19---potential-minor-insolvency-in-stabilitypool-after-liquidations-and-deposits)
+   - [20 - Just-in-time StabilityPool deposits](#20---just-in-time-stabilitypool-deposits)
    - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
      
 
