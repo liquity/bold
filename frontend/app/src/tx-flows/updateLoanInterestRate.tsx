@@ -81,10 +81,15 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
     );
 
     const delegate = useInterestBatchDelegate(loan.branchId, loan.batchManager);
-
     const yearlyBoldInterest = dn.mul(
       loan.borrowed,
       dn.add(loan.interestRate, delegate.data?.fee ?? 0),
+    );
+
+    const prevDelegate = useInterestBatchDelegate(loan.branchId, prevLoan.batchManager);
+    const prevYearlyBoldInterest = dn.mul(
+      prevLoan.borrowed,
+      dn.add(prevLoan.interestRate, prevDelegate.data?.fee ?? 0),
     );
 
     return loan.batchManager
@@ -162,14 +167,26 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                     textDecoration: "line-through",
                   })}
                 >
-                  {fmtnum(prevLoan.interestRate, "pctfull")}% ({fmtnum(
-                    dn.mul(prevLoan.borrowed, prevLoan.interestRate),
-                    {
-                      digits: 4,
-                      dust: false,
-                      prefix: "~",
-                    },
-                  )} BOLD per year)
+                  <Amount
+                    value={prevLoan.interestRate}
+                    format="pct2z"
+                    percentage
+                  />{" "}
+                  <Amount
+                    percentage
+                    format="pct2"
+                    prefix="+ "
+                    suffix="% delegate fee"
+                    fallback="…"
+                    value={prevDelegate.data?.fee}
+                  />
+                  <br />
+                  <Amount
+                    format="2z"
+                    prefix="~"
+                    suffix=" BOLD per year"
+                    value={prevYearlyBoldInterest}
+                  />
                 </div>,
               ]}
             />
