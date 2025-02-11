@@ -159,7 +159,7 @@ export function useEarnPosition(
       )
       ? null
       : earnPositionFromGraph(spDeposit.data, {
-        bold: boldGains.data,
+        usdn: boldGains.data,
         coll: dnum18(
           getCollGainFromSnapshots(
             spDeposit.data.deposit,
@@ -175,7 +175,7 @@ export function useEarnPosition(
 
 function earnPositionFromGraph(
   spDeposit: NonNullable<StabilityPoolDepositQuery["stabilityPoolDeposit"]>,
-  rewards: { bold: Dnum; coll: Dnum },
+  rewards: { usdn: Dnum; coll: Dnum },
 ): PositionEarn {
   const collIndex = spDeposit.collateral.collIndex;
   if (!isCollIndex(collIndex)) {
@@ -466,7 +466,7 @@ export function usePredictAdjustInterestRateUpfrontFee(
   });
 }
 
-// from https://github.com/liquity/bold/blob/204a3dec54a0e8689120ca48faf4ece5cf8ccd22/README.md#example-opentrove-transaction-with-hints
+// from https://github.com/liquity/usdn/blob/204a3dec54a0e8689120ca48faf4ece5cf8ccd22/README.md#example-opentrove-transaction-with-hints
 export async function getTroveOperationHints({
   wagmiConfig,
   contracts,

@@ -129,7 +129,7 @@ export function useBalance(
       }
     )
     .with("LUSD", () => CONTRACT_LUSD_TOKEN)
-    .with("BOLD", () => CONTRACT_BOLD_TOKEN)
+    .with("USDN", () => CONTRACT_BOLD_TOKEN)
     .with("LQTY", () => CONTRACT_LQTY_TOKEN)
     .otherwise(() => null);
 

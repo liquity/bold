@@ -55,9 +55,10 @@ function getEnvGroups() {
     branches.push({
       collIndex,
       symbol,
-      contracts: Object
-        .entries(contracts)
-        .map(([name, address]) => [name, address]),
+      contracts: Object.entries(contracts).map(([name, address]) => [
+        name,
+        address,
+      ]),
     });
   }
 
@@ -72,11 +73,18 @@ function getEnvGroups() {
           return [key, `${name}|${url}`];
         }
         if (key === "CHAIN_CURRENCY") {
-          const { name, symbol, decimals } = value as { name: string; symbol: string; decimals: number };
+          const { name, symbol, decimals } = value as {
+            name: string;
+            symbol: string;
+            decimals: number;
+          };
           return [key, `${name}|${symbol}|${decimals}`];
         }
-        return [key, value === null || value === undefined ? null : String(value)];
-      }),
+        return [
+          key,
+          value === null || value === undefined ? null : String(value),
+        ];
+      })
   );
 
   return { config: configFinal, contracts, branches };
@@ -145,33 +153,42 @@ export function About({ children }: { children: ReactNode }) {
             </h1>
             <AboutTable
               entries={{
-                "Release": env.APP_VERSION_URL
-                  ? (
-                    <AnchorTextButton
-                      external
-                      href={env.APP_VERSION_URL.replace(/\{version\}/, env.APP_VERSION)}
-                      label={`v${env.APP_VERSION}`}
-                    />
-                  )
-                  : `v${env.APP_VERSION}`,
-                "Commit (app)": env.APP_COMMIT_URL
-                  ? (
-                    <AnchorTextButton
-                      external
-                      href={env.APP_COMMIT_URL.replace(/\{commit\}/, env.APP_COMMIT_HASH)}
-                      label={env.APP_COMMIT_HASH}
-                    />
-                  )
-                  : env.APP_COMMIT_HASH,
-                "Commit (contracts)": env.CONTRACTS_COMMIT_URL
-                  ? (
-                    <AnchorTextButton
-                      external
-                      href={env.CONTRACTS_COMMIT_URL.replace(/\{commit\}/, env.CONTRACTS_COMMIT_HASH)}
-                      label={env.CONTRACTS_COMMIT_HASH}
-                    />
-                  )
-                  : env.CONTRACTS_COMMIT_HASH,
+                Release: env.APP_VERSION_URL ? (
+                  <AnchorTextButton
+                    external
+                    href={env.APP_VERSION_URL.replace(
+                      /\{version\}/,
+                      env.APP_VERSION
+                    )}
+                    label={`v${env.APP_VERSION}`}
+                  />
+                ) : (
+                  `v${env.APP_VERSION}`
+                ),
+                "Commit (app)": env.APP_COMMIT_URL ? (
+                  <AnchorTextButton
+                    external
+                    href={env.APP_COMMIT_URL.replace(
+                      /\{commit\}/,
+                      env.APP_COMMIT_HASH
+                    )}
+                    label={env.APP_COMMIT_HASH}
+                  />
+                ) : (
+                  env.APP_COMMIT_HASH
+                ),
+                "Commit (contracts)": env.CONTRACTS_COMMIT_URL ? (
+                  <AnchorTextButton
+                    external
+                    href={env.CONTRACTS_COMMIT_URL.replace(
+                      /\{commit\}/,
+                      env.CONTRACTS_COMMIT_HASH
+                    )}
+                    label={env.CONTRACTS_COMMIT_HASH}
+                  />
+                ) : (
+                  env.CONTRACTS_COMMIT_HASH
+                ),
                 "Price data": (
                   <div
                     className={css({
@@ -180,10 +197,10 @@ export function About({ children }: { children: ReactNode }) {
                     })}
                   >
                     <Link
-                      rel="noopener noreferrer"
-                      target="_blank"
-                      href="https://www.coingecko.com/"
-                      title="By CoinGecko"
+                      rel='noopener noreferrer'
+                      target='_blank'
+                      href='https://www.coingecko.com/'
+                      title='By CoinGecko'
                       className={css({
                         display: "flex",
                         gap: 8,
@@ -192,8 +209,8 @@ export function About({ children }: { children: ReactNode }) {
                     >
                       by
                       <Image
-                        alt="CoinGecko"
-                        src="/coingecko.png"
+                        alt='CoinGecko'
+                        src='/coingecko.png'
                         width={714}
                         height={192}
                         className={css({
@@ -229,52 +246,60 @@ export function About({ children }: { children: ReactNode }) {
                   gap: 8,
                 })}
               >
-                {copyTransition.transition((style, item) => (
-                  item && (
-                    <a.div
-                      className={css({
-                        display: "flex",
-                        alignItems: "center",
-                      })}
-                      style={style}
-                    >
-                      <div
+                {copyTransition.transition(
+                  (style, item) =>
+                    item && (
+                      <a.div
                         className={css({
-                          fontSize: 12,
-                          textTransform: "uppercase",
-                          whiteSpace: "nowrap",
-                          color: "contentAlt",
+                          display: "flex",
+                          alignItems: "center",
                         })}
+                        style={style}
                       >
-                        Copied
-                      </div>
-                    </a.div>
-                  )
-                ))}
+                        <div
+                          className={css({
+                            fontSize: 12,
+                            textTransform: "uppercase",
+                            whiteSpace: "nowrap",
+                            color: "contentAlt",
+                          })}
+                        >
+                          Copied
+                        </div>
+                      </a.div>
+                    )
+                )}
                 <Button
-                  mode="secondary"
-                  size="mini"
-                  label="Copy to clipboard"
+                  mode='secondary'
+                  size='mini'
+                  label='Copy to clipboard'
                   onClick={() => {
-                    navigator.clipboard.writeText(JSON.stringify(envGroups, null, 2));
+                    navigator.clipboard.writeText(
+                      JSON.stringify(envGroups, null, 2)
+                    );
                     copyTransition.flash();
                   }}
                 />
               </div>
             </div>
-            <AboutTable title="Config" entries={envGroups.config} />
+            <AboutTable title='Config' entries={envGroups.config} />
             <AboutTable
               title={
                 <>
-                  Liquity V2 contracts ({env.CONTRACTS_COMMIT_URL
-                    ? (
-                      <AnchorTextButton
-                        external
-                        href={env.CONTRACTS_COMMIT_URL.replace(/\{commit\}/, env.CONTRACTS_COMMIT_HASH)}
-                        label={env.CONTRACTS_COMMIT_HASH}
-                      />
-                    )
-                    : env.CONTRACTS_COMMIT_HASH})
+                  Liquity V2 contracts (
+                  {env.CONTRACTS_COMMIT_URL ? (
+                    <AnchorTextButton
+                      external
+                      href={env.CONTRACTS_COMMIT_URL.replace(
+                        /\{commit\}/,
+                        env.CONTRACTS_COMMIT_HASH
+                      )}
+                      label={env.CONTRACTS_COMMIT_HASH}
+                    />
+                  ) : (
+                    env.CONTRACTS_COMMIT_HASH
+                  )}
+                  )
                 </>
               }
               entries={envGroups.contracts}
@@ -351,7 +376,7 @@ function ModalTitle() {
             transformOrigin: "50% 50%",
           })}
         >
-          <Logo size={40} />
+          <Logo />
         </a.div>
       </a.div>
       <div>Liquity V2 App</div>
@@ -416,18 +441,18 @@ function AboutTable({
                     overflowWrap: "anywhere",
                   })}
                 >
-                  {value === null
-                    ? (
-                      <span
-                        className={css({
-                          color: "contentAlt2",
-                          userSelect: "none",
-                        })}
-                      >
-                        not set
-                      </span>
-                    )
-                    : value}
+                  {value === null ? (
+                    <span
+                      className={css({
+                        color: "contentAlt2",
+                        userSelect: "none",
+                      })}
+                    >
+                      not set
+                    </span>
+                  ) : (
+                    value
+                  )}
                 </div>
               </td>
             </tr>

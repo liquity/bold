@@ -9,12 +9,17 @@ import { useLiquityStats } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, HFlex, shortenAddress, TokenIcon } from "@liquity2/uikit";
+import {
+  AnchorTextButton,
+  HFlex,
+  shortenAddress,
+  TokenIcon,
+} from "@liquity2/uikit";
 import { blo } from "blo";
 import Image from "next/image";
 import Link from "next/link";
 
-const DISPLAYED_PRICES = ["LQTY", "BOLD", "ETH"] as const;
+const DISPLAYED_PRICES = ["LQTY", "USDN", "ETH"] as const;
 
 export function ProtocolStats() {
   const account = useAccount();
@@ -40,30 +45,22 @@ export function ProtocolStats() {
           userSelect: "none",
         })}
       >
-        <HFlex gap={4} alignItems="center">
-          <Logo size={16} />
+        <HFlex gap={4} alignItems='center'>
+          <Logo />
           <span>TVL</span>{" "}
           <span>
             {tvl && (
-              <Amount
-                fallback="…"
-                format="compact"
-                prefix="$"
-                value={tvl}
-              />
+              <Amount fallback='…' format='compact' prefix='$' value={tvl} />
             )}
           </span>
         </HFlex>
         <HFlex gap={16}>
           {DISPLAYED_PRICES.map((symbol) => (
-            <Price
-              key={symbol}
-              symbol={symbol}
-            />
+            <Price key={symbol} symbol={symbol} />
           ))}
           {account.address && ACCOUNT_SCREEN && (
             <Link
-              id="footer-account-button"
+              id='footer-account-button'
               href={`/account?address=${account.address}`}
               passHref
               legacyBehavior
@@ -71,9 +68,9 @@ export function ProtocolStats() {
             >
               <AnchorTextButton
                 label={
-                  <HFlex gap={4} alignItems="center">
+                  <HFlex gap={4} alignItems='center'>
                     <Image
-                      alt=""
+                      alt=''
                       width={16}
                       height={16}
                       src={blo(account.address)}
@@ -107,22 +104,11 @@ export function ProtocolStats() {
 function Price({ symbol }: { symbol: TokenSymbol }) {
   const price = usePrice(symbol);
   return (
-    <HFlex
-      key={symbol}
-      gap={4}
-    >
-      <TokenIcon
-        size={16}
-        symbol={symbol}
-      />
+    <HFlex key={symbol} gap={4}>
+      <TokenIcon size={16} symbol={symbol} />
       <HFlex gap={8}>
         <span>{symbol}</span>
-        <Amount
-          prefix="$"
-          fallback="…"
-          value={price.data}
-          format="2z"
-        />
+        <Amount prefix='$' fallback='…' value={price.data} format='2z' />
       </HFlex>
     </HFlex>
   );
