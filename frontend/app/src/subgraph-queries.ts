@@ -241,6 +241,21 @@ export const InterestBatchQuery = graphql(`
   }
 `);
 
+export const InterestBatchesQuery = graphql(`
+  query InterestBatches($ids: [ID!]!) {
+    interestBatches(where: { id_in: $ids }) {
+      collateral {
+        collIndex
+      }
+      batchManager
+      debt
+      coll
+      annualInterestRate
+      annualManagementFee
+    }
+  }
+`);
+
 export const AllInterestRateBracketsQuery = graphql(`
   query AllInterestRateBrackets {
     interestRateBrackets(orderBy: rate) {

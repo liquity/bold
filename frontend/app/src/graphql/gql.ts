@@ -25,6 +25,7 @@ const documents = {
     "\n  query StabilityPoolDeposit($id: ID!) {\n    stabilityPoolDeposit(id: $id) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        epoch\n        scale\n      }\n    }\n  }\n": types.StabilityPoolDepositDocument,
     "\n  query StabilityPoolEpochScale($id: ID!) {\n    stabilityPoolEpochScale(id: $id) {\n      id\n      B\n      S\n    }\n  }\n": types.StabilityPoolEpochScaleDocument,
     "\n  query InterestBatch($id: ID!) {\n    interestBatch(id: $id) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n": types.InterestBatchDocument,
+    "\n  query InterestBatches($ids: [ID!]!) {\n    interestBatches(where: { id_in: $ids }) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n": types.InterestBatchesDocument,
     "\n  query AllInterestRateBrackets {\n    interestRateBrackets(orderBy: rate) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n    }\n  }\n": types.AllInterestRateBracketsDocument,
     "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n": types.GovernanceInitiativesDocument,
     "\n  query GovernanceUser($id: ID!) {\n    governanceUser(id: $id) {\n      id\n      allocatedLQTY\n      stakedLQTY\n      stakedOffset\n      allocations {\n        id\n        atEpoch\n        vetoLQTY\n        voteLQTY\n        initiative {\n          id\n        }\n      }\n    }\n  }\n": types.GovernanceUserDocument,
@@ -72,6 +73,10 @@ export function graphql(source: "\n  query StabilityPoolEpochScale($id: ID!) {\n
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query InterestBatch($id: ID!) {\n    interestBatch(id: $id) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n"): typeof import('./graphql').InterestBatchDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query InterestBatches($ids: [ID!]!) {\n    interestBatches(where: { id_in: $ids }) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n"): typeof import('./graphql').InterestBatchesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

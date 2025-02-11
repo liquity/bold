@@ -35,7 +35,7 @@ import * as v from "valibot";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract } from "wagmi/actions";
-import { graphQuery, InterestBatchQuery } from "./subgraph-queries";
+import { graphQuery, InterestBatchesQuery, InterestBatchQuery } from "./subgraph-queries";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -680,59 +680,123 @@ export function useLoan(branchId: BranchId, troveId: TroveId): UseQueryResult<Po
 }
 
 export function useInterestBatchDelegate(
-  branchId: null | BranchId,
-  address: null | Address,
-): UseQueryResult<Delegate> {
-  const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
-  if (!BorrowerOperations) {
-    throw new Error(`Invalid branch: ${branchId}`);
-  }
-
+  branchId: BranchId,
+  batchAddress: null | Address,
+): UseQueryResult<Delegate | null> {
   const wagmiConfig = useWagmiConfig();
 
-  const id = address && branchId !== null
-    ? `${branchId}:${address.toLowerCase()}`
+  const id = batchAddress
+    ? `${branchId}:${batchAddress.toLowerCase()}`
     : null;
 
-  let queryFn = async () => {
-    if (!id || !address) return null;
-
-    const [{ interestBatch: batch }, batchFromChain] = await Promise.all([
-      graphQuery(InterestBatchQuery, { id }),
-      readContract(wagmiConfig, {
-        ...BorrowerOperations,
-        functionName: "getInterestBatchManager",
-        args: [address],
-      }),
-    ]);
-
-    if (!isAddress(batch?.batchManager)) {
-      return null;
-    }
-
-    return {
-      id: batch.batchManager,
-      address: batch.batchManager,
-      name: shortenAddress(batch.batchManager, 4),
-      interestRate: dnum18(batch.annualInterestRate),
-      boldAmount: dnum18(batch.debt),
-      interestRateChange: [
-        dnum18(batchFromChain.minInterestRate),
-        dnum18(batchFromChain.maxInterestRate),
-      ],
-      fee: dnum18(batch.annualManagementFee),
-
-      // not available in the subgraph yet
-      followers: 0,
-      lastDays: 0,
-      redemptions: dnum18(0),
-    };
-  };
-
-  return useQuery({
+  return useQuery<Delegate | null>({
     queryKey: ["InterestBatch", id],
-    queryFn,
+    queryFn: async () => {
+      if (!id || !batchAddress) {
+        return null;
+      }
+
+      const [{ interestBatch: batch }, batchFromChain] = await Promise.all([
+        graphQuery(InterestBatchQuery, { id }),
+        readContract(wagmiConfig, {
+          ...getBranchContract(branchId, "BorrowerOperations"),
+          functionName: "getInterestBatchManager",
+          args: [batchAddress],
+        }),
+      ]);
+
+      if (!isAddress(batch?.batchManager)) {
+        return null;
+      }
+
+      return {
+        id: batch.batchManager,
+        address: batch.batchManager,
+        name: shortenAddress(batch.batchManager, 4),
+        interestRate: dnum18(batch.annualInterestRate),
+        boldAmount: dnum18(batch.debt),
+        interestRateChange: [
+          dnum18(batchFromChain.minInterestRate),
+          dnum18(batchFromChain.maxInterestRate),
+        ],
+        fee: dnum18(batch.annualManagementFee),
+
+        // not available in the subgraph yet
+        followers: 0,
+        lastDays: 0,
+        redemptions: dnum18(0),
+      };
+    },
     refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: id !== null,
+  });
+}
+
+export function useInterestBatchDelegates(
+  branchId: BranchId,
+  batchAddresses: Address[],
+): UseQueryResult<Delegate[]> {
+  const wagmiConfig = useWagmiConfig();
+
+  return useQuery<Delegate[]>({
+    queryKey: ["InterestBatches", branchId, batchAddresses],
+    queryFn: async () => {
+      if (batchAddresses.length === 0) {
+        return [];
+      }
+
+      const [{ interestBatches: batches }, batchesFromChain] = await Promise.all([
+        graphQuery(InterestBatchesQuery, {
+          ids: batchAddresses.map((addr) => `${branchId}:${addr.toLowerCase()}`),
+        }),
+        Promise.all(
+          batchAddresses.map(async (address) => {
+            const result = await readContract(wagmiConfig, {
+              ...getBranchContract(branchId, "BorrowerOperations"),
+              functionName: "getInterestBatchManager",
+              args: [address],
+            });
+            return {
+              address: address.toLowerCase(),
+              ...result,
+            };
+          }),
+        ),
+      ]);
+
+      return batches
+        .map((batch): null | Delegate => {
+          const address = batch.batchManager.toLowerCase();
+          const batchFromChain = batchesFromChain.find((b) => b.address === address);
+          if (!batchFromChain) {
+            return null;
+          }
+
+          if (!isAddress(batch.batchManager)) {
+            throw new Error(`Invalid batch manager address: ${batch.batchManager}`);
+          }
+
+          return {
+            id: `${branchId}:${batch.batchManager}`,
+            address: batch.batchManager,
+            name: shortenAddress(batch.batchManager, 4),
+            interestRate: dnum18(batch.annualInterestRate),
+            boldAmount: dnum18(batch.debt),
+            interestRateChange: [
+              dnum18(batchFromChain.minInterestRate),
+              dnum18(batchFromChain.maxInterestRate),
+            ],
+            fee: dnum18(batch.annualManagementFee),
+
+            // not available in the subgraph yet
+            followers: 0,
+            lastDays: 0,
+            redemptions: dnum18(0),
+          };
+        })
+        .filter((delegate) => delegate !== null);
+    },
+    refetchInterval: DATA_REFRESH_INTERVAL,
+    enabled: batchAddresses.length > 0,
   });
 }

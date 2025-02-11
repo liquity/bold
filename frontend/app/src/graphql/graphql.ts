@@ -2225,6 +2225,13 @@ export type InterestBatchQueryVariables = Exact<{
 
 export type InterestBatchQuery = { __typename?: 'Query', interestBatch?: { __typename?: 'InterestBatch', batchManager: string, debt: bigint, coll: bigint, annualInterestRate: bigint, annualManagementFee: bigint, collateral: { __typename?: 'Collateral', collIndex: number } } | null };
 
+export type InterestBatchesQueryVariables = Exact<{
+  ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type InterestBatchesQuery = { __typename?: 'Query', interestBatches: Array<{ __typename?: 'InterestBatch', batchManager: string, debt: bigint, coll: bigint, annualInterestRate: bigint, annualManagementFee: bigint, collateral: { __typename?: 'Collateral', collIndex: number } }> };
+
 export type AllInterestRateBracketsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -2464,6 +2471,20 @@ export const InterestBatchDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<InterestBatchQuery, InterestBatchQueryVariables>;
+export const InterestBatchesDocument = new TypedDocumentString(`
+    query InterestBatches($ids: [ID!]!) {
+  interestBatches(where: {id_in: $ids}) {
+    collateral {
+      collIndex
+    }
+    batchManager
+    debt
+    coll
+    annualInterestRate
+    annualManagementFee
+  }
+}
+    `) as unknown as TypedDocumentString<InterestBatchesQuery, InterestBatchesQueryVariables>;
 export const AllInterestRateBracketsDocument = new TypedDocumentString(`
     query AllInterestRateBrackets {
   interestRateBrackets(orderBy: rate) {
