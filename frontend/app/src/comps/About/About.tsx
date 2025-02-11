@@ -51,7 +51,7 @@ function getEnvGroups() {
     contracts: [string, string][];
   }[] = [];
 
-  for (const { branchId, symbol, contracts } of envConfig.BRANCHES) {
+  for (const { branchId, symbol, contracts } of envConfig.ENV_BRANCHES) {
     branches.push({
       branchId,
       symbol,
