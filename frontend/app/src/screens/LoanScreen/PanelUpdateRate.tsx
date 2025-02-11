@@ -12,14 +12,13 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getCollToken } from "@/src/liquity-utils";
+import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { infoTooltipProps } from "@/src/uikit-utils";
-import { riskLevelToStatusMode } from "@/src/uikit-utils";
+import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, InfoTooltip, StatusDot } from "@liquity2/uikit";
+import { addressesEqual, Button, HFlex, InfoTooltip, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
@@ -32,11 +31,6 @@ export function PanelUpdateRate({
   const txFlow = useTransactionFlow();
 
   const collToken = getCollToken(loan.branchId);
-
-  if (!collToken) {
-    return null;
-  }
-
   const collPrice = usePrice(collToken.symbol);
 
   const deposit = useInputFieldValue((value) => `${fmtnum(value, "full")} ${collToken.symbol}`, {
@@ -46,8 +40,19 @@ export function PanelUpdateRate({
     defaultValue: dn.toString(loan.borrowed),
   });
 
+  const { strategies } = getBranch(loan.branchId);
+
+  const { batchManager } = loan;
+  const isIcpDelegated = batchManager && strategies.some((s) => addressesEqual(s.address, batchManager));
+
   const [interestRate, setInterestRate] = useState(loan.interestRate);
-  const [interestRateMode, setInterestRateMode] = useState<DelegateMode>(loan.batchManager ? "delegate" : "manual");
+  const [interestRateMode, setInterestRateMode] = useState<DelegateMode>(
+    isIcpDelegated
+      ? "strategy"
+      : loan.batchManager
+      ? "delegate"
+      : "manual",
+  );
   const [interestRateDelegate, setInterestRateDelegate] = useState(loan.batchManager);
 
   const loanDetails = getLoanDetails(
@@ -74,14 +79,19 @@ export function PanelUpdateRate({
     && loan.borrowed
     && dn.mul(loan.borrowed, loan.interestRate);
 
-  const allowSubmit = account.isConnected
-    && deposit.parsed
-    && dn.gt(deposit.parsed, 0)
-    && debt.parsed
-    && dn.gt(debt.parsed, 0)
-    && interestRate
-    && dn.gt(interestRate, 0)
-    && (!dn.eq(interestRate, loan.interestRate) || loan.batchManager !== interestRateDelegate);
+  const allowSubmit = Boolean(
+    account.address && addressesEqual(
+      loan.borrower,
+      account.address,
+    ),
+  )
+    && deposit.parsed && dn.gt(deposit.parsed, 0)
+    && debt.parsed && dn.gt(debt.parsed, 0)
+    && interestRate && dn.gt(interestRate, 0)
+    && (
+      !dn.eq(interestRate, loan.interestRate)
+      || loan.batchManager !== interestRateDelegate
+    );
 
   return (
     <>
@@ -191,7 +201,9 @@ export function PanelUpdateRate({
                 prevLoan: { ...loan },
                 loan: {
                   ...loan,
-                  batchManager: interestRateMode === "delegate" ? interestRateDelegate : null,
+                  batchManager: interestRateMode === "delegate" || interestRateMode === "strategy"
+                    ? interestRateDelegate
+                    : null,
                   interestRate,
                 },
               });

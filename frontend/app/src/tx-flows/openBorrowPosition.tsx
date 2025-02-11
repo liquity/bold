@@ -9,8 +9,10 @@ import {
   getCollToken,
   getPrefixedTroveId,
   getTroveOperationHints,
+  useInterestBatchDelegate,
   usePredictOpenTroveUpfrontFee,
 } from "@/src/liquity-utils";
+import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -36,14 +38,7 @@ const RequestSchema = createRequestSchema(
     boldAmount: vDnum(),
     annualInterestRate: vDnum(),
     maxUpfrontFee: vDnum(),
-    interestRateDelegate: v.union([
-      v.null(),
-      v.tuple([
-        vAddress(),
-        vDnum(),
-        vDnum(),
-      ]),
-    ]),
+    interestRateDelegate: v.union([v.null(), vAddress()]),
   },
 );
 
@@ -56,9 +51,13 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
     const upfrontFee = usePredictOpenTroveUpfrontFee(
       request.branchId,
       request.boldAmount,
-      request.interestRateDelegate?.[0] ?? request.annualInterestRate,
+      request.interestRateDelegate ?? request.annualInterestRate,
     );
-    const boldAmountWithFee = upfrontFee.data && dn.add(request.boldAmount, upfrontFee.data);
+
+    const boldAmountWithFee = upfrontFee.data && dn.add(
+      request.boldAmount,
+      upfrontFee.data,
+    );
 
     return (
       <LoanCard
@@ -69,7 +68,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
           status: "active",
           troveId: null,
           borrower: request.owner,
-          batchManager: request.interestRateDelegate?.[0] ?? null,
+          batchManager: request.interestRateDelegate,
           borrowed: boldAmountWithFee ?? dnum18(0),
           branchId: request.branchId,
           deposit: request.collAmount,
@@ -83,19 +82,25 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
 
   Details({ request }) {
     const collateral = getCollToken(request.branchId);
-    if (!collateral) {
-      throw new Error(`Invalid branch: ${request.branchId}`);
-    }
-
     const collPrice = usePrice(collateral.symbol);
 
     const upfrontFee = usePredictOpenTroveUpfrontFee(
       request.branchId,
       request.boldAmount,
-      request.interestRateDelegate?.[0] ?? request.annualInterestRate,
+      request.interestRateDelegate ?? request.annualInterestRate,
     );
 
-    const boldAmountWithFee = upfrontFee.data && dn.add(request.boldAmount, upfrontFee.data);
+    const boldAmountWithFee = upfrontFee.data && dn.add(
+      request.boldAmount,
+      upfrontFee.data,
+    );
+
+    const { branchId, interestRateDelegate, boldAmount } = request;
+    const delegate = useInterestBatchDelegate(branchId, interestRateDelegate);
+    const yearlyBoldInterest = dn.mul(
+      boldAmount,
+      dn.add(request.annualInterestRate, delegate.data?.fee ?? 0),
+    );
 
     return collateral && (
       <>
@@ -141,35 +146,67 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
             </div>,
           ]}
         />
-        <TransactionDetailsRow
-          label="Interest rate"
-          value={[
-            <Amount
-              key="start"
-              value={request.annualInterestRate}
-              percentage
-            />,
-            <Amount
-              key="end"
-              fallback="…"
-              value={boldAmountWithFee && dn.mul(boldAmountWithFee, request.annualInterestRate)}
-              suffix=" BOLD per year"
-            />,
-          ]}
-        />
-        {request.interestRateDelegate && (
-          <TransactionDetailsRow
-            label="Interest rate delegate"
-            value={[
-              <span
-                key="start"
-                title={request.interestRateDelegate[0]}
-              >
-                {shortenAddress(request.interestRateDelegate[0], 4)}
-              </span>,
-            ]}
-          />
-        )}
+        {request.interestRateDelegate
+          ? (
+            <TransactionDetailsRow
+              label="Interest rate delegate"
+              value={[
+                <AccountButton
+                  key="start"
+                  address={request.interestRateDelegate}
+                />,
+                <div key="end">
+                  {delegate.isLoading
+                    ? "Loading…"
+                    : (
+                      <>
+                        <Amount
+                          value={request.annualInterestRate}
+                          format="pct2z"
+                          percentage
+                        />{" "}
+                        <Amount
+                          percentage
+                          format="pct2"
+                          prefix="+ "
+                          suffix="% delegate fee"
+                          fallback="…"
+                          value={delegate.data?.fee}
+                        />
+                        <br />
+                        <Amount
+                          format="2z"
+                          prefix="~"
+                          suffix=" BOLD per year"
+                          value={yearlyBoldInterest}
+                        />
+                      </>
+                    )}
+                </div>,
+              ]}
+            />
+          )
+          : (
+            <TransactionDetailsRow
+              label="Interest rate"
+              value={[
+                <Amount
+                  key="start"
+                  value={request.annualInterestRate}
+                  percentage
+                />,
+                <Amount
+                  key="end"
+                  fallback="…"
+                  value={boldAmountWithFee && dn.mul(
+                    boldAmountWithFee,
+                    request.annualInterestRate,
+                  )}
+                  suffix=" BOLD per year"
+                />,
+              ]}
+            />
+          )}
         <TransactionDetailsRow
           label="Refundable gas deposit"
           value={[
@@ -247,7 +284,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
               ? 0n
               : ctx.request.annualInterestRate[0],
             batchManager: ctx.request.interestRateDelegate
-              ? ctx.request.interestRateDelegate[0]
+              ? ctx.request.interestRateDelegate
               : ADDRESS_ZERO,
             maxUpfrontFee: ctx.request.maxUpfrontFee[0],
             addManager: ADDRESS_ZERO,
@@ -319,7 +356,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
               ? 0n
               : ctx.request.annualInterestRate[0],
             batchManager: ctx.request.interestRateDelegate
-              ? ctx.request.interestRateDelegate[0]
+              ? ctx.request.interestRateDelegate
               : ADDRESS_ZERO,
             maxUpfrontFee: ctx.request.maxUpfrontFee[0],
             addManager: ADDRESS_ZERO,

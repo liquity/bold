@@ -12,9 +12,7 @@ import {
   DEBT_SUGGESTIONS,
   ETH_MAX_RESERVE,
   INTEREST_RATE_DEFAULT,
-  MAX_ANNUAL_INTEREST_RATE,
   MAX_COLLATERAL_DEPOSITS,
-  MIN_ANNUAL_INTEREST_RATE,
   MIN_DEBT,
 } from "@/src/constants";
 import content from "@/src/content";
@@ -403,11 +401,9 @@ export function BorrowScreen() {
                   boldAmount: debt.parsed,
                   annualInterestRate: interestRate,
                   maxUpfrontFee: dnum18(maxUint256),
-                  interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate ? null : [
-                    interestRateDelegate,
-                    MIN_ANNUAL_INTEREST_RATE,
-                    MAX_ANNUAL_INTEREST_RATE,
-                  ],
+                  interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate
+                    ? null
+                    : interestRateDelegate,
                 });
               }
             }}
