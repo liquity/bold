@@ -68,7 +68,7 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
 
   if (operation === OP_OPEN_TROVE_AND_JOIN_BATCH) {
     updateTrove(tm, troveId, timestamp, getLeverageUpdate(event), true);
-    enterBatch(collId, troveId, tm.Troves(troveId).getInterestBatchManager());
+    enterBatch(collId, troveId, timestamp, tm.Troves(troveId).getInterestBatchManager());
     return;
   }
 
@@ -80,14 +80,14 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   }
 
   if (operation === OP_SET_INTEREST_BATCH_MANAGER) {
-    trove = enterBatch(collId, troveId, tm.Troves(troveId).getInterestBatchManager());
+    trove = enterBatch(collId, troveId, timestamp, tm.Troves(troveId).getInterestBatchManager());
     trove.status = "active";
     trove.save();
     return;
   }
 
   if (operation === OP_REMOVE_FROM_BATCH) {
-    trove = leaveBatch(collId, troveId, event.params._annualInterestRate);
+    trove = leaveBatch(collId, troveId, timestamp, event.params._annualInterestRate);
     trove.status = "active";
     trove.save();
     return;
@@ -103,7 +103,7 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   if (operation === OP_CLOSE_TROVE) {
     trove = updateTrove(tm, troveId, timestamp, LeverageUpdate.unchanged, false);
     if (trove.interestBatch !== null) {
-      leaveBatch(collId, troveId, BigInt.fromI32(0));
+      leaveBatch(collId, troveId, timestamp, BigInt.fromI32(0));
     }
 
     updateBorrowerTrovesCount(
@@ -121,7 +121,7 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   if (operation === OP_LIQUIDATE) {
     trove = updateTrove(tm, troveId, timestamp, LeverageUpdate.unchanged, false);
     if (trove.interestBatch !== null) {
-      leaveBatch(collId, troveId, BigInt.fromI32(0));
+      leaveBatch(collId, troveId, timestamp, BigInt.fromI32(0));
     }
     trove.debt = event.params._debtIncreaseFromRedist;
     trove.deposit = event.params._collIncreaseFromRedist;
@@ -158,7 +158,12 @@ function getRateFloored(rate: BigInt): BigInt {
 //  1. set the interest batch on the trove
 //  2. set the interest rate to 0 (indicating that the trove is in a batch)
 //  3. remove its debt from its rate bracket (handled at the batch level)
-function enterBatch(collId: string, troveId: BigInt, batchManager: Address): Trove {
+function enterBatch(
+  collId: string,
+  troveId: BigInt,
+  timestamp: BigInt,
+  batchManager: Address,
+): Trove {
   let troveFullId = collId + ":" + troveId.toHexString();
   let batchId = collId + ":" + batchManager.toHexString();
 
@@ -177,6 +182,7 @@ function enterBatch(collId: string, troveId: BigInt, batchManager: Address): Tro
 
   trove.interestBatch = batchId;
   trove.interestRate = BigInt.fromI32(0);
+  trove.updatedAt = timestamp;
   trove.save();
 
   return trove;
@@ -186,7 +192,12 @@ function enterBatch(collId: string, troveId: BigInt, batchManager: Address): Tro
 //  1. remove the interest batch on the trove
 //  2. set the interest rate to the new rate
 //  3. add its debt to the rate bracket of the current rate
-function leaveBatch(collId: string, troveId: BigInt, interestRate: BigInt): Trove {
+function leaveBatch(
+  collId: string,
+  troveId: BigInt,
+  timestamp: BigInt,
+  interestRate: BigInt,
+): Trove {
   let troveFullId = collId + ":" + troveId.toHexString();
 
   let trove = Trove.load(troveFullId);
@@ -209,6 +220,7 @@ function leaveBatch(collId: string, troveId: BigInt, interestRate: BigInt): Trov
   trove.interestBatch = null;
   trove.interestRate = interestRate;
   trove.status = "active"; // always reset the status when leaving a batch
+  trove.updatedAt = timestamp;
   trove.save();
 
   return trove;
