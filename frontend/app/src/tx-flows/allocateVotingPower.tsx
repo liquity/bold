@@ -189,9 +189,15 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
 
         const allocationArgs = {
           initiatives: initiativeAddresses,
-          votes: new Array(initiativeAddresses.length).fill(0n) as bigint[],
-          vetos: new Array(initiativeAddresses.length).fill(0n) as bigint[],
+          votes: new Array<bigint>(initiativeAddresses.length).fill(0n),
+          vetos: new Array<bigint>(initiativeAddresses.length).fill(0n),
         };
+
+        let remainingLQTY = stakedLQTY;
+        let [remainingVotes] = Object.values(voteAllocations)
+          .map((x) => x?.value)
+          .filter((x) => x != null)
+          .reduce((a, b) => dn.add(a, b));
 
         for (const [index, address] of initiativeAddresses.entries()) {
           const vote = voteAllocations[address];
@@ -199,7 +205,9 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
             throw new Error("Vote not found");
           }
 
-          let qty = dn.mul([stakedLQTY, 18], vote.value)[0];
+          let qty = remainingLQTY * vote.value[0] / remainingVotes;
+          remainingLQTY -= qty;
+          remainingVotes -= vote.value[0];
 
           if (vote?.vote === "for") {
             allocationArgs.votes[index] = qty;
