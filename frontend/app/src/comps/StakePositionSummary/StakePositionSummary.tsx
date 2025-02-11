@@ -368,7 +368,8 @@ export function StakePositionSummary({
                               })}
                             >
                               <p>
-                                Voting power increases over time based on the total amount of LQTY staked.
+                                Your relative voting power changes over time, depending on your and others deposits of
+                                LQTY.
                               </p>
                               {account.address && (govUser.data?.stakedLQTY ?? 0n) > 0n && (
                                 <div
