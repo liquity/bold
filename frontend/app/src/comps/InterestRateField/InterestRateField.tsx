@@ -3,11 +3,10 @@ import type { Dnum } from "dnum";
 
 import { INTEREST_RATE_DEFAULT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import content from "@/src/content";
-import { IC_STRATEGIES } from "@/src/demo-mode";
 import { jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { useInterestRateChartData } from "@/src/liquity-utils";
+import { getBranch, useInterestRateChartData } from "@/src/liquity-utils";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
@@ -31,13 +30,11 @@ import { DelegateModal } from "./DelegateModal";
 import { IcStrategiesModal } from "./IcStrategiesModal";
 import { MiniChart } from "./MiniChart";
 
-export type DelegateMode = "manual" | "strategy" | "delegate";
+import icLogo from "./ic-logo.svg";
 
-const DELEGATE_MODES: DelegateMode[] = [
-  "manual",
-  "delegate",
-  "strategy",
-];
+const DELEGATE_MODES = ["manual", "delegate", "strategy"] as const;
+
+export type DelegateMode = typeof DELEGATE_MODES[number];
 
 export const InterestRateField = memo(
   function InterestRateField({
@@ -97,6 +94,10 @@ export const InterestRateField = memo(
       onDelegateChange(delegate.address ?? null);
     };
 
+    const branch = getBranch(branchId);
+    const hasStrategies = branch.strategies.length > 0;
+    const activeDelegateModes = DELEGATE_MODES.filter((mode) => mode !== "strategy" || hasStrategies);
+
     return (
       <>
         <InputField
@@ -143,9 +144,28 @@ export const InterestRateField = memo(
               <TextButton
                 size="large"
                 label={delegate
-                  ? IC_STRATEGIES.find(
-                    ({ address }) => address === delegate,
-                  )?.name
+                  ? (
+                    <div
+                      title={delegate}
+                      className={css({
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      })}
+                    >
+                      <Image
+                        alt=""
+                        src={icLogo}
+                        width={24}
+                        height={24}
+                        className={css({
+                          display: "block",
+                          borderRadius: 4,
+                        })}
+                      />
+                      {shortenAddress(delegate, 4).toLowerCase()}
+                    </div>
+                  )
                   : "Choose strategy"}
                 onClick={() => {
                   setDelegatePicker("strategy");
@@ -191,19 +211,21 @@ export const InterestRateField = memo(
             end: (
               <div>
                 <Dropdown
-                  items={DELEGATE_MODES.map((mode) => (
+                  items={activeDelegateModes.map((
+                    mode,
+                  ) => (
                     content.interestRateField.delegateModes[mode]
                   ))}
                   menuWidth={300}
                   menuPlacement="end"
                   onSelect={(index) => {
-                    const mode = DELEGATE_MODES[index];
+                    const mode = activeDelegateModes[index];
                     if (mode) {
                       onModeChange(mode);
                     }
                     onDelegateChange(null);
                   }}
-                  selected={DELEGATE_MODES.findIndex((mode_) => mode_ === mode)}
+                  selected={activeDelegateModes.findIndex((mode_) => mode_ === mode)}
                   size="small"
                 />
               </div>
