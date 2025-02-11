@@ -1,21 +1,11 @@
-# Liquity V2 App
+# Nerite App
 
-## Preview
-
-<https://liquity2-sepolia.vercel.app/>
 
 ## Requirements
 
 - [Node.js](https://nodejs.org/) (v20 or later)
 - [pnpm](https://pnpm.io/) (v8)
 
-## Dependencies
-
-```sh
-git clone git@github.com:liquity/bold.git
-cd bold
-pnpm install # install dependencies for all packages
-```
 
 ## How to develop
 
@@ -49,7 +39,6 @@ pnpm dev                    # run the development server
 pnpm fmt                    # format the code
 pnpm lint                   # lint the code
 pnpm test                   # run the tests
-pnpm update-liquity-abis    # build the contracts and update the ABIs
 ```
 
 ## Environment
@@ -72,42 +61,6 @@ Enable or disable the account screen (meant for testing purposes).
 ```dosini
 # Example
 NEXT_PUBLIC_ACCOUNT_SCREEN=false
-```
-
-### `NEXT_PUBLIC_APP_COMMIT_URL`
-
-The URL template for linking to specific app commits in the repository. Set to `false` to disable.
-
-```dosini
-# Format
-NEXT_PUBLIC_APP_COMMIT_URL=https://url_template_with_{commit}
-
-# Example (default)
-NEXT_PUBLIC_APP_COMMIT_URL=https://github.com/liquity/bold/tree/{commit}
-```
-
-### `NEXT_PUBLIC_APP_VERSION_URL`
-
-The URL template for linking to specific app version releases. Set to `false` to disable.
-
-```dosini
-# Format
-NEXT_PUBLIC_APP_VERSION_URL=https://url_template_with_{version}
-
-# Example (default)
-NEXT_PUBLIC_APP_VERSION_URL=https://github.com/liquity/bold/releases/tag/%40liquity2%2Fapp-v{version}
-```
-
-### `NEXT_PUBLIC_CONTRACTS_COMMIT_URL`
-
-The URL template for linking to specific contract commits in the repository. Set to `false` to disable.
-
-```dosini
-# Format
-NEXT_PUBLIC_CONTRACTS_COMMIT_URL=https://url_template_with_{commit}
-
-# Example (default)
-NEXT_PUBLIC_CONTRACTS_COMMIT_URL=https://github.com/liquity/bold/tree/{commit}
 ```
 
 ### `NEXT_PUBLIC_CHAIN_ID`
@@ -261,14 +214,6 @@ NEXT_PUBLIC_DEPLOYMENT_FLAVOR=preview
 
 URL for fetching known initiatives data (optional).
 
-### `NEXT_PUBLIC_LIQUITY_STATS_URL`
-
-URL for fetching Liquity protocol statistics.
-
-```dosini
-# Example
-NEXT_PUBLIC_LIQUITY_STATS_URL=https://api.liquity.org/v2/testnet/sepolia.json
-```
 
 ### `NEXT_PUBLIC_SAFE_API_URL`
 
@@ -303,7 +248,7 @@ A WalletConnect project ID which can be obtained by [creating a WalletConnect pr
 
 ### `NEXT_PUBLIC_CONTRACT_…`
 
-Addresses of the Liquity contracts.
+Addresses of the Nerite contracts.
 
 </details>
 
@@ -311,7 +256,7 @@ Addresses of the Liquity contracts.
 
 ```
 src/
-  abi/         # ABIs of the Liquity contracts
+  abi/         # ABIs of the Nerite contracts
   app/         # The Next.js app (mostly routing only)
   comps/       # UI Components
   demo-mode/   # Files related to the app running in demo mode
