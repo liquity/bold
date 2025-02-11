@@ -57,7 +57,7 @@ function vBranchEnvVars(branchId: BranchId) {
           }
           return value.split(",").map((s) => {
             const [name, address] = s.split(":");
-            return { address, name };
+            return { address: address?.toLowerCase(), name };
           });
         }),
       ),
