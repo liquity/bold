@@ -1,8 +1,7 @@
 import type { BranchId, Delegate } from "@/src/types";
 
 import content from "@/src/content";
-import { IC_STRATEGIES } from "@/src/demo-mode";
-import { getBranch } from "@/src/liquity-utils";
+import { getBranch, useInterestBatchDelegates } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { Modal, TextButton } from "@liquity2/uikit";
 import Image from "next/image";
@@ -23,11 +22,14 @@ export function IcStrategiesModal({
   onSelectDelegate: (delegate: Delegate) => void;
   visible: boolean;
 }) {
-  const branch = getBranch(branchId);
-
   const [displayedDelegates, setDisplayedDelegates] = useState(5);
 
-  console.log(branch);
+  const branch = getBranch(branchId);
+  const delegates = useInterestBatchDelegates(branchId, branch.strategies.map((s) => s.address));
+  const icpDelegates = delegates.data?.map((delegate, index) => ({
+    ...delegate,
+    name: branch.strategies[index]?.name ?? delegate.address,
+  }));
 
   return (
     <Modal
@@ -70,17 +72,17 @@ export function IcStrategiesModal({
           minHeight: 312,
         })}
       >
-        {IC_STRATEGIES.slice(0, displayedDelegates).map((delegate) => {
+        {icpDelegates?.slice(0, displayedDelegates).map((delegate) => {
           return (
             <DelegateBox
-              key={delegate.id}
+              key={delegate.address}
               delegate={delegate}
               selectLabel="Choose"
               onSelect={onSelectDelegate}
             />
           );
         })}
-        {displayedDelegates < IC_STRATEGIES.length && (
+        {displayedDelegates < branch.strategies.length && (
           <ShadowBox>
             <TextButton
               label="Load more"
