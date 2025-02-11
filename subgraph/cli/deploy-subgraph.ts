@@ -78,11 +78,6 @@ export async function main() {
   }
 
   if (networkPreset === "sepolia") {
-    options.name ??= "liquity2-sepolia";
-    options.network ??= "sepolia";
-  }
-
-  if (networkPreset === "sepolia-preview") {
     options.name ??= "liquity2-sepolia-preview";
     options.network ??= "sepolia";
   }
