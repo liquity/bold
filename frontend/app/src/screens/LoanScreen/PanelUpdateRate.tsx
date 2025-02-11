@@ -31,7 +31,7 @@ export function PanelUpdateRate({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const collToken = getCollToken(loan.collIndex);
+  const collToken = getCollToken(loan.branchId);
 
   if (!collToken) {
     return null;
@@ -90,7 +90,7 @@ export function PanelUpdateRate({
         field={
           <InterestRateField
             inputId="input-interest-rate"
-            collIndex={loan.collIndex}
+            branchId={loan.branchId}
             debt={debt.parsed}
             delegate={interestRateDelegate}
             interestRate={interestRate}
@@ -182,7 +182,7 @@ export function PanelUpdateRate({
               txFlow.start({
                 flowId: "updateLoanInterestRate",
                 backLink: [
-                  `/loan/rate?id=${loan.collIndex}:${loan.troveId}`,
+                  `/loan/rate?id=${loan.branchId}:${loan.troveId}`,
                   "Back to editing",
                 ],
                 successLink: ["/", "Go to the dashboard"],

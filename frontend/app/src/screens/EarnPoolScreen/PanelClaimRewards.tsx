@@ -1,4 +1,4 @@
-import type { CollIndex, PositionEarn, TokenSymbol } from "@/src/types";
+import type { BranchId, PositionEarn, TokenSymbol } from "@/src/types";
 import type { Dnum } from "dnum";
 import { ReactNode } from "react";
 
@@ -15,18 +15,18 @@ import { Button, HFlex, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function PanelClaimRewards({
-  collIndex,
+  branchId,
   position,
 }: {
-  collIndex: null | CollIndex;
+  branchId: null | BranchId;
   position?: PositionEarn;
 }) {
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const collateral = getCollToken(collIndex);
+  const collateral = getCollToken(branchId);
   if (!collateral) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
+    throw new Error(`Invalid branch: ${branchId}`);
   }
 
   const boldPriceUsd = usePrice("BOLD");

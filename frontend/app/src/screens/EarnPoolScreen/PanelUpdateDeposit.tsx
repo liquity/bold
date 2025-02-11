@@ -1,4 +1,4 @@
-import type { CollIndex, PositionEarn } from "@/src/types";
+import type { BranchId, PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -22,11 +22,11 @@ type ValueUpdateMode = "add" | "remove";
 
 export function PanelUpdateDeposit({
   deposited,
-  collIndex,
+  branchId,
   position,
 }: {
   deposited: Dnum;
-  collIndex: CollIndex;
+  branchId: BranchId;
   position?: PositionEarn;
 }) {
   const account = useAccount();
@@ -59,7 +59,7 @@ export function PanelUpdateDeposit({
     ? dn.div(updatedDeposit, updatedBoldQty)
     : DNUM_0;
 
-  const collateral = getCollToken(collIndex);
+  const collateral = getCollToken(branchId);
 
   const insufficientBalance = mode === "add"
     && parsedValue
@@ -264,7 +264,7 @@ export function PanelUpdateDeposit({
             const prevEarnPosition = position ?? {
               type: "earn" as const,
               owner: account.address,
-              collIndex,
+              branchId,
               deposit: DNUM_0,
               rewards: { bold: DNUM_0, coll: DNUM_0 },
             };
@@ -279,7 +279,7 @@ export function PanelUpdateDeposit({
               successMessage: mode === "remove"
                 ? "The withdrawal has been processed successfully."
                 : "The deposit has been processed successfully.",
-              collIndex,
+              branchId,
               prevEarnPosition,
               earnPosition: {
                 ...prevEarnPosition,

@@ -10,15 +10,15 @@ import { CardRow, CardRows } from "./shared";
 
 export function PositionCardEarn({
   owner,
-  collIndex,
+  branchId,
 }: Pick<
   PositionEarn,
   | "owner"
-  | "collIndex"
+  | "branchId"
 >) {
-  const token = getCollToken(collIndex);
-  const earnPool = useEarnPool(collIndex);
-  const earnPosition = useEarnPosition(collIndex, owner ?? null);
+  const token = getCollToken(branchId);
+  const earnPool = useEarnPool(branchId);
+  const earnPosition = useEarnPosition(branchId, owner ?? null);
 
   return (
     <Link

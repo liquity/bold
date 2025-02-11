@@ -8,7 +8,7 @@ import type { Config as WagmiConfig } from "wagmi";
 import type { ReadContractOptions } from "wagmi/query";
 
 import { GAS_MIN_HEADROOM, GAS_RELATIVE_HEADROOM, LOCAL_STORAGE_PREFIX } from "@/src/constants";
-import { getContracts } from "@/src/contracts";
+import { CONTRACTS } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { useStoredState } from "@/src/services/StoredState";
@@ -326,7 +326,7 @@ export function TransactionFlow({
           ? {
             ...flow,
             account: account.address,
-            contracts: getContracts(),
+            contracts: CONTRACTS,
             isSafe: account.safeStatus !== null,
             preferredApproveMethod: storedState.preferredApproveMethod,
             readContract: getReadContract(wagmiConfig),
@@ -370,7 +370,7 @@ function useSteps(
 
       return flowDeclaration.getSteps({
         account: account.address,
-        contracts: getContracts(),
+        contracts: CONTRACTS,
         isSafe: account.safeStatus !== null,
         preferredApproveMethod: storedState.preferredApproveMethod,
         readContract: getReadContract(wagmiConfig),
@@ -423,7 +423,7 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
       const params: FlowParams<FlowRequestMap[keyof FlowRequestMap]> = {
         readContract: getReadContract(wagmiConfig),
         account,
-        contracts: getContracts(),
+        contracts: CONTRACTS,
         isSafe,
         preferredApproveMethod: storedState.preferredApproveMethod,
         request: flow.request,

@@ -46,7 +46,7 @@ export function PanelUpdateBorrowPosition({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const collToken = getCollToken(loan.collIndex);
+  const collToken = getCollToken(loan.branchId);
   if (!collToken) {
     throw new Error("collToken not found");
   }
@@ -425,7 +425,7 @@ export function PanelUpdateBorrowPosition({
             if (account.address) {
               txFlow.start({
                 flowId: "updateBorrowPosition",
-                backLink: [`/loan?id=${loan.collIndex}:${loan.troveId}`, "Back to editing"],
+                backLink: [`/loan?id=${loan.branchId}:${loan.troveId}`, "Back to editing"],
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position has been updated successfully.",
 

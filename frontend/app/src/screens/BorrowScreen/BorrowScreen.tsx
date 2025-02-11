@@ -18,16 +18,15 @@ import {
   MIN_DEBT,
 } from "@/src/constants";
 import content from "@/src/content";
-import { getContracts } from "@/src/contracts";
 import { dnum18, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
+import { getBranch, getBranches, getCollToken } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useNextOwnerIndex } from "@/src/subgraph-hooks";
-import { isCollIndex } from "@/src/types";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import {
@@ -51,36 +50,21 @@ import { maxUint256 } from "viem";
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
 
 export function BorrowScreen() {
-  const router = useRouter();
-
-  const account = useAccount();
-  const txFlow = useTransactionFlow();
-  const contracts = getContracts();
-
+  const branches = getBranches();
   // useParams() can return an array but not with the current
   // routing setup, so we can safely cast it to a string
-  const collSymbol = String(useParams().collateral ?? contracts.collaterals[0]?.symbol ?? "").toUpperCase();
+  const collSymbol = `${useParams().collateral ?? branches[0]?.symbol}`.toUpperCase();
   if (!isCollateralSymbol(collSymbol)) {
     throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
 
-  const collIndex = contracts.collaterals.findIndex(({ symbol }) => symbol === collSymbol);
-  if (!isCollIndex(collIndex)) {
-    throw new Error(`Unknown collateral symbol: ${collSymbol}`);
-  }
+  const router = useRouter();
+  const account = useAccount();
+  const txFlow = useTransactionFlow();
 
-  const collaterals = contracts.collaterals.map(({ symbol }) => {
-    const collateral = KNOWN_COLLATERALS.find((c) => c.symbol === symbol);
-    if (!collateral) {
-      throw new Error(`Unknown collateral symbol: ${symbol}`);
-    }
-    return collateral;
-  });
-
-  const collateral = collaterals[collIndex];
-  if (!collateral) {
-    throw new Error(`Unknown collateral index: ${collIndex}`);
-  }
+  const branch = getBranch(collSymbol);
+  const collateral = getCollToken(branch.id);
+  const collaterals = branches.map((b) => getCollToken(b.branchId));
 
   const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
 
@@ -113,7 +97,7 @@ export function BorrowScreen() {
     throw new Error(`Unknown collateral symbol: ${collateral.symbol}`);
   }
 
-  const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, collIndex);
+  const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, branch.id);
 
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
@@ -180,7 +164,7 @@ export function BorrowScreen() {
           <HFlex>
             {content.borrowScreen.headline(
               <TokenIcon.Group>
-                {contracts.collaterals.map(({ symbol }) => (
+                {collaterals.map(({ symbol }) => (
                   <TokenIcon
                     key={symbol}
                     symbol={symbol}
@@ -220,7 +204,7 @@ export function BorrowScreen() {
                   onSelect={(index) => {
                     const coll = collaterals[index];
                     if (!coll) {
-                      throw new Error(`Unknown collateral index: ${index}`);
+                      throw new Error(`Unknown branch: ${index}`);
                     }
 
                     deposit.setValue("");
@@ -229,7 +213,7 @@ export function BorrowScreen() {
                       { scroll: false },
                     );
                   }}
-                  selected={collIndex}
+                  selected={branch.id}
                 />
               }
               label="Collateral"
@@ -346,7 +330,7 @@ export function BorrowScreen() {
           // “Interest rate”
           field={
             <InterestRateField
-              collIndex={collIndex}
+              branchId={branch.id}
               debt={debt.parsed}
               delegate={interestRateDelegate}
               inputId="input-interest-rate"
@@ -412,7 +396,7 @@ export function BorrowScreen() {
                   successLink: ["/", "Go to the Dashboard"],
                   successMessage: "The position has been created successfully.",
 
-                  collIndex,
+                  branchId: branch.id,
                   owner: account.address,
                   ownerIndex: nextOwnerIndex.data,
                   collAmount: deposit.parsed,

@@ -19,7 +19,7 @@ import { CardRow, CardRows } from "./shared";
 export function PositionCardBorrow({
   batchManager,
   debt,
-  collIndex,
+  branchId,
   deposit,
   interestRate,
   statusTag,
@@ -28,7 +28,7 @@ export function PositionCardBorrow({
   & Pick<
     PositionLoanCommitted,
     | "batchManager"
-    | "collIndex"
+    | "branchId"
     | "deposit"
     | "interestRate"
     | "troveId"
@@ -38,7 +38,7 @@ export function PositionCardBorrow({
     statusTag?: ReactNode;
   })
 {
-  const token = getCollToken(collIndex);
+  const token = getCollToken(branchId);
   const collateralPriceUsd = usePrice(token?.symbol ?? null);
 
   const ltv = debt && collateralPriceUsd.data
@@ -59,7 +59,7 @@ export function PositionCardBorrow({
 
   return (
     <Link
-      href={`/loan?id=${collIndex}:${troveId}`}
+      href={`/loan?id=${branchId}:${troveId}`}
       legacyBehavior
       passHref
     >

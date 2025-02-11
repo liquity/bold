@@ -1,6 +1,6 @@
-import type { Address, CollIndex } from "@/src/types";
+import type { Address, Branch, BranchId } from "@/src/types";
 
-import { isCollIndex } from "@/src/types";
+import { isBranchId } from "@/src/types";
 import { vAddress, vEnvAddressAndBlock, vEnvCurrency, vEnvFlag, vEnvLink, vEnvUrlOrDefault } from "@/src/valibot-utils";
 import * as v from "valibot";
 
@@ -12,6 +12,59 @@ export const CollateralSymbolSchema = v.union([
   v.literal("RETH"),
   v.literal("WSTETH"),
 ]);
+
+const contractsEnvNames = [
+  "ACTIVE_POOL",
+  "BORROWER_OPERATIONS",
+  "COLL_SURPLUS_POOL",
+  "COLL_TOKEN",
+  "DEFAULT_POOL",
+  "LEVERAGE_ZAPPER",
+  "PRICE_FEED",
+  "SORTED_TROVES",
+  "STABILITY_POOL",
+  "TROVE_MANAGER",
+  "TROVE_NFT",
+] as const;
+
+type ContractEnvName = typeof contractsEnvNames[number];
+type BranchEnv = Omit<Branch, "contracts"> & {
+  contracts: Record<ContractEnvName, Address>;
+};
+
+function vBranchEnvVars(branchId: BranchId) {
+  const prefix = `COLL_${branchId}`;
+  return v.object({
+    [`${prefix}_CONTRACT_ACTIVE_POOL`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_BORROWER_OPERATIONS`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_COLL_SURPLUS_POOL`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_COLL_TOKEN`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_DEFAULT_POOL`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_LEVERAGE_ZAPPER`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_PRICE_FEED`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_SORTED_TROVES`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_STABILITY_POOL`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_TROVE_MANAGER`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_TROVE_NFT`]: v.optional(vAddress()),
+    [`${prefix}_IC_STRATEGIES`]: v.optional(
+      v.pipe(
+        v.string(),
+        v.regex(/^\s?([^:]+:0x[0-9a-fA-F]{40},?)+\s?$/),
+        v.transform((value) => {
+          value = value.trim();
+          if (value.endsWith(",")) {
+            value = value.slice(0, -1);
+          }
+          return value.split(",").map((s) => {
+            const [name, address] = s.split(":");
+            return { address: address?.toLowerCase(), name };
+          });
+        }),
+      ),
+    ),
+    [`${prefix}_TOKEN_ID`]: v.optional(CollateralSymbolSchema),
+  });
+}
 
 export const EnvSchema = v.pipe(
   v.object({
@@ -109,7 +162,6 @@ export const EnvSchema = v.pipe(
         `Invalid CONTRACTS_COMMIT_URL (must contain "{commit}")`,
       ),
     ),
-    DELEGATE_AUTO: vAddress(),
     DEMO_MODE: v.optional(vEnvFlag(), "false"),
     DEPLOYMENT_FLAVOR: v.pipe(
       v.optional(v.string(), ""),
@@ -140,72 +192,17 @@ export const EnvSchema = v.pipe(
     CONTRACT_MULTI_TROVE_GETTER: vAddress(),
     CONTRACT_WETH: vAddress(),
 
-    COLL_0_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
-    COLL_0_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
-    COLL_0_CONTRACT_COLL_SURPLUS_POOL: v.optional(vAddress()),
-    COLL_0_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
-    COLL_0_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
-    COLL_0_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
-    COLL_0_CONTRACT_PRICE_FEED: v.optional(vAddress()),
-    COLL_0_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
-    COLL_0_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
-    COLL_0_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
-    COLL_0_CONTRACT_TROVE_NFT: v.optional(vAddress()),
-    COLL_0_TOKEN_ID: v.optional(CollateralSymbolSchema),
-
-    COLL_1_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
-    COLL_1_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
-    COLL_1_CONTRACT_COLL_SURPLUS_POOL: v.optional(vAddress()),
-    COLL_1_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
-    COLL_1_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
-    COLL_1_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
-    COLL_1_CONTRACT_PRICE_FEED: v.optional(vAddress()),
-    COLL_1_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
-    COLL_1_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
-    COLL_1_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
-    COLL_1_CONTRACT_TROVE_NFT: v.optional(vAddress()),
-    COLL_1_TOKEN_ID: v.optional(CollateralSymbolSchema),
-
-    COLL_2_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
-    COLL_2_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
-    COLL_2_CONTRACT_COLL_SURPLUS_POOL: v.optional(vAddress()),
-    COLL_2_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
-    COLL_2_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
-    COLL_2_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
-    COLL_2_CONTRACT_PRICE_FEED: v.optional(vAddress()),
-    COLL_2_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
-    COLL_2_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
-    COLL_2_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
-    COLL_2_CONTRACT_TROVE_NFT: v.optional(vAddress()),
-    COLL_2_TOKEN_ID: v.optional(CollateralSymbolSchema),
+    ...vBranchEnvVars(0).entries,
+    ...vBranchEnvVars(1).entries,
+    ...vBranchEnvVars(2).entries,
   }),
   v.transform((data) => {
     const env = { ...data };
 
-    const contractsEnvNames = [
-      "ACTIVE_POOL",
-      "BORROWER_OPERATIONS",
-      "COLL_SURPLUS_POOL",
-      "COLL_TOKEN",
-      "DEFAULT_POOL",
-      "LEVERAGE_ZAPPER",
-      "PRICE_FEED",
-      "SORTED_TROVES",
-      "STABILITY_POOL",
-      "TROVE_MANAGER",
-      "TROVE_NFT",
-    ] as const;
-
-    type ContractEnvName = typeof contractsEnvNames[number];
-
-    const collateralContracts: Array<{
-      collIndex: CollIndex;
-      symbol: v.InferOutput<typeof CollateralSymbolSchema>;
-      contracts: Record<ContractEnvName, Address>;
-    }> = [];
+    const envBranches: BranchEnv[] = [];
 
     for (const index of Array(10).keys()) {
-      const collEnvName = `COLL_${index}`;
+      const collEnvName = `COLL_${index}` as const;
       const contracts: Partial<Record<ContractEnvName, Address>> = {};
 
       for (const name of contractsEnvNames) {
@@ -224,21 +221,24 @@ export const EnvSchema = v.pipe(
         throw new Error(`Incomplete contracts for collateral ${index} (${contractsCount}/${contractsEnvNames.length})`);
       }
 
-      if (!isCollIndex(index)) {
-        throw new Error(`Invalid collateral index: ${index}`);
+      if (!isBranchId(index)) {
+        throw new Error(`Invalid branch: ${index}`);
       }
 
-      collateralContracts[index] = {
-        collIndex: index,
+      envBranches[index] = {
+        id: index,
+        branchId: index,
         contracts: contracts as Record<ContractEnvName, Address>,
-        symbol: env[`${collEnvName}_TOKEN_ID` as keyof typeof env] as v.InferOutput<typeof CollateralSymbolSchema>,
+        strategies: (
+          env[`${collEnvName}_IC_STRATEGIES` as keyof typeof env] ?? []
+        ) as Array<{ address: Address; name: string }>,
+        symbol: (
+          env[`${collEnvName}_TOKEN_ID` as keyof typeof env]
+        ) as v.InferOutput<typeof CollateralSymbolSchema>,
       };
     }
 
-    return {
-      ...env,
-      COLLATERAL_CONTRACTS: collateralContracts,
-    };
+    return { ...env, ENV_BRANCHES: envBranches };
   }),
 );
 
@@ -281,7 +281,6 @@ const parsedEnv = v.safeParse(EnvSchema, {
       ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD
   ),
   CONTRACTS_COMMIT_URL: process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_URL,
-  DELEGATE_AUTO: process.env.NEXT_PUBLIC_DELEGATE_AUTO,
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
   DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
   KNOWN_INITIATIVES_URL: process.env.NEXT_PUBLIC_KNOWN_INITIATIVES_URL,
@@ -305,6 +304,10 @@ const parsedEnv = v.safeParse(EnvSchema, {
   COLL_0_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_0_TOKEN_ID,
   COLL_1_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_1_TOKEN_ID,
   COLL_2_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_2_TOKEN_ID,
+
+  COLL_0_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_0_IC_STRATEGIES,
+  COLL_1_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_1_IC_STRATEGIES,
+  COLL_2_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_2_IC_STRATEGIES,
 
   COLL_0_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_ACTIVE_POOL,
   COLL_0_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_BORROWER_OPERATIONS,
@@ -374,7 +377,7 @@ export const {
   CHAIN_NAME,
   CHAIN_RPC_URL,
   COINGECKO_API_KEY,
-  COLLATERAL_CONTRACTS,
+  ENV_BRANCHES,
   CONTRACTS_COMMIT_HASH,
   CONTRACTS_COMMIT_URL,
   CONTRACT_BOLD_TOKEN,
@@ -387,7 +390,6 @@ export const {
   CONTRACT_LUSD_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
-  DELEGATE_AUTO,
   DEMO_MODE,
   DEPLOYMENT_FLAVOR,
   KNOWN_INITIATIVES_URL,

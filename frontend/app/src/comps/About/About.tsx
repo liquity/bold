@@ -33,27 +33,27 @@ const ENV_EXCLUDE: Set<keyof typeof env> = new Set([
 // - contracts: main contracts (CONTRACT_*)
 // - branches: branches contracts (in COLLATERAL_CONTRACTS)
 function getEnvGroups() {
-  const config = { ...env };
+  const envConfig = { ...env };
 
   const contracts: Record<string, string> = {};
 
   for (const [key, value] of Object.entries(env) as Entries<typeof env>) {
     if (key.startsWith("CONTRACT_")) {
       contracts[key.replace("CONTRACT_", "")] = String(value);
-      delete config[key];
+      delete envConfig[key];
       continue;
     }
   }
 
   const branches: {
-    collIndex: number;
+    branchId: number;
     symbol: string;
     contracts: [string, string][];
   }[] = [];
 
-  for (const { collIndex, symbol, contracts } of config.COLLATERAL_CONTRACTS) {
+  for (const { branchId, symbol, contracts } of envConfig.BRANCHES) {
     branches.push({
-      collIndex,
+      branchId,
       symbol,
       contracts: Object
         .entries(contracts)
@@ -61,10 +61,10 @@ function getEnvGroups() {
     });
   }
 
-  delete config["COLLATERAL_CONTRACTS" as keyof typeof config];
+  delete envConfig["COLLATERAL_CONTRACTS" as keyof typeof envConfig];
 
-  const configFinal = Object.fromEntries(
-    Object.entries(config)
+  const envConfigFinal = Object.fromEntries(
+    Object.entries(envConfig)
       .filter(([key]) => !ENV_EXCLUDE.has(key as keyof typeof env))
       .map(([key, value]) => {
         if (key === "CHAIN_BLOCK_EXPLORER") {
@@ -79,7 +79,7 @@ function getEnvGroups() {
       }),
   );
 
-  return { config: configFinal, contracts, branches };
+  return { config: envConfigFinal, contracts, branches };
 }
 
 const AboutContext = createContext<{
@@ -279,9 +279,9 @@ export function About({ children }: { children: ReactNode }) {
               }
               entries={envGroups.contracts}
             />
-            {envGroups.branches.map(({ collIndex, symbol, contracts }) => (
+            {envGroups.branches.map(({ branchId, symbol, contracts }) => (
               <AboutTable
-                key={collIndex}
+                key={branchId}
                 title={`Branch contracts: ${symbol}`}
                 entries={Object.fromEntries(contracts)}
               />

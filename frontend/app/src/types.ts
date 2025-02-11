@@ -1,16 +1,28 @@
 import type { Address, CollateralSymbol, Token, TokenSymbol } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
+import type { BranchContracts } from "./contracts";
 
 export type { Address, CollateralSymbol, Dnum, Token, TokenSymbol };
 
 export type RiskLevel = "low" | "medium" | "high";
 
-export type CollIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
-export type TroveId = `0x${string}`;
-export type PrefixedTroveId = `${CollIndex}:${TroveId}`;
+export type BranchId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
-export function isCollIndex(value: unknown): value is CollIndex {
+export type TroveId = `0x${string}`;
+export type PrefixedTroveId = `${BranchId}:${TroveId}`;
+
+export type Branch = {
+  id: BranchId;
+  contracts: BranchContracts;
+  branchId: BranchId; // to be removed, use `id` instead
+  symbol: CollateralSymbol;
+  strategies: Array<{ address: Address; name: string }>;
+};
+
+export type EnvBranch = Omit<Branch, "contracts">;
+
+export function isBranchId(value: unknown): value is BranchId {
   return typeof value === "number" && value >= 0 && value <= 9;
 }
 
@@ -47,7 +59,7 @@ export type PositionLoanBase = {
   batchManager: null | Address;
   borrowed: Dnum;
   borrower: Address;
-  collIndex: CollIndex;
+  branchId: BranchId;
   deposit: Dnum;
   interestRate: Dnum;
   status:
@@ -86,7 +98,7 @@ export function isPositionLoanUncommitted(
 export type PositionEarn = {
   type: "earn";
   owner: Address;
-  collIndex: CollIndex;
+  branchId: BranchId;
   deposit: Dnum;
   rewards: {
     bold: Dnum;

@@ -1,6 +1,8 @@
 import type { Contracts } from "@/src/contracts";
 import type {
-  CollIndex,
+  Branch,
+  BranchId,
+  Delegate,
   Dnum,
   PositionEarn,
   PositionLoanCommitted,
@@ -13,9 +15,9 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
-import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
+import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER, LIQUITY_STATS_URL } from "@/src/env";
+import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
   useGovernanceStats,
@@ -24,15 +26,16 @@ import {
   useLoanById,
   useStabilityPool,
 } from "@/src/subgraph-hooks";
-import { isCollIndex, isTroveId } from "@/src/types";
-import { COLLATERALS, isAddress } from "@liquity2/uikit";
+import { isBranchId, isTroveId } from "@/src/types";
+import { COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
-import { useBalance, useReadContract, useReadContracts } from "wagmi";
+import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract } from "wagmi/actions";
+import { graphQuery, InterestBatchesQuery, InterestBatchQuery } from "./subgraph-queries";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -49,51 +52,80 @@ export function getTroveId(owner: Address, ownerIndex: bigint | number) {
 }
 
 export function parsePrefixedTroveId(value: PrefixedTroveId): {
-  collIndex: CollIndex;
+  branchId: BranchId;
   troveId: TroveId;
 } {
-  const [collIndex_, troveId] = value.split(":");
-  if (!collIndex_ || !troveId) {
+  const [branchId_, troveId] = value.split(":");
+  if (!branchId_ || !troveId) {
     throw new Error(`Invalid prefixed trove ID: ${value}`);
   }
-  const collIndex = parseInt(collIndex_, 10);
-  if (!isCollIndex(collIndex) || !isTroveId(troveId)) {
+  const branchId = parseInt(branchId_, 10);
+  if (!isBranchId(branchId) || !isTroveId(troveId)) {
     throw new Error(`Invalid prefixed trove ID: ${value}`);
   }
-  return { collIndex, troveId };
+  return { branchId, troveId };
 }
 
-export function getPrefixedTroveId(collIndex: CollIndex, troveId: TroveId): PrefixedTroveId {
-  return `${collIndex}:${troveId}`;
+export function getPrefixedTroveId(branchId: BranchId, troveId: TroveId): PrefixedTroveId {
+  return `${branchId}:${troveId}`;
 }
 
-export function getCollToken(collIndex: null): null;
-export function getCollToken(collIndex: CollIndex): CollateralToken;
-export function getCollToken(collIndex: CollIndex | null): CollateralToken | null;
-export function getCollToken(collIndex: CollIndex | null): CollateralToken | null {
-  const { collaterals } = getContracts();
-  if (collIndex === null) {
+export function getCollToken(branchId: null): null;
+export function getCollToken(branchId: BranchId): CollateralToken;
+export function getCollToken(branchId: BranchId | null): CollateralToken | null;
+export function getCollToken(branchId: BranchId | null): CollateralToken | null {
+  if (branchId === null) {
     return null;
   }
-  return collaterals.map(({ symbol }) => {
-    const collateral = COLLATERALS.find((c) => c.symbol === symbol);
-    if (!collateral) {
-      throw new Error(`Unknown collateral symbol: ${symbol}`);
+  const branch = getBranch(branchId);
+  const token = COLLATERALS.find((c) => c.symbol === branch.symbol);
+  if (!token) {
+    throw new Error(`Unknown collateral symbol: ${branch.symbol}`);
+  }
+  return token;
+}
+
+export function getBranches(): Branch[] {
+  return ENV_BRANCHES.map((branch) => {
+    const contracts = CONTRACTS.branches.find((b) => b.id === branch.id);
+    if (!contracts) {
+      throw new Error(`Contracts not found for branch: ${branch.id}`);
     }
-    return collateral;
-  })[collIndex] ?? null;
+    return {
+      id: branch.id,
+      branchId: branch.id,
+      contracts: contracts.contracts,
+      symbol: branch.symbol,
+      strategies: branch.strategies,
+    };
+  });
 }
 
-export function getCollIndexFromSymbol(symbol: CollateralSymbol | null): CollIndex | null {
-  if (symbol === null) return null;
-  const { collaterals } = getContracts();
-  const collIndex = collaterals.findIndex((coll) => coll.symbol === symbol);
-  return isCollIndex(collIndex) ? collIndex : null;
+export function getBranch(idOrSymbol: null): null;
+export function getBranch(idOrSymbol: CollateralSymbol | BranchId): Branch;
+export function getBranch(
+  idOrSymbol: CollateralSymbol | BranchId | null,
+): Branch | null {
+  if (idOrSymbol === null) {
+    return null;
+  }
+
+  const branch = getBranches().find((b) => (
+    typeof idOrSymbol === "string"
+      ? b.symbol === idOrSymbol
+      : b.id === idOrSymbol
+  ));
+
+  if (!branch) {
+    throw new Error("Invalid branch ID or symbol: " + idOrSymbol);
+  }
+
+  return branch;
 }
 
-export function useEarnPool(collIndex: null | CollIndex) {
-  const collateral = getCollToken(collIndex);
-  const pool = useStabilityPool(collIndex ?? undefined);
+export function useEarnPool(branchId: null | BranchId) {
+  const collateral = getCollToken(branchId);
+  const pool = useStabilityPool(branchId ?? undefined);
   const stats = useLiquityStats();
   const branchStats = collateral && stats.data?.branch[collateral?.symbol];
   return {
@@ -118,21 +150,21 @@ export function isEarnPositionActive(position: PositionEarn | null) {
 }
 
 export function useEarnPosition(
-  collIndex: null | CollIndex,
+  branchId: null | BranchId,
   account: null | Address,
 ): UseQueryResult<PositionEarn | null> {
-  const getBoldGains = useContinuousBoldGains(account, collIndex);
+  const getBoldGains = useContinuousBoldGains(account, branchId);
 
   const yieldGainsInBold = useQuery({
     queryFn: () => getBoldGains.data?.(Date.now()) ?? null,
-    queryKey: ["useEarnPosition:getBoldGains", collIndex, account],
+    queryKey: ["useEarnPosition:getBoldGains", branchId, account],
     refetchInterval: 10_000,
     enabled: getBoldGains.status === "success",
   });
 
-  const StabilityPool = getCollateralContract(collIndex, "StabilityPool");
+  const StabilityPool = getBranchContract(branchId, "StabilityPool");
   if (!StabilityPool) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
+    throw new Error(`Invalid branch: ${branchId}`);
   }
 
   const spReads = useReadContracts({
@@ -161,13 +193,13 @@ export function useEarnPosition(
   });
 
   return useQuery({
-    queryKey: ["useEarnPosition", collIndex, account],
+    queryKey: ["useEarnPosition", branchId, account],
     queryFn: () => {
       return {
         type: "earn" as const,
         owner: account,
         deposit: spReads.data?.spDeposit ?? DNUM_0,
-        collIndex,
+        branchId,
         rewards: {
           bold: yieldGainsInBold.data ?? DNUM_0,
           coll: dn.add(
@@ -179,7 +211,7 @@ export function useEarnPosition(
     },
     enabled: Boolean(
       account
-        && collIndex !== null
+        && branchId !== null
         && yieldGainsInBold.status === "success"
         && getBoldGains.status === "success"
         && spReads.status === "success",
@@ -294,15 +326,15 @@ export function useStakePosition(address: null | Address) {
     : stakePosition;
 }
 
-export function useTroveNftUrl(collIndex: null | CollIndex, troveId: null | TroveId) {
-  const TroveNft = getCollateralContract(collIndex, "TroveNFT");
+export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveId) {
+  const TroveNft = getBranchContract(branchId, "TroveNFT");
   return TroveNft && troveId && `${CHAIN_BLOCK_EXPLORER?.url}nft/${TroveNft.address}/${BigInt(troveId)}`;
 }
 
 const RATE_STEPS = Math.round((INTEREST_RATE_MAX - INTEREST_RATE_MIN) / INTEREST_RATE_INCREMENT) + 1;
 
-export function useAverageInterestRate(collIndex: null | CollIndex) {
-  const brackets = useInterestRateBrackets(collIndex);
+export function useAverageInterestRate(branchId: null | BranchId) {
+  const brackets = useInterestRateBrackets(branchId);
 
   const data = useMemo(() => {
     if (!brackets.isSuccess) {
@@ -331,13 +363,13 @@ export function useAverageInterestRate(collIndex: null | CollIndex) {
   };
 }
 
-export function useInterestRateChartData(collIndex: null | CollIndex) {
-  const brackets = useInterestRateBrackets(collIndex);
+export function useInterestRateChartData(branchId: null | BranchId) {
+  const brackets = useInterestRateBrackets(branchId);
 
   const chartData = useQuery({
     queryKey: [
       "useInterestRateChartData",
-      collIndex,
+      branchId,
       jsonStringifyWithDnum(brackets.data),
     ],
     queryFn: () => {
@@ -386,7 +418,7 @@ export function useInterestRateChartData(collIndex: null | CollIndex) {
 }
 
 export function usePredictOpenTroveUpfrontFee(
-  collIndex: CollIndex,
+  branchId: BranchId,
   borrowedAmount: Dnum,
   interestRateOrBatch: Address | Dnum,
 ) {
@@ -398,8 +430,8 @@ export function usePredictOpenTroveUpfrontFee(
       ? "predictOpenTroveAndJoinBatchUpfrontFee"
       : "predictOpenTroveUpfrontFee",
     args: batch
-      ? [BigInt(collIndex), borrowedAmount[0], interestRateOrBatch]
-      : [BigInt(collIndex), borrowedAmount[0], interestRateOrBatch[0]],
+      ? [BigInt(branchId), borrowedAmount[0], interestRateOrBatch]
+      : [BigInt(branchId), borrowedAmount[0], interestRateOrBatch[0]],
     query: {
       refetchInterval: DATA_REFRESH_INTERVAL,
       select: dnum18,
@@ -408,7 +440,7 @@ export function usePredictOpenTroveUpfrontFee(
 }
 
 export function usePredictAdjustTroveUpfrontFee(
-  collIndex: CollIndex,
+  branchId: BranchId,
   troveId: TroveId,
   debtIncrease: Dnum,
 ) {
@@ -416,7 +448,7 @@ export function usePredictAdjustTroveUpfrontFee(
     ...getProtocolContract("HintHelpers"),
     functionName: "predictAdjustTroveUpfrontFee",
     args: [
-      BigInt(collIndex),
+      BigInt(branchId),
       BigInt(troveId),
       debtIncrease[0],
     ],
@@ -432,7 +464,7 @@ export function usePredictAdjustTroveUpfrontFee(
 // - joining a batch with a new interest rate (non-batch => batch or batch => batch)
 // - removing a trove from a batch (batch => non-batch)
 export function usePredictAdjustInterestRateUpfrontFee(
-  collIndex: CollIndex,
+  branchId: BranchId,
   troveId: TroveId,
   newInterestRateOrBatch: Address | Dnum,
   fromBatch: boolean,
@@ -447,7 +479,7 @@ export function usePredictAdjustInterestRateUpfrontFee(
     ...getProtocolContract("HintHelpers"),
     functionName,
     args: [
-      BigInt(collIndex),
+      BigInt(branchId),
       BigInt(troveId),
       typeof newInterestRateOrBatch === "string"
         ? newInterestRateOrBatch
@@ -464,24 +496,21 @@ export function usePredictAdjustInterestRateUpfrontFee(
 export async function getTroveOperationHints({
   wagmiConfig,
   contracts,
-  collIndex,
+  branchId,
   interestRate,
 }: {
   wagmiConfig: WagmiConfig;
   contracts: Contracts;
-  collIndex: number;
+  branchId: BranchId;
   interestRate: bigint;
 }): Promise<{
   upperHint: bigint;
   lowerHint: bigint;
 }> {
-  const collateral = contracts.collaterals[collIndex];
-  if (!collateral) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
-  }
+  const branch = getBranch(branchId);
 
   const numTroves = await readContract(wagmiConfig, {
-    ...collateral.contracts.SortedTroves,
+    ...branch.contracts.SortedTroves,
     functionName: "getSize",
   });
 
@@ -489,7 +518,7 @@ export async function getTroveOperationHints({
     ...contracts.HintHelpers,
     functionName: "getApproxHint",
     args: [
-      BigInt(collIndex),
+      BigInt(branchId),
       interestRate,
       // (10 * sqrt(troves)) gives a hint close to the right position
       10n * BigInt(Math.ceil(Math.sqrt(Number(numTroves)))),
@@ -498,7 +527,7 @@ export async function getTroveOperationHints({
   });
 
   const [upperHint, lowerHint] = await readContract(wagmiConfig, {
-    ...collateral.contracts.SortedTroves,
+    ...branch.contracts.SortedTroves,
     functionName: "findInsertPosition",
     args: [
       interestRate,
@@ -568,11 +597,8 @@ const StatsSchema = v.pipe(
   })),
 );
 
-export function useBranchDebt(collIndex: CollIndex | null) {
-  const BorrowerOperations = getCollateralContract(collIndex, "BorrowerOperations");
-  if (!BorrowerOperations) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
-  }
+export function useBranchDebt(branchId: BranchId) {
+  const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
   return useReadContract({
     ...BorrowerOperations,
     functionName: "getEntireSystemDebt",
@@ -597,10 +623,10 @@ export function useLiquityStats() {
   });
 }
 
-export function useLatestTroveData(collIndex: CollIndex, troveId: TroveId) {
-  const TroveManager = getCollateralContract(collIndex, "TroveManager");
+export function useLatestTroveData(branchId: BranchId, troveId: TroveId) {
+  const TroveManager = getBranchContract(branchId, "TroveManager");
   if (!TroveManager) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
+    throw new Error(`Invalid branch: ${branchId}`);
   }
   return useReadContract({
     ...TroveManager,
@@ -612,17 +638,17 @@ export function useLatestTroveData(collIndex: CollIndex, troveId: TroveId) {
   });
 }
 
-export function useLoanLiveDebt(collIndex: CollIndex, troveId: TroveId) {
-  const latestTroveData = useLatestTroveData(collIndex, troveId);
+export function useLoanLiveDebt(branchId: BranchId, troveId: TroveId) {
+  const latestTroveData = useLatestTroveData(branchId, troveId);
   return {
     ...latestTroveData,
     data: latestTroveData.data?.entireDebt ?? null,
   };
 }
 
-export function useLoan(collIndex: CollIndex, troveId: TroveId): UseQueryResult<PositionLoanCommitted | null> {
-  const liveDebt = useLoanLiveDebt(collIndex, troveId);
-  const loan = useLoanById(getPrefixedTroveId(collIndex, troveId));
+export function useLoan(branchId: BranchId, troveId: TroveId): UseQueryResult<PositionLoanCommitted | null> {
+  const liveDebt = useLoanLiveDebt(branchId, troveId);
+  const loan = useLoanById(getPrefixedTroveId(branchId, troveId));
 
   if (liveDebt.status === "pending" || loan.status === "pending") {
     return {
@@ -651,4 +677,126 @@ export function useLoan(collIndex: CollIndex, troveId: TroveId): UseQueryResult<
       borrowed: liveDebt.data ? dnum18(liveDebt.data) : loan.data.borrowed,
     },
   };
+}
+
+export function useInterestBatchDelegate(
+  branchId: BranchId,
+  batchAddress: null | Address,
+): UseQueryResult<Delegate | null> {
+  const wagmiConfig = useWagmiConfig();
+
+  const id = batchAddress
+    ? `${branchId}:${batchAddress.toLowerCase()}`
+    : null;
+
+  return useQuery<Delegate | null>({
+    queryKey: ["InterestBatch", id],
+    queryFn: async () => {
+      if (!id || !batchAddress) {
+        return null;
+      }
+
+      const [{ interestBatch: batch }, batchFromChain] = await Promise.all([
+        graphQuery(InterestBatchQuery, { id }),
+        readContract(wagmiConfig, {
+          ...getBranchContract(branchId, "BorrowerOperations"),
+          functionName: "getInterestBatchManager",
+          args: [batchAddress],
+        }),
+      ]);
+
+      if (!isAddress(batch?.batchManager)) {
+        return null;
+      }
+
+      return {
+        id: batch.batchManager,
+        address: batch.batchManager,
+        name: shortenAddress(batch.batchManager, 4),
+        interestRate: dnum18(batch.annualInterestRate),
+        boldAmount: dnum18(batch.debt),
+        interestRateChange: [
+          dnum18(batchFromChain.minInterestRate),
+          dnum18(batchFromChain.maxInterestRate),
+        ],
+        fee: dnum18(batch.annualManagementFee),
+
+        // not available in the subgraph yet
+        followers: 0,
+        lastDays: 0,
+        redemptions: dnum18(0),
+      };
+    },
+    refetchInterval: DATA_REFRESH_INTERVAL,
+    enabled: id !== null,
+  });
+}
+
+export function useInterestBatchDelegates(
+  branchId: BranchId,
+  batchAddresses: Address[],
+): UseQueryResult<Delegate[]> {
+  const wagmiConfig = useWagmiConfig();
+
+  return useQuery<Delegate[]>({
+    queryKey: ["InterestBatches", branchId, batchAddresses],
+    queryFn: async () => {
+      if (batchAddresses.length === 0) {
+        return [];
+      }
+
+      const [{ interestBatches: batches }, batchesFromChain] = await Promise.all([
+        graphQuery(InterestBatchesQuery, {
+          ids: batchAddresses.map((addr) => `${branchId}:${addr.toLowerCase()}`),
+        }),
+        Promise.all(
+          batchAddresses.map(async (address) => {
+            const result = await readContract(wagmiConfig, {
+              ...getBranchContract(branchId, "BorrowerOperations"),
+              functionName: "getInterestBatchManager",
+              args: [address],
+            });
+            return {
+              address: address.toLowerCase(),
+              ...result,
+            };
+          }),
+        ),
+      ]);
+
+      return batches
+        .map((batch): null | Delegate => {
+          const address = batch.batchManager.toLowerCase();
+          const batchFromChain = batchesFromChain.find((b) => b.address === address);
+          if (!batchFromChain) {
+            return null;
+          }
+
+          if (!isAddress(batch.batchManager)) {
+            throw new Error(`Invalid batch manager address: ${batch.batchManager}`);
+          }
+
+          return {
+            id: `${branchId}:${batch.batchManager}`,
+            address: batch.batchManager,
+            name: shortenAddress(batch.batchManager, 4),
+            interestRate: dnum18(batch.annualInterestRate),
+            boldAmount: dnum18(batch.debt),
+            interestRateChange: [
+              dnum18(batchFromChain.minInterestRate),
+              dnum18(batchFromChain.maxInterestRate),
+            ],
+            fee: dnum18(batch.annualManagementFee),
+
+            // not available in the subgraph yet
+            followers: 0,
+            lastDays: 0,
+            redemptions: dnum18(0),
+          };
+        })
+        .filter((delegate) => delegate !== null);
+    },
+    refetchInterval: DATA_REFRESH_INTERVAL,
+    enabled: batchAddresses.length > 0,
+  });
 }

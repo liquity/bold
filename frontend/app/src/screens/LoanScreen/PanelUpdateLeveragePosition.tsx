@@ -44,7 +44,7 @@ export function PanelUpdateLeveragePosition({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const collToken = getCollToken(loan.collIndex);
+  const collToken = getCollToken(loan.branchId);
   if (!collToken) {
     throw new Error("collToken not found");
   }
@@ -486,7 +486,7 @@ export function PanelUpdateLeveragePosition({
               txFlow.start({
                 flowId: "updateLeveragePosition",
                 backLink: [
-                  `/loan?id=${loan.collIndex}:${loan.troveId}`,
+                  `/loan?id=${loan.branchId}:${loan.troveId}`,
                   "Back to editing",
                 ],
                 successLink: ["/", "Go to the dashboard"],

@@ -1,9 +1,9 @@
-import type { Address, CollateralSymbol, CollIndex } from "@/src/types";
+import type { Address, BranchId, CollateralSymbol } from "@/src/types";
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { Dnum } from "dnum";
 
 import { SP_YIELD_SPLIT } from "@/src/constants";
-import { getCollateralContract } from "@/src/contracts";
+import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { CHAIN_CONTRACT_MULTICALL } from "@/src/env";
 import { getCollToken } from "@/src/liquity-utils";
@@ -17,19 +17,19 @@ const ONE_YEAR = 365n * 24n * 60n * 60n * 1000n;
 
 export function useContinuousBoldGains(
   account: null | Address,
-  collIndex: null | CollIndex,
+  branchId: null | BranchId,
 ): UseQueryResult<null | ((now: number) => null | Dnum)> {
-  const collateral = getCollToken(collIndex);
-  const deposit = useStabilityPoolDeposit(collIndex, account);
+  const collateral = getCollToken(branchId);
+  const deposit = useStabilityPoolDeposit(branchId, account);
 
   const epochScale1 = useStabilityPoolEpochScale(
-    collIndex,
+    branchId,
     deposit.data?.snapshot.epoch ?? null,
     deposit.data?.snapshot.scale ?? null,
   );
 
   const epochScale2 = useStabilityPoolEpochScale(
-    collIndex,
+    branchId,
     deposit.data?.snapshot.epoch ?? null,
     deposit.data?.snapshot.scale ? deposit.data?.snapshot.scale + 1n : null,
   );
@@ -52,7 +52,7 @@ export function useContinuousBoldGains(
     queryKey: [
       "continuousBoldGains",
       account,
-      collIndex,
+      branchId,
       serialize(depositParams),
       serialize(spYieldGainParams.data),
     ],
@@ -98,8 +98,8 @@ type DepositParameters = {
 };
 
 function useSpYieldGainParameters(symbol: CollateralSymbol | null) {
-  const ActivePool = getCollateralContract(symbol, "ActivePool");
-  const StabilityPool = getCollateralContract(symbol, "StabilityPool");
+  const ActivePool = getBranchContract(symbol, "ActivePool");
+  const StabilityPool = getBranchContract(symbol, "StabilityPool");
 
   const AP = ActivePool as NonNullable<typeof ActivePool>;
   const SP = StabilityPool as NonNullable<typeof StabilityPool>;

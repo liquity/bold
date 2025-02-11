@@ -28,7 +28,7 @@ export function vDnum() {
   return v.custom<Dnum>(isDnum, "not a Dnum");
 }
 
-export function vCollIndex() {
+export function vBranchId() {
   return v.union([
     v.literal(0),
     v.literal(1),
@@ -184,7 +184,7 @@ const VPositionLoanBase = v.object({
   batchManager: v.union([v.null(), vAddress()]),
   borrowed: vDnum(),
   borrower: vAddress(),
-  collIndex: vCollIndex(),
+  branchId: vBranchId(),
   deposit: vDnum(),
   interestRate: vDnum(),
   status: v.union([
@@ -226,7 +226,7 @@ export function vPositionEarn() {
   return v.object({
     type: v.literal("earn"),
     owner: vAddress(),
-    collIndex: vCollIndex(),
+    branchId: vBranchId(),
     deposit: vDnum(),
     rewards: v.object({
       bold: vDnum(),

@@ -5,7 +5,7 @@ import type { PositionLoanCommitted } from "@/src/types";
 import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { getCollateralContract } from "@/src/contracts";
+import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId, useLoan } from "@/src/liquity-utils";
@@ -49,12 +49,12 @@ export function LoanScreen() {
   if (!isPrefixedtroveId(paramPrefixedId)) {
     notFound();
   }
-  const { troveId, collIndex } = parsePrefixedTroveId(paramPrefixedId);
+  const { troveId, branchId } = parsePrefixedTroveId(paramPrefixedId);
 
-  const loan = useLoan(collIndex, troveId);
+  const loan = useLoan(branchId, troveId);
   const loanMode = storedState.loanModes[paramPrefixedId] ?? loan.data?.type ?? "borrow";
 
-  const collToken = getCollToken(loan.data?.collIndex ?? null);
+  const collToken = getCollToken(loan.data?.branchId ?? null);
   const collPriceUsd = usePrice(collToken?.symbol ?? null);
 
   const fullyRedeemed = loan.data
@@ -190,7 +190,7 @@ export function LoanScreen() {
                             throw new Error("Invalid tab index");
                           }
                           const id = getPrefixedTroveId(
-                            loan.data.collIndex,
+                            loan.data.branchId,
                             loan.data.troveId,
                           );
                           router.push(
@@ -224,20 +224,11 @@ function ClaimCollateralSurplus({
 }) {
   const account = useAccount();
   const txFlow = useTransactionFlow();
-  const collToken = getCollToken(loan.collIndex);
-  if (!collToken) {
-    throw new Error(`collToken not found for index ${loan.collIndex}`);
-  }
-
-  const csp = getCollateralContract(loan.collIndex, "CollSurplusPool");
-  if (!csp) {
-    throw new Error("Collateral surplus pool not found for collateral index: " + loan.collIndex);
-  }
-
+  const collToken = getCollToken(loan.branchId);
   const collPriceUsd = usePrice(collToken.symbol);
 
   const collSurplus = useReadContract({
-    ...csp,
+    ...getBranchContract(loan.branchId, "CollSurplusPool"),
     functionName: "getCollateral",
     args: [loan.borrower],
     query: {
@@ -356,13 +347,13 @@ function ClaimCollateralSurplus({
               txFlow.start({
                 flowId: "claimCollateralSurplus",
                 backLink: [
-                  `/loan?id=${loan.collIndex}:${loan.troveId}`,
+                  `/loan?id=${loan.branchId}:${loan.troveId}`,
                   "Back to the loan",
                 ],
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The loan position has been closed successfully.",
                 borrower: loan.borrower,
-                collIndex: loan.collIndex,
+                branchId: loan.branchId,
                 collSurplus: collSurplus.data ?? dnum18(0),
               });
             }
