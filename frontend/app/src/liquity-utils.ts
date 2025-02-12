@@ -782,10 +782,11 @@ export function useInterestBatchDelegates(
             name: shortenAddress(batch.batchManager, 4),
             interestRate: dnum18(batch.annualInterestRate),
             boldAmount: dnum18(batch.debt),
-            interestRateChange: [
-              dnum18(batchFromChain.minInterestRate),
-              dnum18(batchFromChain.maxInterestRate),
-            ],
+            interestRateChange: {
+              min: dnum18(batchFromChain.minInterestRate),
+              max: dnum18(batchFromChain.maxInterestRate),
+              period: batchFromChain.minInterestRateChangePeriod,
+            },
             fee: dnum18(batch.annualManagementFee),
 
             // not available in the subgraph yet

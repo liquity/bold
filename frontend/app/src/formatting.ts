@@ -199,3 +199,19 @@ export function formatDate(date: Date, format: "full" | "iso" = "full") {
   }
   throw new Error(`Invalid date format: ${format}`);
 }
+
+export function formatDuration(durationInSeconds: number | bigint) {
+  durationInSeconds = Number(durationInSeconds);
+
+  const seconds = durationInSeconds % 60;
+  const minutes = Math.floor(durationInSeconds / 60) % 60;
+  const hours = Math.floor(durationInSeconds / (60 * 60)) % 24;
+  const days = Math.floor(durationInSeconds / (60 * 60 * 24));
+
+  return [
+    days ? `${days}d` : null,
+    hours ? `${hours}h` : null,
+    minutes ? `${minutes}m` : null,
+    seconds ? `${seconds}s` : null,
+  ].filter(Boolean).join(" ");
+}
