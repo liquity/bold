@@ -14,7 +14,7 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import { getCollToken } from "@/src/liquity-utils";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Arbitrum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";

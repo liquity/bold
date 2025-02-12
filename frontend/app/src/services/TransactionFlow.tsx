@@ -3,20 +3,37 @@
 import type { Contracts } from "@/src/contracts";
 import type { Address } from "@/src/types";
 import type { ComponentType, ReactNode } from "react";
-import type { Abi, ContractFunctionArgs, ContractFunctionName, ReadContractReturnType } from "viem";
+import type {
+  Abi,
+  ContractFunctionArgs,
+  ContractFunctionName,
+  ReadContractReturnType,
+} from "viem";
 import type { Config as WagmiConfig } from "wagmi";
 import type { ReadContractOptions } from "wagmi/query";
 
-import { GAS_MIN_HEADROOM, GAS_RELATIVE_HEADROOM, LOCAL_STORAGE_PREFIX } from "@/src/constants";
+import {
+  GAS_MIN_HEADROOM,
+  GAS_RELATIVE_HEADROOM,
+  LOCAL_STORAGE_PREFIX,
+} from "@/src/constants";
 import { getContracts } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Arbitrum";
 import { useStoredState } from "@/src/services/StoredState";
 import { noop } from "@/src/utils";
 import { vAddress } from "@/src/valibot-utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as v from "valibot";
 import { encodeFunctionData } from "viem";
 import { useConfig as useWagmiConfig } from "wagmi";
@@ -24,36 +41,78 @@ import { estimateGas, readContract, writeContract } from "wagmi/actions";
 
 /* flows registration */
 
-import { allocateVotingPower, type AllocateVotingPowerRequest } from "@/src/tx-flows/allocateVotingPower";
-import { claimCollateralSurplus, type ClaimCollateralSurplusRequest } from "@/src/tx-flows/claimCollateralSurplus";
-import { closeLoanPosition, type CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
-import { earnClaimRewards, type EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
-import { earnDeposit, type EarnDepositRequest } from "@/src/tx-flows/earnDeposit";
-import { earnWithdraw, type EarnWithdrawRequest } from "@/src/tx-flows/earnWithdraw";
-import { openBorrowPosition, type OpenBorrowPositionRequest } from "@/src/tx-flows/openBorrowPosition";
-import { openLeveragePosition, type OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
-import { stakeClaimRewards, type StakeClaimRewardsRequest } from "@/src/tx-flows/stakeClaimRewards";
-import { stakeDeposit, type StakeDepositRequest } from "@/src/tx-flows/stakeDeposit";
-import { unstakeDeposit, type UnstakeDepositRequest } from "@/src/tx-flows/unstakeDeposit";
-import { updateBorrowPosition, type UpdateBorrowPositionRequest } from "@/src/tx-flows/updateBorrowPosition";
-import { updateLeveragePosition, type UpdateLeveragePositionRequest } from "@/src/tx-flows/updateLeveragePosition";
-import { updateLoanInterestRate, type UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
+import {
+  allocateVotingPower,
+  type AllocateVotingPowerRequest,
+} from "@/src/tx-flows/allocateVotingPower";
+import {
+  claimCollateralSurplus,
+  type ClaimCollateralSurplusRequest,
+} from "@/src/tx-flows/claimCollateralSurplus";
+import {
+  closeLoanPosition,
+  type CloseLoanPositionRequest,
+} from "@/src/tx-flows/closeLoanPosition";
+import {
+  earnClaimRewards,
+  type EarnClaimRewardsRequest,
+} from "@/src/tx-flows/earnClaimRewards";
+import {
+  earnDeposit,
+  type EarnDepositRequest,
+} from "@/src/tx-flows/earnDeposit";
+import {
+  earnWithdraw,
+  type EarnWithdrawRequest,
+} from "@/src/tx-flows/earnWithdraw";
+import {
+  openBorrowPosition,
+  type OpenBorrowPositionRequest,
+} from "@/src/tx-flows/openBorrowPosition";
+import {
+  openLeveragePosition,
+  type OpenLeveragePositionRequest,
+} from "@/src/tx-flows/openLeveragePosition";
+import {
+  stakeClaimRewards,
+  type StakeClaimRewardsRequest,
+} from "@/src/tx-flows/stakeClaimRewards";
+import {
+  stakeDeposit,
+  type StakeDepositRequest,
+} from "@/src/tx-flows/stakeDeposit";
+import {
+  unstakeDeposit,
+  type UnstakeDepositRequest,
+} from "@/src/tx-flows/unstakeDeposit";
+import {
+  updateBorrowPosition,
+  type UpdateBorrowPositionRequest,
+} from "@/src/tx-flows/updateBorrowPosition";
+import {
+  updateLeveragePosition,
+  type UpdateLeveragePositionRequest,
+} from "@/src/tx-flows/updateLeveragePosition";
+import {
+  updateLoanInterestRate,
+  type UpdateLoanInterestRateRequest,
+} from "@/src/tx-flows/updateLoanInterestRate";
 
 export type FlowRequestMap = {
-  "allocateVotingPower": AllocateVotingPowerRequest;
-  "claimCollateralSurplus": ClaimCollateralSurplusRequest;
-  "closeLoanPosition": CloseLoanPositionRequest;
-  "earnClaimRewards": EarnClaimRewardsRequest;
-  "earnDeposit": EarnDepositRequest;
-  "earnWithdraw": EarnWithdrawRequest;
-  "openBorrowPosition": OpenBorrowPositionRequest;
-  "openLeveragePosition": OpenLeveragePositionRequest;
-  "stakeClaimRewards": StakeClaimRewardsRequest;
-  "stakeDeposit": StakeDepositRequest;
-  "unstakeDeposit": UnstakeDepositRequest;
-  "updateBorrowPosition": UpdateBorrowPositionRequest;
-  "updateLeveragePosition": UpdateLeveragePositionRequest;
-  "updateLoanInterestRate": UpdateLoanInterestRateRequest;
+  allocateVotingPower: AllocateVotingPowerRequest;
+  claimCollateralSurplus: ClaimCollateralSurplusRequest;
+  closeLoanPosition: CloseLoanPositionRequest;
+  earnClaimRewards: EarnClaimRewardsRequest;
+  earnDeposit: EarnDepositRequest;
+  earnWithdraw: EarnWithdrawRequest;
+  openBorrowPosition: OpenBorrowPositionRequest;
+  openLeveragePosition: OpenLeveragePositionRequest;
+  stakeClaimRewards: StakeClaimRewardsRequest;
+  stakeDeposit: StakeDepositRequest;
+  unstakeDeposit: UnstakeDepositRequest;
+  updateBorrowPosition: UpdateBorrowPositionRequest;
+  updateLeveragePosition: UpdateLeveragePositionRequest;
+  updateLoanInterestRate: UpdateLoanInterestRateRequest;
 };
 
 const FlowIdSchema = v.union([
@@ -123,7 +182,9 @@ export interface BaseFlowRequest {
 }
 
 // individual step in a flow
-export type FlowStepDeclaration<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
+export type FlowStepDeclaration<
+  FlowRequest extends BaseFlowRequest = BaseFlowRequest,
+> = {
   name: (params: FlowParams<FlowRequest>) => string;
   commit: (params: FlowParams<FlowRequest>) => Promise<string | null>;
   verify: (params: FlowParams<FlowRequest>, artifact: string) => Promise<void>;
@@ -132,10 +193,10 @@ export type FlowStepDeclaration<FlowRequest extends BaseFlowRequest = BaseFlowRe
     | { status: "awaiting-commit"; onRetry: () => void }
     | { status: "awaiting-verify" | "confirmed"; artifact: string }
     | {
-      status: "error";
-      error: { name: string | null; message: string };
-      artifact?: string;
-    }
+        status: "error";
+        error: { name: string | null; message: string };
+        artifact?: string;
+      }
   >;
 };
 
@@ -164,25 +225,28 @@ export type Flowstate<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
 };
 
 // passed to the step functions
-export type FlowParams<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
-  account: Address | null;
-  contracts: Contracts;
-  isSafe: boolean;
-  preferredApproveMethod: "permit" | "approve-amount" | "approve-infinite";
-  readContract: ReturnType<typeof getReadContract>;
-  request: FlowRequest;
-  steps: FlowStep[] | null;
-  storedState: ReturnType<typeof useStoredState>;
-  wagmiConfig: WagmiConfig;
-  writeContract: ReturnType<typeof getWriteContract>;
-};
+export type FlowParams<FlowRequest extends BaseFlowRequest = BaseFlowRequest> =
+  {
+    account: Address | null;
+    contracts: Contracts;
+    isSafe: boolean;
+    preferredApproveMethod: "permit" | "approve-amount" | "approve-infinite";
+    readContract: ReturnType<typeof getReadContract>;
+    request: FlowRequest;
+    steps: FlowStep[] | null;
+    storedState: ReturnType<typeof useStoredState>;
+    wagmiConfig: WagmiConfig;
+    writeContract: ReturnType<typeof getWriteContract>;
+  };
 
 function getReadContract(config: WagmiConfig) {
   return <
     const A extends Abi,
     const F extends ContractFunctionName<A, "pure" | "view">,
     const Args extends ContractFunctionArgs<A, "pure" | "view", F>,
-  >(options: ReadContractOptions<A, F, Args, WagmiConfig>) => {
+  >(
+    options: ReadContractOptions<A, F, Args, WagmiConfig>
+  ) => {
     return readContract(config, options as any) as Promise<
       ReadContractReturnType<A, F, Args>
     >;
@@ -194,7 +258,7 @@ function getWriteContract(config: WagmiConfig, account: Address) {
     params: Omit<Parameters<typeof writeContract>[1], "value"> & {
       value?: bigint;
     },
-    gasMinHeadroom: number = GAS_MIN_HEADROOM,
+    gasMinHeadroom: number = GAS_MIN_HEADROOM
   ) => {
     const gasEstimate = Number(
       await estimateGas(config, {
@@ -206,10 +270,13 @@ function getWriteContract(config: WagmiConfig, account: Address) {
         }),
         to: params.address,
         value: params.value,
-      }),
+      })
     );
     const gas = BigInt(
-      Math.ceil(gasEstimate + Math.max(gasMinHeadroom, gasEstimate * GAS_RELATIVE_HEADROOM)),
+      Math.ceil(
+        gasEstimate +
+          Math.max(gasMinHeadroom, gasEstimate * GAS_RELATIVE_HEADROOM)
+      )
     );
 
     return writeContract(config, { ...params, gas } as any);
@@ -221,10 +288,7 @@ const FlowStateSchema = v.object({
   account: vAddress(),
   request: v.looseObject({
     flowId: FlowIdSchema,
-    backLink: v.union([
-      v.null(),
-      v.tuple([v.string(), v.string()]),
-    ]),
+    backLink: v.union([v.null(), v.tuple([v.string(), v.string()])]),
     successLink: v.tuple([v.string(), v.string()]),
     successMessage: v.string(),
   }),
@@ -248,20 +312,21 @@ const FlowStateSchema = v.object({
             message: v.string(),
           }),
         ]),
-      }),
+      })
     ),
   ]),
 });
 
 export function getFlowDeclaration<K extends keyof FlowRequestMap>(
-  flowId: K,
+  flowId: K
 ): FlowDeclaration<FlowRequestMap[K]> | null {
   return flows[flowId] ?? null;
 }
 
 // flow react context
 type TransactionFlowContext<
-  FlowRequest extends FlowRequestMap[keyof FlowRequestMap] = FlowRequestMap[keyof FlowRequestMap],
+  FlowRequest extends
+    FlowRequestMap[keyof FlowRequestMap] = FlowRequestMap[keyof FlowRequestMap],
 > = {
   clearError: () => void;
   currentStep: FlowStep | null;
@@ -286,11 +351,7 @@ const TransactionFlowContext = createContext<TransactionFlowContext>({
   flowParams: null,
 });
 
-export function TransactionFlow({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function TransactionFlow({ children }: { children: ReactNode }) {
   const account = useAccount();
   const router = useRouter();
   const storedState = useStoredState();
@@ -307,14 +368,17 @@ export function TransactionFlow({
     startFlow,
   } = useFlowManager(account.address ?? null, account.safeStatus !== null);
 
-  const start: TransactionFlowContext["start"] = useCallback((request) => {
-    if (account.address) {
-      startFlow(request, account.address);
-      setTimeout(() => {
-        router.push("/transactions");
-      }, 0);
-    }
-  }, [account.address, startFlow, router]);
+  const start: TransactionFlowContext["start"] = useCallback(
+    (request) => {
+      if (account.address) {
+        startFlow(request, account.address);
+        setTimeout(() => {
+          router.push("/transactions");
+        }, 0);
+      }
+    },
+    [account.address, startFlow, router]
+  );
 
   return (
     <TransactionFlowContext.Provider
@@ -326,19 +390,20 @@ export function TransactionFlow({
         discard: discardFlow,
         flow,
         flowDeclaration,
-        flowParams: flow && account.address
-          ? {
-            ...flow,
-            account: account.address,
-            contracts: getContracts(),
-            isSafe: account.safeStatus !== null,
-            preferredApproveMethod: storedState.preferredApproveMethod,
-            readContract: getReadContract(wagmiConfig),
-            storedState,
-            wagmiConfig,
-            writeContract: getWriteContract(wagmiConfig, account.address),
-          }
-          : null,
+        flowParams:
+          flow && account.address
+            ? {
+                ...flow,
+                account: account.address,
+                contracts: getContracts(),
+                isSafe: account.safeStatus !== null,
+                preferredApproveMethod: storedState.preferredApproveMethod,
+                readContract: getReadContract(wagmiConfig),
+                storedState,
+                wagmiConfig,
+                writeContract: getWriteContract(wagmiConfig, account.address),
+              }
+            : null,
         start,
       }}
     >
@@ -349,7 +414,7 @@ export function TransactionFlow({
 
 function useSteps(
   flow: Flowstate<FlowRequestMap[keyof FlowRequestMap]> | null,
-  enabled: boolean,
+  enabled: boolean
 ) {
   const account = useAccount();
   const storedState = useStoredState();
@@ -389,7 +454,9 @@ function useSteps(
 }
 
 function useFlowManager(account: Address | null, isSafe: boolean = false) {
-  const [flow, setFlow] = useState<Flowstate<FlowRequestMap[keyof FlowRequestMap]> | null>(null);
+  const [flow, setFlow] = useState<Flowstate<
+    FlowRequestMap[keyof FlowRequestMap]
+  > | null>(null);
   const wagmiConfig = useWagmiConfig();
   const storedState = useStoredState();
   const runningStepRef = useRef<string | null>(null);
@@ -409,84 +476,93 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
   }, [account, flow]);
 
   // start going through the states of a step
-  const startStep = useCallback(async (
-    stepDef: FlowStepDeclaration<FlowRequestMap[keyof FlowRequestMap]>,
-    stepIndex: number,
-    currentArtifact: string | null = null,
-  ) => {
-    if (!flow || !account) return;
+  const startStep = useCallback(
+    async (
+      stepDef: FlowStepDeclaration<FlowRequestMap[keyof FlowRequestMap]>,
+      stepIndex: number,
+      currentArtifact: string | null = null
+    ) => {
+      if (!flow || !account) return;
 
-    const stepKey = `${stepIndex}-${currentArtifact ?? ""}`;
-    if (runningStepRef.current === stepKey) {
-      return;
-    }
+      const stepKey = `${stepIndex}-${currentArtifact ?? ""}`;
+      if (runningStepRef.current === stepKey) {
+        return;
+      }
 
-    try {
-      runningStepRef.current = stepKey;
+      try {
+        runningStepRef.current = stepKey;
 
-      const params: FlowParams<FlowRequestMap[keyof FlowRequestMap]> = {
-        readContract: getReadContract(wagmiConfig),
-        account,
-        contracts: getContracts(),
-        isSafe,
-        preferredApproveMethod: storedState.preferredApproveMethod,
-        request: flow.request,
-        steps: flow.steps,
-        storedState,
-        wagmiConfig,
-        writeContract: getWriteContract(wagmiConfig, account),
-      };
+        const params: FlowParams<FlowRequestMap[keyof FlowRequestMap]> = {
+          readContract: getReadContract(wagmiConfig),
+          account,
+          contracts: getContracts(),
+          isSafe,
+          preferredApproveMethod: storedState.preferredApproveMethod,
+          request: flow.request,
+          steps: flow.steps,
+          storedState,
+          wagmiConfig,
+          writeContract: getWriteContract(wagmiConfig, account),
+        };
 
-      let artifact = currentArtifact;
+        let artifact = currentArtifact;
 
-      if (!artifact) {
+        if (!artifact) {
+          updateFlowStep(stepIndex, {
+            status: "awaiting-commit",
+            artifact: null,
+            error: null,
+          });
+
+          artifact = await stepDef.commit(params);
+          if (artifact === null) {
+            throw new Error("Commit failed - no artifact returned");
+          }
+        }
+
         updateFlowStep(stepIndex, {
-          status: "awaiting-commit",
-          artifact: null,
+          status: "awaiting-verify",
+          artifact,
           error: null,
         });
 
-        artifact = await stepDef.commit(params);
-        if (artifact === null) {
-          throw new Error("Commit failed - no artifact returned");
-        }
+        await stepDef.verify(params, artifact);
+
+        updateFlowStep(stepIndex, {
+          status: "confirmed",
+          artifact,
+          error: null,
+        });
+      } catch (error) {
+        updateFlowStep(stepIndex, {
+          status: "error",
+          artifact: currentArtifact,
+          error:
+            error instanceof Error
+              ? {
+                  name:
+                    error.name.toLowerCase().trim() === "error"
+                      ? null
+                      : error.name,
+                  message: error.message,
+                }
+              : { name: null, message: String(error) },
+        });
+        console.error(`Error at step ${stepIndex}:`, error);
+      } finally {
+        runningStepRef.current = null;
       }
-
-      updateFlowStep(stepIndex, {
-        status: "awaiting-verify",
-        artifact,
-        error: null,
-      });
-
-      await stepDef.verify(params, artifact);
-
-      updateFlowStep(stepIndex, {
-        status: "confirmed",
-        artifact,
-        error: null,
-      });
-    } catch (error) {
-      updateFlowStep(stepIndex, {
-        status: "error",
-        artifact: currentArtifact,
-        error: error instanceof Error
-          ? {
-            name: error.name.toLowerCase().trim() === "error" ? null : error.name,
-            message: error.message,
-          }
-          : { name: null, message: String(error) },
-      });
-      console.error(`Error at step ${stepIndex}:`, error);
-    } finally {
-      runningStepRef.current = null;
-    }
-  }, [account, flow, storedState, wagmiConfig]);
+    },
+    [account, flow, storedState, wagmiConfig]
+  );
 
   // resume verification of the current step if needed
   useEffect(() => {
     if (!flow?.steps || !account) return;
 
-    const verifyingStep = flow.steps.find((step) => step.status === "awaiting-verify" && step.artifact);
+    const verifyingStep = flow.steps.find(
+      (step) => step.status === "awaiting-verify" && step.artifact
+    );
     if (!verifyingStep) return;
 
     const stepIndex = flow.steps.indexOf(verifyingStep);
@@ -499,58 +575,64 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
     startStep(stepDef, stepIndex, verifyingStep.artifact);
   }, [flow, account, startStep]);
 
-  const startFlow = useCallback((
-    request: FlowRequestMap[keyof FlowRequestMap],
-    account: Address,
-  ) => {
-    const newFlow = { account, request, steps: null };
-    setFlow(newFlow);
-    FlowContextStorage.set(newFlow);
-  }, []);
+  const startFlow = useCallback(
+    (request: FlowRequestMap[keyof FlowRequestMap], account: Address) => {
+      const newFlow = { account, request, steps: null };
+      setFlow(newFlow);
+      FlowContextStorage.set(newFlow);
+    },
+    []
+  );
 
   const discardFlow = useCallback(() => {
     setFlow(null);
     FlowContextStorage.clear();
   }, []);
 
-  const setFlowSteps = useCallback((steps: FlowStep[] | null) => {
-    if (!flow) return;
+  const setFlowSteps = useCallback(
+    (steps: FlowStep[] | null) => {
+      if (!flow) return;
 
-    const newFlow = { ...flow, steps };
-    setFlow(newFlow);
-    FlowContextStorage.set(newFlow);
-  }, [flow]);
+      const newFlow = { ...flow, steps };
+      setFlow(newFlow);
+      FlowContextStorage.set(newFlow);
+    },
+    [flow]
+  );
 
-  const updateFlowStep = useCallback((
-    stepIndex: number,
-    update: Omit<FlowStep, "id">,
-  ) => {
-    if (!flow?.steps) return;
+  const updateFlowStep = useCallback(
+    (stepIndex: number, update: Omit<FlowStep, "id">) => {
+      if (!flow?.steps) return;
 
-    const newSteps = flow.steps.map((step, i) => (
-      i === stepIndex ? { ...step, ...update } : step
-    ));
+      const newSteps = flow.steps.map((step, i) =>
+        i === stepIndex ? { ...step, ...update } : step
+      );
 
-    setFlowSteps(newSteps);
-  }, [flow, setFlowSteps]);
+      setFlowSteps(newSteps);
+    },
+    [flow, setFlowSteps]
+  );
 
   const currentStepIndex = useMemo(() => {
-    const firstUnconfirmed = flow?.steps?.findIndex(
-      (step) => step.status !== "confirmed",
-    ) ?? -1;
-    return firstUnconfirmed === -1 ? (flow?.steps?.length ?? 0) - 1 : firstUnconfirmed;
+    const firstUnconfirmed =
+      flow?.steps?.findIndex((step) => step.status !== "confirmed") ?? -1;
+    return firstUnconfirmed === -1
+      ? (flow?.steps?.length ?? 0) - 1
+      : firstUnconfirmed;
   }, [flow]);
 
   const currentStep = useMemo(
     () => flow?.steps?.[currentStepIndex] ?? null,
-    [flow, currentStepIndex],
+    [flow, currentStepIndex]
   );
 
-  const flowDeclaration = useMemo(() => (
-    flow && (flow.request.flowId in flows)
-      ? getFlowDeclaration(flow.request.flowId)
-      : null
-  ), [flow]);
+  const flowDeclaration = useMemo(
+    () =>
+      flow && flow.request.flowId in flows
+        ? getFlowDeclaration(flow.request.flowId)
+        : null,
+    [flow]
+  );
 
   const commit = useCallback(async () => {
     if (!flow || !flowDeclaration || !currentStep || currentStepIndex === -1) {
@@ -576,24 +658,26 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
 
   const isFlowComplete = useMemo(
     () => flow?.steps?.at(-1)?.status === "confirmed",
-    [flow],
+    [flow]
   );
 
   // get steps when the flow starts
   const awaitingSteps = flow !== null && flow.steps === null;
   const steps = useSteps(
     flow,
-    Boolean(awaitingSteps && account && flow.account === account),
+    Boolean(awaitingSteps && account && flow.account === account)
   );
 
   useEffect(() => {
     if (awaitingSteps && steps.data) {
-      setFlowSteps(steps.data.map((id) => ({
-        id,
-        status: "idle",
-        artifact: null,
-        error: null,
-      })));
+      setFlowSteps(
+        steps.data.map((id) => ({
+          id,
+          status: "idle",
+          artifact: null,
+          error: null,
+        }))
+      );
     }
   }, [awaitingSteps, steps.data, setFlowSteps]);
 
@@ -618,7 +702,9 @@ const FlowContextStorage = {
   },
   get(): Flowstate<FlowRequestMap[keyof FlowRequestMap]> | null {
     try {
-      const storedFlowState = (localStorage.getItem(TRANSACTION_FLOW_KEY) ?? "").trim();
+      const storedFlowState = (
+        localStorage.getItem(TRANSACTION_FLOW_KEY) ?? ""
+      ).trim();
       if (!storedFlowState) {
         return null;
       }

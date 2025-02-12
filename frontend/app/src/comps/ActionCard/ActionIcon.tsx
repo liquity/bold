@@ -24,14 +24,14 @@ export function ActionIcon({
     background: string;
     foreground: string;
   };
-  iconType: "borrow" | "multiply" | "earn" | "stake";
+  iconType: "borrow" | "multiply" | "earn" | "buy";
   state: IconProps["state"];
 }) {
   const Icon = match(iconType)
     .with("borrow", () => ActionIconBorrow)
     .with("multiply", () => ActionIconLeverage)
     .with("earn", () => ActionIconEarn)
-    .with("stake", () => ActionIconStake)
+    .with("buy", () => ActionIconStake)
     .exhaustive();
 
   return (
@@ -45,35 +45,37 @@ export function ActionIcon({
 
 function ActionIconBorrow({ foreground, state }: IconProps) {
   const { t1, t2 } = useSpring({
-    t1: state === "active"
-      ? "translate(36 0) scale(1.1)"
-      : "translate(0 0) scale(1)",
-    t2: state === "active"
-      ? "translate(-36 0) scale(1.1)"
-      : "translate(0 0) scale(1)",
+    t1:
+      state === "active"
+        ? "translate(36 0) scale(1.1)"
+        : "translate(0 0) scale(1)",
+    t2:
+      state === "active"
+        ? "translate(-36 0) scale(1.1)"
+        : "translate(0 0) scale(1)",
     config: springConfig,
   });
   return (
     <IconBase>
       <a.path
         fill={foreground}
-        d="
+        d='
           M 20 48
           A 28 28 0 0 1 0 56
           V 0
           a 28 28 0 0 1 20 48
-        "
+        '
         transform={t1}
         style={{ transformOrigin: "50% 50%" }}
       />
       <a.path
         fill={foreground}
-        d="
+        d='
           M 28 28
           A 28 28 0 0 1 56 0
           v 56
           a 28 28 0 0 1 -28 -28
-        "
+        '
         transform={t2}
         style={{ transformOrigin: "50% 50%" }}
       />
@@ -83,12 +85,14 @@ function ActionIconBorrow({ foreground, state }: IconProps) {
 
 function ActionIconLeverage({ foreground, state }: IconProps) {
   const { t1, t2 } = useSpring({
-    t1: state === "active"
-      ? "translate(0 56) scale(0)"
-      : "translate(0 36) scale(2)",
-    t2: state === "active"
-      ? "translate(-6 -6) scale(6.8)"
-      : "translate(20 0) scale(3.6)",
+    t1:
+      state === "active"
+        ? "translate(0 56) scale(0)"
+        : "translate(0 36) scale(2)",
+    t2:
+      state === "active"
+        ? "translate(-6 -6) scale(6.8)"
+        : "translate(20 0) scale(3.6)",
     config: springConfig,
   });
 
@@ -96,24 +100,24 @@ function ActionIconLeverage({ foreground, state }: IconProps) {
     <IconBase>
       <a.path
         fill={foreground}
-        d="
+        d='
           M0 0
           h 10
           v 10
           h -10
           z
-        "
+        '
         transform={t1}
       />
       <a.path
         fill={foreground}
-        d="
+        d='
           M0 0
           h 10
           v 10
           h -10
           z
-        "
+        '
         transform={t2}
       />
     </IconBase>
@@ -131,17 +135,17 @@ function ActionIconEarn({ foreground, background, state }: IconProps) {
     <IconBase>
       <a.rect
         fill={foreground}
-        width="56"
-        height="56"
+        width='56'
+        height='56'
         rx={squareRadius}
         transform={squareT}
         style={{ transformOrigin: "50% 50%" }}
       />
       <a.circle
         fill={background}
-        cx="28"
-        cy="28"
-        r="16"
+        cx='28'
+        cy='28'
+        r='16'
         transform={circleT}
         style={{ transformOrigin: "50% 50%" }}
       />
@@ -154,7 +158,7 @@ export function ActionIconStake({ foreground, state }: IconProps) {
 
   // style transform
   const tr = (x: number, y: number, w: number = 1, h: number = 1) => `
-    translate(${x * 56 / 3}px, ${y * 56 / 3}px)
+    translate(${(x * 56) / 3}px, ${(y * 56) / 3}px)
     scale(${w}, ${h})
   `;
 
@@ -214,9 +218,9 @@ export function ActionIconStake({ foreground, state }: IconProps) {
 function IconBase({ children }: { children: ReactNode }) {
   return (
     <svg
-      width="24"
-      height="24"
-      viewBox="0 0 56 56"
+      width='24'
+      height='24'
+      viewBox='0 0 56 56'
       style={{ overflow: "visible" }}
     >
       {children}

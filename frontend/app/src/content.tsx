@@ -13,7 +13,7 @@ export default {
     borrow: "Borrow",
     multiply: "Multiply",
     earn: "Earn",
-    stake: "Stake",
+    buy: "Buy USDN",
   },
 
   accountButton: {
@@ -26,9 +26,10 @@ export default {
       "Liquidation risk",
       <>
         If the LTV of a loan goes above the max LTV, it becomes
-        undercollateralized and will be liquidated. In that case, the borrower's
-        debt is paid off but they lose most of their collateral. In order to
-        avoid liquidation, one can increase the collateral or reduce the debt.
+        undercollateralized and will be liquidated. In that case, the
+        borrower&apos;s debt is paid off but they lose most of their collateral.
+        In order to avoid liquidation, one can increase the collateral or reduce
+        the debt.
       </>,
     ],
     loanRedemptionRisk: [
@@ -223,10 +224,9 @@ export default {
         description:
           "Deposit USDN to earn protocol revenues and liquidation proceeds",
       },
-      stake: {
-        title: "Stake LQTY",
-        description:
-          "Direct protocol incentives with LQTY while earning from Liquity V1",
+      buy: {
+        title: "USDN",
+        description: "Buy USDN",
       },
     },
     statsBar: {
@@ -417,82 +417,13 @@ export default {
   },
 
   // Stake screen
-  stakeScreen: {
-    headline: (lqtyIcon: N) => (
+  buyScreen: {
+    headline: () => (
       <>
-        <span>Stake</span>
-        {lqtyIcon} <span>LQTY & get</span>
-        <span>voting power</span>
+        <span>Buy USDN </span>
       </>
     ),
-    subheading: (
-      <>
-        By staking LQTY you can vote on incentives for Liquity V2, while still
-        earning Liquity V1 fees.
-      </>
-    ),
+    subheading: <>Buy USDN</>,
     learnMore: ["https://docs.liquity.org/faq/staking", "Learn more"],
-    accountDetails: {
-      myDeposit: "My deposit",
-      votingPower: "Voting power",
-      votingPowerHelp: (
-        <>
-          Voting power is the percentage of the total staked LQTY that you own.
-        </>
-      ),
-      unclaimed: "Unclaimed rewards",
-    },
-    tabs: {
-      deposit: "Staking",
-      rewards: "Rewards",
-      voting: "Voting",
-    },
-    depositPanel: {
-      label: "Deposit",
-      shareLabel: "Pool share",
-      rewardsLabel: "Available rewards",
-      action: "Next: Summary",
-    },
-    rewardsPanel: {
-      label: "You claim",
-      details: (usdAmount: N, fee: N) => (
-        <>
-          ~${usdAmount} • Expected gas fee ~${fee}
-        </>
-      ),
-      action: "Next: Summary",
-    },
-    votingPanel: {
-      title: "Allocate your voting power",
-      intro: (
-        <>
-          Direct incentives from Liquity V2 protocol revenues towards liquidity
-          providers for USDN. Upvote from Thursday to Tuesday. Downvote all
-          week.{" "}
-          <Link href='https://docs.liquity.org/v2-faq/lqty-staking'>
-            Learn more
-          </Link>
-        </>
-      ),
-    },
-    infoTooltips: {
-      alsoClaimRewardsDeposit: [
-        <>Rewards will be paid out as part of the update transaction.</>,
-      ],
-    },
   },
 } as const;
-
-function Link({ href, children }: { href: string; children: N }) {
-  const props = !href.startsWith("http")
-    ? {}
-    : {
-        target: "_blank",
-        rel: "noopener noreferrer",
-      };
-  return (
-    <a href={href} {...props}>
-      {children}
-    </a>
-  );
-}

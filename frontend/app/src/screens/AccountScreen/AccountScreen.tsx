@@ -13,7 +13,7 @@ import {
 } from "@/src/contracts";
 import { CHAIN_ID } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
 import {
   addressesEqual,

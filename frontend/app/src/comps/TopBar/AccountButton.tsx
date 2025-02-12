@@ -1,6 +1,6 @@
 import content from "@/src/content";
 import { useDemoMode } from "@/src/demo-mode";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
 import { Button, IconAccount, shortenAddress } from "@liquity2/uikit";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
@@ -18,7 +18,9 @@ export function AccountButton() {
   const account = useAccount();
   const demoMode = useDemoMode();
 
-  return demoMode.enabled ? <ButtonDemoMode /> : (
+  return demoMode.enabled ? (
+    <ButtonDemoMode />
+  ) : (
     <ConnectButton.Custom>
       {({ chain, openChainModal, openConnectModal }) => {
         const button = match({ account, chain })
@@ -29,7 +31,7 @@ export function AccountButton() {
             () => ({
               label: content.accountButton.wrongNetwork,
               onClick: openChainModal,
-            }),
+            })
           )
           .with(
             // connected
@@ -39,19 +41,21 @@ export function AccountButton() {
               onClick: account.disconnect,
               title: account.address,
               variant: "connected",
-            }),
+            })
           )
           .otherwise(
             // disconnected / not ready
             () => ({
               label: content.accountButton.connectAccount,
               onClick: openConnectModal,
-            }),
+            })
           );
 
-        return button.variant === "connected"
-          ? <ButtonConnected button={button} />
-          : <Button mode="primary" {...button} />;
+        return button.variant === "connected" ? (
+          <ButtonConnected button={button} />
+        ) : (
+          <Button mode='primary' {...button} />
+        );
       }}
     </ConnectButton.Custom>
   );
@@ -59,27 +63,23 @@ export function AccountButton() {
 
 function ButtonDemoMode() {
   const { account, updateAccountConnected } = useDemoMode();
-  return (
-    account.isConnected
-      ? (
-        <ButtonConnected
-          button={{
-            label: "demo.eth",
-            onClick: () => {
-              updateAccountConnected(false);
-            },
-          }}
-        />
-      )
-      : (
-        <Button
-          mode="primary"
-          label="Connect"
-          onClick={() => {
-            updateAccountConnected(true);
-          }}
-        />
-      )
+  return account.isConnected ? (
+    <ButtonConnected
+      button={{
+        label: "demo.eth",
+        onClick: () => {
+          updateAccountConnected(false);
+        },
+      }}
+    />
+  ) : (
+    <Button
+      mode='primary'
+      label='Connect'
+      onClick={() => {
+        updateAccountConnected(true);
+      }}
+    />
   );
 }
 
@@ -102,10 +102,7 @@ function ButtonConnected({ button }: { button: ButtonData }) {
         },
       })}
     >
-      <MenuItem
-        icon={<IconAccount />}
-        label={button.label}
-      />
+      <MenuItem icon={<IconAccount />} label={button.label} />
     </button>
   );
 }

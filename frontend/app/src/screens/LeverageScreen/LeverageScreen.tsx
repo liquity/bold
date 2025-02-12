@@ -29,7 +29,7 @@ import { fmtnum } from "@/src/formatting";
 import { useCheckLeverageSlippage } from "@/src/liquity-leverage";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { getCollIndexFromSymbol } from "@/src/liquity-utils";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Arbitrum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useNextOwnerIndex } from "@/src/subgraph-hooks";

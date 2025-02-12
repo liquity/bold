@@ -7,7 +7,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
 import { useEarnPosition } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";

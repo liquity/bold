@@ -6,7 +6,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { Logo } from "@/src/comps/Logo/Logo";
 import { ACCOUNT_SCREEN } from "@/src/env";
 import { useLiquityStats } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Arbitrum";
 import { usePrice } from "@/src/services/Prices";
 import { css } from "@/styled-system/css";
 import {
