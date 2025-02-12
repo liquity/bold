@@ -49,18 +49,27 @@ function vBranchEnvVars(branchId: BranchId) {
     [`${prefix}_IC_STRATEGIES`]: v.optional(
       v.pipe(
         v.string(),
-        v.regex(/^\s?([^:]+:0x[0-9a-fA-F]{40},?)+\s?$/),
+        v.regex(/^\s?([^:]+:0x[0-9a-fA-F]{40},?)*\s?$/),
         v.transform((value) => {
           value = value.trim();
           if (value.endsWith(",")) {
             value = value.slice(0, -1);
           }
-          return value.split(",").map((s) => {
-            const [name, address] = s.split(":");
-            return { address: address?.toLowerCase(), name };
-          });
+          return value.split(",")
+            .map((s) => {
+              const [name, address] = s.split(":");
+              if (!name || !address) {
+                return null;
+              }
+              return {
+                address: address.toLowerCase(),
+                name,
+              };
+            })
+            .filter((x) => x !== null);
         }),
       ),
+      "",
     ),
     [`${prefix}_TOKEN_ID`]: v.optional(CollateralSymbolSchema),
   });
