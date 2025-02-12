@@ -20,6 +20,7 @@ export const ETH_MAX_RESERVE = dn.from(0.1, 18); // leave 0.1 ETH when users cli
 
 export const ETH_GAS_COMPENSATION = dn.from(0.0375, 18); // see contracts/src/Dependencies/Constants.sol
 
+export const INTEREST_RATE_ADJ_COOLDOWN = 7 * 24 * 60 * 60; // 7 days in seconds
 export const INTEREST_RATE_MIN = 0.5; // 0.5% annualized
 export const INTEREST_RATE_MAX = 25; // 25% annualized
 export const INTEREST_RATE_DEFAULT = 10;

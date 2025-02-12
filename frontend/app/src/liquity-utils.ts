@@ -14,7 +14,13 @@ import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { Config as WagmiConfig } from "wagmi";
 
-import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
+import {
+  DATA_REFRESH_INTERVAL,
+  INTEREST_RATE_ADJ_COOLDOWN,
+  INTEREST_RATE_INCREMENT,
+  INTEREST_RATE_MAX,
+  INTEREST_RATE_MIN,
+} from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
@@ -754,5 +760,23 @@ export function useInterestBatchDelegates(
     },
     refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: batchAddresses.length > 0,
+  });
+}
+
+export function useTroveRateUpdateCooldown(branchId: BranchId, troveId: TroveId) {
+  const wagmiConfig = useWagmiConfig();
+  return useQuery({
+    queryKey: ["troveRateUpdateCooldown", branchId, troveId],
+    queryFn: async () => {
+      const { lastInterestRateAdjTime } = await readContract(wagmiConfig, {
+        ...getBranchContract(branchId, "TroveManager"),
+        functionName: "getLatestTroveData",
+        args: [BigInt(troveId)],
+      });
+      const cooldownEndTime = (
+        Number(lastInterestRateAdjTime) + INTEREST_RATE_ADJ_COOLDOWN
+      ) * 1000;
+      return (now: number) => Math.max(0, cooldownEndTime - now);
+    },
   });
 }
