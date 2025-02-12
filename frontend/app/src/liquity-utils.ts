@@ -27,15 +27,15 @@ import {
   useStabilityPool,
 } from "@/src/subgraph-hooks";
 import { isBranchId, isTroveId } from "@/src/types";
-import { COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
+import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
-import { readContract } from "wagmi/actions";
-import { graphQuery, InterestBatchesQuery, InterestBatchQuery } from "./subgraph-queries";
+import { readContract, readContracts } from "wagmi/actions";
+import { graphQuery, InterestBatchesQuery } from "./subgraph-queries";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -682,54 +682,9 @@ export function useLoan(branchId: BranchId, troveId: TroveId): UseQueryResult<Po
 export function useInterestBatchDelegate(
   branchId: BranchId,
   batchAddress: null | Address,
-): UseQueryResult<Delegate | null> {
-  const wagmiConfig = useWagmiConfig();
-
-  const id = batchAddress
-    ? `${branchId}:${batchAddress.toLowerCase()}`
-    : null;
-
-  return useQuery<Delegate | null>({
-    queryKey: ["InterestBatch", id],
-    queryFn: async () => {
-      if (!id || !batchAddress) {
-        return null;
-      }
-
-      const [{ interestBatch: batch }, batchFromChain] = await Promise.all([
-        graphQuery(InterestBatchQuery, { id }),
-        readContract(wagmiConfig, {
-          ...getBranchContract(branchId, "BorrowerOperations"),
-          functionName: "getInterestBatchManager",
-          args: [batchAddress],
-        }),
-      ]);
-
-      if (!isAddress(batch?.batchManager)) {
-        return null;
-      }
-
-      return {
-        id: batch.batchManager,
-        address: batch.batchManager,
-        name: shortenAddress(batch.batchManager, 4),
-        interestRate: dnum18(batch.annualInterestRate),
-        boldAmount: dnum18(batch.debt),
-        interestRateChange: [
-          dnum18(batchFromChain.minInterestRate),
-          dnum18(batchFromChain.maxInterestRate),
-        ],
-        fee: dnum18(batch.annualManagementFee),
-
-        // not available in the subgraph yet
-        followers: 0,
-        lastDays: 0,
-        redemptions: dnum18(0),
-      };
-    },
-    refetchInterval: DATA_REFRESH_INTERVAL,
-    enabled: id !== null,
-  });
+) {
+  const result = useInterestBatchDelegates(branchId, batchAddress ? [batchAddress] : []);
+  return { ...result, data: result.data?.[0] ?? null };
 }
 
 export function useInterestBatchDelegates(
@@ -749,37 +704,37 @@ export function useInterestBatchDelegates(
         graphQuery(InterestBatchesQuery, {
           ids: batchAddresses.map((addr) => `${branchId}:${addr.toLowerCase()}`),
         }),
-        Promise.all(
-          batchAddresses.map(async (address) => {
-            const result = await readContract(wagmiConfig, {
-              ...getBranchContract(branchId, "BorrowerOperations"),
-              functionName: "getInterestBatchManager",
-              args: [address],
-            });
-            return {
-              address: address.toLowerCase(),
-              ...result,
-            };
-          }),
-        ),
+        readContracts(wagmiConfig, {
+          allowFailure: false,
+          contracts: batchAddresses.map((address) => ({
+            ...getBranchContract(branchId, "BorrowerOperations"),
+            functionName: "getInterestBatchManager" as const,
+            args: [address],
+          })),
+        }).then((results) => {
+          return results.map((result, index) => ({
+            address: (batchAddresses[index] ?? "").toLowerCase() as Address,
+            ...result,
+          }));
+        }),
       ]);
 
       return batches
         .map((batch): null | Delegate => {
-          const address = batch.batchManager.toLowerCase();
-          const batchFromChain = batchesFromChain.find((b) => b.address === address);
+          const batchAddress = batch.batchManager.toLowerCase();
+          if (!isAddress(batchAddress)) {
+            throw new Error(`Invalid batch manager address: ${batchAddress}`);
+          }
+
+          const batchFromChain = batchesFromChain.find((b) => addressesEqual(b.address, batchAddress));
           if (!batchFromChain) {
             return null;
           }
 
-          if (!isAddress(batch.batchManager)) {
-            throw new Error(`Invalid batch manager address: ${batch.batchManager}`);
-          }
-
           return {
-            id: `${branchId}:${batch.batchManager}`,
-            address: batch.batchManager,
-            name: shortenAddress(batch.batchManager, 4),
+            id: `${branchId}:${batchAddress}`,
+            address: batchAddress,
+            name: shortenAddress(batchAddress, 4),
             interestRate: dnum18(batch.annualInterestRate),
             boldAmount: dnum18(batch.debt),
             interestRateChange: {
