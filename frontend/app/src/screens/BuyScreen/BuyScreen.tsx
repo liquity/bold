@@ -106,12 +106,12 @@ export function BuyScreen() {
               "button-sm-secondary-text": "#292C32",
               "button-sm-tertiary-bg": "#292C32",
               "button-sm-tertiary-text": "#D1D6E0",
-              "input-bg": "#17191C",
-              "input-placeholder": "#676B7E",
-              "input-text": "#D1D6E0",
-              "input-selection": "#D1D6E0",
-              "menu-bg": "#17191CA8",
-              "menu-text": "#FBFBFDA8",
+              "input-bg": "#f3eee2",
+              "input-placeholder": "#2f4225",
+              "input-text": "#2f4225",
+              "input-selection": "#2f4225",
+              "menu-bg": "#2f4225",
+              "menu-text": "#f3eee2",
               "menu-backdrop": "#FBFBFD1A",
               "modal-backdrop": "#17191C54"
             }
