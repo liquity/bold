@@ -12,6 +12,7 @@ import { css } from "@/styled-system/css";
 import {
   AnchorTextButton,
   HFlex,
+  IconExternal,
   shortenAddress,
   TokenIcon,
 } from "@liquity2/uikit";
@@ -58,6 +59,27 @@ export function ProtocolStats() {
           {DISPLAYED_PRICES.map((symbol) => (
             <Price key={symbol} symbol={symbol} />
           ))}
+          <Link
+            href='https://docs.nerite.org/'
+            target='_blank'
+            rel='noopener noreferrer'
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: "2",
+              color: "content",
+              _hover: { opacity: 0.8 },
+              _focusVisible: {
+                outline: "2px solid token(colors.focused)",
+              },
+              _active: {
+                translate: "0 1px",
+              },
+            })}
+          >
+            <IconExternal size={16} />
+            <span>Docs</span>
+          </Link>
           {account.address && ACCOUNT_SCREEN && (
             <Link
               id='footer-account-button'
@@ -78,7 +100,6 @@ export function ProtocolStats() {
                         borderRadius: "50%",
                       })}
                     />
-
                     {shortenAddress(account.address, 3)}
                   </HFlex>
                 }

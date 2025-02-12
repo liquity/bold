@@ -49,7 +49,7 @@ export function HomeScreen() {
         })}
       >
         <HomeTable
-          title='Borrow USDN against ETH and staked ETH'
+          title='Borrow USDN against ETH and assets'
           subtitle='You can adjust your loans, including your interest rate, at any time'
           icon={<IconBorrow />}
           columns={
