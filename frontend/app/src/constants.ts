@@ -19,8 +19,6 @@ export const MAX_LTV_RESERVE_RATIO = 0.04; // ratio of the max LTV in non-limite
 export const ETH_MAX_RESERVE = dn.from(0.1, 18); // leave 0.1 ETH when users click on "max" to deposit from their account
 
 export const ETH_GAS_COMPENSATION = dn.from(0.0375, 18); // see contracts/src/Dependencies/Constants.sol
-export const MIN_ANNUAL_INTEREST_RATE = dn.from(0.005, 18); // 0.5% see contracts/src/Dependencies/Constants.sol
-export const MAX_ANNUAL_INTEREST_RATE = dn.from(2.5, 18); // 250% see contracts/src/Dependencies/Constants.sol
 
 export const INTEREST_RATE_MIN = 0.5; // 0.5% annualized
 export const INTEREST_RATE_MAX = 25; // 25% annualized

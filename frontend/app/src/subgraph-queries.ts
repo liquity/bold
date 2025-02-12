@@ -226,21 +226,6 @@ export const StabilityPoolEpochScaleQuery = graphql(`
   }
 `);
 
-export const InterestBatchQuery = graphql(`
-  query InterestBatch($id: ID!) {
-    interestBatch(id: $id) {
-      collateral {
-        collIndex
-      }
-      batchManager
-      debt
-      coll
-      annualInterestRate
-      annualManagementFee
-    }
-  }
-`);
-
 export const InterestBatchesQuery = graphql(`
   query InterestBatches($ids: [ID!]!) {
     interestBatches(where: { id_in: $ids }) {

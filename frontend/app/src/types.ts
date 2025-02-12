@@ -127,7 +127,11 @@ export type Delegate = {
   followers: number;
   id: string;
   interestRate: Dnum;
-  interestRateChange: [Dnum, Dnum];
+  interestRateChange: {
+    min: Dnum;
+    max: Dnum;
+    period: bigint;
+  };
   lastDays: number;
   name: string;
   redemptions: Dnum;

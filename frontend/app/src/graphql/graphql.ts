@@ -2218,13 +2218,6 @@ export type StabilityPoolEpochScaleQueryVariables = Exact<{
 
 export type StabilityPoolEpochScaleQuery = { __typename?: 'Query', stabilityPoolEpochScale?: { __typename?: 'StabilityPoolEpochScale', id: string, B: bigint, S: bigint } | null };
 
-export type InterestBatchQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type InterestBatchQuery = { __typename?: 'Query', interestBatch?: { __typename?: 'InterestBatch', batchManager: string, debt: bigint, coll: bigint, annualInterestRate: bigint, annualManagementFee: bigint, collateral: { __typename?: 'Collateral', collIndex: number } } | null };
-
 export type InterestBatchesQueryVariables = Exact<{
   ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
 }>;
@@ -2457,20 +2450,6 @@ export const StabilityPoolEpochScaleDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<StabilityPoolEpochScaleQuery, StabilityPoolEpochScaleQueryVariables>;
-export const InterestBatchDocument = new TypedDocumentString(`
-    query InterestBatch($id: ID!) {
-  interestBatch(id: $id) {
-    collateral {
-      collIndex
-    }
-    batchManager
-    debt
-    coll
-    annualInterestRate
-    annualManagementFee
-  }
-}
-    `) as unknown as TypedDocumentString<InterestBatchQuery, InterestBatchQueryVariables>;
 export const InterestBatchesDocument = new TypedDocumentString(`
     query InterestBatches($ids: [ID!]!) {
   interestBatches(where: {id_in: $ids}) {

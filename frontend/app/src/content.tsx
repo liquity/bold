@@ -130,11 +130,10 @@ export default {
         secondary: <>The interest rate is set and updated by a third party of your choice. They may charge a fee.</>,
       },
       strategy: {
-        label: "Automated (ICP)",
+        label: "Autonomous Rate Manager",
         secondary: (
           <>
-            The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer
-            (ICP).
+            The interest rate is set and updated by an automated strategy running on the Internet Computer (ICP).
           </>
         ),
       },
@@ -143,13 +142,13 @@ export default {
     icStrategyModal: {
       title: (
         <>
-          Automated Strategies (<abbr title="Internet Computer">ICP</abbr>)
+          Autonomous Rate Manager (ARM)
         </>
       ),
       intro: (
         <>
           These strategies are run on the Internet Computer (ICP). They are automated and decentralized. More strategies
-          will be added over time.
+          may be added over time.
         </>
       ),
     },

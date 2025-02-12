@@ -1,7 +1,7 @@
 import type { Delegate } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { fmtnum, formatRedemptionRisk } from "@/src/formatting";
+import { fmtnum, formatDuration, formatRedemptionRisk } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -120,9 +120,23 @@ export function DelegateBox({
           >
             <div>Interest rate range</div>
             <div>
-              {fmtnum(delegate.interestRateChange[0], "pct2")}
+              {fmtnum(delegate.interestRateChange.min, "pct2")}
               <span>-</span>
-              {fmtnum(delegate.interestRateChange[1], "pct2")}%
+              {fmtnum(delegate.interestRateChange.max, "pct2")}%
+            </div>
+          </div>
+          <div
+            className={css({
+              display: "flex",
+              justifyContent: "space-between",
+              width: "100%",
+              fontSize: 14,
+              color: "content",
+            })}
+          >
+            <div>Max. update frequency</div>
+            <div>
+              {formatDuration(delegate.interestRateChange.period)}
             </div>
           </div>
           {delegate.fee && (
