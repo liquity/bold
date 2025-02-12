@@ -196,7 +196,7 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
         let remainingLQTY = stakedLQTY;
         let [remainingVotes] = Object.values(voteAllocations)
           .map((x) => x?.value)
-          .filter((x) => x != null)
+          .filter((x) => x !== undefined)
           .reduce((a, b) => dn.add(a, b));
 
         for (const [index, address] of initiativeAddresses.entries()) {
