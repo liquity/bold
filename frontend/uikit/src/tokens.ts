@@ -1,6 +1,6 @@
 import type { Token } from "./types";
 
-import tokenUSDN from "./token-icons/USDN.svg";
+import tokenUSDN from "./token-icons/usdn.svg";
 import tokenEth from "./token-icons/eth.svg";
 import tokenLqty from "./token-icons/lqty.svg";
 import tokenLusd from "./token-icons/lusd.svg";
