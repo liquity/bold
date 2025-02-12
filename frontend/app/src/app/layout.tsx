@@ -4,7 +4,6 @@ import "@liquity2/uikit/index.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
-import { About } from "@/src/comps/About/About";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Blocking } from "@/src/comps/Blocking/Blocking";
 import content from "@/src/content";
@@ -34,9 +33,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <Arbitrum>
                   <Blocking>
                     <TransactionFlow>
-                      <About>
-                        <AppLayout>{children}</AppLayout>
-                      </About>
+                      <AppLayout>{children}</AppLayout>
                     </TransactionFlow>
                   </Blocking>
                 </Arbitrum>

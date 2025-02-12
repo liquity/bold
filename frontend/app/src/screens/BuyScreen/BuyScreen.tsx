@@ -2,17 +2,13 @@
 
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { AnchorTextButton, HFlex, TokenIcon } from "@liquity2/uikit";
+import { AnchorTextButton, HFlex } from "@liquity2/uikit";
 
 export function BuyScreen() {
   return (
     <Screen
       heading={{
-        title: (
-          <HFlex>
-            {content.buyScreen.headline(<TokenIcon size={24} symbol='LQTY' />)}
-          </HFlex>
-        ),
+        title: <HFlex>{content.buyScreen.headline()}</HFlex>,
         subtitle: (
           <>
             {content.buyScreen.subheading}{" "}
