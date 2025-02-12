@@ -7,7 +7,7 @@ import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningB
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { getCollToken } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Arbitrum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
@@ -29,25 +29,30 @@ export function PanelClaimRewards({
     throw new Error(`Invalid collateral index: ${collIndex}`);
   }
 
-  const boldPriceUsd = usePrice("BOLD");
+  const boldPriceUsd = usePrice("USDN");
   const collPriceUsd = usePrice(collateral.symbol);
 
-  const totalRewards = collPriceUsd.data && boldPriceUsd.data && dn.add(
-    dn.mul(position?.rewards?.bold ?? DNUM_0, boldPriceUsd.data),
-    dn.mul(position?.rewards?.coll ?? DNUM_0, collPriceUsd.data),
-  );
+  const totalRewards =
+    collPriceUsd.data &&
+    boldPriceUsd.data &&
+    dn.add(
+      dn.mul(position?.rewards?.usdn ?? DNUM_0, boldPriceUsd.data),
+      dn.mul(position?.rewards?.coll ?? DNUM_0, collPriceUsd.data)
+    );
 
-  const gasFeeUsd = collPriceUsd.data && dn.multiply(dn.from(0.0015, 18), collPriceUsd.data);
+  const gasFeeUsd =
+    collPriceUsd.data && dn.multiply(dn.from(0.0015, 18), collPriceUsd.data);
 
-  const allowSubmit = account.isConnected && totalRewards && dn.gt(totalRewards, 0);
+  const allowSubmit =
+    account.isConnected && totalRewards && dn.gt(totalRewards, 0);
 
   return (
     <VFlex gap={48}>
       <VFlex gap={0}>
         <Rewards
-          amount={position?.rewards?.bold ?? DNUM_0}
+          amount={position?.rewards?.usdn ?? DNUM_0}
           label={content.earnScreen.rewardsPanel.boldRewardsLabel}
-          symbol="BOLD"
+          symbol='USDN'
         />
         <Rewards
           amount={position?.rewards?.coll ?? DNUM_0}
@@ -64,21 +69,13 @@ export function PanelClaimRewards({
             color: "contentAlt",
           })}
         >
-          <HFlex justifyContent="space-between" gap={24}>
+          <HFlex justifyContent='space-between' gap={24}>
             <div>{content.earnScreen.rewardsPanel.totalUsdLabel}</div>
-            <Amount
-              prefix="$"
-              value={totalRewards}
-              format={2}
-            />
+            <Amount prefix='$' value={totalRewards} format={2} />
           </HFlex>
-          <HFlex justifyContent="space-between" gap={24}>
+          <HFlex justifyContent='space-between' gap={24}>
             <div>{content.earnScreen.rewardsPanel.expectedGasFeeLabel}</div>
-            <Amount
-              prefix="~$"
-              value={gasFeeUsd}
-              format={2}
-            />
+            <Amount prefix='~$' value={gasFeeUsd} format={2} />
           </HFlex>
         </div>
       </VFlex>
@@ -88,8 +85,8 @@ export function PanelClaimRewards({
       <Button
         disabled={!allowSubmit}
         label={content.earnScreen.rewardsPanel.action}
-        mode="primary"
-        size="large"
+        mode='primary'
+        size='large'
         wide
         onClick={() => {
           if (!account.address || !position) {

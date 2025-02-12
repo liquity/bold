@@ -229,7 +229,7 @@ export function vPositionEarn() {
     collIndex: vCollIndex(),
     deposit: vDnum(),
     rewards: v.object({
-      bold: vDnum(),
+      usdn: vDnum(),
       coll: vDnum(),
     }),
   });

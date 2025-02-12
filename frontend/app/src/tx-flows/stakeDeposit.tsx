@@ -7,7 +7,7 @@ import { dnum18 } from "@/src/dnum-utils";
 import { signPermit } from "@/src/permit";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Arbitrum";
 import { usePrice } from "@/src/services/Prices";
 import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
@@ -17,14 +17,11 @@ import { maxUint256 } from "viem";
 import { getBytecode } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
-const RequestSchema = createRequestSchema(
-  "stakeDeposit",
-  {
-    lqtyAmount: vDnum(),
-    stakePosition: vPositionStake(),
-    prevStakePosition: v.union([v.null(), vPositionStake()]),
-  },
-);
+const RequestSchema = createRequestSchema("stakeDeposit", {
+  lqtyAmount: vDnum(),
+  stakePosition: vPositionStake(),
+  prevStakePosition: v.union([v.null(), vPositionStake()]),
+});
 
 export type StakeDepositRequest = v.InferOutput<typeof RequestSchema>;
 
@@ -45,16 +42,12 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
     const lqtyPrice = usePrice("LQTY");
     return (
       <TransactionDetailsRow
-        label="You deposit"
+        label='You deposit'
         value={[
+          <Amount key='start' suffix=' LQTY' value={request.lqtyAmount} />,
           <Amount
-            key="start"
-            suffix=" LQTY"
-            value={request.lqtyAmount}
-          />,
-          <Amount
-            key="end"
-            prefix="$"
+            key='end'
+            prefix='$'
             value={lqtyPrice.data && dn.mul(request.lqtyAmount, lqtyPrice.data)}
           />,
         ]}
@@ -87,14 +80,16 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         if (!ctx.account) {
           throw new Error("Account address is required");
         }
-        const allocated = await graphQuery(
-          GovernanceUserAllocated,
-          { id: ctx.account.toLowerCase() },
-        );
+        const allocated = await graphQuery(GovernanceUserAllocated, {
+          id: ctx.account.toLowerCase(),
+        });
         return ctx.writeContract({
           ...ctx.contracts.Governance,
           functionName: "resetAllocations",
-          args: [(allocated.governanceUser?.allocated ?? []) as Address[], true],
+          args: [
+            (allocated.governanceUser?.allocated ?? []) as Address[],
+            true,
+          ],
         });
       },
       async verify(ctx, hash) {
@@ -135,11 +130,14 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
             wagmiConfig: ctx.wagmiConfig,
           });
 
-          return "permit:" + JSON.stringify({
-            ...permit,
-            deadline: Number(deadline),
-            userProxyAddress,
-          });
+          return (
+            "permit:" +
+            JSON.stringify({
+              ...permit,
+              deadline: Number(deadline),
+              userProxyAddress,
+            })
+          );
         }
 
         // approve()
@@ -184,7 +182,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
 
         // deposit LQTY via permit
         const { userProxyAddress, ...permit } = JSON.parse(
-          approveStep?.artifact?.replace(/^permit:/, "") ?? "{}",
+          approveStep?.artifact?.replace(/^permit:/, "") ?? "{}"
         );
 
         return ctx.writeContract({
@@ -219,13 +217,12 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
     const steps: string[] = [];
 
     // check if the user has any allocations
-    const allocated = await graphQuery(
-      GovernanceUserAllocated,
-      { id: ctx.account.toLowerCase() },
-    );
+    const allocated = await graphQuery(GovernanceUserAllocated, {
+      id: ctx.account.toLowerCase(),
+    });
     if (
-      allocated.governanceUser
-      && allocated.governanceUser.allocated.length > 0
+      allocated.governanceUser &&
+      allocated.governanceUser.allocated.length > 0
     ) {
       steps.push("resetAllocations");
     }

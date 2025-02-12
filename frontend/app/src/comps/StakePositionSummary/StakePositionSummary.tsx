@@ -5,10 +5,16 @@ import { useAppear } from "@/src/anim-utils";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Arbitrum";
 import { useGovernanceStats, useGovernanceUser } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
-import { HFlex, IconStake, InfoTooltip, TokenIcon, useRaf } from "@liquity2/uikit";
+import {
+  HFlex,
+  IconStake,
+  InfoTooltip,
+  TokenIcon,
+  useRaf,
+} from "@liquity2/uikit";
 import { a } from "@react-spring/web";
 import * as dn from "dnum";
 import { useRef } from "react";
@@ -30,9 +36,8 @@ export function StakePositionSummary({
   const account = useAccount();
 
   const appear = useAppear(
-    account.isDisconnected || (
-      loadingState === "success" && govUser.status === "success"
-    ),
+    account.isDisconnected ||
+      (loadingState === "success" && govUser.status === "success")
   );
 
   // totalVotingPower(t) = governanceStats.totalLQTYStaked * t - governanceStats.totalOffset
@@ -67,10 +72,10 @@ export function StakePositionSummary({
     const totalVPNext = totalVotingPower(nowInSeconds + 1n);
 
     if (
-      userVp === null
-      || userVpNext === null
-      || totalVP === null
-      || totalVPNext === null
+      userVp === null ||
+      userVpNext === null ||
+      totalVP === null ||
+      totalVPNext === null
     ) {
       votingPowerRef.current.innerHTML = "−";
       votingPowerRef.current.title = "";
@@ -78,13 +83,19 @@ export function StakePositionSummary({
     }
 
     const liveProgress = (now % 1000) / 1000;
-    const userVpLive = userVp + (userVpNext - userVp) * BigInt(Math.floor(liveProgress * 1000)) / 1000n;
-    const totalVpLive = totalVP + (totalVPNext - totalVP) * BigInt(Math.floor(liveProgress * 1000)) / 1000n;
+    const userVpLive =
+      userVp +
+      ((userVpNext - userVp) * BigInt(Math.floor(liveProgress * 1000))) / 1000n;
+    const totalVpLive =
+      totalVP +
+      ((totalVPNext - totalVP) * BigInt(Math.floor(liveProgress * 1000))) /
+        1000n;
 
     // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
     const share = dn.div([userVpLive, 18], [totalVpLive, 18]);
 
-    const sharePctFormatted = fmtnum(share, { preset: "12z", scale: 100 }) + "%";
+    const sharePctFormatted =
+      fmtnum(share, { preset: "12z", scale: 100 }) + "%";
     const sharePctRoundedFormatted = fmtnum(share, "pct2z") + "%";
 
     votingPowerRef.current.innerHTML = sharePctRoundedFormatted;
@@ -117,11 +128,12 @@ export function StakePositionSummary({
           alignItems: "flex-start",
           flexDirection: "column",
           paddingBottom: 12,
-          borderBottom: "1px solid color-mix(in srgb, token(colors.secondary) 15%, transparent)",
+          borderBottom:
+            "1px solid color-mix(in srgb, token(colors.secondary) 15%, transparent)",
         })}
       >
         <h1
-          title="LQTY Stake"
+          title='LQTY Stake'
           className={css({
             display: "flex",
             alignItems: "center",
@@ -156,8 +168,7 @@ export function StakePositionSummary({
             flexShrink: 0,
             display: "flex",
           })}
-        >
-        </div>
+        ></div>
         <div
           className={css({
             display: "flex",
@@ -181,40 +192,44 @@ export function StakePositionSummary({
                 height: 40,
               })}
             >
-              {appear((style, show) => (
-                show && (
-                  <a.div
-                    className={css({
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      height: 40,
-                    })}
-                    style={style}
-                  >
-                    <div
-                      style={{
-                        color: txPreviewMode
-                            && prevStakePosition
-                            && stakePosition?.deposit
-                            && !dn.eq(prevStakePosition.deposit, stakePosition.deposit)
-                          ? "var(--update-color)"
-                          : "inherit",
-                      }}
+              {appear(
+                (style, show) =>
+                  show && (
+                    <a.div
+                      className={css({
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        height: 40,
+                      })}
+                      style={style}
                     >
-                      <Amount
-                        format={2}
-                        value={stakePosition?.deposit ?? 0}
-                      />
-                    </div>
-                    <TokenIcon symbol="LQTY" size={32} />
-                  </a.div>
-                )
-              ))}
-              {prevStakePosition
-                && stakePosition
-                && !dn.eq(prevStakePosition.deposit, stakePosition.deposit)
-                && (
+                      <div
+                        style={{
+                          color:
+                            txPreviewMode &&
+                            prevStakePosition &&
+                            stakePosition?.deposit &&
+                            !dn.eq(
+                              prevStakePosition.deposit,
+                              stakePosition.deposit
+                            )
+                              ? "var(--update-color)"
+                              : "inherit",
+                        }}
+                      >
+                        <Amount
+                          format={2}
+                          value={stakePosition?.deposit ?? 0}
+                        />
+                      </div>
+                      <TokenIcon symbol='LQTY' size={32} />
+                    </a.div>
+                  )
+              )}
+              {prevStakePosition &&
+                stakePosition &&
+                !dn.eq(prevStakePosition.deposit, stakePosition.deposit) && (
                   <div
                     title={`${fmtnum(prevStakePosition.deposit, "full")} LQTY`}
                     className={css({
@@ -268,40 +283,40 @@ export function StakePositionSummary({
             >
               Rewards
             </div>
-            <HFlex
-              gap={8}
-            >
+            <HFlex gap={8}>
               <HFlex
                 gap={4}
                 className={css({
-                  color: txPreviewMode
-                      && stakePosition?.rewards.lusd
-                      && dn.gt(stakePosition?.rewards.lusd, 0)
-                    ? "var(--update-color)"
-                    : "inherit",
+                  color:
+                    txPreviewMode &&
+                    stakePosition?.rewards.lusd &&
+                    dn.gt(stakePosition?.rewards.lusd, 0)
+                      ? "var(--update-color)"
+                      : "inherit",
                 })}
               >
                 <Amount
-                  format="2diff"
+                  format='2diff'
                   value={stakePosition?.rewards.lusd ?? 0}
                 />
-                <TokenIcon symbol="LUSD" size="mini" />
+                <TokenIcon symbol='LUSD' size='mini' />
               </HFlex>
               <HFlex
                 gap={4}
                 className={css({
-                  color: txPreviewMode
-                      && stakePosition?.rewards.eth
-                      && dn.gt(stakePosition?.rewards.eth, 0)
-                    ? "var(--update-color)"
-                    : "inherit",
+                  color:
+                    txPreviewMode &&
+                    stakePosition?.rewards.eth &&
+                    dn.gt(stakePosition?.rewards.eth, 0)
+                      ? "var(--update-color)"
+                      : "inherit",
                 })}
               >
                 <Amount
-                  format="2diff"
+                  format='2diff'
                   value={stakePosition?.rewards.eth ?? 0}
                 />
-                <TokenIcon symbol="ETH" size="mini" />
+                <TokenIcon symbol='ETH' size='mini' />
               </HFlex>
             </HFlex>
           </div>
@@ -315,87 +330,95 @@ export function StakePositionSummary({
                 Voting power
               </div>
 
-              {appear((style, show) => (
-                show && (
-                  <a.div
-                    className={css({
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    })}
-                    style={style}
-                  >
-                    <div
-                      ref={votingPowerRef}
+              {appear(
+                (style, show) =>
+                  show && (
+                    <a.div
                       className={css({
-                        fontVariantNumeric: "tabular-nums",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
                       })}
-                      style={{
-                        color: txPreviewMode
-                            && prevStakePosition
-                            && stakePosition?.share
-                            && !dn.eq(prevStakePosition.share, stakePosition.share)
-                          ? "var(--update-color)"
-                          : "inherit",
-                      }}
+                      style={style}
                     >
-                    </div>
-                    {prevStakePosition
-                      && stakePosition
-                      && !dn.eq(prevStakePosition.share, stakePosition.share) && (
                       <div
+                        ref={votingPowerRef}
                         className={css({
-                          color: "contentAlt",
-                          textDecoration: "line-through",
+                          fontVariantNumeric: "tabular-nums",
                         })}
-                      >
-                        <Amount
-                          percentage
-                          value={prevStakePosition?.share ?? 0}
-                        />
-                      </div>
-                    )}
-                    {!txPreviewMode && (
-                      <InfoTooltip
-                        content={{
-                          heading: null,
-                          body: (
-                            <div
-                              className={css({
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 16,
-                              })}
-                            >
-                              <p>
-                                Voting power increases over time based on the total amount of LQTY staked.
-                              </p>
-                              {account.address && (govUser.data?.stakedLQTY ?? 0n) > 0n && (
-                                <div
-                                  className={css({
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 8,
-                                  })}
-                                >
-                                  <TooltipRow
-                                    label="Your voting power"
-                                    value={<div ref={votingPowerTooltipRef} />}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          ),
-                          footerLink: {
-                            href: "https://docs.liquity.org/v2-faq/lqty-staking",
-                            label: "Learn more",
-                          },
+                        style={{
+                          color:
+                            txPreviewMode &&
+                            prevStakePosition &&
+                            stakePosition?.share &&
+                            !dn.eq(prevStakePosition.share, stakePosition.share)
+                              ? "var(--update-color)"
+                              : "inherit",
                         }}
-                      />
-                    )}
-                  </a.div>
-                )
-              ))}
+                      ></div>
+                      {prevStakePosition &&
+                        stakePosition &&
+                        !dn.eq(
+                          prevStakePosition.share,
+                          stakePosition.share
+                        ) && (
+                          <div
+                            className={css({
+                              color: "contentAlt",
+                              textDecoration: "line-through",
+                            })}
+                          >
+                            <Amount
+                              percentage
+                              value={prevStakePosition?.share ?? 0}
+                            />
+                          </div>
+                        )}
+                      {!txPreviewMode && (
+                        <InfoTooltip
+                          content={{
+                            heading: null,
+                            body: (
+                              <div
+                                className={css({
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 16,
+                                })}
+                              >
+                                <p>
+                                  Voting power increases over time based on the
+                                  total amount of LQTY staked.
+                                </p>
+                                {account.address &&
+                                  (govUser.data?.stakedLQTY ?? 0n) > 0n && (
+                                    <div
+                                      className={css({
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 8,
+                                      })}
+                                    >
+                                      <TooltipRow
+                                        label='Your voting power'
+                                        value={
+                                          <div ref={votingPowerTooltipRef} />
+                                        }
+                                      />
+                                    </div>
+                                  )}
+                              </div>
+                            ),
+                            footerLink: {
+                              href: "https://docs.liquity.org/v2-faq/lqty-staking",
+                              label: "Learn more",
+                            },
+                          }}
+                        />
+                      )}
+                    </a.div>
+                  )
+              )}
             </div>
           )}
           {!txPreviewMode && (
@@ -414,7 +437,10 @@ export function StakePositionSummary({
                 Allocated
               </div>
               <div
-                title={`${fmtnum([govUser.data?.allocatedLQTY ?? 0n, 18], "full")} LQTY`}
+                title={`${fmtnum(
+                  [govUser.data?.allocatedLQTY ?? 0n, 18],
+                  "full"
+                )} LQTY`}
                 className={css({
                   display: "flex",
                   alignItems: "center",
@@ -423,14 +449,10 @@ export function StakePositionSummary({
               >
                 <Amount
                   title={null}
-                  format="compact"
+                  format='compact'
                   value={[govUser.data?.allocatedLQTY ?? 0n, 18]}
                 />
-                <TokenIcon
-                  title={null}
-                  symbol="LQTY"
-                  size="mini"
-                />
+                <TokenIcon title={null} symbol='LQTY' size='mini' />
               </div>
             </div>
           )}
@@ -440,13 +462,7 @@ export function StakePositionSummary({
   );
 }
 
-function TooltipRow({
-  label,
-  value,
-}: {
-  label: ReactNode;
-  value: ReactNode;
-}) {
+function TooltipRow({ label, value }: { label: ReactNode; value: ReactNode }) {
   return (
     <div
       className={css({

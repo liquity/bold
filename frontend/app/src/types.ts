@@ -89,7 +89,7 @@ export type PositionEarn = {
   collIndex: CollIndex;
   deposit: Dnum;
   rewards: {
-    bold: Dnum;
+    usdn: Dnum;
     coll: Dnum;
   };
 };
