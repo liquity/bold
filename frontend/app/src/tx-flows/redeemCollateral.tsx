@@ -3,12 +3,12 @@ import type { Address } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
-import { getBranchContract, getProtocolContract } from "@/src/contracts";
+import { getProtocolContract } from "@/src/contracts";
 import { dnum18, jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { getBranches } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { useAccount, useWagmiConfig } from "@/src/services/Ethereum";
+import { useWagmiConfig } from "@/src/services/Ethereum";
 import { vDnum } from "@/src/valibot-utils";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
