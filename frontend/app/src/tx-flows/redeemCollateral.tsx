@@ -33,6 +33,7 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
   Summary: () => null,
   Details(ctx) {
     const estimatedGains = useSimulatedBalancesChange(ctx);
+    const branches = getBranches();
     const boldChange = estimatedGains.data?.find(({ symbol }) => symbol === "BOLD")?.change;
     const collChanges = estimatedGains.data?.filter(({ symbol }) => symbol !== "BOLD");
     return (
@@ -48,33 +49,36 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
             />,
           ]}
         />
-        {boldChange && (
-          <TransactionDetailsRow
-            label="Reedeming BOLD"
-            value={[
-              <Amount
-                key="start"
-                value={boldChange}
-                suffix=" BOLD"
-              />,
-              <>Estimated BOLD that will be redeemed.</>,
-            ]}
-          />
-        )}
-        {collChanges?.map(({ symbol, change }) => (
-          <TransactionDetailsRow
-            key={symbol}
-            label={`Receiving ${symbol}`}
-            value={[
-              <Amount
-                key="start"
-                value={change}
-                suffix={` ${symbol}`}
-              />,
-              <>Estimated {symbol} you will receive.</>,
-            ]}
-          />
-        ))}
+        <TransactionDetailsRow
+          label="Reedeming BOLD"
+          value={[
+            <Amount
+              key="start"
+              value={boldChange}
+              fallback="fetching…"
+              suffix=" BOLD"
+            />,
+            <>Estimated BOLD that will be redeemed.</>,
+          ]}
+        />
+        {branches.map(({ symbol }) => {
+          const collChange = collChanges?.find((change) => symbol === change.symbol)?.change;
+          return (
+            <TransactionDetailsRow
+              key={symbol}
+              label={`Receiving ${symbol}`}
+              value={[
+                <Amount
+                  key="start"
+                  value={collChange}
+                  fallback="fetching…"
+                  suffix={` ${symbol}`}
+                />,
+                <>Estimated {symbol} you will receive.</>,
+              ]}
+            />
+          );
+        })}
       </>
     );
   },
