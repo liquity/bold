@@ -278,10 +278,6 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
   },
 
   async getSteps(ctx) {
-    if (!ctx.account) {
-      throw new Error("Account address is required");
-    }
-
     const { loan } = ctx.request;
     const collToken = getCollToken(loan.branchId);
     if (!collToken) {

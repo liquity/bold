@@ -351,10 +351,6 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
   },
 
   async getSteps(ctx) {
-    if (!ctx.account) {
-      throw new Error("Account address is required");
-    }
-
     const debtChange = getDebtChange(ctx.request.loan, ctx.request.prevLoan);
     const collChange = getCollChange(ctx.request.loan, ctx.request.prevLoan);
 

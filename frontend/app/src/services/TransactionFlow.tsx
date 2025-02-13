@@ -142,12 +142,12 @@ export type FlowStepDeclaration<FlowRequest extends BaseFlowRequest = BaseFlowRe
 export type FlowDeclaration<FlowRequest extends BaseFlowRequest> = {
   title: ReactNode;
   Summary: ComponentType<{
-    account: Address | null;
+    account: Address;
     request: FlowRequest;
     steps: FlowStep[] | null;
   }>;
   Details: ComponentType<{
-    account: Address | null;
+    account: Address;
     request: FlowRequest;
     steps: FlowStep[] | null;
   }>;
@@ -158,14 +158,14 @@ export type FlowDeclaration<FlowRequest extends BaseFlowRequest> = {
 
 // passed to the react context + saved in local storage
 export type Flowstate<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
-  account: Address | null;
+  account: Address;
   request: FlowRequest;
   steps: FlowStep[] | null;
 };
 
 // passed to the step functions
 export type FlowParams<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
-  account: Address | null;
+  account: Address;
   contracts: Contracts;
   isSafe: boolean;
   preferredApproveMethod: "permit" | "approve-amount" | "approve-infinite";

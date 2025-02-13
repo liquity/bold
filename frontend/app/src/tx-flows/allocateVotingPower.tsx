@@ -177,9 +177,6 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
       Status: TransactionStatus,
 
       async commit(ctx) {
-        if (!ctx.account) {
-          throw new Error("Account address is required");
-        }
         const userStates = await getUserStates(ctx.wagmiConfig, ctx.account);
 
         const { voteAllocations } = ctx.request;

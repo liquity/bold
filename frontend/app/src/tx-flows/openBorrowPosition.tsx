@@ -375,10 +375,6 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
   },
 
   async getSteps(ctx) {
-    if (!ctx.account) {
-      throw new Error("Account address is required");
-    }
-
     const branch = getBranch(ctx.request.branchId);
 
     // ETH doesn't need approval

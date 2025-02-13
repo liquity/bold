@@ -64,10 +64,6 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
       Status: TransactionStatus,
 
       async commit(ctx) {
-        if (!ctx.account) {
-          throw new Error("Account address is required");
-        }
-
         const allocated = await graphQuery(
           GovernanceUserAllocated,
           { id: ctx.account.toLowerCase() },
@@ -105,10 +101,6 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
   },
 
   async getSteps({ account }) {
-    if (!account) {
-      throw new Error("Account address is required");
-    }
-
     const steps: string[] = [];
 
     // check if the user has any allocations

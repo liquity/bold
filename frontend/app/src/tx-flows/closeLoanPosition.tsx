@@ -215,10 +215,6 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
   },
 
   async getSteps(ctx) {
-    if (!ctx.account) {
-      throw new Error("Account address is required");
-    }
-
     const { loan } = ctx.request;
     const branch = getBranch(loan.branchId);
 
