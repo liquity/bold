@@ -223,7 +223,7 @@ export function RedeemScreen() {
               },
             })}
           >
-            You will be charged dynamic redemptions fee (the more redemptions, the higher the fee). Trading BOLD on an
+            You will be charged a dynamic redemption fee (the more redemptions, the higher the fee). Trading BOLD on an
             exchange could be more favorable.{" "}
             <Link
               href="https://docs.liquity.org/v2-faq/redemptions-and-delegation"
