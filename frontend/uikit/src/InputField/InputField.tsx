@@ -15,7 +15,7 @@ const diffSpringConfig = {
 };
 
 type Drawer = {
-  mode: "error" | "loading" | "success";
+  mode: "error" | "loading" | "success" | "warning";
   message: ReactNode;
   autoClose?: number;
 };
