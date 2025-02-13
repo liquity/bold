@@ -659,6 +659,7 @@ export function useLoan(branchId: BranchId, troveId: TroveId): UseQueryResult<Po
       isFetching: true,
       isLoading: true,
       isLoadingError: false,
+      isPlaceholderData: false,
       isPending: true,
       isRefetchError: false,
       isSuccess: false,
