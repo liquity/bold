@@ -23,18 +23,20 @@ export type RedeemCollateralRequest = v.InferOutput<typeof RequestSchema>;
 export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
   title: "Review & Send Transaction",
   Summary: () => null,
-
   Details({ request }) {
     return (
       <>
         <TransactionDetailsRow
-          label="Reedem BOLD"
+          label="Reedeming BOLD"
           value={[
             <Amount
               key="start"
               value={request.amount}
               suffix=" BOLD"
             />,
+            <>
+              Please check your wallet to see the exact amount of tokens resulting from your redemption.
+            </>,
           ]}
         />
         <TransactionDetailsRow
