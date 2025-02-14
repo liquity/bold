@@ -236,6 +236,11 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
     }
     */
 
+    function getTroveBatchDebtShares(uint256 _troveId) external view returns (uint256) {
+        Trove memory trove = Troves[_troveId];
+        return trove.batchDebtShares;
+    }
+
     function getTroveStake(uint256 _troveId) external view override returns (uint256) {
         return Troves[_troveId].stake;
     }
@@ -249,6 +254,12 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
             return batch.debt * trove.batchDebtShares / batch.totalDebtShares;
         }
         return trove.debt;
+    }
+
+    function getbatchDebtAndShares(address batchAddress) external view returns (uint256, uint256) {
+        Batch memory batch = batches[batchAddress];
+
+        return (batch.debt, batch.totalDebtShares);
     }
 
     function getTroveWeightedRecordedDebt(uint256 _troveId) external view returns (uint256) {
@@ -335,6 +346,16 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         Batch memory batch = batches[_batchAddress];
         // convert annual interest to per-second and multiply by the principal
         return _calcInterest(batch.debt * batch.annualManagementFee, block.timestamp - batch.lastDebtUpdateTime);
+    }
+
+
+    function getTroveInterestRate(uint256 troveId) external view returns (uint256) {
+        address batchAddress = _getBatchManager(troveId);
+        if (batchAddress != address(0)) {
+            batches[batchAddress].annualInterestRate;
+        }
+
+        return Troves[troveId].annualInterestRate;
     }
 
     function getBatchAnnualInterestRate(address _batchAddress) external view returns (uint256) {
