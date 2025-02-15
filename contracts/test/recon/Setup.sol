@@ -48,8 +48,15 @@ import {IDefaultPool} from "../../src/Interfaces/IDefaultPool.sol";
 import {ICollSurplusPool} from "../../src/Interfaces/ICollSurplusPool.sol";
 import {ISortedTroves} from "../../src/Interfaces/ISortedTroves.sol";
 
-// TODO: We need the whole system
+// Superfluid
+import {SuperfluidFrameworkDeployer} from
+    "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.t.sol";
+import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperTokenV1Library.sol";
 
+
+interface IInitializableBold {
+    function initialize(ISuperTokenFactory factory) external;
+}
 
 contract InterestRouter {
     
@@ -182,6 +189,9 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
 
     uint256 currentBranch;
 
+    // Superfluid
+    SuperfluidFrameworkDeployer.Framework _sf;
+
     function _setupAddressRegistryAndTroveManager(
         address coll,
         TroveManagerParams memory params
@@ -206,12 +216,19 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         _addActor(address(0x7333333337));
         _addActor(address(0xb4d455555));
 
+        /// === NERITE / Superfluid Custom === ///
+        // Using `deployBytecode`
+        SuperfluidFrameworkDeployer sfDeployer = new SuperfluidFrameworkDeployer();
+        sfDeployer.deployTestFramework();
+        _sf = sfDeployer.getFramework();
+        factory = address(_sf.superTokenFactory);
+
         // === Before === ///
         // Bold and interst router
         interestRouter = new InterestRouter();
         boldToken = boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), ISuperTokenFactory(factory))));
-        
-        // Temp branch and then push?
+        // NOTE: Unclear interface?
+        IInitializableBold(address(boldToken)).initialize(ISuperTokenFactory(factory));
 
         weth = MockERC20(_newAsset(18));
 
