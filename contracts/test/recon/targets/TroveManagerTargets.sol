@@ -39,7 +39,7 @@ abstract contract TroveManagerTargets is BaseTargetFunctions, Properties  {
     }
 
     
-    function troveManager_urgentRedemption_clamped(uint256 _boldAmount, uint256[] memory _troveIds, uint256 _minCollateral) public {
+    function troveManager_urgentRedemption_clamped(uint256 _boldAmount) public {
         uint256[] memory ids = new uint256[](1);
         ids[0] = clampedTroveId;
 
