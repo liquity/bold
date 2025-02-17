@@ -1,5 +1,5 @@
 import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
-import type { PositionLoanCommitted } from "@/src/types";
+import type { BranchId, PositionLoanCommitted, TroveId } from "@/src/types";
 
 import { ARROW_RIGHT } from "@/src/characters";
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -9,10 +9,10 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import content from "@/src/content";
 import { useInputFieldValue } from "@/src/form-utils";
-import { fmtnum } from "@/src/formatting";
+import { fmtnum, formatRelativeTime } from "@/src/formatting";
 import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getBranch, getCollToken } from "@/src/liquity-utils";
+import { getBranch, getCollToken, useTroveRateUpdateCooldown } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -20,7 +20,7 @@ import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { addressesEqual, Button, HFlex, InfoTooltip, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function PanelUpdateRate({
   loan,
@@ -53,7 +53,11 @@ export function PanelUpdateRate({
       ? "delegate"
       : "manual",
   );
-  const [interestRateDelegate, setInterestRateDelegate] = useState(loan.batchManager);
+  const [interestRateDelegate, setInterestRateDelegate] = useState(
+    loan.batchManager,
+  );
+
+  const udpateRateCooldown = useUpdateRateCooldown(loan.branchId, loan.troveId);
 
   const loanDetails = getLoanDetails(
     loan.deposit,
@@ -137,9 +141,52 @@ export function PanelUpdateRate({
 
       <div
         className={css({
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
           padding: "8px 0",
         })}
       >
+        <div
+          className={css({
+            flexDirection: "column",
+            gap: 16,
+            padding: 16,
+            fontSize: 16,
+            color: "content",
+            background: "infoSurface",
+            border: "1px solid token(colors.infoSurfaceBorder)",
+            borderRadius: 8,
+          })}
+          style={{
+            display: udpateRateCooldown.showCooldown ? "flex" : "none",
+          }}
+        >
+          <HFlex justifyContent="space-between">
+            <HFlex gap={8}>
+              Rate update fee reset
+              <InfoTooltip
+                content={{
+                  heading: "Rate update fee",
+                  body: (
+                    <div>
+                      {`A fee corresponding to 7 days of average interest is
+                        charged on any rate adjustments that happen less than 7
+                        days after the last adjustment. This is the remaining
+                        time until the cooldown expires and the rate can be
+                        updated without a fee.`}
+                    </div>
+                  ),
+                  footerLink: {
+                    href: "https://docs.liquity.org/v2-faq/borrowing-and-liquidations#can-i-adjust-the-rate",
+                    label: "Learn more",
+                  },
+                }}
+              />
+            </HFlex>
+            <div ref={udpateRateCooldown.cooldownRemainingRef} />
+          </HFlex>
+        </div>
         <UpdateBox
           updates={[
             {
@@ -213,4 +260,45 @@ export function PanelUpdateRate({
       </div>
     </>
   );
+}
+
+function useUpdateRateCooldown(branchId: BranchId, troveId: TroveId) {
+  const cooldown = useTroveRateUpdateCooldown(branchId, troveId);
+
+  const cooldownRemainingRef = useRef<HTMLDivElement>(null);
+  const [showCooldown, setShowCooldown] = useState(false);
+
+  useEffect(() => {
+    if (!cooldown.data) {
+      return;
+    }
+
+    const update = () => {
+      const remaining = cooldown.data(Date.now());
+
+      if (remaining === 0) {
+        if (showCooldown) {
+          setShowCooldown(false);
+        }
+        return;
+      }
+
+      if (!showCooldown && remaining > 0) {
+        setShowCooldown(true);
+      }
+
+      if (remaining > 0 && cooldownRemainingRef.current) {
+        cooldownRemainingRef.current.innerHTML = formatRelativeTime(remaining);
+      }
+    };
+
+    const timeout = setTimeout(update, 1000);
+    update();
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [cooldown.data, showCooldown]);
+
+  return { showCooldown, cooldownRemainingRef };
 }
