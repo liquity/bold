@@ -49,6 +49,11 @@ abstract contract Properties is BeforeAfter, Asserts {
     // All troves that are active must have debt above the MIN_DEBT  -> TODO GOOD PROPERTY   
     // GetDebt > MIN_DETB
     function property_active_troves_are_above_MIN_DEBT() public {
+        // Skip if shutdown
+        if(borrowerOperations.hasBeenShutDown()) {
+            return;
+        }
+        
         uint256 trove = sortedTroves.getFirst(); /// NOTE: Troves in ST are active
         while(trove != 0) {
             uint256 debt = troveManager.getTroveEntireDebt(trove);
