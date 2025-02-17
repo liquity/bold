@@ -10,12 +10,12 @@ import {Properties} from "../Properties.sol";
 
 abstract contract StabilityPoolTargets is BaseTargetFunctions, Properties  {
 
-    function stabilityPool_claimAllCollGains() public asActor {
+    function stabilityPool_claimAllCollGains() public updateGhosts asActor {
         stabilityPool.claimAllCollGains();
     }
 
 
-    function stabilityPool_provideToSP(uint256 _topUp, bool _doClaim) public asActor {
+    function stabilityPool_provideToSP(uint256 _topUp, bool _doClaim) public updateGhosts asActor {
         stabilityPool.provideToSP(_topUp, _doClaim);
     }
 
@@ -24,7 +24,7 @@ abstract contract StabilityPoolTargets is BaseTargetFunctions, Properties  {
         stabilityPool_provideToSP(_topUp, _doClaim);
     }
 
-    function stabilityPool_withdrawFromSP(uint256 _amount, bool _doClaim) public asActor {
+    function stabilityPool_withdrawFromSP(uint256 _amount, bool _doClaim) public updateGhosts asActor {
         stabilityPool.withdrawFromSP(_amount, _doClaim);
     }
 
@@ -35,11 +35,11 @@ abstract contract StabilityPoolTargets is BaseTargetFunctions, Properties  {
 
 
 
-    function stabilityPool_offset(uint256 _debtToOffset, uint256 _collToAdd) public asActor {
+    function stabilityPool_offset(uint256 _debtToOffset, uint256 _collToAdd) public updateGhosts asActor {
         stabilityPool.offset(_debtToOffset, _collToAdd);
     }
 
-    function stabilityPool_triggerBoldRewards(uint256 _boldYield) public asActor {
+    function stabilityPool_triggerBoldRewards(uint256 _boldYield) public updateGhosts asActor {
         stabilityPool.triggerBoldRewards(_boldYield);
     }
 

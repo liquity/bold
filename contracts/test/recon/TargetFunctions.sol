@@ -11,6 +11,7 @@ import {BorrowerOperationsTargets} from "./targets/BorrowerOperationsTargets.sol
 import {CollateralRegistryTargets} from "./targets/CollateralRegistryTargets.sol";
 import {CollTokenTargets} from "./targets/CollTokenTargets.sol";
 import {ManagersTargets} from "./targets/ManagersTargets.sol";
+import {OptimizationTargets} from "./targets/OptimizationTargets.sol";
 import {PriceFeedTargets} from "./targets/PriceFeedTargets.sol";
 import {StabilityPoolTargets} from "./targets/StabilityPoolTargets.sol";
 import {TroveManagerTargets} from "./targets/TroveManagerTargets.sol";
@@ -21,6 +22,7 @@ abstract contract TargetFunctions is
     CollateralRegistryTargets,
     CollTokenTargets,
     ManagersTargets,
+    OptimizationTargets,
     PriceFeedTargets,
     StabilityPoolTargets,
     TroveManagerTargets

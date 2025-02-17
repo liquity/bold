@@ -9,7 +9,7 @@ import "forge-std/console2.sol";
 import {Properties} from "../Properties.sol";
 
 abstract contract CollateralRegistryTargets is BaseTargetFunctions, Properties  {
-    function collateralRegistry_redeemCollateral(uint256 _boldAmount, uint256 _maxIterationsPerCollateral, uint256 _maxFeePercentage) public asActor {
+    function collateralRegistry_redeemCollateral(uint256 _boldAmount, uint256 _maxIterationsPerCollateral, uint256 _maxFeePercentage) public updateGhosts asActor {
         collateralRegistry.redeemCollateral(_boldAmount, _maxIterationsPerCollateral, _maxFeePercentage);
         hasDoneRedemption = true;
     }

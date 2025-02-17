@@ -10,12 +10,12 @@ import {Properties} from "../Properties.sol";
 
 abstract contract TroveManagerTargets is BaseTargetFunctions, Properties  {
 
-    function troveManager_batchLiquidateTroves(uint256[] memory _troveArray) public asActor {
+    function troveManager_batchLiquidateTroves(uint256[] memory _troveArray) public updateGhosts asActor {
         troveManager.batchLiquidateTroves(_troveArray);
     }
 
 
-    function troveManager_liquidate(uint256 _troveId) public asActor {
+    function troveManager_liquidate(uint256 _troveId) public updateGhosts asActor {
         troveManager.liquidate(_troveId);
         hasDoneLiquidation = true;
     }
@@ -34,7 +34,7 @@ abstract contract TroveManagerTargets is BaseTargetFunctions, Properties  {
     }
 
 
-    function troveManager_urgentRedemption(uint256 _boldAmount, uint256[] memory _troveIds, uint256 _minCollateral) public asActor {
+    function troveManager_urgentRedemption(uint256 _boldAmount, uint256[] memory _troveIds, uint256 _minCollateral) public updateGhosts asActor {
         troveManager.urgentRedemption(_boldAmount, _troveIds, _minCollateral);
     }
 
@@ -48,72 +48,72 @@ abstract contract TroveManagerTargets is BaseTargetFunctions, Properties  {
     }
     
 
-    // function troveManager_callInternalRemoveTroveId(uint256 _troveId) public asActor {
+    // function troveManager_callInternalRemoveTroveId(uint256 _troveId) public updateGhosts asActor {
     //     troveManager.callInternalRemoveTroveId(_troveId);
     // }
 
-    // function troveManager_getUnbackedPortionPriceAndRedeemability() public asActor {
+    // function troveManager_getUnbackedPortionPriceAndRedeemability() public updateGhosts asActor {
     //     troveManager.getUnbackedPortionPriceAndRedeemability();
     // }
 
 
-    // function troveManager_onAdjustTrove(uint256 _troveId, uint256 _newColl, uint256 _newDebt, TroveChange memory _troveChange) public asActor {
+    // function troveManager_onAdjustTrove(uint256 _troveId, uint256 _newColl, uint256 _newDebt, TroveChange memory _troveChange) public updateGhosts asActor {
     //     troveManager.onAdjustTrove(_troveId, _newColl, _newDebt, _troveChange);
     // }
 
-    // function troveManager_onAdjustTroveInsideBatch(uint256 _troveId, uint256 _newTroveColl, uint256 _newTroveDebt, TroveChange memory _troveChange, address _batchAddress, uint256 _newBatchColl, uint256 _newBatchDebt) public asActor {
+    // function troveManager_onAdjustTroveInsideBatch(uint256 _troveId, uint256 _newTroveColl, uint256 _newTroveDebt, TroveChange memory _troveChange, address _batchAddress, uint256 _newBatchColl, uint256 _newBatchDebt) public updateGhosts asActor {
     //     troveManager.onAdjustTroveInsideBatch(_troveId, _newTroveColl, _newTroveDebt, _troveChange, _batchAddress, _newBatchColl, _newBatchDebt);
     // }
 
-    // function troveManager_onAdjustTroveInterestRate(uint256 _troveId, uint256 _newColl, uint256 _newDebt, uint256 _newAnnualInterestRate, TroveChange memory _troveChange) public asActor {
+    // function troveManager_onAdjustTroveInterestRate(uint256 _troveId, uint256 _newColl, uint256 _newDebt, uint256 _newAnnualInterestRate, TroveChange memory _troveChange) public updateGhosts asActor {
     //     troveManager.onAdjustTroveInterestRate(_troveId, _newColl, _newDebt, _newAnnualInterestRate, _troveChange);
     // }
 
-    // function troveManager_onApplyTroveInterest(uint256 _troveId, uint256 _newTroveColl, uint256 _newTroveDebt, address _batchAddress, uint256 _newBatchColl, uint256 _newBatchDebt, TroveChange memory _troveChange) public asActor {
+    // function troveManager_onApplyTroveInterest(uint256 _troveId, uint256 _newTroveColl, uint256 _newTroveDebt, address _batchAddress, uint256 _newBatchColl, uint256 _newBatchDebt, TroveChange memory _troveChange) public updateGhosts asActor {
     //     troveManager.onApplyTroveInterest(_troveId, _newTroveColl, _newTroveDebt, _batchAddress, _newBatchColl, _newBatchDebt, _troveChange);
     // }
 
-    // function troveManager_onCloseTrove(uint256 _troveId, TroveChange memory _troveChange, address _batchAddress, uint256 _newBatchColl, uint256 _newBatchDebt) public asActor {
+    // function troveManager_onCloseTrove(uint256 _troveId, TroveChange memory _troveChange, address _batchAddress, uint256 _newBatchColl, uint256 _newBatchDebt) public updateGhosts asActor {
     //     troveManager.onCloseTrove(_troveId, _troveChange, _batchAddress, _newBatchColl, _newBatchDebt);
     // }
 
-    // function troveManager_onLowerBatchManagerAnnualFee(address _batchAddress, uint256 _newColl, uint256 _newDebt, uint256 _newAnnualManagementFee) public asActor {
+    // function troveManager_onLowerBatchManagerAnnualFee(address _batchAddress, uint256 _newColl, uint256 _newDebt, uint256 _newAnnualManagementFee) public updateGhosts asActor {
     //     troveManager.onLowerBatchManagerAnnualFee(_batchAddress, _newColl, _newDebt, _newAnnualManagementFee);
     // }
 
-    // function troveManager_onOpenTrove(address _owner, uint256 _troveId, TroveChange memory _troveChange, uint256 _annualInterestRate) public asActor {
+    // function troveManager_onOpenTrove(address _owner, uint256 _troveId, TroveChange memory _troveChange, uint256 _annualInterestRate) public updateGhosts asActor {
     //     troveManager.onOpenTrove(_owner, _troveId, _troveChange, _annualInterestRate);
     // }
 
-    // function troveManager_onOpenTroveAndJoinBatch(address _owner, uint256 _troveId, TroveChange memory _troveChange, address _batchAddress, uint256 _batchColl, uint256 _batchDebt) public asActor {
+    // function troveManager_onOpenTroveAndJoinBatch(address _owner, uint256 _troveId, TroveChange memory _troveChange, address _batchAddress, uint256 _batchColl, uint256 _batchDebt) public updateGhosts asActor {
     //     troveManager.onOpenTroveAndJoinBatch(_owner, _troveId, _troveChange, _batchAddress, _batchColl, _batchDebt);
     // }
 
-    // function troveManager_onRegisterBatchManager(address _account, uint256 _annualInterestRate, uint256 _annualManagementFee) public asActor {
+    // function troveManager_onRegisterBatchManager(address _account, uint256 _annualInterestRate, uint256 _annualManagementFee) public updateGhosts asActor {
     //     troveManager.onRegisterBatchManager(_account, _annualInterestRate, _annualManagementFee);
     // }
 
-    // function troveManager_onRemoveFromBatch(uint256 _troveId, uint256 _newTroveColl, uint256 _newTroveDebt, TroveChange memory _troveChange, address _batchAddress, uint256 _newBatchColl, uint256 _newBatchDebt, uint256 _newAnnualInterestRate) public asActor {
+    // function troveManager_onRemoveFromBatch(uint256 _troveId, uint256 _newTroveColl, uint256 _newTroveDebt, TroveChange memory _troveChange, address _batchAddress, uint256 _newBatchColl, uint256 _newBatchDebt, uint256 _newAnnualInterestRate) public updateGhosts asActor {
     //     troveManager.onRemoveFromBatch(_troveId, _newTroveColl, _newTroveDebt, _troveChange, _batchAddress, _newBatchColl, _newBatchDebt, _newAnnualInterestRate);
     // }
 
-    // function troveManager_onSetBatchManagerAnnualInterestRate(address _batchAddress, uint256 _newColl, uint256 _newDebt, uint256 _newAnnualInterestRate, uint256 _upfrontFee) public asActor {
+    // function troveManager_onSetBatchManagerAnnualInterestRate(address _batchAddress, uint256 _newColl, uint256 _newDebt, uint256 _newAnnualInterestRate, uint256 _upfrontFee) public updateGhosts asActor {
     //     troveManager.onSetBatchManagerAnnualInterestRate(_batchAddress, _newColl, _newDebt, _newAnnualInterestRate, _upfrontFee);
     // }
 
-    // function troveManager_onSetInterestBatchManager(ITroveManager.OnSetInterestBatchManagerParams memory _params) public asActor {
+    // function troveManager_onSetInterestBatchManager(ITroveManager.OnSetInterestBatchManagerParams memory _params) public updateGhosts asActor {
     //     troveManager.onSetInterestBatchManager(_params);
     // }
 
-    // function troveManager_redeemCollateral(address _redeemer, uint256 _boldamount, uint256 _price, uint256 _redemptionRate, uint256 _maxIterations) public asActor {
+    // function troveManager_redeemCollateral(address _redeemer, uint256 _boldamount, uint256 _price, uint256 _redemptionRate, uint256 _maxIterations) public updateGhosts asActor {
     //     troveManager.redeemCollateral(_redeemer, _boldamount, _price, _redemptionRate, _maxIterations);
     // }
 
-    // function troveManager_setTroveStatusToActive(uint256 _troveId) public asActor {
+    // function troveManager_setTroveStatusToActive(uint256 _troveId) public updateGhosts asActor {
     //     troveManager.setTroveStatusToActive(_troveId);
     // }
 
-    // function troveManager_shutdown() public asActor {
+    // function troveManager_shutdown() public updateGhosts asActor {
     //     troveManager.shutdown();
     // }
 
