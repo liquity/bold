@@ -257,9 +257,14 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
     }
 
     function getbatchDebtAndShares(address batchAddress) external view returns (uint256, uint256) {
-        Batch memory batch = batches[batchAddress];
+        LatestBatchData memory batch;
 
-        return (batch.debt, batch.totalDebtShares);
+        _getLatestBatchData(batchAddress, batch);
+
+        // Shares are in this mapping
+        uint256 totalDebtShares = batches[batchAddress].totalDebtShares;
+
+        return (batch.entireDebtWithoutRedistribution, totalDebtShares);
     }
 
     function getTroveWeightedRecordedDebt(uint256 _troveId) external view returns (uint256) {
@@ -352,7 +357,7 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
     function getTroveInterestRate(uint256 troveId) external view returns (uint256) {
         address batchAddress = _getBatchManager(troveId);
         if (batchAddress != address(0)) {
-            batches[batchAddress].annualInterestRate;
+            return batches[batchAddress].annualInterestRate;
         }
 
         return Troves[troveId].annualInterestRate;
