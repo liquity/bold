@@ -45,3 +45,8 @@ testMatrix.json
 
 # E2E broadcast logs
 /broadcast-e2e
+
+# Recon
+medusa
+echidna
+crytic-export
