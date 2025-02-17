@@ -31,6 +31,7 @@ import { earnClaimRewards, type EarnClaimRewardsRequest } from "@/src/tx-flows/e
 import { earnUpdate, type EarnUpdateRequest } from "@/src/tx-flows/earnUpdate";
 import { openBorrowPosition, type OpenBorrowPositionRequest } from "@/src/tx-flows/openBorrowPosition";
 import { openLeveragePosition, type OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
+import { redeemCollateral, type RedeemCollateralRequest } from "@/src/tx-flows/redeemCollateral";
 import { stakeClaimRewards, type StakeClaimRewardsRequest } from "@/src/tx-flows/stakeClaimRewards";
 import { stakeDeposit, type StakeDepositRequest } from "@/src/tx-flows/stakeDeposit";
 import { unstakeDeposit, type UnstakeDepositRequest } from "@/src/tx-flows/unstakeDeposit";
@@ -47,6 +48,7 @@ export type FlowRequestMap = {
   "openBorrowPosition": OpenBorrowPositionRequest;
   "openLeveragePosition": OpenLeveragePositionRequest;
   "stakeClaimRewards": StakeClaimRewardsRequest;
+  "redeemCollateral": RedeemCollateralRequest;
   "stakeDeposit": StakeDepositRequest;
   "unstakeDeposit": UnstakeDepositRequest;
   "updateBorrowPosition": UpdateBorrowPositionRequest;
@@ -63,6 +65,7 @@ const FlowIdSchema = v.union([
   v.literal("openBorrowPosition"),
   v.literal("openLeveragePosition"),
   v.literal("stakeClaimRewards"),
+  v.literal("redeemCollateral"),
   v.literal("stakeDeposit"),
   v.literal("unstakeDeposit"),
   v.literal("updateBorrowPosition"),
@@ -79,6 +82,7 @@ export const flows: FlowsMap = {
   openBorrowPosition,
   openLeveragePosition,
   stakeClaimRewards,
+  redeemCollateral,
   stakeDeposit,
   unstakeDeposit,
   updateBorrowPosition,
@@ -138,12 +142,12 @@ export type FlowStepDeclaration<FlowRequest extends BaseFlowRequest = BaseFlowRe
 export type FlowDeclaration<FlowRequest extends BaseFlowRequest> = {
   title: ReactNode;
   Summary: ComponentType<{
-    account: Address | null;
+    account: Address;
     request: FlowRequest;
     steps: FlowStep[] | null;
   }>;
   Details: ComponentType<{
-    account: Address | null;
+    account: Address;
     request: FlowRequest;
     steps: FlowStep[] | null;
   }>;
@@ -154,14 +158,14 @@ export type FlowDeclaration<FlowRequest extends BaseFlowRequest> = {
 
 // passed to the react context + saved in local storage
 export type Flowstate<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
-  account: Address | null;
+  account: Address;
   request: FlowRequest;
   steps: FlowStep[] | null;
 };
 
 // passed to the step functions
 export type FlowParams<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
-  account: Address | null;
+  account: Address;
   contracts: Contracts;
   isSafe: boolean;
   preferredApproveMethod: "permit" | "approve-amount" | "approve-infinite";
