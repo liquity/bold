@@ -7,7 +7,8 @@ import { useAbout } from "@/src/comps/About/About";
 import { ProtocolStats } from "@/src/comps/ProtocolStats/ProtocolStats";
 import { TopBar } from "@/src/comps/TopBar/TopBar";
 import { css } from "@/styled-system/css";
-import { TextButton } from "@liquity2/uikit";
+import { AnchorTextButton, TextButton } from "@liquity2/uikit";
+import Link from "next/link";
 
 export const LAYOUT_WIDTH = 1092;
 export const MIN_WIDTH = 960;
@@ -19,7 +20,17 @@ export function AppLayout({
 }) {
   return (
     <>
-      <Banner />
+      <div
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+          gap: 1,
+        })}
+      >
+        <Banner />
+        <EarnRiskBanner />
+      </div>
       <div
         className={css({
           display: "flex",
@@ -105,6 +116,49 @@ function BuildInfo() {
           fontSize: 12,
         }}
       />
+    </div>
+  );
+}
+
+function EarnRiskBanner() {
+  return (
+    <div
+      className={css({
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        maxWidth: "100%",
+        width: "100%",
+        height: 40,
+        padding: "0 16px",
+        textAlign: "center",
+        color: "#fff",
+        background: "strongSurface",
+      })}
+    >
+      <div
+        className={css({
+          width: "100%",
+          maxWidth: LAYOUT_WIDTH,
+          whiteSpace: "nowrap",
+        })}
+      >
+        There is a potential issue affecting Stability Pools (“Earn”).{" "}
+        <Link
+          href="https://x.com/LiquityProtocol/status/1889685629681934789"
+          passHref
+          legacyBehavior
+        >
+          <AnchorTextButton
+            external
+            label="Please read this announcement"
+            className={css({
+              color: "inherit",
+              textDecoration: "underline",
+            })}
+          />
+        </Link>.
+      </div>
     </div>
   );
 }
