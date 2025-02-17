@@ -145,7 +145,7 @@ function EarnRiskBanner() {
       >
         There is a potential issue affecting Stability Pools (“Earn”).{" "}
         <Link
-          href="https://x.com/LiquityProtocol/status/1889685629681934789"
+          href="https://www.liquity.org/blog/stability-pool-issue"
           passHref
           legacyBehavior
         >
