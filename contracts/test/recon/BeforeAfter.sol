@@ -94,6 +94,8 @@ abstract contract BeforeAfter is Setup {
             _after.entireSystemDebt = borrowerOperations.getEntireSystemDebt();
             _after.ghostWeightedRecordedDebtAccumulator += (_after.dataForTroves[troveId].entireDebt * troveManager.getTroveInterestRate(troveId));
             _after.weightedRecordedDebtAccumulator += _after.dataForTroves[troveId].weightedRecordedDebt;
+
+            // TODO: Missing Zombie Trove | lastZombieTrove  (NOTE: Technically a suite long enough will have more than one)
         }
     }
 }
