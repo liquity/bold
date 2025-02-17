@@ -98,6 +98,35 @@ export function ProtocolStats() {
               />
             </Link>
           )}
+          <Link
+            id="footer-redeem-button"
+            href="/redeem"
+            passHref
+            legacyBehavior
+            scroll={true}
+          >
+            <AnchorTextButton
+              label={
+                <HFlex gap={4} alignItems="center">
+                  <TokenIcon
+                    size={16}
+                    symbol="BOLD"
+                  />
+                  Redeem BOLD
+                </HFlex>
+              }
+              className={css({
+                color: "content",
+                borderRadius: 4,
+                _focusVisible: {
+                  outline: "2px solid token(colors.focused)",
+                },
+                _active: {
+                  translate: "0 1px",
+                },
+              })}
+            />
+          </Link>
         </HFlex>
       </div>
     </div>

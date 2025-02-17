@@ -67,9 +67,6 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
       name: () => "Initialize Staking",
       Status: TransactionStatus,
       async commit(ctx) {
-        if (!ctx.account) {
-          throw new Error("Account address is required");
-        }
         return ctx.writeContract({
           ...ctx.contracts.Governance,
           functionName: "deployUserProxy",
@@ -84,9 +81,6 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
       name: () => "Reset Votes",
       Status: TransactionStatus,
       async commit(ctx) {
-        if (!ctx.account) {
-          throw new Error("Account address is required");
-        }
         const allocated = await graphQuery(
           GovernanceUserAllocated,
           { id: ctx.account.toLowerCase() },
@@ -115,10 +109,6 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         );
       },
       async commit(ctx) {
-        if (!ctx.account) {
-          throw new Error("Account address is required");
-        }
-
         const userProxyAddress = await ctx.readContract({
           ...ctx.contracts.Governance,
           functionName: "deriveUserProxyAddress",
@@ -166,10 +156,6 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
       Status: TransactionStatus,
 
       async commit(ctx) {
-        if (!ctx.account) {
-          throw new Error("Account address is required");
-        }
-
         const approveStep = ctx.steps?.find((step) => step.id === "approve");
         const isPermit = approveStep?.artifact?.startsWith("permit:") === true;
 
@@ -212,10 +198,6 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
   },
 
   async getSteps(ctx) {
-    if (!ctx.account) {
-      throw new Error("Account address is required");
-    }
-
     const steps: string[] = [];
 
     // check if the user has any allocations
