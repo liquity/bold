@@ -1184,7 +1184,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // --- Trove property getters ---
 
     function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool) {
-        uint256 totalDebt = getEntireSystemDebt();
+        uint256 totalDebt = getEntireBranchDebt();
         uint256 spSize = stabilityPool.getTotalBoldDeposits();
         uint256 unbackedPortion = totalDebt > spSize ? totalDebt - spSize : 0;
 

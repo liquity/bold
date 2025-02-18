@@ -133,7 +133,7 @@ contract CollateralRegistry is ICollateralRegistry {
                 ITroveManager troveManager = getTroveManager(index);
                 (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
                 if (redeemable) {
-                    uint256 unbackedPortion = troveManager.getEntireSystemDebt();
+                    uint256 unbackedPortion = troveManager.getEntireBranchDebt();
                     totals.unbacked += unbackedPortion;
                     unbackedPortions[index] = unbackedPortion;
                 }

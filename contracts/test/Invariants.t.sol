@@ -265,7 +265,7 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
         for (uint256 j = 0; j < branches.length; ++j) {
             ITroveManagerTester troveManager = branches[j].troveManager;
             uint256 numTroves = troveManager.getTroveIdsCount();
-            uint256 systemColl = troveManager.getEntireSystemColl();
+            uint256 systemColl = troveManager.getEntireBranchColl();
             uint256 trovesColl = 0;
 
             for (uint256 i = 0; i < numTroves; ++i) {

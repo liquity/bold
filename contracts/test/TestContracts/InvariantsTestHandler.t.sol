@@ -541,8 +541,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         i = _bound(i, 0, branches.length - 1);
         tcr = _bound(tcr, TCR_MIN, TCR_MAX);
 
-        uint256 totalColl = branches[i].troveManager.getEntireSystemColl();
-        uint256 totalDebt = branches[i].troveManager.getEntireSystemDebt();
+        uint256 totalColl = branches[i].troveManager.getEntireBranchColl();
+        uint256 totalDebt = branches[i].troveManager.getEntireBranchDebt();
 
         vm.assume(totalColl > 0);
         uint256 price = totalDebt * tcr / totalColl;
@@ -2376,7 +2376,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     function _getTotalDebt(uint256 i) internal view returns (uint256) {
-        return branches[i].troveManager.getEntireSystemDebt();
+        return branches[i].troveManager.getEntireBranchDebt();
     }
 
     function _getUnbacked(uint256 i) internal view returns (uint256) {
@@ -2422,8 +2422,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     function _TCR(uint256 i, int256 collDelta, int256 debtDelta, uint256 upfrontFee) internal view returns (uint256) {
-        uint256 coll = branches[i].troveManager.getEntireSystemColl().add(collDelta);
-        uint256 debt = branches[i].troveManager.getEntireSystemDebt().add(debtDelta) + upfrontFee;
+        uint256 coll = branches[i].troveManager.getEntireBranchColl().add(collDelta);
+        uint256 debt = branches[i].troveManager.getEntireBranchDebt().add(debtDelta) + upfrontFee;
 
         return _CR(i, coll, debt);
     }
