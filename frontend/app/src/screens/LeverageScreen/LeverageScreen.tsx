@@ -322,10 +322,12 @@ export function LeverageScreen() {
                   alignItems: "center",
                   gap: 4,
                   color: "contentAlt",
+                  fontSize: 14,
                 })}
               >
                 <IconSuggestion size={16} />
-                <span>You can adjust interest rate later</span>
+                <>You can adjust this rate at any time</>
+                <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateAdjustment)} />
               </span>
             ),
           }}

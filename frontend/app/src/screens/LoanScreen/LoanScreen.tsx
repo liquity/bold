@@ -23,9 +23,9 @@ import { match, P } from "ts-pattern";
 import { useReadContract } from "wagmi";
 import { LoanScreenCard } from "./LoanScreenCard";
 import { PanelClosePosition } from "./PanelClosePosition";
+import { PanelInterestRate } from "./PanelInterestRate";
 import { PanelUpdateBorrowPosition } from "./PanelUpdateBorrowPosition";
 import { PanelUpdateLeveragePosition } from "./PanelUpdateLeveragePosition";
-import { PanelUpdateRate } from "./PanelUpdateRate";
 
 const TABS = [
   { label: "Update Loan", id: "colldebt" },
@@ -204,7 +204,7 @@ export function LoanScreen() {
                           ? <PanelUpdateLeveragePosition loan={loan.data} />
                           : <PanelUpdateBorrowPosition loan={loan.data} />
                       )}
-                      {action === "rate" && <PanelUpdateRate loan={loan.data} />}
+                      {action === "rate" && <PanelInterestRate loan={loan.data} />}
                       {action === "close" && <PanelClosePosition loan={loan.data} />}
                     </>
                   )}
