@@ -102,7 +102,16 @@ export function TopBar() {
           </div>
         </Link>
         <Menu menuItems={menuItems} />
-        <AccountButton />
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            width: 140,
+          })}
+        >
+          <AccountButton />
+        </div>
       </div>
     </div>
   );
