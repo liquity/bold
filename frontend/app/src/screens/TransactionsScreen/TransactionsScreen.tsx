@@ -37,12 +37,27 @@ export function TransactionsScreen() {
   } = useTransactionFlow();
 
   const isLastStep = flow?.steps && currentStepIndex === flow.steps.length - 1;
+  const isSuccess = isLastStep && step?.status === "confirmed";
 
-  const successMessageTransition = useTransition(isLastStep && step?.status === "confirmed", {
-    from: { height: 0, opacity: 0, transform: "scale(0.9)" },
-    enter: { height: 56, opacity: 1, transform: "scale(1)" },
-    leave: { height: 0, opacity: 0, transform: "scale(1)" },
-    config: boxTransitionConfig,
+  const successMessageTransition = useTransition(isSuccess, {
+    from: {
+      opacity: 0,
+      transform: "translateY(24px)",
+    },
+    enter: {
+      opacity: 1,
+      transform: "translateY(0px)",
+      delay: 500,
+    },
+    leave: {
+      opacity: 0,
+      immediate: true,
+    },
+    config: {
+      mass: 1,
+      tension: 2000,
+      friction: 120,
+    },
   });
 
   const errorBoxTransition = useTransition(step?.error, {
@@ -144,24 +159,28 @@ export function TransactionsScreen() {
             paddingBottom: 32,
           })}
         >
-          {successMessageTransition((style, show) => (
-            show && (
-              <a.div
-                style={style}
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: 56,
-                  whiteSpace: "nowrap",
-                  textAlign: "center",
-                  color: "positive",
-                })}
-              >
-                {flow.request.successMessage}
-              </a.div>
-            )
-          ))}
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: 56,
+              whiteSpace: "nowrap",
+              textAlign: "center",
+              color: "positive",
+            })}
+            style={{
+              marginBottom: flow.steps.length === 1 ? -24 : 0,
+            }}
+          >
+            {successMessageTransition((style, show) => (
+              show && (
+                <a.div style={style}>
+                  {flow.request.successMessage}
+                </a.div>
+              )
+            ))}
+          </div>
 
           <FlowSteps
             currentStep={currentStepIndex}
@@ -422,18 +441,17 @@ function StepDisc({
   mode: StepDiscMode;
   secondary: string;
 }) {
-  const [forcedMode, setForcedMode] = useState<StepDiscMode>(mode);
   const [showLabel, setShowLabel] = useState(false);
 
   const modeTransition = useTransition(mode, {
     initial: { transform: "scale(1)" },
-    from: { transform: "scale(1.4)" },
+    from: { transform: "scale(0.5)" },
     enter: { transform: "scale(1)" },
-    leave: { immediate: true },
+    leave: { opacity: 0, immediate: true },
     config: {
       mass: 1,
-      tension: 2000,
-      friction: 180,
+      tension: 2400,
+      friction: 120,
     },
   });
 
@@ -451,21 +469,6 @@ function StepDisc({
   return (
     <div
       title={label}
-      onClick={() => {
-        const forcedStatuses: StepDiscMode[] = [
-          "upcoming",
-          "ready",
-          "loading",
-          "success",
-          "error",
-        ];
-        const forcedStatus = forcedStatuses[
-          (forcedStatuses.indexOf(forcedMode) + 1) % forcedStatuses.length
-        ];
-        if (forcedStatus) {
-          setForcedMode(forcedStatus);
-        }
-      }}
       onMouseEnter={() => setShowLabel(true)}
       onMouseLeave={() => setShowLabel(false)}
       className={css({
