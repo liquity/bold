@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { a, useTransition } from "@react-spring/web";
 import FocusTrap from "focus-trap-react";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { css } from "../../styled-system/css";
 import { IconCross } from "../icons";
 import { Root } from "../Root/Root";
