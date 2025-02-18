@@ -321,10 +321,27 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](3);
-        // TODO: move params out of here
-        troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WETH
-        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // wstETH
-        troveManagerParamsArray[2] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // rETH
+
+        // WETH
+        troveManagerParamsArray[0] = TroveManagerParams({
+            CCR: CCR_WETH,
+            MCR: MCR_WETH,
+            SCR: SCR_WETH,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_WETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_WETH
+        });
+
+        // wstETH
+        troveManagerParamsArray[1] = TroveManagerParams({
+            CCR: CCR_SETH,
+            MCR: MCR_SETH,
+            SCR: SCR_SETH,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+        });
+
+        // rETH (same as wstETH)
+        troveManagerParamsArray[2] = troveManagerParamsArray[1];
 
         string[] memory collNames = new string[](2);
         string[] memory collSymbols = new string[](2);
