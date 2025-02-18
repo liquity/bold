@@ -1,7 +1,7 @@
 // All global styles should be imported here for easier maintenance
 import "@liquity2/uikit/index.css";
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 import { About } from "@/src/comps/About/About";
@@ -21,6 +21,13 @@ import { GeistSans } from "geist/font/sans";
 export const metadata: Metadata = {
   title: content.appName,
   icons: "/favicon.svg",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function Layout({
