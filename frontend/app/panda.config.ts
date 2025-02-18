@@ -30,11 +30,17 @@ export default defineConfig({
   ],
   globalCss: defineGlobalStyles({
     "html, body": {
+      height: "100%",
+      minWidth: 960,
       lineHeight: 1.5,
       fontSize: 16,
       fontWeight: 500,
       color: "content",
       background: "background",
+    },
+    html: {
+      overflowX: "auto",
+      overflowY: "scroll",
     },
   }),
 });

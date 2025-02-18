@@ -19,13 +19,18 @@ export function AppLayout({
   children: ReactNode;
 }) {
   return (
-    <>
+    <div
+      className={css({
+        display: "grid",
+        gridTemplateRows: "auto 1fr",
+        minHeight: "100vh",
+        height: "100%",
+        background: "background",
+      })}
+    >
       <div
         className={css({
-          display: "flex",
-          flexDirection: "column",
           width: "100%",
-          gap: 1,
         })}
       >
         <Banner />
@@ -33,24 +38,17 @@ export function AppLayout({
       </div>
       <div
         className={css({
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-start",
-          width: "100%",
-          minHeight: "100vh",
+          display: "grid",
+          gridTemplateRows: "auto 1fr auto",
+          minWidth: 960,
+          maxWidth: 1092,
           margin: "0 auto",
-          background: "background",
+          width: "100%",
         })}
-        style={{
-          minWidth: `${MIN_WIDTH}px`,
-          maxWidth: `${LAYOUT_WIDTH + 24 * 2}px`,
-        }}
       >
         <div
           className={css({
             width: "100%",
-            flexGrow: 0,
-            flexShrink: 0,
             paddingBottom: 48,
           })}
         >
@@ -58,37 +56,25 @@ export function AppLayout({
         </div>
         <div
           className={css({
-            flexGrow: 1,
-            display: "flex",
             flexDirection: "column",
+            width: "100%",
+            minHeight: 0,
+            padding: "0 24px",
           })}
-          style={{
-            width: `${LAYOUT_WIDTH + 24 * 2}px`,
-          }}
         >
-          <div
-            className={css({
-              flexGrow: 1,
-              display: "flex",
-              flexDirection: "column",
-              width: "100%",
-              padding: "0 24px",
-            })}
-          >
-            {children}
-          </div>
-          <div
-            className={css({
-              width: "100%",
-              padding: "48px 24px 0",
-            })}
-          >
-            <BuildInfo />
-            <ProtocolStats />
-          </div>
+          {children}
+        </div>
+        <div
+          className={css({
+            width: "100%",
+            padding: "48px 24px 0",
+          })}
+        >
+          <BuildInfo />
+          <ProtocolStats />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

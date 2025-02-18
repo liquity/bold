@@ -68,8 +68,6 @@ export function IcStrategiesModal({
           alignItems: "center",
           gap: 8,
           paddingTop: 32,
-          paddingBottom: 24,
-          minHeight: 312,
         })}
       >
         {icpDelegates?.slice(0, displayedDelegates).map((delegate) => {
