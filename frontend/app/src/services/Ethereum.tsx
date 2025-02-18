@@ -196,17 +196,7 @@ export function useWagmiConfig() {
       },
       ssr: true,
     });
-  }, [
-    CHAIN_BLOCK_EXPLORER,
-    CHAIN_CONTRACT_ENS_REGISTRY,
-    CHAIN_CONTRACT_ENS_RESOLVER,
-    CHAIN_CONTRACT_MULTICALL,
-    CHAIN_CURRENCY,
-    CHAIN_ID,
-    CHAIN_NAME,
-    CHAIN_RPC_URL,
-    WALLET_CONNECT_PROJECT_ID,
-  ]);
+  }, []);
 }
 
 function createChain({

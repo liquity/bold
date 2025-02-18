@@ -27,6 +27,7 @@ export { PillButton } from "./PillButton/PillButton";
 export { Radio } from "./Radio/Radio";
 export { RadioGroup, useRadioGroup } from "./Radio/RadioGroup";
 export { Root, RootEntryPoint } from "./Root/Root";
+export { ShowAfter } from "./ShowAfter/ShowAfter";
 export { Slider } from "./Slider/Slider";
 export { StatusDot } from "./StatusDot/StatusDot";
 export { Tabs } from "./Tabs/Tabs";
