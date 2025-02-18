@@ -5,6 +5,11 @@ import type { CollateralSymbol, RiskLevel } from "@/src/types";
 import { norm } from "@liquity2/uikit";
 import * as dn from "dnum";
 
+export const ONE_SECOND = 1000;
+export const ONE_MINUTE = 60 * ONE_SECOND;
+export const ONE_HOUR = 60 * ONE_MINUTE;
+export const ONE_DAY = 24 * ONE_HOUR;
+
 export const GAS_MIN_HEADROOM = 100_000;
 export const GAS_RELATIVE_HEADROOM = 0.25;
 export const GAS_ALLOCATE_LQTY_MIN_HEADROOM = 350_000;
@@ -20,6 +25,7 @@ export const ETH_MAX_RESERVE = dn.from(0.1, 18); // leave 0.1 ETH when users cli
 
 export const ETH_GAS_COMPENSATION = dn.from(0.0375, 18); // see contracts/src/Dependencies/Constants.sol
 
+export const INTEREST_RATE_ADJ_COOLDOWN = 7 * 24 * 60 * 60; // 7 days in seconds
 export const INTEREST_RATE_MIN = 0.5; // 0.5% annualized
 export const INTEREST_RATE_MAX = 25; // 25% annualized
 export const INTEREST_RATE_DEFAULT = 10;
