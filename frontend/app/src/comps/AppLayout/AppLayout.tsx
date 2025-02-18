@@ -3,15 +3,13 @@
 import type { ReactNode } from "react";
 
 import { Banner } from "@/Banner";
-import { useAbout } from "@/src/comps/About/About";
-import { ProtocolStats } from "@/src/comps/ProtocolStats/ProtocolStats";
-import { TopBar } from "@/src/comps/TopBar/TopBar";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, TextButton } from "@liquity2/uikit";
+import { AnchorTextButton } from "@liquity2/uikit";
 import Link from "next/link";
+import { BottomBar } from "./BottomBar";
+import { TopBar } from "./TopBar";
 
 export const LAYOUT_WIDTH = 1092;
-export const MIN_WIDTH = 960;
 
 export function AppLayout({
   children,
@@ -30,6 +28,9 @@ export function AppLayout({
     >
       <div
         className={css({
+          display: "flex",
+          flexDirection: "column",
+          gap: 1,
           width: "100%",
         })}
       >
@@ -40,23 +41,15 @@ export function AppLayout({
         className={css({
           display: "grid",
           gridTemplateRows: "auto 1fr auto",
-          minWidth: 960,
-          maxWidth: 1092,
+          gap: 48,
+          maxWidth: `calc(${LAYOUT_WIDTH}px + 48px)`,
           margin: "0 auto",
           width: "100%",
         })}
       >
+        <TopBar />
         <div
           className={css({
-            width: "100%",
-            paddingBottom: 48,
-          })}
-        >
-          <TopBar />
-        </div>
-        <div
-          className={css({
-            flexDirection: "column",
             width: "100%",
             minHeight: 0,
             padding: "0 24px",
@@ -64,44 +57,8 @@ export function AppLayout({
         >
           {children}
         </div>
-        <div
-          className={css({
-            width: "100%",
-            padding: "48px 24px 0",
-          })}
-        >
-          <BuildInfo />
-          <ProtocolStats />
-        </div>
+        <BottomBar />
       </div>
-    </div>
-  );
-}
-
-function BuildInfo() {
-  const about = useAbout();
-  return (
-    <div
-      className={css({
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "flex-end",
-        height: 40,
-      })}
-    >
-      <TextButton
-        label={about.fullVersion}
-        title={`About Liquity V2 App ${about.fullVersion}`}
-        onClick={() => {
-          about.openModal();
-        }}
-        className={css({
-          color: "dimmed",
-        })}
-        style={{
-          fontSize: 12,
-        }}
-      />
     </div>
   );
 }

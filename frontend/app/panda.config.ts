@@ -31,7 +31,7 @@ export default defineConfig({
   globalCss: defineGlobalStyles({
     "html, body": {
       height: "100%",
-      minWidth: 960,
+      minWidth: 960 + 48,
       lineHeight: 1.5,
       fontSize: 16,
       fontWeight: 500,
