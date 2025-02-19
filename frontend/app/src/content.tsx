@@ -339,7 +339,7 @@ export default {
       rewardsLabel: "My rewards",
     },
     tabs: {
-      deposit: "Deposit",
+      deposit: "Withdraw",
       claim: "Claim rewards",
     },
     depositPanel: {

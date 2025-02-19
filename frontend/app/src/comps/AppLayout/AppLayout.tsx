@@ -86,7 +86,7 @@ function EarnRiskBanner() {
           whiteSpace: "nowrap",
         })}
       >
-        There is a potential issue affecting Stability Pools (“Earn”).{" "}
+        There is an issue affecting the Stability Pools (“Earn”).{" "}
         <Link
           href="https://www.liquity.org/blog/stability-pool-issue"
           passHref
