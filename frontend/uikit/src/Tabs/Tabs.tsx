@@ -9,6 +9,7 @@ import { token } from "../../styled-system/tokens";
 import { useElementSize } from "../react-utils";
 
 export type TabItem = {
+  disabled?: boolean;
   label: ReactNode;
   panelId: string;
   tabId: string;
@@ -50,7 +51,11 @@ export function Tabs({
   useKeyboardNavigation({
     isFocused,
     itemsLength: items.length,
-    onSelect,
+    onSelect: (index, context) => {
+      if (!items[index].disabled) {
+        onSelect(index, context);
+      }
+    },
     selected,
   });
 
@@ -205,7 +210,7 @@ function Tab({
   compact,
   onSelect,
   selected,
-  tabItem: { label, tabId, panelId },
+  tabItem: { disabled, label, tabId, panelId },
 }: {
   compact?: boolean;
   onSelect: (context: Exclude<OnSelectContext, { origin: "keyboard" }>) => void;
@@ -229,10 +234,14 @@ function Tab({
       aria-selected={selected}
       id={tabId}
       onMouseDown={(event) => {
-        onSelect({ origin: "mouse", event });
+        if (!disabled) {
+          onSelect({ origin: "mouse", event });
+        }
       }}
       onTouchStart={(event) => {
-        onSelect({ origin: "touch", event });
+        if (!disabled) {
+          onSelect({ origin: "touch", event });
+        }
       }}
       role="tab"
       tabIndex={selected ? 0 : -1}
@@ -256,6 +265,8 @@ function Tab({
         color: styles.activeTabContent.color,
         padding: compact ? "0 12px" : "0 16px",
         outlineOffset: compact ? 1 : -2,
+        pointerEvents: disabled ? "none" : "auto",
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       <div

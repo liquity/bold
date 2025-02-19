@@ -64,54 +64,81 @@ export function EarnPoolScreen() {
         label: content.earnScreen.backButton,
       }}
       heading={
-        <ScreenCard
-          mode={match(loadingState)
-            .returnType<"ready" | "loading">()
-            .with("success", () => "ready")
-            .with("loading", () => "loading")
-            .exhaustive()}
-          finalHeight={140}
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            gap: 24,
+          })}
         >
-          {loadingState === "success"
-            ? (
-              <EarnPositionSummary
-                earnPosition={earnPosition.data ?? null}
-                branchId={branch.id}
-              />
-            )
-            : (
-              <>
-                <div
-                  className={css({
-                    position: "absolute",
-                    top: 16,
-                    left: 16,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    textTransform: "uppercase",
-                    userSelect: "none",
-                    fontSize: 12,
-                  })}
-                >
+          <ScreenCard
+            mode={match(loadingState)
+              .returnType<"ready" | "loading">()
+              .with("success", () => "ready")
+              .with("loading", () => "loading")
+              .exhaustive()}
+            finalHeight={140}
+          >
+            {loadingState === "success"
+              ? (
+                <EarnPositionSummary
+                  earnPosition={earnPosition.data ?? null}
+                  branchId={branch.id}
+                />
+              )
+              : (
+                <>
                   <div
                     className={css({
+                      position: "absolute",
+                      top: 16,
+                      left: 16,
                       display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      textTransform: "uppercase",
+                      userSelect: "none",
+                      fontSize: 12,
                     })}
                   >
-                    <IconEarn size={16} />
+                    <div
+                      className={css({
+                        display: "flex",
+                      })}
+                    >
+                      <IconEarn size={16} />
+                    </div>
+                    <div>
+                      Earn Pool
+                    </div>
                   </div>
-                  <div>
-                    Earn Pool
-                  </div>
-                </div>
-                <HFlex gap={8}>
-                  Fetching {earnPool.data.collateral?.name} Stability Pool…
-                  <Spinner size={18} />
-                </HFlex>
-              </>
-            )}
-        </ScreenCard>
+                  <HFlex gap={8}>
+                    Fetching {earnPool.data.collateral?.name} Stability Pool…
+                    <Spinner size={18} />
+                  </HFlex>
+                </>
+              )}
+          </ScreenCard>
+          {active && (
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                gap: 32,
+                marginBottom: -24,
+                padding: 16,
+                textAlign: "center",
+                textWrap: "balance",
+                color: "content",
+                background: "infoSurface",
+                border: "1px solid token(colors.infoSurfaceBorder)",
+                borderRadius: 8,
+              })}
+            >
+              Please withdraw your Earn position. See the top banner for more information.
+            </div>
+          )}
+        </div>
       }
       className={css({
         position: "relative",
@@ -151,15 +178,16 @@ export function EarnPoolScreen() {
                 />
               )
               : (
-                <h1
+                <p
                   className={css({
-                    fontSize: 24,
+                    fontSize: 18,
+                    textAlign: "center",
                   })}
                 >
-                  New Stability Pool deposit
-                </h1>
+                  Stability Pool (“Earn”) deposits are disabled, see top banner.
+                </p>
               )}
-            {tab.action === "deposit" && (
+            {tab.action === "deposit" && active && (
               <PanelUpdateDeposit
                 branchId={branch.id}
                 deposited={earnPool.data.totalDeposited ?? dn.from(0, 18)}
