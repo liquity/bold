@@ -21,11 +21,11 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { getBranch, getBranches, getCollToken } from "@/src/liquity-utils";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useNextOwnerIndex } from "@/src/subgraph-hooks";
 import { infoTooltipProps } from "@/src/uikit-utils";
+import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
   Button,

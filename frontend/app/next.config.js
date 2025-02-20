@@ -30,8 +30,8 @@ export default withBundleAnalyzer({
     CONTRACTS_COMMIT_HASH_FROM_BUILD,
   },
   webpack: (config) => {
-    // required for rainbowkit
-    config.externals.push("pino-pretty", "lokijs", "encoding");
+    // WalletConnect 2.0 imports these
+    config.resolve.fallback = { fs: false, net: false, tls: false };
     return config;
   },
   eslint: {

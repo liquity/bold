@@ -10,7 +10,7 @@ import { getBranchContract, getProtocolContract } from "@/src/contracts";
 import { CHAIN_ID } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
 import { getBranches } from "@/src/liquity-utils";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
   addressesEqual,

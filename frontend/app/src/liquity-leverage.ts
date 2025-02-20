@@ -6,9 +6,9 @@ import { getProtocolContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { getBranch } from "@/src/liquity-utils";
 import { useDebouncedQueryKey } from "@/src/react-utils";
-import { useWagmiConfig } from "@/src/services/Ethereum";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
+import { useConfig as useWagmiConfig } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
 const DECIMAL_PRECISION = 10n ** 18n;

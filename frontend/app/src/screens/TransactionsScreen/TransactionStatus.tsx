@@ -2,9 +2,9 @@ import type { FlowStepDeclaration } from "@/src/services/TransactionFlow";
 import type { ComponentPropsWithoutRef } from "react";
 
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
-import { useAccount } from "@/src/services/Ethereum";
 import { useStoredState } from "@/src/services/StoredState";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { useAccount } from "@/src/wagmi-utils";
 import { css, cx } from "@/styled-system/css";
 import { AnchorTextButton, Dropdown, IconChevronDown, TextButton } from "@liquity2/uikit";
 import { match } from "ts-pattern";
