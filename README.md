@@ -1625,7 +1625,7 @@ Two informational issues are present in the oracle code which have no impact on 
 
 - The `WETHPriceFeed` contains one unused internal function - `_fetchPricePrimary(bool _isRedemption)`. Unlike the LST feeds, this PriceFeed in fact does not need to know whether the operation is a redemption, since it uses the ETH-USD market price for all operations via the internal function `_fetchPricePrimary()`.  
 
--The `RETHPriceFeed` contains a misnamed variable on L39 and L60. `rEthPerEth` should rather be named `ethPerReth`. However, its _value_ is assigned correctly from the external call to `getExchangeRate` (which returns an ETH per RETH value). It is also _used_ correctly, as per the arithmetic in comment on L59. It is only named incorrectly.
+- The `RETHPriceFeed` contains a misnamed variable on L39 and L60. `rEthPerEth` should rather be named `ethPerReth`. However, its _value_ is assigned correctly from the external call to `getExchangeRate` (which returns an ETH per RETH value). It is also _used_ correctly, as per the arithmetic in comment on L59. It is only named incorrectly.
 
 ### 17 - Path dependence of redistributions - sequential vs batch liquidations
 
