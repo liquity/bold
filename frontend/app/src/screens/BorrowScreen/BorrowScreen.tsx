@@ -390,7 +390,10 @@ export function BorrowScreen() {
               ) {
                 txFlow.start({
                   flowId: "openBorrowPosition",
-                  backLink: ["/borrow", "Back to editing"],
+                  backLink: [
+                    `/borrow/${collSymbol.toLowerCase()}`,
+                    "Back to editing",
+                  ],
                   successLink: ["/", "Go to the Dashboard"],
                   successMessage: "The position has been created successfully.",
 
