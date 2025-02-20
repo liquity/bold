@@ -38,13 +38,8 @@ export async function getSafeTransaction(safeTxHash: string): Promise<
 
 export const SafeStatusSchema = v.object({
   address: vAddress(),
-  nonce: v.number(),
   threshold: v.number(),
   owners: v.array(vAddress()),
-  masterCopy: vAddress(),
-  modules: v.array(vAddress()),
-  fallbackHandler: vAddress(),
-  guard: vAddress(),
   version: v.string(),
 });
 
