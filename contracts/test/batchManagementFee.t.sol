@@ -504,7 +504,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         vm.warp(block.timestamp + 10 days);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireBranchDebt();
         uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
         assertApproxEqAbs(entireSystemDebt, entireDebtA, 2, "Entire debt should be that of trove A");
 
@@ -513,7 +513,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         vm.warp(block.timestamp + 5 days);
 
-        entireSystemDebt = troveManager.getEntireSystemDebt();
+        entireSystemDebt = troveManager.getEntireBranchDebt();
         entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
         uint256 entireDebtC = troveManager.getTroveEntireDebt(CTroveId);
         assertApproxEqAbs(entireSystemDebt, entireDebtA + entireDebtC, 10, "Entire debt should be A+C");
@@ -533,7 +533,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         vm.warp(block.timestamp + 5 days);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireBranchDebt();
         uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
         uint256 entireDebtC = troveManager.getTroveEntireDebt(CTroveId);
         assertApproxEqAbs(entireSystemDebt, entireDebtA + entireDebtC, 10);
@@ -551,7 +551,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         vm.warp(block.timestamp + 5 days);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireBranchDebt();
         uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
         uint256 entireDebtC = troveManager.getTroveEntireDebt(CTroveId);
         assertApproxEqAbs(entireSystemDebt, entireDebtA + entireDebtC, 5);
@@ -568,7 +568,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         vm.warp(block.timestamp + 15 days);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireBranchDebt();
         uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
         assertApproxEqAbs(entireSystemDebt, entireDebtA, 2);
     }
@@ -590,7 +590,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         vm.warp(block.timestamp + 5 days);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireBranchDebt();
         uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
         assertApproxEqAbs(entireSystemDebt, entireDebtA, 4);
     }
@@ -609,7 +609,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         vm.warp(block.timestamp + 5 days);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireBranchDebt();
         uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
         assertApproxEqAbs(entireSystemDebt, entireDebtA, 100);
     }
@@ -626,7 +626,7 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         vm.warp(block.timestamp + 10 days);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireBranchDebt();
         uint256 entireDebtA = troveManager.getTroveEntireDebt(ATroveId);
         uint256 entireDebtC = troveManager.getTroveEntireDebt(CTroveId);
         assertApproxEqAbs(entireSystemDebt, entireDebtA + entireDebtC, 10);

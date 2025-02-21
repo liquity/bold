@@ -8,6 +8,6 @@ import "./IPriceFeed.sol";
 
 interface ILiquityBase {
     function activePool() external view returns (IActivePool);
-    function getEntireSystemDebt() external view returns (uint256);
-    function getEntireSystemColl() external view returns (uint256);
+    function getEntireBranchDebt() external view returns (uint256);
+    function getEntireBranchColl() external view returns (uint256);
 }

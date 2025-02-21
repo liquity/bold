@@ -607,7 +607,7 @@ export function useBranchDebt(branchId: BranchId) {
   const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
   return useReadContract({
     ...BorrowerOperations,
-    functionName: "getEntireSystemDebt",
+    functionName: "getEntireBranchDebt",
     query: {
       refetchInterval: DATA_REFRESH_INTERVAL,
       select: dnum18,

@@ -1414,12 +1414,12 @@ contract InterestRateAggregate is DevTestSetup {
     // --- getTotalSystemDebt tests ---
 
     function testGetEntireSystemDebtReturns0For0TrovesOpen() public {
-        uint256 entireSystemDebt_1 = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt_1 = troveManager.getEntireBranchDebt();
         assertEq(entireSystemDebt_1, 0);
 
         vm.warp(block.timestamp + 1 days);
 
-        uint256 entireSystemDebt_2 = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt_2 = troveManager.getEntireBranchDebt();
         assertEq(entireSystemDebt_2, 0);
     }
 
@@ -1442,7 +1442,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(recordedDebt_B, 0);
         assertGt(recordedDebt_C, 0);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireBranchDebt();
 
         assertEq(entireSystemDebt, recordedDebt_A + recordedDebt_B + recordedDebt_C);
     }
@@ -1476,7 +1476,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(accruedInterest_B, 0);
         assertGt(accruedInterest_C, 0);
 
-        uint256 entireSystemDebt = troveManager.getEntireSystemDebt();
+        uint256 entireSystemDebt = troveManager.getEntireBranchDebt();
 
         uint256 sumIndividualTroveDebts =
             recordedDebt_A + accruedInterest_A + recordedDebt_B + accruedInterest_B + recordedDebt_C + accruedInterest_C;

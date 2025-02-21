@@ -72,14 +72,14 @@ export const TroveManager = [
   },
   {
     "type": "function",
-    "name": "getEntireSystemColl",
+    "name": "getEntireBranchColl",
     "inputs": [],
     "outputs": [{ "name": "entireSystemColl", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
   {
     "type": "function",
-    "name": "getEntireSystemDebt",
+    "name": "getEntireBranchDebt",
     "inputs": [],
     "outputs": [{ "name": "entireSystemDebt", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",

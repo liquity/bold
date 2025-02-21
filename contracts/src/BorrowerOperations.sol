@@ -1160,8 +1160,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function shutdown() external {
         if (hasBeenShutDown) revert IsShutDown();
 
-        uint256 totalColl = getEntireSystemColl();
-        uint256 totalDebt = getEntireSystemDebt();
+        uint256 totalColl = getEntireBranchColl();
+        uint256 totalDebt = getEntireBranchDebt();
         (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
         // If the oracle failed, the above call to PriceFeed will have shut this branch down
         if (newOracleFailureDetected) return;
@@ -1531,11 +1531,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         view
         returns (uint256 newTCR)
     {
-        uint256 totalColl = getEntireSystemColl();
+        uint256 totalColl = getEntireBranchColl();
         totalColl += _troveChange.collIncrease;
         totalColl -= _troveChange.collDecrease;
 
-        uint256 totalDebt = getEntireSystemDebt();
+        uint256 totalDebt = getEntireBranchDebt();
         totalDebt += _troveChange.debtIncrease;
         totalDebt += _troveChange.upfrontFee;
         totalDebt -= _troveChange.debtDecrease;
