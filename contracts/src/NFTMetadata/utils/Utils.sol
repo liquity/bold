@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import "lib/Solady/src/utils/LibString.sol";
+import "Solady/utils/LibString.sol";
 
 library numUtils {
     function toLocale(string memory _wholeNumber) internal pure returns (string memory) {
