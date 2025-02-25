@@ -1,7 +1,7 @@
 import type { Address, BranchId, Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 
-import { INTEREST_RATE_DEFAULT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
+import { INTEREST_RATE_DEFAULT } from "@/src/constants";
 import content from "@/src/content";
 import { jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -10,17 +10,7 @@ import { getBranch, useInterestRateChartData } from "@/src/liquity-utils";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import {
-  Dropdown,
-  HFlex,
-  InfoTooltip,
-  InputField,
-  lerp,
-  norm,
-  shortenAddress,
-  Slider,
-  TextButton,
-} from "@liquity2/uikit";
+import { Dropdown, HFlex, InfoTooltip, InputField, shortenAddress, Slider, TextButton } from "@liquity2/uikit";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
@@ -68,7 +58,7 @@ export const InterestRateField = memo(
     const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
       defaultValue: interestRate
         ? dn.toString(dn.mul(interestRate, 100))
-        : String(INTEREST_RATE_DEFAULT),
+        : String(INTEREST_RATE_DEFAULT * 100),
       onChange: ({ parsed }) => {
         if (parsed) {
           onChange(dn.div(parsed, 100));
@@ -76,17 +66,11 @@ export const InterestRateField = memo(
       },
     });
 
-    const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
-
     const interestChartData = useInterestRateChartData(branchId);
 
-    const interestRateNumber = interestRate && dn.toNumber(
-      dn.mul(interestRate, 100),
+    const bracket = interestChartData.data?.find(
+      (bracket) => interestRate && dn.eq(bracket.rate, interestRate),
     );
-    const chartdataPoint = interestChartData.data?.find(
-      ({ rate }) => rate === interestRateNumber,
-    );
-    const boldRedeemableInFront = chartdataPoint?.debtInFront ?? dn.from(0, 18);
 
     const handleDelegateSelect = (delegate: Delegate) => {
       setDelegatePicker(null);
@@ -97,6 +81,8 @@ export const InterestRateField = memo(
     const branch = getBranch(branchId);
     const hasStrategies = branch.strategies.length > 0;
     const activeDelegateModes = DELEGATE_MODES.filter((mode) => mode !== "strategy" || hasStrategies);
+
+    const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
 
     return (
       <>
@@ -112,31 +98,58 @@ export const InterestRateField = memo(
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: 300,
+                  width: 260,
+                  paddingTop: 16,
                 }}
               >
                 <Slider
                   gradient={[1 / 3, 2 / 3]}
                   gradientMode="high-to-low"
-                  chart={interestChartData.data?.map(
-                    ({ size }) => Math.max(0.1, size),
-                  ) ?? []}
+                  chart={interestChartData.data?.map(({ size }) => size) ?? []}
                   onChange={(value) => {
-                    fieldValue.setValue(String(
-                      Math.round(
-                        lerp(
-                          INTEREST_RATE_MIN,
-                          INTEREST_RATE_MAX,
-                          value,
-                        ) * 10,
-                      ) / 10,
-                    ));
+                    if (interestChartData.data) {
+                      const index = Math.round(value * (interestChartData.data.length - 1));
+                      fieldValue.setValue(String(dn.toNumber(dn.mul(
+                        interestChartData.data[index]?.rate ?? dn.from(0, 18),
+                        100,
+                      ))));
+                    }
                   }}
-                  value={norm(
-                    interestRate ? dn.toNumber(dn.mul(interestRate, 100)) : 0,
-                    INTEREST_RATE_MIN,
-                    INTEREST_RATE_MAX,
-                  )}
+                  value={(() => {
+                    const chartRates = interestChartData.data?.map(({ rate }) => rate[0]);
+                    const rate = interestRate?.[0] ?? 0n;
+
+                    if (!rate || !chartRates || chartRates.length === 0) {
+                      return 0;
+                    }
+
+                    const firstRate = chartRates[0] ?? 0n;
+                    const lastRate = chartRates.at(-1) ?? 0n;
+
+                    if (rate <= firstRate) return 0;
+                    if (rate >= lastRate) return (chartRates.length - 1) / chartRates.length;
+
+                    let index = 0;
+                    let currentDiff = firstRate - rate;
+                    if (currentDiff < 0) currentDiff = -currentDiff;
+
+                    while (index < (chartRates.length - 1)) {
+                      const nextRate = chartRates[index + 1] ?? 0n;
+
+                      let nextDiff = nextRate - rate;
+                      if (nextDiff < 0) nextDiff = -nextDiff;
+
+                      // diff starts increasing = we passed the closest point
+                      if (nextDiff > currentDiff) {
+                        break;
+                      }
+
+                      currentDiff = nextDiff;
+                      index++;
+                    }
+
+                    return index / chartRates.length;
+                  })()}
                 />
               </div>
             ))
@@ -256,7 +269,7 @@ export const InterestRateField = memo(
                   })}
                 >
                   {(mode === "manual" || delegate !== null)
-                    ? fmtnum(boldRedeemableInFront, "compact")
+                    ? fmtnum(bracket?.debtInFront, "compact")
                     : "−"}
                 </span>
                 <span>{" BOLD"}</span>

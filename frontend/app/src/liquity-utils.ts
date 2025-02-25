@@ -17,9 +17,11 @@ import type { Config as WagmiConfig } from "wagmi";
 import {
   DATA_REFRESH_INTERVAL,
   INTEREST_RATE_ADJ_COOLDOWN,
-  INTEREST_RATE_INCREMENT,
-  INTEREST_RATE_MAX,
-  INTEREST_RATE_MIN,
+  INTEREST_RATE_END,
+  INTEREST_RATE_INCREMENT_NORMAL,
+  INTEREST_RATE_INCREMENT_PRECISE,
+  INTEREST_RATE_PRECISE_UNTIL,
+  INTEREST_RATE_START,
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
@@ -337,8 +339,6 @@ export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveI
   return TroveNft && troveId && `${CHAIN_BLOCK_EXPLORER?.url}nft/${TroveNft.address}/${BigInt(troveId)}`;
 }
 
-const RATE_STEPS = Math.round((INTEREST_RATE_MAX - INTEREST_RATE_MIN) / INTEREST_RATE_INCREMENT) + 1;
-
 export function useAverageInterestRate(branchId: null | BranchId) {
   const brackets = useInterestRateBrackets(branchId);
 
@@ -371,8 +371,7 @@ export function useAverageInterestRate(branchId: null | BranchId) {
 
 export function useInterestRateChartData(branchId: null | BranchId) {
   const brackets = useInterestRateBrackets(branchId);
-
-  const chartData = useQuery({
+  return useQuery({
     queryKey: [
       "useInterestRateChartData",
       branchId,
@@ -380,47 +379,68 @@ export function useInterestRateChartData(branchId: null | BranchId) {
     ],
     queryFn: () => {
       if (!brackets.isSuccess) {
-        return [];
+        throw new Error();
       }
 
+      const debtByRate = new Map<string, Dnum>();
       let totalDebt = DNUM_0;
       let highestDebt = DNUM_0;
-      const debtByNonEmptyRateBrackets = new Map<number, Dnum>();
+
       for (const bracket of brackets.data) {
-        const rate = dn.toNumber(dn.mul(bracket.rate, 100));
-        if (rate >= INTEREST_RATE_MIN && rate <= INTEREST_RATE_MAX) {
-          totalDebt = dn.add(totalDebt, bracket.totalDebt);
-          debtByNonEmptyRateBrackets.set(rate, bracket.totalDebt);
-          if (dn.gt(bracket.totalDebt, highestDebt)) {
-            highestDebt = bracket.totalDebt;
-          }
+        if (
+          dn.lt(bracket.rate, INTEREST_RATE_START)
+          || dn.gt(bracket.rate, INTEREST_RATE_END)
+        ) {
+          continue;
+        }
+
+        debtByRate.set(dn.toJSON(bracket.rate), bracket.totalDebt);
+        totalDebt = dn.add(totalDebt, bracket.totalDebt);
+        if (dn.gt(bracket.totalDebt, highestDebt)) {
+          highestDebt = bracket.totalDebt;
         }
       }
 
+      const chartData = [];
+      let currentRate = dn.from(INTEREST_RATE_START, 18);
       let runningDebtTotal = DNUM_0;
-      const chartData = Array.from({ length: RATE_STEPS }, (_, i) => {
-        const rate = INTEREST_RATE_MIN + Math.floor(i * INTEREST_RATE_INCREMENT * 10) / 10;
-        const debt = debtByNonEmptyRateBrackets?.get(rate) ?? DNUM_0;
-        const debtInFront = runningDebtTotal;
-        runningDebtTotal = dn.add(runningDebtTotal, debt);
-        return {
-          debt,
-          debtInFront,
-          rate: INTEREST_RATE_MIN + Math.floor(i * INTEREST_RATE_INCREMENT * 10) / 10,
-          size: totalDebt[0] === 0n ? 0 : dn.toNumber(dn.div(debt, highestDebt)),
-        };
-      });
+
+      while (dn.lte(currentRate, INTEREST_RATE_END)) {
+        const nextRate = dn.add(
+          currentRate,
+          dn.lt(currentRate, INTEREST_RATE_PRECISE_UNTIL)
+            ? INTEREST_RATE_INCREMENT_PRECISE
+            : INTEREST_RATE_INCREMENT_NORMAL,
+        );
+
+        let aggregatedDebt = DNUM_0; // debt between currentRate and nextRate
+        let stepRate = currentRate;
+        while (dn.lt(stepRate, nextRate)) {
+          aggregatedDebt = dn.add(
+            aggregatedDebt,
+            debtByRate.get(dn.toJSON(stepRate)) ?? DNUM_0,
+          );
+          stepRate = dn.add(stepRate, INTEREST_RATE_INCREMENT_PRECISE);
+        }
+
+        chartData.push({
+          debt: aggregatedDebt,
+          debtInFront: dn.from(runningDebtTotal),
+          rate: currentRate,
+          size: totalDebt[0] === 0n
+            ? 0
+            : dn.toNumber(dn.div(aggregatedDebt, highestDebt)),
+        });
+
+        runningDebtTotal = dn.add(runningDebtTotal, aggregatedDebt);
+        currentRate = nextRate;
+      }
 
       return chartData;
     },
     refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: brackets.isSuccess,
   });
-
-  return brackets.isSuccess ? chartData : {
-    ...chartData,
-    data: [],
-  };
 }
 
 export function usePredictOpenTroveUpfrontFee(
