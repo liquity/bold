@@ -9,7 +9,7 @@ import "./utils/bauhaus.sol";
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
+import {ITroveManager} from "../Interfaces/ITroveManager.sol";
 
 interface IMetadataNFT {
     struct TroveData {
