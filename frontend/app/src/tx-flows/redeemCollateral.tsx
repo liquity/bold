@@ -8,13 +8,12 @@ import { dnum18, jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-uti
 import { getBranches } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { useWagmiConfig } from "@/src/services/Ethereum";
 import { vDnum } from "@/src/valibot-utils";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { createPublicClient } from "viem";
-import { http } from "wagmi";
+import { http, useConfig as useWagmiConfig } from "wagmi";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
