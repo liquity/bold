@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import "lib/Solady/src/utils/SSTORE2.sol";
+import "Solady/utils/SSTORE2.sol";
 import "./utils/JSON.sol";
 
 import "./utils/baseSVG.sol";

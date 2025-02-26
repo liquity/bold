@@ -6,6 +6,14 @@ import type { ReactNode as N } from "react";
 export default {
   // Used in the top bar and other places
   appName: "Liquity V2",
+  appDescription: `
+    Liquity V2 is a new borrowing protocol that lets users
+    deposit ETH or LSTs as collateral and mint the stablecoin BOLD.
+  `,
+  appUrl: "https://www.liquity.org/",
+  appIcon: (
+    typeof window === "undefined" ? "" : window.location.origin
+  ) + "/favicon.svg",
 
   // Menu bar
   menu: {
