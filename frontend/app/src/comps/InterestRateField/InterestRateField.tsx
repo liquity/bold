@@ -68,11 +68,13 @@ export const InterestRateField = memo(
       },
     });
 
-    const interestChartData = useInterestRateChartData(branchId);
+    const interestChartData = useInterestRateChartData();
 
     const bracket = interestChartData.data?.find(
       (bracket) => interestRate && dn.eq(bracket.rate, interestRate),
     );
+
+    const redeemableTransition = useAppear(bracket?.debtInFront !== undefined);
 
     const handleDelegateSelect = (delegate: Delegate) => {
       setDelegatePicker(null);
@@ -195,34 +197,48 @@ export const InterestRateField = memo(
           placeholder="0.00"
           secondary={{
             start: (
-              <HFlex gap={4}>
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  minWidth: 120,
+                })}
+              >
                 <div>
                   {boldInterestPerYear && (mode === "manual" || delegate !== null)
                     ? fmtnum(boldInterestPerYear)
                     : "−"} BOLD / year
                 </div>
-                <InfoTooltip
-                  {...infoTooltipProps(
-                    content.generalInfotooltips.interestRateBoldPerYear,
-                  )}
-                />
-              </HFlex>
+                <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
+              </div>
             ),
-            end: (
-              <span>
-                Redeemable before you:{" "}
-                <span
+            end: redeemableTransition((style, show) => (
+              show && (
+                <a.div
                   className={css({
-                    fontVariantNumeric: "tabular-nums",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
                   })}
+                  style={style}
                 >
-                  {(mode === "manual" || delegate !== null)
-                    ? fmtnum(bracket?.debtInFront, "compact")
-                    : "−"}
-                </span>
-                <span>{" BOLD"}</span>
-              </span>
-            ),
+                  <span>
+                    Redeemable before you:{" "}
+                    <span
+                      className={css({
+                        fontVariantNumeric: "tabular-nums",
+                      })}
+                    >
+                      {(mode === "manual" || delegate !== null)
+                        ? fmtnum(bracket?.debtInFront, "compact")
+                        : "−"}
+                    </span>
+                    <span>{" BOLD"}</span>
+                  </span>
+                </a.div>
+              )
+            )),
           }}
           {...fieldValue.inputFieldProps}
           value={
