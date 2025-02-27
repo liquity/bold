@@ -1,7 +1,7 @@
 "use client";
 
 import type { SpringValue } from "@react-spring/web";
-import type { CSSProperties, ReactNode } from "react";
+import type { CSSProperties } from "react";
 import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
 import type { Direction } from "../types";
 
@@ -13,13 +13,12 @@ import { token } from "../../styled-system/tokens";
 type GradientMode = "low-to-high" | "high-to-low";
 type Chart = number[];
 
-const PADDING = 4;
 const BAR_HEIGHT = 4; // in non-chart mode
 const HANDLE_OUTLINE = 2;
 const HANDLE_SIZE = 26; // with the outline
 const MIN_WIDTH = HANDLE_SIZE * 10;
 const CHART_MAX_HEIGHT = 30;
-const HEIGHT = Math.max(HANDLE_SIZE, BAR_HEIGHT, CHART_MAX_HEIGHT * 2) + PADDING * 2;
+const HEIGHT = 60;
 const GRADIENT_TRANSITION_BLUR = 4;
 
 export function Slider({
@@ -141,7 +140,9 @@ export function Slider({
     to: {
       value,
       handleColor: gradient && chart
-        ? value < gradient[0] ? gradientColors[0] : value < gradient[1]
+        ? value <= gradient[0]
+          ? gradientColors[0]
+          : value <= gradient[1]
           ? gradientColors[2]
           : gradientColors[4]
         : token("colors.controlSurface"),

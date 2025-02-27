@@ -28,6 +28,7 @@ import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-ut
 import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
+  useAllInterestRateBrackets,
   useGovernanceStats,
   useGovernanceUser,
   useInterestRateBrackets,
@@ -370,7 +371,7 @@ export function useAverageInterestRate(branchId: null | BranchId) {
 }
 
 export function useInterestRateChartData(branchId: null | BranchId) {
-  const brackets = useInterestRateBrackets(branchId);
+  const brackets = useAllInterestRateBrackets();
   return useQuery({
     queryKey: [
       "useInterestRateChartData",

@@ -1,7 +1,8 @@
 import type { Address, BranchId, Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 
-import { INTEREST_RATE_DEFAULT } from "@/src/constants";
+import { useAppear } from "@/src/anim-utils";
+import { INTEREST_RATE_DEFAULT, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
 import { jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -11,10 +12,11 @@ import { infoTooltipProps } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
 import { Dropdown, HFlex, InfoTooltip, InputField, shortenAddress, Slider, TextButton } from "@liquity2/uikit";
+import { a } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
-import { memo, useId, useState } from "react";
+import { memo, useId, useMemo, useState } from "react";
 import { match } from "ts-pattern";
 import { DelegateModal } from "./DelegateModal";
 import { IcStrategiesModal } from "./IcStrategiesModal";
@@ -93,65 +95,11 @@ export const InterestRateField = memo(
           disabled={mode !== "manual"}
           contextual={match(mode)
             .with("manual", () => (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 260,
-                  paddingTop: 16,
-                }}
-              >
-                <Slider
-                  gradient={[1 / 3, 2 / 3]}
-                  gradientMode="high-to-low"
-                  chart={interestChartData.data?.map(({ size }) => size) ?? []}
-                  onChange={(value) => {
-                    if (interestChartData.data) {
-                      const index = Math.round(value * (interestChartData.data.length - 1));
-                      fieldValue.setValue(String(dn.toNumber(dn.mul(
-                        interestChartData.data[index]?.rate ?? dn.from(0, 18),
-                        100,
-                      ))));
-                    }
-                  }}
-                  value={(() => {
-                    const chartRates = interestChartData.data?.map(({ rate }) => rate[0]);
-                    const rate = interestRate?.[0] ?? 0n;
-
-                    if (!rate || !chartRates || chartRates.length === 0) {
-                      return 0;
-                    }
-
-                    const firstRate = chartRates[0] ?? 0n;
-                    const lastRate = chartRates.at(-1) ?? 0n;
-
-                    if (rate <= firstRate) return 0;
-                    if (rate >= lastRate) return (chartRates.length - 1) / chartRates.length;
-
-                    let index = 0;
-                    let currentDiff = firstRate - rate;
-                    if (currentDiff < 0) currentDiff = -currentDiff;
-
-                    while (index < (chartRates.length - 1)) {
-                      const nextRate = chartRates[index + 1] ?? 0n;
-
-                      let nextDiff = nextRate - rate;
-                      if (nextDiff < 0) nextDiff = -nextDiff;
-
-                      // diff starts increasing = we passed the closest point
-                      if (nextDiff > currentDiff) {
-                        break;
-                      }
-
-                      currentDiff = nextDiff;
-                      index++;
-                    }
-
-                    return index / chartRates.length;
-                  })()}
-                />
-              </div>
+              <ManualInterestRateSlider
+                interestChartData={interestChartData}
+                interestRate={interestRate}
+                fieldValue={fieldValue}
+              />
             ))
             .with("strategy", () => (
               <TextButton
@@ -343,3 +291,131 @@ export const InterestRateField = memo(
     jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next)
   ),
 );
+
+function ManualInterestRateSlider({
+  interestChartData,
+  interestRate,
+  fieldValue,
+}: {
+  interestChartData: ReturnType<typeof useInterestRateChartData>;
+  interestRate: Dnum | null;
+  fieldValue: ReturnType<typeof useInputFieldValue>;
+}) {
+  const value = (() => {
+    const chartRates = interestChartData.data?.map(({ rate }) => rate[0]);
+    const rate = interestRate?.[0] ?? 0n;
+
+    if (!rate || !chartRates || chartRates.length === 0) {
+      return -1;
+    }
+
+    const firstRate = chartRates.at(0) ?? 0n;
+    if (rate <= firstRate) return 0;
+
+    const lastRate = chartRates.at(-1) ?? 0n;
+    if (rate >= lastRate) return 1;
+
+    // find the closest rate in the chart data
+    let index = 0;
+    let currentDiff = firstRate - rate;
+    if (currentDiff < 0) currentDiff = -currentDiff; // abs()
+    while (index < (chartRates.length - 1)) {
+      const nextRate = chartRates[index + 1] ?? 0n;
+
+      let nextDiff = nextRate - rate;
+      if (nextDiff < 0) nextDiff = -nextDiff;
+
+      // diff starts increasing = we passed the closest point
+      if (nextDiff > currentDiff) {
+        break;
+      }
+
+      // otherwise, keep going
+      currentDiff = nextDiff;
+      index++;
+    }
+
+    return index / chartRates.length;
+  })();
+
+  const gradientStops = useMemo((): [number, number] => {
+    if (!interestChartData.data || interestChartData.data.length === 0) {
+      return [0, 0];
+    }
+    const rates = interestChartData.data.map((bar) => dn.toNumber(bar.rate));
+    return [
+      gradientStop(rates, REDEMPTION_RISK.medium),
+      gradientStop(rates, REDEMPTION_RISK.low),
+    ];
+  }, [interestChartData.data]);
+
+  const transition = useAppear(value !== -1);
+
+  return transition((style, show) =>
+    show && (
+      <a.div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 260,
+          paddingTop: 16,
+          ...style,
+        }}
+      >
+        <Slider
+          gradient={gradientStops}
+          gradientMode="high-to-low"
+          chart={interestChartData.data?.map(({ size }) => size) ?? []}
+          onChange={(value) => {
+            if (interestChartData.data) {
+              const index = Math.min(
+                interestChartData.data.length - 1,
+                Math.round(value * (interestChartData.data.length)),
+              );
+              fieldValue.setValue(String(dn.toNumber(dn.mul(
+                interestChartData.data[index]?.rate ?? dn.from(0, 18),
+                100,
+              ))));
+            }
+          }}
+          value={value}
+        />
+      </a.div>
+    )
+  );
+}
+
+function gradientStop(chartRates: number[], targetRate: number) {
+  const firstRate = chartRates.at(0);
+  const lastRate = chartRates.at(-1);
+
+  if (firstRate === undefined || lastRate === undefined) {
+    return 0;
+  }
+
+  if (targetRate <= firstRate) return 0;
+  if (targetRate >= lastRate) return 1;
+
+  let index = 0;
+  let currentDiff = Math.abs(firstRate - targetRate);
+
+  while (index < chartRates.length) {
+    const nextRate = chartRates[index + 1];
+    if (nextRate === undefined) {
+      break;
+    }
+
+    const nextDiff = Math.abs(nextRate - targetRate);
+
+    // diff starts increasing = we passed the closest point
+    if (nextDiff > currentDiff) {
+      break;
+    }
+
+    currentDiff = nextDiff;
+    index++;
+  }
+
+  return index / (chartRates.length);
+}
