@@ -14,6 +14,7 @@ export default {
     multiply: "Multiply",
     earn: "Earn",
     buy: "Buy USDN",
+    govern: "Govern",
   },
 
   accountButton: {
@@ -426,4 +427,84 @@ export default {
     subheading: <>Buy USDN</>,
     learnMore: ["https://docs.liquity.org/faq/staking", "Learn more"],
   },
+
+  stakeScreen: {
+    headline: (lqtyIcon: N) => (
+      <>
+        <span>Stake</span>
+        {lqtyIcon} <span>LQTY & get</span>
+        <span>voting power</span>
+      </>
+    ),
+    subheading: (
+      <>
+        By staking LQTY you can vote on incentives for Liquity V2, while still earning Liquity V1 fees.
+      </>
+    ),
+    learnMore: ["https://docs.liquity.org/faq/staking", "Learn more"],
+    accountDetails: {
+      myDeposit: "My deposit",
+      votingPower: "Voting power",
+      votingPowerHelp: (
+        <>
+          Voting power is the percentage of the total staked LQTY that you own.
+        </>
+      ),
+      unclaimed: "Unclaimed rewards",
+    },
+    tabs: {
+      deposit: "Staking",
+      rewards: "Rewards",
+      voting: "Voting",
+    },
+    depositPanel: {
+      label: "Deposit",
+      shareLabel: "Pool share",
+      rewardsLabel: "Available rewards",
+      action: "Next: Summary",
+    },
+    rewardsPanel: {
+      label: "You claim",
+      details: (usdAmount: N, fee: N) => (
+        <>
+          ~${usdAmount} • Expected gas fee ~${fee}
+        </>
+      ),
+      action: "Next: Summary",
+    },
+    votingPanel: {
+      title: "Allocate your voting power",
+      intro: (
+        <>
+          Direct incentives from Liquity V2 protocol revenues towards liquidity providers for BOLD. Upvote from Thursday
+          to Tuesday. Downvote all week. <Link href="https://docs.liquity.org/v2-faq/lqty-staking">Learn more</Link>
+        </>
+      ),
+    },
+    infoTooltips: {
+      alsoClaimRewardsDeposit: [
+        <>
+          Rewards will be paid out as part of the update transaction.
+        </>,
+      ],
+    },
+  },
 } as const;
+
+function Link({
+  href,
+  children,
+}: {
+  href: string;
+  children: N;
+}) {
+  const props = !href.startsWith("http") ? {} : {
+    target: "_blank",
+    rel: "noopener noreferrer",
+  };
+  return (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  );
+}

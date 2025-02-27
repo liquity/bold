@@ -24,6 +24,7 @@ const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
   [content.menu.multiply, "/multiply", IconLeverage],
   [content.menu.earn, "/earn", IconEarn],
   [content.menu.buy, "/buy", IconStake],
+  [content.menu.govern, "/stake", IconStake],
 ];
 
 export function TopBar() {
