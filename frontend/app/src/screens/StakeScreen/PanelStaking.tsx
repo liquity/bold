@@ -96,7 +96,7 @@ export function PanelStaking() {
               <InputTokenBadge
                 background={false}
                 icon={<TokenIcon symbol="LQTY" />}
-                label="LQTY"
+                label="NERI"
               />
             }
             label={{

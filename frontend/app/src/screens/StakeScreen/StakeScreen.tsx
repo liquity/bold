@@ -7,14 +7,14 @@ import { useStakePosition } from "@/src/liquity-utils";
 // import { useAccount } from "@/src/wagmi-utils";
 import { AnchorTextButton, HFlex, Tabs, TokenIcon, VFlex } from "@liquity2/uikit";
 import { useParams, useRouter } from "next/navigation";
-import { PanelRewards } from "./PanelRewards";
+// import { PanelRewards } from "./PanelRewards";
 import { PanelStaking } from "./PanelStaking";
 import { PanelVoting } from "./PanelVoting";
 import { useAccount } from "wagmi";
 
 const TABS = [
   { label: content.stakeScreen.tabs.deposit, id: "deposit" },
-  { label: content.stakeScreen.tabs.rewards, id: "rewards" },
+  // { label: content.stakeScreen.tabs.rewards, id: "rewards" },
   { label: content.stakeScreen.tabs.voting, id: "voting" },
 ];
 
@@ -67,7 +67,7 @@ export function StakeScreen() {
         />
 
         {action === "deposit" && <PanelStaking />}
-        {action === "rewards" && <PanelRewards />}
+        {/* {action === "rewards" && <PanelRewards />} */}
         {action === "voting" && <PanelVoting />}
       </VFlex>
     </Screen>

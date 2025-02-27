@@ -13,8 +13,8 @@ export default {
     borrow: "Borrow",
     multiply: "Multiply",
     earn: "Earn",
+    stake: "Stake",
     buy: "Buy USDN",
-    govern: "Govern",
   },
 
   accountButton: {
@@ -425,36 +425,36 @@ export default {
       </>
     ),
     subheading: <>Buy USDN</>,
-    learnMore: ["https://docs.liquity.org/faq/staking", "Learn more"],
+    learnMore: ["https://docs.nerite.org/docs/user-docs/NERI-staking-and-voting", "Learn more"],
   },
 
   stakeScreen: {
     headline: (lqtyIcon: N) => (
       <>
         <span>Stake</span>
-        {lqtyIcon} <span>LQTY & get</span>
+        {lqtyIcon} <span>NERI & get</span>
         <span>voting power</span>
       </>
     ),
     subheading: (
       <>
-        By staking LQTY you can vote on incentives for Liquity V2, while still earning Liquity V1 fees.
+        By staking NERI you can vote on incentives for Nerite.
       </>
     ),
-    learnMore: ["https://docs.liquity.org/faq/staking", "Learn more"],
+    learnMore: ["https://docs.nerite.org/docs/user-docs/NERI-staking-and-voting", "Learn more"],
     accountDetails: {
       myDeposit: "My deposit",
       votingPower: "Voting power",
       votingPowerHelp: (
         <>
-          Voting power is the percentage of the total staked LQTY that you own.
+          Voting power is the percentage of the total staked NERI that you own.
         </>
       ),
       unclaimed: "Unclaimed rewards",
     },
     tabs: {
       deposit: "Staking",
-      rewards: "Rewards",
+      // rewards: "Rewards",
       voting: "Voting",
     },
     depositPanel: {
@@ -476,8 +476,8 @@ export default {
       title: "Allocate your voting power",
       intro: (
         <>
-          Direct incentives from Liquity V2 protocol revenues towards liquidity providers for BOLD. Upvote from Thursday
-          to Tuesday. Downvote all week. <Link href="https://docs.liquity.org/v2-faq/lqty-staking">Learn more</Link>
+          Direct incentives from Nerite protocol revenues towards liquidity providers for USDN. Upvote from Thursday
+          to Tuesday. Downvote all week. <Link href="https://docs.nerite.org/docs/user-docs/NERI-staking-and-voting">Learn more</Link>
         </>
       ),
     },
