@@ -5,7 +5,8 @@ import { a, useSpring } from "@react-spring/web";
 import Link from "next/link";
 import { useState } from "react";
 import { match } from "ts-pattern";
-import { ActionIcon } from "./ActionIcon";
+// import { ActionIcon } from "./ActionIcon";
+import { ActionIcon } from "./SnailIcon";
 
 export function ActionCard({
   type,

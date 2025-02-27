@@ -10,7 +10,7 @@ import { useGovernanceStats, useGovernanceUser } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import {
   // HFlex,
-  IconStake,
+  // IconStake,
   InfoTooltip,
   TokenIcon,
   useRaf,
@@ -18,6 +18,7 @@ import {
 import { a } from "@react-spring/web";
 import * as dn from "dnum";
 import { useRef } from "react";
+import Image from "next/image";
 
 export function StakePositionSummary({
   loadingState = "success",
@@ -157,7 +158,8 @@ export function StakePositionSummary({
                 color: "strongSurfaceContentAlt2",
               })}
             >
-              <IconStake size={16} />
+              {/* <IconStake size={16} /> */}
+              <Image src='/cute-snails/red.png' alt='Stake' width={16} height={16} />
             </div>
             NERI Stake
           </div>
