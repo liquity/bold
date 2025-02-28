@@ -78,7 +78,7 @@ export function BorrowScreen() {
 
   const debt = useInputFieldValue(fmtnum);
 
-  const [interestRate, setInterestRate] = useState(dn.div(dn.from(INTEREST_RATE_DEFAULT, 18), 100));
+  const [interestRate, setInterestRate] = useState(dn.from(INTEREST_RATE_DEFAULT, 18));
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
   const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(null);
 
