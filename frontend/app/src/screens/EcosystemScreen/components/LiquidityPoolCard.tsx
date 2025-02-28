@@ -19,7 +19,8 @@ export function LiquidityPoolCard({ pool }: LiquidityPoolProps) {
   return (
     <div
       className={css({ 
-        p: '6', 
+        px: '10px', 
+        py: '8px',
         borderRadius: 'lg',
         transition: 'transform 0.2s ease',
         _hover: { transform: 'scale(1.02)' },
