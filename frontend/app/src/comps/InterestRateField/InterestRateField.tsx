@@ -2,7 +2,7 @@ import type { Address, BranchId, Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { useAppear } from "@/src/anim-utils";
-import { INTEREST_RATE_DEFAULT, REDEMPTION_RISK } from "@/src/constants";
+import { INTEREST_RATE_DEFAULT, INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
 import { jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -11,7 +11,7 @@ import { getBranch, useInterestRateChartData } from "@/src/liquity-utils";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { Dropdown, HFlex, InfoTooltip, InputField, shortenAddress, Slider, TextButton } from "@liquity2/uikit";
+import { Dropdown, InfoTooltip, InputField, shortenAddress, Slider, TextButton } from "@liquity2/uikit";
 import { a } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
@@ -61,6 +61,16 @@ export const InterestRateField = memo(
       defaultValue: interestRate
         ? dn.toString(dn.mul(interestRate, 100))
         : String(INTEREST_RATE_DEFAULT * 100),
+      onFocusChange: ({ parsed, focused }) => {
+        if (!focused && parsed) {
+          const rounded = dn.div(dn.round(dn.mul(parsed, 10)), 10);
+          fieldValue.setValue(
+            rounded[0] === 0n
+              ? String(INTEREST_RATE_START * 100)
+              : dn.toString(rounded),
+          );
+        }
+      },
       onChange: ({ parsed }) => {
         if (parsed) {
           onChange(dn.div(parsed, 100));
@@ -69,9 +79,10 @@ export const InterestRateField = memo(
     });
 
     const interestChartData = useInterestRateChartData();
+    const interestRateRounded = interestRate && dn.div(dn.round(dn.mul(interestRate, 1000)), 1000);
 
-    const bracket = interestChartData.data?.find(
-      (bracket) => interestRate && dn.eq(bracket.rate, interestRate),
+    const bracket = interestRateRounded && interestChartData.data?.find(
+      ({ rate }) => rate[0] === interestRateRounded[0],
     );
 
     const redeemableTransition = useAppear(bracket?.debtInFront !== undefined);
@@ -257,7 +268,7 @@ export const InterestRateField = memo(
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 10,
+                    gap: 8,
                   }}
                 >
                   {delegate !== null && <MiniChart size="medium" />}
@@ -309,20 +320,20 @@ export const InterestRateField = memo(
 );
 
 function ManualInterestRateSlider({
+  fieldValue,
   interestChartData,
   interestRate,
-  fieldValue,
 }: {
+  fieldValue: ReturnType<typeof useInputFieldValue>;
   interestChartData: ReturnType<typeof useInterestRateChartData>;
   interestRate: Dnum | null;
-  fieldValue: ReturnType<typeof useInputFieldValue>;
 }) {
   const value = (() => {
     const chartRates = interestChartData.data?.map(({ rate }) => rate[0]);
     const rate = interestRate?.[0] ?? 0n;
 
     if (!rate || !chartRates || chartRates.length === 0) {
-      return -1;
+      return 0;
     }
 
     const firstRate = chartRates.at(0) ?? 0n;
