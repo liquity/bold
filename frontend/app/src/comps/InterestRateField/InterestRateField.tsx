@@ -2,12 +2,12 @@ import type { Address, BranchId, Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { useAppear } from "@/src/anim-utils";
-import { INTEREST_RATE_DEFAULT, INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
+import { INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
 import { jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { getBranch, useInterestRateChartData } from "@/src/liquity-utils";
+import { findClosestRateIndex, getBranch, useAverageInterestRate, useInterestRateChartData } from "@/src/liquity-utils";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
@@ -16,7 +16,7 @@ import { a } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
-import { memo, useId, useMemo, useState } from "react";
+import { memo, useId, useMemo, useRef, useState } from "react";
 import { match } from "ts-pattern";
 import { DelegateModal } from "./DelegateModal";
 import { IcStrategiesModal } from "./IcStrategiesModal";
@@ -57,10 +57,23 @@ export const InterestRateField = memo(
     const autoInputId = useId();
     const inputId = inputIdFromProps ?? autoInputId;
 
+    const averageInterestRate = useAverageInterestRate(branchId);
+
+    const rateTouchedForBranch = useRef<
+      | null // rate not touched for this branch, average rate should be applied
+      | BranchId // rate touched for this branch, not applying the average rate
+    >(null);
+
+    if (rateTouchedForBranch.current !== branchId) {
+      rateTouchedForBranch.current = null;
+    }
+
+    if (rateTouchedForBranch.current === null && averageInterestRate.data) {
+      rateTouchedForBranch.current = branchId;
+      onChange(averageInterestRate.data);
+    }
+
     const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
-      defaultValue: interestRate
-        ? dn.toString(dn.mul(interestRate, 100))
-        : String(INTEREST_RATE_DEFAULT * 100),
       onFocusChange: ({ parsed, focused }) => {
         if (!focused && parsed) {
           const rounded = dn.div(dn.round(dn.mul(parsed, 10)), 10);
@@ -73,6 +86,7 @@ export const InterestRateField = memo(
       },
       onChange: ({ parsed }) => {
         if (parsed) {
+          rateTouchedForBranch.current = branchId;
           onChange(dn.div(parsed, 100));
         }
       },
@@ -89,11 +103,13 @@ export const InterestRateField = memo(
 
     const handleDelegateSelect = (delegate: Delegate) => {
       setDelegatePicker(null);
+      rateTouchedForBranch.current = branchId;
       onChange(delegate.interestRate);
       onDelegateChange(delegate.address ?? null);
     };
 
     const branch = getBranch(branchId);
+
     const hasStrategies = branch.strategies.length > 0;
     const activeDelegateModes = DELEGATE_MODES.filter((mode) => mode !== "strategy" || hasStrategies);
 
@@ -181,7 +197,43 @@ export const InterestRateField = memo(
             ))
             .exhaustive()}
           label={{
-            start: "Interest rate",
+            start: (
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                })}
+              >
+                <div>Interest rate</div>
+                {averageInterestRate.data && (
+                  <div>
+                    <TextButton
+                      size="small"
+                      title={`Set average interest rate (${
+                        fmtnum(averageInterestRate.data, {
+                          preset: "pct1z",
+                          suffix: "%",
+                        })
+                      })`}
+                      label={`(avg. ${
+                        fmtnum(averageInterestRate.data, {
+                          preset: "pct1z",
+                          suffix: "%",
+                        })
+                      })`}
+                      onClick={(event) => {
+                        if (averageInterestRate.data) {
+                          event.preventDefault();
+                          rateTouchedForBranch.current = branchId;
+                          onChange(averageInterestRate.data);
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ),
             end: (
               <div>
                 <Dropdown
@@ -328,13 +380,10 @@ function ManualInterestRateSlider({
   interestChartData: ReturnType<typeof useInterestRateChartData>;
   interestRate: Dnum | null;
 }) {
-  const value = (() => {
-    const chartRates = interestChartData.data?.map(({ rate }) => rate[0]);
+  const value = useMemo(() => {
     const rate = interestRate?.[0] ?? 0n;
-
-    if (!rate || !chartRates || chartRates.length === 0) {
-      return 0;
-    }
+    const chartRates = interestChartData.data?.map(({ rate }) => rate[0]);
+    if (!rate || !chartRates || chartRates.length === 0) return 0;
 
     const firstRate = chartRates.at(0) ?? 0n;
     if (rate <= firstRate) return 0;
@@ -342,37 +391,23 @@ function ManualInterestRateSlider({
     const lastRate = chartRates.at(-1) ?? 0n;
     if (rate >= lastRate) return 1;
 
-    // find the closest rate in the chart data
-    let index = 0;
-    let currentDiff = firstRate - rate;
-    if (currentDiff < 0) currentDiff = -currentDiff; // abs()
-    while (index < (chartRates.length - 1)) {
-      const nextRate = chartRates[index + 1] ?? 0n;
-
-      let nextDiff = nextRate - rate;
-      if (nextDiff < 0) nextDiff = -nextDiff;
-
-      // diff starts increasing = we passed the closest point
-      if (nextDiff > currentDiff) {
-        break;
-      }
-
-      // otherwise, keep going
-      currentDiff = nextDiff;
-      index++;
-    }
-
-    return index / chartRates.length;
-  })();
+    return findClosestRateIndex(chartRates, rate) / chartRates.length;
+  }, [
+    jsonStringifyWithDnum(interestChartData.data),
+    jsonStringifyWithDnum(interestRate),
+  ]);
 
   const gradientStops = useMemo((): [number, number] => {
     if (!interestChartData.data || interestChartData.data.length === 0) {
       return [0, 0];
     }
-    const rates = interestChartData.data.map((bar) => dn.toNumber(bar.rate));
+    const rates = interestChartData.data.map((bar) => bar.rate[0]);
+    const stop = (rate: number) => (
+      findClosestRateIndex(rates, BigInt(rate * 10 ** 18)) / rates.length
+    );
     return [
-      gradientStop(rates, REDEMPTION_RISK.medium),
-      gradientStop(rates, REDEMPTION_RISK.low),
+      stop(REDEMPTION_RISK.medium),
+      stop(REDEMPTION_RISK.low),
     ];
   }, [interestChartData.data]);
 
@@ -411,38 +446,4 @@ function ManualInterestRateSlider({
       </a.div>
     )
   );
-}
-
-function gradientStop(chartRates: number[], targetRate: number) {
-  const firstRate = chartRates.at(0);
-  const lastRate = chartRates.at(-1);
-
-  if (firstRate === undefined || lastRate === undefined) {
-    return 0;
-  }
-
-  if (targetRate <= firstRate) return 0;
-  if (targetRate >= lastRate) return 1;
-
-  let index = 0;
-  let currentDiff = Math.abs(firstRate - targetRate);
-
-  while (index < chartRates.length) {
-    const nextRate = chartRates[index + 1];
-    if (nextRate === undefined) {
-      break;
-    }
-
-    const nextDiff = Math.abs(nextRate - targetRate);
-
-    // diff starts increasing = we passed the closest point
-    if (nextDiff > currentDiff) {
-      break;
-    }
-
-    currentDiff = nextDiff;
-    index++;
-  }
-
-  return index / (chartRates.length);
 }

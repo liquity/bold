@@ -36,6 +36,7 @@ import {
   useStabilityPool,
 } from "@/src/subgraph-hooks";
 import { isBranchId, isTroveId } from "@/src/types";
+import { bigIntAbs } from "@/src/utils";
 import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
@@ -438,6 +439,37 @@ export function useInterestRateChartData() {
     refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: brackets.isSuccess,
   });
+}
+
+export function findClosestRateIndex(
+  rates: bigint[], // rates must be sorted
+  rate: bigint,
+): number {
+  const firstRate = rates.at(0);
+  const lastRate = rates.at(-1);
+
+  if (firstRate === undefined || lastRate === undefined) {
+    throw new Error("Invalid rates array");
+  }
+
+  if (rate <= firstRate) return 0;
+  if (rate >= lastRate) return 1;
+
+  let diff = bigIntAbs(firstRate - rate);
+
+  for (let index = 0; index < rates.length - 1; index++) {
+    const nextRate = rates.at(index + 1);
+    if (nextRate === undefined) throw new Error(); // should never happen
+
+    const nextDiff = bigIntAbs(nextRate - rate);
+
+    // diff starts increasing = we passed the closest point
+    if (nextDiff > diff) return index;
+
+    diff = nextDiff;
+  }
+
+  return rates.length - 1;
 }
 
 export function usePredictOpenTroveUpfrontFee(
