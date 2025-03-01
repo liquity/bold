@@ -1,7 +1,7 @@
 "use client";
 
 import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
-import type { Address, PositionLoanUncommitted } from "@/src/types";
+import type { Address, Dnum, PositionLoanUncommitted } from "@/src/types";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -11,13 +11,7 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
-import {
-  ETH_MAX_RESERVE,
-  INTEREST_RATE_DEFAULT,
-  LEVERAGE_MAX_SLIPPAGE,
-  MAX_COLLATERAL_DEPOSITS,
-  MIN_DEBT,
-} from "@/src/constants";
+import { ETH_MAX_RESERVE, LEVERAGE_MAX_SLIPPAGE, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
 import content from "@/src/content";
 import { dnum18, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -85,7 +79,7 @@ export function LeverageScreen() {
     },
   });
 
-  const [interestRate, setInterestRate] = useState(dn.div(dn.from(INTEREST_RATE_DEFAULT, 18), 100));
+  const [interestRate, setInterestRate] = useState<null | Dnum>(null);
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
   const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(null);
 
@@ -123,7 +117,7 @@ export function LeverageScreen() {
     deposit: depositPreLeverage.parsed
       ? dn.mul(depositPreLeverage.parsed, leverageField.leverageFactor)
       : dn.from(0, 18),
-    interestRate,
+    interestRate: interestRate ?? dn.from(0, 18),
     troveId: null,
   };
 

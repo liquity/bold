@@ -35,3 +35,7 @@ export function jsonStringifyWithBigInt(data: unknown) {
     typeof value === "bigint" ? String(value) : value
   ));
 }
+
+export function bigIntAbs(value: bigint) {
+  return value < 0n ? -value : value;
+}

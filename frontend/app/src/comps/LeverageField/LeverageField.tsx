@@ -59,8 +59,7 @@ export function LeverageField({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: 300,
-            marginRight: -20,
+            width: 260,
           }}
         >
           <Slider

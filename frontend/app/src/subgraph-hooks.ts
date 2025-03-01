@@ -5,7 +5,7 @@ import type {
   StabilityPoolDepositQuery as StabilityPoolDepositQueryType,
   TrovesByAccountQuery as TrovesByAccountQueryType,
 } from "@/src/graphql/graphql";
-import type { Address, BranchId, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
+import type { Address, BranchId, Dnum, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
@@ -15,6 +15,7 @@ import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } fro
 import { sleep } from "@/src/utils";
 import { isAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
+import * as dn from "dnum";
 import { useCallback } from "react";
 import {
   AllInterestRateBracketsQuery,
@@ -35,7 +36,7 @@ type Options = {
   refetchInterval?: number;
 };
 
-function prepareOptions(options?: Options) {
+function prepareOptions(options?: Options): Options {
   return {
     refetchInterval: DATA_REFRESH_INTERVAL,
     ...options,
@@ -109,7 +110,9 @@ export function useLoanById(
   id?: null | PrefixedTroveId,
   options?: Options,
 ) {
-  let queryFn = async () => {
+  let queryFn: () => Promise<PositionLoanCommitted | null>;
+
+  queryFn = async () => {
     if (!isPrefixedtroveId(id)) return null;
     const { trove } = await graphQuery(TroveByIdQuery, { id });
     return trove ? subgraphTroveToLoan(trove) : null;
@@ -363,8 +366,6 @@ export function useInterestRateBrackets(
     queryKey: ["AllInterestRateBrackets"],
     queryFn,
     select: useCallback((brackets: Awaited<ReturnType<typeof queryFn>>) => {
-      // only filter by branchId in the select()
-      // so that we can query all the brackets at once
       return brackets
         .filter((bracket) => bracket.collateral.collIndex === branchId)
         .sort((a, b) => (a.rate > b.rate ? 1 : -1))
@@ -372,6 +373,41 @@ export function useInterestRateBrackets(
           rate: dnum18(bracket.rate),
           totalDebt: dnum18(bracket.totalDebt),
         }));
+    }, [branchId]),
+    ...prepareOptions(options),
+  });
+}
+
+export function useAllInterestRateBrackets(
+  options?: Options,
+) {
+  let queryFn = async () => (
+    (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
+  );
+
+  if (DEMO_MODE) {
+    queryFn = async () => [];
+  }
+
+  return useQuery({
+    queryKey: ["AllInterestRateBrackets"],
+    queryFn,
+    select: useCallback((brackets: Awaited<ReturnType<typeof queryFn>>) => {
+      const debtByRate: Map<string, bigint> = new Map();
+      for (const bracket of brackets) {
+        const key = String(bracket.rate);
+        debtByRate.set(key, (debtByRate.get(key) ?? 0n) + BigInt(bracket.totalDebt));
+      }
+      return brackets
+        .sort((a, b) => (a.rate > b.rate ? 1 : -1))
+        .map((bracket) => {
+          const totalDebt = debtByRate.get(String(bracket.rate));
+          if (totalDebt === undefined) throw new Error();
+          return {
+            rate: dnum18(bracket.rate),
+            totalDebt: dnum18(totalDebt),
+          };
+        });
     }, []),
     ...prepareOptions(options),
   });
