@@ -122,26 +122,44 @@ const projects = [
 const liquidityPools = [
   {
     id: 1,
-    pair: 'USDN / ETH',
-    liquidity: '$308.28M',
-    token1: <TokenIcon symbol="USDN" />,
-    token2: <TokenIcon symbol="ETH" />,
+    asset1: {
+      icon: <TokenIcon symbol="USDN" />,
+      symbol: 'USDN',
+      pricePer: '2100',
+    },
+    asset2: {
+      icon: <TokenIcon symbol="ETH" />,
+      symbol: 'ETH',
+      pricePer: '0.00000067',
+    },
     dex: '/images/dex/uniswap.png',
   },
   {
     id: 2,
-    pair: 'USDN / USDC',
-    liquidity: '$111.04M',
-    token1: <TokenIcon symbol="USDN" />,
-    token2: <TokenIcon symbol="USDN" />, // TO DO: Change to USDC
+    asset1: {
+      icon: <TokenIcon symbol="USDN" />,
+      symbol: 'USDN',
+      pricePer: '0.99',
+    },
+    asset2: {
+      icon: <TokenIcon symbol="USDN" />, // TODO: Change to USDC
+      symbol: 'USDC',
+      pricePer: '1',
+    },
     dex: '/images/dex/sushiswap.png',
   },
   {
     id: 3,
-    pair: 'USDN / BOLD',
-    liquidity: '355,672',
-    token1: <TokenIcon symbol="USDN" />,
-    token2: <TokenIcon symbol="LQTY" />, // TO DO: Change to BOLD
+    asset1: {
+      icon: <TokenIcon symbol="USDN" />,
+      symbol: 'USDN',
+      pricePer: '1',
+    },
+    asset2: {
+      icon: <TokenIcon symbol="LQTY" />, // TODO: Change to BOLD
+      symbol: 'BOLD',
+      pricePer: '1',
+    },
     dex: '/images/dex/curve.png',
   },
 ];
