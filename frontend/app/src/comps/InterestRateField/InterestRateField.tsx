@@ -70,7 +70,11 @@ export const InterestRateField = memo(
 
     if (rateTouchedForBranch.current === null && averageInterestRate.data) {
       rateTouchedForBranch.current = branchId;
-      onChange(averageInterestRate.data);
+      setTimeout(() => {
+        if (averageInterestRate.data) {
+          onChange(averageInterestRate.data);
+        }
+      }, 0);
     }
 
     const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
