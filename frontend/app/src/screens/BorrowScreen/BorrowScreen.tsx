@@ -386,6 +386,7 @@ export function BorrowScreen() {
                 deposit.parsed
                 && debt.parsed
                 && account.address
+                && interestRate
                 && typeof nextOwnerIndex.data === "number"
               ) {
                 txFlow.start({

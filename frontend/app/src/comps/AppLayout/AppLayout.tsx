@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 
 import { Banner } from "@/Banner";
+import { LegacyPositionsBanner } from "@/src/comps/LegacyPositionsBanner/LegacyPositionsBanner";
+import { LEGACY_CHECK } from "@/src/constants";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton } from "@liquity2/uikit";
 import Link from "next/link";
@@ -26,6 +28,7 @@ export function AppLayout({
         background: "background",
       })}
     >
+      {LEGACY_CHECK && <LegacyPositionsBanner />}
       <div
         className={css({
           display: "flex",
@@ -35,7 +38,7 @@ export function AppLayout({
         })}
       >
         <Banner />
-        <EarnRiskBanner />
+        {!LEGACY_CHECK && <EarnRiskBanner />}
       </div>
       <div
         className={css({
