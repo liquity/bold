@@ -5,7 +5,7 @@ import type {
   StabilityPoolDepositQuery as StabilityPoolDepositQueryType,
   TrovesByAccountQuery as TrovesByAccountQueryType,
 } from "@/src/graphql/graphql";
-import type { Address, BranchId, Dnum, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
+import type { Address, BranchId, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
@@ -15,7 +15,6 @@ import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } fro
 import { sleep } from "@/src/utils";
 import { isAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
-import * as dn from "dnum";
 import { useCallback } from "react";
 import {
   AllInterestRateBracketsQuery,
