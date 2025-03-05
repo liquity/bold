@@ -42,9 +42,9 @@ const projects = [
   },
   { 
     name: 'Squid Router', 
-    logo: '/images/ecosystem/squidrouter.png', // TO DO: Image missing
+    logo: '/images/ecosystem/squidrouter.jpg', // TO DO: Image missing
     url: "https://squidrouter.com/",
-    categories: ["Infrastructure"],
+    categories: ["Infrastructure", "DeFi", "DEXs"],
     description: "Cross-chain liquidity routing protocol."
   },
   { 
@@ -64,7 +64,7 @@ const projects = [
   { 
     name: '0xpossum', 
     logo: '/images/ecosystem/0xpossum.png', // TO DO: Image missing
-    url: "https://0xpossum.xyz/",
+    url: "https://0xpossum.xyz/", // TO DO: Link missing
     categories: ["DeFi"],
     description: "Permissionless debt marketplace for DAOs and protocols."
   },
@@ -92,7 +92,7 @@ const projects = [
   { 
     name: 'Starboard Side finance', 
     logo: '/images/ecosystem/starboard.png', // TO DO: Image missing
-    url: "https://starboard.xyz/",
+    url: "https://starboard.xyz/", // TO DO: Link missing
     categories: ["DeFi"],
     description: "Next-gen structured products for DeFi traders."
   },
