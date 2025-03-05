@@ -360,6 +360,7 @@ const InputField = forwardRef<HTMLInputElement, {
                   display: "flex",
                   whiteSpace: "nowrap",
                   textOverflow: "ellipsis",
+                  overflow: "hidden",
                 })}
               >
                 {secondary_.end}

@@ -10,10 +10,17 @@ const CHART_TMP = Array.from({ length: 50 }, () => (
 export default function SliderFixture() {
   const [value, setValue] = useState(0.5);
   return (
-    <Slider
-      chart={CHART_TMP}
-      onChange={setValue}
-      value={value}
-    />
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
+      <Slider
+        chart={CHART_TMP}
+        onChange={setValue}
+        value={value}
+      />
+    </div>
   );
 }
