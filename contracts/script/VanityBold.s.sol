@@ -36,8 +36,8 @@ contract VanityBoldScript is Script, StdCheats, Logging {
             vm.startBroadcast(privateKey);
         }
 
-        _log("Deployer:               ", deployer.toHexString());
-        _log("Deployer balance:       ", deployer.balance.decimal());
+        //_log("Deployer:               ", deployer.toHexString());
+        //_log("Deployer balance:       ", deployer.balance.decimal());
 
         bytes memory boldBytecode = bytes.concat(type(BoldToken).creationCode, abi.encode(deployer));
         for (uint256 i = startIndex; i < startIndex + iterations; i++) {
@@ -46,14 +46,30 @@ contract VanityBoldScript is Script, StdCheats, Logging {
             //_log(saltStr);
             SALT = keccak256(bytes(saltStr));
             boldAddress = vm.computeCreate2Address(SALT, keccak256(boldBytecode));
-            if (uint256(uint160(boldAddress)) >> 144 == SOUGHT_PATTERN) {
+            uint256 firstPart = uint256(uint160(boldAddress)) >> 144;
+            uint256 lastPart = uint256(uint160(boldAddress)) & uint256(0xFFFF);
+            //_log("first: ", firstPart.toHexString());
+            //_log("last:  ", lastPart.toHexString());
+            //_log("SP:    ", SOUGHT_PATTERN.toHexString());
+            if (lastPart == SOUGHT_PATTERN) {
                 _log("CREATE2 salt:           ", 'keccak256(bytes("', saltStr, '")) = ', uint256(SALT).toHexString());
                 _log("BOLD address:           ", boldAddress.toHexString());
-                break;
+                vm.writeLine(
+                    "bold-address.json",
+                    string.concat(
+                        '{',
+                        '"saltStr":"', saltStr, '",',
+                        '"saltHex":"', uint256(SALT).toHexString(), '",',
+                        '"boldToken":"', boldAddress.toHexString(), '"' // no trailing comma
+                        '},'
+                    )
+                );
+                if (firstPart == SOUGHT_PATTERN) {
+                    break;
+                }
             }
         }
 
-        vm.writeFile("bold-address.json", string.concat('{"boldToken":"', boldAddress.toHexString(), '"}'));
         return;
     }
 }
