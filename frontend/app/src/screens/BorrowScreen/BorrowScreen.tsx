@@ -1,20 +1,14 @@
 "use client";
 
 import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
-import type { Address } from "@/src/types";
+import type { Address, Dnum } from "@/src/types";
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
-import {
-  DEBT_SUGGESTIONS,
-  ETH_MAX_RESERVE,
-  INTEREST_RATE_DEFAULT,
-  MAX_COLLATERAL_DEPOSITS,
-  MIN_DEBT,
-} from "@/src/constants";
+import { DEBT_SUGGESTIONS, ETH_MAX_RESERVE, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
 import content from "@/src/content";
 import { dnum18, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -78,7 +72,7 @@ export function BorrowScreen() {
 
   const debt = useInputFieldValue(fmtnum);
 
-  const [interestRate, setInterestRate] = useState(dn.div(dn.from(INTEREST_RATE_DEFAULT, 18), 100));
+  const [interestRate, setInterestRate] = useState<null | Dnum>(null);
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
   const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(null);
 
