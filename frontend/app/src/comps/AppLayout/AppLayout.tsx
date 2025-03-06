@@ -28,17 +28,25 @@ export function AppLayout({
         background: "background",
       })}
     >
-      {LEGACY_CHECK && <LegacyPositionsBanner />}
       <div
         className={css({
           display: "flex",
           flexDirection: "column",
-          gap: 1,
           width: "100%",
         })}
       >
-        <Banner />
-        {!LEGACY_CHECK && <EarnRiskBanner />}
+        {LEGACY_CHECK && <LegacyPositionsBanner />}
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+            width: "100%",
+          })}
+        >
+          <Banner />
+          {!LEGACY_CHECK && <EarnRiskBanner />}
+        </div>
       </div>
       <div
         className={css({
