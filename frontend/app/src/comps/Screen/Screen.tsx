@@ -70,8 +70,8 @@ export function Screen({
     from: {
       opacity: 0,
       transform: `
-        scale3d(0.95, 0.95, 1)
-        translate3d(0, 20px, 0)
+        scale3d(0.97, 0.97, 1)
+        translate3d(0, 8px, 0)
       `,
     },
     to: {
@@ -84,7 +84,7 @@ export function Screen({
     delay: 100,
     config: {
       mass: 1,
-      tension: 2200,
+      tension: 2800,
       friction: 120,
     },
   });
