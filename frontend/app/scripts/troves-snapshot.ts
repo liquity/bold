@@ -1,9 +1,12 @@
 import * as v from "valibot";
-import { $, argv, echo, glob } from "zx";
+import { argv, echo } from "zx";
 
 const INSTRUCTIONS = `
 Usage:
   pnpm tsx troves-snapshot.ts <subgraph_url>
+
+Example:
+  pnpm tsx troves-snapshot.ts https://gateway.thegraph.com/api/…/subgraphs/id/… > troves-snapshot.json
 
 Options:
   --help, -h  Show this help message.
@@ -74,6 +77,8 @@ export async function main() {
     process.exit(1);
   }
 
-  console.log(await queryTroves(subgraphUrl));
+  console.log(
+    JSON.stringify(await queryTroves(subgraphUrl), null, 2),
+  );
 }
 main();
