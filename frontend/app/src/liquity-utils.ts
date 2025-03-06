@@ -14,6 +14,9 @@ import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { Config as WagmiConfig } from "wagmi";
 
+import { Governance } from "@/src/abi/Governance";
+import { StabilityPool } from "@/src/abi/StabilityPool";
+import { TroveNFT } from "@/src/abi/TroveNFT";
 import {
   DATA_REFRESH_INTERVAL,
   INTEREST_RATE_ADJ_COOLDOWN,
@@ -22,6 +25,7 @@ import {
   INTEREST_RATE_INCREMENT_PRECISE,
   INTEREST_RATE_PRECISE_UNTIL,
   INTEREST_RATE_START,
+  LEGACY_CHECK,
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
@@ -828,5 +832,130 @@ export function useTroveRateUpdateCooldown(branchId: BranchId, troveId: TroveId)
       ) * 1000;
       return (now: number) => Math.max(0, cooldownEndTime - now);
     },
+  });
+}
+
+export function useLegacyPositions(account: Address | null): UseQueryResult<{
+  branches: Array<{
+    collGain: bigint;
+    deposit: bigint;
+    yieldGain: bigint;
+  }>;
+  hasAnyEarnPosition: boolean;
+  hasAnyLoan: boolean;
+  hasAnyPosition: boolean;
+  hasStakeDeposit: boolean;
+  stakeDeposit: bigint;
+}> {
+  const checkLegacyPositions = Boolean(account && LEGACY_CHECK);
+
+  const hasAnyLegacyTrove = useReadContracts({
+    contracts: LEGACY_CHECK?.BRANCHES.map(({ TROVE_NFT }) => ({
+      abi: TroveNFT,
+      address: TROVE_NFT,
+      functionName: "balanceOf" as const,
+      args: [account],
+    })),
+    allowFailure: false,
+    query: {
+      enabled: checkLegacyPositions,
+      refetchInterval: DATA_REFRESH_INTERVAL,
+      select: (balances) => balances.some((balance) => balance > 0n),
+    },
+  });
+
+  const spDeposits = useReadContracts({
+    contracts: LEGACY_CHECK
+      ? [
+        ...LEGACY_CHECK.BRANCHES.map(({ STABILITY_POOL }) => ({
+          abi: StabilityPool,
+          address: STABILITY_POOL,
+          functionName: "getCompoundedBoldDeposit" as const,
+          args: [account],
+        })),
+        ...LEGACY_CHECK.BRANCHES.map(({ STABILITY_POOL }) => ({
+          abi: StabilityPool,
+          address: STABILITY_POOL,
+          functionName: "getDepositorYieldGainWithPending" as const,
+          args: [account],
+        })),
+        ...LEGACY_CHECK.BRANCHES.map(({ STABILITY_POOL }) => ({
+          abi: StabilityPool,
+          address: STABILITY_POOL,
+          functionName: "getDepositorCollGain" as const,
+          args: [account],
+        })),
+      ]
+      : undefined,
+    allowFailure: false,
+    query: {
+      enabled: checkLegacyPositions,
+      refetchInterval: DATA_REFRESH_INTERVAL,
+      select: (results) => {
+        if (!LEGACY_CHECK) {
+          throw new Error(); // should never happen (see checkLegacyPositions)
+        }
+        const branchCount = LEGACY_CHECK.BRANCHES.length;
+        const getBranchSlice = (index: number) => (
+          results.slice(branchCount * index, branchCount * (index + 1))
+        );
+
+        const deposits = getBranchSlice(0);
+        const yieldGains = getBranchSlice(1);
+        const collGains = getBranchSlice(2);
+
+        return {
+          hasAnySpDeposit: deposits.some((deposit) => deposit > 0n),
+          branches: LEGACY_CHECK.BRANCHES.map((_, index) => ({
+            collGain: collGains[index] ?? 0n,
+            deposit: deposits[index] ?? 0n,
+            yieldGain: yieldGains[index] ?? 0n,
+          })),
+        };
+      },
+    },
+  });
+
+  const stakedLqty = useReadContract({
+    abi: Governance,
+    address: LEGACY_CHECK?.GOVERNANCE,
+    functionName: "userStates" as const,
+    args: [account ?? "0x"],
+    query: {
+      enabled: checkLegacyPositions,
+      refetchInterval: DATA_REFRESH_INTERVAL,
+      select: ([
+        unallocatedLQTY,
+        _unallocatedOffset,
+        allocatedLQTY,
+        _allocatedOffset,
+      ]) => unallocatedLQTY + allocatedLQTY,
+    },
+  });
+
+  return useQuery({
+    queryKey: ["hasAnyLegacyPosition", account],
+    queryFn: () => {
+      const stakeDeposit = stakedLqty.data ?? 0n;
+
+      const hasAnyEarnPosition = spDeposits.data?.hasAnySpDeposit ?? false;
+      const hasAnyLoan = hasAnyLegacyTrove.data ?? false;
+      const hasStakeDeposit = stakeDeposit > 0n;
+      return {
+        stakeDeposit: stakedLqty.data ?? 0n,
+        hasAnyEarnPosition,
+        hasAnyLoan,
+        hasStakeDeposit,
+        hasAnyPosition: hasAnyEarnPosition || hasAnyLoan || hasStakeDeposit,
+        branches: spDeposits.data?.branches ?? [],
+      };
+    },
+    refetchInterval: DATA_REFRESH_INTERVAL,
+    enabled: (
+      checkLegacyPositions
+      && hasAnyLegacyTrove.isSuccess
+      && spDeposits.isSuccess
+      && stakedLqty.isSuccess
+    ),
   });
 }

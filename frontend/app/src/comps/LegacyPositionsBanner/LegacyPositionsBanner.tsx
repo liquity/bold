@@ -1,27 +1,20 @@
 "use client";
 
-import type { Address } from "@liquity2/uikit";
-
-import { Governance } from "@/src/abi/Governance";
-import { StabilityPool } from "@/src/abi/StabilityPool";
-import { TroveNFT } from "@/src/abi/TroveNFT";
-import { DATA_REFRESH_INTERVAL, LEGACY_CHECK } from "@/src/constants";
+import { useLegacyPositions } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton, IconChevronSmallUp, IconWarning } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useReadContract, useReadContracts } from "wagmi";
 
 export const LAYOUT_WIDTH = 1092;
 
 export function LegacyPositionsBanner() {
   const account = useAccount();
-  const hasAnyLegacyPosition = useHasAnyLegacyPosition(account.address ?? null);
+  const legacyPositions = useLegacyPositions(account.address ?? null);
 
   const showTransition = useTransition(
-    hasAnyLegacyPosition.data?.any === true,
+    legacyPositions.data?.hasAnyPosition === true,
     {
       from: { marginTop: -41 },
       enter: { marginTop: 0 },
@@ -68,12 +61,11 @@ export function LegacyPositionsBanner() {
             <div>
               You still have open positions on Liquity V2-Legacy.{" "}
               <Link
-                href="https://www.liquity.org/"
+                href="/legacy"
                 passHref
                 legacyBehavior
               >
                 <AnchorTextButton
-                  external
                   label={
                     <div
                       className={css({
@@ -82,7 +74,7 @@ export function LegacyPositionsBanner() {
                         gap: 4,
                       })}
                     >
-                      <div>Go to legacy frontends</div>
+                      <div>Check legacy positions</div>
                       <div
                         className={css({
                           transformOrigin: "50% 50%",
@@ -105,73 +97,4 @@ export function LegacyPositionsBanner() {
       </a.div>
     )
   ));
-}
-
-function useHasAnyLegacyPosition(account: Address | null) {
-  const hasAnyLegacyTrove = useReadContracts({
-    contracts: LEGACY_CHECK?.TROVE_NFT_CONTRACTS.map((address) => ({
-      abi: TroveNFT,
-      address,
-      functionName: "balanceOf" as const,
-      args: [account],
-    })),
-    allowFailure: false,
-    query: {
-      enabled: Boolean(account && LEGACY_CHECK),
-      refetchInterval: DATA_REFRESH_INTERVAL,
-      select: (balances) => balances.some((balance) => balance > 0n),
-    },
-  });
-
-  const hasAnySpDeposit = useReadContracts({
-    contracts: LEGACY_CHECK?.STABILITY_POOL_CONTRACTS.map((address) => ({
-      abi: StabilityPool,
-      address,
-      functionName: "getCompoundedBoldDeposit" as const,
-      args: [account],
-    })),
-    allowFailure: false,
-    query: {
-      enabled: Boolean(account && LEGACY_CHECK),
-      refetchInterval: DATA_REFRESH_INTERVAL,
-      select: (deposits) => deposits.some((deposit) => deposit > 0n),
-    },
-  });
-
-  const hasAnyStakedLqty = useReadContract({
-    abi: Governance,
-    address: LEGACY_CHECK?.GOVERNANCE_CONTRACT,
-    functionName: "userStates" as const,
-    args: [account ?? "0x"],
-    query: {
-      enabled: Boolean(account && LEGACY_CHECK),
-      refetchInterval: DATA_REFRESH_INTERVAL,
-      select: ([
-        unallocatedLQTY,
-        _unallocatedOffset,
-        allocatedLQTY,
-        _allocatedOffset,
-      ]) => (
-        unallocatedLQTY > 0n || allocatedLQTY > 0n
-      ),
-    },
-  });
-
-  return useQuery({
-    queryKey: ["hasAnyLegacyPosition", account],
-    queryFn: () => {
-      const earn = hasAnySpDeposit.data ?? false;
-      const loan = hasAnyLegacyTrove.data ?? false;
-      const stake = hasAnyStakedLqty.data ?? false;
-      return { earn, loan, stake, any: earn || loan || stake };
-    },
-    refetchInterval: DATA_REFRESH_INTERVAL,
-    enabled: Boolean(
-      account
-        && LEGACY_CHECK
-        && hasAnyLegacyTrove.isSuccess
-        && hasAnySpDeposit.isSuccess
-        && hasAnyStakedLqty.isSuccess,
-    ),
-  });
 }

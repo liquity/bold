@@ -29,6 +29,7 @@ import { claimCollateralSurplus, type ClaimCollateralSurplusRequest } from "@/sr
 import { closeLoanPosition, type CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import { earnClaimRewards, type EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
 import { earnUpdate, type EarnUpdateRequest } from "@/src/tx-flows/earnUpdate";
+import { legacyEarnUpdate, type LegacyEarnUpdateRequest } from "@/src/tx-flows/legacyEarnUpdate";
 import { openBorrowPosition, type OpenBorrowPositionRequest } from "@/src/tx-flows/openBorrowPosition";
 import { openLeveragePosition, type OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
 import { redeemCollateral, type RedeemCollateralRequest } from "@/src/tx-flows/redeemCollateral";
@@ -45,6 +46,7 @@ export type FlowRequestMap = {
   "closeLoanPosition": CloseLoanPositionRequest;
   "earnClaimRewards": EarnClaimRewardsRequest;
   "earnUpdate": EarnUpdateRequest;
+  "legacyEarnUpdate": LegacyEarnUpdateRequest;
   "openBorrowPosition": OpenBorrowPositionRequest;
   "openLeveragePosition": OpenLeveragePositionRequest;
   "stakeClaimRewards": StakeClaimRewardsRequest;
@@ -62,6 +64,7 @@ const FlowIdSchema = v.union([
   v.literal("closeLoanPosition"),
   v.literal("earnClaimRewards"),
   v.literal("earnUpdate"),
+  v.literal("legacyEarnUpdate"),
   v.literal("openBorrowPosition"),
   v.literal("openLeveragePosition"),
   v.literal("stakeClaimRewards"),
@@ -79,6 +82,7 @@ export const flows: FlowsMap = {
   closeLoanPosition,
   earnClaimRewards,
   earnUpdate,
+  legacyEarnUpdate,
   openBorrowPosition,
   openLeveragePosition,
   stakeClaimRewards,
