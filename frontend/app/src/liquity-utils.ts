@@ -8,6 +8,7 @@ import type {
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
+  TokenSymbol,
   TroveId,
 } from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
@@ -16,7 +17,7 @@ import type { Config as WagmiConfig } from "wagmi";
 
 import { Governance } from "@/src/abi/Governance";
 import { StabilityPool } from "@/src/abi/StabilityPool";
-import { TroveNFT } from "@/src/abi/TroveNFT";
+import { TroveManager } from "@/src/abi/TroveManager";
 import {
   DATA_REFRESH_INTERVAL,
   INTEREST_RATE_ADJ_COOLDOWN,
@@ -41,6 +42,7 @@ import {
 } from "@/src/subgraph-hooks";
 import { isBranchId, isTroveId } from "@/src/types";
 import { bigIntAbs } from "@/src/utils";
+import { vAddress, vPrefixedTroveId } from "@/src/valibot-utils";
 import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
@@ -835,8 +837,14 @@ export function useTroveRateUpdateCooldown(branchId: BranchId, troveId: TroveId)
   });
 }
 
+const TrovesSnapshotSchema = v.record(
+  vAddress(),
+  v.array(vPrefixedTroveId()),
+);
+
 export function useLegacyPositions(account: Address | null): UseQueryResult<{
-  branches: Array<{
+  spDeposits: Array<{
+    branchId: BranchId;
     collGain: bigint;
     deposit: bigint;
     yieldGain: bigint;
@@ -846,23 +854,81 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
   hasAnyPosition: boolean;
   hasStakeDeposit: boolean;
   stakeDeposit: bigint;
+  troves: Array<{
+    accruedBatchManagementFee: bigint;
+    accruedInterest: bigint;
+    annualInterestRate: bigint;
+    branchId: BranchId;
+    collToken: { name: string; symbol: TokenSymbol };
+    entireColl: bigint;
+    entireDebt: bigint;
+    lastInterestRateAdjTime: bigint;
+    recordedDebt: bigint;
+    redistBoldDebtGain: bigint;
+    redistCollGain: bigint;
+    troveId: TroveId;
+    weightedRecordedDebt: bigint;
+  }>;
 }> {
   const checkLegacyPositions = Boolean(account && LEGACY_CHECK);
 
-  const hasAnyLegacyTrove = useReadContracts({
-    contracts: LEGACY_CHECK?.BRANCHES.map(({ TROVE_NFT }) => ({
-      abi: TroveNFT,
-      address: TROVE_NFT,
-      functionName: "balanceOf" as const,
-      args: [account],
-    })),
+  const legacyTrovesFromSnapshot = useQuery<PrefixedTroveId[]>({
+    queryKey: ["legacyTrovesFromSnapshot", account],
+    queryFn: async () => {
+      if (!LEGACY_CHECK || !account) {
+        throw new Error("LEGACY_CHECK or account not defined");
+      }
+      const result = await fetch(LEGACY_CHECK.TROVES_SNAPSHOT_URL);
+      const trovesByAccount = v.parse(TrovesSnapshotSchema, await result.json());
+      return trovesByAccount[account.toLowerCase() as `0x${string}`] ?? [];
+    },
+    enabled: checkLegacyPositions,
+  });
+
+  const legacyTroves = useReadContracts({
+    contracts: legacyTrovesFromSnapshot.data?.map((prefixedTroveId) => {
+      const { branchId, troveId } = parsePrefixedTroveId(prefixedTroveId);
+      const branch = LEGACY_CHECK?.BRANCHES[branchId as number];
+      const address: Address = branch?.TROVE_MANAGER ?? "0x";
+      return {
+        abi: TroveManager,
+        address,
+        functionName: "getLatestTroveData",
+        args: [BigInt(troveId)],
+      } as const;
+    }),
     allowFailure: false,
     query: {
       enabled: checkLegacyPositions,
       refetchInterval: DATA_REFRESH_INTERVAL,
-      select: (balances) => balances.some((balance) => balance > 0n),
+      select: (results) => (
+        results
+          .map((data, index) => {
+            const prefixedTroveId = legacyTrovesFromSnapshot.data?.[index];
+            if (!prefixedTroveId) {
+              throw new Error("Trove ID not found");
+            }
+            const { branchId, troveId } = parsePrefixedTroveId(prefixedTroveId);
+            const branch = LEGACY_CHECK?.BRANCHES[branchId as number];
+            if (!branch) {
+              throw new Error(`Invalid branch ID: ${branchId}`);
+            }
+            return {
+              ...data,
+              branchId,
+              collToken: {
+                name: branch.name,
+                symbol: branch.symbol,
+              },
+              troveId,
+            };
+          })
+          .filter((trove) => trove.entireDebt > 0n)
+      ),
     },
   });
+
+  const hasAnyLegacyTrove = (legacyTroves.data?.length ?? 0) > 0;
 
   const spDeposits = useReadContracts({
     contracts: LEGACY_CHECK
@@ -893,7 +959,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
       refetchInterval: DATA_REFRESH_INTERVAL,
       select: (results) => {
         if (!LEGACY_CHECK) {
-          throw new Error(); // should never happen (see checkLegacyPositions)
+          throw new Error("LEGACY_CHECK not defined");
         }
         const branchCount = LEGACY_CHECK.BRANCHES.length;
         const getBranchSlice = (index: number) => (
@@ -907,6 +973,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
         return {
           hasAnySpDeposit: deposits.some((deposit) => deposit > 0n),
           branches: LEGACY_CHECK.BRANCHES.map((_, index) => ({
+            branchId: index as BranchId,
             collGain: collGains[index] ?? 0n,
             deposit: deposits[index] ?? 0n,
             yieldGain: yieldGains[index] ?? 0n,
@@ -934,26 +1001,32 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
   });
 
   return useQuery({
-    queryKey: ["hasAnyLegacyPosition", account],
+    queryKey: [
+      "hasAnyLegacyPosition",
+      account,
+      JSON.stringify(legacyTrovesFromSnapshot.data),
+    ],
     queryFn: () => {
       const stakeDeposit = stakedLqty.data ?? 0n;
 
       const hasAnyEarnPosition = spDeposits.data?.hasAnySpDeposit ?? false;
-      const hasAnyLoan = hasAnyLegacyTrove.data ?? false;
       const hasStakeDeposit = stakeDeposit > 0n;
       return {
-        stakeDeposit: stakedLqty.data ?? 0n,
         hasAnyEarnPosition,
-        hasAnyLoan,
+        hasAnyLoan: hasAnyLegacyTrove,
+        hasAnyPosition: hasAnyEarnPosition || hasAnyLegacyTrove || hasStakeDeposit,
         hasStakeDeposit,
-        hasAnyPosition: hasAnyEarnPosition || hasAnyLoan || hasStakeDeposit,
-        branches: spDeposits.data?.branches ?? [],
+        spDeposits: (spDeposits.data?.branches ?? []).filter(
+          (branch) => branch.deposit > 0n,
+        ),
+        stakeDeposit: stakedLqty.data ?? 0n,
+        troves: legacyTroves.data ?? [],
       };
     },
     refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: (
       checkLegacyPositions
-      && hasAnyLegacyTrove.isSuccess
+      && legacyTroves.isSuccess
       && spDeposits.isSuccess
       && stakedLqty.isSuccess
     ),

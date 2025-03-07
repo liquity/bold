@@ -80,22 +80,26 @@ export const REDEMPTION_RISK: Record<Exclude<RiskLevel, "high">, number> = {
 
 // TODO: use mainnet addresses
 export const LEGACY_CHECK = !CHECK_LEGACY_POSITIONS || CHAIN_ID !== 11155111 ? null : {
+  TROVES_SNAPSHOT_URL: "/troves-snapshot-sepolia.json",
   GOVERNANCE: "0xe3f9ca5398cc3d0099c3ad37d3252e37431555b8",
   BOLD_TOKEN: "0xb01d32c05f4aa066eef2bfd4d461833fddd56d0a",
   BRANCHES: [{
     symbol: "ETH",
     name: "ETH",
     STABILITY_POOL: "0x89fb98c98792c8b9e9d468148c6593fa0fc47b40",
-    TROVE_NFT: "0x814541303b140a70741613a62eef7a8d6a940bee",
+    TROVE_MANAGER: "0x364038750236739e0cd96d5754516c9b8168fb0c",
+    LEVERAGE_ZAPPER: "0x482bf4d6a2e61d259a7f97ef6aac8b3ce5dd9f99",
   }, {
     symbol: "WSTETH",
     name: "wstETH",
     STABILITY_POOL: "0x68320bd4bbc16fe14f91501380edaa9ffe5890e1",
-    TROVE_NFT: "0xa043d764044a239ee888370c22043132ee97817e",
+    TROVE_MANAGER: "0xa7b57913b5643025a15c80ca3a56eb6fb59d095d",
+    LEVERAGE_ZAPPER: "0xea7fb1919bf9bae007df10ad8b748ee75fd5971d",
   }, {
     symbol: "RETH",
     name: "rETH",
     STABILITY_POOL: "0x8492ad1df9f89e4b6c54c81149058172592e1c94",
-    TROVE_NFT: "0xee4e0af750653ad654933ffb53354e62b5c409ef",
+    TROVE_MANAGER: "0x310fa1d1d711c75da45952029861bcf0d330aa81",
+    LEVERAGE_ZAPPER: "0x251dfe2078a910c644289f2344fac96bffea7c02",
   }],
 } as const;

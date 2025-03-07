@@ -128,9 +128,11 @@ export function Screen({
       </header>
     )
     : (
-      <div style={{ width }}>
-        {heading}
-      </div>
+      heading && (
+        <div style={{ width }}>
+          {heading}
+        </div>
+      )
     );
 
   return (

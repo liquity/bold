@@ -11,7 +11,7 @@ import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
-  "legacyEarnUpdate",
+  "legacyEarnWithdrawAll",
   {
     pools: v.array(
       v.object({
@@ -26,77 +26,55 @@ const RequestSchema = createRequestSchema(
   },
 );
 
-export type LegacyEarnUpdateRequest = v.InferOutput<typeof RequestSchema>;
+export type LegacyEarnWithdrawAllRequest = v.InferOutput<typeof RequestSchema>;
+type Step = FlowDeclaration<LegacyEarnWithdrawAllRequest>["steps"][number];
 
-export const legacyEarnUpdate: FlowDeclaration<LegacyEarnUpdateRequest> = {
+export const legacyEarnWithdrawAll: FlowDeclaration<LegacyEarnWithdrawAllRequest> = {
   title: "Withdraw from Legacy Earn Pools",
-  Summary: () => null,
+  Summary: null,
   Details({ request }) {
-    return (
-      <>
-        {request.pools.map((pool) => {
-          const branch = LEGACY_CHECK?.BRANCHES[pool.branchIndex];
-          return (
-            branch && (
-              <Fragment key={pool.branchIndex}>
-                <TransactionDetailsRow
-                  label={[
-                    `Withdraw deposit from ${branch?.name} pool`,
-                    (pool.rewards.coll[0] > 0n || pool.rewards.bold[0] > 0n)
-                      ? "And claim rewards"
-                      : null,
-                  ]}
-                  value={[
+    return request.pools.map((pool) => {
+      const branch = LEGACY_CHECK?.BRANCHES[pool.branchIndex];
+      return (
+        branch && (
+          <Fragment key={pool.branchIndex}>
+            <TransactionDetailsRow
+              label={[
+                `Withdraw deposit from ${branch?.name} pool`,
+                (pool.rewards.coll[0] > 0n || pool.rewards.bold[0] > 0n)
+                  ? "And claim rewards"
+                  : null,
+              ]}
+              value={[
+                <Amount
+                  key="start"
+                  suffix=" BOLD"
+                  value={pool.deposit}
+                />,
+                pool.rewards.coll[0] > 0n
+                  ? (
                     <Amount
-                      key="start"
-                      suffix=" BOLD"
-                      value={pool.deposit}
-                    />,
-                    pool.rewards.coll[0] > 0n
-                      ? (
-                        <Amount
-                          key="middle"
-                          value={pool.rewards.coll}
-                          suffix={` ${branch.symbol}`}
-                        />
-                      )
-                      : null,
-                    pool.rewards.bold[0] > 0n
-                      ? (
-                        <Amount
-                          key="end"
-                          value={pool.rewards.bold}
-                          suffix=" BOLD"
-                        />
-                      )
-                      : null,
-                  ]}
-                />
-                {
-                  /*dn.gt(rewards.coll, 0) && (
-                <TransactionDetailsRow
-                  label={`Claim ${collateral.name} rewards`}
-                  value={[
-                    <Amount
-                      key="start"
-                      value={rewards.coll}
-                      suffix={` ${collateral.symbol}`}
-                    />,
+                      key="middle"
+                      value={pool.rewards.coll}
+                      suffix={` ${branch.symbol}`}
+                    />
+                  )
+                  : null,
+                pool.rewards.bold[0] > 0n
+                  ? (
                     <Amount
                       key="end"
-                      value={collPrice.data && dn.mul(rewards.coll, collPrice.data)}
-                      prefix="$"
-                    />,
-                  ]}
-                />
-              )*/
-                }
-              </Fragment>
-            )
-          );
-        })}
-      </>
-    );
+                      value={pool.rewards.bold}
+                      suffix=" BOLD"
+                    />
+                  )
+                  : null,
+              ]}
+            />
+          </Fragment>
+        )
+      );
+    });
   },
 
   // doing this is easier than supporting dynamic steps,
@@ -124,8 +102,6 @@ export const legacyEarnUpdate: FlowDeclaration<LegacyEarnUpdateRequest> = {
     return v.parse(RequestSchema, request);
   },
 };
-
-type Step = FlowDeclaration<LegacyEarnUpdateRequest>["steps"][number];
 
 function getWithdrawStep(legacyBranchIndex: number): Step {
   const legacyBranch = LEGACY_CHECK?.BRANCHES[legacyBranchIndex];

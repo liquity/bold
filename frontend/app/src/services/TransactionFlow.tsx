@@ -29,7 +29,9 @@ import { claimCollateralSurplus, type ClaimCollateralSurplusRequest } from "@/sr
 import { closeLoanPosition, type CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import { earnClaimRewards, type EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
 import { earnUpdate, type EarnUpdateRequest } from "@/src/tx-flows/earnUpdate";
-import { legacyEarnUpdate, type LegacyEarnUpdateRequest } from "@/src/tx-flows/legacyEarnUpdate";
+import { legacyCloseLoanPosition, type LegacyCloseLoanPositionRequest } from "@/src/tx-flows/legacyCloseLoanPosition";
+import { legacyEarnWithdrawAll, type LegacyEarnWithdrawAllRequest } from "@/src/tx-flows/legacyEarnWithdrawAll";
+import { legacyUnstakeAll, type LegacyUnstakeAllRequest } from "@/src/tx-flows/legacyUnstakeAll";
 import { openBorrowPosition, type OpenBorrowPositionRequest } from "@/src/tx-flows/openBorrowPosition";
 import { openLeveragePosition, type OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
 import { redeemCollateral, type RedeemCollateralRequest } from "@/src/tx-flows/redeemCollateral";
@@ -46,7 +48,9 @@ export type FlowRequestMap = {
   "closeLoanPosition": CloseLoanPositionRequest;
   "earnClaimRewards": EarnClaimRewardsRequest;
   "earnUpdate": EarnUpdateRequest;
-  "legacyEarnUpdate": LegacyEarnUpdateRequest;
+  "legacyCloseLoanPosition": LegacyCloseLoanPositionRequest;
+  "legacyEarnWithdrawAll": LegacyEarnWithdrawAllRequest;
+  "legacyUnstakeAll": LegacyUnstakeAllRequest;
   "openBorrowPosition": OpenBorrowPositionRequest;
   "openLeveragePosition": OpenLeveragePositionRequest;
   "stakeClaimRewards": StakeClaimRewardsRequest;
@@ -64,7 +68,9 @@ const FlowIdSchema = v.union([
   v.literal("closeLoanPosition"),
   v.literal("earnClaimRewards"),
   v.literal("earnUpdate"),
-  v.literal("legacyEarnUpdate"),
+  v.literal("legacyCloseLoanPosition"),
+  v.literal("legacyEarnWithdrawAll"),
+  v.literal("legacyUnstakeAll"),
   v.literal("openBorrowPosition"),
   v.literal("openLeveragePosition"),
   v.literal("stakeClaimRewards"),
@@ -82,7 +88,9 @@ export const flows: FlowsMap = {
   closeLoanPosition,
   earnClaimRewards,
   earnUpdate,
-  legacyEarnUpdate,
+  legacyCloseLoanPosition,
+  legacyEarnWithdrawAll,
+  legacyUnstakeAll,
   openBorrowPosition,
   openLeveragePosition,
   stakeClaimRewards,
@@ -145,11 +153,13 @@ export type FlowStepDeclaration<FlowRequest extends BaseFlowRequest = BaseFlowRe
 
 export type FlowDeclaration<FlowRequest extends BaseFlowRequest> = {
   title: ReactNode;
-  Summary: ComponentType<{
-    account: Address;
-    request: FlowRequest;
-    steps: FlowStep[] | null;
-  }>;
+  Summary:
+    | null
+    | ComponentType<{
+      account: Address;
+      request: FlowRequest;
+      steps: FlowStep[] | null;
+    }>;
   Details: ComponentType<{
     account: Address;
     request: FlowRequest;
