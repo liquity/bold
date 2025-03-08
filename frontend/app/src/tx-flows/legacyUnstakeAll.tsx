@@ -1,14 +1,15 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
-import type { Address } from "@/src/types";
 
+import { Governance } from "@/src/abi/Governance";
 import { Amount } from "@/src/comps/Amount/Amount";
+import { LEGACY_CHECK } from "@/src/constants";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
-import { vDnum } from "@/src/valibot-utils";
+import { vAddress, vDnum } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
+import { readContracts } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -52,15 +53,47 @@ export const legacyUnstakeAll: FlowDeclaration<LegacyUnstakeAllRequest> = {
       Status: TransactionStatus,
 
       async commit(ctx) {
-        const allocated = await graphQuery(
-          GovernanceUserAllocated,
-          { id: ctx.account.toLowerCase() },
+        if (!LEGACY_CHECK) {
+          throw new Error("LEGACY_CHECK is not defined");
+        }
+
+        const initiativesFromSnapshotResult = await fetch(LEGACY_CHECK.INITIATIVES_SNAPSHOT_URL);
+        const initiativesFromSnapshot = v.parse(
+          v.array(vAddress()),
+          await initiativesFromSnapshotResult.json(),
         );
 
+        const lqtyAllocatedByUser = await readContracts(ctx.wagmiConfig, {
+          contracts: initiativesFromSnapshot.map((initiative) => {
+            if (!LEGACY_CHECK) {
+              throw new Error("LEGACY_CHECK is not defined");
+            }
+            return {
+              abi: Governance,
+              address: LEGACY_CHECK.GOVERNANCE,
+              functionName: "lqtyAllocatedByUserToInitiative",
+              args: [ctx.account, initiative],
+            } as const;
+          }),
+          allowFailure: false,
+        });
+
+        const allocatedInitiatives = lqtyAllocatedByUser
+          .map((allocation, index) => {
+            const [voteLQTY, _, vetoLQTY] = allocation;
+            const initiative = initiativesFromSnapshot[index];
+            if (!initiative) {
+              throw new Error("initiative missing");
+            }
+            return voteLQTY > 0n || vetoLQTY > 0n ? initiative : null;
+          })
+          .filter((initiative) => initiative !== null);
+
         return ctx.writeContract({
-          ...ctx.contracts.Governance,
+          abi: Governance,
+          address: LEGACY_CHECK.GOVERNANCE,
           functionName: "resetAllocations",
-          args: [(allocated.governanceUser?.allocated ?? []) as Address[], true],
+          args: [allocatedInitiatives, true],
         });
       },
 
@@ -74,9 +107,12 @@ export const legacyUnstakeAll: FlowDeclaration<LegacyUnstakeAllRequest> = {
       Status: TransactionStatus,
 
       async commit(ctx) {
-        const { Governance } = ctx.contracts;
+        if (!LEGACY_CHECK) {
+          throw new Error("LEGACY_CHECK is not defined");
+        }
         return ctx.writeContract({
-          ...Governance,
+          abi: Governance,
+          address: LEGACY_CHECK.GOVERNANCE,
           functionName: "withdrawLQTY",
           args: [ctx.request.lqtyAmount[0]],
         });
@@ -88,15 +124,26 @@ export const legacyUnstakeAll: FlowDeclaration<LegacyUnstakeAllRequest> = {
     },
   },
 
-  async getSteps({ account }) {
+  async getSteps(ctx) {
     const steps: string[] = [];
 
+    if (!LEGACY_CHECK) {
+      throw new Error("LEGACY_CHECK is not defined");
+    }
+
     // check if the user has any allocations
-    const allocated = await graphQuery(GovernanceUserAllocated, {
-      id: account.toLowerCase(),
+    const [
+      _unallocatedLQTY,
+      _unallocatedOffset,
+      allocatedLQTY,
+    ] = await ctx.readContract({
+      abi: Governance,
+      address: LEGACY_CHECK.GOVERNANCE,
+      functionName: "userStates",
+      args: [ctx.account],
     });
 
-    if ((allocated.governanceUser?.allocated.length ?? 0) > 0) {
+    if (allocatedLQTY > 0n) {
       steps.push("resetAllocations");
     }
 

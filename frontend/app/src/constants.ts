@@ -80,9 +80,10 @@ export const REDEMPTION_RISK: Record<Exclude<RiskLevel, "high">, number> = {
 
 // TODO: use mainnet addresses
 export const LEGACY_CHECK = !CHECK_LEGACY_POSITIONS || CHAIN_ID !== 11155111 ? null : {
-  TROVES_SNAPSHOT_URL: "/troves-snapshot-sepolia.json",
-  GOVERNANCE: "0xe3f9ca5398cc3d0099c3ad37d3252e37431555b8",
   BOLD_TOKEN: "0xb01d32c05f4aa066eef2bfd4d461833fddd56d0a",
+  GOVERNANCE: "0xe3f9ca5398cc3d0099c3ad37d3252e37431555b8",
+  INITIATIVES_SNAPSHOT_URL: "/initiatives-snapshot-sepolia.json",
+  TROVES_SNAPSHOT_URL: "/troves-snapshot-sepolia.json",
   BRANCHES: [{
     symbol: "ETH",
     name: "ETH",

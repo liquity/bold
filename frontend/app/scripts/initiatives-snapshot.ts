@@ -3,50 +3,41 @@ import { argv, echo } from "zx";
 
 const INSTRUCTIONS = `
 Usage:
-  pnpm tsx troves-snapshot.ts <subgraph_url>
+  pnpm tsx initiatives-snapshot.ts <subgraph_url>
 
 Example:
-  pnpm tsx troves-snapshot.ts https://gateway.thegraph.com/api/{API_KEY}/subgraphs/id/{SUBGRAPH_ID} > troves-snapshot.json
+  pnpm tsx initiatives-snapshot.ts https://gateway.thegraph.com/api/{API_KEY}/subgraphs/id/{SUBGRAPH_ID} > initiatives-snapshot.json
 
 Options:
   --help, -h  Show this help message.
 `;
 
 const HELP = `
-Generates a JSON snapshot of the currently opened Troves.
+Generates a JSON snapshot of the currently registered initiatives.
 ${INSTRUCTIONS}
 `;
 
-const QueryTrovesResultSchema = v.pipe(
+const QueryInitiativesResultSchema = v.pipe(
   v.object({
-    troves: v.array(
+    governanceInitiatives: v.array(
       v.object({
         id: v.string(),
-        borrower: v.string(),
       }),
     ),
   }),
-  v.transform(({ troves }) => {
-    const trovesByBorrower: Record<string, string[]> = {};
-    for (const { borrower, id } of troves) {
-      if (!trovesByBorrower[borrower]) {
-        trovesByBorrower[borrower] = [];
-      }
-      trovesByBorrower[borrower].push(id);
-    }
-    return trovesByBorrower;
-  }),
+  v.transform(({ governanceInitiatives }) => (
+    governanceInitiatives.map(({ id }) => id)
+  )),
 );
 
-async function queryTroves(subgraphUrl: string) {
+async function queryInitiatives(subgraphUrl: string) {
   const result = await fetch(subgraphUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       query: `{
-        troves(where: { borrower_not: "0x0000000000000000000000000000000000000000"}) {
+        governanceInitiatives {
           id
-          borrower
         }
       }`,
       operationName: "Subgraphs",
@@ -55,7 +46,7 @@ async function queryTroves(subgraphUrl: string) {
 
   const { data } = await result.json();
 
-  return v.parse(QueryTrovesResultSchema, data);
+  return v.parse(QueryInitiativesResultSchema, data);
 }
 
 export async function main() {
@@ -78,7 +69,7 @@ export async function main() {
   }
 
   console.log(
-    JSON.stringify(await queryTroves(subgraphUrl), null, 2),
+    JSON.stringify(await queryInitiatives(subgraphUrl), null, 2),
   );
 }
 main();
