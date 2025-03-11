@@ -24,7 +24,6 @@ import { estimateGas, readContract, writeContract } from "wagmi/actions";
 
 /* flows registration */
 
-import { allocateVotingPower, type AllocateVotingPowerRequest } from "@/src/tx-flows/allocateVotingPower";
 import { claimCollateralSurplus, type ClaimCollateralSurplusRequest } from "@/src/tx-flows/claimCollateralSurplus";
 import { closeLoanPosition, type CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import { earnClaimRewards, type EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
@@ -32,59 +31,44 @@ import { earnUpdate, type EarnUpdateRequest } from "@/src/tx-flows/earnUpdate";
 import { openBorrowPosition, type OpenBorrowPositionRequest } from "@/src/tx-flows/openBorrowPosition";
 import { openLeveragePosition, type OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
 import { redeemCollateral, type RedeemCollateralRequest } from "@/src/tx-flows/redeemCollateral";
-import { stakeClaimRewards, type StakeClaimRewardsRequest } from "@/src/tx-flows/stakeClaimRewards";
-import { stakeDeposit, type StakeDepositRequest } from "@/src/tx-flows/stakeDeposit";
-import { unstakeDeposit, type UnstakeDepositRequest } from "@/src/tx-flows/unstakeDeposit";
 import { updateBorrowPosition, type UpdateBorrowPositionRequest } from "@/src/tx-flows/updateBorrowPosition";
 import { updateLeveragePosition, type UpdateLeveragePositionRequest } from "@/src/tx-flows/updateLeveragePosition";
 import { updateLoanInterestRate, type UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
 
 export type FlowRequestMap = {
-  "allocateVotingPower": AllocateVotingPowerRequest;
   "claimCollateralSurplus": ClaimCollateralSurplusRequest;
   "closeLoanPosition": CloseLoanPositionRequest;
   "earnClaimRewards": EarnClaimRewardsRequest;
   "earnUpdate": EarnUpdateRequest;
   "openBorrowPosition": OpenBorrowPositionRequest;
   "openLeveragePosition": OpenLeveragePositionRequest;
-  "stakeClaimRewards": StakeClaimRewardsRequest;
   "redeemCollateral": RedeemCollateralRequest;
-  "stakeDeposit": StakeDepositRequest;
-  "unstakeDeposit": UnstakeDepositRequest;
   "updateBorrowPosition": UpdateBorrowPositionRequest;
   "updateLeveragePosition": UpdateLeveragePositionRequest;
   "updateLoanInterestRate": UpdateLoanInterestRateRequest;
 };
 
 const FlowIdSchema = v.union([
-  v.literal("allocateVotingPower"),
   v.literal("claimCollateralSurplus"),
   v.literal("closeLoanPosition"),
   v.literal("earnClaimRewards"),
   v.literal("earnUpdate"),
   v.literal("openBorrowPosition"),
   v.literal("openLeveragePosition"),
-  v.literal("stakeClaimRewards"),
   v.literal("redeemCollateral"),
-  v.literal("stakeDeposit"),
-  v.literal("unstakeDeposit"),
   v.literal("updateBorrowPosition"),
   v.literal("updateLeveragePosition"),
   v.literal("updateLoanInterestRate"),
 ]);
 
 export const flows: FlowsMap = {
-  allocateVotingPower,
   claimCollateralSurplus,
   closeLoanPosition,
   earnClaimRewards,
   earnUpdate,
   openBorrowPosition,
   openLeveragePosition,
-  stakeClaimRewards,
   redeemCollateral,
-  stakeDeposit,
-  unstakeDeposit,
   updateBorrowPosition,
   updateLeveragePosition,
   updateLoanInterestRate,

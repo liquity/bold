@@ -34,43 +34,6 @@ dataSources:
           handler: handleCollateralRegistryAddressChanged
       file: ./src/BoldToken.mapping.ts
     network: mainnet
-  - kind: ethereum/contract
-    name: Governance
-    source:
-      abi: Governance
-      address: "0x636deb767cd7d0f15ca4ab8ea9a9b26e98b426ac"
-      startBlock: 21640111
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.9
-      language: wasm/assemblyscript
-      entities:
-        - GovernanceAllocation
-        - GovernanceInitiative
-        - GovernanceStats
-        - GovernanceUser
-      abis:
-        - name: Governance
-          file: ../contracts/out/Governance.sol/Governance.json
-      eventHandlers:
-        - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,uint8)
-          handler: handleAllocateLQTY
-        - event: ClaimForInitiative(indexed address,uint256,uint256,uint8)
-          handler: handleClaimForInitiative
-        - event: DepositLQTY(indexed
-            address,address,uint256,uint256,uint256,uint256,uint256)
-          handler: handleDepositLQTY
-        - event: RegisterInitiative(address,address,uint256,uint8)
-          handler: handleRegisterInitiative
-        - event: SnapshotVotesForInitiative(indexed address,uint256,uint256,uint256)
-          handler: handleSnapshotVotesForInitiative
-        - event: UnregisterInitiative(address,uint256,uint8)
-          handler: handleUnregisterInitiative
-        - event: WithdrawLQTY(indexed
-            address,address,uint256,uint256,uint256,uint256,uint256,uint256)
-          handler: handleWithdrawLQTY
-      file: ./src/Governance.mapping.ts
-    network: mainnet
 templates:
   - name: TroveManager
     kind: ethereum/contract

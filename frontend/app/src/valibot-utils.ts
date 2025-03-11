@@ -162,20 +162,6 @@ export function vEnvCurrency() {
   );
 }
 
-export function vPositionStake() {
-  return v.object({
-    type: v.literal("stake"),
-    owner: vAddress(),
-    deposit: vDnum(),
-    share: vDnum(),
-    totalStaked: vDnum(),
-    rewards: v.object({
-      lusd: vDnum(),
-      eth: vDnum(),
-    }),
-  });
-}
-
 const VPositionLoanBase = v.object({
   type: v.union([
     v.literal("borrow"),
@@ -233,22 +219,4 @@ export function vPositionEarn() {
       coll: vDnum(),
     }),
   });
-}
-
-export function vVote() {
-  return v.union([
-    v.literal("for"),
-    v.literal("against"),
-  ]);
-}
-
-export function vVoteAllocation() {
-  return v.object({
-    vote: v.union([v.null(), vVote()]),
-    value: vDnum(),
-  });
-}
-
-export function vVoteAllocations() {
-  return v.record(vAddress(), vVoteAllocation());
 }

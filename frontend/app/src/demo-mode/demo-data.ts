@@ -70,17 +70,6 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
       coll: dn.from(0.943, 18),
     },
   },
-  {
-    type: "stake",
-    owner: DEMO_ACCOUNT,
-    deposit: dn.from(3414, 18),
-    share: dn.div(dn.from(3414, 18), STAKED_LQTY_TOTAL),
-    totalStaked: STAKED_LQTY_TOTAL,
-    rewards: {
-      lusd: dn.from(789.438, 18),
-      eth: dn.from(0.943, 18),
-    },
-  },
 ];
 
 export const BORROW_STATS = {

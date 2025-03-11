@@ -5,18 +5,15 @@ import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
-import { useStakePosition } from "@/src/liquity-utils";
 import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { a, useSpring, useTransition } from "@react-spring/web";
-import * as dn from "dnum";
 import { useEffect, useRef, useState } from "react";
 import { match, P } from "ts-pattern";
 import { NewPositionCard } from "./NewPositionCard";
 import { PositionCard } from "./PositionCard";
 import { PositionCardEarn } from "./PositionCardEarn";
 import { PositionCardLoan } from "./PositionCardLoan";
-import { PositionCardStake } from "./PositionCardStake";
 
 type Mode = "positions" | "loading" | "actions";
 
@@ -39,13 +36,11 @@ export function Positions({
 }) {
   const loans = useLoansByAccount(address);
   const earnPositions = useEarnPositionsByAccount(address);
-  const stakePosition = useStakePosition(address);
 
   const isPositionsPending = Boolean(
     address && (
       loans.isPending
       || earnPositions.isPending
-      || stakePosition.isPending
     ),
   );
 
@@ -53,7 +48,6 @@ export function Positions({
     DEMO_MODE ? ACCOUNT_POSITIONS : [
       ...loans.data ?? [],
       ...earnPositions.data ?? [],
-      ...stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : [],
     ]
   );
 
@@ -126,10 +120,6 @@ function PositionsGroup({
               index,
               <PositionCardEarn key={index} {...p} />,
             ])
-            .with({ type: "stake" }, (p) => [
-              index,
-              <PositionCardStake key={index} {...p} />,
-            ])
             .exhaustive()
         )) ?? [],
       );
@@ -147,7 +137,6 @@ function PositionsGroup({
           [0, <ActionCard key="0" type="borrow" />],
           [1, <ActionCard key="1" type="multiply" />],
           [2, <ActionCard key="2" type="earn" />],
-          [3, <ActionCard key="3" type="stake" />],
         ]
         : [])
     .exhaustive();

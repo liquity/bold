@@ -19,9 +19,6 @@ import { useCallback } from "react";
 import {
   AllInterestRateBracketsQuery,
   BorrowerInfoQuery,
-  GovernanceInitiatives,
-  GovernanceStats,
-  GovernanceUser,
   graphQuery,
   StabilityPoolDepositQuery,
   StabilityPoolDepositsByAccountQuery,
@@ -408,77 +405,6 @@ export function useAllInterestRateBrackets(
           };
         });
     }, []),
-    ...prepareOptions(options),
-  });
-}
-
-export function useGovernanceInitiatives(options?: Options) {
-  let queryFn = async () => {
-    const { governanceInitiatives } = await graphQuery(GovernanceInitiatives);
-    return governanceInitiatives.map((initiative) => initiative.id as Address);
-  };
-
-  if (DEMO_MODE) {
-    queryFn = async () => [];
-  }
-
-  return useQuery({
-    queryKey: ["GovernanceInitiatives"],
-    queryFn,
-    ...prepareOptions(options),
-  });
-}
-
-export function useGovernanceUser(account: Address | null, options?: Options) {
-  let queryFn = async () => {
-    if (!account) return null;
-    const { governanceUser } = await graphQuery(GovernanceUser, {
-      id: account.toLowerCase(),
-    });
-    if (!governanceUser) {
-      return null;
-    }
-    return {
-      ...governanceUser,
-      id: governanceUser.id as Address,
-      allocatedLQTY: BigInt(governanceUser.allocatedLQTY),
-      stakedLQTY: BigInt(governanceUser.stakedLQTY),
-      stakedOffset: BigInt(governanceUser.stakedOffset),
-      allocations: governanceUser.allocations.map((allocation) => ({
-        ...allocation,
-        voteLQTY: BigInt(allocation.voteLQTY),
-        vetoLQTY: BigInt(allocation.vetoLQTY),
-        initiative: allocation.initiative.id as Address,
-      })),
-    };
-  };
-
-  // TODO: demo mode
-  if (DEMO_MODE) {
-    queryFn = async () => null;
-  }
-
-  return useQuery({
-    queryKey: ["GovernanceUser", account],
-    queryFn,
-    ...prepareOptions(options),
-  });
-}
-
-export function useGovernanceStats(options?: Options) {
-  let queryFn = async () => {
-    const { governanceStats } = await graphQuery(GovernanceStats);
-    return governanceStats;
-  };
-
-  // TODO: demo mode
-  if (DEMO_MODE) {
-    queryFn = async () => null;
-  }
-
-  return useQuery({
-    queryKey: ["GovernanceStats"],
-    queryFn,
     ...prepareOptions(options),
   });
 }

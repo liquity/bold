@@ -16,7 +16,9 @@ import { useReadContract } from "wagmi";
 
 type PriceToken = "LQTY" | "BOLD" | "LUSD" | CollateralSymbol;
 
-function useCollateralPrice(symbol: null | CollateralSymbol): UseQueryResult<Dnum> {
+function useCollateralPrice(
+  symbol: null | CollateralSymbol
+): UseQueryResult<Dnum> {
   // "ETH" is a fallback when null is passed, so we can return a standard
   // query object from the PriceFeed ABI, while the query stays disabled
   const PriceFeed = getBranchContract(symbol ?? "ETH", "PriceFeed");
@@ -24,14 +26,19 @@ function useCollateralPrice(symbol: null | CollateralSymbol): UseQueryResult<Dnu
   if (!PriceFeed) {
     throw new Error(`Price feed contract not found for ${symbol}`);
   }
-
+  
+  // TODO: fix this
+  // @ts-ignore
   return useReadContract({
     ...PriceFeed,
+    // TODO: fix this
+    // @ts-ignore
     functionName: "fetchPrice",
+    allowFailure: false,
     query: {
       enabled: symbol !== null,
       refetchInterval: PRICE_REFRESH_INTERVAL,
-      select: ([price]) => dnum18(price),
+      select: (price) => dnum18(price),
     },
   });
 }
@@ -40,11 +47,13 @@ type CoinGeckoSymbol = TokenSymbol & ("LQTY" | "LUSD");
 const coinGeckoTokenIds: {
   [key in CoinGeckoSymbol]: string;
 } = {
-  "LQTY": "liquity",
-  "LUSD": "liquity-usd",
+  LQTY: "liquity",
+  LUSD: "liquity-usd",
 };
 
-function useCoinGeckoPrice(supportedSymbol: null | CoinGeckoSymbol): UseQueryResult<Dnum> {
+function useCoinGeckoPrice(
+  supportedSymbol: null | CoinGeckoSymbol
+): UseQueryResult<Dnum> {
   return useQuery({
     queryKey: ["coinGeckoPrice", ...Object.keys(coinGeckoTokenIds)],
     queryFn: async () => {
@@ -67,17 +76,21 @@ function useCoinGeckoPrice(supportedSymbol: null | CoinGeckoSymbol): UseQueryRes
       const response = await fetch(url, { headers });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch price for ${Object.keys(coinGeckoTokenIds).join(",")}`);
+        throw new Error(
+          `Failed to fetch price for ${Object.keys(coinGeckoTokenIds).join(
+            ","
+          )}`
+        );
       }
 
       const result = v.parse(
         v.object(
           v.entriesFromList(
             Object.values(coinGeckoTokenIds),
-            v.object({ "usd": v.number() }),
-          ),
+            v.object({ usd: v.number() })
+          )
         ),
-        await response.json(),
+        await response.json()
       );
 
       const prices = {} as { [key in CoinGeckoSymbol]: Dnum | null };
@@ -102,9 +115,12 @@ function useCoinGeckoPrice(supportedSymbol: null | CoinGeckoSymbol): UseQueryRes
   });
 }
 
-export function usePrice<PT extends PriceToken>(symbol: PT | null): UseQueryResult<Dnum> {
+export function usePrice<PT extends PriceToken>(
+  symbol: PT | null
+): UseQueryResult<Dnum> {
   const fromCoinGecko = symbol === "LQTY" || symbol === "LUSD";
-  const fromPriceFeed = !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
+  const fromPriceFeed =
+    !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
 
   const collPrice = useCollateralPrice(fromPriceFeed ? symbol : null);
   const coinGeckoPrice = useCoinGeckoPrice(fromCoinGecko ? symbol : null);
