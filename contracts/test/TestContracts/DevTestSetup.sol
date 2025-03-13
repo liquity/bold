@@ -5,6 +5,8 @@ import "./BaseTest.sol";
 import {TestDeployer} from "./Deployment.t.sol";
 
 contract DevTestSetup is BaseTest {
+    TestDeployer public deployer;
+
     function giveAndApproveColl(address _account, uint256 _amount) public {
         return giveAndApproveCollateral(collToken, _account, _amount, address(borrowerOperations));
     }
@@ -47,7 +49,7 @@ contract DevTestSetup is BaseTest {
             accountsList[6]
         );
 
-        TestDeployer deployer = new TestDeployer();
+        deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev memory contracts;
         TestDeployer.Zappers memory zappers;
         (contracts, collateralRegistry, boldToken, hintHelpers,, WETH, zappers) = deployer.deployAndConnectContracts();

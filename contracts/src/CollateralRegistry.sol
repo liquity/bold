@@ -119,7 +119,7 @@ contract CollateralRegistry is ICollateralRegistry {
             (uint256 unbackedPortion, uint256 price, bool redeemable) =
                 troveManager.getUnbackedPortionPriceAndRedeemability();
             prices[index] = price;
-            if (redeemable) {
+            if (redeemable && _isWhitelistedRedeemer(troveManager, msg.sender)) {
                 totals.unbacked += unbackedPortion;
                 unbackedPortions[index] = unbackedPortion;
             }
@@ -132,7 +132,7 @@ contract CollateralRegistry is ICollateralRegistry {
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
                 ITroveManager troveManager = getTroveManager(index);
                 (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
-                if (redeemable) {
+                if (redeemable && _isWhitelistedRedeemer(troveManager, msg.sender)) {
                     uint256 unbackedPortion = troveManager.getEntireBranchDebt();
                     totals.unbacked += unbackedPortion;
                     unbackedPortions[index] = unbackedPortion;
@@ -291,6 +291,22 @@ contract CollateralRegistry is ICollateralRegistry {
     }
 
     // require functions
+
+    function _isWhitelistedRedeemer(ITroveManager troveManager, address redeemer) internal view returns (bool) {
+        IWhitelist whitelist = troveManager.whitelist();
+
+        // if a branch does not implement whitelisting, the whitelist contract address is 0
+        bool whitelisted = true;
+        if(address(whitelist) != address(0)) {
+            try whitelist.isWhitelisted(redeemer) returns (bool w) {
+                whitelisted = w;
+            } catch {
+                whitelisted = false;
+            }
+        }
+
+        return whitelisted;
+    }
 
     function _requireValidMaxFeePercentage(uint256 _maxFeePercentage) internal pure {
         require(

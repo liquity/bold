@@ -66,4 +66,10 @@ contract LiquityBase is ILiquityBase {
     function _calcInterest(uint256 _weightedDebt, uint256 _period) internal pure returns (uint256) {
         return _weightedDebt * _period / ONE_YEAR / DECIMAL_PRECISION;
     }
+
+    function _updatePriceFeed(IPriceFeed _newPriceFeed) internal {
+        priceFeed = _newPriceFeed;
+
+        emit PriceFeedAddressChanged(address(_newPriceFeed));
+    }
 }

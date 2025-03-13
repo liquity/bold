@@ -31,6 +31,8 @@ import "./IBoldRewardsReceiver.sol";
 interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     function boldToken() external view returns (IBoldToken);
     function troveManager() external view returns (ITroveManager);
+    
+    function updatePriceFeed(IPriceFeed _newPriceFeed) external;
 
     /*  provideToSP():
     * - Calculates depositor's Coll gain

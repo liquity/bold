@@ -199,6 +199,8 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     // Error tracker fror the error correction in the BOLD reward calculation
     uint256 public lastYieldError;
 
+    error NotWhitelisted(address user);
+
     // --- Events ---
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
@@ -211,6 +213,12 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         emit TroveManagerAddressChanged(address(troveManager));
         emit BoldTokenAddressChanged(address(boldToken));
+    }
+
+    // --- Contracts update logic ---
+    function updatePriceFeed(IPriceFeed _newPriceFeed) external override {
+        _requireCallerIsTroveManager();
+        _updatePriceFeed(_newPriceFeed);
     }
 
     // --- Getters for public variables. Required by IPool interface ---
@@ -240,6 +248,8 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     * - Sends depositor's accumulated Coll gains to depositor
     */
     function provideToSP(uint256 _topUp, bool _doClaim) external override {
+        _requireIsWhitelisted(msg.sender);
+
         _requireNonZeroAmount(_topUp);
 
         activePool.mintAggInterest();
@@ -806,6 +816,21 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     }
 
     // --- 'require' functions ---
+    function _requireIsWhitelisted(address user) internal view {
+        bool whitelisted = true;
+        IWhitelist whitelist = troveManager.whitelist();
+
+        if(address(whitelist) != address(0)) {
+            try whitelist.isWhitelisted(user) returns (bool w) {
+                whitelisted = w;
+            } catch {
+                whitelisted = false;
+            }
+        }
+
+        if(!whitelisted)
+            revert NotWhitelisted(user);
+    }
 
     function _requireCallerIsActivePool() internal view {
         require(msg.sender == address(activePool), "StabilityPool: Caller is not ActivePool");

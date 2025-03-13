@@ -3,7 +3,7 @@
 pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "./Dependencies/Ownable.sol";
+import "./Dependencies/Owned.sol";
 import "./Interfaces/IBoldToken.sol";
 
 /*
@@ -16,7 +16,8 @@ import "./Interfaces/IBoldToken.sol";
  * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move Bold tokens between Liquity <-> user.
  */
 
-contract BoldToken is Ownable, IBoldToken, ERC20Permit {
+// TODO naming
+contract BoldToken is Owned, IBoldToken, ERC20Permit {
     string internal constant _NAME = "Bold Stablecoin";
     string internal constant _SYMBOL = "Bold";
 
@@ -35,7 +36,9 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
     event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
     event ActivePoolAddressAdded(address _newActivePoolAddress);
 
-    constructor(address _owner) Ownable(_owner) ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {}
+    error AlreadyInitialised();
+
+    constructor(address _owner) Owned(_owner) ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {}
 
     function setBranchAddresses(
         address _troveManagerAddress,
@@ -57,10 +60,11 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
     }
 
     function setCollateralRegistry(address _collateralRegistryAddress) external override onlyOwner {
+        if(collateralRegistryAddress != address(0))
+            revert AlreadyInitialised();
+
         collateralRegistryAddress = _collateralRegistryAddress;
         emit CollateralRegistryAddressChanged(_collateralRegistryAddress);
-
-        _renounceOwnership();
     }
 
     // --- Functions for intra-Liquity calls ---

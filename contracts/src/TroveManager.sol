@@ -3,7 +3,6 @@
 pragma solidity 0.8.24;
 
 import "./Interfaces/ITroveManager.sol";
-import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IStabilityPool.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/IBoldToken.sol";
@@ -12,6 +11,7 @@ import "./Interfaces/ITroveEvents.sol";
 import "./Interfaces/ITroveNFT.sol";
 import "./Interfaces/ICollateralRegistry.sol";
 import "./Interfaces/IWETH.sol";
+import "./Interfaces/IWhitelist.sol";
 import "./Dependencies/LiquityBase.sol";
 
 contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
@@ -19,10 +19,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     ITroveNFT public troveNFT;
     IBorrowerOperations public borrowerOperations;
+    IAddressesRegistry internal addressRegistry; 
     IStabilityPool public stabilityPool;
+    IWhitelist public whitelist;
     address internal gasPoolAddress;
     ICollSurplusPool internal collSurplusPool;
     IBoldToken internal boldToken;
+
     // A doubly linked list of Troves, sorted by their interest rate
     ISortedTroves public sortedTroves;
     ICollateralRegistry internal collateralRegistry;
@@ -161,12 +164,14 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     error NothingToLiquidate();
     error CallerNotBorrowerOperations();
     error CallerNotCollateralRegistry();
+    error CallerNotAddressRegistry();
     error OnlyOneTroveLeft();
     error NotShutDown();
     error ZeroAmount();
     error NotEnoughBoldBalance();
     error MinCollNotReached(uint256 _coll);
     error BatchSharesRatioTooHigh();
+    error NotWhitelisted(address _redeemer);
 
     // --- Events ---
 
@@ -178,6 +183,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
+    event WhitelistAddressChanged(address _whitelistAddress);
+    event SystemContractsChanged(UpgradableContracts _systemContracts);
 
     constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
         CCR = _addressesRegistry.CCR();
@@ -196,6 +203,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         WETH = _addressesRegistry.WETH();
         collateralRegistry = _addressesRegistry.collateralRegistry();
 
+        addressRegistry = _addressesRegistry;
+
         emit TroveNFTAddressChanged(address(troveNFT));
         emit BorrowerOperationsAddressChanged(address(borrowerOperations));
         emit StabilityPoolAddressChanged(address(stabilityPool));
@@ -204,6 +213,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         emit BoldTokenAddressChanged(address(boldToken));
         emit SortedTrovesAddressChanged(address(sortedTroves));
         emit CollateralRegistryAddressChanged(address(collateralRegistry));
+        emit WhitelistAddressChanged(address(whitelist));
     }
 
     // --- Getters ---
@@ -214,6 +224,27 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     function getTroveFromTroveIdsArray(uint256 _index) external view override returns (uint256) {
         return TroveIds[_index];
+    }
+
+    // --- Contracts update logic ---
+    function updateWhitelist(IWhitelist _newWhitelist) external override {
+        _requireCallerIsAddressRegistry();
+        whitelist = _newWhitelist;
+
+        emit WhitelistAddressChanged(address(_newWhitelist));
+    }
+
+    function updateSystemContracts(UpgradableContracts memory _toUpdate) external override {
+        _requireCallerIsAddressRegistry();
+        
+        if(_toUpdate.priceFeed != address(0))
+            priceFeed = IPriceFeed(_toUpdate.priceFeed);
+
+        // TODO trigger updates in all system contracts that have dependencies
+        borrowerOperations.updatePriceFeed(IPriceFeed(_toUpdate.priceFeed));
+        stabilityPool.updatePriceFeed(IPriceFeed(_toUpdate.priceFeed));
+
+        emit PriceFeedAddressChanged(_toUpdate.priceFeed);
     }
 
     // --- Trove Liquidation functions ---
@@ -844,6 +875,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         _requireIsShutDown();
         _requireAmountGreaterThanZero(_boldAmount);
         _requireBoldBalanceCoversRedemption(boldToken, msg.sender, _boldAmount);
+        _requireIsWhitelistedRedeemer(msg.sender);
 
         IActivePool activePoolCached = activePool;
         TroveChange memory totalsTroveChange;
@@ -1153,10 +1185,30 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         }
     }
 
+    function _requireCallerIsAddressRegistry() internal {
+        if (msg.sender != address(addressRegistry))
+            revert CallerNotAddressRegistry();
+    }
+
+
     function _requireMoreThanOneTroveInSystem(uint256 TroveIdsArrayLength) internal pure {
         if (TroveIdsArrayLength == 1) {
             revert OnlyOneTroveLeft();
         }
+    }
+
+    function _requireIsWhitelistedRedeemer(address redeemer) internal view {
+        bool whitelisted = true;
+        if(address(whitelist) != address(0)) {
+            try whitelist.isWhitelisted(redeemer) returns (bool w) {
+                whitelisted = w;
+            } catch {
+                whitelisted = false;
+            }
+        }
+
+        if(!whitelisted)
+            revert NotWhitelisted(redeemer);
     }
 
     function _requireIsShutDown() internal view {

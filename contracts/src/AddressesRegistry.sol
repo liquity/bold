@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
-import "./Dependencies/Ownable.sol";
+import "./Dependencies/Owned.sol";
 import {MIN_LIQUIDATION_PENALTY_SP, MAX_LIQUIDATION_PENALTY_REDISTRIBUTION} from "./Dependencies/Constants.sol";
 import "./Interfaces/IAddressesRegistry.sol";
+import {UpgradableContracts} from "./Types/UpgradableContracts.sol";
 
-contract AddressesRegistry is Ownable, IAddressesRegistry {
+contract AddressesRegistry is Owned, IAddressesRegistry {
     IERC20Metadata public collToken;
     IBorrowerOperations public borrowerOperations;
     ITroveManager public troveManager;
@@ -25,6 +26,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     ICollateralRegistry public collateralRegistry;
     IBoldToken public boldToken;
     IWETH public WETH;
+    IWhitelist public whitelist;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
     uint256 public immutable CCR;
@@ -46,6 +48,8 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     error SPPenaltyTooLow();
     error SPPenaltyGtRedist();
     error RedistPenaltyTooHigh();
+    error AlreadyInitialised();
+    error Cooldown();
 
     event CollTokenAddressChanged(address _collTokenAddress);
     event BorrowerOperationsAddressChanged(address _borrowerOperationsAddress);
@@ -73,7 +77,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         uint256 _scr,
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution
-    ) Ownable(_owner) {
+    ) Owned(_owner) {
         if (_ccr <= 1e18 || _ccr >= 2e18) revert InvalidCCR();
         if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR();
         if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();
@@ -88,7 +92,15 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         LIQUIDATION_PENALTY_REDISTRIBUTION = _liquidationPenaltyRedistribution;
     }
 
+    function getOwner() external returns (address) {
+        return owner;
+    }
+
+    // initialization
     function setAddresses(AddressVars memory _vars) external onlyOwner {
+        if(systemContractsInitialised)
+            revert AlreadyInitialised();
+    
         collToken = _vars.collToken;
         borrowerOperations = _vars.borrowerOperations;
         troveManager = _vars.troveManager;
@@ -107,6 +119,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         collateralRegistry = _vars.collateralRegistry;
         boldToken = _vars.boldToken;
         WETH = _vars.WETH;
+        systemContractsInitialised = true;
 
         emit CollTokenAddressChanged(address(_vars.collToken));
         emit BorrowerOperationsAddressChanged(address(_vars.borrowerOperations));
@@ -126,7 +139,106 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         emit CollateralRegistryAddressChanged(address(_vars.collateralRegistry));
         emit BoldTokenAddressChanged(address(_vars.boldToken));
         emit WETHAddressChanged(address(_vars.WETH));
-
-        _renounceOwnership();
     }
+    
+    function initializeWhitelist(address _whitelist) external onlyOwner {
+        require(address(whitelist) == address(0), "Already initialized");
+
+        whitelist = IWhitelist(_whitelist);
+
+        troveManager.updateWhitelist(IWhitelist(_whitelist));
+
+        emit WhitelistChanged(_whitelist);
+    }
+
+    // --- WHITELIST UPDATE LOGIC ---- //
+    event WhitelistChanged(address _whitelistAddress);
+    event WhitelistProposed(address _newWhitelistAddress);
+
+    struct WhitelistProposal {
+        address whitelist; 
+        uint256 timestamp;
+    }
+    WhitelistProposal public proposedWhitelist;
+
+    function proposeNewWhitelist(address _newWhitelist) external onlyOwner {
+        require(_newWhitelist != address(0), "Invalid address");
+
+        proposedWhitelist.whitelist = _newWhitelist;
+        proposedWhitelist.timestamp = block.timestamp;
+
+        emit WhitelistProposed(_newWhitelist);
+    }
+
+    function acceptNewWhitelist() external onlyOwner {
+        require(
+            address(whitelist) != address(0) && 
+            proposedWhitelist.timestamp + 3 days <= block.timestamp, 
+            "Invalid"
+        );
+
+        // update address
+        whitelist = IWhitelist(proposedWhitelist.whitelist);
+            
+        // trigger update in trove manager
+        troveManager.updateWhitelist(whitelist);
+
+        // reset proposal
+        delete proposedWhitelist;
+
+        emit WhitelistChanged(address(whitelist));
+    }
+
+    // // --- SYSTEM CONTRACTS UPDATE LOGIC TODO ---- //
+
+    // event NewSystemContractsProposed(UpdateContractsProposal _proposedAddresses);
+    // event SystemContractsChanged();
+
+    // struct UpdateContractsProposal {
+    //     UpgradableContracts contracts;
+    //     uint256 timestamp;
+    // }
+
+    // UpdateContractsProposal proposedSystemUpdates;
+    bool systemContractsInitialised;
+
+    // function proposeNewSystemContracts(UpdateContractsProposal memory _newAddresses) external onlyOwner {
+    //     UpgradableContracts memory proposedContracts = _newAddresses.contracts;
+        
+    //     require(
+    //         systemContractsInitialised &&
+    //         proposedContracts.priceFeed != address(0),
+    //         "Invalid proposal"
+    //     );
+
+    //     proposedSystemUpdates.contracts = proposedContracts;
+    //     proposedSystemUpdates.timestamp = block.timestamp;
+
+    //     emit NewSystemContractsProposed(_newAddresses);
+    // }
+
+    // function acceptNewSystemContracts() external onlyOwner {
+    //     require(
+    //         systemContractsInitialised && 
+    //         proposedSystemUpdates.timestamp + 3 days <= block.timestamp, 
+    //         "Invalid"
+    //     );
+        
+    //     // update addresses
+    //     UpgradableContracts memory proposedContracts = proposedSystemUpdates.contracts;
+    //     _setNewSystemContracts(proposedContracts);
+
+    //     // trigger update in trove manager
+    //     troveManager.updateSystemContracts(proposedContracts);
+
+    //     // reset proposal
+    //     delete proposedContracts;
+
+    //     emit SystemContractsChanged();
+    // }
+
+    // function _setNewSystemContracts(UpgradableContracts memory _proposedContracts) internal {
+    //     if(_proposedContracts.priceFeed != address(0))
+    //         priceFeed = IPriceFeed(_proposedContracts.priceFeed);
+    // }
 }
