@@ -5,6 +5,11 @@ pragma solidity 0.8.24;
 import "./TokenPriceFeedBase.sol";
 
 contract tBTCPriceFeed is TokenPriceFeedBase {
+
+    //BTC feed on arbitrum.
+    address public BTCOracleAddress = 0x6ce185860a4963106506C203335A2910413708e9;
+
+
     constructor(address _owner, address _tBTCUsdOracleAddress, uint256 _tBTCUsdStalenessThreshold)
         TokenPriceFeedBase(_owner, _tBTCUsdOracleAddress, _tBTCUsdStalenessThreshold)
     {
@@ -25,7 +30,26 @@ contract tBTCPriceFeed is TokenPriceFeedBase {
 
     function fetchRedemptionPrice() external returns (uint256, bool) {
         // Use same price for redemption as all other ops in tBTC branch
-        return fetchPrice();    
+
+        //get the price of normal BTC. 
+        int256 btcPriceInt;
+        (,btcPriceInt,,,) = AggregatorV3Interface(BTCOracleAddress).latestRoundData();
+        uint256 btcPrice = uint256(btcPriceInt); // Convert from int256 to uint256
+        //compare tbtc price. 
+        (uint256 tbtcPrice, bool resultDown) = fetchPrice();
+        //if they are within 2% then there is no depeg. Use the higher one of the two to prevent value leak.
+        // Instead of comparing tbtcPrice/btcPrice with fractions, cross-multiply.
+        if (tbtcPrice * 100 <= btcPrice * 102 && tbtcPrice * 100 >= btcPrice * 98) {
+            //no depeg. return the higher one.
+            if( tbtcPrice > btcPrice) {
+                return (tbtcPrice, resultDown); 
+            } else {
+                return (btcPrice, resultDown);
+            }
+        } else {
+            //depeg is significant. 
+            return (tbtcPrice, resultDown);
+        }
     }
 
     //  _fetchPricePrimary returns:
