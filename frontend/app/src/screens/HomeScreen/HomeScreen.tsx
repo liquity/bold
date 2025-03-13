@@ -16,13 +16,14 @@ import { useAccount } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
 import {
   AnchorTextButton,
-  IconBorrow,
-  IconEarn,
+  // IconBorrow,
+  // IconEarn,
   TokenIcon,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 import { HomeTable } from "./HomeTable";
+import Image from "next/image";
 
 export function HomeScreen() {
   const account = useAccount();
@@ -51,7 +52,8 @@ export function HomeScreen() {
         <HomeTable
           title='Borrow USDN against ETH and assets'
           subtitle='You can adjust your loans, including your interest rate, at any time'
-          icon={<IconBorrow />}
+          // icon={<IconBorrow />}
+          icon={<Image src='/cute-snails/battle.png' alt='Borrow' width={24} height={24} />}
           columns={
             [
               "Collateral",
@@ -69,7 +71,8 @@ export function HomeScreen() {
         <HomeTable
           title='Earn rewards with USDN'
           subtitle='Earn USDN & (staked) ETH rewards by putting your USDN in a stability pool'
-          icon={<IconEarn />}
+          // icon={<IconEarn />}
+          icon={<Image src='/cute-snails/blue.png' alt='Borrow' width={24} height={24} />}
           columns={
             [
               "Pool",

@@ -9,8 +9,8 @@ import { useAccount } from "@/src/services/Arbitrum";
 import { useGovernanceStats, useGovernanceUser } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import {
-  HFlex,
-  IconStake,
+  // HFlex,
+  // IconStake,
   InfoTooltip,
   TokenIcon,
   useRaf,
@@ -18,6 +18,7 @@ import {
 import { a } from "@react-spring/web";
 import * as dn from "dnum";
 import { useRef } from "react";
+import Image from "next/image";
 
 export function StakePositionSummary({
   loadingState = "success",
@@ -115,7 +116,7 @@ export function StakePositionSummary({
         width: "100%",
         padding: 16,
         color: "positionContent",
-        background: "position",
+        background: "#8bb2b7",
         borderRadius: 8,
         userSelect: "none",
         "--update-color": "token(colors.positiveAlt)",
@@ -133,7 +134,7 @@ export function StakePositionSummary({
         })}
       >
         <h1
-          title='LQTY Stake'
+          title='NERI Stake'
           className={css({
             display: "flex",
             alignItems: "center",
@@ -157,9 +158,10 @@ export function StakePositionSummary({
                 color: "strongSurfaceContentAlt2",
               })}
             >
-              <IconStake size={16} />
+              {/* <IconStake size={16} /> */}
+              <Image src='/cute-snails/red.png' alt='Stake' width={16} height={16} />
             </div>
-            LQTY Stake
+            NERI Stake
           </div>
         </h1>
         <div
@@ -223,7 +225,7 @@ export function StakePositionSummary({
                           value={stakePosition?.deposit ?? 0}
                         />
                       </div>
-                      <TokenIcon symbol='LQTY' size={32} />
+                      <TokenIcon symbol='LQTY' size={32} /> {/* TO DO: change to NERI */}
                     </a.div>
                   )
               )}
@@ -231,7 +233,7 @@ export function StakePositionSummary({
                 stakePosition &&
                 !dn.eq(prevStakePosition.deposit, stakePosition.deposit) && (
                   <div
-                    title={`${fmtnum(prevStakePosition.deposit, "full")} LQTY`}
+                    title={`${fmtnum(prevStakePosition.deposit, "full")} NERI`}
                     className={css({
                       color: "contentAlt",
                       textDecoration: "line-through",
@@ -269,7 +271,7 @@ export function StakePositionSummary({
             fontSize: 14,
           })}
         >
-          <div
+          {/* <div
             className={css({
               display: "flex",
               flexDirection: "column",
@@ -299,7 +301,7 @@ export function StakePositionSummary({
                   format='2diff'
                   value={stakePosition?.rewards.lusd ?? 0}
                 />
-                <TokenIcon symbol='LUSD' size='mini' />
+                <TokenIcon symbol='USDN' size='mini' />
               </HFlex>
               <HFlex
                 gap={4}
@@ -319,7 +321,7 @@ export function StakePositionSummary({
                 <TokenIcon symbol='ETH' size='mini' />
               </HFlex>
             </HFlex>
-          </div>
+          </div> */}
           {!txPreviewMode && (
             <div>
               <div
@@ -388,7 +390,7 @@ export function StakePositionSummary({
                               >
                                 <p>
                                   Voting power increases over time based on the
-                                  total amount of LQTY staked.
+                                  total amount of NERI staked.
                                 </p>
                                 {account.address &&
                                   (govUser.data?.stakedLQTY ?? 0n) > 0n && (
@@ -410,7 +412,7 @@ export function StakePositionSummary({
                               </div>
                             ),
                             footerLink: {
-                              href: "https://docs.liquity.org/v2-faq/lqty-staking",
+                              href: "https://docs.liquity.org/v2-faq/lqty-staking", // TO DO: change to NERI
                               label: "Learn more",
                             },
                           }}
@@ -440,7 +442,7 @@ export function StakePositionSummary({
                 title={`${fmtnum(
                   [govUser.data?.allocatedLQTY ?? 0n, 18],
                   "full"
-                )} LQTY`}
+                )} NERI`}
                 className={css({
                   display: "flex",
                   alignItems: "center",
@@ -452,7 +454,7 @@ export function StakePositionSummary({
                   format='compact'
                   value={[govUser.data?.allocatedLQTY ?? 0n, 18]}
                 />
-                <TokenIcon title={null} symbol='LQTY' size='mini' />
+                <TokenIcon title={null} symbol='LQTY' size='mini' /> {/* TO DO: change to NERI */}
               </div>
             </div>
           )}
