@@ -1,19 +1,38 @@
 "use client";
 
+import type { Dnum, TokenSymbol } from "@/src/types";
+
+import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { LEGACY_CHECK } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
+import { parseInputPercentage, useInputFieldValue } from "@/src/form-utils";
+import { fmtnum } from "@/src/formatting";
 import { useLegacyPositions } from "@/src/liquity-utils";
 import { HomeTable } from "@/src/screens/HomeScreen/HomeTable";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, IconBorrow, IconEarn, IconStake, TokenIcon } from "@liquity2/uikit";
+import {
+  Button,
+  IconBorrow,
+  IconEarn,
+  IconStake,
+  InfoTooltip,
+  InputField,
+  TextButton,
+  TokenIcon,
+  TOKENS_BY_SYMBOL,
+} from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { useRef } from "react";
+import { useReadContract } from "wagmi";
 
 function getLegacyBranch(branchId: number) {
   const branch = LEGACY_CHECK?.BRANCHES[branchId];
@@ -107,6 +126,18 @@ export function LegacyScreen() {
                   <EarnPositionsTable />
                   <LoanPositionsTable />
                   <StakingPositionsTable />
+                  <RedeemSection />
+                </div>
+              )}
+              {legacyPositions.isLoading && (
+                <div
+                  className={css({
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: 16,
+                  })}
+                >
+                  Loading…
                 </div>
               )}
             </a.div>
@@ -158,7 +189,10 @@ function EarnPositionsTable() {
                     gap: 4,
                   })}
                 >
-                  <TokenIcon symbol={branch.symbol} size="mini" />
+                  <TokenIcon
+                    size="mini"
+                    symbol={branch.symbol}
+                  />
                   <span>{branch.name}</span>
                 </div>
               </td>
@@ -168,15 +202,12 @@ function EarnPositionsTable() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "flex-end",
-                    gap: 4,
                   })}
                 >
-                  <Amount
-                    fallback="…"
-                    format="compact"
-                    value={spPosition && dnum18(spPosition.deposit)}
+                  <TokenAmount
+                    symbol="LEGACY_BOLD"
+                    value={dnum18(spPosition.deposit)}
                   />
-                  <TokenIcon symbol="BOLD" size="mini" />
                 </div>
               </td>
               <td>
@@ -188,34 +219,14 @@ function EarnPositionsTable() {
                     gap: 8,
                   })}
                 >
-                  <div
-                    className={css({
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    })}
-                  >
-                    <Amount
-                      fallback="…"
-                      format="compact"
-                      value={spPosition && dnum18(spPosition.yieldGain)}
-                    />
-                    <TokenIcon symbol="BOLD" size="mini" />
-                  </div>
-                  <div
-                    className={css({
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    })}
-                  >
-                    <Amount
-                      fallback="…"
-                      format="compact"
-                      value={spPosition && dnum18(spPosition.collGain)}
-                    />
-                    <TokenIcon symbol={branch.symbol} size="mini" />
-                  </div>
+                  <TokenAmount
+                    symbol="LEGACY_BOLD"
+                    value={dnum18(spPosition.yieldGain)}
+                  />
+                  <TokenAmount
+                    symbol={branch.symbol}
+                    value={dnum18(spPosition.collGain)}
+                  />
                 </div>
               </td>
             </tr>
@@ -270,6 +281,7 @@ function LoanPositionsTable() {
   const account = useAccount();
   const legacyPositions = useLegacyPositions(account.address ?? null);
   const troves = legacyPositions.data?.troves ?? [];
+  const boldBalance = dnum18(legacyPositions.data?.boldBalance ?? 0n);
   return (
     <HomeTable
       title="Legacy Loan Positions"
@@ -285,6 +297,7 @@ function LoanPositionsTable() {
       rows={troves.map((trove) => {
         const debt = dnum18(trove.entireDebt);
         const coll = dnum18(trove.entireColl);
+        const hasEnoughBold = dn.lte(debt, boldBalance);
         return (
           <tr key={trove.collToken.symbol}>
             <td>
@@ -295,7 +308,10 @@ function LoanPositionsTable() {
                   gap: 4,
                 })}
               >
-                <TokenIcon symbol={trove.collToken.symbol} size="mini" />
+                <TokenIcon
+                  size="mini"
+                  symbol={trove.collToken.symbol}
+                />
                 <span>{trove.collToken.name}</span>
               </div>
             </td>
@@ -305,18 +321,12 @@ function LoanPositionsTable() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "flex-end",
-                  gap: 4,
                 })}
               >
-                <Amount
-                  fallback="…"
-                  format="compact"
+                <TokenAmount
+                  symbol={trove.collToken.symbol}
                   value={coll}
                 />
-                <TokenIcon
-                  symbol={trove.collToken.symbol}
-                  size="mini"
-                />
               </div>
             </td>
             <td>
@@ -325,15 +335,13 @@ function LoanPositionsTable() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "flex-end",
-                  gap: 4,
+                  gap: 8,
                 })}
               >
-                <Amount
-                  fallback="…"
-                  format="compact"
+                <TokenAmount
+                  symbol="LEGACY_BOLD"
                   value={debt}
                 />
-                <TokenIcon symbol="BOLD" size="mini" />
               </div>
             </td>
             <td>
@@ -342,9 +350,20 @@ function LoanPositionsTable() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "flex-end",
+                  gap: 8,
                 })}
               >
+                {!hasEnoughBold && (
+                  <InfoTooltip level="warning" heading="Insufficient Legacy BOLD">
+                    Your current Legacy BOLD balance ({fmtnum(
+                      boldBalance,
+                      { digits: 2 },
+                    )} BOLD) is too low to close this loan. You need at least {fmtnum(debt, { digits: 2 })}{" "}
+                    BOLD to close this loan.
+                  </InfoTooltip>
+                )}
                 <Button
+                  disabled={!hasEnoughBold}
                   mode="primary"
                   size="small"
                   label="Close loan"
@@ -387,19 +406,10 @@ function StakingPositionsTable() {
       rows={[
         <tr>
           <td>
-            <div
-              className={css({
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-              })}
-            >
-              <Amount
-                fallback="…"
-                value={stakeDeposit}
-              />
-              <TokenIcon symbol="LQTY" size="mini" />
-            </div>
+            <TokenAmount
+              symbol="LQTY"
+              value={stakeDeposit}
+            />
           </td>
           <td>
             <div
@@ -431,5 +441,304 @@ function StakingPositionsTable() {
         </tr>,
       ]}
     />
+  );
+}
+
+function RedeemSection() {
+  if (!LEGACY_CHECK) {
+    throw new Error("LEGACY_CHECK is not defined.");
+  }
+
+  const account = useAccount();
+  const txFlow = useTransactionFlow();
+  const legacyPositions = useLegacyPositions(account.address ?? null);
+  const boldBalance = legacyPositions.data ? dnum18(legacyPositions.data.boldBalance) : null;
+
+  const redemptionRate = useReadContract({
+    abi: CollateralRegistry,
+    address: LEGACY_CHECK.COLLATERAL_REGISTRY,
+    functionName: "getRedemptionRateWithDecay",
+    account: account.address,
+  });
+
+  const amount = useInputFieldValue(fmtnum);
+  const maxFee = useInputFieldValue((value) => `${fmtnum(value, "pct2z")}%`, {
+    parse: parseInputPercentage,
+  });
+
+  const hasUpdatedRedemptionRate = useRef(false);
+  if (!hasUpdatedRedemptionRate.current && redemptionRate.data) {
+    if (maxFee.isEmpty) {
+      maxFee.setValue(
+        fmtnum(
+          dn.mul(dnum18(redemptionRate.data), 1.1),
+          "pct2z",
+        ),
+      );
+    }
+    hasUpdatedRedemptionRate.current = true;
+  }
+
+  const allowSubmit = account.isConnected
+    && amount.parsed
+    && maxFee.parsed
+    && boldBalance
+    && dn.gte(boldBalance, amount.parsed);
+
+  return (
+    <HomeTable
+      title="Legacy Redemption"
+      subtitle="Redeem your Legacy BOLD for ETH and LSTs."
+      icon={<IconEarn />}
+      columns={[]}
+      rows={[
+        <tr
+          className={css({
+            "& th, & td": {
+              fontWeight: "initial",
+              whiteSpace: "initial",
+              textAlign: "initial",
+            },
+          })}
+        >
+          <td>
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                gap: 24,
+                padding: 16,
+              })}
+            >
+              <Field
+                field={
+                  <InputField
+                    id="input-redeem-amount"
+                    contextual={
+                      <InputField.Badge
+                        icon={<TokenIcon symbol="BOLD" />}
+                        label="Legacy BOLD"
+                      />
+                    }
+                    drawer={amount.isFocused
+                      ? null
+                      : boldBalance
+                          && amount.parsed
+                          && dn.gt(amount.parsed, boldBalance)
+                      ? {
+                        mode: "error",
+                        message: `Insufficient BOLD balance. You have ${fmtnum(boldBalance)} BOLD.`,
+                      }
+                      : null}
+                    label="Redeeming"
+                    placeholder="0.00"
+                    secondary={{
+                      start: `$${
+                        amount.parsed
+                          ? fmtnum(amount.parsed)
+                          : "0.00"
+                      }`,
+                      end: (
+                        boldBalance && dn.gt(boldBalance, 0) && (
+                          <TextButton
+                            label={`Max ${fmtnum(boldBalance)} Legacy BOLD`}
+                            onClick={() => {
+                              amount.setValue(dn.toString(boldBalance));
+                            }}
+                          />
+                        )
+                      ),
+                    }}
+                    {...amount.inputFieldProps}
+                  />
+                }
+              />
+
+              <Field
+                field={
+                  <InputField
+                    id="input-max-fee"
+                    drawer={maxFee.isFocused
+                      ? null
+                      : maxFee.parsed && dn.gt(maxFee.parsed, 0.01)
+                      ? {
+                        mode: "warning",
+                        message: `A high percentage will result in a higher fee.`,
+                      }
+                      : null}
+                    label="Max redemption fee"
+                    placeholder="0.00"
+                    {...maxFee.inputFieldProps}
+                  />
+                }
+                footer={[
+                  {
+                    end: (
+                      <span
+                        className={css({
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          fontSize: 14,
+                        })}
+                      >
+                        <>
+                          Current redemption rate:
+                          <Amount
+                            percentage
+                            suffix="%"
+                            value={redemptionRate.data ? dnum18(redemptionRate.data) : null}
+                            format="pct1z"
+                          />
+                        </>
+                        <InfoTooltip
+                          content={{
+                            heading: "Maximum redemption fee",
+                            body: (
+                              <>
+                                This is the maximum redemption fee you are willing to pay. The redemption fee is a
+                                percentage of the redeemed amount that is paid to the protocol. The redemption fee must
+                                be higher than the current fee.
+                              </>
+                            ),
+                            footerLink: {
+                              href: "https://dune.com/queries/4641717/7730245",
+                              label: "Redemption fee on Dune",
+                            },
+                          }}
+                        />
+                      </span>
+                    ),
+                  },
+                ]}
+              />
+
+              <section
+                className={css({
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  padding: 16,
+                  color: "infoSurfaceContent",
+                  background: "infoSurface",
+                  border: "1px solid token(colors.infoSurfaceBorder)",
+                  borderRadius: 8,
+                })}
+              >
+                <h1
+                  className={css({
+                    display: "flex",
+                    flexDirection: "column",
+                    fontSize: 16,
+                    fontWeight: 600,
+                  })}
+                >
+                  Important note
+                </h1>
+                <div>
+                  <p
+                    className={css({
+                      fontSize: 15,
+                      "& a": {
+                        color: "accent",
+                        textDecoration: "underline",
+                      },
+                    })}
+                  >
+                    You will be charged a dynamic redemption fee (the more redemptions, the higher the fee).{" "}
+                    <Link
+                      href="https://docs.liquity.org/v2-faq/redemptions-and-delegation"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Learn more about redemptions.
+                    </Link>
+                  </p>
+                </div>
+              </section>
+
+              <div
+                className={css({
+                  display: "flex",
+                  justifyContent: "flex-end",
+                })}
+              >
+                <Button
+                  disabled={!allowSubmit}
+                  label="Redeem Legacy BOLD"
+                  mode="primary"
+                  size="small"
+                  onClick={() => {
+                    if (
+                      amount.parsed
+                      && maxFee.parsed
+                      && boldBalance
+                      && dn.gte(boldBalance, amount.parsed)
+                    ) {
+                      txFlow.start({
+                        flowId: "legacyRedeemCollateral",
+                        backLink: ["/legacy", "Back to legacy positions"],
+                        successLink: ["/legacy", "Go to legacy positions"],
+                        successMessage: "The redemption was successful.",
+
+                        amount: amount.parsed,
+                        maxFee: maxFee.parsed,
+                      });
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </td>
+        </tr>,
+      ]}
+    />
+  );
+}
+
+function TokenAmount({
+  digits = 2,
+  symbol,
+  value,
+}: {
+  digits?: number | null;
+  symbol: TokenSymbol | "LEGACY_BOLD";
+  value?: Dnum | null;
+}) {
+  const token = TOKENS_BY_SYMBOL[symbol === "LEGACY_BOLD" ? "BOLD" : symbol];
+  return (
+    <div
+      title={fmtnum(value, {
+        digits: digits ?? undefined,
+        suffix: " " + (symbol === "LEGACY_BOLD" ? "Legacy BOLD" : token.name),
+      })}
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+        userSelect: "none",
+      })}
+    >
+      {fmtnum(value, {
+        compact: true,
+        digits: 2,
+      })}
+      <div
+        className={css({
+          display: "flex",
+          width: 16,
+          height: 16,
+          pointerEvents: "none",
+        })}
+        style={{
+          opacity: symbol === "LEGACY_BOLD" ? 0.5 : 1,
+        }}
+      >
+        <TokenIcon
+          size="mini"
+          symbol={symbol === "LEGACY_BOLD" ? "BOLD" : symbol}
+        />
+      </div>
+    </div>
   );
 }

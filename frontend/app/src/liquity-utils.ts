@@ -41,14 +41,14 @@ import {
   useStabilityPool,
 } from "@/src/subgraph-hooks";
 import { isBranchId, isTroveId } from "@/src/types";
-import { bigIntAbs } from "@/src/utils";
+import { bigIntAbs, jsonStringifyWithBigInt } from "@/src/utils";
 import { vAddress, vPrefixedTroveId } from "@/src/valibot-utils";
 import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
-import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
+import { encodeAbiParameters, erc20Abi, keccak256, parseAbiParameters } from "viem";
 import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 import { graphQuery, InterestBatchesQuery } from "./subgraph-queries";
@@ -843,16 +843,17 @@ const TrovesSnapshotSchema = v.record(
 );
 
 export function useLegacyPositions(account: Address | null): UseQueryResult<{
+  boldBalance: bigint;
+  hasAnyEarnPosition: boolean;
+  hasAnyLoan: boolean;
+  hasAnyPosition: boolean;
+  hasStakeDeposit: boolean;
   spDeposits: Array<{
     branchId: BranchId;
     collGain: bigint;
     deposit: bigint;
     yieldGain: bigint;
   }>;
-  hasAnyEarnPosition: boolean;
-  hasAnyLoan: boolean;
-  hasAnyPosition: boolean;
-  hasStakeDeposit: boolean;
   stakeDeposit: bigint;
   troves: Array<{
     accruedBatchManagementFee: bigint;
@@ -983,6 +984,17 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
     },
   });
 
+  const legacyBoldBalance = useReadContract({
+    abi: erc20Abi,
+    address: LEGACY_CHECK?.BOLD_TOKEN,
+    functionName: "balanceOf",
+    args: [account ?? "0x"],
+    query: {
+      enabled: checkLegacyPositions,
+      refetchInterval: DATA_REFRESH_INTERVAL,
+    },
+  });
+
   const stakedLqty = useReadContract({
     abi: Governance,
     address: LEGACY_CHECK?.GOVERNANCE,
@@ -1004,14 +1016,17 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
     queryKey: [
       "hasAnyLegacyPosition",
       account,
-      JSON.stringify(legacyTrovesFromSnapshot.data),
+      jsonStringifyWithBigInt(legacyTroves.data),
+      String(legacyBoldBalance.data),
+      jsonStringifyWithBigInt(spDeposits.data),
+      String(stakedLqty.data),
     ],
     queryFn: () => {
       const stakeDeposit = stakedLqty.data ?? 0n;
-
       const hasAnyEarnPosition = spDeposits.data?.hasAnySpDeposit ?? false;
       const hasStakeDeposit = stakeDeposit > 0n;
       return {
+        boldBalance: legacyBoldBalance.data ?? 0n,
         hasAnyEarnPosition,
         hasAnyLoan: hasAnyLegacyTrove,
         hasAnyPosition: hasAnyEarnPosition || hasAnyLegacyTrove || hasStakeDeposit,
@@ -1023,9 +1038,11 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
         troves: legacyTroves.data ?? [],
       };
     },
+    placeholderData: (data) => data,
     refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: (
       checkLegacyPositions
+      && legacyBoldBalance.isSuccess
       && legacyTroves.isSuccess
       && spDeposits.isSuccess
       && stakedLqty.isSuccess

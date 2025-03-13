@@ -319,9 +319,8 @@ const InputField = forwardRef<HTMLInputElement, {
         {(secondary_.start || secondary_.end) && (
           <div
             className={css({
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
               gap: 16,
               fontSize: 16,
               fontWeight: 500,
@@ -340,27 +339,23 @@ const InputField = forwardRef<HTMLInputElement, {
               ? (
                 <div
                   className={css({
-                    flexGrow: 0,
-                    flexShrink: 1,
-                    display: "flex",
+                    overflow: "hidden",
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
-                    maxWidth: "50%",
                   })}
                 >
-                  {secondary_.start}
+                  <span>
+                    {secondary_.start}
+                  </span>
                 </div>
               )
               : <div />}
             {secondary_.end && (
               <div
                 className={css({
-                  flexGrow: 0,
-                  flexShrink: 1,
                   display: "flex",
                   whiteSpace: "nowrap",
                   textOverflow: "ellipsis",
-                  overflow: "hidden",
                 })}
               >
                 {secondary_.end}

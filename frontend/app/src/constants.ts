@@ -81,26 +81,30 @@ export const REDEMPTION_RISK: Record<Exclude<RiskLevel, "high">, number> = {
 // TODO: use mainnet addresses
 export const LEGACY_CHECK = !CHECK_LEGACY_POSITIONS || CHAIN_ID !== 11155111 ? null : {
   BOLD_TOKEN: "0xb01d32c05f4aa066eef2bfd4d461833fddd56d0a",
+  COLLATERAL_REGISTRY: "0x55cefb9c04724ba3c67d92df5e386c6f1585a83b",
   GOVERNANCE: "0xe3f9ca5398cc3d0099c3ad37d3252e37431555b8",
   INITIATIVES_SNAPSHOT_URL: "/initiatives-snapshot-sepolia.json",
   TROVES_SNAPSHOT_URL: "/troves-snapshot-sepolia.json",
   BRANCHES: [{
     symbol: "ETH",
     name: "ETH",
+    COLL_TOKEN: "0x8116d0a0e8d4f0197b428c520953f302adca0b50",
+    LEVERAGE_ZAPPER: "0x482bf4d6a2e61d259a7f97ef6aac8b3ce5dd9f99",
     STABILITY_POOL: "0x89fb98c98792c8b9e9d468148c6593fa0fc47b40",
     TROVE_MANAGER: "0x364038750236739e0cd96d5754516c9b8168fb0c",
-    LEVERAGE_ZAPPER: "0x482bf4d6a2e61d259a7f97ef6aac8b3ce5dd9f99",
   }, {
     symbol: "WSTETH",
     name: "wstETH",
+    COLL_TOKEN: "0xff9f477b09c6937ff6313ae90e79022609851a9c",
+    LEVERAGE_ZAPPER: "0xea7fb1919bf9bae007df10ad8b748ee75fd5971d",
     STABILITY_POOL: "0x68320bd4bbc16fe14f91501380edaa9ffe5890e1",
     TROVE_MANAGER: "0xa7b57913b5643025a15c80ca3a56eb6fb59d095d",
-    LEVERAGE_ZAPPER: "0xea7fb1919bf9bae007df10ad8b748ee75fd5971d",
   }, {
     symbol: "RETH",
     name: "rETH",
+    COLL_TOKEN: "0xbdb72f78302e6174e48aa5872f0dd986ed6d98d9",
+    LEVERAGE_ZAPPER: "0x251dfe2078a910c644289f2344fac96bffea7c02",
     STABILITY_POOL: "0x8492ad1df9f89e4b6c54c81149058172592e1c94",
     TROVE_MANAGER: "0x310fa1d1d711c75da45952029861bcf0d330aa81",
-    LEVERAGE_ZAPPER: "0x251dfe2078a910c644289f2344fac96bffea7c02",
   }],
 } as const;
