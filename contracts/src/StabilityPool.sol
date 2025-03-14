@@ -199,7 +199,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     // Error tracker fror the error correction in the BOLD reward calculation
     uint256 public lastYieldError;
 
-    error NotWhitelisted(address user);
+    error NotWhitelisted();
 
     // --- Events ---
 
@@ -829,7 +829,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         }
 
         if(!whitelisted)
-            revert NotWhitelisted(user);
+            revert NotWhitelisted();
     }
 
     function _requireCallerIsActivePool() internal view {
