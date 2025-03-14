@@ -26,7 +26,6 @@ contract WhitelistedRedemptions is Redemptions, WhitelistTestSetup {
 
         // set a non whitelisted address
         nonWhitelistedUser = address(123);
-
     }
 
     // a not whitelisted user try redeeming from a branch with whitelist
