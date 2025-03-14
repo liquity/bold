@@ -7,7 +7,7 @@ import "./TestContracts/DevTestSetup.sol";
 contract MulticollateralTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 4;
     TestDeployer.LiquityContractsDev[] public contractsArray;
-
+    
     function openMulticollateralTroveNoHints100pctWithIndex(
         uint256 _collIndex,
         address _account,
@@ -48,7 +48,7 @@ contract MulticollateralTest is DevTestSetup {
         vm.stopPrank();
     }
 
-    function setUp() public override {
+    function setUp() public virtual override {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
 
@@ -72,7 +72,7 @@ contract MulticollateralTest is DevTestSetup {
         troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
         troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 125e16, 5e16, 10e16);
 
-        TestDeployer deployer = new TestDeployer();
+        deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _contractsArray;
         (_contractsArray, collateralRegistry, boldToken,,, WETH,) =
             deployer.deployAndConnectContractsMultiColl(troveManagerParamsArray);
