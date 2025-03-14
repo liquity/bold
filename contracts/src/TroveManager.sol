@@ -227,11 +227,11 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     // --- Contracts update logic ---
-    function updateWhitelist(IWhitelist _newWhitelist) external override {
+    function updateWhitelist(address _newWhitelist) external override {
         _requireCallerIsAddressRegistry();
-        whitelist = _newWhitelist;
+        whitelist = IWhitelist(_newWhitelist);
 
-        emit WhitelistAddressChanged(address(_newWhitelist));
+        emit WhitelistAddressChanged(_newWhitelist);
     }
 
     function updateSystemContracts(UpgradableContracts memory _toUpdate) external override {

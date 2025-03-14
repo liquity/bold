@@ -48,7 +48,7 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     error SPPenaltyTooLow();
     error SPPenaltyGtRedist();
     error RedistPenaltyTooHigh();
-    error AlreadyInitialised();
+    error AlreadyInitialized();
     error Cooldown();
 
     event CollTokenAddressChanged(address _collTokenAddress);
@@ -98,8 +98,8 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
 
     // initialization
     function setAddresses(AddressVars memory _vars) external onlyOwner {
-        if(systemContractsInitialised)
-            revert AlreadyInitialised();
+        if(systemContractsInitialized)
+            revert AlreadyInitialized();
     
         collToken = _vars.collToken;
         borrowerOperations = _vars.borrowerOperations;
@@ -119,7 +119,7 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         collateralRegistry = _vars.collateralRegistry;
         boldToken = _vars.boldToken;
         WETH = _vars.WETH;
-        systemContractsInitialised = true;
+        systemContractsInitialized = true;
 
         emit CollTokenAddressChanged(address(_vars.collToken));
         emit BorrowerOperationsAddressChanged(address(_vars.borrowerOperations));
@@ -142,11 +142,14 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     }
     
     function initializeWhitelist(address _whitelist) external onlyOwner {
-        require(address(whitelist) == address(0), "Already initialized");
+        if(whitelistInitialized)
+            revert AlreadyInitialized();
 
         whitelist = IWhitelist(_whitelist);
 
-        troveManager.updateWhitelist(IWhitelist(_whitelist));
+        troveManager.updateWhitelist(_whitelist);
+
+        whitelistInitialized = true;
 
         emit WhitelistChanged(_whitelist);
     }
@@ -159,10 +162,12 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         address whitelist; 
         uint256 timestamp;
     }
+    bool whitelistInitialized;
     WhitelistProposal public proposedWhitelist;
 
+    // set to address 0 to remove the whitelist
     function proposeNewWhitelist(address _newWhitelist) external onlyOwner {
-        require(_newWhitelist != address(0), "Invalid address");
+        require(whitelistInitialized, "Not initalised");
 
         proposedWhitelist.whitelist = _newWhitelist;
         proposedWhitelist.timestamp = block.timestamp;
@@ -172,21 +177,23 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
 
     function acceptNewWhitelist() external onlyOwner {
         require(
-            address(whitelist) != address(0) && 
-            proposedWhitelist.timestamp + 3 days <= block.timestamp, 
+            proposedWhitelist.timestamp + 3 days <= block.timestamp && 
+            proposedWhitelist.timestamp != 0,
             "Invalid"
         );
-
-        // update address
-        whitelist = IWhitelist(proposedWhitelist.whitelist);
+        
+        address newWhitelist = proposedWhitelist.whitelist;
+        
+        // update/remove whitelist
+        whitelist = IWhitelist(newWhitelist);
             
         // trigger update in trove manager
-        troveManager.updateWhitelist(whitelist);
+        troveManager.updateWhitelist(newWhitelist);
 
         // reset proposal
         delete proposedWhitelist;
 
-        emit WhitelistChanged(address(whitelist));
+        emit WhitelistChanged(newWhitelist);
     }
 
     // // --- SYSTEM CONTRACTS UPDATE LOGIC TODO ---- //
@@ -200,13 +207,13 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     // }
 
     // UpdateContractsProposal proposedSystemUpdates;
-    bool systemContractsInitialised;
+    bool systemContractsInitialized;
 
     // function proposeNewSystemContracts(UpdateContractsProposal memory _newAddresses) external onlyOwner {
     //     UpgradableContracts memory proposedContracts = _newAddresses.contracts;
         
     //     require(
-    //         systemContractsInitialised &&
+    //         systemContractsInitialized &&
     //         proposedContracts.priceFeed != address(0),
     //         "Invalid proposal"
     //     );
@@ -219,7 +226,7 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
 
     // function acceptNewSystemContracts() external onlyOwner {
     //     require(
-    //         systemContractsInitialised && 
+    //         systemContractsInitialized && 
     //         proposedSystemUpdates.timestamp + 3 days <= block.timestamp, 
     //         "Invalid"
     //     );

@@ -32,7 +32,7 @@ interface ITroveManager is ILiquityBase {
     function borrowerOperations() external view returns (IBorrowerOperations);
     
     function whitelist() external view returns (IWhitelist);
-    function updateWhitelist(IWhitelist _newWhitelist) external;
+    function updateWhitelist(address _newWhitelist) external;
     function updateSystemContracts(UpgradableContracts memory _toUpdate) external;
 
     function Troves(uint256 _id)
