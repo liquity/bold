@@ -1,9 +1,7 @@
-import type { BranchId, TroveId } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
-import { getPrefixedTroveId } from "@/src/liquity-utils";
 import { waitForSafeTransaction } from "@/src/safe-utils";
-import { BlockNumberQuery, graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
+import { BlockNumberQuery, graphQuery } from "@/src/subgraph-queries";
 import { sleep } from "@/src/utils";
 import * as v from "valibot";
 import { waitForTransactionReceipt } from "wagmi/actions";
