@@ -62,8 +62,8 @@ const InputField = forwardRef<HTMLInputElement, {
   onFocus,
   placeholder,
   secondary,
-  secondaryHeight = 12,
-  secondarySpacing = 20,
+  secondaryHeight = 24,
+  secondarySpacing = 14,
   value,
   valueUnfocused,
 }, ref) {
@@ -165,7 +165,7 @@ const InputField = forwardRef<HTMLInputElement, {
           background: "fieldSurface",
           border: "1px solid token(colors.fieldBorder)",
           borderRadius: 8,
-          padding: 16,
+          padding: "16px 16px 10px",
         })}
       >
         <div
@@ -332,13 +332,14 @@ const InputField = forwardRef<HTMLInputElement, {
             })}
             style={{
               height: secondaryHeight + secondarySpacing,
-              paddingTop: secondarySpacing,
             }}
           >
             {secondary_.start
               ? (
                 <div
                   className={css({
+                    display: "flex",
+                    alignItems: "flex-end",
                     overflow: "hidden",
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
@@ -354,8 +355,10 @@ const InputField = forwardRef<HTMLInputElement, {
               <div
                 className={css({
                   display: "flex",
+                  alignItems: "flex-end",
                   whiteSpace: "nowrap",
                   textOverflow: "ellipsis",
+                  justifyContent: "flex-end",
                 })}
               >
                 {secondary_.end}
