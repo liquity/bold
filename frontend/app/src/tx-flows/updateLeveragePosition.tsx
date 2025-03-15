@@ -17,7 +17,7 @@ import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
-import { createRequestSchema, verifyTransaction, verifyTroveUpdate } from "./shared";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "updateLeveragePosition",
@@ -239,7 +239,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -277,7 +277,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -327,7 +327,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -374,7 +374,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
   },
