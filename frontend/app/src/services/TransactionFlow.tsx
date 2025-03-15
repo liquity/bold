@@ -507,6 +507,11 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
     const verifyingStep = flow.steps.find((step) => step.status === "awaiting-verify" && step.artifact);
     if (!verifyingStep) return;
 
+    // if runningStepRef is set, no need to resume
+    if (runningStepRef.current !== null) {
+      return;
+    }
+
     const stepIndex = flow.steps.indexOf(verifyingStep);
     const flowDeclaration = getFlowDeclaration(flow.request.flowId);
     if (!flowDeclaration) return;

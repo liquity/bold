@@ -299,3 +299,13 @@ export const GovernanceUserAllocated = graphql(`
     }
   }
 `);
+
+export const BlockNumberQuery = graphql(`
+  query BlockNumber {
+    _meta {
+      block {
+        number
+      }
+    }
+  }
+`);
