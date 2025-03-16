@@ -17,9 +17,17 @@ export const ACCOUNT_BALANCES = {
   USDN: dn.from(3_987, 18),
   ETH: dn.from(2.429387, 18),
   LQTY: dn.from(2008.217, 18),
+  NERI: dn.from(2008.217, 18),
   RETH: dn.from(1.3732, 18),
   WSTETH: dn.from(17.912, 18),
   LUSD: dn.from(1_200, 18),
+  COMP: dn.from(1_200, 18),
+  PUFETH: dn.from(1_200, 18),
+  SFRXETH: dn.from(1_200, 18),
+  TBTC: dn.from(1_200, 18),
+  TETH: dn.from(1_200, 18),
+  WETH: dn.from(1_200, 18),
+  WEETH: dn.from(1_200, 18),
 } as const;
 
 const DEMO_ACCOUNT = `0x${"0".repeat(39)}1` as const;
@@ -107,6 +115,34 @@ export const EARN_POOLS: Record<
     boldQty: [44_100_000n, 0],
   },
   WSTETH: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  COMP: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  PUFETH: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  SFRXETH: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  TBTC: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  TETH: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  WETH: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  WEETH: {
     apr: dn.from(0.054, 18),
     boldQty: [25_700_000n, 0],
   },

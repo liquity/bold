@@ -159,6 +159,7 @@ export function useBalance(
     .with("LUSD", () => CONTRACT_LUSD_TOKEN)
     .with("USDN", () => CONTRACT_BOLD_TOKEN)
     .with("LQTY", () => CONTRACT_LQTY_TOKEN)
+    .with("NERI", () => CONTRACT_LQTY_TOKEN)
     .otherwise(() => null);
 
   const tokenBalance = useReadContract({
