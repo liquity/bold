@@ -147,7 +147,8 @@ export function BorrowScreen() {
     && debt.parsed
     && dn.gt(debt.parsed, 0)
     && interestRate
-    && dn.gt(interestRate, 0);
+    && dn.gt(interestRate, 0)
+    && !isBelowMinDebt;
 
   return (
     <Screen
