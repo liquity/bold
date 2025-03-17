@@ -3,7 +3,7 @@ import type { ComponentPropsWithRef, ReactNode } from "react";
 import content from "@/src/content";
 import { useDemoMode } from "@/src/demo-mode";
 import { css } from "@/styled-system/css";
-import { Button, IconAccount, shortenAddress, ShowAfter } from "@liquity2/uikit";
+import { Button, shortenAddress, ShowAfter } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { ConnectKitButton } from "connectkit";
 import { match, P } from "ts-pattern";
@@ -65,7 +65,9 @@ function CKButton({
   });
 
   return transition((spring, { mode, address }) => (
-    <a.div style={spring}>
+    <a.div
+      style={spring}
+    >
       {mode === "connected"
         ? (
           <ButtonConnected
@@ -77,11 +79,14 @@ function CKButton({
         : (
           <Button
             mode="primary"
+            size="medium"
+            shape="rectangular"
+            wide
             label={mode === "connecting"
               ? "Connecting…"
               : mode === "unsupported"
-              ? content.accountButton.wrongNetwork
-              : content.accountButton.connectAccount}
+                ? content.accountButton.wrongNetwork
+                : content.accountButton.connectAccount}
             onClick={show}
           />
         )}
@@ -116,20 +121,19 @@ function ButtonConnected({
         display: "flex",
         height: "100%",
         maxWidth: 140,
-        padding: 0,
+        padding: "8px 16px",
         whiteSpace: "nowrap",
         textAlign: "center",
         _active: {
           translate: "0 1px",
         },
-        _focusVisible: {
-          borderRadius: 4,
-          outline: "2px solid token(colors.focused)",
-        },
+        border: "2px solid token(colors.fieldBorder)",
+        borderRadius: 20,
+        background: "neutralDimmed300",
       })}
     >
       <MenuItem
-        icon={<IconAccount />}
+        icon={undefined} //{<IconAccount />}
         label={label}
       />
     </button>

@@ -5,12 +5,12 @@ import type { ReactNode as N } from "react";
 
 export default {
   // Used in the top bar and other places
-  appName: "Liquity V2",
+  appName: "Bitvault",
   appDescription: `
-    Liquity V2 is a new borrowing protocol that lets users
-    deposit ETH or LSTs as collateral and mint the stablecoin BOLD.
+    Bitv ault is a new borrowing protocol that lets users
+    deposit BTC as collateral and mint the stablecoin bvUSD.
   `,
-  appUrl: "https://www.liquity.org/",
+  appUrl: "https://www.bitvault.xyz/",
   appIcon: (
     typeof window === "undefined" ? "" : window.location.origin
   ) + "/favicon.svg",
@@ -19,9 +19,7 @@ export default {
   menu: {
     dashboard: "Dashboard",
     borrow: "Borrow",
-    multiply: "Multiply",
     earn: "Earn",
-    stake: "Stake",
   },
 
   accountButton: {
@@ -41,20 +39,20 @@ export default {
     loanRedemptionRisk: [
       "Redemption risk",
       <>
-        Users paying the lowest interest rate can get redeemed, if the price of BOLD falls below $1. By raising your
+        Users paying the lowest interest rate can get redeemed, if the price of bvUSD falls below $1. By raising your
         interest rate, you reduce this risk.
       </>,
     ],
     loanLtv: [
       "Loan-to-value ratio",
       <>
-        The ratio between the amount of BOLD borrowed and the deposited collateral (in USD).
+        The ratio between the amount of bvUSD borrowed and the deposited collateral (in USD).
       </>,
     ],
     loanMaxLtv: [
       "Maximum Loan-To-Value (LTV) Ratio",
       <>
-        The maximum ratio between the USD value of a loan (in BOLD) and the collateral backing it. The LTV will
+        The maximum ratio between the USD value of a loan (in bvUSD) and the collateral backing it. The LTV will
         fluctuate as the price of the collateral changes. To decrease the LTV add more colateral or reduce debt.
       </>,
     ],
@@ -63,16 +61,16 @@ export default {
       <>The collateral price at which a loan can be liquidated.</>,
     ],
     ethPrice: [
-      "ETH Price",
+      "BTC Price",
       <>
-        The current price of ETH, as reported by the oracle. The ETH price is used to calculate the Loan-To-Value (LTV)
+        The current price of BTC, as reported by the oracle. The BTC price is used to calculate the Loan-To-Value (LTV)
         ratio of a loan.
       </>,
     ],
     interestRateBoldPerYear: [
       "Interest rate",
       <>
-        The annualized interest amount in BOLD for the selected interest rate. The accumulated interest is added to the
+        The annualized interest amount in bvUSD for the selected interest rate. The accumulated interest is added to the
         loan.
       </>,
     ],
@@ -87,7 +85,7 @@ export default {
       heading: "Your collateral and debt are reduced by the same value.",
       body: (
         <>
-          When BOLD trades for under $1, anyone can redeem positions to get BOLD back at $1. Positions with the lowest
+          When bvUSD trades for under $1, anyone can redeem positions to get bvUSD back at $1. Positions with the lowest
           interest rate get redeemed first.
         </>
       ),
@@ -103,14 +101,14 @@ export default {
     title: "Redemptions in a nutshell",
     subtitle: (
       <>
-        Redemptions help maintain BOLD’s peg in a decentralized way. If a user is redeemed, their collateral and debt
+        Redemptions help maintain bvUSD’s peg in a decentralized way. If a user is redeemed, their collateral and debt
         are reduced equally, resulting in no net loss.
       </>
     ),
     infoItems: [
       {
         icon: "bold",
-        text: "Redemptions occur when BOLD drops below $1.",
+        text: "Redemptions occur when bvUSD drops below $1.",
       },
       {
         icon: "redemption",
@@ -199,15 +197,15 @@ export default {
     actions: {
       borrow: {
         title: "Borrow",
-        description: "Mint BOLD against your collateral at whatever interest rate you want",
+        description: "Mint bvUSD against your collateral at whatever interest rate you want",
       },
       multiply: {
         title: "Multiply",
-        description: "Increase your exposure to ETH and its staking yield with a single click",
+        description: "Increase your exposure to BTC and its staking yield with a single click",
       },
       earn: {
-        title: "Earn with BOLD",
-        description: "Deposit BOLD to earn protocol revenues and liquidation proceeds",
+        title: "Earn with bvUSD",
+        description: "Deposit bvUSD to earn protocol revenues and liquidation proceeds",
       },
       stake: {
         title: "Stake LQTY",
@@ -219,7 +217,7 @@ export default {
     },
     infoTooltips: {
       avgInterestRate: [
-        "The current average interest rate being paid by ETH-backed positions.",
+        "The current average interest rate being paid by BTC-backed positions.",
       ],
       spApr: [
         "Annual Percentage Rate",
@@ -227,7 +225,7 @@ export default {
       ],
       spTvl: [
         "Total Value Locked",
-        "The total amount of BOLD deposited in each stability pool.",
+        "The total amount of bvUSD deposited in each stability pool.",
       ],
       borrowTvl: [
         "Total Value Locked",
@@ -240,7 +238,7 @@ export default {
   borrowScreen: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Borrow {boldIcon} BOLD with {tokensIcons} ETH
+        Borrow {boldIcon} bvUSD with {tokensIcons} BTC
       </>
     ),
     depositField: {
@@ -250,7 +248,7 @@ export default {
       label: "You borrow",
     },
     liquidationPriceField: {
-      label: "ETH liquidation price",
+      label: "BTC liquidation price",
     },
     interestRateField: {
       label: "Interest rate",
@@ -258,7 +256,7 @@ export default {
     action: "Next: Summary",
     infoTooltips: {
       interestRateSuggestions: [
-        "Positions with lower interest rates are the first to be redeemed by BOLD holders.",
+        "Positions with lower interest rates are the first to be redeemed by bvUSD holders.",
       ],
     },
   },
@@ -274,7 +272,7 @@ export default {
       label: "You deposit",
     },
     liquidationPriceField: {
-      label: "ETH liquidation price",
+      label: "BTC liquidation price",
     },
     interestRateField: {
       label: "Interest rate",
@@ -290,7 +288,7 @@ export default {
       ],
       interestRateSuggestions: [
         <>
-          Positions with lower interest rates are the first to be redeemed by BOLD holders.
+          Positions with lower interest rates are the first to be redeemed by bvUSD holders.
         </>,
       ],
       exposure: [
@@ -306,13 +304,13 @@ export default {
   earnHome: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Deposit {boldIcon} BOLD to earn rewards {tokensIcons}
+        Deposit {boldIcon} bvUSD to earn rewards {tokensIcons}
       </>
     ),
     subheading: (
       <>
-        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, in case the
-        system needs to liquidate positions, the BOLD may be swapped to collateral.
+        A bvUSD deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, in case the
+        system needs to liquidate positions, the bvUSD may be swapped to collateral.
       </>
     ),
     poolsColumns: {
@@ -322,7 +320,7 @@ export default {
     },
     infoTooltips: {
       tvl: (collateral: N) => [
-        <>Total BOLD covering {collateral}-backed position liquidations</>,
+        <>Total bvUSD covering {collateral}-backed position liquidations</>,
       ],
     },
   },
@@ -370,10 +368,10 @@ export default {
     },
     infoTooltips: {
       tvl: (collateral: N) => [
-        <>Total BOLD covering {collateral}-backed position liquidations.</>,
+        <>Total bvUSD covering {collateral}-backed position liquidations.</>,
       ],
       depositPoolShare: [
-        "Percentage of your BOLD deposit compared to the total deposited in this stability pool.",
+        "Percentage of your bvUSD deposit compared to the total deposited in this stability pool.",
       ],
       alsoClaimRewardsDeposit: [
         <>
@@ -387,14 +385,14 @@ export default {
         </>,
       ],
       currentApr: [
-        "Average annualized return for BOLD deposits over the past 7 days.",
+        "Average annualized return for bvUSD deposits over the past 7 days.",
       ],
       rewardsEth: [
-        "ETH rewards",
+        "BTC rewards",
         "Your proceeds from liquidations conducted by this stability pool.",
       ],
       rewardsBold: [
-        "BOLD rewards",
+        "bvUSD rewards",
         "Your earnings from protocol revenue distributions to this stability pool.",
       ],
     },
@@ -449,7 +447,7 @@ export default {
       title: "Allocate your voting power",
       intro: (
         <>
-          Direct incentives from Liquity V2 protocol revenues towards liquidity providers for BOLD. Upvote from Thursday
+          Direct incentives from Liquity V2 protocol revenues towards liquidity providers for bvUSD. Upvote from Thursday
           to Tuesday. Downvote all week. <Link href="https://docs.liquity.org/v2-faq/lqty-staking">Learn more</Link>
         </>
       ),

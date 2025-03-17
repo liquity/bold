@@ -18,7 +18,7 @@ const colorNames = Object.keys(colorsContrasted) as (keyof typeof colorsContrast
 export default function IconFixture() {
   const [colorMode] = useFixtureSelect("color", {
     options: colorNames,
-    defaultValue: "blue:950",
+    defaultValue: "blue",
   });
   return (
     <div

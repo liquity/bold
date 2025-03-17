@@ -38,6 +38,7 @@ import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { maxUint256 } from "viem";
+import { AccountButton } from "@/src/comps/AppLayout/AccountButton";
 
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
 
@@ -100,9 +101,9 @@ export function BorrowScreen() {
   );
 
   const debtSuggestions = loanDetails.maxDebt
-      && loanDetails.depositUsd
-      && loanDetails.deposit
-      && dn.gt(loanDetails.deposit, 0)
+    && loanDetails.depositUsd
+    && loanDetails.deposit
+    && dn.gt(loanDetails.deposit, 0)
     ? DEBT_SUGGESTIONS.map((ratio, index) => {
       let debt = loanDetails.maxDebt && dn.mul(loanDetails.maxDebt, ratio);
 
@@ -167,6 +168,7 @@ export function BorrowScreen() {
             )}
           </HFlex>
         ),
+        subtitle: "You can adjust your loans, including your interest rate at any time",
       }}
     >
       <div
@@ -211,11 +213,10 @@ export function BorrowScreen() {
               label="Collateral"
               placeholder="0.00"
               secondary={{
-                start: `$${
-                  deposit.parsed && collPrice.data
+                start: `$${deposit.parsed && collPrice.data
                     ? fmtnum(dn.mul(collPrice.data, deposit.parsed), "2z")
                     : "0.00"
-                }`,
+                  }`,
                 end: maxAmount && dn.gt(maxAmount, 0) && (
                   <TextButton
                     label={`Max ${fmtnum(maxAmount)} ${collateral.name}`}
@@ -251,21 +252,20 @@ export function BorrowScreen() {
               contextual={
                 <InputField.Badge
                   icon={<TokenIcon symbol="BOLD" />}
-                  label="BOLD"
+                  label="bvUSD"
                 />
               }
               drawer={debt.isFocused || !isBelowMinDebt ? null : {
                 mode: "error",
-                message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
+                message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} bvUSD.`,
               }}
               label="Loan"
               placeholder="0.00"
               secondary={{
-                start: `$${
-                  debt.parsed
+                start: `$${debt.parsed
                     ? fmtnum(debt.parsed)
                     : "0.00"
-                }`,
+                  }`,
                 end: debtSuggestions && (
                   <HFlex gap={6}>
                     {debtSuggestions.map((s) => {
@@ -368,45 +368,47 @@ export function BorrowScreen() {
             width: "100%",
           }}
         >
-          <ConnectWarningBox />
-          <Button
-            disabled={!allowSubmit}
-            label={content.borrowScreen.action}
-            mode="primary"
-            size="large"
-            wide
-            onClick={() => {
-              if (
-                deposit.parsed
-                && debt.parsed
-                && account.address
-                && typeof nextOwnerIndex.data === "number"
-              ) {
-                txFlow.start({
-                  flowId: "openBorrowPosition",
-                  backLink: [
-                    `/borrow/${collSymbol.toLowerCase()}`,
-                    "Back to editing",
-                  ],
-                  successLink: ["/", "Go to the Dashboard"],
-                  successMessage: "The position has been created successfully.",
+          {account.isConnected ?
+            <Button
+              disabled={!allowSubmit}
+              label={content.borrowScreen.action}
+              mode="primary"
+              size="large"
+              wide
+              onClick={() => {
+                if (
+                  deposit.parsed
+                  && debt.parsed
+                  && account.address
+                  && typeof nextOwnerIndex.data === "number"
+                ) {
+                  txFlow.start({
+                    flowId: "openBorrowPosition",
+                    backLink: [
+                      `/borrow/${collSymbol.toLowerCase()}`,
+                      "Back to editing",
+                    ],
+                    successLink: ["/", "Go to the Dashboard"],
+                    successMessage: "The position has been created successfully.",
 
-                  branchId: branch.id,
-                  owner: account.address,
-                  ownerIndex: nextOwnerIndex.data,
-                  collAmount: deposit.parsed,
-                  boldAmount: debt.parsed,
-                  // TODO: fix this
-                  // @ts-ignore
-                  annualInterestRate: interestRate,
-                  maxUpfrontFee: dnum18(maxUint256),
-                  interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate
-                    ? null
-                    : interestRateDelegate,
-                });
-              }
-            }}
-          />
+                    branchId: branch.id,
+                    owner: account.address,
+                    ownerIndex: nextOwnerIndex.data,
+                    collAmount: deposit.parsed,
+                    boldAmount: debt.parsed,
+                    // TODO: fix this
+                    // @ts-ignore
+                    annualInterestRate: interestRate,
+                    maxUpfrontFee: dnum18(maxUint256),
+                    interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate
+                      ? null
+                      : interestRateDelegate,
+                  });
+                }
+              }}
+            />
+            : <AccountButton />
+          }
         </div>
       </div>
     </Screen>

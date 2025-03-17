@@ -27,8 +27,8 @@ export function PillButton({
         fontWeight: 500,
         color: "content",
         background: "controlSurface",
-        border: "1px dashed token(colors.controlBorder)",
-        borderRadius: 12,
+        border: "1px solid token(colors.gray600)",
+        borderRadius: 10,
         cursor: "pointer",
         _focusVisible: {
           outline: "2px solid token(colors.focused)",

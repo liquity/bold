@@ -33,7 +33,7 @@ export { StatusDot } from "./StatusDot/StatusDot";
 export { Tabs } from "./Tabs/Tabs";
 export { AnchorTextButton } from "./TextButton/AnchorTextButton";
 export { TextButton } from "./TextButton/TextButton";
-export { colors, lightTheme, Theme, themeColor, useTheme } from "./Theme/Theme";
+export { colors, darkTheme, Theme, themeColor, useTheme } from "./Theme/Theme";
 export { TokenIcon, TokenIconGroup } from "./TokenIcon/TokenIcon";
 export { InfoTooltip } from "./Tooltip/InfoTooltip";
 export { Tooltip } from "./Tooltip/Tooltip";

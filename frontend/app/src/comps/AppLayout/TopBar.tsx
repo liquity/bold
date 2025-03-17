@@ -40,7 +40,9 @@ export function TopBar() {
           padding: "16px 24px",
           fontSize: 16,
           fontWeight: 500,
-          background: "background",
+          background: "fieldSurface",
+          border: "1px solid token(colors.fieldBorder)",
+          borderRadius: 16,
         })}
       >
         <Link
@@ -49,16 +51,13 @@ export function TopBar() {
             position: "relative",
             display: "flex",
             alignItems: "center",
-            gap: 16,
+            gap: 4,
             height: "100%",
             paddingRight: 8,
-            _focusVisible: {
-              borderRadius: 4,
-              outline: "2px solid token(colors.focused)",
-            },
             _active: {
               translate: "0 1px",
             },
+            fontSize: 24,
           })}
         >
           <div

@@ -340,7 +340,7 @@ export const InterestRateField = memo(
                   </span>
                   <span
                     style={{
-                      color: "#878AA4",
+                      color: "gray300",
                       fontSize: 24,
                     }}
                   >

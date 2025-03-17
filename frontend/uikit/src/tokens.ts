@@ -4,7 +4,7 @@ import tokenBold from "./token-icons/bold.svg";
 import tokenEth from "./token-icons/eth.svg";
 import tokenLqty from "./token-icons/lqty.svg";
 import tokenLusd from "./token-icons/lusd.svg";
-
+ 
 export type CollateralSymbol = "ETH";
 
 export function isCollateralSymbol(symbol: string): symbol is CollateralSymbol {

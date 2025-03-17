@@ -40,20 +40,16 @@ export function Menu({
                   _active: {
                     translate: "0 1px",
                   },
-                  _focusVisible: {
-                    outline: "2px solid token(colors.focused)",
-                    borderRadius: 4,
-                  },
                 })}
                 style={{
                   color: token(
                     `colors.${selected ? "selected" : "interactive"}`,
-                  ),
+                  )
                 }}
               >
                 <MenuItem
-                  icon={<Icon />}
-                  label={label}
+                  icon={undefined}
+                  label={label.toUpperCase()}
                   selected={selected}
                 />
               </Link>

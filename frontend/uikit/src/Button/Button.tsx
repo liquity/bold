@@ -75,7 +75,7 @@ export function useButtonStyles({
       borderRadius: 8,
     }))
     .with("medium", () => ({
-      height: 40,
+      height: 48,
       padding: "0 14px",
       fontSize: 16,
       borderRadius: shape === "rectangular" ? 8 : 20,
@@ -90,10 +90,10 @@ export function useButtonStyles({
 
   const colors = match(mode)
     .with("primary", () => ({
-      "--color": color("accentContent"),
-      "--background": color("accent"),
+      "--color": color("background"),
+      "--background": color("accentContent"),
       // "--backgroundHover": color("accentHint"),
-      "--backgroundHover": color("accent"),
+      "--backgroundHover": color("accentActive"),
       "--backgroundPressed": color("accentActive"),
     }))
     .with(P.union("secondary", "tertiary"), (mode) => ({

@@ -23,7 +23,10 @@ export function AppLayout({
         gridTemplateRows: "auto 1fr",
         minHeight: "100vh",
         height: "100%",
-        background: "background",
+        backgroundImage: "url('/background.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       })}
     >
       <div
@@ -34,8 +37,8 @@ export function AppLayout({
           width: "100%",
         })}
       >
-        <Banner />
-        <EarnRiskBanner />
+        {/* <Banner /> */}
+        {/* <EarnRiskBanner /> */}
       </div>
       <div
         className={css({
@@ -44,6 +47,7 @@ export function AppLayout({
           gap: 48,
           maxWidth: `calc(${LAYOUT_WIDTH}px + 48px)`,
           margin: "0 auto",
+          padding: "24px 0",
           width: "100%",
         })}
       >

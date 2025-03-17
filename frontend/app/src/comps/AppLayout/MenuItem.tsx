@@ -8,7 +8,7 @@ export function MenuItem({
   label,
   selected,
 }: {
-  icon: ReactNode;
+  icon?: ReactNode;
   label: ReactNode;
   selected?: boolean;
 }) {
@@ -29,18 +29,22 @@ export function MenuItem({
       })}
       style={{
         color: token(`colors.${selected ? "selected" : "interactive"}`),
+        textDecoration: selected ? `underline ${token("colors.selected")}` : "none",
+        textUnderlineOffset: 4
       }}
     >
-      <div
-        className={css({
-          display: "grid",
-          placeItems: "center",
-          width: 24,
-          height: 24,
-        })}
-      >
-        {icon}
-      </div>
+      {icon &&
+        <div
+          className={css({
+            display: "grid",
+            placeItems: "center",
+            width: 24,
+            height: 24,
+          })}
+        >
+          {icon}
+        </div>
+      }
       <div
         className={css({
           flexShrink: 1,

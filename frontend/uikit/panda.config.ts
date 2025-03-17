@@ -1,5 +1,5 @@
 import { defineConfig, definePreset } from "@pandacss/dev";
-import { colors, lightTheme } from "./src/Theme/Theme";
+import { colors, darkTheme } from "./src/Theme/Theme";
 
 const tokenColors = Object.fromEntries(
   Object.entries(colors).map(([key, value]) => [
@@ -9,7 +9,7 @@ const tokenColors = Object.fromEntries(
 );
 
 const semanticColors = Object.fromEntries(
-  Object.entries(lightTheme.colors).map(([key, value]) => [
+  Object.entries(darkTheme.colors).map(([key, value]) => [
     key,
     {
       value: value.startsWith("#") ? value : `{colors.${value}}`,
