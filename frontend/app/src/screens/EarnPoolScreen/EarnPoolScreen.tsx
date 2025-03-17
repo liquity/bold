@@ -130,8 +130,8 @@ export function EarnPoolScreen() {
                 textAlign: "center",
                 textWrap: "balance",
                 color: "content",
-                background: "infoSurface",
-                border: "1px solid token(colors.infoSurfaceBorder)",
+                background: "fieldSurface",
+                border: "1px solid token(colors.fieldBorder)",
                 borderRadius: 8,
               })}
             >

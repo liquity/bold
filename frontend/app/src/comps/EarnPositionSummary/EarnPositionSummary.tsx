@@ -62,8 +62,8 @@ export function EarnPositionSummary({
         "--fg-secondary-active": "token(colors.positionContentAlt)",
         "--fg-secondary-inactive": "token(colors.contentAlt)",
 
-        "--border-active": "color-mix(in srgb, token(colors.secondary) 15%, transparent)",
-        "--border-inactive": "token(colors.infoSurfaceBorder)",
+        "--border-active": "color-mix(in srgb, token(colors.white) 15%, transparent)",
+        "--border-inactive": "token(colors.neutral100)",
 
         "--bg-active": "token(colors.position)",
         "--bg-inactive": "token(colors.infoSurface)",
@@ -133,7 +133,7 @@ export function EarnPositionSummary({
                 />
               </div>
               <InfoTooltip heading="Total Value Locked (TVL)">
-                Total amount of BOLD deposited in this stability pool.
+                Total amount of bvUSD deposited in this stability pool.
               </InfoTooltip>
             </div>
           </div>
@@ -251,7 +251,7 @@ export function EarnPositionSummary({
             >
               <div
                 title={active
-                  ? `${fmtnum(earnPosition?.deposit, "full")} BOLD`
+                  ? `${fmtnum(earnPosition?.deposit, "full")} bvUSD`
                   : undefined}
                 className={css({
                   display: "flex",
@@ -266,7 +266,7 @@ export function EarnPositionSummary({
               </div>
               {prevEarnPosition && (
                 <div
-                  title={`${fmtnum(prevEarnPosition.deposit, "full")} BOLD`}
+                  title={`${fmtnum(prevEarnPosition.deposit, "full")} bvUSD`}
                   className={css({
                     display: "flex",
                     justifyContent: "flex-start",
@@ -312,7 +312,7 @@ export function EarnPositionSummary({
                     <>
                       <HFlex
                         gap={4}
-                        title={`${fmtnum(earnPosition?.rewards.bold, "full")} BOLD`}
+                        title={`${fmtnum(earnPosition?.rewards.bold, "full")} bvUSD`}
                         className={css({
                           fontVariantNumeric: "tabular-nums",
                         })}
@@ -402,10 +402,6 @@ function OpenLink({
         padding: "0 12px 0 24px",
         borderRadius: 10,
         transition: "scale 80ms",
-        _focusVisible: {
-          outline: "2px solid token(colors.focused)",
-          outlineOffset: -2,
-        },
         _active: {
           translate: "0 1px",
         },
@@ -420,7 +416,7 @@ function OpenLink({
           placeItems: "center",
           width: 34,
           height: 34,
-          color: "accentContent",
+          color: "neutral100",
           background: "accent",
           borderRadius: "50%",
         })}

@@ -65,7 +65,7 @@ export const darkTheme = {
     controlSurfaceAlt: "neutralDimmed200",
     hint: "blue",
     infoSurface: "neutralDimmed100",
-    infoSurfaceBorder: "yellow",
+    infoSurfaceBorder: "neutral100",
     infoSurfaceContent: "yellow",
     dimmed: "gray100",
     fieldBorder: "neutral100",
@@ -138,9 +138,9 @@ export const darkTheme = {
     riskGradientDimmed2: "yellow",
     riskGradientDimmed3: "green",
 
-    loadingGradient1: "blue",
-    loadingGradient2: "blue",
-    loadingGradientContent: "blue",
+    loadingGradient1: "gold",
+    loadingGradient2: "#FEF0E5",
+    loadingGradientContent: "neutral100",
 
   } satisfies Record<string, (keyof typeof colors) | `#${string}`>,
 } as const;
