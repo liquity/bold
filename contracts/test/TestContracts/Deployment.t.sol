@@ -211,6 +211,35 @@ contract TestDeployer is MetadataDeployment {
         return address(uint160(uint256(hash)));
     }
 
+    function deployBranch(
+        TroveManagerParams memory troveManagerParams, 
+        IERC20Metadata collateralToken,
+        IWETH WETH,
+        IBoldToken boldToken, 
+        ICollateralRegistry collateralRegistry
+    ) public returns (
+        LiquityContractsDev memory contracts,
+        Zappers memory zappers
+    ) 
+    {
+        (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
+            _deployAddressesRegistryDev(troveManagerParams);
+
+        IHintHelpers hintHelpers = new HintHelpers(collateralRegistry);
+        IMultiTroveGetter multiTroveGetter = new MultiTroveGetter(collateralRegistry);
+
+        (contracts, zappers) = _deployAndConnectCollateralContractsDev(
+            collateralToken,
+            boldToken,
+            collateralRegistry,
+            WETH,
+            addressesRegistry,
+            troveManagerAddress,
+            hintHelpers,
+            multiTroveGetter
+        );
+    }
+
     function deployAndConnectContracts()
         external
         returns (

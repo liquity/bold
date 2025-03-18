@@ -3,7 +3,6 @@
 pragma solidity 0.8.24;
 
 import "./TestContracts/WhitelistTestSetup.sol";
-import "forge-std/console.sol";
 import {MulticollateralTest} from "./multicollateral.t.sol";
 
 contract MultiCollateralWhitelistedRedemptions is MulticollateralTest, WhitelistTestSetup {
