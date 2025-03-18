@@ -122,6 +122,23 @@ contract ShutdownTest is DevTestSetup {
         return troveId;
     }
 
+    function test_OnlyOwnerCanAlwaysShutdown() public {
+        openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 10000e18, 5e16);
+        
+        // not owner
+        vm.expectRevert(BorrowerOperations.TCRNotBelowSCR.selector);
+        contractsArray[0].borrowerOperations.shutdown();
+        
+        // owner
+        vm.prank(contractsArray[0].addressesRegistry.getOwner());
+        contractsArray[0].borrowerOperations.shutdown();
+
+        // can't shutdown twice
+        vm.prank(contractsArray[0].addressesRegistry.getOwner());
+        vm.expectRevert(BorrowerOperations.IsShutDown.selector);
+        contractsArray[0].borrowerOperations.shutdown();
+    }
+
     function testCanShutdownBranchesSeparately() public {
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 10000e18, 5e16);
         openMulticollateralTroveNoHints100pctWithIndex(1, A, 0, 110e18, 10000e18, 5e16);
@@ -700,8 +717,7 @@ contract ShutdownTest is DevTestSetup {
 
         uint256 accruedAggInterest = contractsArray[0].activePool.calcPendingAggInterest();
         assertGt(accruedAggInterest, 0);
-
-        uint256 expectedSPYield = _getSPYield(accruedAggInterest);
+        uint256 expectedSPYield = _getSPYield(contractsArray[0].activePool, accruedAggInterest);
         assertGt(expectedSPYield, 0);
 
         uint256 spBal1 = boldToken.balanceOf(address(contractsArray[0].stabilityPool));
