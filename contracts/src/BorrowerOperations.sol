@@ -405,8 +405,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsActive(troveManagerCached, _troveId);
 
-        require(troveManagerCached.getDebtLimit() >= troveManagerCached.getEntireSystemDebt() + _boldAmount, "BorrowerOperations: Debt limit exceeded.");
-
         TroveChange memory troveChange;
         troveChange.debtIncrease = _boldAmount;
         _adjustTrove(troveManagerCached, _troveId, troveChange, _maxUpfrontFee);
