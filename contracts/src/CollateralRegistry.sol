@@ -174,7 +174,7 @@ contract CollateralRegistry is ICollateralRegistry {
         uint256 timePassed = block.timestamp - lastFeeOperationTime;
 
         if (timePassed >= ONE_MINUTE) {
-            lastFeeOperationTime = block.timestamp;
+            lastFeeOperationTime += _minutesPassedSinceLastFeeOp()*60; // 60 seconds in 1 minute.
             emit LastFeeOpTimeUpdated(block.timestamp);
         }
     }
