@@ -28,19 +28,21 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     IWETH public WETH;
     IWhitelist public whitelist;
 
+    bool systemContractsInitialized;
+
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    uint256 public immutable CCR;
+    uint256 public CCR;
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    uint256 public immutable SCR;
+    uint256 public SCR;
 
     // Minimum collateral ratio for individual troves
-    uint256 public immutable MCR;
+    uint256 public MCR;
 
     // Liquidation penalty for troves offset to the SP
-    uint256 public immutable LIQUIDATION_PENALTY_SP;
+    uint256 public LIQUIDATION_PENALTY_SP;
     // Liquidation penalty for troves redistributed
-    uint256 public immutable LIQUIDATION_PENALTY_REDISTRIBUTION;
+    uint256 public LIQUIDATION_PENALTY_REDISTRIBUTION;
 
     error InvalidCCR();
     error InvalidMCR();
@@ -196,56 +198,93 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         emit WhitelistChanged(newWhitelist);
     }
 
-    // // --- SYSTEM CONTRACTS UPDATE LOGIC TODO ---- //
+    // --- CRs UPDATE LOGIC ---- //
+    event CRsChanged(uint256 newCCR, uint256 newSCR, uint256 newMCR);
+    event CRsProposal(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 timestamp);
 
-    // event NewSystemContractsProposed(UpdateContractsProposal _proposedAddresses);
-    // event SystemContractsChanged();
+    struct CRProposal {
+        uint256 CCR;
+        uint256 MCR;
+        uint256 SCR;
+        uint256 timestamp; 
+    }
 
-    // struct UpdateContractsProposal {
-    //     UpgradableContracts contracts;
-    //     uint256 timestamp;
-    // }
+    CRProposal public proposedCR; 
 
-    // UpdateContractsProposal proposedSystemUpdates;
-    bool systemContractsInitialized;
+    function proposeNewCollateralValues(uint256 newCCR, uint256 newSCR, uint256 newMCR) external override onlyOwner {
+        if (newCCR <= 1e18 || newCCR >= 2e18) revert InvalidCCR();
+        if (newMCR <= 1e18 || newMCR >= 2e18) revert InvalidMCR();
+        if (newSCR <= 1e18 || newSCR >= 2e18) revert InvalidSCR();
 
-    // function proposeNewSystemContracts(UpdateContractsProposal memory _newAddresses) external onlyOwner {
-    //     UpgradableContracts memory proposedContracts = _newAddresses.contracts;
-        
-    //     require(
-    //         systemContractsInitialized &&
-    //         proposedContracts.priceFeed != address(0),
-    //         "Invalid proposal"
-    //     );
+        proposedCR.CCR = newCCR;
+        proposedCR.MCR = newMCR;
+        proposedCR.SCR = newSCR;
+        proposedCR.timestamp = block.timestamp;
 
-    //     proposedSystemUpdates.contracts = proposedContracts;
-    //     proposedSystemUpdates.timestamp = block.timestamp;
+        emit CRsProposal(newCCR, newSCR, newMCR, block.timestamp);
+    }
 
-    //     emit NewSystemContractsProposed(_newAddresses);
-    // }
+    function acceptNewCollateralValues() external override onlyOwner {
+        require(
+            proposedCR.timestamp + 3 days <= block.timestamp && 
+            proposedCR.timestamp != 0,
+            "Invalid"
+        );
 
-    // function acceptNewSystemContracts() external onlyOwner {
-    //     require(
-    //         systemContractsInitialized && 
-    //         proposedSystemUpdates.timestamp + 3 days <= block.timestamp, 
-    //         "Invalid"
-    //     );
-        
-    //     // update addresses
-    //     UpgradableContracts memory proposedContracts = proposedSystemUpdates.contracts;
-    //     _setNewSystemContracts(proposedContracts);
+        CCR = proposedCR.CCR;
+        SCR = proposedCR.SCR;
+        MCR = proposedCR.MCR;
+            
+        // trigger update in trove manager
+        troveManager.updateCRs(CCR, SCR, MCR);
 
-    //     // trigger update in trove manager
-    //     troveManager.updateSystemContracts(proposedContracts);
+        // reset proposal
+        delete proposedCR;
 
-    //     // reset proposal
-    //     delete proposedContracts;
+        emit CRsChanged(CCR, SCR, MCR);
+    }
+    
+        // --- LIQUIDATION VALUES UPDATE LOGIC ---- //
+    event LiquidationValuesChanged(uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution);
+    event LiquidationValuesProposed(uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution, uint256 timestamp);
 
-    //     emit SystemContractsChanged();
-    // }
+    struct LiquidationValuesProposal {
+        uint256 liquidationPenaltySP;
+        uint256 liquidationPenaltyRedistribution;
+        uint256 timestamp; 
+    }
 
-    // function _setNewSystemContracts(UpgradableContracts memory _proposedContracts) internal {
-    //     if(_proposedContracts.priceFeed != address(0))
-    //         priceFeed = IPriceFeed(_proposedContracts.priceFeed);
-    // }
+    LiquidationValuesProposal public proposedLiquidationValues; 
+
+    function proposeNewLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newLiquidationPenaltyRedistribution) external override onlyOwner {
+        if (newLiquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) revert SPPenaltyTooLow();
+        if (newLiquidationPenaltySP > newLiquidationPenaltyRedistribution) revert SPPenaltyGtRedist();
+        if (newLiquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) revert RedistPenaltyTooHigh();
+
+        proposedLiquidationValues.liquidationPenaltySP = newLiquidationPenaltySP;
+        proposedLiquidationValues.liquidationPenaltyRedistribution = newLiquidationPenaltyRedistribution;
+        proposedLiquidationValues.timestamp = block.timestamp;
+
+        emit LiquidationValuesProposed(newLiquidationPenaltySP, newLiquidationPenaltyRedistribution, block.timestamp);
+    }
+
+    function acceptNewLiquidationValues() external override onlyOwner {
+        require(
+            proposedLiquidationValues.timestamp + 3 days <= block.timestamp && 
+            proposedLiquidationValues.timestamp != 0,
+            "Invalid"
+        );
+
+        LIQUIDATION_PENALTY_SP = proposedLiquidationValues.liquidationPenaltySP;
+        LIQUIDATION_PENALTY_REDISTRIBUTION = proposedLiquidationValues.liquidationPenaltyRedistribution;
+            
+        // trigger update in trove manager
+        troveManager.updateLiquidationValues(LIQUIDATION_PENALTY_SP, LIQUIDATION_PENALTY_REDISTRIBUTION);
+
+        // reset proposal
+        delete proposedLiquidationValues;
+
+        emit LiquidationValuesChanged(LIQUIDATION_PENALTY_SP, LIQUIDATION_PENALTY_REDISTRIBUTION);
+    }
+
 }

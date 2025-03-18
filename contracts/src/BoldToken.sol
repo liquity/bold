@@ -40,6 +40,10 @@ contract BoldToken is Owned, IBoldToken, ERC20Permit {
 
     constructor(address _owner) Owned(_owner) ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {}
 
+    function getOwner() external override view returns (address) {
+        return owner;
+    }
+
     function setBranchAddresses(
         address _troveManagerAddress,
         address _stabilityPoolAddress,

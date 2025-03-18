@@ -17,6 +17,7 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
     function SCR() external view returns (uint256);
     
     function updatePriceFeed(IPriceFeed _newPriceFeed) external;
+    function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR) external;
 
     function openTrove(
         address _owner,

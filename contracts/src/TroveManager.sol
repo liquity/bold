@@ -33,18 +33,18 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     IWETH internal immutable WETH;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    uint256 public immutable CCR;
+    uint256 public CCR;
 
     // Minimum collateral ratio for individual troves
-    uint256 internal immutable MCR;
+    uint256 public MCR;
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    uint256 internal immutable SCR;
+    uint256 public SCR;
 
     // Liquidation penalty for troves offset to the SP
-    uint256 internal immutable LIQUIDATION_PENALTY_SP;
+    uint256 public LIQUIDATION_PENALTY_SP;
     // Liquidation penalty for troves redistributed
-    uint256 internal immutable LIQUIDATION_PENALTY_REDISTRIBUTION;
+    uint256 public LIQUIDATION_PENALTY_REDISTRIBUTION;
 
     // --- Data structures ---
 
@@ -184,7 +184,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
     event WhitelistAddressChanged(address _whitelistAddress);
-    event SystemContractsChanged(UpgradableContracts _systemContracts);
+    event CRsChanged(uint256 newCCR, uint256 newSCR, uint256 newMCR);
+    event LiquidationValuesChanged(uint256 newLiquidationPenaltySP, uint256 newliquidationPenaltyRedistribution);
 
     constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
         CCR = _addressesRegistry.CCR();
@@ -234,17 +235,26 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         emit WhitelistAddressChanged(_newWhitelist);
     }
 
-    function updateSystemContracts(UpgradableContracts memory _toUpdate) external override {
+    function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR) external override {
         _requireCallerIsAddressRegistry();
         
-        if(_toUpdate.priceFeed != address(0))
-            priceFeed = IPriceFeed(_toUpdate.priceFeed);
+        CCR = newCCR;
+        SCR = newSCR;
+        MCR = newMCR;
 
-        // TODO trigger updates in all system contracts that have dependencies
-        borrowerOperations.updatePriceFeed(IPriceFeed(_toUpdate.priceFeed));
-        stabilityPool.updatePriceFeed(IPriceFeed(_toUpdate.priceFeed));
+        // trigger updates in all system contracts that have dependencies
+        borrowerOperations.updateCRs(newCCR, newSCR, newMCR);
 
-        emit PriceFeedAddressChanged(_toUpdate.priceFeed);
+        emit CRsChanged(newCCR, newSCR, newMCR);
+    }
+
+    function updateLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newliquidationPenaltyRedistribution) external override {
+        _requireCallerIsAddressRegistry();
+        
+        LIQUIDATION_PENALTY_SP = newLiquidationPenaltySP;
+        LIQUIDATION_PENALTY_REDISTRIBUTION = newliquidationPenaltyRedistribution;
+
+        emit LiquidationValuesChanged(newLiquidationPenaltySP, newliquidationPenaltyRedistribution);
     }
 
     // --- Trove Liquidation functions ---

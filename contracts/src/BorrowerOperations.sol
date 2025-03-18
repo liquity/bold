@@ -32,15 +32,15 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     IWETH internal immutable WETH;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    uint256 public immutable CCR;
+    uint256 public CCR;
 
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    uint256 public immutable SCR;
+    uint256 public SCR;
     bool public hasBeenShutDown;
 
     // Minimum collateral ratio for individual troves
-    uint256 public immutable MCR;
+    uint256 public MCR;
 
     /*
     * Mapping from TroveId to individual delegate for interest rate setting.
@@ -157,6 +157,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
+    event CRsChanged(uint256 newCCR, uint256 newSCR, uint256 newMCR);
 
     event ShutDown(uint256 _tcr);
 
@@ -196,6 +197,16 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function updatePriceFeed(IPriceFeed _newPriceFeed) external override {
         _requireCallerIsTroveManager();
         _updatePriceFeed(_newPriceFeed);
+    }
+
+    function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR) external override {
+        _requireCallerIsTroveManager();
+       
+        MCR = newMCR;        
+        CCR = newCCR;
+        SCR = newSCR;
+
+        emit CRsChanged(newCCR, newSCR, newMCR);
     }
 
     // --- Borrower Trove Operations ---
@@ -1180,7 +1191,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         collSurplusPool.claimColl(msg.sender);
     }
 
-    // TODO can we add owner abilities to shutdown the branch in order to upgrade contracts in case a bug is found? 
     function shutdown() external {
         if (hasBeenShutDown) revert IsShutDown();
 
