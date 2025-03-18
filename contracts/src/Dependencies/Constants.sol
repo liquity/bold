@@ -74,7 +74,7 @@ uint256 constant ONE_YEAR = 365 days;
 uint256 constant UPFRONT_INTEREST_PERIOD = 7 days;
 uint256 constant INTEREST_RATE_ADJ_COOLDOWN = 7 days;
 
-uint256 constant SP_YIELD_SPLIT = 75 * _1pct; // 75%
+// uint256 constant SP_YIELD_SPLIT = 75 * _1pct; // 75%
 
 // Dummy contract that lets legacy Hardhat tests query some of the constants
 contract Constants {

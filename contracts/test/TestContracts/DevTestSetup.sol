@@ -7,6 +7,8 @@ import {TestDeployer} from "./Deployment.t.sol";
 contract DevTestSetup is BaseTest {
     TestDeployer public deployer;
 
+    uint256 public SP_YIELD_SPLIT;
+
     function giveAndApproveColl(address _account, uint256 _amount) public {
         return giveAndApproveCollateral(collToken, _account, _amount, address(borrowerOperations));
     }
@@ -83,6 +85,9 @@ contract DevTestSetup is BaseTest {
         MCR = troveManager.get_MCR();
         LIQUIDATION_PENALTY_SP = troveManager.get_LIQUIDATION_PENALTY_SP();
         LIQUIDATION_PENALTY_REDISTRIBUTION = troveManager.get_LIQUIDATION_PENALTY_REDISTRIBUTION();
+
+        SP_YIELD_SPLIT = activePool.SP_YIELD_SPLIT();
+        console.log("SETUP", SP_YIELD_SPLIT);
     }
 
     function _setupForWithdrawCollGainToTrove() internal returns (uint256, uint256, uint256) {
@@ -327,8 +332,8 @@ contract DevTestSetup is BaseTest {
         assertEq(uint8(troveManager.getTroveStatus(_troveIDs.B)), uint8(ITroveManager.Status.active));
     }
 
-    function _getSPYield(uint256 _aggInterest) internal pure returns (uint256) {
-        uint256 spYield = SP_YIELD_SPLIT * _aggInterest / 1e18;
+    function _getSPYield(IActivePool activePool, uint256 _aggInterest) internal view returns (uint256) {
+        uint256 spYield = activePool.SP_YIELD_SPLIT() * _aggInterest / 1e18;
         assertGt(spYield, 0);
         assertLe(spYield, _aggInterest);
         return spYield;

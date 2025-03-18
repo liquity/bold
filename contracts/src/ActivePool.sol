@@ -24,6 +24,8 @@ contract ActivePool is IActivePool {
 
     string public constant NAME = "ActivePool";
 
+    uint256 public SP_YIELD_SPLIT = 75 * _1pct; // 75% default split
+
     IERC20 public immutable collToken;
     address public immutable borrowerOperationsAddress;
     address public immutable troveManagerAddress;
@@ -70,6 +72,7 @@ contract ActivePool is IActivePool {
     event StabilityPoolAddressChanged(address _newStabilityPoolAddress);
     event ActivePoolBoldDebtUpdated(uint256 _recordedDebtSum);
     event ActivePoolCollBalanceUpdated(uint256 _collBalance);
+    event SPYieldSplitChanged(uint256 _newYieldSplitPct);
 
     constructor(IAddressesRegistry _addressesRegistry) {
         collToken = _addressesRegistry.collToken();
@@ -88,6 +91,20 @@ contract ActivePool is IActivePool {
 
         // Allow funds movements between Liquity contracts
         collToken.approve(defaultPoolAddress, type(uint256).max);
+    }
+
+    // TODO 3 days update
+    function updateYieldSplit(uint256 newYieldSplitPct) external {
+        require(msg.sender == boldToken.getOwner(), "Only owner");
+
+        require(newYieldSplitPct <= 100, "Too High");
+
+        // mint accumulated interest
+        _mintAggInterest(0);
+
+        SP_YIELD_SPLIT = newYieldSplitPct * _1pct;
+
+        emit SPYieldSplitChanged(SP_YIELD_SPLIT);
     }
 
     // --- Getters for public variables. Required by IPool interface ---

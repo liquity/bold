@@ -230,7 +230,7 @@ contract InterestRateAggregate is DevTestSetup {
         // Open 2nd trove
         (, uint256 upfrontFee_1) = openTroveHelper(B, 0, 2 ether, 2000e18, 25e16);
 
-        uint256 expectedSPYield_1 = _getSPYield(pendingAggInterest_1 + upfrontFee_1);
+        uint256 expectedSPYield_1 = _getSPYield(activePool, pendingAggInterest_1 + upfrontFee_1);
 
         // Check SP Bold bal has increased as expected from 2nd trove opening
         uint256 boldBalSP_1 = boldToken.balanceOf(address(stabilityPool));
@@ -244,7 +244,7 @@ contract InterestRateAggregate is DevTestSetup {
         // Open 3rd trove
         (, uint256 upfrontFee_2) = openTroveHelper(C, 0, 2 ether, 2000e18, 25e16);
 
-        uint256 expectedSPYield_2 = _getSPYield(pendingAggInterest_2 + upfrontFee_2);
+        uint256 expectedSPYield_2 = _getSPYield(activePool, pendingAggInterest_2 + upfrontFee_2);
 
         // Check SP Bold bal has increased as expected from 3rd trove opening
         uint256 boldBalSP_2 = boldToken.balanceOf(address(stabilityPool));
@@ -366,7 +366,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
-        uint256 expectedSPYield = _getSPYield(pendingAggInterest);
+        uint256 expectedSPYield = _getSPYield(activePool, pendingAggInterest);
 
         // Make SP deposit
         makeSPDepositAndClaim(A, sPdeposit);
@@ -488,7 +488,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
-        uint256 expectedSPYield_A = _getSPYield(pendingAggInterest);
+        uint256 expectedSPYield_A = _getSPYield(activePool, pendingAggInterest);
 
         uint256 expectedBoldGain_A = getShareofSPReward(A, expectedSPYield_A);
         assertGt(expectedBoldGain_A, 0);
@@ -632,7 +632,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 expectedSPYield = _getSPYield(pendingAggInterest);
+        uint256 expectedSPYield = _getSPYield(activePool, pendingAggInterest);
 
         // B closes Trove
         closeTrove(B, BTroveId);
@@ -769,7 +769,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         // A changes interest rate
         uint256 upfrontFee = changeInterestRateNoHints(A, ATroveId, 75e16);
-        uint256 expectedSPYield = _getSPYield(pendingAggInterest + upfrontFee);
+        uint256 expectedSPYield = _getSPYield(activePool, pendingAggInterest + upfrontFee);
 
         // Check SP Bold bal has increased as expected
         uint256 boldBalSP_2 = boldToken.balanceOf(address(stabilityPool));
@@ -868,7 +868,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertGt(aggInterest, 0);
 
         uint256 upfrontFee = predictAdjustTroveUpfrontFee(ATroveId, debtIncrease);
-        uint256 expectedSPYield = _getSPYield(aggInterest + upfrontFee);
+        uint256 expectedSPYield = _getSPYield(activePool, aggInterest + upfrontFee);
 
         // A draws more debt
         withdrawBold100pct(A, ATroveId, debtIncrease);
@@ -986,7 +986,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
-        uint256 expectedSPYield = _getSPYield(pendingAggInterest);
+        uint256 expectedSPYield = _getSPYield(activePool, pendingAggInterest);
 
         // A repays debt
         repayBold(A, ATroveId, debtDecrease);
@@ -1102,7 +1102,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 aggInterest = activePool.calcPendingAggInterest();
         assertGt(aggInterest, 0);
 
-        uint256 expectedSPYield = _getSPYield(aggInterest);
+        uint256 expectedSPYield = _getSPYield(activePool, aggInterest);
 
         // A adds coll
         addColl(A, ATroveId, collIncrease);
@@ -1220,7 +1220,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 aggInterest = activePool.calcPendingAggInterest();
         assertGt(aggInterest, 0);
-        uint256 expectedSPYield = _getSPYield(aggInterest);
+        uint256 expectedSPYield = _getSPYield(activePool, aggInterest);
 
         // A withdraws coll
         withdrawColl(A, ATroveId, collDecrease);
@@ -1346,7 +1346,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 expectedSPYield = _getSPYield(pendingAggInterest);
+        uint256 expectedSPYield = _getSPYield(activePool, pendingAggInterest);
 
         // B applies A's pending interest
         applyPendingDebt(B, ATroveId);
@@ -1557,7 +1557,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 expectedSPYield = _getSPYield(pendingAggInterest);
+        uint256 expectedSPYield = _getSPYield(activePool, pendingAggInterest);
 
         uint256 debt_C = troveManager.getTroveEntireDebt(CTroveId);
         uint256 debt_D = troveManager.getTroveEntireDebt(DTroveId);
@@ -1702,7 +1702,7 @@ contract InterestRateAggregate is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 expectedSPYield = _getSPYield(pendingAggInterest);
+        uint256 expectedSPYield = _getSPYield(activePool, pendingAggInterest);
 
         // A liquidates C and D
         uint256[] memory trovesToLiq = new uint256[](2);
@@ -2046,7 +2046,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
-        uint256 expectedSPYield = _getSPYield(pendingAggInterest);
+        uint256 expectedSPYield = _getSPYield(activePool, pendingAggInterest);
 
         uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
         // E redeems
@@ -2230,7 +2230,7 @@ contract InterestRateAggregate is DevTestSetup {
 
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
-        uint256 expectedSPYield = _getSPYield(pendingAggInterest);
+        uint256 expectedSPYield = _getSPYield(activePool, pendingAggInterest);
         uint256 expectedBoldGain_A = getShareofSPReward(A, expectedSPYield);
 
         // Check A has stashed Coll gains

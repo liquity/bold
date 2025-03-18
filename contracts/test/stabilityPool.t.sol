@@ -1105,7 +1105,7 @@ contract SPTest is DevTestSetup {
 
         uint256 yieldGainsOwed_2 = stabilityPool.getYieldGainsOwed();
         uint256 yieldGainsPending_2 = stabilityPool.getYieldGainsPending();
-        assertEq(yieldGainsOwed_2, yieldGainsOwed_1 + _getSPYield(upfrontFee), "Yield owed mismatch 2");
+        assertEq(yieldGainsOwed_2, yieldGainsOwed_1 + _getSPYield(activePool, upfrontFee), "Yield owed mismatch 2");
         assertEq(yieldGainsPending_2, 0, "Yield pending mismatch 2");
     }
 
