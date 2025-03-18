@@ -220,7 +220,7 @@ function Tab({
   const styles = compact
     ? {
       activeTabContent: {
-        color: selected ? token("colors.accentContent") : token("colors.interactive"),
+        color: selected ? token("colors.controlSurface") : token("colors.interactive"),
       },
     }
     : {
@@ -256,10 +256,6 @@ function Tab({
         whiteSpace: "nowrap",
         textOverflow: "ellipsis",
         overflow: "hidden",
-        _focusVisible: {
-          outline: "2px solid token(colors.focused)",
-          borderRadius: 8,
-        },
       })}
       style={{
         color: styles.activeTabContent.color,

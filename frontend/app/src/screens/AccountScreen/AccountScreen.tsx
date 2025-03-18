@@ -40,6 +40,7 @@ export function AccountScreen({
           className={css({
             fontSize: 32,
             userSelect: "none",
+            color: "content",
           })}
         >
           Account
@@ -47,8 +48,8 @@ export function AccountScreen({
         <section
           className={css({
             padding: "16px 16px 24px",
-            color: "strongSurfaceContent",
-            background: "strongSurface",
+            color: "controlSurface",
+            background: "infoSurface",
             borderRadius: 8,
             userSelect: "none",
           })}
@@ -61,12 +62,13 @@ export function AccountScreen({
               paddingBottom: 12,
               textTransform: "uppercase",
               fontSize: 12,
+              color: "contentAlt"
             })}
           >
             <div
               className={css({
                 display: "flex",
-                color: "strongSurfaceContentAlt2",
+                color: "contentAlt",
               })}
             >
               <IconAccount size={16} />
@@ -81,6 +83,7 @@ export function AccountScreen({
               gap: 12,
               height: 40,
               fontSize: 40,
+              color: "content",
             })}
           >
             {shortenAddress(address, 3)}
@@ -106,25 +109,19 @@ export function AccountScreen({
               gridTemplateColumns: `repeat(3, 1fr)`,
             }}
           >
-            <GridItem label="BOLD balance">
+            <GridItem label="bvUSD balance">
               <Balance
                 address={address}
                 tokenSymbol="BOLD"
               />
             </GridItem>
-            <GridItem label="LQTY balance">
+            <GridItem label="VCRAFT balance">
               <Balance
                 address={address}
                 tokenSymbol="LQTY"
                 tapButton={tapEnabled
                   && account.address
                   && addressesEqual(address, account.address)}
-              />
-            </GridItem>
-            <GridItem label="LUSD balance">
-              <Balance
-                address={address}
-                tokenSymbol="LUSD"
               />
             </GridItem>
             {branches.map(({ symbol }) => (

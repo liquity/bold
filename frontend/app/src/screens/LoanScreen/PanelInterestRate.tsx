@@ -229,7 +229,8 @@ export function PanelInterestRate({
           disabled={!allowSubmit}
           label="Update position"
           mode="primary"
-          size="large"
+          size="medium"
+          shape="rectangular"
           wide
           onClick={() => {
             if (account.address) {
