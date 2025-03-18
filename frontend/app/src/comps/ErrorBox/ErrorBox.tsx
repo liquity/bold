@@ -34,7 +34,7 @@ export function ErrorBox({
       className={css({
         width: "100%",
         background: "negativeSurface",
-        color: "negative",
+        color: "content",
         fontSize: 14,
         border: "1px solid token(colors.negativeSurfaceBorder)",
         borderRadius: 8,

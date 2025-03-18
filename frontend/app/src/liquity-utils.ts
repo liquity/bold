@@ -562,6 +562,7 @@ export function useLiquityStats() {
         throw new Error("LIQUITY_STATS_URL is not defined");
       }
       const response = await fetch(LIQUITY_STATS_URL);
+      console.log(await response.json())
       return v.parse(StatsSchema, await response.json());
     },
     enabled: Boolean(LIQUITY_STATS_URL),

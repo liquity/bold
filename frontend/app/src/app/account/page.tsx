@@ -7,6 +7,7 @@ import { notFound, useSearchParams } from "next/navigation";
 export default function Page() {
   const searchParams = useSearchParams();
   const accountAddress = searchParams.get("address") ?? searchParams.get("a");
+  console.log(searchParams, accountAddress)
 
   if (!isAddress(accountAddress)) {
     notFound();

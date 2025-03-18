@@ -467,9 +467,11 @@ function Drawer({
 export function InputFieldBadge({
   label,
   icon,
+  size = "medium",
 }: {
   label: ReactNode;
   icon?: ReactNode;
+  size?: "medium" | "small";
 }) {
   return (
     <div
@@ -477,7 +479,7 @@ export function InputFieldBadge({
         display: "flex",
         alignItems: "center",
         gap: 8,
-        height: 40,
+        height: size === "small" ? 32 : 40,
         padding: "0 16px",
         paddingLeft: icon ? 8 : 16,
         background: "controlSurfaceAlt",
@@ -489,7 +491,7 @@ export function InputFieldBadge({
       {icon}
       <div
         style={{
-          fontSize: 24,
+          fontSize: size === "small" ? 16 : 24,
           fontWeight: 500,
         }}
       >

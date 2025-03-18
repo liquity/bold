@@ -21,7 +21,7 @@ export function BottomBar() {
   const account = useAccount();
   const stats = useLiquityStats();
 
-  const tvl = stats.data?.totalValueLocked;
+  const tvl = 200_000_000 //stats.data?.totalValueLocked;
 
   return (
     <div

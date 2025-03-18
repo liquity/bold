@@ -82,7 +82,7 @@ export const darkTheme = {
     positionContent: "white",
     positionContentAlt: "gray100",
     interactive: "white",
-    negative: "white",
+    negative: "red",
     negativeStrong: "red",
     negativeActive: "red",
     negativeContent: "white",
