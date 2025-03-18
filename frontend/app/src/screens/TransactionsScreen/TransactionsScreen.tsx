@@ -217,7 +217,8 @@ export function TransactionsScreen() {
                 <AnchorButton
                   label={flow.request.successLink[1]}
                   mode="positive"
-                  size="large"
+                  size="medium"
+                  shape="rectangular"
                   wide
                 />
               </Link>
@@ -228,13 +229,14 @@ export function TransactionsScreen() {
                 label={(
                   step.status === "error" ? "Retry: " : ""
                 ) + (
-                  flowParams
-                    ? stepDeclaration.name(flowParams)
-                    : ""
-                )}
+                    flowParams
+                      ? stepDeclaration.name(flowParams)
+                      : ""
+                  )}
                 mode="primary"
                 onClick={commit}
-                size="large"
+                size="medium"
+                shape="rectangular"
                 wide
               />
             )}

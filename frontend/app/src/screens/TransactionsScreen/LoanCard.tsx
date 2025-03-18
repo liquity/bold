@@ -576,15 +576,15 @@ function LoadingCard({
             // - 40 // bottom bar 2
           ),
           cardHeight: s === "error" || s === "not-found" ? 180 : 120,
-          cardBackground: token("colors.blue"),
-          cardColor: token("colors.blue"),
+          cardBackground: token("colors.gold"),
+          cardColor: token("colors.neutral200"),
         }),
       )
       .otherwise(() => ({
         cardtransform: "scale3d(1, 1, 1)",
         containerHeight: height,
         cardHeight: height,
-        cardBackground: token("colors.position"),
+        cardBackground: token("colors.infoSurface"),
         cardColor: token("colors.white"),
       })),
     config: {

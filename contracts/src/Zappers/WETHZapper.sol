@@ -14,7 +14,7 @@ contract WETHZapper is BaseZapper {
         // Approve coll to BorrowerOperations
         WETH.approve(address(borrowerOperations), type(uint256).max);
         // Approve Coll to exchange module (for closeTroveFromCollateral)
-        WETH.approve(address(_exchange), type(uint256).max);
+        // WETH.approve(address(_exchange), type(uint256).max);
     }
 
     function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256) {
@@ -238,53 +238,53 @@ contract WETHZapper is BaseZapper {
         require(success, "WZ: Sending ETH failed");
     }
 
-    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external override {
-        address owner = troveNFT.ownerOf(_troveId);
-        address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
-        CloseTroveParams memory params =
-            CloseTroveParams({troveId: _troveId, flashLoanAmount: _flashLoanAmount, receiver: receiver});
+    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external virtual override {
+        // address owner = troveNFT.ownerOf(_troveId);
+        // address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        // CloseTroveParams memory params =
+        //     CloseTroveParams({troveId: _troveId, flashLoanAmount: _flashLoanAmount, receiver: receiver});
 
-        // Set initial balances to make sure there are not lefovers
-        InitialBalances memory initialBalances;
-        initialBalances.tokens[0] = WETH;
-        initialBalances.tokens[1] = boldToken;
-        _setInitialBalancesAndReceiver(initialBalances, receiver);
+        // // Set initial balances to make sure there are not lefovers
+        // InitialBalances memory initialBalances;
+        // initialBalances.tokens[0] = WETH;
+        // initialBalances.tokens[1] = boldToken;
+        // _setInitialBalancesAndReceiver(initialBalances, receiver);
 
-        // Flash loan coll
-        flashLoanProvider.makeFlashLoan(
-            WETH, _flashLoanAmount, IFlashLoanProvider.Operation.CloseTrove, abi.encode(params)
-        );
+        // // Flash loan coll
+        // flashLoanProvider.makeFlashLoan(
+        //     WETH, _flashLoanAmount, IFlashLoanProvider.Operation.CloseTrove, abi.encode(params)
+        // );
 
-        // return leftovers to user
-        _returnLeftovers(initialBalances);
+        // // return leftovers to user
+        // _returnLeftovers(initialBalances);
     }
 
     function receiveFlashLoanOnCloseTroveFromCollateral(
         CloseTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
-    ) external {
-        require(msg.sender == address(flashLoanProvider), "WZ: Caller not FlashLoan provider");
+    ) external virtual override {
+        // require(msg.sender == address(flashLoanProvider), "WZ: Caller not FlashLoan provider");
 
-        LatestTroveData memory trove = troveManager.getLatestTroveData(_params.troveId);
+        // LatestTroveData memory trove = troveManager.getLatestTroveData(_params.troveId);
 
-        // Swap Coll from flash loan to Bold, so we can repay and close trove
-        // We swap the flash loan minus the flash loan fee
-        exchange.swapToBold(_effectiveFlashLoanAmount, trove.entireDebt);
+        // // Swap Coll from flash loan to Bold, so we can repay and close trove
+        // // We swap the flash loan minus the flash loan fee
+        // exchange.swapToBold(_effectiveFlashLoanAmount, trove.entireDebt);
 
-        // We asked for a min of entireDebt in swapToBold call above, so we don’t check again here:
-        // uint256 receivedBoldAmount = exchange.swapToBold(_effectiveFlashLoanAmount, trove.entireDebt);
-        //require(receivedBoldAmount >= trove.entireDebt, "WZ: Not enough BOLD obtained to repay");
+        // // We asked for a min of entireDebt in swapToBold call above, so we don’t check again here:
+        // // uint256 receivedBoldAmount = exchange.swapToBold(_effectiveFlashLoanAmount, trove.entireDebt);
+        // //require(receivedBoldAmount >= trove.entireDebt, "WZ: Not enough BOLD obtained to repay");
 
-        borrowerOperations.closeTrove(_params.troveId);
+        // borrowerOperations.closeTrove(_params.troveId);
 
-        // Send coll back to return flash loan
-        WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
+        // // Send coll back to return flash loan
+        // WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
 
-        // Send coll left and gas compensation
-        uint256 collLeft = trove.entireColl + ETH_GAS_COMPENSATION - _params.flashLoanAmount;
-        WETH.withdraw(collLeft);
-        (bool success,) = _params.receiver.call{value: collLeft}("");
-        require(success, "WZ: Sending ETH failed");
+        // // Send coll left and gas compensation
+        // uint256 collLeft = trove.entireColl + ETH_GAS_COMPENSATION - _params.flashLoanAmount;
+        // WETH.withdraw(collLeft);
+        // (bool success,) = _params.receiver.call{value: collLeft}("");
+        // require(success, "WZ: Sending ETH failed");
     }
 
     receive() external payable {}

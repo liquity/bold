@@ -51,9 +51,6 @@ export function ErrorBox({
           padding: "0 0 0 24px",
           cursor: "pointer",
           borderRadius: 8,
-          _focusVisible: {
-            outline: "2px solid token(colors.focused)",
-          },
         })}
       >
         <h1

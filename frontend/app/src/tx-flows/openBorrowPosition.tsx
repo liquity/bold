@@ -123,7 +123,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
               key="start"
               fallback="…"
               value={boldAmountWithFee}
-              suffix=" BOLD"
+              suffix=" bvUSD"
             />,
             <div
               className={css({
@@ -137,9 +137,9 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                 fallback="…"
                 prefix="Incl. "
                 value={upfrontFee.data}
-                suffix=" BOLD creation fee"
+                suffix=" bvUSD creation fee"
               />
-              <InfoTooltip heading="BOLD Creation Fee">
+              <InfoTooltip heading="bvUSD Creation Fee">
                 This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of average
                 interest for the respective collateral asset.
               </InfoTooltip>

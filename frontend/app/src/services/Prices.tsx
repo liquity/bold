@@ -43,12 +43,13 @@ function useCollateralPrice(
   });
 }
 
-type CoinGeckoSymbol = TokenSymbol & ("LQTY" | "LUSD");
+type CoinGeckoSymbol = TokenSymbol & ("LQTY" | "LUSD" | "ETH");
 const coinGeckoTokenIds: {
   [key in CoinGeckoSymbol]: string;
 } = {
   LQTY: "liquity",
   LUSD: "liquity-usd",
+  ETH: "ethereum",
 };
 
 function useCoinGeckoPrice(
@@ -118,7 +119,7 @@ function useCoinGeckoPrice(
 export function usePrice<PT extends PriceToken>(
   symbol: PT | null
 ): UseQueryResult<Dnum> {
-  const fromCoinGecko = symbol === "LQTY" || symbol === "LUSD";
+  const fromCoinGecko = symbol === "LQTY" || symbol === "LUSD" || symbol === "ETH";
   const fromPriceFeed =
     !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
 

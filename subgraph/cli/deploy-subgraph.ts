@@ -87,6 +87,11 @@ export async function main() {
     options.network ??= "mainnet";
   }
 
+  if (networkPreset === "arbitrum") {
+    options.name ??= "liquity2-arbitrum";
+    options.network ??= "arbitrum";
+  }
+
   if (!options.name) {
     throw new Error("--name <SUBGRAPH_NAME> is required");
   }

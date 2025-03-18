@@ -135,8 +135,13 @@ export function BorrowScreen() {
     })
     : null;
 
+  // const maxAmount = collBalance.data && dnumMax(
+  //   dn.sub(collBalance.data, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0), // Only keep a reserve for ETH, not LSTs
+  //   dnum18(0),
+  // );
+
   const maxAmount = collBalance.data && dnumMax(
-    dn.sub(collBalance.data, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0), // Only keep a reserve for ETH, not LSTs
+    dn.sub(collBalance.data, 0), // Only keep a reserve for ETH, not LSTs
     dnum18(0),
   );
 
@@ -214,8 +219,8 @@ export function BorrowScreen() {
               placeholder="0.00"
               secondary={{
                 start: `$${deposit.parsed && collPrice.data
-                    ? fmtnum(dn.mul(collPrice.data, deposit.parsed), "2z")
-                    : "0.00"
+                  ? fmtnum(dn.mul(collPrice.data, deposit.parsed), "2z")
+                  : "0.00"
                   }`,
                 end: maxAmount && dn.gt(maxAmount, 0) && (
                   <TextButton
@@ -263,8 +268,8 @@ export function BorrowScreen() {
               placeholder="0.00"
               secondary={{
                 start: `$${debt.parsed
-                    ? fmtnum(debt.parsed)
-                    : "0.00"
+                  ? fmtnum(debt.parsed)
+                  : "0.00"
                   }`,
                 end: debtSuggestions && (
                   <HFlex gap={6}>
@@ -373,7 +378,8 @@ export function BorrowScreen() {
               disabled={!allowSubmit}
               label={content.borrowScreen.action}
               mode="primary"
-              size="large"
+              size="medium"
+              shape="rectangular"
               wide
               onClick={() => {
                 if (

@@ -26,5 +26,11 @@
       "address": "0xe3f9ca5398cc3d0099c3ad37d3252e37431555b8",
       "startBlock": 7533021
     }
+  },
+  "arbitrum": {
+    "BoldToken": {
+      "address": "0xdb68937ED884CE87A23719B9d08b1e01a0dB879B",
+      "startBlock": 316628886
+    }
   }
 }

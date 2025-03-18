@@ -236,7 +236,7 @@ export function BackButton({
           alignItems: "center",
           padding: "0 16px",
           gap: 8,
-          color: "secondaryContent",
+          color: "positionContent",
           background: "fieldSurface",
           height: 40,
           width: "fit-content",

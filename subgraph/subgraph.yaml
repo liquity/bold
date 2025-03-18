@@ -6,8 +6,8 @@ dataSources:
     name: BoldToken
     source:
       abi: BoldToken
-      address: "0xb01dd87b29d187f3e3a4bf6cdaebfb97f3d9ab98"
-      startBlock: 21640111
+      address: "0xdb68937ED884CE87A23719B9d08b1e01a0dB879B"
+      startBlock: 316628886
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -33,11 +33,11 @@ dataSources:
         - event: CollateralRegistryAddressChanged(address)
           handler: handleCollateralRegistryAddressChanged
       file: ./src/BoldToken.mapping.ts
-    network: mainnet
+    network: arbitrum-one
 templates:
   - name: TroveManager
     kind: ethereum/contract
-    network: mainnet
+    network: arbitrum-one
     source:
       abi: TroveManager
     mapping:
@@ -66,7 +66,7 @@ templates:
           handler: handleBatchUpdated
   - name: TroveNFT
     kind: ethereum/contract
-    network: mainnet
+    network: arbitrum-one
     source:
       abi: TroveNFT
     mapping:
@@ -85,7 +85,7 @@ templates:
           handler: handleTransfer
   - name: StabilityPool
     kind: ethereum/contract
-    network: mainnet
+    network: arbitrum-one
     source:
       abi: StabilityPool
     mapping:

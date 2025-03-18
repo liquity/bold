@@ -23,10 +23,7 @@ export function AppLayout({
         gridTemplateRows: "auto 1fr",
         minHeight: "100vh",
         height: "100%",
-        backgroundImage: "url('/background.png')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
+        background: "linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.75)), url('/background.png') no-repeat center center/cover",
       })}
     >
       <div
