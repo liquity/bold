@@ -15,7 +15,7 @@ import { vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
-import { readContract } from "wagmi/actions";
+import { readContract, readContracts } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -222,20 +222,22 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       ? branch.contracts.LeverageWETHZapper
       : branch.contracts.LeverageLSTZapper;
 
-    const { entireDebt } = await ctx.readContract({
-      ...branch.contracts.TroveManager,
-      functionName: "getLatestTroveData",
-      args: [BigInt(loan.troveId)],
-    });
-
-    const isBoldApproved = ctx.request.repayWithCollateral || !dn.gt(entireDebt, [
-      await ctx.readContract({
+    const [{ entireDebt }, boldAllowance] = await readContracts(ctx.wagmiConfig, {
+      contracts: [{
+        ...branch.contracts.TroveManager,
+        functionName: "getLatestTroveData",
+        args: [BigInt(loan.troveId)],
+      }, {
         ...ctx.contracts.BoldToken,
         functionName: "allowance",
         args: [ctx.account, Zapper.address],
-      }) ?? 0n,
-      18,
-    ]);
+      }],
+      allowFailure: false,
+    });
+
+    const isBoldApproved = ctx.request.repayWithCollateral || (
+      entireDebt <= boldAllowance
+    );
 
     const steps: string[] = [];
 
