@@ -135,6 +135,7 @@ contract TestDeployer is MetadataDeployment {
     struct TroveManagerParams {
         uint256 CCR;
         uint256 MCR;
+        uint256 BCR;
         uint256 SCR;
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
@@ -223,7 +224,7 @@ contract TestDeployer is MetadataDeployment {
             Zappers memory zappers
         )
     {
-        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16));
+        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16));
     }
 
     function deployAndConnectContracts(TroveManagerParams memory troveManagerParams)
@@ -368,6 +369,7 @@ contract TestDeployer is MetadataDeployment {
             address(this),
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
+            _troveManagerParams.BCR,
             _troveManagerParams.SCR,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
@@ -614,6 +616,7 @@ contract TestDeployer is MetadataDeployment {
             address(this),
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
+            _troveManagerParams.BCR,
             _troveManagerParams.SCR,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
