@@ -54,7 +54,7 @@ contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy
     //TODO lookup address of factory deployment and include that in the deployment scripts to int the factory.
     //TODO BOLD token now has a payable fallback function. verify this is not a problem.
     //TODO clean up construtor and update tests that use the constructor to not have the factory param.
-    constructor(address _owner, ISuperTokenFactory factory) Ownable(_owner) {}
+    constructor(address _owner) Ownable(_owner) {}
 
     function initialize(ISuperTokenFactory factory) external {
         // This call to the factory invokes `UUPSProxy.initialize`, which connects the proxy to the canonical SuperToken implementation.

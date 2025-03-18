@@ -319,7 +319,7 @@ contract TestDeployer is MetadataDeployment {
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this), _sf.superTokenFactory));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), _sf.superTokenFactory)));
+        boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this))));
         assert(address(boldToken) == vars.boldTokenAddress);
 
         // Initialize the BoldToken
@@ -584,7 +584,7 @@ contract TestDeployer is MetadataDeployment {
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this), superTokenFactory));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        result.boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), superTokenFactory)));
+        result.boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this))));
         assert(address(result.boldToken) == vars.boldTokenAddress);
 
         // WETH
