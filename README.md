@@ -1575,11 +1575,13 @@ sum(debt_i)
 While this wouldn't result in the most accurate estimation of the average interest rate either — considering we'd be using outdated debt values sampled at different times for each Trove as weights — at least we would have consistent weights in the numerator and denominator of our weighted average. To implement this though, we'd have to keep track of this modified sum (i.e. the sum of recorded Trove debts) in `ActivePool`, which we currently don't do.
 
 ### 12 - TroveManager can make troves liquidatable by changing the batch interest rate
-Users that add their Trove to a Batch are allowing the BatchManager to charge a lot of fees by simply adjusting the interest rate as soon as they can via `setBatchManagerAnnualInterestRate`.
+Users that add their Trove to a Batch are allowing the BatchManager to charge premature adjustment fees by simply adjusting the interest rate as soon as they can via `setBatchManagerAnnualInterestRate`.
 
-This change cannot result in triggering the critical threshold, however it can make any trove in the batch liquidatable
+This change cannot result in triggering the global critical threshold, however it can theoretically make a Trove in the batch liquidateable. 
 
-Thus BatchManagers should be considered benign trusted actors
+The BCR buffer enforces that Troves must join a batch at `CR >= MCR + BCR`, which creates a collateral buffer before they can be liquidated - therefore, Troves cannot immediately join a batch and be liquidated due to the upfront fee.  However, the collateral price may drop after they join, reducing their CR closer to the MCR, such than a premature adjustment fee could pull their `CR < MCR` and make them liquidateable.
+
+Thus BatchManagers should be considered trusted actors by Trove owners.
 
 ### 13 - Trove Adjustments may be griefed by sandwich raising the average interest rate
 
@@ -1588,19 +1590,13 @@ Borrowing requires accepting an upfront fee. This is effectively a percentage of
 To mitigate this, users should use tight but not exact checks for the `_maxUpfrontFee`.
 
 ### 14 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards
-The StabilityPool doesn't automatically compound Bold yield gains to depositors
+The StabilityPool doesn't automatically compound Bold yield gains to depositors. All deposits are added to `totalBoldDeposits` - but claimable yields are not part of `totalBoldDeposits`.
 
-All deposits are added to `totalBoldDeposits`.
+When a depositor claims their BOLD yield they may choose to add it directly to their deposit - which does increase `totalBoldDeposits`.
 
-Claimable yields are not part of `totalBoldDeposits`.
+Thus, if we compare a deposit that never claims gainst one that frequently "compounds" their yield gains by adding it to their deposit, the depositor compounding their claims will technically receive some of the rewards that could have been received by the passive depositor, due to the pro-rata reward scheme.
 
-Claiming bold allows to receive the corresponding yield and it does increase `totalBoldDeposits`.
-
-If we compare a deposit that never claims, against one that compound their claims.
-
-The depositor compounding their claims will technically receive the rewards that could have been received by the passive depositor.
-
-Meaning that claiming frequently is the preferred strategy.
+This simply means that frequently claiming and adding BOLD yield gains to one's deposit is the preferred strategy.
 
 ### 15. Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1
 If ICR is less than 101% , urgent redemptions with 1% premium reduce the ICR of a Trove.
