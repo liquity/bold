@@ -1040,6 +1040,18 @@ When a borrower adds their Trove to a batch, there is a trust assumption: they e
 
 Generally is expected that competent batch managers will build good reputations and attract borrowers. Malicious or poor managers will likely end up with empty batches in the long-term.
 
+
+### Buffer Collateral Ratio (BCR)
+
+Troves in a batch are subject to additional collateral ratio constraints involving the branch level `BCR` constant. This constant acts as a buffer on top of the MCR.  Specifically:
+
+- A Trove opened into or added to a batch must satisfy `CR > MCR + BCR` when it joins the batch
+- A debt or collateral adjustment on a Trove inside a batch must result in `CR > MCR + BCR`
+
+The purpose of the `BCR` is to ensure that a batch Trove cannot be added to or adjusted in a batch and then immediately liquidated after a premature adjustment fee brings its `CR < MCR`.  The `BCR` buffer ensures that a significant price drop must occur in between opening/adjusting the batch Trove and the premature adjustment fee.
+
+Note: self-liquidations are still possible, though they now rely entirely on price drops.
+
 ### Batch invariants
 
 Batch Troves are intended to be fundamentally equivalent to individual Troves. That is, if individual Trove A and batch Trove B have identical state at a given time (such as coll, debt, stake, accrued interest, etc) - then they would also have identical state after both undergoing the same operation (coll/debt adjustment, application of interest, receiving a redistribution gain).
