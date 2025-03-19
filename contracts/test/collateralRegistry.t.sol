@@ -302,7 +302,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
 
     // cannot send an invalid branch index
     function test_revert_InvalidIndex() public {
-         assertEq(collateralRegistry.totalCollaterals(), 4);
+        assertEq(collateralRegistry.totalCollaterals(), 4);
 
         IERC20Metadata[] memory _tokens = new IERC20Metadata[](1);
         ITroveManager[] memory _troveManagers = new ITroveManager[](1);
@@ -314,5 +314,61 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         vm.prank(boldToken.getOwner());
         vm.expectRevert("Invalid index");
         collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
+    }
+
+    function test_onlyOwner_removeBranch() public {
+        assertEq(collateralRegistry.totalCollaterals(), 4);
+
+        IERC20Metadata[] memory _tokens = new IERC20Metadata[](1);
+        ITroveManager[] memory _troveManagers = new ITroveManager[](1);
+
+        // deploy the branch 
+        (_troveManagers[0], _tokens[0]) = deployNewCollateralBranch();
+
+        uint256[] memory indexes = new uint256[](1);
+        indexes[0] = 4; // append new branch
+
+        vm.prank(boldToken.getOwner());
+        collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
+
+        assertEq(collateralRegistry.totalCollaterals(), 5);
+
+        assertEq(address(collateralRegistry.getToken(4)), address(_tokens[0]));
+        assertEq(address(collateralRegistry.getTroveManager(4)), address(_troveManagers[0]));
+
+        // only owner can remove branch
+        vm.expectRevert("Only owner");
+        collateralRegistry.removeCollaterals(indexes);
+
+        // cannot remove more than existing branches
+        uint256[] memory invalidIndexes = new uint256[](7);
+        vm.prank(boldToken.getOwner());
+        vm.expectRevert("Invalid input");
+        collateralRegistry.removeCollaterals(invalidIndexes);
+
+        // cannot remove a not initialised branch
+        invalidIndexes = new uint256[](1);
+        invalidIndexes[0] = 8;
+
+        vm.prank(boldToken.getOwner());
+        vm.expectRevert("Branch not initialised");
+        collateralRegistry.removeCollaterals(invalidIndexes);
+
+        // invalid index
+        invalidIndexes = new uint256[](1);
+        invalidIndexes[0] = 11;
+
+        vm.prank(boldToken.getOwner());
+        vm.expectRevert("Invalid index");
+        collateralRegistry.removeCollaterals(invalidIndexes);
+
+        // owner remove
+        vm.prank(boldToken.getOwner());
+        collateralRegistry.removeCollaterals(indexes);
+
+        assertEq(collateralRegistry.totalCollaterals(), 4);
+
+        assertEq(address(collateralRegistry.getToken(4)), address(0));
+        assertEq(address(collateralRegistry.getTroveManager(4)), address(0));
     }
 }

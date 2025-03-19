@@ -28,6 +28,7 @@ contract CollateralRegistry is ICollateralRegistry {
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
     event NewCollateralAdded(address collateral, address troveManager);
+    event CollateralRemoved(address collateral, address troveManager);
 
     constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers) {
         uint256 numTokens = _tokens.length;
@@ -71,6 +72,32 @@ contract CollateralRegistry is ICollateralRegistry {
 
         // update total Collaterals
         totalCollaterals += numTokens;
+    }
+ 
+    function removeCollaterals(uint256[] memory _indexes) external override {
+        require(msg.sender == boldToken.getOwner(), "Only owner");
+       
+        uint256 numTokens = _indexes.length; 
+        require(
+            numTokens > 0 && 
+            numTokens <= totalCollaterals, 
+            "Invalid input"
+        );
+
+        // remove collaterals and trove managers 
+        for(uint8 i=0; i<numTokens; i++) {
+            uint256 index = _indexes[i];
+
+            require(index <= 9, "Invalid index");
+            require(address(collateralTokens[index]) != address(0), "Branch not initialised");
+
+            emit CollateralRemoved(address(collateralTokens[index]), address(troveManagers[index]));
+
+            collateralTokens[index] = IERC20Metadata(address(0));
+            troveManagers[index] = ITroveManager(address(0));
+        }
+        
+        totalCollaterals -= numTokens;
     }
 
     struct RedemptionTotals {
