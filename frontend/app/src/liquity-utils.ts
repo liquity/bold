@@ -617,6 +617,7 @@ export function useLoan(branchId: BranchId, troveId: TroveId): UseQueryResult<Po
     return loan;
   }
 
+  // @ts-ignore
   return {
     ...loan,
     data: {

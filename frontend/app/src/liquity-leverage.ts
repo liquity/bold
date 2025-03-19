@@ -20,7 +20,9 @@ export async function getLeverUpTroveParams(
   wagmiConfig: WagmiConfig,
 ) {
   const { PriceFeed, TroveManager } = getBranch(branchId).contracts;
+  
   const [priceResult, troveDataResult] = await readContracts(wagmiConfig, {
+    // @ts-ignore
     contracts: [{
       abi: PriceFeed.abi,
       address: PriceFeed.address,

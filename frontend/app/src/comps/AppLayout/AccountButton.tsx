@@ -1,7 +1,6 @@
 import type { ComponentPropsWithRef, ReactNode } from "react";
 
 import content from "@/src/content";
-import { useDemoMode } from "@/src/demo-mode";
 import { css } from "@/styled-system/css";
 import { Button, shortenAddress, ShowAfter } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
@@ -10,10 +9,6 @@ import { match, P } from "ts-pattern";
 import { MenuItem } from "./MenuItem";
 
 export function AccountButton() {
-  const demoMode = useDemoMode();
-  if (demoMode.enabled) {
-    return <DemoModeAccountButton />;
-  }
   return (
     <ShowAfter delay={500}>
       <ConnectKitButton.Custom>
@@ -92,16 +87,6 @@ function CKButton({
         )}
     </a.div>
   ));
-}
-
-function DemoModeAccountButton() {
-  const { account, updateAccountConnected } = useDemoMode();
-  const onClick = () => {
-    updateAccountConnected(!account.isConnected);
-  };
-  return account.isConnected
-    ? <ButtonConnected label="demo.eth" onClick={onClick} />
-    : <Button mode="primary" label="Connect" onClick={onClick} />;
 }
 
 function ButtonConnected({

@@ -3,8 +3,6 @@ import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
-import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
-import { DEMO_MODE } from "@/src/env";
 import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { a, useSpring, useTransition } from "@react-spring/web";
@@ -25,8 +23,8 @@ export function Positions({
     mode === "loading"
       ? " "
       : mode === "positions"
-      ? content.home.myPositionsTitle
-      : content.home.openPositionTitle
+        ? content.home.myPositionsTitle
+        : content.home.openPositionTitle
   ),
 }: {
   address: null | Address;
@@ -44,18 +42,16 @@ export function Positions({
     ),
   );
 
-  const positions = isPositionsPending ? [] : (
-    DEMO_MODE ? ACCOUNT_POSITIONS : [
-      ...loans.data ?? [],
-      ...earnPositions.data ?? [],
-    ]
-  );
+  const positions = isPositionsPending ? [] : [
+    ...loans.data ?? [],
+    ...earnPositions.data ?? [],
+  ]
 
   let mode: Mode = address && positions && positions.length > 0
     ? "positions"
     : isPositionsPending
-    ? "loading"
-    : "actions";
+      ? "loading"
+      : "actions";
 
   // preloading for 1 second, prevents flickering
   // since the account doesn’t reconnect instantly
@@ -191,7 +187,8 @@ function PositionsGroup({
     },
   });
 
-  return (
+
+  return mode === "actions" ? <></> : (
     <div>
       {title_ && (
         <h1
@@ -233,7 +230,10 @@ function PositionsGroup({
                 height: "100%",
                 willChange: "transform, opacity",
               })}
-              style={style}
+              style={{
+                ...style,
+                borderRadius: 16,
+              }}
             >
               {card}
             </a.div>

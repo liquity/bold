@@ -129,6 +129,7 @@ export function Screen({
     )
     : (
       <div style={{ width }}>
+        {/* @ts-ignore */}
         {heading}
       </div>
     );

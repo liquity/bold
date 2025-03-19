@@ -8,9 +8,7 @@ import type {
 import type { Address, BranchId, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
-import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
-import { DEMO_MODE } from "@/src/env";
 import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { sleep } from "@/src/utils";
 import { isAddress } from "@liquity2/uikit";
@@ -58,16 +56,6 @@ export function useNextOwnerIndex(
     return borrowerInfo?.nextOwnerIndexes[branchId] ?? 0;
   };
 
-  if (DEMO_MODE) {
-    queryFn = async () => (
-      borrower
-        ? Object.values(ACCOUNT_POSITIONS)
-          .filter(isPositionLoanCommitted)
-          .length
-        : null
-    );
-  }
-
   return useQuery({
     queryKey: ["NextTroveId", borrower, branchId],
     queryFn,
@@ -88,13 +76,6 @@ export function useLoansByAccount(
     return troves.map(subgraphTroveToLoan);
   };
 
-  if (DEMO_MODE) {
-    queryFn = async () =>
-      account
-        ? ACCOUNT_POSITIONS.filter(isPositionLoanCommitted)
-        : null;
-  }
-
   return useQuery({
     queryKey: ["TrovesByAccount", account],
     queryFn,
@@ -113,19 +94,6 @@ export function useLoanById(
     const { trove } = await graphQuery(TroveByIdQuery, { id });
     return trove ? subgraphTroveToLoan(trove) : null;
   };
-
-  if (DEMO_MODE) {
-    queryFn = async () => {
-      if (!isPrefixedtroveId(id)) return null;
-      await sleep(500);
-      for (const pos of ACCOUNT_POSITIONS) {
-        if (isPositionLoanCommitted(pos) && `${pos.branchId}:${pos.troveId}` === id) {
-          return pos;
-        }
-      }
-      return null;
-    };
-  }
 
   return useQuery<PositionLoanCommitted | null>({
     queryKey: ["TroveById", id],
@@ -158,27 +126,6 @@ export function useStabilityPoolDeposits(
       },
     }));
   };
-
-  if (DEMO_MODE) {
-    queryFn = async () => {
-      if (!account) return [];
-      return ACCOUNT_POSITIONS
-        .filter((position) => position.type === "earn")
-        .map((position) => ({
-          id: `${position.branchId}:${account}`.toLowerCase(),
-          collateral: { collIndex: position.branchId },
-          deposit: position.deposit[0],
-          depositor: account.toLowerCase(),
-          snapshot: {
-            B: 0n,
-            P: 0n,
-            S: 0n,
-            epoch: 0n,
-            scale: 0n,
-          },
-        }));
-    };
-  }
 
   return useQuery<NonNullable<
     StabilityPoolDepositQueryType["stabilityPoolDeposit"]
@@ -214,30 +161,6 @@ export function useStabilityPoolDeposit(
     };
   };
 
-  if (DEMO_MODE) {
-    queryFn = async () => {
-      if (account === null || branchId === null) return null;
-      const position = ACCOUNT_POSITIONS.find(
-        (position): position is PositionEarn => (
-          position.type === "earn" && position.branchId === branchId
-        ),
-      );
-      return !position ? null : {
-        id: `${branchId}:${account}`.toLowerCase(),
-        collateral: { collIndex: branchId },
-        deposit: position.deposit[0],
-        depositor: account.toLowerCase(),
-        snapshot: {
-          B: 0n,
-          P: 0n,
-          S: 0n,
-          epoch: 0n,
-          scale: 0n,
-        },
-      };
-    };
-  }
-
   return useQuery<
     | null
     | NonNullable<
@@ -264,15 +187,6 @@ export function useStabilityPool(
       totalDeposited: dnum18(stabilityPool.totalDeposited),
     }));
   };
-
-  if (DEMO_MODE) {
-    queryFn = async () =>
-      Array.from({ length: 10 }, (_, branchId) => ({
-        branchId,
-        apr: dnum18(0),
-        totalDeposited: dnum18(0),
-      }));
-  }
 
   return useQuery({
     queryKey: ["StabilityPool"],
@@ -308,10 +222,6 @@ export function useStabilityPoolEpochScale(
     };
   };
 
-  if (DEMO_MODE) {
-    queryFn = async () => ({ B: 0n, S: 0n });
-  }
-
   return useQuery<{ B: bigint; S: bigint }>({
     queryKey: ["StabilityPoolEpochScale", branchId, String(epoch), String(scale)],
     queryFn,
@@ -332,13 +242,6 @@ export function useEarnPositionsByAccount(
     return stabilityPoolDeposits.map(subgraphStabilityPoolDepositToEarnPosition);
   };
 
-  if (DEMO_MODE) {
-    queryFn = async () =>
-      account
-        ? ACCOUNT_POSITIONS.filter((position) => position.type === "earn")
-        : null;
-  }
-
   return useQuery({
     queryKey: ["StabilityPoolDepositsByAccount", account],
     queryFn,
@@ -353,10 +256,6 @@ export function useInterestRateBrackets(
   let queryFn = async () => (
     (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
   );
-
-  if (DEMO_MODE) {
-    queryFn = async () => [];
-  }
 
   return useQuery({
     queryKey: ["AllInterestRateBrackets"],
@@ -380,11 +279,7 @@ export function useAllInterestRateBrackets(
   let queryFn = async () => (
     (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
   );
-
-  if (DEMO_MODE) {
-    queryFn = async () => [];
-  }
-
+  
   return useQuery({
     queryKey: ["AllInterestRateBrackets"],
     queryFn,

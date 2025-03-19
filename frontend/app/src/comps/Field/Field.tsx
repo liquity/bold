@@ -65,7 +65,7 @@ export function Field({
             gap: 8,
           })}
         >
-          {footer.map(({ start, end }, index) => (
+          {Array.isArray(footer) ? footer.map(({ start, end }, index) => (
             <div
               key={index}
               className={css({
@@ -92,7 +92,7 @@ export function Field({
                 {end}
               </div>
             </div>
-          ))}
+          )) : <></>}
         </div>
       )}
     </div>

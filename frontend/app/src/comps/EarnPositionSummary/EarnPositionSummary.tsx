@@ -381,7 +381,7 @@ export function EarnPositionSummary({
   );
 }
 
-function OpenLink({
+export function OpenLink({
   active,
   path,
   title,

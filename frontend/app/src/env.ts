@@ -8,9 +8,7 @@ const DEFAULT_COMMIT_URL = "https://github.com/liquity/bold/tree/{commit}";
 const DEFAULT_VERSION_URL = "https://github.com/liquity/bold/releases/tag/%40liquity2%2Fapp-v{version}";
 
 export const CollateralSymbolSchema = v.union([
-  v.literal("ETH"),
-  v.literal("RETH"),
-  v.literal("WSTETH"),
+  v.literal("ETH")
 ]);
 
 const contractsEnvNames = [

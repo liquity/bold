@@ -1,7 +1,6 @@
 import type { Token } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
-import { ACCOUNT_BALANCES, useDemoMode } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { CONTRACT_BOLD_TOKEN, CONTRACT_LQTY_TOKEN, CONTRACT_LUSD_TOKEN } from "@/src/env";
 import { getBranch } from "@/src/liquity-utils";
@@ -17,7 +16,6 @@ export function useBalance(
   address: Address | undefined,
   token: Token["symbol"] | undefined,
 ) {
-  const demoMode = useDemoMode();
 
   const tokenAddress = match(token)
     .when(
@@ -26,12 +24,9 @@ export function useBalance(
         if (!symbol || !isCollateralSymbol(symbol) || symbol === "ETH") {
           return null;
         }
-        return getBranch(symbol).contracts.CollToken.address;
+        return null // getBranch(symbol)?.contracts.CollToken.address ?? null;
       },
     )
-    .with("LUSD", () => CONTRACT_LUSD_TOKEN)
-    .with("BOLD", () => CONTRACT_BOLD_TOKEN)
-    .with("LQTY", () => CONTRACT_LQTY_TOKEN)
     .otherwise(() => null);
 
   const tokenBalance = useReadContract({
@@ -41,7 +36,7 @@ export function useBalance(
     args: address && [address],
     query: {
       select: (value) => dnum18(value ?? 0n),
-      enabled: Boolean(!demoMode.enabled && address && token !== "ETH"),
+      enabled: Boolean(address && token !== "ETH"),
     },
   });
 
@@ -49,13 +44,11 @@ export function useBalance(
     address,
     query: {
       select: ({ value }) => dnum18(value ?? 0n),
-      enabled: Boolean(!demoMode.enabled && address && token === "ETH"),
+      enabled: Boolean(address && token === "ETH"),
     },
   });
 
-  return demoMode.enabled && token
-    ? { data: ACCOUNT_BALANCES[token], isLoading: false }
-    : (token === "ETH" ? ethBalance : tokenBalance);
+  return (token === "ETH" ? ethBalance : tokenBalance);
 }
 
 export function useAccount():
@@ -66,7 +59,6 @@ export function useAccount():
     safeStatus: Awaited<ReturnType<typeof getSafeStatus>> | null;
   }
 {
-  const demoMode = useDemoMode();
   const account = useWagmiAccount();
   const connectKitModal = useConnectKitModal();
   const ensName = useEnsName({ address: account?.address });
@@ -84,10 +76,6 @@ export function useAccount():
     refetchInterval: false, // only needed once
     enabled: Boolean(account.address),
   });
-
-  if (demoMode.enabled) {
-    return demoMode.account;
-  }
 
   return {
     ...account,
