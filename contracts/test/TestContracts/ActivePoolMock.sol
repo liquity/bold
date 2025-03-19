@@ -27,6 +27,7 @@ contract ActivePoolMock {
     function sendColl(address _account, uint256 _amount) external {
         collToken.safeTransfer(_account, _amount);
     }
+    function sendCollToDefaultPool(uint256) external {}
 
     function triggerBoldRewards(uint256 _amount) external {
         stabilityPool.triggerBoldRewards(_amount);
@@ -35,5 +36,13 @@ contract ActivePoolMock {
 
     function mintBold(address _account, uint256 _boldAmount) external {
         boldToken.mint(_account, _boldAmount);
+    }
+
+    function mintBatchManagementFeeAndAccountForChange(TroveChange calldata, address) external {}
+    function mintAggInterestAndAccountForTroveChange(TroveChange calldata, address) external {}
+    function setShutdownFlag() external {}
+
+    function getCollBalance() external view returns (uint256) {
+        return collToken.balanceOf(address(this));
     }
 }

@@ -1146,13 +1146,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     // --- 'require' wrapper functions ---
 
-    function _requireCallerIsBorrowerOperations() internal view {
+    function _requireCallerIsBorrowerOperations() internal view virtual {
         if (msg.sender != address(borrowerOperations)) {
             revert CallerNotBorrowerOperations();
         }
     }
 
-    function _requireCallerIsCollateralRegistry() internal view {
+    function _requireCallerIsCollateralRegistry() internal view virtual {
         if (msg.sender != address(collateralRegistry)) {
             revert CallerNotCollateralRegistry();
         }
