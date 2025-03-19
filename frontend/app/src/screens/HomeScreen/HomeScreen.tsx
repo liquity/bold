@@ -32,7 +32,7 @@ export function HomeScreen() {
             paddingBottom: 32,
           }}
         >
-          My Tokens
+          My Token
         </h1>
         <div
           className={css({
