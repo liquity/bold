@@ -1045,8 +1045,8 @@ Generally is expected that competent batch managers will build good reputations 
 
 Troves in a batch are subject to additional collateral ratio constraints involving the branch level `BCR` constant. This constant acts as a buffer on top of the MCR.  Specifically:
 
-- A Trove opened into or added to a batch must satisfy `CR > MCR + BCR` when it joins the batch
-- A debt or collateral adjustment on a Trove inside a batch must result in `CR > MCR + BCR`
+- A Trove opened into or added to a batch must satisfy `CR >= MCR + BCR` when it joins the batch
+- A debt or collateral adjustment on a Trove inside a batch must result in `CR >= MCR + BCR`
 
 The purpose of the `BCR` is to ensure that a batch Trove cannot be added to or adjusted in a batch and then immediately liquidated after a premature adjustment fee brings its `CR < MCR`.  The `BCR` buffer ensures that a significant price drop must occur in between opening/adjusting the batch Trove and the premature adjustment fee.
 
