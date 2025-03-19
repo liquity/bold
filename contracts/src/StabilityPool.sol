@@ -580,11 +580,11 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     // --- 'require' functions ---
 
-    function _requireCallerIsActivePool() internal view {
+    function _requireCallerIsActivePool() internal view virtual {
         require(msg.sender == address(activePool), "StabilityPool: Caller is not ActivePool");
     }
 
-    function _requireCallerIsTroveManager() internal view {
+    function _requireCallerIsTroveManager() internal view virtual {
         require(msg.sender == address(troveManager), "StabilityPool: Caller is not TroveManager");
     }
 
