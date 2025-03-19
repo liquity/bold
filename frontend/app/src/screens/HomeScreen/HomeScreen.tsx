@@ -1,9 +1,6 @@
 "use client";
 
 import { Positions } from "@/src/comps/Positions/Positions";
-import {
-  getBranches,
-} from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 
@@ -32,7 +29,7 @@ export function HomeScreen() {
             paddingBottom: 32,
           }}
         >
-          My Token
+          My Tokens
         </h1>
         <div
           className={css({
