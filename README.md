@@ -825,12 +825,22 @@ Stability Pool depositors can expect to earn net gains from liquidations, as in 
 If the liquidated debt is higher than the amount of BOLD in the Stability Pool, the system applies both steps 1) and then 2): that is, it cancels as much debt as possible with the BOLD in the Stability Pool, and then redistributes the remaining liquidated collateral and debt across all active Troves in the branch.
 
 
+## Minimum 1 BOLD token in the SP
+
+Once the SP has reached at least 1 BOLD in size, the system enforces that at least 1 BOLD remain in it - e.g. that `totalBoldDeposits >=1e18`.  Specifically:
+
+- SP withdrawals check that the resulting `totalBoldDeposits >= 1e18`. This means that if a depositor's withdrawal would result in `totalBoldDeposits < 1e18`, then it will revert. The depositor can just withdraw slightly less, in order to leave 1e18 `totalBoldDeposits` in the SP. At worst, they forego 1 BOLD. This situation should be rare, and can be remedied by anyone else depositing 1 BOLD to the SP, allowing them to withdraw.
+
+- When `totalBoldDeposits >= 1e18` BOLD, offsets leave `1e18` BOLD in the SP. In `batchLiquidateTroves` we track `boldInSPForOffsets`, and it is `1e18` less than the total SP. So all liquidation logic remains the same, and only the offset boundary has shifted.
+
+- In the special case of `totalBoldDeposits < 1e18` (e.g. before at least 1 BOLD has been deposited), liquidations do a pure redistribution and do not perform an offset against the SP. This means that if somehow a liquidation occurs when `totalBoldDeposits < 1e18`, then it will still succeed and will not deplete the SP.
+
 ## Liquidation logic
 
 | Condition                         | Description                                                                                                                                                                                                                                                                                                                  |
 |-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ICR < MCR & SP.BOLD >= Trove.debt | BOLD in the StabilityPool equal to the Trove's debt is offset with the Trove's debt. The Trove's seized collateral is shared between depositors.                                                                                                                                                                                    |
-| ICR < MCR & SP.BOLD < Trove.debt  | The total StabilityPool BOLD is offset with an equal amount of debt from the Trove. A portion of the Trove's collateral corresponding to the offset debt is shared between depositors. The remaining debt and seized collateral (minus collateral gas compensation) is redistributed to active Troves.  |
+| ICR < MCR & SP.BOLD - 1 >= Trove.debt | BOLD in the StabilityPool equal to the Trove's debt is offset with the Trove's debt. The Trove's seized collateral is shared between depositors.                                                                                                                                                                                    |
+| ICR < MCR & SP.BOLD - 1 < Trove.debt  | The offsettable BOLD in the SP is offset with an equal amount of debt from the Trove. A portion of the Trove's collateral corresponding to the offset debt is shared between depositors. The remaining debt and seized collateral (minus collateral gas compensation) is redistributed to active Troves.  |
 | ICR < MCR & SP.BOLD = 0           | Redistribute all debt and seized collateral (minus collateral gas compensation) to active Troves.                                                                                                                                                                                                                                    |
 | ICR >= MCR                        | Liquidation not possible.                                                                                                                                                                                                                                                                                                     |
 
