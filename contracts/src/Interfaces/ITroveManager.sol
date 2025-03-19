@@ -11,7 +11,6 @@ import "./ISortedTroves.sol";
 import "./IWhitelist.sol";
 import "../Types/LatestTroveData.sol";
 import "../Types/LatestBatchData.sol";
-import {UpgradableContracts} from "../Types/UpgradableContracts.sol";
 
 // Common interface for the Trove Manager.
 interface ITroveManager is ILiquityBase {

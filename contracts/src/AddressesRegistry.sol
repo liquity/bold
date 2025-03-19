@@ -5,7 +5,6 @@ pragma solidity ^0.8.24;
 import "./Dependencies/Owned.sol";
 import {MIN_LIQUIDATION_PENALTY_SP, MAX_LIQUIDATION_PENALTY_REDISTRIBUTION} from "./Dependencies/Constants.sol";
 import "./Interfaces/IAddressesRegistry.sol";
-import {UpgradableContracts} from "./Types/UpgradableContracts.sol";
 
 contract AddressesRegistry is Owned, IAddressesRegistry {
     IERC20Metadata public collToken;
