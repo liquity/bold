@@ -1431,21 +1431,13 @@ However, this invariant doesn't hold perfectly - the aggregate is sometimes slig
 
 Though rounding error is inevitable, we have ensured that the error always “favors the system” - that is, the aggregate is always greater than the sum over Troves, and every Trove can be closed (until there is only 1 left in the system, as intended).
 
-### 8 - Discrepancy between `yieldGainsOwed` and sum of individual yield gains in StabilityPool
+### 8 - Rounding errors in the SP favor the system
 
-StabilityPool increases `yieldGainsOwed` by the amount of BOLD yield it receives from interest minting, and decreases it by the claimed amount any time a depositor makes a claim. As such, `yieldGainsOwed` should always equal the sum of unclaimed yield present in deposits:
+The StabilityPool calculates deposits and collateral and yield gains dynamically based on a depositor's snapshot of a global index `P` and reward sums `G` and `B`.  The Stability Pool arithmetic creates small rounding errors in the deposit and gains, which favor the pool over the users. That is, for a given StabilityPool the following invariants hold:
 
-`StabilityPool.getYieldGainsOwed() = SUM(StabilityPool.getDepositorYieldGain())`
-
-Currently, the discrepancy between these 2 can be rather large, especially if yield is received immediately after a liquidation that results in very little remaining deposited BOLD in StabilityPool. What's worse, the discrepancy can sometimes be negative, meaning if every depositor were to try and claim their gains, at some point we would try to reduce `yieldGainsOwed` below zero, resulting in arithmetic underflow.
-
-#### Solution
-
-Some imprecision in the StabilityPool arithmetic is inevitable, but we should avoid arithmetic underflow in `yieldGainsOwed` by ensuring the error stays positive. The root cause of the underflow is not yet clear, however it seems to be connected to our error feedback mechanism.
-
-[PR 261](https://github.com/liquity/bold/pull/261) contains a proof-of-concept patch that eliminates error correction while also simplifying the code in an effort make it easier to reason about. This fixes all currently known instances of arithmetic underflow.
-
-**TODO**: we should analyze the issue more and understand the root cause better.
+- `SUM(deposit_i)_over_all_depositors_i < totalBoldDeposits`
+- `SUM(coll_gain_i)_over_all_depositors_i < collBalance`
+- `SUM(yield_gain_i)_over_all_depositors_i < yieldGainsOwed + yieldGainsPending`
 
 ### 9 - LST oracle risks 
 
@@ -1725,39 +1717,13 @@ Past simulation has shown that this potential knock-on drag-down effect is minor
 
 A number of TODOs remain in comments in core smart contracts:
 
-- TroveManager L1276: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/TroveManager.sol#L1276  This `assert` always holds true since the encapsulating function is only called when a Trove is opened.
-
-- StabilityPool L372: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/StabilityPool.sol#L372  This `assert` is always true since the encapsulating function triggerBoldRewards is only ever called when there is non-zero BOLD yield for the SP - see ActivePool L258: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/ActivePool.sol#L258.
+- TroveManager L1281 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1281 L1537 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1537 
+L1593 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1593
+L1734 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1734 These `assert` check that certain debt quantities on a live Trove are not 0, which always holds true. 
 
 - MainnetPriceFeedBase L52: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/PriceFeeds/MainnetPriceFeedBase.sol#L52  This is irrelevant now that contracts have been deployed.
 
-### 19 - Potential minor insolvency in StabilityPool after liquidations and deposits
-
-The StabilityPool reward arithmetic uses a running product `P` to track user deposits across depletions from liquidations. When a fraction of the SP is absorbed in liquidation, `P` is reduced. The system uses error correction arithmetic in order to maintain accuracy in the stored `P` value.
-
-However, the error correction itself is not perfect, and has a side effect whereby a minor insolvency in the Stability Pool can still emerge - that is, the sum of individual user deposits (i.e. the sum of `getCompoundedBoldDeposit` over all deposits) may become slightly greater than the `totalBoldDeposits`.
-
-
-#### Impact size
-
-The maximum impact scenario involves a liquidation that is “almost” pool-emptying, followed by a very large deposit and another liquidation.
-
-Even then, the insolvency generated is extremely minor - i.e. for a liquidation of order ~100m BOLD and subsequent deposit on the order of ~10b BOLD, the insolvency is only on the order of ~1 BOLD.
-
-Multiple factors feed into the magnitude of the insolvency relative to the SP size. However, the maximum impact is bounded due the fact that `P` itself bounded, and has a maximum relative decrease between liquidations.
-
-#### Consequences
-
-In practice, an insolvency only has any impact if all depositors withdraw from the Stability Pool. In this case, the final deposit will attempt to withdraw slightly more BOLD than remains in the pool, and their transaction will revert.
-
-This can be easily remedied by withdrawing slightly less than their deposit value, i.e. their current deposit value less the insolvency.
-
-It can also be remedied by a third party BOLD “donation” to the SP via `provideToSP`. If this new deposit covers the insolvency, then all other existing depositors will be able to fully withdraw.  Since the insolvency magnitude is likely very small, such a donation is trivial.
-
-**Note**: the insolvency magnitude is very minor due to the fact that the error correction is very small relative to the absolute value of `P`, which is 18 decimal precision. If the precision of `P` were altered to be lower, then the impact may be greater - this is something that Liquity v2 forks should be aware of.
-
-
-### 20 - Just in time StabilityPool deposits
+### 19 - Just in time StabilityPool deposits
 
 It is possible for a depositor to front-run a liquidation transaction with a large SP deposit and reap most of the liquidation gains.
 
@@ -1767,11 +1733,18 @@ For example:
 - User front-runs it and immediately makes a large deposit with `provideToSP`
 - User extracts most of the collateral gain from the liquidation
 
-A frontrunner could deposit funds to the Stability Pool in this just-in-time manner (instead of keeping their funds in the pool long-term), earn liquidation gains, then immediately withdraw their gain and remaining deposit.
+A frontrunner could deposit funds to the Stability Pool in this just-in-time (JIT) manner (instead of keeping their funds in the pool long-term), earn liquidation gains, then immediately withdraw their gain and remaining deposit.
 
 This is a known feature of the SP and is in fact considered to be positive. Such JIT deposits are beneficial (in terms of TCR) to system health and help prevent redistributions.
 
 Though long-term depositors may miss out on some liquidation gains in the case of large JIT deposits, their incentive to remain in the SP long-term comes from the BOLD yield generated by interest paid on Troves.
 
+#### Reclaiming borrow fees via JIT deposits
+
+When new debt is drawn on a Trove, an upfront fee is charged.  Part of this fee is sent as yield rewards to the SP. A borrower may reclaim some of their borrow fees by sequentially drawing their debt in chunks, and depositing their issued BOLD into the SP. As such, they'll then earn back a portion of their borrow fee paid on the next chunk of debt. They can repeat this process until they reach their target debt.
+
+Of course, the reclaimed fee portion depends on the size of their target debt, how finely they chunk their debt, and the prior size of the SP. Existing depositors will still earn a portion of their upfront fees which are split to depositors pro-rata.
+
+
 ### Issues identified in audits requiring no fix
-A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/labels/wontfix).
+A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/issues?q=label%3Awontfix+).
