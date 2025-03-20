@@ -36,7 +36,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
     {
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](1);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
 
         TestDeployer.LiquityContractsDev memory _contractsArray;
 

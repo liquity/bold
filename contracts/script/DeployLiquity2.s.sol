@@ -190,6 +190,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         uint256 CCR;
         uint256 MCR;
         uint256 SCR;
+        uint256 BCR;
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
     }
@@ -329,6 +330,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             CCR: CCR_WETH,
             MCR: MCR_WETH,
             SCR: SCR_WETH,
+            BCR: BCR_ALL,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_WETH,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_WETH
         });
@@ -338,6 +340,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             CCR: CCR_SETH,
             MCR: MCR_SETH,
             SCR: SCR_SETH,
+            BCR: BCR_ALL,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
         });
@@ -653,6 +656,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             deployer,
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
+            _troveManagerParams.BCR,
             _troveManagerParams.SCR,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION

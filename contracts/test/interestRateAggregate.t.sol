@@ -410,6 +410,10 @@ contract InterestRateAggregate is DevTestSetup {
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
         makeSPDepositAndClaim(A, sPdeposit);
 
+        // B puts 1e18 in Pool so A can withdraw
+        transferBold(A, B, 1e18);
+        makeSPDepositAndClaim(B, 1e18);
+
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
 
@@ -430,6 +434,10 @@ contract InterestRateAggregate is DevTestSetup {
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
         makeSPDepositAndClaim(A, sPdeposit);
+
+        // B puts 1e18 in Pool so A can withdraw
+        transferBold(A, B, 1e18);
+        makeSPDepositAndClaim(B, 1e18);
 
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
@@ -456,6 +464,10 @@ contract InterestRateAggregate is DevTestSetup {
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
         makeSPDepositAndClaim(A, sPdeposit);
 
+        // B puts 1e18 in Pool so A can withdraw
+        transferBold(A, B, 1e18);
+        makeSPDepositAndClaim(B, 1e18);
+
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
 
@@ -476,6 +488,11 @@ contract InterestRateAggregate is DevTestSetup {
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
         makeSPDepositAndClaim(A, sPdeposit);
+
+        // B puts 1e18 in Pool so A can withdraw
+        transferBold(A, B, 1e18);
+        makeSPDepositAndClaim(B, 1e18);
+
         // claim gains from first trove
         makeSPWithdrawalAndClaim(A, 0);
 
@@ -509,6 +526,10 @@ contract InterestRateAggregate is DevTestSetup {
         priceFeed.setPrice(2000e18);
         openTroveNoHints100pct(A, 2 ether, troveDebtRequest, 25e16);
         makeSPDepositAndClaim(A, sPdeposit);
+
+        // B puts 1e18 in Pool so A can withdraw
+        transferBold(A, B, 1e18);
+        makeSPDepositAndClaim(B, 1e18);
 
         // fast-forward time
         vm.warp(block.timestamp + 1 days);
@@ -1489,7 +1510,7 @@ contract InterestRateAggregate is DevTestSetup {
     // --- batchLiquidateTroves (Normal Mode, offset) ---
 
     function testBatchLiquidateTrovesPureOffsetChangesAggRecordedInterestCorrectly() public {
-        (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset();
+        (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset(1);
 
         // fast-forward time so interest accrues
         vm.warp(block.timestamp + 1 days);
@@ -1529,7 +1550,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testBatchLiquidateTrovesPureOffsetReducesAggPendingInterestTo0() public {
-        (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset();
+        (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset(1);
 
         // fast-forward time so interest accrues
         vm.warp(block.timestamp + 1 days);
@@ -1547,7 +1568,7 @@ contract InterestRateAggregate is DevTestSetup {
 
     // Mints interest to SP
     function testBatchLiquidateTrovesPureOffsetMintsAggInterestToSP() public {
-        (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset();
+        (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset(1);
 
         // fast-forward time so interest accrues
         vm.warp(block.timestamp + 1 days);
@@ -1575,7 +1596,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testBatchLiquidateTrovesPureOffsetUpdatesLastAggInterestUpdateTimeToNow() public {
-        (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset();
+        (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset(1);
 
         // fast-forward time so interest accrues
         vm.warp(block.timestamp + 1 days);
@@ -1597,7 +1618,7 @@ contract InterestRateAggregate is DevTestSetup {
     function testBatchLiquidateTrovesPureOffsetRemovesLiquidatedTrovesWeightedRecordedDebtsFromWeightedRecordedDebtSum()
         public
     {
-        (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset();
+        (,, uint256 CTroveId, uint256 DTroveId) = _setupForBatchLiquidateTrovesPureOffset(1);
 
         // fast-forward time so interest accrues
         vm.warp(block.timestamp + 1 days);

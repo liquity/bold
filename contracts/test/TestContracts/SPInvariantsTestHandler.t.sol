@@ -20,14 +20,15 @@ import {
     _100pct,
     ETH_GAS_COMPENSATION,
     COLL_GAS_COMPENSATION_DIVISOR,
-    MIN_ANNUAL_INTEREST_RATE
+    MIN_ANNUAL_INTEREST_RATE,
+    MIN_BOLD_IN_SP
 } from "src/Dependencies/Constants.sol";
 
 using {mulDivCeil} for uint256;
 
 // Test parameters
 uint256 constant OPEN_TROVE_BORROWED_MIN = 2_000 ether;
-uint256 constant OPEN_TROVE_BORROWED_MAX = 100_000 ether;
+uint256 constant OPEN_TROVE_BORROWED_MAX = 100e18 ether;
 uint256 constant OPEN_TROVE_ICR = 1.5 ether; // CCR
 uint256 constant LIQUIDATION_ICR = MCR - _1pct;
 
@@ -176,7 +177,7 @@ contract SPInvariantsTestHandler is BaseHandler {
         vm.assume(troveManager.getTroveStatus(troveId) == ITroveManager.Status.active);
 
         (uint256 debt, uint256 coll,,,) = troveManager.getEntireDebtAndColl(troveId);
-        vm.assume(debt <= spBold); // only interested in SP offset, no redistribution
+        vm.assume(debt <= (spBold > MIN_BOLD_IN_SP ? spBold - MIN_BOLD_IN_SP : 0)); // only interested in SP offset, no redistribution
 
         logCall("liquidateMe");
 
@@ -190,13 +191,7 @@ contract SPInvariantsTestHandler is BaseHandler {
         // The Trove owner bears the gas compensation costs
         uint256 claimableColl = coll - seizedColl - collCompensation;
 
-        // try
         troveManager.liquidate(troveId);
-        // {} catch Panic(uint256 errorCode) {
-        //     // XXX ignore assertion failure inside liquidation (due to P = 0)
-        //     assertEq(errorCode, 1, "Unexpected revert in liquidate()");
-        //     vm.assume(false);
-        // }
 
         priceFeed.setPrice(initialPrice);
 
