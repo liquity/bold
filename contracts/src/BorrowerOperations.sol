@@ -115,7 +115,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         address batchManager;
         LatestTroveData trove;
         LatestBatchData batch;
-        uint256 newBatchDebt;
     }
 
     error IsShutDown();
