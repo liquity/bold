@@ -1,37 +1,35 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import type { Address } from "@/src/types";
 
+import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { Amount } from "@/src/comps/Amount/Amount";
-import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
-import { getProtocolContract } from "@/src/contracts";
+import { LEGACY_CHECK, LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { dnum18, jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { getBranches } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { vDnum } from "@/src/valibot-utils";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { createPublicClient } from "viem";
+import { createPublicClient, erc20Abi } from "viem";
 import { http, useConfig as useWagmiConfig } from "wagmi";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
-  "redeemCollateral",
+  "legacyRedeemCollateral",
   {
     amount: vDnum(),
     maxFee: vDnum(),
   },
 );
 
-export type RedeemCollateralRequest = v.InferOutput<typeof RequestSchema>;
+export type LegacyRedeemCollateralRequest = v.InferOutput<typeof RequestSchema>;
 
-export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
+export const legacyRedeemCollateral: FlowDeclaration<LegacyRedeemCollateralRequest> = {
   title: "Review & Send Transaction",
   Summary: () => null,
   Details(ctx) {
     const estimatedGains = useSimulatedBalancesChange(ctx);
-    const branches = getBranches();
     const boldChange = estimatedGains.data?.find(({ symbol }) => symbol === "BOLD")?.change;
     const collChanges = estimatedGains.data?.filter(({ symbol }) => symbol !== "BOLD");
     return (
@@ -59,7 +57,7 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
             <>Estimated BOLD that will be redeemed.</>,
           ]}
         />
-        {branches.map(({ symbol }) => {
+        {LEGACY_CHECK?.BRANCHES.map(({ symbol }) => {
           const collChange = collChanges?.find((change) => symbol === change.symbol)?.change;
           const symbol_ = symbol === "ETH" ? "WETH" : symbol;
           return (
@@ -86,13 +84,14 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
       name: () => "Approve BOLD",
       Status: TransactionStatus,
       async commit({ request, writeContract }) {
-        const CollateralRegistry = getProtocolContract("CollateralRegistry");
-        const BoldToken = getProtocolContract("BoldToken");
-
+        if (!LEGACY_CHECK) {
+          throw new Error("LEGACY_CHECK is not defined");
+        }
         return writeContract({
-          ...BoldToken,
+          abi: erc20Abi,
+          address: LEGACY_CHECK.BOLD_TOKEN,
           functionName: "approve",
-          args: [CollateralRegistry.address, request.amount[0]],
+          args: [LEGACY_CHECK.COLLATERAL_REGISTRY, request.amount[0]],
         });
       },
       async verify(ctx, hash) {
@@ -103,9 +102,12 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
       name: () => "Redeem BOLD",
       Status: TransactionStatus,
       async commit({ request, writeContract }) {
-        const CollateralRegistry = getProtocolContract("CollateralRegistry");
+        if (!LEGACY_CHECK) {
+          throw new Error("LEGACY_CHECK is not defined");
+        }
         return writeContract({
-          ...CollateralRegistry,
+          abi: CollateralRegistry,
+          address: LEGACY_CHECK.COLLATERAL_REGISTRY,
           functionName: "redeemCollateral",
           args: [
             request.amount[0],
@@ -121,17 +123,20 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
   },
 
   async getSteps(ctx) {
+    if (!LEGACY_CHECK) {
+      throw new Error("LEGACY_CHECK is not defined");
+    }
+
     const steps = [];
 
     // check for allowance
     const boldAllowance = await ctx.readContract({
-      ...getProtocolContract("BoldToken"),
+      abi: erc20Abi,
+      address: LEGACY_CHECK.BOLD_TOKEN,
       functionName: "allowance",
-      args: [
-        ctx.account,
-        getProtocolContract("CollateralRegistry").address,
-      ],
+      args: [ctx.account, LEGACY_CHECK.COLLATERAL_REGISTRY],
     });
+
     if (dn.gt(ctx.request.amount, dnum18(boldAllowance))) {
       steps.push("approve");
     }
@@ -159,14 +164,15 @@ export function useSimulatedBalancesChange({
   request,
 }: {
   account: Address;
-  request: RedeemCollateralRequest;
+  request: LegacyRedeemCollateralRequest;
 }) {
   const wagmiConfig = useWagmiConfig();
   return useQuery({
     queryKey: ["simulatedBalancesChange", account, jsonStringifyWithDnum(request)],
     queryFn: async () => {
-      const CollateralRegistry = getProtocolContract("CollateralRegistry");
-      const BoldToken = getProtocolContract("BoldToken");
+      if (!LEGACY_CHECK) {
+        throw new Error("LEGACY_CHECK is not defined");
+      }
 
       let stored: v.InferOutput<typeof StoredBalancesChangeSchema> | null = null;
       try {
@@ -188,17 +194,16 @@ export function useSimulatedBalancesChange({
       const [rpcUrl] = chain.rpcUrls.default.http;
       const client = createPublicClient({ chain, transport: http(rpcUrl) });
 
-      const branches = getBranches();
-      const branchesBalanceCalls = branches.map((branch) => ({
-        to: branch.contracts.CollToken.address,
-        abi: branch.contracts.CollToken.abi,
+      const branchesBalanceCalls = LEGACY_CHECK.BRANCHES.map((branch) => ({
+        to: branch.COLL_TOKEN,
+        abi: erc20Abi,
         functionName: "balanceOf" as const,
         args: [account],
       } as const));
 
       const boldBalanceCall = {
-        to: BoldToken.address,
-        abi: BoldToken.abi,
+        to: LEGACY_CHECK.BOLD_TOKEN,
+        abi: erc20Abi,
         functionName: "balanceOf" as const,
         args: [account],
       } as const;
@@ -209,8 +214,8 @@ export function useSimulatedBalancesChange({
           boldBalanceCall,
           ...branchesBalanceCalls,
           {
-            to: CollateralRegistry.address,
-            abi: CollateralRegistry.abi,
+            to: LEGACY_CHECK.COLLATERAL_REGISTRY,
+            abi: CollateralRegistry,
             functionName: "redeemCollateral",
             args: [request.amount[0], 0n, request.maxFee[0]],
           },
@@ -220,10 +225,16 @@ export function useSimulatedBalancesChange({
       });
 
       const getBalancesFromSimulated = (position: number) => {
+        if (!LEGACY_CHECK) {
+          throw new Error("LEGACY_CHECK is not defined");
+        }
         return simulation.results
-          .slice(position, position + branches.length + 1)
+          .slice(position, position + LEGACY_CHECK.BRANCHES.length + 1)
           .map((result, index) => {
-            const symbol = index === 0 ? "BOLD" : branches[index - 1]?.symbol;
+            if (!LEGACY_CHECK) {
+              throw new Error("LEGACY_CHECK is not defined");
+            }
+            const symbol = index === 0 ? "BOLD" : LEGACY_CHECK.BRANCHES[index - 1]?.symbol;
             return {
               symbol,
               balance: dnum18(result.data ?? 0n),
@@ -232,7 +243,7 @@ export function useSimulatedBalancesChange({
       };
 
       const balancesBefore = getBalancesFromSimulated(0);
-      const balancesAfter = getBalancesFromSimulated(branches.length + 2);
+      const balancesAfter = getBalancesFromSimulated(LEGACY_CHECK.BRANCHES.length + 2);
 
       const balanceChanges = balancesBefore.map((balanceBefore, index) => {
         const balanceAfter = balancesAfter[index];
