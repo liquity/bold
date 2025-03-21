@@ -26,10 +26,11 @@ contract TokenWrapper is ERC20, ITokenWrapper {
         require(_underlyingDecimals <= 18, "Max 18 underlying decimals");
     }
 
-    function underlying() public view returns (IERC20Metadata) {
+    function underlying() external view override returns (IERC20Metadata) {
         return _underlying;
     }
 
+    // amount in underlying token decimals
     function deposit(uint256 amount) external override {
         address sender = msg.sender;
         require(sender != address(this), "Wrapper can't deposit");
@@ -39,6 +40,7 @@ contract TokenWrapper is ERC20, ITokenWrapper {
         _mint(sender, scaledAmount);
     }
 
+    // amount in wrapped token decimals (18)
     function withdraw(uint256 amount) external override{
         address sender = msg.sender;
 
