@@ -1,5 +1,5 @@
 {
-  "framework": "other",
+  "framework": "nextjs",
   "buildCommand": "pnpm build-frontend",
   "public": false,
   "github": {
