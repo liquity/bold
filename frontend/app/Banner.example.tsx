@@ -1,5 +1,5 @@
 export function Banner(): JSX.Element {
-  return <>Test Test</>
+  return <></>
 }
 
 // Example banner:
