@@ -1,8 +1,8 @@
 {
-  "framework": null,
-  "buildCommand": "",
+  "framework": "other",
+  "buildCommand": "pnpm build-frontend",
   "public": false,
   "github": {
-    "enabled": false
+    "enabled": true
   }
 }
