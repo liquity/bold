@@ -6,6 +6,9 @@
   "repository": "github:liquity/bold",
   "bugs": "https://github.com/liquity/bold/issues",
   "homepage": "https://github.com/liquity/bold#readme",
+  "scripts":{
+    "build-frontend": "cd frontend/app && pnpm build"
+  },
   "devDependencies": {
     "dprint": "^0.47.5"
   },
