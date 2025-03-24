@@ -1,12 +1,17 @@
 import type { CodegenConfig } from "@graphql-codegen/cli";
 
 function findSubgraphUrl(envFile: string) {
+  console.log("envFile: ", envFile);
   const fs = require("fs");
   const path = require("path");
   const envPath = path.resolve(process.cwd(), envFile);
+  console.log("envPath: ", envPath);
   const envContent = fs.readFileSync(envPath, "utf-8");
+  console.log("envContent: ", envContent);
+
   for (const line of envContent.split("\n")) {
     if (line.trim().startsWith("NEXT_PUBLIC_SUBGRAPH_URL=")) {
+      console.log("line: ", line.slice("NEXT_PUBLIC_SUBGRAPH_URL=".length));
       return line.slice("NEXT_PUBLIC_SUBGRAPH_URL=".length);
     }
   }
