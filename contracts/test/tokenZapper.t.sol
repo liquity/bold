@@ -91,6 +91,17 @@ contract TokenZapperTest is DevTestSetup {
 
         tokenZapper = new TokenZapper(addressesRegistry, wrapper8Decimals);
 
+        // add branch to collateralReegistry
+        uint256[] memory indexes = new uint256[](1);
+        indexes[0] = 1;
+        IERC20Metadata[] memory tokens = new IERC20Metadata[](1);
+        tokens[0] = token8Decimals;
+        ITroveManager[] memory troveManagers = new ITroveManager[](1);
+        troveManagers[0] = troveManager;
+
+        vm.prank(boldToken.getOwner());
+        collateralRegistry.addNewCollaterals(indexes, tokens, troveManagers);
+
         // A to F
         for (uint256 i = 0; i < 6; i++) {
             deal(accountsList[i], 10 ether);
@@ -295,7 +306,7 @@ contract TokenZapperTest is DevTestSetup {
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 5e16,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
             batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
@@ -330,7 +341,7 @@ contract TokenZapperTest is DevTestSetup {
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 5e16,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
             batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
@@ -382,7 +393,7 @@ contract TokenZapperTest is DevTestSetup {
             boldAmount: boldAmount,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 1e16,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
             batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
@@ -425,7 +436,7 @@ contract TokenZapperTest is DevTestSetup {
         uint256 boldAmount2 = 1000e18;
         
         uint256 collateralAmount = 10e8;
-        uint256 collateralAmount2 = 2e8; // 2e8 in underlying
+        uint256 collateralAmount2 = 1e8;
     
         ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
             owner: A,
@@ -434,7 +445,7 @@ contract TokenZapperTest is DevTestSetup {
             boldAmount: boldAmount1,
             upperHint: 0,
             lowerHint: 0,
-            annualInterestRate: 1e16,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
             batchManager: address(0),
             maxUpfrontFee: 1000e18,
             addManager: address(0),
@@ -472,292 +483,313 @@ contract TokenZapperTest is DevTestSetup {
         assertEq(token8Decimals.balanceOf(B), collateralBalanceBeforeB, "A ETH bal mismatch");
     }
 
-    // function testCanAdjustTroveAddCollAndBold() external {
-    //     uint256 ethAmount1 = 10 ether;
-    //     uint256 ethAmount2 = 1 ether;
-    //     uint256 boldAmount1 = 10000e18;
-    //     uint256 boldAmount2 = 1000e18;
+    function testCanAdjustTroveAddCollAndBold() external {
+        uint256 boldAmount1 = 10000e18;
+        uint256 boldAmount2 = 1000e18;
+        
+        uint256 collateralAmount = 10e8;
+        uint256 collateralAmount2 = 1e8;
+    
+        ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: collateralAmount,
+            boldAmount: boldAmount1,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
 
-    //     IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
-    //         owner: A,
-    //         ownerIndex: 0,
-    //         collAmount: 0, // not needed
-    //         boldAmount: boldAmount1,
-    //         upperHint: 0,
-    //         lowerHint: 0,
-    //         annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-    //         batchManager: address(0),
-    //         maxUpfrontFee: 1000e18,
-    //         addManager: address(0),
-    //         removeManager: address(0),
-    //         receiver: address(0)
-    //     });
-    //     vm.startPrank(A);
-    //     uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount1 + ETH_GAS_COMPENSATION}(params);
-    //     // A sends Bold to B
-    //     boldToken.transfer(B, boldAmount2);
-    //     vm.stopPrank();
+        vm.startPrank(A);
+        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        boldToken.transfer(B, boldAmount2);
+        vm.stopPrank();
 
-    //     uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
-    //     uint256 ethBalanceBeforeA = A.balance;
-    //     uint256 boldBalanceBeforeB = boldToken.balanceOf(B);
-    //     uint256 ethBalanceBeforeB = B.balance;
+        uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
+        uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
+        
+        uint256 boldBalanceBeforeB = boldToken.balanceOf(B);
+        uint256 collateralBalanceBeforeB = token8Decimals.balanceOf(B);
+        
+        // Add an add manager for the zapper
+        vm.startPrank(A);
+        tokenZapper.setAddManager(troveId, B);
+        vm.stopPrank();
 
-    //     // Add an add manager for the zapper
-    //     vm.startPrank(A);
-    //     wethZapper.setAddManager(troveId, B);
-    //     vm.stopPrank();
+        // Adjust (add coll and Bold)
+        vm.startPrank(B);
+        boldToken.approve(address(tokenZapper), boldAmount2);
+        tokenZapper.adjustTroveWithToken(troveId, collateralAmount2, true, boldAmount2, false, boldAmount2);
+        vm.stopPrank();
 
-    //     // Adjust (add coll and Bold)
-    //     vm.startPrank(B);
-    //     boldToken.approve(address(wethZapper), boldAmount2);
-    //     wethZapper.adjustTroveWithRawETH{value: ethAmount2}(troveId, ethAmount2, true, boldAmount2, false, boldAmount2);
-    //     vm.stopPrank();
+        assertEq(troveManager.getTroveEntireColl(troveId), (collateralAmount + collateralAmount2) * 10 ** (18 - 8), "Trove coll mismatch");
+        assertApproxEqAbs(
+            troveManager.getTroveEntireDebt(troveId), boldAmount1 - boldAmount2, 2e18, "Trove  debt mismatch"
+        );
+        assertEq(boldToken.balanceOf(A), boldBalanceBeforeA, "A BOLD bal mismatch");
+        assertEq(token8Decimals.balanceOf(A), collateralBalanceBefore, "A ETH bal mismatch");
+        assertEq(boldToken.balanceOf(B), boldBalanceBeforeB - boldAmount2, "B BOLD bal mismatch");
+        assertEq(token8Decimals.balanceOf(B), collateralBalanceBeforeB - collateralAmount2, "B ETH bal mismatch");
+    }
 
-    //     assertEq(troveManager.getTroveEntireColl(troveId), ethAmount1 + ethAmount2, "Trove coll mismatch");
-    //     assertApproxEqAbs(
-    //         troveManager.getTroveEntireDebt(troveId), boldAmount1 - boldAmount2, 2e18, "Trove  debt mismatch"
-    //     );
-    //     assertEq(boldToken.balanceOf(A), boldBalanceBeforeA, "A BOLD bal mismatch");
-    //     assertEq(A.balance, ethBalanceBeforeA, "A ETH bal mismatch");
-    //     assertEq(boldToken.balanceOf(B), boldBalanceBeforeB - boldAmount2, "B BOLD bal mismatch");
-    //     assertEq(B.balance, ethBalanceBeforeB - ethAmount2, "B ETH bal mismatch");
-    // }
+    function testCanAdjustZombieTroveWithdrawCollAndBold() external {
+        uint256 boldAmount1 = 10000e18;
+        
+        uint256 collateralAmount = 10e8;
+        uint256 collateralAmount2 = 1e8;
+        uint256 boldAmount2 = 1000e18;
 
-    // function testCanAdjustZombieTroveWithdrawCollAndBold() external {
-    //     uint256 ethAmount1 = 10 ether;
-    //     uint256 ethAmount2 = 1 ether;
-    //     uint256 boldAmount1 = 10000e18;
-    //     uint256 boldAmount2 = 1000e18;
+        ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: collateralAmount,
+            boldAmount: boldAmount1,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
 
-    //     IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
-    //         owner: A,
-    //         ownerIndex: 0,
-    //         collAmount: 0, // not needed
-    //         boldAmount: boldAmount1,
-    //         upperHint: 0,
-    //         lowerHint: 0,
-    //         annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-    //         batchManager: address(0),
-    //         maxUpfrontFee: 1000e18,
-    //         addManager: address(0),
-    //         removeManager: address(0),
-    //         receiver: address(0)
-    //     });
-    //     vm.startPrank(A);
-    //     uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount1 + ETH_GAS_COMPENSATION}(params);
-    //     vm.stopPrank();
+        vm.startPrank(A);
+        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
 
-    //     // Add a remove manager for the zapper
-    //     vm.startPrank(A);
-    //     wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
-    //     vm.stopPrank();
+        // Add a remove manager for the zapper
+        vm.startPrank(A);
+        tokenZapper.setRemoveManagerWithReceiver(troveId, B, A);
+        vm.stopPrank();
 
-    //     // Redeem to make trove zombie
-    //     vm.startPrank(A);
-    //     collateralRegistry.redeemCollateral(boldAmount1 - boldAmount2, 10, 1e18);
-    //     vm.stopPrank();
+        // Redeem to make trove zombie
+        vm.startPrank(A);
+        collateralRegistry.redeemCollateral(boldAmount1 - boldAmount2, 10, 1e18);
+        vm.stopPrank();
 
-    //     uint256 troveCollBefore = troveManager.getTroveEntireColl(troveId);
-    //     uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
-    //     uint256 ethBalanceBeforeA = A.balance;
-    //     uint256 ethBalanceBeforeB = B.balance;
+        uint256 troveCollBefore = troveManager.getTroveEntireColl(troveId);
+        
+        uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
+        uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
+        uint256 collateralBalanceBeforeB = token8Decimals.balanceOf(B);
 
-    //     // Adjust (withdraw coll and Bold)
-    //     vm.startPrank(B);
-    //     wethZapper.adjustZombieTroveWithRawETH(troveId, ethAmount2, false, boldAmount2, true, 0, 0, boldAmount2);
-    //     vm.stopPrank();
+        // Adjust (withdraw coll and Bold)
+        vm.startPrank(B);
+        tokenZapper.adjustZombieTroveWithToken(troveId, collateralAmount2, false, boldAmount2, true, 0, 0, boldAmount2);
+        vm.stopPrank();
 
-    //     assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore - ethAmount2, "Trove coll mismatch");
-    //     assertApproxEqAbs(troveManager.getTroveEntireDebt(troveId), 2 * boldAmount2, 2e18, "Trove  debt mismatch");
-    //     assertEq(boldToken.balanceOf(A), boldBalanceBeforeA + boldAmount2, "A BOLD bal mismatch");
-    //     assertEq(A.balance, ethBalanceBeforeA + ethAmount2, "A ETH bal mismatch");
-    //     assertEq(boldToken.balanceOf(B), 0, "B BOLD bal mismatch");
-    //     assertEq(B.balance, ethBalanceBeforeB, "B ETH bal mismatch");
-    // }
+        assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore - collateralAmount2 * 10 ** (18 - 8), "Trove coll mismatch");
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveId), 2 * boldAmount2, 2e18, "Trove  debt mismatch");
+        assertEq(boldToken.balanceOf(A), boldBalanceBeforeA + boldAmount2, "A BOLD bal mismatch");
+        assertEq(token8Decimals.balanceOf(A), collateralBalanceBefore + collateralAmount2, "A ETH bal mismatch");
+        assertEq(boldToken.balanceOf(B), 0, "B BOLD bal mismatch");
+        assertEq(token8Decimals.balanceOf(B), collateralBalanceBeforeB, "B ETH bal mismatch");
+    }
 
-    // function testCanAdjustZombieTroveAddCollAndWithdrawBold() external {
-    //     IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
-    //         owner: A,
-    //         ownerIndex: 0,
-    //         collAmount: 0, // not needed
-    //         boldAmount: 10000e18,
-    //         upperHint: 0,
-    //         lowerHint: 0,
-    //         annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-    //         batchManager: address(0),
-    //         maxUpfrontFee: 1000e18,
-    //         addManager: address(0),
-    //         removeManager: address(0),
-    //         receiver: address(0)
-    //     });
-    //     vm.startPrank(A);
-    //     uint256 troveId = wethZapper.openTroveWithRawETH{value: 10 ether + ETH_GAS_COMPENSATION}(params);
-    //     vm.stopPrank();
+    function testCanAdjustZombieTroveAddCollAndWithdrawBold() external {
+        ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 10e8,
+            boldAmount: 10000e18,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
 
-    //     // Add a remove manager for the zapper
-    //     vm.startPrank(A);
-    //     wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
-    //     vm.stopPrank();
+        vm.startPrank(A);
+        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
 
-    //     uint256 ethAmount2 = 1 ether;
-    //     uint256 boldAmount2 = 1000e18;
+        // Add a remove manager for the zapper
+        vm.startPrank(A);
+        tokenZapper.setRemoveManagerWithReceiver(troveId, B, A);
+        vm.stopPrank();
 
-    //     // Redeem to make trove zombie
-    //     vm.startPrank(A);
-    //     collateralRegistry.redeemCollateral(10000e18 - boldAmount2, 10, 1e18);
-    //     vm.stopPrank();
+        uint256 collateralAmount2 = 1e8;
+        uint256 boldAmount2 = 1000e18;
 
-    //     uint256 troveCollBefore = troveManager.getTroveEntireColl(troveId);
-    //     uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
-    //     uint256 ethBalanceBeforeA = A.balance;
-    //     uint256 ethBalanceBeforeB = B.balance;
+        // Redeem to make trove zombie
+        vm.startPrank(A);
+        collateralRegistry.redeemCollateral(10000e18 - boldAmount2, 10, 1e18);
+        vm.stopPrank();
 
-    //     // Adjust (add coll and withdraw Bold)
-    //     vm.startPrank(B);
-    //     wethZapper.adjustZombieTroveWithRawETH{value: ethAmount2}(
-    //         troveId, ethAmount2, true, boldAmount2, true, 0, 0, boldAmount2
-    //     );
-    //     vm.stopPrank();
+        uint256 troveCollBefore = troveManager.getTroveEntireColl(troveId);
+        uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
+        uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
+        uint256 collateralBalanceBeforeB = token8Decimals.balanceOf(B);
 
-    //     assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore + ethAmount2, "Trove coll mismatch");
-    //     assertApproxEqAbs(troveManager.getTroveEntireDebt(troveId), 2 * boldAmount2, 2e18, "Trove  debt mismatch");
-    //     assertEq(boldToken.balanceOf(A), boldBalanceBeforeA + boldAmount2, "A BOLD bal mismatch");
-    //     assertEq(A.balance, ethBalanceBeforeA, "A ETH bal mismatch");
-    //     assertEq(boldToken.balanceOf(B), 0, "B BOLD bal mismatch");
-    //     assertEq(B.balance, ethBalanceBeforeB - ethAmount2, "B ETH bal mismatch");
-    // }
+        // Adjust (add coll and withdraw Bold)
+        vm.startPrank(B);
+        tokenZapper.adjustZombieTroveWithToken(
+            troveId, collateralAmount2, true, boldAmount2, true, 0, 0, boldAmount2
+        );
+        vm.stopPrank();
 
-    // function testCanCloseTrove() external {
-    //     uint256 tokenAmount = 10e8;
-    //     uint256 boldAmount = 10000e18;
+        assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore + collateralAmount2 * 10 ** (18 - 8), "Trove coll mismatch");
+        assertApproxEqAbs(troveManager.getTroveEntireDebt(troveId), 2 * boldAmount2, 2e18, "Trove  debt mismatch");
+        assertEq(boldToken.balanceOf(A), boldBalanceBeforeA + boldAmount2, "A BOLD bal mismatch");
+        assertEq(token8Decimals.balanceOf(A), collateralBalanceBefore, "A ETH bal mismatch");
+        assertEq(boldToken.balanceOf(B), 0, "B BOLD bal mismatch");
+        assertEq(token8Decimals.balanceOf(B), collateralBalanceBeforeB - collateralAmount2, "B ETH bal mismatch");
+    }
 
-    //     uint256 ethBalanceBefore = A.balance;
+    function testCanCloseTrove() external {
+        uint256 collateralAmount = 10e8;
+        uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
+        uint256 boldAmount = 10000e18;
 
-    //     IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
-    //         owner: A,
-    //         ownerIndex: 0,
-    //         collAmount: 0, // not needed
-    //         boldAmount: boldAmount,
-    //         upperHint: 0,
-    //         lowerHint: 0,
-    //         annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-    //         batchManager: address(0),
-    //         maxUpfrontFee: 1000e18,
-    //         addManager: address(0),
-    //         removeManager: address(0),
-    //         receiver: address(0)
-    //     });
-    //     vm.startPrank(A);
-    //     uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
-    //     vm.stopPrank();
+        uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
 
-    //     // open a 2nd trove so we can close the 1st one, and send Bold to account for interest and fee
-    //     vm.startPrank(B);
-    //     deal(address(WETH), B, 100 ether + ETH_GAS_COMPENSATION);
-    //     WETH.approve(address(borrowerOperations), 100 ether + ETH_GAS_COMPENSATION);
-    //     borrowerOperations.openTrove(
-    //         B,
-    //         0, // index,
-    //         100 ether, // coll,
-    //         10000e18, //boldAmount,
-    //         0, // _upperHint
-    //         0, // _lowerHint
-    //         MIN_ANNUAL_INTEREST_RATE, // annualInterestRate,
-    //         10000e18, // upfrontFee
-    //         address(0),
-    //         address(0),
-    //         address(0)
-    //     );
-    //     boldToken.transfer(A, troveManager.getTroveEntireDebt(troveId) - boldAmount);
-    //     vm.stopPrank();
+        ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: collateralAmount,
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
 
-    //     vm.startPrank(A);
-    //     boldToken.approve(address(wethZapper), type(uint256).max);
-    //     wethZapper.closeTroveToRawETH(troveId);
-    //     vm.stopPrank();
+        vm.startPrank(A);
+        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
 
-    //     assertEq(troveManager.getTroveEntireColl(troveId), 0, "Coll mismatch");
-    //     assertEq(troveManager.getTroveEntireDebt(troveId), 0, "Debt mismatch");
-    //     assertEq(boldToken.balanceOf(A), 0, "BOLD bal mismatch");
-    //     assertEq(A.balance, ethBalanceBefore, "ETH bal mismatch");
-    // }
+        // open a 2nd trove so we can close the 1st one, and send Bold to account for interest and fee
+        vm.startPrank(B);
+        deal(address(wrapper8Decimals), B, 100e18 + ETH_GAS_COMPENSATION);
+        deal(address(WETH), B, 100 ether + ETH_GAS_COMPENSATION);
+        WETH.approve(address(borrowerOperations), ETH_GAS_COMPENSATION);
+        wrapper8Decimals.approve(address(borrowerOperations), 100e18 + ETH_GAS_COMPENSATION);
 
-    // function testExcessRepaymentByAdjustGoesBackToUser() external {
-    //     uint256 tokenAmount = 10e8;
-    //     uint256 boldAmount = 10000e18;
+        borrowerOperations.openTrove(
+            B,
+            0, // index,
+            100e18, // coll,
+            10000e18, //boldAmount,
+            0, // _upperHint
+            0, // _lowerHint
+            MIN_ANNUAL_INTEREST_RATE, // annualInterestRate,
+            10000e18, // upfrontFee
+            address(0),
+            address(0),
+            address(0)
+        );
 
-    //     IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
-    //         owner: A,
-    //         ownerIndex: 0,
-    //         collAmount: 0, // not needed
-    //         boldAmount: boldAmount,
-    //         upperHint: 0,
-    //         lowerHint: 0,
-    //         annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-    //         batchManager: address(0),
-    //         maxUpfrontFee: 1000e18,
-    //         addManager: address(0),
-    //         removeManager: address(0),
-    //         receiver: address(0)
-    //     });
-    //     vm.startPrank(A);
-    //     uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
-    //     vm.stopPrank();
+        boldToken.transfer(A, troveManager.getTroveEntireDebt(troveId) - boldAmount);
+        vm.stopPrank();
 
-    //     uint256 ethBalanceBefore = A.balance;
-    //     uint256 collBalanceBefore = WETH.balanceOf(A);
-    //     uint256 boldDebtBefore = troveManager.getTroveEntireDebt(troveId);
 
-    //     // Adjust trove: remove 1 ETH and try to repay 9k (only will repay ~8k, up to MIN_DEBT)
-    //     vm.startPrank(A);
-    //     boldToken.approve(address(wethZapper), type(uint256).max);
-    //     wethZapper.adjustTroveWithRawETH(troveId, 1 ether, false, 9000e18, false, 0);
-    //     vm.stopPrank();
+        vm.startPrank(A);
+        boldToken.approve(address(tokenZapper), type(uint256).max);
+        tokenZapper.closeTroveToUnderlyingToken(troveId);
+        vm.stopPrank();
 
-    //     assertEq(boldToken.balanceOf(A), boldAmount + MIN_DEBT - boldDebtBefore, "BOLD bal mismatch");
-    //     assertEq(boldToken.balanceOf(address(wethZapper)), 0, "Zapper BOLD bal should be zero");
-    //     assertEq(A.balance, ethBalanceBefore + 1 ether, "ETH bal mismatch");
-    //     assertEq(address(wethZapper).balance, 0, "Zapper ETH bal should be zero");
-    //     assertEq(WETH.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
-    //     assertEq(WETH.balanceOf(address(wethZapper)), 0, "Zapper Coll bal should be zero");
-    // }
+        assertEq(troveManager.getTroveEntireColl(troveId), 0, "Coll mismatch");
+        assertEq(troveManager.getTroveEntireDebt(troveId), 0, "Debt mismatch");
+        assertEq(boldToken.balanceOf(A), 0, "BOLD bal mismatch");
+        assertEq(token8Decimals.balanceOf(A), collateralBalanceBefore, "ETH bal mismatch");
+    }
 
-    // function testExcessRepaymentByRepayGoesBackToUser() external {
-    //     uint256 tokenAmount = 10e8;
-    //     uint256 boldAmount = 10000e18;
+    function testExcessRepaymentByAdjustGoesBackToUser() external {
+        uint256 collateralAmount = 10e8;
+        uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
+        uint256 boldAmount = 10000e18;
 
-    //     IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
-    //         owner: A,
-    //         ownerIndex: 0,
-    //         collAmount: 0, // not needed
-    //         boldAmount: boldAmount,
-    //         upperHint: 0,
-    //         lowerHint: 0,
-    //         annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-    //         batchManager: address(0),
-    //         maxUpfrontFee: 1000e18,
-    //         addManager: address(0),
-    //         removeManager: address(0),
-    //         receiver: address(0)
-    //     });
-    //     vm.startPrank(A);
-    //     uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
-    //     vm.stopPrank();
+        uint256 ethBalanceBefore = A.balance;
 
-    //     uint256 boldDebtBefore = troveManager.getTroveEntireDebt(troveId);
-    //     uint256 collBalanceBefore = WETH.balanceOf(A);
+        ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: collateralAmount,
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
 
-    //     // Adjust trove: try to repay 9k (only will repay ~8k, up to MIN_DEBT)
-    //     vm.startPrank(A);
-    //     boldToken.approve(address(wethZapper), type(uint256).max);
-    //     wethZapper.repayBold(troveId, 9000e18);
-    //     vm.stopPrank();
+        vm.startPrank(A);
+        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
 
-    //     assertEq(boldToken.balanceOf(A), boldAmount + MIN_DEBT - boldDebtBefore, "BOLD bal mismatch");
-    //     assertEq(boldToken.balanceOf(address(wethZapper)), 0, "Zapper BOLD bal should be zero");
-    //     assertEq(address(wethZapper).balance, 0, "Zapper ETH bal should be zero");
-    //     assertEq(WETH.balanceOf(A), collBalanceBefore, "Coll bal mismatch");
-    //     assertEq(WETH.balanceOf(address(wethZapper)), 0, "Zapper Coll bal should be zero");
-    // }
+        uint256 tokenBalanceBefore = token8Decimals.balanceOf(A);
+        uint256 collateralBalanceBefore = wrapper8Decimals.balanceOf(A);
+        uint256 boldDebtBefore = troveManager.getTroveEntireDebt(troveId);
+
+        // Adjust trove: remove 1 ETH and try to repay 9k (only will repay ~8k, up to MIN_DEBT)
+        vm.startPrank(A);
+        boldToken.approve(address(tokenZapper), type(uint256).max);
+        tokenZapper.adjustTroveWithToken(troveId, 1e8, false, 9000e18, false, 0);
+        vm.stopPrank();
+
+        assertEq(boldToken.balanceOf(A), boldAmount + MIN_DEBT - boldDebtBefore, "BOLD bal mismatch");
+        assertEq(boldToken.balanceOf(address(tokenZapper)), 0, "Zapper BOLD bal should be zero");
+        assertEq(token8Decimals.balanceOf(A), tokenBalanceBefore + 1e8, "ETH bal mismatch");
+        assertEq(address(tokenZapper).balance, 0, "Zapper ETH bal should be zero");
+        assertEq(wrapper8Decimals.balanceOf(A), collateralBalanceBefore, "Coll bal mismatch");
+        assertEq(wrapper8Decimals.balanceOf(address(tokenZapper)), 0, "Zapper Coll bal should be zero");
+    }
+
+    function testExcessRepaymentByRepayGoesBackToUser() external {
+        uint256 collateralAmount = 10e8;
+        uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
+        uint256 boldAmount = 10000e18;
+
+        uint256 ethBalanceBefore = A.balance;
+
+        ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: collateralAmount,
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+
+        vm.startPrank(A);
+        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        uint256 boldDebtBefore = troveManager.getTroveEntireDebt(troveId);
+        uint256 collateralBalanceBefore = wrapper8Decimals.balanceOf(A);
+
+        // Adjust trove: try to repay 9k (only will repay ~8k, up to MIN_DEBT)
+        vm.startPrank(A);
+        boldToken.approve(address(tokenZapper), type(uint256).max);
+        tokenZapper.repayBold(troveId, 9000e18);
+        vm.stopPrank();
+
+        assertEq(boldToken.balanceOf(A), boldAmount + MIN_DEBT - boldDebtBefore, "BOLD bal mismatch");
+        assertEq(boldToken.balanceOf(address(tokenZapper)), 0, "Zapper BOLD bal should be zero");
+        assertEq(address(tokenZapper).balance, 0, "Zapper ETH bal should be zero");
+        assertEq(wrapper8Decimals.balanceOf(A), collateralBalanceBefore, "Coll bal mismatch");
+        assertEq(WETH.balanceOf(address(tokenZapper)), 0, "Zapper Coll bal should be zero");
+    }
 }

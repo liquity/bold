@@ -22,6 +22,8 @@ contract TokenZapper is BaseTokenZapper {
         WETH.approve(address(borrowerOperations), type(uint256).max);
     }
 
+    receive() external payable {}
+
     // wraps a token into its 18 decimals wrapper which serves as the actual collateral
     // wraps ETH into WETH for ETH_GAS_COMPENSATION
     function openTroveWithToken(OpenTroveParams calldata _params) external payable returns (uint256) {
@@ -132,7 +134,6 @@ contract TokenZapper is BaseTokenZapper {
         _returnLeftovers(initialBalances);
     }
 
-    // TODO decimals input change 
     function adjustTroveWithToken(
         uint256 _troveId,
         uint256 _collChange, // underlying token decimals
@@ -142,21 +143,21 @@ contract TokenZapper is BaseTokenZapper {
         uint256 _maxUpfrontFee
     ) external {
         InitialBalances memory initialBalances;
-        (address receiver, uint256 scaledCollateralToDeposit) =
+        (address receiver, uint256 scaledCollateralChange) =
             _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
-        
+
         borrowerOperations.adjustTrove(
-            _troveId, scaledCollateralToDeposit, _isCollIncrease, _boldChange, _isDebtIncrease, _maxUpfrontFee
+            _troveId, scaledCollateralChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxUpfrontFee
         );
         
-        _adjustTrovePost(scaledCollateralToDeposit, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
+        _adjustTrovePost(scaledCollateralChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
     }
 
     // close a trove and unwrap collateral into token
     // unwrap ETH_GAS_COMPENSATION amount of WETH and trasfer ETH
     function closeTroveToUnderlyingToken(uint256 _troveId) external {
         address owner = troveNFT.ownerOf(_troveId);
-        address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
+        address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
 
         // pull Bold for repayment
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
@@ -185,14 +186,14 @@ contract TokenZapper is BaseTokenZapper {
         uint256 _maxUpfrontFee
     ) external payable {
         InitialBalances memory initialBalances;
-        (address receiver, uint256 scaledCollateralToDeposit) =
+        (address receiver, uint256 scaledCollateralChange) =
             _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
         
         borrowerOperations.adjustZombieTrove(
-            _troveId, scaledCollateralToDeposit, _isCollIncrease, _boldChange, _isDebtIncrease, _upperHint, _lowerHint, _maxUpfrontFee
+            _troveId, scaledCollateralChange, _isCollIncrease, _boldChange, _isDebtIncrease, _upperHint, _lowerHint, _maxUpfrontFee
         );
         
-        _adjustTrovePost(scaledCollateralToDeposit, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
+        _adjustTrovePost(scaledCollateralChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
     }
 
     function _adjustTrovePre(
@@ -203,28 +204,28 @@ contract TokenZapper is BaseTokenZapper {
         bool _isDebtIncrease,
         InitialBalances memory _initialBalances
     ) internal returns (address, uint256) {
-        if (_isCollIncrease) {
-            require(_collChange == msg.value, "WZ: Wrong coll amount");
-        } else {
-            require(msg.value == 0, "WZ: Not adding coll, no ETH should be received");
-        }
-
         address receiver = _checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
 
         // Set initial balances to make sure there are not lefovers
         _setInitialTokensAndBalances(tokenWrapper, boldToken, _initialBalances);
 
-        // wrap token
-        uint256 scaledCollateralToDeposit;
-        if (_isCollIncrease)
-            scaledCollateralToDeposit = _wrapTokenAndReturnScaledAmount(_collChange);
+        uint256 scaledCollateralChange;
+        if (_isCollIncrease) {
+            // wrap token
+            scaledCollateralChange = _wrapTokenAndReturnScaledAmount(_collChange);
+        }
+        else {
+            // withdraw collateral
+            uint256 scalingDecimals = 18 - tokenWrapper.underlying().decimals();
+            scaledCollateralChange = _collChange * (10 ** scalingDecimals);
+        }
 
         // Pull Bold
         if (!_isDebtIncrease) {
             boldToken.transferFrom(msg.sender, address(this), _boldChange);
         }
 
-        return (receiver, scaledCollateralToDeposit);
+        return (receiver, scaledCollateralChange);
     }
 
     function _adjustTrovePost(
@@ -270,7 +271,6 @@ contract TokenZapper is BaseTokenZapper {
         uint256 tokenBalanceBefore = underlyingToken.balanceOf(address(this));
         tokenWrapper.withdraw(collateralAmount);
         uint256 tokenBalance = underlyingToken.balanceOf(address(this)) - tokenBalanceBefore;
-
         SafeERC20.safeTransfer(underlyingToken, receiver, tokenBalance);
     }
 }
