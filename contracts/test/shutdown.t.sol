@@ -130,11 +130,11 @@ contract ShutdownTest is DevTestSetup {
         contractsArray[0].borrowerOperations.shutdown();
         
         // owner
-        vm.prank(contractsArray[0].addressesRegistry.getOwner());
+        vm.prank(boldToken.getOwner());
         contractsArray[0].borrowerOperations.shutdown();
 
         // can't shutdown twice
-        vm.prank(contractsArray[0].addressesRegistry.getOwner());
+        vm.prank(boldToken.getOwner());
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         contractsArray[0].borrowerOperations.shutdown();
     }

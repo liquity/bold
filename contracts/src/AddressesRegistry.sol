@@ -99,10 +99,6 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         LIQUIDATION_PENALTY_REDISTRIBUTION = _liquidationPenaltyRedistribution;
     }
 
-    function getOwner() external returns (address) {
-        return owner;
-    }
-
     // initialization
     function setAddresses(AddressVars memory _vars) external onlyOwner {
         if(systemContractsInitialized)

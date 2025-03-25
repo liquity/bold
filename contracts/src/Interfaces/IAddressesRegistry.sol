@@ -77,6 +77,5 @@ interface IAddressesRegistry {
     function proposeNewLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newliquidationPenaltyRedistribution) external;
     function acceptNewLiquidationValues() external;
 
-    function getOwner() external returns (address);
     function setAddresses(AddressVars memory _vars) external;
 }

@@ -1214,7 +1214,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         if (newOracleFailureDetected) return;
 
         // check if caller is branch owner 
-        bool isBranchOwner = msg.sender == addressRegistry.getOwner();
+        bool isBranchOwner = msg.sender == boldToken.getOwner();
 
         // Otherwise, proceed with the TCR check:
         uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);
