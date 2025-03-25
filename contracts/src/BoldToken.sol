@@ -29,19 +29,14 @@ contract BoldToken is Owned, IBoldToken, ERC20Permit {
     mapping(address => bool) activePoolAddresses;
 
     // minters
-    struct MinterProposal {
+    struct MinterBurnerProposal {
         uint256 timestamp;    
         address[] minters;
-    }
-    MinterProposal minterProposal;
-    mapping(address => bool) public minterAddresses;
-
-    // burners
-    struct BurnerProposal {
-        uint256 timestamp;    
         address[] burners;
     }
-    BurnerProposal public burnerProposal;
+    MinterBurnerProposal minterBurnerProposal;
+    
+    mapping(address => bool) public minterAddresses;
     mapping(address => bool) public burnerAddresses;
 
     // --- Events ---
@@ -51,11 +46,9 @@ contract BoldToken is Owned, IBoldToken, ERC20Permit {
     event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
     event ActivePoolAddressAdded(address _newActivePoolAddress);
    
-    event AddMinterProposal(uint256 timestamp);
+    event AddMinterBurnerProposal(uint256 timestamp);
     event MinterAdded(address _newMinter);
     event MinterRemoved(address _minterRemoved);
-    
-    event AddBurnerProposal(uint256 timestamp);
     event BurnerAdded(address _newBurner);
     event BurnerRemoved(address _burnerRemoved);
 
@@ -94,34 +87,46 @@ contract BoldToken is Owned, IBoldToken, ERC20Permit {
         emit CollateralRegistryAddressChanged(_collateralRegistryAddress);
     }
 
-    // ----- ADDITIONAL MINTERS LOGIC ----- //
-    function proposeNewMinters(address[] memory minters) external override onlyOwner {
-        minterProposal.minters = new address[](minters.length);
-        minterProposal.minters = minters;
-        minterProposal.timestamp = block.timestamp;
+    // ----- ADDITIONAL MINTERS AND BURNERS  LOGIC ----- //
+    function proposeNewMintersAndBurners(address[] memory minters, address[] memory burners) external override onlyOwner {
+        minterBurnerProposal.minters = new address[](minters.length);
+        minterBurnerProposal.minters = minters;
+        minterBurnerProposal.burners = new address[](burners.length);
+        minterBurnerProposal.burners = burners;
+
+        minterBurnerProposal.timestamp = block.timestamp;
         
-        emit AddMinterProposal(block.timestamp);
+        emit AddMinterBurnerProposal(block.timestamp);
     }
 
-    function getMinterProposal() external view override returns (uint256, address[] memory) {
-        return (minterProposal.timestamp, minterProposal.minters);
+    function getMinterBurnerProposal() external view override returns (uint256, address[] memory, address[] memory) {
+        return (minterBurnerProposal.timestamp, minterBurnerProposal.minters, minterBurnerProposal.burners);
     }
 
-    function acceptNewMinters() external override onlyOwner {
+    function acceptMinterBurnerProposal() external override onlyOwner {
         require(
-            minterProposal.timestamp + 3 days <= block.timestamp && 
-            minterProposal.timestamp != 0,
+            minterBurnerProposal.timestamp + 3 days <= block.timestamp && 
+            minterBurnerProposal.timestamp != 0,
             "Invalid"
         );
         
-        for(uint i=0; i<minterProposal.minters.length; i++) {
-            address newMinter = minterProposal.minters[i];
+        // add minters
+        for(uint i=0; i<minterBurnerProposal.minters.length; i++) {
+            address newMinter = minterBurnerProposal.minters[i];
             minterAddresses[newMinter] = true;
             
             emit MinterAdded(newMinter);
         }
+        
+        // add burners
+        for(uint i=0; i<minterBurnerProposal.burners.length; i++) {
+            address newBurner = minterBurnerProposal.burners[i];
+            burnerAddresses[newBurner] = true;
+            
+            emit BurnerAdded(newBurner);
+        }
 
-        delete minterProposal;
+        delete minterBurnerProposal;
     }
 
     function removeMinters(address[] memory minters) external override onlyOwner {
@@ -129,35 +134,6 @@ contract BoldToken is Owned, IBoldToken, ERC20Permit {
             minterAddresses[minters[i]] = false;
             emit MinterRemoved(minters[i]);
         }
-    }
-
-    // ----- ADDITIONAL BURNERS LOGIC ----- //
-    function proposeNewBurners(address[] memory burners) external override onlyOwner {
-        burnerProposal.burners = new address[](burners.length);
-        burnerProposal.burners = burners;
-        burnerProposal.timestamp = block.timestamp;
-
-        emit AddBurnerProposal(block.timestamp);
-    }
-
-    function getBurnerProposal() external view returns (uint256, address[] memory) {
-        return (burnerProposal.timestamp, burnerProposal.burners);
-    }
-
-    function acceptNewBurners() external override onlyOwner {
-        require(
-            burnerProposal.timestamp + 3 days <= block.timestamp && 
-            burnerProposal.timestamp != 0,
-            "Invalid"
-        );
-
-        for(uint i=0; i<burnerProposal.burners.length; i++) {
-            address newBurner = burnerProposal.burners[i];
-            burnerAddresses[newBurner] = true;
-            emit BurnerAdded(newBurner);
-        }
-
-        delete burnerProposal;
     }
 
     function removeBurners(address[] memory burners) external override onlyOwner {
