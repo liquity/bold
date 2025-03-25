@@ -154,7 +154,6 @@ contract TokenZapperTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
 
         uint256 ethBalanceBefore = A.balance;
-        uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
 
         registerBatchManager(B);
 
@@ -221,7 +220,6 @@ contract TokenZapperTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
 
         uint256 ethBalanceBefore = A.balance;
-        uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
 
         ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
             owner: A,
@@ -260,7 +258,6 @@ contract TokenZapperTest is DevTestSetup {
         uint256 boldAmount = 10000e18;
 
         uint256 ethBalanceBefore = A.balance;
-        uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
 
         ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
             owner: A,
@@ -292,12 +289,8 @@ contract TokenZapperTest is DevTestSetup {
     }
 
     function testCanNotAddReceiverWithoutRemoveManager() external {
-          uint256 collateralAmount = 10e8;
-        uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
+        uint256 collateralAmount = 10e8;
         uint256 boldAmount = 10000e18;
-
-        uint256 ethBalanceBefore = A.balance;
-        uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
 
         ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
             owner: A,
@@ -330,9 +323,6 @@ contract TokenZapperTest is DevTestSetup {
         uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
         uint256 boldAmount = 10000e18;
         uint256 boldAmount2 = 1000e18;
-
-        uint256 ethBalanceBefore = A.balance;
-        uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
 
         ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
             owner: A,
@@ -647,7 +637,6 @@ contract TokenZapperTest is DevTestSetup {
 
     function testCanCloseTrove() external {
         uint256 collateralAmount = 10e8;
-        uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
         uint256 boldAmount = 10000e18;
 
         uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
@@ -709,10 +698,7 @@ contract TokenZapperTest is DevTestSetup {
 
     function testExcessRepaymentByAdjustGoesBackToUser() external {
         uint256 collateralAmount = 10e8;
-        uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
         uint256 boldAmount = 10000e18;
-
-        uint256 ethBalanceBefore = A.balance;
 
         ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
             owner: A,
@@ -753,10 +739,7 @@ contract TokenZapperTest is DevTestSetup {
 
     function testExcessRepaymentByRepayGoesBackToUser() external {
         uint256 collateralAmount = 10e8;
-        uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
         uint256 boldAmount = 10000e18;
-
-        uint256 ethBalanceBefore = A.balance;
 
         ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
             owner: A,
