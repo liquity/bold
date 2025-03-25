@@ -1301,7 +1301,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         bool whitelisted = true;
         
         if(address(whitelist) != address(0)) {
-            try whitelist.isWhitelisted(user) returns (bool w) {
+            try whitelist.isWhitelisted(address(this), user) returns (bool w) {
                 whitelisted = w;
             } catch {
                 whitelisted = false;

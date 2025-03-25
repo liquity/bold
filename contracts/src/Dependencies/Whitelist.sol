@@ -7,26 +7,27 @@ import {Owned} from "./Owned.sol";
 import {IWhitelist} from "../interfaces/IWhitelist.sol";
 
 contract Whitelist is IWhitelist, Owned {
-    mapping(address => bool) whitelist;
+    // calling contract -> user -> whitelisted
+    mapping(address => mapping(address => bool)) whitelist;
   
-    event Whitelisted(address user);
-    event WhitelistRemoved(address user);
+    event Whitelisted(address callingContract, address user);
+    event WhitelistRemoved(address callingContract, address user);
   
     constructor(address owner) Owned(owner) {}
     
-    function addToWhitelist(address user) onlyOwner external override {
-        whitelist[user] = true;
+    function addToWhitelist(address callingContract, address user) onlyOwner external override {
+        whitelist[callingContract][user] = true;
 
-        emit Whitelisted(user);
+        emit Whitelisted(callingContract, user);
     }
 
-    function removeFromWhitelist(address user) onlyOwner external override {
-        whitelist[user] = false;
+    function removeFromWhitelist(address callingContract, address user) onlyOwner external override {
+        whitelist[callingContract][user] = false;
 
-        emit WhitelistRemoved(user);
+        emit WhitelistRemoved(callingContract, user);
     }
 
-    function isWhitelisted(address user) external view override returns (bool) {
-        return whitelist[user];
+    function isWhitelisted(address callingContract, address user) external view override returns (bool) {
+        return whitelist[callingContract][user];
     }
 }

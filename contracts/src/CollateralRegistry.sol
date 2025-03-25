@@ -300,7 +300,7 @@ contract CollateralRegistry is ICollateralRegistry {
         // if a branch does not implement whitelisting, the whitelist contract address is 0
         bool whitelisted = true;
         if(address(whitelist) != address(0)) {
-            try whitelist.isWhitelisted(redeemer) returns (bool w) {
+            try whitelist.isWhitelisted(address(troveManager), redeemer) returns (bool w) {
                 whitelisted = w;
             } catch {
                 whitelisted = false;

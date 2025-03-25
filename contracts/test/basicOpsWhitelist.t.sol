@@ -22,7 +22,9 @@ contract WhitelistedBasicOps is BasicOps, WhitelistTestSetup {
         // whitelist users
         whitelistedUsers = [A, B, G];             
         for(uint8 i=0; i<3; i++){
-            _addToWhitelist(whitelistedUsers[i]);
+            _addToWhitelist(address(borrowerOperations), whitelistedUsers[i]);
+            _addToWhitelist(address(stabilityPool), whitelistedUsers[i]);
+            _addToWhitelist(address(troveManager), whitelistedUsers[i]);
         }
 
         // set a not whitelisted address

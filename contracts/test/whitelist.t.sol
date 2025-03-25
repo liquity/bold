@@ -9,6 +9,7 @@ contract WhitelistTest is Test {
 
     address public owner;
     address public user;
+    address public mockContract = address(123345);
 
     function setUp() public {
         owner = makeAddr("owner");
@@ -18,25 +19,25 @@ contract WhitelistTest is Test {
     }
 
     function test_addWhitelist() public {
-        assertEq(whitelistContract.isWhitelisted(user), false);
+        assertEq(whitelistContract.isWhitelisted(mockContract, user), false);
 
         vm.prank(owner);
-        whitelistContract.addToWhitelist(user);
+        whitelistContract.addToWhitelist(mockContract, user);
 
-        assertEq(whitelistContract.isWhitelisted(user), true);
+        assertEq(whitelistContract.isWhitelisted(mockContract, user), true);
     }
 
     function test_removeWhitelist() public {
-        assertEq(whitelistContract.isWhitelisted(user), false);
+        assertEq(whitelistContract.isWhitelisted(mockContract, user), false);
 
         vm.startPrank(owner);
-        whitelistContract.addToWhitelist(user);
+        whitelistContract.addToWhitelist(mockContract, user);
 
-        assertEq(whitelistContract.isWhitelisted(user), true);
+        assertEq(whitelistContract.isWhitelisted(mockContract, user), true);
 
-        whitelistContract.removeFromWhitelist(user);
+        whitelistContract.removeFromWhitelist(mockContract, user);
 
-        assertEq(whitelistContract.isWhitelisted(user), false);
+        assertEq(whitelistContract.isWhitelisted(mockContract, user), false);
 
         vm.stopPrank();
     }
@@ -45,15 +46,15 @@ contract WhitelistTest is Test {
         vm.expectRevert(bytes("Owned/not-owner"));
 
         vm.prank(user);
-        whitelistContract.addToWhitelist(user);
+        whitelistContract.addToWhitelist(mockContract, user);
     }
 
     function test_removeWhitelist_onlyOwner() public {
         vm.prank(owner);
-        whitelistContract.addToWhitelist(user);
+        whitelistContract.addToWhitelist(mockContract, user);
 
         vm.expectRevert(bytes("Owned/not-owner"));
         vm.prank(user);
-        whitelistContract.removeFromWhitelist(user);
+        whitelistContract.removeFromWhitelist(mockContract, user);
     }
 }

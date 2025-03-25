@@ -93,7 +93,6 @@ contract ActivePool is IActivePool {
         collToken.approve(defaultPoolAddress, type(uint256).max);
     }
 
-    // TODO 3 days update
     function updateYieldSplit(uint256 newYieldSplitPct) external {
         require(msg.sender == boldToken.getOwner(), "Only owner");
 

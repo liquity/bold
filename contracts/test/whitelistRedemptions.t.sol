@@ -21,7 +21,9 @@ contract WhitelistedRedemptions is Redemptions, WhitelistTestSetup {
         // whitelist users
         whitelistedUsers = [A, B, C, D, E];             
         for(uint8 i=0; i<5; i++){
-            _addToWhitelist(whitelistedUsers[i]);
+            _addToWhitelist(address(borrowerOperations), whitelistedUsers[i]);
+            _addToWhitelist(address(stabilityPool), whitelistedUsers[i]);
+            _addToWhitelist(address(troveManager), whitelistedUsers[i]);        
         }
 
         // set a non whitelisted address

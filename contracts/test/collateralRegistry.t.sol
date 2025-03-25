@@ -22,7 +22,9 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         // whitelist all users involved in base tests
         whitelistedUsers = [A, B, C, D, E];             
         for(uint8 i=0; i<5; i++){
-            _addToWhitelist(whitelistedUsers[i]);
+            _addToWhitelist(address(contractsArray[0].borrowerOperations), whitelistedUsers[i]);
+            _addToWhitelist(address(contractsArray[0].stabilityPool), whitelistedUsers[i]);
+            _addToWhitelist(address(contractsArray[0].troveManager), whitelistedUsers[i]);        
         }
 
         // set a non whitelisted address

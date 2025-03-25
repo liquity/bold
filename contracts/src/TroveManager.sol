@@ -1215,7 +1215,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     function _requireIsWhitelistedRedeemer(address redeemer) internal view {
         bool whitelisted = true;
         if(address(whitelist) != address(0)) {
-            try whitelist.isWhitelisted(redeemer) returns (bool w) {
+            try whitelist.isWhitelisted(address(this), redeemer) returns (bool w) {
                 whitelisted = w;
             } catch {
                 whitelisted = false;
