@@ -73,31 +73,45 @@ contract CollateralRegistry is ICollateralRegistry {
         // update total Collaterals
         totalCollaterals += numTokens;
     }
- 
-    function removeCollaterals(uint256[] memory _indexes) external override {
+    
+    // this function removes a branch from the collateralRegistry list
+    // and swaps the elements in order to push zero values at the end of the array
+    // it's meant to "clean up" space in the collaterals/troveManagers array
+    // can be executed only if the branch is in shutdown state
+    function removeCollateral(uint256 index) external override {
         require(msg.sender == boldToken.getOwner(), "Only owner");
-       
-        uint256 numTokens = _indexes.length; 
-        require(
-            numTokens > 0 && 
-            numTokens <= totalCollaterals, 
-            "Invalid input"
-        );
 
         // remove collaterals and trove managers 
-        for(uint8 i=0; i<numTokens; i++) {
-            uint256 index = _indexes[i];
+        require(index <= 9, "Invalid index");
+        require(address(collateralTokens[index]) != address(0), "Branch not initialised");
 
-            require(index <= 9, "Invalid index");
-            require(address(collateralTokens[index]) != address(0), "Branch not initialised");
+        ITroveManager troveManager = ITroveManager(troveManagers[index]);
 
-            emit CollateralRemoved(address(collateralTokens[index]), address(troveManagers[index]));
+        // revert if branch is not shutdown
+        require(troveManager.shutdownTime() != 0, "Branch is not shutdown");
 
-            collateralTokens[index] = IERC20Metadata(address(0));
-            troveManagers[index] = ITroveManager(address(0));
+        emit CollateralRemoved(address(collateralTokens[index]), address(troveManagers[index]));
+
+        // push the zero element at the end
+        for(uint256 j=totalCollaterals ; j>0; j--){
+            uint256 swapIndex = j - 1;
+            if(address(collateralTokens[swapIndex]) != address(0)) {
+                if(swapIndex > index) {
+                    // swap
+                    collateralTokens[index] = collateralTokens[swapIndex];
+                    troveManagers[index] = ITroveManager(troveManagers[swapIndex]);
+
+                    collateralTokens[swapIndex] = IERC20Metadata(address(0));
+                    troveManagers[swapIndex] = ITroveManager(address(0));
+                } else {
+                    // no swap. deleted index is the last in the array
+                    collateralTokens[index] = IERC20Metadata(address(0));
+                    troveManagers[index] = ITroveManager(address(0));
+                }
+                break;
+            }
         }
-        
-        totalCollaterals -= numTokens;
+        totalCollaterals --;
     }
 
     struct RedemptionTotals {

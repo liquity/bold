@@ -1200,7 +1200,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         }
     }
 
-    function _requireCallerIsAddressRegistry() internal {
+    function _requireCallerIsAddressRegistry() internal view {
         if (msg.sender != address(addressRegistry))
             revert CallerNotAddressRegistry();
     }

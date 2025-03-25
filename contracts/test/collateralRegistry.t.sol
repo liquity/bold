@@ -318,7 +318,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
     }
 
-    function test_onlyOwner_removeBranch() public {
+    function test_onlyOwner_removeBranch_lastIndex() public {
         assertEq(collateralRegistry.totalCollaterals(), 4);
 
         IERC20Metadata[] memory _tokens = new IERC20Metadata[](1);
@@ -326,6 +326,8 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
 
         // deploy the branch 
         (_troveManagers[0], _tokens[0]) = deployNewCollateralBranch();
+
+        uint256 removeIndex = 4;
 
         uint256[] memory indexes = new uint256[](1);
         indexes[0] = 4; // append new branch
@@ -340,37 +342,137 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
 
         // only owner can remove branch
         vm.expectRevert("Only owner");
-        collateralRegistry.removeCollaterals(indexes);
-
-        // cannot remove more than existing branches
-        uint256[] memory invalidIndexes = new uint256[](7);
-        vm.prank(boldToken.getOwner());
-        vm.expectRevert("Invalid input");
-        collateralRegistry.removeCollaterals(invalidIndexes);
+        collateralRegistry.removeCollateral(removeIndex);
 
         // cannot remove a not initialised branch
-        invalidIndexes = new uint256[](1);
-        invalidIndexes[0] = 8;
+        uint256 invalidIndex = 8;
 
         vm.prank(boldToken.getOwner());
         vm.expectRevert("Branch not initialised");
-        collateralRegistry.removeCollaterals(invalidIndexes);
+        collateralRegistry.removeCollateral(invalidIndex);
 
         // invalid index
-        invalidIndexes = new uint256[](1);
-        invalidIndexes[0] = 11;
+        invalidIndex = 11;
 
         vm.prank(boldToken.getOwner());
         vm.expectRevert("Invalid index");
-        collateralRegistry.removeCollaterals(invalidIndexes);
+        collateralRegistry.removeCollateral(invalidIndex);
+
+        // branch not in shutdown
+        vm.prank(boldToken.getOwner());
+        vm.expectRevert("Branch is not shutdown");
+        collateralRegistry.removeCollateral(removeIndex);
+
+        // copy elements before removing
+        address tokenAt0 = address(collateralRegistry.getToken(0));
+        address tokenAt1 = address(collateralRegistry.getToken(1));
+        address tokenAt2 = address(collateralRegistry.getToken(2));
+        address tokenAt3 = address(collateralRegistry.getToken(3));
+
+        address managerAt0 = address(collateralRegistry.getTroveManager(0));
+        address managerAt1 = address(collateralRegistry.getTroveManager(1));
+        address managerAt2 = address(collateralRegistry.getTroveManager(2));
+        address managerAt3 = address(collateralRegistry.getTroveManager(3));
 
         // owner remove
-        vm.prank(boldToken.getOwner());
-        collateralRegistry.removeCollaterals(indexes);
+        vm.startPrank(boldToken.getOwner());
+        IBorrowerOperations(contractsArray[4].borrowerOperations).shutdown();
+        collateralRegistry.removeCollateral(removeIndex);
+        vm.stopPrank();
 
         assertEq(collateralRegistry.totalCollaterals(), 4);
 
+        // last element is now 0
         assertEq(address(collateralRegistry.getToken(4)), address(0));
         assertEq(address(collateralRegistry.getTroveManager(4)), address(0));
+
+        // the other elements didn't move
+        assertEq(address(collateralRegistry.getToken(0)), tokenAt0);
+        assertEq(address(collateralRegistry.getToken(1)), tokenAt1);
+        assertEq(address(collateralRegistry.getToken(2)), tokenAt2);
+        assertEq(address(collateralRegistry.getToken(3)), tokenAt3);
+
+        assertEq(address(collateralRegistry.getTroveManager(0)), managerAt0);
+        assertEq(address(collateralRegistry.getTroveManager(1)), managerAt1);
+        assertEq(address(collateralRegistry.getTroveManager(2)), managerAt2);
+        assertEq(address(collateralRegistry.getTroveManager(3)), managerAt3);
+    }
+
+    function test_removeBranch_firstIndex() public {
+        assertEq(collateralRegistry.totalCollaterals(), 4);
+
+        uint256 removeIndex = 0;
+
+        // copy elements before removing
+        address tokenAt0 = address(collateralRegistry.getToken(0));
+        address tokenAt1 = address(collateralRegistry.getToken(1));
+        address tokenAt2 = address(collateralRegistry.getToken(2));
+        address tokenAt3 = address(collateralRegistry.getToken(3));
+
+        address managerAt0 = address(collateralRegistry.getTroveManager(0));
+        address managerAt1 = address(collateralRegistry.getTroveManager(1));
+        address managerAt2 = address(collateralRegistry.getTroveManager(2));
+        address managerAt3 = address(collateralRegistry.getTroveManager(3));
+
+        // owner remove
+        vm.startPrank(boldToken.getOwner());
+        IBorrowerOperations(contractsArray[0].borrowerOperations).shutdown();
+        collateralRegistry.removeCollateral(removeIndex);
+        vm.stopPrank();
+
+        assertEq(collateralRegistry.totalCollaterals(), 3);
+
+        // last element is now 0
+        assertEq(address(collateralRegistry.getToken(3)), address(0));
+        assertEq(address(collateralRegistry.getTroveManager(3)), address(0));
+
+        // elements at index 3 should be at index 0 now
+        // the other didn't move
+        assertEq(address(collateralRegistry.getToken(0)), tokenAt3);
+        assertEq(address(collateralRegistry.getToken(1)), tokenAt1);
+        assertEq(address(collateralRegistry.getToken(2)), tokenAt2);
+
+        assertEq(address(collateralRegistry.getTroveManager(0)), managerAt3);
+        assertEq(address(collateralRegistry.getTroveManager(1)), managerAt1);
+        assertEq(address(collateralRegistry.getTroveManager(2)), managerAt2);
+    }
+
+    function test_removeBranch_middleIndex() public {
+        assertEq(collateralRegistry.totalCollaterals(), 4);
+
+        uint256 removeIndex = 2;
+
+        // copy elements before removing
+        address tokenAt0 = address(collateralRegistry.getToken(0));
+        address tokenAt1 = address(collateralRegistry.getToken(1));
+        address tokenAt2 = address(collateralRegistry.getToken(2));
+        address tokenAt3 = address(collateralRegistry.getToken(3));
+
+        address managerAt0 = address(collateralRegistry.getTroveManager(0));
+        address managerAt1 = address(collateralRegistry.getTroveManager(1));
+        address managerAt2 = address(collateralRegistry.getTroveManager(2));
+        address managerAt3 = address(collateralRegistry.getTroveManager(3));
+
+        // owner remove
+        vm.startPrank(boldToken.getOwner());
+        IBorrowerOperations(contractsArray[2].borrowerOperations).shutdown();
+        collateralRegistry.removeCollateral(removeIndex);
+        vm.stopPrank();
+
+        assertEq(collateralRegistry.totalCollaterals(), 3);
+
+        // last element is now 0
+        assertEq(address(collateralRegistry.getToken(3)), address(0));
+        assertEq(address(collateralRegistry.getTroveManager(3)), address(0));
+
+        // elements at index 3 should be at index 2 now
+        // the other didn't move
+        assertEq(address(collateralRegistry.getToken(0)), tokenAt0);
+        assertEq(address(collateralRegistry.getToken(1)), tokenAt1);
+        assertEq(address(collateralRegistry.getToken(2)), tokenAt3);
+
+        assertEq(address(collateralRegistry.getTroveManager(0)), managerAt0);
+        assertEq(address(collateralRegistry.getTroveManager(1)), managerAt1);
+        assertEq(address(collateralRegistry.getTroveManager(2)), managerAt3);
     }
 }

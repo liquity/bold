@@ -200,12 +200,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         emit BoldTokenAddressChanged(address(boldToken));
     }
 
-    // --- Contracts update logic ---
-    function updatePriceFeed(IPriceFeed _newPriceFeed) external override {
-        _requireCallerIsTroveManager();
-        _updatePriceFeed(_newPriceFeed);
-    }
-
     // --- Getters for public variables. Required by IPool interface ---
 
     function getCollBalance() external view override returns (uint256) {
