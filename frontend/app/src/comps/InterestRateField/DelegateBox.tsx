@@ -83,7 +83,7 @@ export function DelegateBox({
               <Amount
                 value={delegate.boldAmount}
                 format="compact"
-                suffix=" BOLD"
+                suffix=" bvUSD"
               />
             </div>
             <div
@@ -190,7 +190,7 @@ export function DelegateBox({
             <Button
               label={selectLabel}
               mode="primary"
-              size="small"
+              size="mini"
               onClick={() => {
                 onSelect(delegate);
               }}

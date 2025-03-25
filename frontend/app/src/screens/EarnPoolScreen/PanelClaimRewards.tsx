@@ -29,7 +29,7 @@ export function PanelClaimRewards({
     throw new Error(`Invalid branch: ${branchId}`);
   }
 
-  const boldPriceUsd = usePrice("BOLD");
+  const boldPriceUsd = usePrice("bvUSD");
   const collPriceUsd = usePrice(collateral.symbol);
 
   const totalRewards = collPriceUsd.data && boldPriceUsd.data && dn.add(
@@ -47,7 +47,7 @@ export function PanelClaimRewards({
         <Rewards
           amount={position?.rewards?.bold ?? DNUM_0}
           label={content.earnScreen.rewardsPanel.boldRewardsLabel}
-          symbol="BOLD"
+          symbol="bvUSD"
         />
         <Rewards
           amount={position?.rewards?.coll ?? DNUM_0}

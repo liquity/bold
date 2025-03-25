@@ -33,8 +33,8 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
   Details(ctx) {
     const estimatedGains = useSimulatedBalancesChange(ctx);
     const branches = getBranches();
-    const boldChange = estimatedGains.data?.find(({ symbol }) => symbol === "BOLD")?.change;
-    const collChanges = estimatedGains.data?.filter(({ symbol }) => symbol !== "BOLD");
+    const boldChange = estimatedGains.data?.find(({ symbol }) => symbol === "bvUSD")?.change;
+    const collChanges = estimatedGains.data?.filter(({ symbol }) => symbol !== "bvUSD");
 
     console.log({ ctx, estimatedGains: estimatedGains })
 
@@ -87,7 +87,7 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
   },
   steps: {
     approve: {
-      name: () => "Approve BOLD",
+      name: () => "Approve bvUSD",
       Status: TransactionStatus,
       async commit({ request, writeContract }) {
         const CollateralRegistry = getProtocolContract("CollateralRegistry");
@@ -104,7 +104,7 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
       },
     },
     redeemCollateral: {
-      name: () => "Redeem BOLD",
+      name: () => "Redeem bvUSD",
       Status: TransactionStatus,
       async commit({ request, writeContract }) {
         const CollateralRegistry = getProtocolContract("CollateralRegistry");
@@ -253,7 +253,7 @@ export function useSimulatedBalancesChange({
         return simulation.results
           .slice(position, position + branches.length + 1)
           .map((result, index) => {
-            const symbol = index === 0 ? "BOLD" : branches[index - 1]?.symbol;
+            const symbol = index === 0 ? "bvUSD" : branches[index - 1]?.symbol;
             return {
               symbol,
               balance: dnum18(result.data ?? 0n),

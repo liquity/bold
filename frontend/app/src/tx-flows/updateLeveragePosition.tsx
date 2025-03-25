@@ -154,7 +154,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
               key="start"
               fallback="…"
               value={debtChangeWithFee}
-              suffix=" BOLD"
+              suffix=" bvUSD"
             />,
             upfrontFeeData.data?.upfrontFee
             && dn.gt(upfrontFeeData.data.upfrontFee, 0)
@@ -164,7 +164,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
                 fallback="…"
                 prefix="Incl. "
                 value={upfrontFeeData.data.upfrontFee}
-                suffix=" BOLD interest rate adjustment fee"
+                suffix=" bvUSD interest rate adjustment fee"
               />
             ),
           ]}

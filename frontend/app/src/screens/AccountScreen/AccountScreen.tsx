@@ -112,13 +112,13 @@ export function AccountScreen({
             <GridItem label="bvUSD balance">
               <Balance
                 address={address}
-                tokenSymbol="BOLD"
+                tokenSymbol="bvUSD"
               />
             </GridItem>
             <GridItem label="VCRAFT balance">
               <Balance
                 address={address}
-                tokenSymbol="LQTY"
+                tokenSymbol="bvUSD"
                 tapButton={tapEnabled
                   && account.address
                   && addressesEqual(address, account.address)}
@@ -189,47 +189,6 @@ function Balance({
         {fmtnum(balance.data, 2) || "−"}
         <TokenIcon symbol={tokenSymbol} size="mini" />
       </div>
-      {tapButton && (
-        <Button
-          mode="primary"
-          size="mini"
-          label="tap"
-          onClick={() => {
-            if ((tokenSymbol === "WSTETH" || tokenSymbol === "RETH") && CollToken) {
-              writeContract({
-                abi: ERC20Faucet,
-                address: CollToken.address,
-                functionName: "tap",
-                args: [],
-              }, {
-                onError: (error) => {
-                  alert(error.message);
-                },
-              });
-              return;
-            }
-
-            if (tokenSymbol === "LQTY") {
-              writeContract({
-                abi: LqtyToken.abi,
-                address: LqtyToken.address,
-                functionName: "tap",
-              }, {
-                onError: (error) => {
-                  alert(error.message);
-                },
-              });
-              return;
-            }
-          }}
-          style={{
-            padding: "0 6px",
-            height: 20,
-            fontSize: 11,
-            textTransform: "uppercase",
-          }}
-        />
-      )}
     </div>
   );
 }

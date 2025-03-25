@@ -169,7 +169,7 @@ export function BorrowScreen() {
                   />
                 ))}
               </TokenIcon.Group>,
-              <TokenIcon symbol="BOLD" />,
+              <TokenIcon symbol="bvUSD" />,
             )}
           </HFlex>
         ),
@@ -256,7 +256,7 @@ export function BorrowScreen() {
               id="input-debt"
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol="BOLD" />}
+                  icon={<TokenIcon symbol="bvUSD" />}
                   label="bvUSD"
                 />
               }

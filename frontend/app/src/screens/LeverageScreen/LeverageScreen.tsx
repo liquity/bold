@@ -139,7 +139,7 @@ export function LeverageScreen() {
     && dn.lte(leverageSlippage.data, LEVERAGE_MAX_SLIPPAGE);
 
   const leverageFieldDrawer = (hasDeposit && newLoan.borrowed && dn.lt(newLoan.borrowed, MIN_DEBT))
-    ? { mode: "error" as const, message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+    ? { mode: "error" as const, message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} bvUSD.` }
     : leverageSlippageElements.drawer;
 
   const allowSubmit = account.isConnected

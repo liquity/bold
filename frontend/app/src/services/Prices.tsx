@@ -14,7 +14,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "LQTY" | "BOLD" | "LUSD" | CollateralSymbol;
+type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol;
 
 function useCollateralPrice(
   symbol: null | CollateralSymbol
@@ -43,12 +43,10 @@ function useCollateralPrice(
   });
 }
 
-type CoinGeckoSymbol = TokenSymbol & ("LQTY" | "LUSD" | "ETH");
+type CoinGeckoSymbol = TokenSymbol & ("ETH");
 const coinGeckoTokenIds: {
   [key in CoinGeckoSymbol]: string;
 } = {
-  LQTY: "liquity",
-  LUSD: "liquity-usd",
   ETH: "ethereum",
 };
 
@@ -119,7 +117,7 @@ function useCoinGeckoPrice(
 export function usePrice<PT extends PriceToken>(
   symbol: PT | null
 ): UseQueryResult<Dnum> {
-  const fromCoinGecko = symbol === "LQTY" || symbol === "LUSD" || symbol === "ETH";
+  const fromCoinGecko = symbol === "ETH";
   const fromPriceFeed =
     !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
 
@@ -128,7 +126,7 @@ export function usePrice<PT extends PriceToken>(
   const boldPrice = useQuery({
     queryKey: ["boldPrice"],
     queryFn: () => dn.from(1, 18),
-    enabled: symbol === "BOLD",
+    enabled: symbol === "BOLD" || symbol === "bvUSD",
   });
 
   // could be any of the three, we just need
@@ -145,7 +143,7 @@ export function usePrice<PT extends PriceToken>(
     return collPrice;
   }
 
-  if (symbol === "BOLD") {
+  if (symbol === "BOLD" || symbol === "bvUSD") {
     return boldPrice;
   }
 

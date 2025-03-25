@@ -72,13 +72,11 @@ export function InputFieldFixture({
         onSelect={setToken}
         menuPlacement="end"
         items={[
-          itemRow("ETH", "ETH", "10.00"),
-          itemRow("RETH", "rETH", "30.00"),
-          itemRow("WSTETH", "wstETH", "40.00"),
+          itemRow("ETH", "ETH", "10.00")
         ]}
       />
     ))
-    .with("borrow", () => <Token name="BOLD" />)
+    .with("borrow", () => <Token name="bvUSD" />)
     .with("slider", () => (
       <div
         style={{
@@ -103,7 +101,7 @@ export function InputFieldFixture({
   const secondaryStart = match(fixture)
     .with("deposit", () => `${parsedValue ? dn.format(dn.mul(parsedValue, ETH_PRICE_USD), 2) : "−"}  USD`)
     .with("borrow", () => `${parsedValue ? dn.format(parsedValue, 2) : "−"}  USD`)
-    .with("slider", () => "Total debt 0 BOLD")
+    .with("slider", () => "Total debt 0 bvUSD")
     .otherwise(() => undefined);
 
   const secondaryEnd = match(fixture)
@@ -128,7 +126,7 @@ export function InputFieldFixture({
           Max LTV 80%:
         </div>
         <TextButton
-          label="24,405.69 BOLD"
+          label="24,405.69 bvUSD"
           onClick={() => setValue("24405.69")}
         />
       </div>
@@ -164,7 +162,7 @@ export function InputFieldFixture({
       (focused || !parsedValue) ? value : `${dn.format(parsedValue)} ETH`
     ))
     .with("borrow", () => (
-      (focused || !parsedValue) ? value : `${dn.format(parsedValue)} BOLD`
+      (focused || !parsedValue) ? value : `${dn.format(parsedValue)} bvUSD`
     ))
     .with("slider", () => (
       (focused || !parsedValue) ? value : `$${dn.format(parsedValue)}`
@@ -206,12 +204,13 @@ export function InputFieldFixture({
   );
 }
 
-function Token({ name }: { name: "ETH" | "BOLD" }) {
+function Token({ name }: { name: "ETH" | "BOLD" | "bvUSD" }) {
   return (
     <Action
       icon={match(name)
         .with("ETH", () => <IconEth />)
         .with("BOLD", () => <IconBold />)
+        .with("bvUSD", () => <IconBold />)
         .exhaustive()}
       label={name}
     />

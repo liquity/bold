@@ -148,7 +148,7 @@ export const RedemptionInfo = memo(function RedemptionInfo() {
 function BoldIcon() {
   return (
     <svg width="24" height="24" fill="none">
-      <rect width="24" height="24" fill="#63D77D" rx="12" />
+      <rect width="24" height="24" fill="#E49D2F" rx="12" />
       <path
         fill="#1C1D4F"
         fillRule="evenodd"
@@ -163,10 +163,10 @@ function RedemptionIcon() {
   return (
     <svg width="28" height="24" fill="none">
       <path
-        fill="#63D77D"
+        fill="#E49D2F"
         d="M16 0A12 12 0 0 0 4 12H0l5.334 5.333L10.667 12h-4a9.327 9.327 0 0 1 9.334-9.333A9.327 9.327 0 0 1 25.334 12a9.326 9.326 0 0 1-14.747 7.6l-1.893 1.92A12.002 12.002 0 0 0 27.87 10.24 12 12 0 0 0 16 0Z"
       />
-      <circle cx="16" cy="12" r="3" fill="#1C1D4F" />
+      <circle cx="16" cy="12" r="3" fill="#E49D2F" />
     </svg>
   );
 }
@@ -175,7 +175,7 @@ function InterestIcon() {
   return (
     <svg width="20" height="24" fill="none">
       <path
-        fill="#63D77D"
+        fill="#E49D2F"
         d="M10 0 0 4.364v6.545C0 16.964 4.267 22.625 10 24c5.733-1.375 10-7.036 10-13.09V4.363L10 0Z"
       />
       <circle cx="6" cy="9" r="2" fill="#1C1D4F" />

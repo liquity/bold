@@ -84,7 +84,7 @@ export function LoanScreenCard({
   );
 
   const nftUrl = useTroveNftUrl(loan?.branchId ?? null, troveId);
-  const title = mode === "multiply" ? "Multiply" : "BOLD loan";
+  const title = mode === "multiply" ? "Multiply" : "bvUSD loan";
 
   const fullyRedeemed = loan && loan.status === "redeemed" && dn.eq(loan.borrowed, 0);
 
@@ -168,7 +168,7 @@ export function LoanScreenCard({
               <Button
                 mode="negative"
                 label="Try again"
-                size="small"
+                size="mini"
                 onClick={onRetry}
               />
             </VFlex>
@@ -183,7 +183,7 @@ export function LoanScreenCard({
             <Button
               mode="primary"
               label="Try again"
-              size="small"
+              size="mini"
               onClick={onRetry}
             />
           </HFlex>
@@ -397,7 +397,7 @@ function LoanCard({
         troveId,
         nftUrl,
       }) => {
-        const title = mode === "multiply" ? "Multiply" : "BOLD loan";
+        const title = mode === "multiply" ? "Multiply" : "bvUSD loan";
         return (
           <a.div
             className={css({
@@ -629,7 +629,7 @@ function LoanCard({
                       )
                       : (
                         <div
-                          title={`${fmtnum(loan.borrowed)} BOLD`}
+                          title={`${fmtnum(loan.borrowed)} bvUSD`}
                           className={css({
                             display: "flex",
                             alignItems: "center",
@@ -637,7 +637,7 @@ function LoanCard({
                           })}
                         >
                           {fmtnum(loan.borrowed)}
-                          <TokenIcon symbol="BOLD" size={24} />
+                          <TokenIcon symbol="bvUSD" size={24} />
                         </div>
                       )}
                   </div>

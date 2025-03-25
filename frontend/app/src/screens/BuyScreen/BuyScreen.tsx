@@ -118,7 +118,7 @@ export function BuyScreen() {
               id="input-buy"
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol="BOLD" />}
+                  icon={<TokenIcon symbol="bvUSD" />}
                   label="bvUSD"
                 />
               }

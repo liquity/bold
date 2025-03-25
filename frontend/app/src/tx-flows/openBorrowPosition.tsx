@@ -177,7 +177,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                         <Amount
                           format="2z"
                           prefix="~"
-                          suffix=" BOLD per year"
+                          suffix=" bvUSD per year"
                           value={yearlyBoldInterest}
                         />
                       </>
@@ -202,7 +202,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                     boldAmountWithFee,
                     request.annualInterestRate,
                   )}
-                  suffix=" BOLD per year"
+                  suffix=" bvUSD per year"
                 />,
               ]}
             />

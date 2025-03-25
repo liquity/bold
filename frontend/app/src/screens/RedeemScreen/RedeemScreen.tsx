@@ -23,7 +23,7 @@ export function RedeemScreen() {
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const boldBalance = useBalance(account.address, "BOLD");
+  const boldBalance = useBalance(account.address, "bvUSD");
 
   const CollateralRegistry = getProtocolContract("CollateralRegistry");
   const redemptionRate = useReadContract({
@@ -62,7 +62,7 @@ export function RedeemScreen() {
       heading={{
         title: (
           <HFlex>
-            Redeem <TokenIcon symbol="BOLD" /> bvUSD for
+            Redeem <TokenIcon symbol="bvUSD" /> bvUSD for
             <TokenIcon.Group>
               {branches.map((b) => getCollToken(b.branchId)).map(({ symbol }) => (
                 <TokenIcon
@@ -90,7 +90,7 @@ export function RedeemScreen() {
               id="input-redeem-amount"
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol="BOLD" />}
+                  icon={<TokenIcon symbol="bvUSD" />}
                   label="bvUSD"
                 />
               }

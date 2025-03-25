@@ -42,14 +42,14 @@ export function EarnPoolsListScreen() {
           >
             {content.earnHome.headline(
               <TokenIcon.Group>
-                {["BOLD" as const, ...collSymbols].map((symbol) => (
+                {["bvUSD" as const, ...collSymbols].map((symbol) => (
                   <TokenIcon
                     key={symbol}
                     symbol={symbol}
                   />
                 ))}
               </TokenIcon.Group>,
-              <TokenIcon symbol="BOLD" />,
+              <TokenIcon symbol="bvUSD" />,
             )}
           </div>
         ),
@@ -126,7 +126,7 @@ function Vault() {
           })}
         >
           <TokenIcon
-            symbol={"BOLD"}
+            symbol={"bvUSD"}
             size={34}
           />
         </div>
@@ -144,7 +144,7 @@ function Vault() {
             })}
           >
             <div>
-              bvUSD Vault
+              sbvUSD
             </div>
             <div
               className={css({
@@ -286,7 +286,7 @@ function Vault() {
                   height: 24,
                 })}
               >
-                <TokenIcon symbol="BOLD" size="mini" title={null} />
+                <TokenIcon symbol="bvUSD" size="mini" title={null} />
               </div>
             </div>
           </div>
@@ -313,7 +313,7 @@ function Vault() {
                 height: 24,
               })}
             >
-              <TokenIcon symbol="BOLD" size="mini" title={null} />
+              <TokenIcon symbol="bvUSD" size="mini" title={null} />
             </div>
           </div>
           {/* {active && (

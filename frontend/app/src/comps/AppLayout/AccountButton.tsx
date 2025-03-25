@@ -74,8 +74,8 @@ function CKButton({
         : (
           <Button
             mode="primary"
-            size="medium"
-            shape="rectangular"
+            size="small"
+            shape="rounded"
             wide
             label={mode === "connecting"
               ? "Connecting…"

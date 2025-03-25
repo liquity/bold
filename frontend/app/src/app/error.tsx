@@ -57,11 +57,15 @@ export default function Error({
           >
             <AnchorButton
               mode="secondary"
+              size="medium"
+              shape="rectangular"
               label="Go to dashboard"
             />
           </Link>
           <Button
             mode="primary"
+            size="medium"
+            shape="rectangular"
             label="Reset state"
             onClick={reset}
           />
@@ -75,8 +79,8 @@ export default function Error({
         >
           <ErrorBox title={`Error: ${error.message}`}>
             <pre>
-{error.message}<br /><br />
-{error.stack}
+              {error.message}<br /><br />
+              {error.stack}
             </pre>
           </ErrorBox>
         </div>
@@ -87,7 +91,7 @@ export default function Error({
 
 function Illustration() {
   const spring = useSpring({
-    from: {
+    from: { 
       discOpacity: 0,
       discTransform: "scale(0.5)",
       barOpacity: 0,
@@ -134,7 +138,7 @@ function Illustration() {
         className={css({
           width: 208,
           height: 208,
-          background: "#FB7C59",
+          background: "#E49D2F",
           borderRadius: "50%",
         })}
         style={{
@@ -147,7 +151,7 @@ function Illustration() {
           position: "absolute",
           width: 362,
           height: 24,
-          background: "#121B44",
+          background: "#E49D2F",
           transformOrigin: "50% 50%",
         })}
         style={{

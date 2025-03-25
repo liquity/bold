@@ -5,9 +5,9 @@ import type { ReactNode as N } from "react";
 
 export default {
   // Used in the top bar and other places
-  appName: "Bitvault",
+  appName: "BitVault",
   appDescription: `
-    Bitv ault is a new borrowing protocol that lets users
+    BitVault is a new borrowing protocol that lets users
     deposit BTC as collateral and mint the stablecoin bvUSD.
   `,
   appUrl: "https://www.bitvault.xyz/",
@@ -122,7 +122,7 @@ export default {
     ],
     learnMore: {
       text: "Learn more about redemptions",
-      href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation",
+      href: "https://docs.bitvault.finance/welcome-to-bitvault/bvusd-explained",
     },
   },
 
@@ -310,8 +310,7 @@ export default {
     ),
     subheading: (
       <>
-        A bvUSD deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, in case the
-        system needs to liquidate positions, the bvUSD may be swapped to collateral.
+        Put your bvUSD to work for the most competitive yield in DeFi.
       </>
     ),
     poolsColumns: {

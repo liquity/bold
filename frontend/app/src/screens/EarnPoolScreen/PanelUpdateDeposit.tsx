@@ -51,7 +51,7 @@ export function PanelUpdateDeposit({
     DNUM_0,
   );
 
-  const boldBalance = useBalance(account.address, "BOLD");
+  const boldBalance = useBalance(account.address, "bvUSD");
 
   const updatedBoldQty = dn.add(deposited, depositDifference);
 
@@ -92,21 +92,21 @@ export function PanelUpdateDeposit({
             drawer={insufficientBalance
               ? {
                 mode: "error",
-                message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0)} BOLD.`,
+                message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0)} bvUSD.`,
               }
               : withdrawAboveDeposit
               ? {
                 mode: "error",
                 message: hasDeposit
                   ? `You can’t withdraw more than you have deposited.`
-                  : `No BOLD deposited.`,
+                  : `No bvUSD deposited.`,
               }
               : null}
             contextual={
               <InputTokenBadge
                 background={false}
-                icon={<TokenIcon symbol="BOLD" />}
-                label="BOLD"
+                icon={<TokenIcon symbol="bvUSD" />}
+                label="bvUSD"
               />
             }
             id="input-deposit-change"
@@ -156,13 +156,13 @@ export function PanelUpdateDeposit({
               end: mode === "add"
                 ? boldBalance.data && (
                   <TextButton
-                    label={dn.gt(boldBalance.data, 0) ? `Max ${fmtnum(boldBalance.data, 2)} BOLD` : null}
+                    label={dn.gt(boldBalance.data, 0) ? `Max ${fmtnum(boldBalance.data, 2)} bvUSD` : null}
                     onClick={() => setValue(dn.toString(boldBalance.data))}
                   />
                 )
                 : position?.deposit && dn.gt(position.deposit, 0) && (
                   <TextButton
-                    label={`Max ${fmtnum(position.deposit, 2)} BOLD`}
+                    label={`Max ${fmtnum(position.deposit, 2)} bvUSD`}
                     onClick={() => {
                       setValue(dn.toString(position.deposit));
                       setClaimRewards(true);
@@ -230,7 +230,7 @@ export function PanelUpdateDeposit({
                       color: "contentAlt",
                     })}
                   >
-                    BOLD
+                    bvUSD
                   </span>
                 </div>
                 {collateral && (

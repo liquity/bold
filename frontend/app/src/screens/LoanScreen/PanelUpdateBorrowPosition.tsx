@@ -53,11 +53,11 @@ export function PanelUpdateBorrowPosition({
 
   // balances
   const collBalance = useBalance(account.address, collToken.symbol);
-  const boldBalance = useBalance(account.address, "BOLD");
+  const boldBalance = useBalance(account.address, "bvUSD");
 
   // prices
   const collPrice = usePrice(collToken.symbol ?? null);
-  const boldPriceUsd = usePrice("BOLD") ?? dnum18(0);
+  const boldPriceUsd = usePrice("bvUSD") ?? dnum18(0);
 
   // deposit change
   const [depositMode, setDepositMode] = useState<ValueUpdateMode>("add");
@@ -132,7 +132,7 @@ export function PanelUpdateBorrowPosition({
     && !isBelowMinDebt
     // the new deposit must be positive
     && dn.gt(newLoanDetails.deposit ?? dnum18(0), 0)
-    // the account must have enough BOLD
+    // the account must have enough bvUSD
     && !insufficientBold
     // there should be a change in the deposit or debt
     && (
@@ -275,14 +275,14 @@ export function PanelUpdateBorrowPosition({
               contextual={
                 <InputTokenBadge
                   background={false}
-                  icon={<TokenIcon symbol="BOLD" />}
-                  label="BOLD"
+                  icon={<TokenIcon symbol="bvUSD" />}
+                  label="bvUSD"
                 />
               }
               drawer={!debtChange.isFocused && isBelowMinDebt
-                ? { mode: "error", message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+                ? { mode: "error", message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} bvUSD.` }
                 : insufficientBold
-                ? { mode: "error", message: "Insufficient BOLD balance." }
+                ? { mode: "error", message: "Insufficient bvUSD balance." }
                 : null}
               label={{
                 start: debtMode === "remove"
@@ -314,7 +314,7 @@ export function PanelUpdateBorrowPosition({
                 end: (
                   boldMax && (
                     <TextButton
-                      label={`Max ${fmtnum(boldMax)} BOLD`}
+                      label={`Max ${fmtnum(boldMax)} bvUSD`}
                       onClick={() => {
                         debtChange.setValue(dn.toString(boldMax));
                       }}
@@ -345,15 +345,15 @@ export function PanelUpdateBorrowPosition({
                     >
                       <Amount
                         value={newLoanDetails.debt}
-                        suffix=" BOLD"
+                        suffix=" bvUSD"
                       />
                     </div>
                     <InfoTooltip heading="Debt update">
                       <div>
-                        Before: <Amount value={loanDetails.debt} suffix=" BOLD" />
+                        Before: <Amount value={loanDetails.debt} suffix=" bvUSD" />
                       </div>
                       <div>
-                        After: <Amount value={newLoanDetails.debt} suffix=" BOLD" />
+                        After: <Amount value={newLoanDetails.debt} suffix=" bvUSD" />
                       </div>
                     </InfoTooltip>
                   </HFlex>

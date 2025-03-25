@@ -63,22 +63,22 @@ export function useButtonStyles({
 
   const geometry = match(size)
     .with("mini", () => ({
-      height: 26,
-      padding: "0 8px",
+      height: 34,
+      padding: shape === "rectangular" ? "0 8px" : "0 14px",
       fontSize: 14,
-      borderRadius: 8,
+      borderRadius: shape === "rectangular" ? 6 : 40,
     }))
     .with("small", () => ({
-      height: 34,
-      padding: "0 8px",
+      height: 40,
+      padding: shape === "rectangular" ? "0 8px" : "0 14px",
       fontSize: 14,
-      borderRadius: 8,
+      borderRadius: shape === "rectangular" ? 6 : 20,
     }))
     .with("medium", () => ({
       height: 48,
       padding: "0 14px",
       fontSize: 16,
-      borderRadius: shape === "rectangular" ? 8 : 20,
+      borderRadius: shape === "rectangular" ? 4 : 40,
     }))
     .with("large", () => ({
       height: 74,

@@ -15,7 +15,7 @@ import { blo } from "blo";
 import Image from "next/image";
 import Link from "next/link";
 
-const DISPLAYED_PRICES = ["BOLD", "ETH"] as const;
+const DISPLAYED_PRICES = ["bvUSD", "ETH"] as const;
 
 export function BottomBar() {
   const account = useAccount();
@@ -118,7 +118,7 @@ export function BottomBar() {
                   <HFlex gap={4} alignItems="center">
                     <TokenIcon
                       size={16}
-                      symbol="BOLD"
+                      symbol="bvUSD"
                     />
                     Redeem bvUSD
                   </HFlex>

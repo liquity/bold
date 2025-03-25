@@ -262,7 +262,7 @@ export function EarnPositionSummary({
                 })}
               >
                 {active && fmtnum(earnPosition?.deposit)}
-                <TokenIcon symbol="BOLD" size="mini" title={null} />
+                <TokenIcon symbol="bvUSD" size="mini" title={null} />
               </div>
               {prevEarnPosition && (
                 <div
@@ -278,7 +278,7 @@ export function EarnPositionSummary({
                   })}
                 >
                   {fmtnum(prevEarnPosition.deposit)}
-                  <TokenIcon symbol="BOLD" size="mini" title={null} />
+                  <TokenIcon symbol="bvUSD" size="mini" title={null} />
                 </div>
               )}
             </div>
@@ -318,7 +318,7 @@ export function EarnPositionSummary({
                         })}
                       >
                         {fmtnum(earnPosition?.rewards.bold)}
-                        <TokenIcon symbol="BOLD" size="mini" title={null} />
+                        <TokenIcon symbol="bvUSD" size="mini" title={null} />
                       </HFlex>
                       <HFlex gap={4}>
                         <Amount value={earnPosition?.rewards.coll} />
@@ -328,7 +328,7 @@ export function EarnPositionSummary({
                   )
                   : (
                     <TokenIcon.Group size="mini">
-                      <TokenIcon symbol="BOLD" />
+                      <TokenIcon symbol="bvUSD" />
                       <TokenIcon symbol={collToken.symbol} />
                     </TokenIcon.Group>
                   )}

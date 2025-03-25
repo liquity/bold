@@ -256,7 +256,7 @@ export const InterestRateField = memo(
                     onDelegateChange(null);
                   }}
                   selected={activeDelegateModes.findIndex((mode_) => mode_ === mode)}
-                  size="small"
+                  size="mini"
                 /> */}
               </div>
             ),
