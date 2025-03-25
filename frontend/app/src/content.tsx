@@ -91,7 +91,7 @@ export default {
         </>
       ),
       footerLink: {
-        href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation",
+        href: "https://docs.bitvault.finance/welcome-to-bitvault/bvusd-explained",
         label: "Learn more",
       },
     },
