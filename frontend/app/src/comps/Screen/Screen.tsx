@@ -139,10 +139,10 @@ export function Screen({
         css({
           position: "relative",
           flexGrow: 1,
-          display: "flex",
+          display: "grid",
           gap: 48,
-          flexDirection: "column",
-          alignItems: "center",
+          gridTemplateColumns: "1fr",
+          gridTemplateRows: "auto 1fr",
           width: "100%",
           padding: 24,
           transformOrigin: "50% 0",

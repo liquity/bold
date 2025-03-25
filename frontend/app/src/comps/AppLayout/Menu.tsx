@@ -6,18 +6,27 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MenuItem } from "./MenuItem";
 
+export type MenuItem = [
+  label: string,
+  url: string,
+  Icon: ComponentType<{}>,
+];
+
 export function Menu({
   menuItems,
 }: {
-  menuItems: [
-    string,
-    string,
-    ComponentType<{}>,
-  ][];
+  menuItems: MenuItem[];
 }) {
   const pathname = usePathname();
   return (
-    <nav>
+    <nav
+      className={css({
+        display: "none",
+        large: {
+          display: "block",
+        },
+      })}
+    >
       <ul
         className={css({
           position: "relative",

@@ -1,6 +1,7 @@
 import type { Address, Position, PositionLoanUncommitted } from "@/src/types";
 import type { ReactNode } from "react";
 
+import { useBreakpoint } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
@@ -77,9 +78,20 @@ export function Positions({
     mode = "loading";
   }
 
+  const [breakpoint, setBreakpoint] = useState("large");
+  useBreakpoint(({ name }) => {
+    setBreakpoint(name);
+  });
+
   return (
     <PositionsGroup
-      columns={columns}
+      columns={columns ?? (
+        breakpoint === "small"
+          ? 1
+          : breakpoint === "medium"
+          ? 2
+          : undefined
+      )}
       mode={mode}
       positions={positions ?? []}
       showNewPositionCard={showNewPositionCard}
@@ -89,7 +101,7 @@ export function Positions({
 }
 
 function PositionsGroup({
-  columns = 3,
+  columns,
   mode,
   onTitleClick,
   positions,
@@ -103,6 +115,8 @@ function PositionsGroup({
   title: (mode: Mode) => ReactNode;
   showNewPositionCard: boolean;
 }) {
+  columns ??= mode === "actions" ? 4 : 3;
+
   const title_ = title(mode);
 
   const cards = match(mode)
@@ -151,10 +165,6 @@ function PositionsGroup({
         ]
         : [])
     .exhaustive();
-
-  if (mode === "actions") {
-    columns = 4;
-  }
 
   const cardHeight = mode === "actions" ? 144 : 180;
   const rows = Math.ceil(cards.length / columns);
@@ -207,13 +217,19 @@ function PositionsGroup({
       {title_ && (
         <h1
           className={css({
-            fontSize: 32,
+            fontSize: {
+              base: 24,
+              medium: 26,
+              large: 32,
+            },
+            paddingBottom: {
+              base: 16,
+              medium: 20,
+              large: 32,
+            },
             color: "content",
             userSelect: "none",
           })}
-          style={{
-            paddingBottom: 32,
-          }}
           onClick={onTitleClick}
         >
           {title_}
@@ -230,7 +246,10 @@ function PositionsGroup({
         <a.div
           className={css({
             display: "grid",
-            gap: 24,
+            gap: {
+              base: 16,
+              medium: 24,
+            },
           })}
           style={{
             gridTemplateColumns: `repeat(${columns}, 1fr)`,

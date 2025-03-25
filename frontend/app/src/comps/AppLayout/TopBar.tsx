@@ -1,6 +1,6 @@
 "use client";
 
-import type { ComponentProps } from "react";
+import type { MenuItem } from "./Menu";
 
 import { Logo } from "@/src/comps/Logo/Logo";
 import { Tag } from "@/src/comps/Tag/Tag";
@@ -11,8 +11,9 @@ import { IconBorrow, IconDashboard, IconEarn, IconLeverage, IconStake } from "@l
 import Link from "next/link";
 import { AccountButton } from "./AccountButton";
 import { Menu } from "./Menu";
+import { MenuDrawerButton } from "./MenuDrawer";
 
-const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
+const menuItems: MenuItem[] = [
   [content.menu.dashboard, "/", IconDashboard],
   [content.menu.borrow, "/borrow", IconBorrow],
   [content.menu.multiply, "/multiply", IconLeverage],
@@ -39,7 +40,10 @@ export function TopBar() {
           maxWidth: 1280,
           height: "100%",
           margin: "0 auto",
-          padding: "16px 24px",
+          padding: {
+            base: "16px 12px",
+            medium: "16px 24px",
+          },
           fontSize: 16,
           fontWeight: 500,
           background: "background",
@@ -74,8 +78,13 @@ export function TopBar() {
             className={css({
               flexShrink: 0,
               display: "flex",
-              alignItems: "center",
-              gap: 8,
+              flexDirection: "column",
+              alignItems: "flex-start",
+              medium: {
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+              },
               whiteSpace: "nowrap",
             })}
           >
@@ -84,6 +93,7 @@ export function TopBar() {
               <div
                 className={css({
                   display: "flex",
+                  transform: "translateY(-1px)",
                 })}
               >
                 <Tag
@@ -104,13 +114,17 @@ export function TopBar() {
         <Menu menuItems={menuItems} />
         <div
           className={css({
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            width: 140,
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            gap: 8,
+            width: "min-content",
+            // width: 140,
           })}
         >
-          <AccountButton />
+          <div>
+            <AccountButton />
+          </div>
+          <MenuDrawerButton menuItems={menuItems} />
         </div>
       </div>
     </div>

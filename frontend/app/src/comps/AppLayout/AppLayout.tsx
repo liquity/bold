@@ -22,6 +22,7 @@ export function AppLayout({
         display: "grid",
         gridTemplateRows: "auto 1fr",
         minHeight: "100vh",
+        minWidth: "fit-content",
         height: "100%",
         background: "background",
       })}
@@ -41,7 +42,10 @@ export function AppLayout({
         className={css({
           display: "grid",
           gridTemplateRows: "auto 1fr auto",
-          gap: 48,
+          gap: {
+            base: 24,
+            large: 48,
+          },
           maxWidth: `calc(${LAYOUT_WIDTH}px + 48px)`,
           margin: "0 auto",
           width: "100%",
@@ -52,7 +56,15 @@ export function AppLayout({
           className={css({
             width: "100%",
             minHeight: 0,
-            padding: "0 24px",
+            padding: {
+              base: "0 12px",
+              medium: "0 24px",
+            },
+            overflow: "auto",
+            medium: {
+              overflow: "visible",
+              maxWidth: "100%",
+            },
           })}
         >
           {children}
@@ -72,18 +84,23 @@ function EarnRiskBanner() {
         alignItems: "center",
         maxWidth: "100%",
         width: "100%",
-        height: 40,
-        padding: "0 16px",
+        padding: "8px 16px",
+        lineHeight: "18px",
         textAlign: "center",
+        fontSize: 14,
         color: "#fff",
         background: "strongSurface",
+        medium: {
+          padding: "10px 16px",
+          fontSize: 16,
+          lineHeight: "20px",
+        },
       })}
     >
       <div
         className={css({
           width: "100%",
           maxWidth: LAYOUT_WIDTH,
-          whiteSpace: "nowrap",
         })}
       >
         There is an issue affecting the Stability Pools (“Earn”).{" "}
@@ -96,6 +113,7 @@ function EarnRiskBanner() {
             external
             label="Please read this announcement"
             className={css({
+              display: "inline",
               color: "inherit",
               textDecoration: "underline",
             })}
