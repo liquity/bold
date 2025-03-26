@@ -585,7 +585,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     // --- 'require' functions ---
     function _requireIsWhitelisted(address user) internal view {
         bool whitelisted = true;
-        IWhitelist whitelist = troveManager.whitelist();
+        IWhitelist whitelist = troveManager.addressRegistry().whitelist();
 
         if(address(whitelist) != address(0)) {
             try whitelist.isWhitelisted(address(this), user) returns (bool w) {

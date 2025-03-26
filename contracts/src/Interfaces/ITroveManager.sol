@@ -8,9 +8,9 @@ import "./IBorrowerOperations.sol";
 import "./IStabilityPool.sol";
 import "./IBoldToken.sol";
 import "./ISortedTroves.sol";
-import "./IWhitelist.sol";
 import "../Types/LatestTroveData.sol";
 import "../Types/LatestBatchData.sol";
+import "./IAddressesRegistryWhitelist.sol";
 
 // Common interface for the Trove Manager.
 interface ITroveManager is ILiquityBase {
@@ -29,9 +29,7 @@ interface ITroveManager is ILiquityBase {
     //function boldToken() external view returns (IBoldToken);
     function sortedTroves() external view returns (ISortedTroves);
     function borrowerOperations() external view returns (IBorrowerOperations);
-    
-    function whitelist() external view returns (IWhitelist);
-    function updateWhitelist(address _newWhitelist) external;
+    function addressRegistry() external view returns (IAddressesRegistryWhitelist);
     function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR) external;
     function updateLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newliquidationPenaltyRedistribution) external;
 

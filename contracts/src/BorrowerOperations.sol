@@ -22,7 +22,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
     IERC20 internal immutable collToken;
     ITroveManager internal troveManager;
-    IAddressesRegistry internal addressRegistry; 
     address internal gasPoolAddress;
     ICollSurplusPool internal collSurplusPool;
     IBoldToken internal boldToken;
@@ -186,7 +185,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         collSurplusPool = _addressesRegistry.collSurplusPool();
         sortedTroves = _addressesRegistry.sortedTroves();
         boldToken = _addressesRegistry.boldToken();
-        addressRegistry = _addressesRegistry;
 
         emit TroveManagerAddressChanged(address(troveManager));
         emit GasPoolAddressChanged(gasPoolAddress);
@@ -199,11 +197,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     // --- Contracts update logic ---
-    function updatePriceFeed(IPriceFeed _newPriceFeed) external override {
-        _requireCallerIsTroveManager();
-        _updatePriceFeed(_newPriceFeed);
-    }
-
     function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR) external override {
         _requireCallerIsTroveManager();
        
@@ -231,7 +224,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ) external override returns (uint256) {
         _requireValidAnnualInterestRate(_annualInterestRate);
         
-        IWhitelist whitelist = troveManager.whitelist();
+        IWhitelist whitelist = troveManager.addressRegistry().whitelist();
         _requireWhitelisted(whitelist, _owner);
         _requireWhitelisted(whitelist, msg.sender);
         
@@ -271,7 +264,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     {
         _requireValidInterestBatchManager(_params.interestBatchManager);
         
-        IWhitelist whitelist = troveManager.whitelist();
+        IWhitelist whitelist = troveManager.addressRegistry().whitelist();
         _requireWhitelisted(whitelist, _params.owner);
         _requireWhitelisted(whitelist, msg.sender);
         

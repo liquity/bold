@@ -19,9 +19,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     ITroveNFT public troveNFT;
     IBorrowerOperations public borrowerOperations;
-    IAddressesRegistry internal addressRegistry; 
     IStabilityPool public stabilityPool;
-    IWhitelist public whitelist;
+    IAddressesRegistryWhitelist public addressRegistry; 
     address internal gasPoolAddress;
     ICollSurplusPool internal collSurplusPool;
     IBoldToken internal boldToken;
@@ -203,8 +202,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         sortedTroves = _addressesRegistry.sortedTroves();
         WETH = _addressesRegistry.WETH();
         collateralRegistry = _addressesRegistry.collateralRegistry();
-
-        addressRegistry = _addressesRegistry;
+        addressRegistry = IAddressesRegistryWhitelist(_addressesRegistry);
 
         emit TroveNFTAddressChanged(address(troveNFT));
         emit BorrowerOperationsAddressChanged(address(borrowerOperations));
@@ -214,7 +212,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         emit BoldTokenAddressChanged(address(boldToken));
         emit SortedTrovesAddressChanged(address(sortedTroves));
         emit CollateralRegistryAddressChanged(address(collateralRegistry));
-        emit WhitelistAddressChanged(address(whitelist));
     }
 
     // --- Getters ---
@@ -228,13 +225,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     // --- Contracts update logic ---
-    function updateWhitelist(address _newWhitelist) external override {
-        _requireCallerIsAddressRegistry();
-        whitelist = IWhitelist(_newWhitelist);
-
-        emit WhitelistAddressChanged(_newWhitelist);
-    }
-
     function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR) external override {
         _requireCallerIsAddressRegistry();
         
@@ -1214,6 +1204,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     function _requireIsWhitelistedRedeemer(address redeemer) internal view {
         bool whitelisted = true;
+        IWhitelist whitelist = addressRegistry.whitelist();
+        
         if(address(whitelist) != address(0)) {
             try whitelist.isWhitelisted(address(this), redeemer) returns (bool w) {
                 whitelisted = w;

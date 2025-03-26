@@ -309,10 +309,11 @@ contract CollateralRegistry is ICollateralRegistry {
     // require functions
 
     function _isWhitelistedRedeemer(ITroveManager troveManager, address redeemer) internal view returns (bool) {
-        IWhitelist whitelist = troveManager.whitelist();
-
         // if a branch does not implement whitelisting, the whitelist contract address is 0
         bool whitelisted = true;
+
+        IWhitelist whitelist = troveManager.addressRegistry().whitelist();
+
         if(address(whitelist) != address(0)) {
             try whitelist.isWhitelisted(address(troveManager), redeemer) returns (bool w) {
                 whitelisted = w;

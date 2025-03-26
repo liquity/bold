@@ -221,8 +221,5 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
 
         vm.expectRevert(TroveManager.CallerNotAddressRegistry.selector);
         troveManager.updateLiquidationValues(10e16, 10e16);
-
-        vm.expectRevert(TroveManager.CallerNotAddressRegistry.selector);
-        troveManager.updateWhitelist(address(1234));
     }
 }

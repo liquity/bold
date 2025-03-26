@@ -150,8 +150,6 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
 
         whitelist = IWhitelist(_whitelist);
 
-        troveManager.updateWhitelist(_whitelist);
-
         whitelistInitialized = true;
 
         emit WhitelistChanged(_whitelist);
@@ -189,9 +187,6 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         
         // update/remove whitelist
         whitelist = IWhitelist(newWhitelist);
-            
-        // trigger update in trove manager
-        troveManager.updateWhitelist(newWhitelist);
 
         // reset proposal
         delete proposedWhitelist;

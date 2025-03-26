@@ -67,9 +67,4 @@ contract LiquityBase is ILiquityBase {
         return _weightedDebt * _period / ONE_YEAR / DECIMAL_PRECISION;
     }
 
-    function _updatePriceFeed(IPriceFeed _newPriceFeed) internal {
-        priceFeed = _newPriceFeed;
-
-        emit PriceFeedAddressChanged(address(_newPriceFeed));
-    }
 }
