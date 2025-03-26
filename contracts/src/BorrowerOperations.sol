@@ -42,7 +42,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     uint256 public MCR;
 
     // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
-    uint256 public immutable BCR;
+    uint256 public BCR;
 
     /*
     * Mapping from TroveId to individual delegate for interest rate setting.
@@ -160,7 +160,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
-    event CRsChanged(uint256 newCCR, uint256 newSCR, uint256 newMCR);
+    event CRsChanged(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR);
 
     event ShutDown(uint256 _tcr);
 
@@ -197,14 +197,15 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     // --- Contracts update logic ---
-    function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR) external override {
+    function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR) external override {
         _requireCallerIsTroveManager();
        
         MCR = newMCR;        
         CCR = newCCR;
         SCR = newSCR;
-
-        emit CRsChanged(newCCR, newSCR, newMCR);
+        BCR = newBCR;
+    
+        emit CRsChanged(newCCR, newSCR, newMCR, newBCR);
     }
 
     // --- Borrower Trove Operations ---

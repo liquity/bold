@@ -71,7 +71,7 @@ interface IAddressesRegistry is IAddressesRegistryWhitelist {
     function proposeNewWhitelist(address _newWhitelist) external;
     function acceptNewWhitelist() external;
 
-    function proposeNewCollateralValues(uint256 newCCR, uint256 newSCR, uint256 newMCR) external;
+    function proposeNewCollateralValues(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR) external;
     function acceptNewCollateralValues() external; 
 
     function proposeNewLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newliquidationPenaltyRedistribution) external;

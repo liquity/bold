@@ -97,21 +97,23 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
         uint256 newCCR = 150e16;
         uint256 newMCR = 110e16;
         uint256 newSCR = 110e16;
+        uint256 newBCR = 20e16;
 
         // only owner can propose new CR values
         vm.expectRevert("Owned/not-owner");
-        addressesRegistry.proposeNewCollateralValues(newCCR, newSCR, newMCR);
+        addressesRegistry.proposeNewCollateralValues(newCCR, newSCR, newMCR, newBCR);
 
         vm.prank(owner);
-        addressesRegistry.proposeNewCollateralValues(newCCR, newSCR, newMCR);
+        addressesRegistry.proposeNewCollateralValues(newCCR, newSCR, newMCR, newBCR);
         
         AddressesRegistry addressesContract = AddressesRegistry(address(addressesRegistry));
 
-        (uint256 proposedCCR, uint256 proposedMCR, uint256 proposedSCR, uint256 time) = addressesContract.proposedCR();
+        (uint256 proposedCCR, uint256 proposedMCR, uint256 proposedSCR, uint256 proposedBCR, uint256 time) = addressesContract.proposedCR();
         assertEq(time, block.timestamp);
         assertEq(proposedCCR, newCCR);
         assertEq(proposedMCR, newMCR);
         assertEq(proposedSCR, newSCR);
+        assertEq(proposedBCR, newBCR);
 
         // cannot accept before 3 days
         vm.prank(owner);
@@ -128,16 +130,18 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
         addressesRegistry.acceptNewCollateralValues();
 
         // proposal is deleted 
-        (proposedCCR, proposedMCR, proposedSCR, time) = addressesContract.proposedCR();
+        (proposedCCR, proposedMCR, proposedSCR, proposedBCR, time) = addressesContract.proposedCR();
         assertEq(time, 0);
         assertEq(proposedCCR, 0);
         assertEq(proposedMCR, 0);
         assertEq(proposedSCR, 0);
+        assertEq(proposedBCR, 0);
 
         // values are updated 
         assertEq(addressesRegistry.CCR(), newCCR);
         assertEq(addressesRegistry.MCR(), newMCR);
         assertEq(addressesRegistry.SCR(), newSCR);
+        assertEq(addressesRegistry.BCR(), newBCR);
 
         // values are updated in trove manager
         TroveManager managerContract = TroveManager(address(troveManager));
@@ -150,6 +154,7 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
         assertEq(borrowerContract.CCR(), newCCR);
         assertEq(borrowerContract.MCR(), newMCR);
         assertEq(borrowerContract.SCR(), newSCR);
+        assertEq(borrowerContract.BCR(), newBCR);
     }
 
     function test_liquidationValuesUpdate_onlyOwner() public {
@@ -217,7 +222,7 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
     // only addressesRegistry can trigger CR, Liquidation and Whitelist values update in trove manager
     function test_troveManagerUpdate_onlyAddressesRegistry() public {
         vm.expectRevert(TroveManager.CallerNotAddressRegistry.selector);
-        troveManager.updateCRs(100e16, 100e16, 100e16);
+        troveManager.updateCRs(100e16, 100e16, 100e16, 5e16);
 
         vm.expectRevert(TroveManager.CallerNotAddressRegistry.selector);
         troveManager.updateLiquidationValues(10e16, 10e16);

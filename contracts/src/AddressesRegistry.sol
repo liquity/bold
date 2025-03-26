@@ -39,7 +39,7 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     uint256 public MCR;
 
     // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
-    uint256 public immutable BCR;
+    uint256 public BCR;
     // Liquidation penalty for troves offset to the SP
     uint256 public LIQUIDATION_PENALTY_SP;
     // Liquidation penalty for troves redistributed
@@ -195,29 +195,32 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     }
 
     // --- CRs UPDATE LOGIC ---- //
-    event CRsChanged(uint256 newCCR, uint256 newSCR, uint256 newMCR);
-    event CRsProposal(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 timestamp);
+    event CRsChanged(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR);
+    event CRsProposal(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR, uint256 timestamp);
 
     struct CRProposal {
         uint256 CCR;
         uint256 MCR;
         uint256 SCR;
+        uint256 BCR;
         uint256 timestamp; 
     }
 
     CRProposal public proposedCR; 
 
-    function proposeNewCollateralValues(uint256 newCCR, uint256 newSCR, uint256 newMCR) external override onlyOwner {
+    function proposeNewCollateralValues(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR) external override onlyOwner {
         if (newCCR <= 1e18 || newCCR >= 2e18) revert InvalidCCR();
         if (newMCR <= 1e18 || newMCR >= 2e18) revert InvalidMCR();
         if (newSCR <= 1e18 || newSCR >= 2e18) revert InvalidSCR();
+        if (newBCR < 5e16 || newBCR >= 50e16) revert InvalidBCR();
 
         proposedCR.CCR = newCCR;
         proposedCR.MCR = newMCR;
         proposedCR.SCR = newSCR;
+        proposedCR.BCR = newBCR;
         proposedCR.timestamp = block.timestamp;
 
-        emit CRsProposal(newCCR, newSCR, newMCR, block.timestamp);
+        emit CRsProposal(newCCR, newSCR, newMCR, newBCR, block.timestamp);
     }
 
     function acceptNewCollateralValues() external override onlyOwner {
@@ -230,14 +233,15 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         CCR = proposedCR.CCR;
         SCR = proposedCR.SCR;
         MCR = proposedCR.MCR;
-            
+        BCR = proposedCR.BCR;
+        
         // trigger update in trove manager
-        troveManager.updateCRs(CCR, SCR, MCR);
+        troveManager.updateCRs(CCR, SCR, MCR, BCR);
 
         // reset proposal
         delete proposedCR;
 
-        emit CRsChanged(CCR, SCR, MCR);
+        emit CRsChanged(CCR, SCR, MCR, BCR);
     }
     
         // --- LIQUIDATION VALUES UPDATE LOGIC ---- //

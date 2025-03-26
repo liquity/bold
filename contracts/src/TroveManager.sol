@@ -225,7 +225,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     // --- Contracts update logic ---
-    function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR) external override {
+    function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR) external override {
         _requireCallerIsAddressRegistry();
         
         CCR = newCCR;
@@ -233,7 +233,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         MCR = newMCR;
 
         // trigger updates in all system contracts that have dependencies
-        borrowerOperations.updateCRs(newCCR, newSCR, newMCR);
+        borrowerOperations.updateCRs(newCCR, newSCR, newMCR, newBCR);
 
         emit CRsChanged(newCCR, newSCR, newMCR);
     }
