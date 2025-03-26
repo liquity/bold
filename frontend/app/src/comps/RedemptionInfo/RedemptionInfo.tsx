@@ -131,6 +131,9 @@ export const RedemptionInfo = memo(function RedemptionInfo() {
                 alignItems: "center",
                 gap: 4,
                 color: "accent",
+                _hover: {
+                  color: "goldLight",
+                },
               })}
             >
               <span>

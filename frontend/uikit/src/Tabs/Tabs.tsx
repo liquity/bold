@@ -256,6 +256,9 @@ function Tab({
         whiteSpace: "nowrap",
         textOverflow: "ellipsis",
         overflow: "hidden",
+        _hover: {
+          color: "accentActive",
+        },
       })}
       style={{
         color: styles.activeTabContent.color,

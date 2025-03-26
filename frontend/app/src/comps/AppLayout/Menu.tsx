@@ -44,7 +44,7 @@ export function Menu({
                 style={{
                   color: token(
                     `colors.${selected ? "selected" : "interactive"}`,
-                  )
+                  ),
                 }}
               >
                 <MenuItem

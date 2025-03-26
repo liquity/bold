@@ -60,6 +60,9 @@ export function MenuItem({
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
+            _hover: {
+              color: selected ? "accent" : "gray100",
+            },
           })}
         >
           {label}

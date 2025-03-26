@@ -401,13 +401,6 @@ export function OpenLink({
         placeItems: "center",
         padding: "0 12px 0 24px",
         borderRadius: 10,
-        transition: "scale 80ms",
-        _active: {
-          translate: "0 1px",
-        },
-        _hover: {
-          scale: 1.05,
-        },
       })}
     >
       <div
@@ -419,6 +412,14 @@ export function OpenLink({
           color: "neutral100",
           background: "accent",
           borderRadius: "50%",
+          transition: "scale 80ms",
+          _hover: {
+            background: "goldLight",
+            scale: 1.05,
+          },
+          _active: {
+            translate: "0 1px",
+          },
         })}
       >
         {active

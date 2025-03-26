@@ -106,6 +106,9 @@ function TokenCard({
           className={css({
             color: "accent",
             textDecoration: "none",
+            _hover: {
+              color: "goldLight",
+            },
           })}>
           {link.label}
         </a>

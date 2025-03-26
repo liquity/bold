@@ -43,13 +43,13 @@ export function Dropdown({
   size = "medium",
 }: {
   buttonDisplay?:
-    | "normal"
-    | "label-only"
-    | ReactElement
-    | ((item: DropdownItem, index: number) => {
-      icon?: ReactNode;
-      label: ReactNode;
-    });
+  | "normal"
+  | "label-only"
+  | ReactElement
+  | ((item: DropdownItem, index: number) => {
+    icon?: ReactNode;
+    label: ReactNode;
+  });
   customButton?: (ctx: {
     item: DropdownItem | null;
     index: number;
@@ -200,8 +200,8 @@ export function Dropdown({
     index: selected,
     menuVisible: showMenu,
   }) ?? (
-    isValidElement(buttonDisplay) ? buttonDisplay : null
-  );
+      isValidElement(buttonDisplay) ? buttonDisplay : null
+    );
 
   return (
     <>
@@ -224,7 +224,7 @@ export function Dropdown({
             display: "flex",
             outline: 0,
             cursor: "pointer",
-          }),
+          })
         )}
         style={customButton_ ? {} : {
           height: size === "small" ? 32 : 40,
@@ -248,19 +248,10 @@ export function Dropdown({
               `,
                 borderRadius: 10,
                 cursor: "pointer",
-
                 "--color-normal": "token(colors.content)",
                 "--color-placeholder": "token(colors.accentContent)",
                 "--background-normal": "token(colors.controlSurfaceAlt)",
                 "--background-placeholder": "token(colors.accent)",
-
-                _groupActive: {
-                  translate: "0 1px",
-                  boxShadow: `0 1px 1px rgba(0, 0, 0, 0.1)`,
-                },
-                _groupFocusVisible: {
-                  outline: "2px solid token(colors.focused)",
-                },
               })}
               style={{
                 gap: size === "small" ? 6 : 8,
