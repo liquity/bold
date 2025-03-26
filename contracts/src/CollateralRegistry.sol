@@ -93,24 +93,20 @@ contract CollateralRegistry is ICollateralRegistry {
         emit CollateralRemoved(address(collateralTokens[index]), address(troveManagers[index]));
 
         // push the zero element at the end
-        for(uint256 j=totalCollaterals ; j>0; j--){
-            uint256 swapIndex = j - 1;
-            if(address(collateralTokens[swapIndex]) != address(0)) {
-                if(swapIndex > index) {
-                    // swap
-                    collateralTokens[index] = collateralTokens[swapIndex];
-                    troveManagers[index] = ITroveManager(troveManagers[swapIndex]);
+        uint256 swapIndex = totalCollaterals - 1;
+        if(swapIndex > index) {
+            // swap
+            collateralTokens[index] = collateralTokens[swapIndex];
+            troveManagers[index] = ITroveManager(troveManagers[swapIndex]);
 
-                    collateralTokens[swapIndex] = IERC20Metadata(address(0));
-                    troveManagers[swapIndex] = ITroveManager(address(0));
-                } else {
-                    // no swap. deleted index is the last in the array
-                    collateralTokens[index] = IERC20Metadata(address(0));
-                    troveManagers[index] = ITroveManager(address(0));
-                }
-                break;
-            }
+            collateralTokens[swapIndex] = IERC20Metadata(address(0));
+            troveManagers[swapIndex] = ITroveManager(address(0));
+        } else {
+            // no swap. deleted index is the last in the array
+            collateralTokens[index] = IERC20Metadata(address(0));
+            troveManagers[index] = ITroveManager(address(0));
         }
+
         totalCollaterals --;
     }
 
