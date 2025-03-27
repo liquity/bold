@@ -32,8 +32,18 @@ dataSources:
       eventHandlers:
         - event: CollateralRegistryAddressChanged(address)
           handler: handleCollateralRegistryAddressChanged
+          # TODO: add handlers for these events
+        - event: TroveManagerAddressAdded(address)
+          handler: handleTroveManagerAddressAdded
+        - event: StabilityPoolAddressAdded(address)
+          handler: handleStabilityPoolAddressAdded
+        - event: BorrowerOperationsAddressAdded(address)
+          handler: handleBorrowerOperationsAddressAdded
+        - event: ActivePoolAddressAdded(address)
+          handler: handleActivePoolAddressAdded
       file: ./src/BoldToken.mapping.ts
     network: mainnet
+    # TODO: This does not exist in the contracts. Remove?
   - kind: ethereum/contract
     name: Governance
     source:
@@ -101,6 +111,14 @@ templates:
         - event: BatchUpdated(indexed
             address,uint8,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleBatchUpdated
+          # TODO: add handler for this event
+        - event: TroveUpdated(indexed
+            uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleTroveUpdated
+          # TODO: add handler for this event
+        - event: BatchedTroveUpdated(indexed
+            uint256,address,uint256,uint256,uint256,uint256,uint256)
+          handler: handleBatchedTroveUpdated
   - name: TroveNFT
     kind: ethereum/contract
     network: mainnet
@@ -144,3 +162,13 @@ templates:
           handler: handleSUpdated
         - event: B_Updated(uint256,uint128,uint128)
           handler: handleBUpdated
+          # TODO: add handler for this event
+        - event: DepositOperation(indexed
+            address,uint8,uint256,int256,uint256,uint256,uint256,uint256)
+          handler: handleDepositOperation
+          # TODO: add handler for this event
+        - event: StabilityPoolCollBalanceUpdated(uint256)
+          handler: handleStabilityPoolCollBalanceUpdated
+          # TODO: add handler for this event
+        - event: StabilityPoolBoldBalanceUpdated(uint256)
+          handler: handleStabilityPoolBoldBalanceUpdated
