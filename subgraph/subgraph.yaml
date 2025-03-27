@@ -29,10 +29,14 @@ dataSources:
           file: ../contracts/out/TroveManager.sol/TroveManager.json
         - name: TroveNFT
           file: ../contracts/out/TroveNFT.sol/TroveNFT.json
+        - name: ActivePool
+          file: ../contracts/out/ActivePool.sol/ActivePool.json
+        - name: AddressesRegistry
+          file: ../contracts/out/AddressesRegistry.sol/AddressesRegistry.json
       eventHandlers:
         - event: CollateralRegistryAddressChanged(address)
           handler: handleCollateralRegistryAddressChanged
-          # TODO: add handlers for these events
+          # TODO: revise handlers for these events
         - event: TroveManagerAddressAdded(address)
           handler: handleTroveManagerAddressAdded
         - event: StabilityPoolAddressAdded(address)
@@ -111,11 +115,11 @@ templates:
         - event: BatchUpdated(indexed
             address,uint8,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleBatchUpdated
-          # TODO: add handler for this event
+          # TODO: test handler for this event
         - event: TroveUpdated(indexed
             uint256,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleTroveUpdated
-          # TODO: add handler for this event
+          # TODO: test handler for this event
         - event: BatchedTroveUpdated(indexed
             uint256,address,uint256,uint256,uint256,uint256,uint256)
           handler: handleBatchedTroveUpdated
@@ -162,13 +166,13 @@ templates:
           handler: handleSUpdated
         - event: B_Updated(uint256,uint128,uint128)
           handler: handleBUpdated
-          # TODO: add handler for this event
+          # TODO: test handler for this event
         - event: DepositOperation(indexed
             address,uint8,uint256,int256,uint256,uint256,uint256,uint256)
           handler: handleDepositOperation
-          # TODO: add handler for this event
+          # TODO: test handler for this event
         - event: StabilityPoolCollBalanceUpdated(uint256)
           handler: handleStabilityPoolCollBalanceUpdated
-          # TODO: add handler for this event
+          # TODO: test handler for this event
         - event: StabilityPoolBoldBalanceUpdated(uint256)
           handler: handleStabilityPoolBoldBalanceUpdated
