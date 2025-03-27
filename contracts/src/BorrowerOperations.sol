@@ -311,8 +311,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
-        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + _boldAmount, "BorrowerOperations: Debt limit exceeded.");
-
         vars.price = _requireOraclesLive();
 
         // --- Checks ---
@@ -331,6 +329,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireUserAcceptsUpfrontFee(_change.upfrontFee, _maxUpfrontFee);
 
         vars.entireDebt = _change.debtIncrease + _change.upfrontFee;
+        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + vars.entireDebt, "BorrowerOperations: Debt limit exceeded.");
         _requireAtLeastMinDebt(vars.entireDebt);
 
         // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee, and the batch fee if needed
