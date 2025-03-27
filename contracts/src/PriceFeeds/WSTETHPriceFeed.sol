@@ -8,8 +8,14 @@ import "../Interfaces/IWSTETHPriceFeed.sol";
 
 // import "forge-std/console2.sol";
 
+interface IWSTETH_Provider{
+    function getRate() external view returns (uint256);
+}
+
 contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
     Oracle public stEthUsdOracle;
+    IWSTETH_Provider public provider = IWSTETH_Provider(0xB1552C5e96B312d0Bf8b554186F846C40614a540);
+
 
     uint256 public constant STETH_USD_DEVIATION_THRESHOLD = 1e16; // 1%
 
@@ -71,7 +77,7 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
     function _getCanonicalRate() internal view override returns (uint256, bool) {
         uint256 gasBefore = gasleft();
 
-        try IWSTETH(rateProviderAddress).stEthPerToken() returns (uint256 stEthPerWstEth) {
+        try provider.getRate() returns (uint256 stEthPerWstEth) {
             // If rate is 0, return true
             if (stEthPerWstEth == 0) return (0, true);
 
