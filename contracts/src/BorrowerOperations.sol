@@ -1224,11 +1224,13 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         IBoldToken _boldToken,
         IActivePool _activePool
     ) internal {
-        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + _troveChange.debtIncrease, "BorrowerOperations: Debt limit exceeded.");
 
         if (_troveChange.debtIncrease > 0) {
+            // Check if the debt limit is exceeded only when increasing debt.
+            require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + _troveChange.debtIncrease, "BorrowerOperations: Debt limit exceeded.");
             _boldToken.mint(withdrawalReceiver, _troveChange.debtIncrease);
         } else if (_troveChange.debtDecrease > 0) {
+            //debt can be repaid without checking the debt limit.
             _boldToken.burn(msg.sender, _troveChange.debtDecrease);
         }
 
