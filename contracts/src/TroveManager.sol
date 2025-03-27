@@ -46,6 +46,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // Maximum debt allowed on this branch
     //Current debt on this branch is tracked via getEntireSystemDebt() in LiquityBase.sol
     uint256 public debtLimit;
+    uint256 public initalDebtLimit;
 
     // --- Data structures ---
 
@@ -188,6 +189,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         MCR = _addressesRegistry.MCR();
         SCR = _addressesRegistry.SCR();
         debtLimit = _addressesRegistry.debtLimit();
+        initalDebtLimit = debtLimit;
         LIQUIDATION_PENALTY_SP = _addressesRegistry.LIQUIDATION_PENALTY_SP();
         LIQUIDATION_PENALTY_REDISTRIBUTION = _addressesRegistry.LIQUIDATION_PENALTY_REDISTRIBUTION();
 
@@ -1975,6 +1977,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     function getDebtLimit() external view returns (uint256) {
         return debtLimit;
+    }
+
+    function getInitalDebtLimit() external view returns (uint256) {
+        return initalDebtLimit;
     }
 
     function setDebtLimit(uint256 _newDebtLimit) external {

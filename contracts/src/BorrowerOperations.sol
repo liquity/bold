@@ -311,8 +311,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
-        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + _boldAmount, "BorrowerOperations: Debt limit exceeded.");
-
         vars.price = _requireOraclesLive();
 
         // --- Checks ---
@@ -331,6 +329,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireUserAcceptsUpfrontFee(_change.upfrontFee, _maxUpfrontFee);
 
         vars.entireDebt = _change.debtIncrease + _change.upfrontFee;
+        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + vars.entireDebt, "BorrowerOperations: Debt limit exceeded.");
         _requireAtLeastMinDebt(vars.entireDebt);
 
         // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee, and the batch fee if needed
@@ -404,8 +403,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external override {
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsActive(troveManagerCached, _troveId);
-
-        require(troveManagerCached.getDebtLimit() >= troveManagerCached.getEntireSystemDebt() + _boldAmount, "BorrowerOperations: Debt limit exceeded.");
 
         TroveChange memory troveChange;
         troveChange.debtIncrease = _boldAmount;
@@ -1227,8 +1224,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt(), "BorrowerOperations: Debt limit exceeded.");
 
         if (_troveChange.debtIncrease > 0) {
+            // Check if the debt limit is exceeded only when increasing debt.
+            require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + _troveChange.debtIncrease, "BorrowerOperations: Debt limit exceeded.");
             _boldToken.mint(withdrawalReceiver, _troveChange.debtIncrease);
         } else if (_troveChange.debtDecrease > 0) {
+            //debt can be repaid without checking the debt limit.
             _boldToken.burn(msg.sender, _troveChange.debtDecrease);
         }
 
