@@ -36,15 +36,6 @@ dataSources:
       eventHandlers:
         - event: CollateralRegistryAddressChanged(address)
           handler: handleCollateralRegistryAddressChanged
-          # TODO: revise handlers for these events
-        - event: TroveManagerAddressAdded(address)
-          handler: handleTroveManagerAddressAdded
-        - event: StabilityPoolAddressAdded(address)
-          handler: handleStabilityPoolAddressAdded
-        - event: BorrowerOperationsAddressAdded(address)
-          handler: handleBorrowerOperationsAddressAdded
-        - event: ActivePoolAddressAdded(address)
-          handler: handleActivePoolAddressAdded
       file: ./src/BoldToken.mapping.ts
     network: mainnet
     # TODO: This does not exist in the contracts. Remove?

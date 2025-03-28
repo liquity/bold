@@ -74,6 +74,7 @@ type BorrowerInfo @entity {
 type StabilityPool @entity {
   id: ID! # "collIndex", e.g. "0"
   totalDeposited: BigInt!
+  collBalance: BigInt!
 }
 
 type StabilityPoolDeposit @entity {

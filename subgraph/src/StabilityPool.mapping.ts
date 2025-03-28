@@ -104,6 +104,8 @@ export function handleStabilityPoolCollBalanceUpdated(event: StabilityPoolCollBa
     sp = new StabilityPool(collId);
     sp.totalDeposited = BigInt.fromI32(0);
   }
+
+  sp.collBalance = event.params._newBalance;
   
   // Since the StabilityPool entity doesn't have a collateralBalance field in the schema,
   // we don't update it directly. If needed, this data could be tracked in a separate entity 
@@ -122,6 +124,8 @@ export function handleStabilityPoolBoldBalanceUpdated(event: StabilityPoolBoldBa
     sp = new StabilityPool(collId);
     sp.totalDeposited = BigInt.fromI32(0);
   }
+
+  sp.totalDeposited = event.params._newBalance;
   
   // Since the StabilityPool entity doesn't have a boldBalance field in the schema,
   // we don't update it directly. If needed, this data could be tracked in a separate entity 
