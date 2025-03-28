@@ -15,7 +15,6 @@ import "./Interfaces/IBoldToken.sol";
  *
  * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move BOLD tokens between Liquity <-> user.
  */
-
 contract BoldToken is Owned, IBoldToken, ERC20Permit {
     string internal constant _NAME = "BOLD Stablecoin";
     string internal constant _SYMBOL = "BOLD";
@@ -23,124 +22,45 @@ contract BoldToken is Owned, IBoldToken, ERC20Permit {
     // --- Addresses ---
 
     address public collateralRegistryAddress;
-    mapping(address => bool) troveManagerAddresses;
-    mapping(address => bool) stabilityPoolAddresses;
-    mapping(address => bool) borrowerOperationsAddresses;
-    mapping(address => bool) activePoolAddresses;
-
-    // minters
-    struct MinterBurnerProposal {
-        uint256 timestamp;    
-        address[] minters;
-        address[] burners;
-    }
-    MinterBurnerProposal minterBurnerProposal;
-    
-    mapping(address => bool) public minterAddresses;
-    mapping(address => bool) public burnerAddresses;
+    mapping(address => bool) public isMinter;
+    mapping(address => bool) public isBurner;
+    mapping(address => bool) public isStabilityPool;
 
     // --- Events ---
+    event MinterSet(address _newMinter, bool _isMinter);
+    event BurnerSet(address _newBurner, bool _isBurner);
+    event StabilityPoolSet(address _newStabilityPool, bool _isStabilityPool);
     event CollateralRegistryAddressChanged(address _newCollateralRegistryAddress);
-    event TroveManagerAddressAdded(address _newTroveManagerAddress);
-    event StabilityPoolAddressAdded(address _newStabilityPoolAddress);
-    event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
-    event ActivePoolAddressAdded(address _newActivePoolAddress);
-   
-    event AddMinterBurnerProposal(uint256 timestamp);
-    event MinterAdded(address _newMinter);
-    event MinterRemoved(address _minterRemoved);
-    event BurnerAdded(address _newBurner);
-    event BurnerRemoved(address _burnerRemoved);
 
+    // --- Errors ---
     error AlreadyInitialised();
 
+    // --- Constructor ---
     constructor(address _owner) Owned(_owner) ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {}
 
-    function getOwner() external override view returns (address) {
-        return owner;
+    // --- Setters ---
+    function setMinter(address _minter, bool _isMinter) external onlyOwner {
+        isMinter[_minter] = _isMinter;
+        emit MinterSet(_minter, _isMinter);
     }
 
-    function setBranchAddresses(
-        address _troveManagerAddress,
-        address _stabilityPoolAddress,
-        address _borrowerOperationsAddress,
-        address _activePoolAddress
-    ) external override onlyOwner {
-        troveManagerAddresses[_troveManagerAddress] = true;
-        emit TroveManagerAddressAdded(_troveManagerAddress);
-
-        stabilityPoolAddresses[_stabilityPoolAddress] = true;
-        emit StabilityPoolAddressAdded(_stabilityPoolAddress);
-
-        borrowerOperationsAddresses[_borrowerOperationsAddress] = true;
-        emit BorrowerOperationsAddressAdded(_borrowerOperationsAddress);
-
-        activePoolAddresses[_activePoolAddress] = true;
-        emit ActivePoolAddressAdded(_activePoolAddress);
+    function setBurner(address _burner, bool _isBurner) external onlyOwner {
+        isBurner[_burner] = _isBurner;
+        emit BurnerSet(_burner, _isBurner);
     }
 
-    function setCollateralRegistry(address _collateralRegistryAddress) external override onlyOwner {
-        if(collateralRegistryAddress != address(0))
+    function setStabilityPool(address _stabilityPool, bool _isStabilityPool) external onlyOwner {
+        isStabilityPool[_stabilityPool] = _isStabilityPool;
+        emit StabilityPoolSet(_stabilityPool, _isStabilityPool);
+    }
+
+    function setCollateralRegistry(address _collateralRegistryAddress) external onlyOwner {
+        if (collateralRegistryAddress != address(0)) {
             revert AlreadyInitialised();
+        }
 
         collateralRegistryAddress = _collateralRegistryAddress;
         emit CollateralRegistryAddressChanged(_collateralRegistryAddress);
-    }
-
-    // ----- ADDITIONAL MINTERS AND BURNERS  LOGIC ----- //
-    function proposeNewMintersAndBurners(address[] memory minters, address[] memory burners) external override onlyOwner {
-        minterBurnerProposal.minters = new address[](minters.length);
-        minterBurnerProposal.minters = minters;
-        minterBurnerProposal.burners = new address[](burners.length);
-        minterBurnerProposal.burners = burners;
-
-        minterBurnerProposal.timestamp = block.timestamp;
-        
-        emit AddMinterBurnerProposal(block.timestamp);
-    }
-
-    function getMinterBurnerProposal() external view override returns (uint256, address[] memory, address[] memory) {
-        return (minterBurnerProposal.timestamp, minterBurnerProposal.minters, minterBurnerProposal.burners);
-    }
-
-    function acceptMinterBurnerProposal() external override onlyOwner {
-        require(
-            minterBurnerProposal.timestamp + 3 days <= block.timestamp && 
-            minterBurnerProposal.timestamp != 0,
-            "Invalid"
-        );
-        
-        // add minters
-        for(uint i=0; i<minterBurnerProposal.minters.length; i++) {
-            address newMinter = minterBurnerProposal.minters[i];
-            minterAddresses[newMinter] = true;
-            
-            emit MinterAdded(newMinter);
-        }
-        
-        // add burners
-        for(uint i=0; i<minterBurnerProposal.burners.length; i++) {
-            address newBurner = minterBurnerProposal.burners[i];
-            burnerAddresses[newBurner] = true;
-            
-            emit BurnerAdded(newBurner);
-        }
-
-        delete minterBurnerProposal;
-    }
-
-    function removeMinters(address[] memory minters) external override onlyOwner {
-        for(uint i=0; i<minters.length; i++) {
-            minterAddresses[minters[i]] = false;
-            emit MinterRemoved(minters[i]);
-        }
-    }
-
-    function removeBurners(address[] memory burners) external override onlyOwner {
-        for(uint i=0; i<burners.length; i++) {
-            burnerAddresses[burners[i]] = false;
-            emit BurnerRemoved(burners[i]);
-        }
     }
 
     // --- Functions for intra-Liquity calls ---
@@ -191,26 +111,14 @@ contract BoldToken is Owned, IBoldToken, ERC20Permit {
     }
 
     function _requireCallerIsMinter() internal view {
-        require(
-            borrowerOperationsAddresses[msg.sender] || 
-            activePoolAddresses[msg.sender] || 
-            minterAddresses[msg.sender],
-            "BoldToken: Caller is not BO or AP or a minter" 
-        );
+        require(isMinter[msg.sender], "BoldToken: Caller is not a minter");
     }
 
     function _requireCallerIsBurner() internal view {
-        require(
-            msg.sender == collateralRegistryAddress || 
-            borrowerOperationsAddresses[msg.sender] || 
-            troveManagerAddresses[msg.sender] || 
-            stabilityPoolAddresses[msg.sender] || 
-            burnerAddresses[msg.sender],
-            "Bold: Caller is neither CR nor BorrowerOperations nor TroveManager nor StabilityPool not a burner"
-        );
+        require(msg.sender == collateralRegistryAddress || isBurner[msg.sender], "Bold: Caller is not a burner");
     }
 
     function _requireCallerIsStabilityPool() internal view {
-        require(stabilityPoolAddresses[msg.sender], "BoldToken: Caller is not the StabilityPool");
+        require(isStabilityPool[msg.sender], "BoldToken: Caller is not the StabilityPool");
     }
 }

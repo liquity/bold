@@ -7,7 +7,7 @@ import "./TestContracts/DevTestSetup.sol";
 contract MulticollateralTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 4;
     TestDeployer.LiquityContractsDev[] public contractsArray;
-    
+
     function openMulticollateralTroveNoHints100pctWithIndex(
         uint256 _collIndex,
         address _account,

@@ -213,16 +213,12 @@ contract TestDeployer is MetadataDeployment {
     }
 
     function deployBranch(
-        TroveManagerParams memory troveManagerParams, 
+        TroveManagerParams memory troveManagerParams,
         IERC20Metadata collateralToken,
         IWETH WETH,
-        IBoldToken boldToken, 
+        IBoldToken boldToken,
         ICollateralRegistry collateralRegistry
-    ) public returns (
-        LiquityContractsDev memory contracts,
-        Zappers memory zappers
-    ) 
-    {
+    ) public returns (LiquityContractsDev memory contracts, Zappers memory zappers) {
         (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
             _deployAddressesRegistryDev(troveManagerParams);
 
@@ -358,7 +354,7 @@ contract TestDeployer is MetadataDeployment {
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers);
+        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, address(this));
         hintHelpers = new HintHelpers(collateralRegistry);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
@@ -483,7 +479,8 @@ contract TestDeployer is MetadataDeployment {
             multiTroveGetter: _multiTroveGetter,
             collateralRegistry: _collateralRegistry,
             boldToken: _boldToken,
-            WETH: _weth
+            WETH: _weth,
+            whitelist: IWhitelist(address(0))
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
@@ -508,12 +505,13 @@ contract TestDeployer is MetadataDeployment {
         assert(address(contracts.sortedTroves) == addresses.sortedTroves);
 
         // Connect contracts
-        _boldToken.setBranchAddresses(
-            address(contracts.troveManager),
-            address(contracts.stabilityPool),
-            address(contracts.borrowerOperations),
-            address(contracts.activePool)
-        );
+        _boldToken.setMinter(address(contracts.borrowerOperations), true);
+        _boldToken.setMinter(address(contracts.activePool), true);
+        _boldToken.setBurner(address(_collateralRegistry), true);
+        _boldToken.setBurner(address(contracts.borrowerOperations), true);
+        _boldToken.setBurner(address(contracts.troveManager), true);
+        _boldToken.setBurner(address(contracts.stabilityPool), true);
+        _boldToken.setStabilityPool(address(contracts.stabilityPool), true);
 
         // deploy zappers
         _deployZappers(
@@ -610,7 +608,8 @@ contract TestDeployer is MetadataDeployment {
         vars.troveManagers[2] = ITroveManager(troveManagerAddress);
 
         // Deploy registry and register the TMs
-        result.collateralRegistry = new CollateralRegistryTester(result.boldToken, vars.collaterals, vars.troveManagers);
+        result.collateralRegistry =
+            new CollateralRegistryTester(result.boldToken, vars.collaterals, vars.troveManagers, address(this));
 
         result.hintHelpers = new HintHelpers(result.collateralRegistry);
         result.multiTroveGetter = new MultiTroveGetter(result.collateralRegistry);
@@ -722,7 +721,8 @@ contract TestDeployer is MetadataDeployment {
             multiTroveGetter: _params.multiTroveGetter,
             collateralRegistry: _params.collateralRegistry,
             boldToken: _params.boldToken,
-            WETH: _params.weth
+            WETH: _params.weth,
+            whitelist: IWhitelist(address(0))
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
@@ -747,12 +747,13 @@ contract TestDeployer is MetadataDeployment {
         assert(address(contracts.sortedTroves) == addresses.sortedTroves);
 
         // Connect contracts
-        _params.boldToken.setBranchAddresses(
-            address(contracts.troveManager),
-            address(contracts.stabilityPool),
-            address(contracts.borrowerOperations),
-            address(contracts.activePool)
-        );
+        _params.boldToken.setMinter(address(contracts.borrowerOperations), true);
+        _params.boldToken.setMinter(address(contracts.activePool), true);
+        _params.boldToken.setBurner(address(_params.collateralRegistry), true);
+        _params.boldToken.setBurner(address(contracts.borrowerOperations), true);
+        _params.boldToken.setBurner(address(contracts.troveManager), true);
+        _params.boldToken.setBurner(address(contracts.stabilityPool), true);
+        _params.boldToken.setStabilityPool(address(contracts.stabilityPool), true);
 
         // TODO: remove this and set address in constructor as per the CREATE2 approach above
         _params.priceFeed.setAddresses(addresses.borrowerOperations);

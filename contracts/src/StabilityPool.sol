@@ -184,8 +184,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     mapping(uint256 => uint256) public scaleToS;
     mapping(uint256 => uint256) public scaleToB;
 
-    error NotWhitelisted();
-
     // --- Events ---
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
@@ -227,7 +225,10 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     * - Sends depositor's accumulated Coll gains to depositor
     */
     function provideToSP(uint256 _topUp, bool _doClaim) external override {
-        _requireIsWhitelisted(msg.sender);
+        IWhitelist _whitelist = whitelist;
+        if (address(_whitelist) != address(0)) {
+            _requireWhitelisted(_whitelist, msg.sender);
+        }
 
         _requireNonZeroAmount(_topUp);
 
@@ -583,22 +584,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     }
 
     // --- 'require' functions ---
-    function _requireIsWhitelisted(address user) internal view {
-        bool whitelisted = true;
-        IWhitelist whitelist = troveManager.addressRegistry().whitelist();
-
-        if(address(whitelist) != address(0)) {
-            try whitelist.isWhitelisted(address(this), user) returns (bool w) {
-                whitelisted = w;
-            } catch {
-                whitelisted = false;
-            }
-        }
-
-        if(!whitelisted)
-            revert NotWhitelisted();
-    }
-
     function _requireCallerIsActivePool() internal view {
         require(msg.sender == address(activePool), "StabilityPool: Caller is not ActivePool");
     }

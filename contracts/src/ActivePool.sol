@@ -94,7 +94,7 @@ contract ActivePool is IActivePool {
     }
 
     function updateYieldSplit(uint256 newYieldSplitPct) external {
-        require(msg.sender == boldToken.getOwner(), "Only owner");
+        require(msg.sender == boldToken.owner(), "Only owner");
 
         require(newYieldSplitPct <= 100, "Too High");
 

@@ -210,7 +210,9 @@ Deploying Liquity contracts with the following settings:
   DEPLOYMENT_MODE:        ${options.mode}
   DEPLOYER (address):     ${deployerAddress}
   SALT:                   ${options.salt ? options.salt : chalk.yellow("block.timestamp will be used !!")}
-  EPOCH_START:            ${options.epochStart ? options.epochStart : chalk.yellow("auto based on block.timestamp will be used !!")}
+  EPOCH_START:            ${
+    options.epochStart ? options.epochStart : chalk.yellow("auto based on block.timestamp will be used !!")
+  }
   ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}
   LEDGER_PATH:            ${options.ledgerPath}
   OPEN_DEMO_TROVES:       ${options.openDemoTroves ? "yes" : "no"}

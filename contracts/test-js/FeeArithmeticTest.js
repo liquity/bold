@@ -741,7 +741,7 @@ contract("Fee arithmetic tests", async (accounts) => {
 
       // Test base = 0
       const response_0 = await mathTester.callDecPowTx(0, exponent);
-      //console.log(response_0);
+      // console.log(response_0);
       assert.isTrue(response_0.receipt.status);
 
       // test base = 1
@@ -764,7 +764,7 @@ contract("Fee arithmetic tests", async (accounts) => {
 
         const error = expected.sub(result).abs();
 
-        //console.log(`run: ${i}. base: ${base}, exp: ${exponent}, res: ${result}, error: ${error}`);
+        // console.log(`run: ${i}. base: ${base}, exp: ${exponent}, res: ${result}, error: ${error}`);
       }
 
       // Use a high base to fully test high exponent, without prematurely decaying to 0
@@ -783,7 +783,7 @@ contract("Fee arithmetic tests", async (accounts) => {
 
         const error = expected.sub(result).abs();
 
-        //console.log(`run: ${i}. base: ${base}, exp: ${exponent}, res: ${result}, error: ${error}`);
+        // console.log(`run: ${i}. base: ${base}, exp: ${exponent}, res: ${result}, error: ${error}`);
       }
     });
   });

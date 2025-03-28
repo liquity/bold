@@ -4,21 +4,21 @@ pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import "./Interfaces/ITroveManager.sol";
-import "./Interfaces/IBoldToken.sol";
 import "./Dependencies/Constants.sol";
 import "./Dependencies/LiquityMath.sol";
+import "./Dependencies/Owned.sol";
 
+import "./Interfaces/ITroveManager.sol";
+import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ICollateralRegistry.sol";
+import "./Interfaces/IWhitelist.sol";
 
-contract CollateralRegistry is ICollateralRegistry {
-    // See: https://github.com/ethereum/solidity/issues/12587
+contract CollateralRegistry is Owned, ICollateralRegistry {
+    IBoldToken public immutable boldToken;
+
     uint256 public totalCollaterals;
-
     IERC20Metadata[10] internal collateralTokens;
     ITroveManager[10] internal troveManagers;
-
-    IBoldToken public immutable boldToken;
 
     uint256 public baseRate;
 
@@ -29,8 +29,16 @@ contract CollateralRegistry is ICollateralRegistry {
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
     event NewCollateralAdded(address collateral, address troveManager);
     event CollateralRemoved(address collateral, address troveManager);
+    event WhitelistSet(address whitelist);
 
-    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers) {
+    // --- Constructor ---
+
+    constructor(
+        IBoldToken _boldToken,
+        IERC20Metadata[] memory _tokens,
+        ITroveManager[] memory _troveManagers,
+        address _owner
+    ) Owned(_owner) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens <= 10, "Collateral list too long");
@@ -38,26 +46,29 @@ contract CollateralRegistry is ICollateralRegistry {
 
         boldToken = _boldToken;
 
-        for(uint8 i=0; i<numTokens; i++) {
+        for (uint8 i; i < numTokens; i++) {
             collateralTokens[i] = _tokens[i];
             troveManagers[i] = _troveManagers[i];
         }
 
         // Initialize the baseRate state variable
         baseRate = INITIAL_BASE_RATE;
+
         emit BaseRateUpdated(INITIAL_BASE_RATE);
     }
 
-    function addNewCollaterals(uint256[] memory _indexes, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers) external override {
-        require(msg.sender == boldToken.getOwner(), "Only owner");
-        
-        uint256 numTokens = _indexes.length; 
+    function addNewCollaterals(
+        uint256[] memory _indexes,
+        IERC20Metadata[] memory _tokens,
+        ITroveManager[] memory _troveManagers
+    ) external override onlyOwner {
+        uint256 numTokens = _indexes.length;
         require(numTokens > 0 && numTokens == _tokens.length && numTokens == _troveManagers.length, "Invalid input");
 
         require(totalCollaterals + numTokens <= 10, "Max collaterals");
 
-        // add new collaterals and trove managers 
-        for(uint8 i=0; i<numTokens; i++) {
+        // add new collaterals and trove managers
+        for (uint8 i = 0; i < numTokens; i++) {
             uint256 index = _indexes[i];
 
             // can't overwrite an existing branch
@@ -73,15 +84,13 @@ contract CollateralRegistry is ICollateralRegistry {
         // update total Collaterals
         totalCollaterals += numTokens;
     }
-    
+
     // this function removes a branch from the collateralRegistry list
     // and swaps the elements in order to push zero values at the end of the array
     // it's meant to "clean up" space in the collaterals/troveManagers array
     // can be executed only if the branch is in shutdown state
-    function removeCollateral(uint256 index) external override {
-        require(msg.sender == boldToken.getOwner(), "Only owner");
-
-        // remove collaterals and trove managers 
+    function removeCollateral(uint256 index) external override onlyOwner {
+        // remove collaterals and trove managers
         require(index <= 9, "Invalid index");
         require(address(collateralTokens[index]) != address(0), "Branch not initialised");
 
@@ -94,7 +103,7 @@ contract CollateralRegistry is ICollateralRegistry {
 
         // push the zero element at the end
         uint256 swapIndex = totalCollaterals - 1;
-        if(swapIndex > index) {
+        if (swapIndex > index) {
             // swap
             collateralTokens[index] = collateralTokens[swapIndex];
             troveManagers[index] = ITroveManager(troveManagers[swapIndex]);
@@ -107,15 +116,10 @@ contract CollateralRegistry is ICollateralRegistry {
             troveManagers[index] = ITroveManager(address(0));
         }
 
-        totalCollaterals --;
+        totalCollaterals--;
     }
 
-    struct RedemptionTotals {
-        uint256 numCollaterals;
-        uint256 boldSupplyAtStart;
-        uint256 unbacked;
-        uint256 redeemedAmount;
-    }
+    // --- Redemption functions ---
 
     function redeemCollateral(uint256 _boldAmount, uint256 _maxIterationsPerCollateral, uint256 _maxFeePercentage)
         external
@@ -147,7 +151,7 @@ contract CollateralRegistry is ICollateralRegistry {
             (uint256 unbackedPortion, uint256 price, bool redeemable) =
                 troveManager.getUnbackedPortionPriceAndRedeemability();
             prices[index] = price;
-            if (redeemable && _isWhitelistedRedeemer(troveManager, msg.sender)) {
+            if (redeemable && troveManager.isWhitelisted(msg.sender)) {
                 totals.unbacked += unbackedPortion;
                 unbackedPortions[index] = unbackedPortion;
             }
@@ -160,7 +164,7 @@ contract CollateralRegistry is ICollateralRegistry {
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
                 ITroveManager troveManager = getTroveManager(index);
                 (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
-                if (redeemable && _isWhitelistedRedeemer(troveManager, msg.sender)) {
+                if (redeemable && troveManager.isWhitelisted(msg.sender)) {
                     uint256 unbackedPortion = troveManager.getEntireBranchDebt();
                     totals.unbacked += unbackedPortion;
                     unbackedPortions[index] = unbackedPortion;
@@ -172,7 +176,7 @@ contract CollateralRegistry is ICollateralRegistry {
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
             //uint256 unbackedPortion = unbackedPortions[index];
             if (unbackedPortions[index] > 0) {
-                uint256 redeemAmount = _boldAmount * unbackedPortions[index] / totals.unbacked;
+                uint256 redeemAmount = (_boldAmount * unbackedPortions[index]) / totals.unbacked;
                 if (redeemAmount > 0) {
                     ITroveManager troveManager = getTroveManager(index);
                     uint256 redeemedAmount = troveManager.redeemCollateral(
@@ -235,7 +239,7 @@ contract CollateralRegistry is ICollateralRegistry {
         uint256 decayedBaseRate = _calcDecayedBaseRate();
 
         // get the fraction of total supply that was redeemed
-        uint256 redeemedBoldFraction = _redeemAmount * DECIMAL_PRECISION / _totalBoldSupply;
+        uint256 redeemedBoldFraction = (_redeemAmount * DECIMAL_PRECISION) / _totalBoldSupply;
 
         uint256 newBaseRate = decayedBaseRate + redeemedBoldFraction / REDEMPTION_BETA;
         newBaseRate = LiquityMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
@@ -247,7 +251,7 @@ contract CollateralRegistry is ICollateralRegistry {
         uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
         uint256 decayFactor = LiquityMath._decPow(REDEMPTION_MINUTE_DECAY_FACTOR, minutesPassed);
 
-        return baseRate * decayFactor / DECIMAL_PRECISION;
+        return (baseRate * decayFactor) / DECIMAL_PRECISION;
     }
 
     function _calcRedemptionRate(uint256 _baseRate) internal pure returns (uint256) {
@@ -258,7 +262,7 @@ contract CollateralRegistry is ICollateralRegistry {
     }
 
     function _calcRedemptionFee(uint256 _redemptionRate, uint256 _amount) internal pure returns (uint256) {
-        uint256 redemptionFee = _redemptionRate * _amount / DECIMAL_PRECISION;
+        uint256 redemptionFee = (_redemptionRate * _amount) / DECIMAL_PRECISION;
         return redemptionFee;
     }
 
@@ -303,24 +307,6 @@ contract CollateralRegistry is ICollateralRegistry {
     }
 
     // require functions
-
-    function _isWhitelistedRedeemer(ITroveManager troveManager, address redeemer) internal view returns (bool) {
-        // if a branch does not implement whitelisting, the whitelist contract address is 0
-        bool whitelisted = true;
-
-        IWhitelist whitelist = troveManager.addressRegistry().whitelist();
-
-        if(address(whitelist) != address(0)) {
-            try whitelist.isWhitelisted(address(troveManager), redeemer) returns (bool w) {
-                whitelisted = w;
-            } catch {
-                whitelisted = false;
-            }
-        }
-
-        return whitelisted;
-    }
-
     function _requireValidMaxFeePercentage(uint256 _maxFeePercentage) internal pure {
         require(
             _maxFeePercentage >= REDEMPTION_FEE_FLOOR && _maxFeePercentage <= DECIMAL_PRECISION,

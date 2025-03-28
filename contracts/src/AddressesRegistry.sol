@@ -73,6 +73,17 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
     event WETHAddressChanged(address _wethAddress);
+    event WhitelistChanged(address _whitelistAddress);
+    event WhitelistProposed(address _newWhitelistAddress);
+    event LiquidationValuesChanged(uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution);
+    event LiquidationValuesProposed(
+        uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution, uint256 timestamp
+    );
+
+    event CRsChanged(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR);
+    event CRsProposal(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR, uint256 timestamp);
+
+    // --- Constructor ---
 
     constructor(
         address _owner,
@@ -87,8 +98,12 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR();
         if (_bcr < 5e16 || _bcr >= 50e16) revert InvalidBCR();
         if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();
-        if (_liquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) revert SPPenaltyTooLow();
-        if (_liquidationPenaltySP > _liquidationPenaltyRedistribution) revert SPPenaltyGtRedist();
+        if (_liquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) {
+            revert SPPenaltyTooLow();
+        }
+        if (_liquidationPenaltySP > _liquidationPenaltyRedistribution) {
+            revert SPPenaltyGtRedist();
+        }
         if (_liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) revert RedistPenaltyTooHigh();
 
         CCR = _ccr;
@@ -101,9 +116,8 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
 
     // initialization
     function setAddresses(AddressVars memory _vars) external onlyOwner {
-        if(systemContractsInitialized)
-            revert AlreadyInitialized();
-    
+        if (systemContractsInitialized) revert AlreadyInitialized();
+
         collToken = _vars.collToken;
         borrowerOperations = _vars.borrowerOperations;
         troveManager = _vars.troveManager;
@@ -122,6 +136,7 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         collateralRegistry = _vars.collateralRegistry;
         boldToken = _vars.boldToken;
         WETH = _vars.WETH;
+        whitelist = _vars.whitelist;
         systemContractsInitialized = true;
 
         emit CollTokenAddressChanged(address(_vars.collToken));
@@ -142,34 +157,14 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         emit CollateralRegistryAddressChanged(address(_vars.collateralRegistry));
         emit BoldTokenAddressChanged(address(_vars.boldToken));
         emit WETHAddressChanged(address(_vars.WETH));
-    }
-    
-    function initializeWhitelist(address _whitelist) external onlyOwner {
-        if(whitelistInitialized)
-            revert AlreadyInitialized();
-
-        whitelist = IWhitelist(_whitelist);
-
-        whitelistInitialized = true;
-
-        emit WhitelistChanged(_whitelist);
+        emit WhitelistChanged(address(_vars.whitelist));
     }
 
     // --- WHITELIST UPDATE LOGIC ---- //
-    event WhitelistChanged(address _whitelistAddress);
-    event WhitelistProposed(address _newWhitelistAddress);
-
-    struct WhitelistProposal {
-        address whitelist; 
-        uint256 timestamp;
-    }
-    bool whitelistInitialized;
     WhitelistProposal public proposedWhitelist;
 
     // set to address 0 to remove the whitelist
     function proposeNewWhitelist(address _newWhitelist) external onlyOwner {
-        require(whitelistInitialized, "Not initalised");
-
         proposedWhitelist.whitelist = _newWhitelist;
         proposedWhitelist.timestamp = block.timestamp;
 
@@ -177,14 +172,10 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     }
 
     function acceptNewWhitelist() external onlyOwner {
-        require(
-            proposedWhitelist.timestamp + 3 days <= block.timestamp && 
-            proposedWhitelist.timestamp != 0,
-            "Invalid"
-        );
-        
+        require(proposedWhitelist.timestamp + 3 days <= block.timestamp && proposedWhitelist.timestamp != 0, "Invalid");
+
         address newWhitelist = proposedWhitelist.whitelist;
-        
+
         // update/remove whitelist
         whitelist = IWhitelist(newWhitelist);
 
@@ -195,20 +186,14 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     }
 
     // --- CRs UPDATE LOGIC ---- //
-    event CRsChanged(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR);
-    event CRsProposal(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR, uint256 timestamp);
 
-    struct CRProposal {
-        uint256 CCR;
-        uint256 MCR;
-        uint256 SCR;
-        uint256 BCR;
-        uint256 timestamp; 
-    }
+    CRProposal public proposedCR;
 
-    CRProposal public proposedCR; 
-
-    function proposeNewCollateralValues(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR) external override onlyOwner {
+    function proposeNewCollateralValues(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR)
+        external
+        override
+        onlyOwner
+    {
         if (newCCR <= 1e18 || newCCR >= 2e18) revert InvalidCCR();
         if (newMCR <= 1e18 || newMCR >= 2e18) revert InvalidMCR();
         if (newSCR <= 1e18 || newSCR >= 2e18) revert InvalidSCR();
@@ -224,41 +209,38 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     }
 
     function acceptNewCollateralValues() external override onlyOwner {
-        require(
-            proposedCR.timestamp + 3 days <= block.timestamp && 
-            proposedCR.timestamp != 0,
-            "Invalid"
-        );
+        require(proposedCR.timestamp + 3 days <= block.timestamp && proposedCR.timestamp != 0, "Invalid");
 
         CCR = proposedCR.CCR;
         SCR = proposedCR.SCR;
         MCR = proposedCR.MCR;
         BCR = proposedCR.BCR;
-        
+
         // trigger update in trove manager
-        troveManager.updateCRs(CCR, SCR, MCR, BCR);
+        troveManager.updateCRs(CCR, SCR, MCR);
+        borrowerOperations.updateCRs(CCR, SCR, MCR, BCR);
 
         // reset proposal
         delete proposedCR;
 
         emit CRsChanged(CCR, SCR, MCR, BCR);
     }
-    
-        // --- LIQUIDATION VALUES UPDATE LOGIC ---- //
-    event LiquidationValuesChanged(uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution);
-    event LiquidationValuesProposed(uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution, uint256 timestamp);
 
-    struct LiquidationValuesProposal {
-        uint256 liquidationPenaltySP;
-        uint256 liquidationPenaltyRedistribution;
-        uint256 timestamp; 
-    }
+    // --- LIQUIDATION VALUES UPDATE LOGIC ---- //
 
-    LiquidationValuesProposal public proposedLiquidationValues; 
+    LiquidationValuesProposal public proposedLiquidationValues;
 
-    function proposeNewLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newLiquidationPenaltyRedistribution) external override onlyOwner {
-        if (newLiquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) revert SPPenaltyTooLow();
-        if (newLiquidationPenaltySP > newLiquidationPenaltyRedistribution) revert SPPenaltyGtRedist();
+    function proposeNewLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newLiquidationPenaltyRedistribution)
+        external
+        override
+        onlyOwner
+    {
+        if (newLiquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) {
+            revert SPPenaltyTooLow();
+        }
+        if (newLiquidationPenaltySP > newLiquidationPenaltyRedistribution) {
+            revert SPPenaltyGtRedist();
+        }
         if (newLiquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) revert RedistPenaltyTooHigh();
 
         proposedLiquidationValues.liquidationPenaltySP = newLiquidationPenaltySP;
@@ -270,14 +252,13 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
 
     function acceptNewLiquidationValues() external override onlyOwner {
         require(
-            proposedLiquidationValues.timestamp + 3 days <= block.timestamp && 
-            proposedLiquidationValues.timestamp != 0,
+            proposedLiquidationValues.timestamp + 3 days <= block.timestamp && proposedLiquidationValues.timestamp != 0,
             "Invalid"
         );
 
         LIQUIDATION_PENALTY_SP = proposedLiquidationValues.liquidationPenaltySP;
         LIQUIDATION_PENALTY_REDISTRIBUTION = proposedLiquidationValues.liquidationPenaltyRedistribution;
-            
+
         // trigger update in trove manager
         troveManager.updateLiquidationValues(LIQUIDATION_PENALTY_SP, LIQUIDATION_PENALTY_REDISTRIBUTION);
 
@@ -286,5 +267,4 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
 
         emit LiquidationValuesChanged(LIQUIDATION_PENALTY_SP, LIQUIDATION_PENALTY_REDISTRIBUTION);
     }
-
 }

@@ -28,202 +28,91 @@ contract BoldTokenTest is DevTestSetup {
         assertEq(boldToken.allowance(A, B), UINT256_MAX, "Allowance should still be infinite");
     }
 
-    function test_propose_accept_minters_onlyOwner() external {
-        // cannot be "accepted" before initialization
-        vm.prank(boldToken.getOwner());
-        vm.expectRevert("Invalid");
-        boldToken.acceptMinterBurnerProposal();
-
-        address[] memory newMinters = new address[](2);
-        newMinters[0] = A;
-        newMinters[1] = B;
-        uint256 timestamp = block.timestamp;
-
-        address[] memory newBurners = new address[](2);
-        newBurners[0] = C;
-        newBurners[1] = D;
-
-        // only owner can propose 
+    function test_OnlyOwnerCanSetMinter() public {
         vm.expectRevert("Owned/not-owner");
-        boldToken.proposeNewMintersAndBurners(newMinters, newBurners);
+        boldToken.setMinter(address(1234), true);
 
-        vm.prank(boldToken.getOwner());
-        boldToken.proposeNewMintersAndBurners(newMinters, newBurners);
+        vm.prank(boldToken.owner());
+        boldToken.setMinter(address(1234), true);
 
-        // the proposal is stored correctly
-        BoldToken boldContract = BoldToken(address(boldToken));
-        (uint256 proposalTimestamp, address[] memory proposedMinters, address[] memory proposedBurners) = boldContract.getMinterBurnerProposal();
+        assertEq(boldToken.isMinter(address(1234)), true);
 
-        assertEq(timestamp, proposalTimestamp);
+        vm.prank(boldToken.owner());
+        boldToken.setMinter(address(1234), false);
 
-        assertEq(proposedMinters[0], A);
-        assertEq(proposedMinters[1], B);
+        assertEq(boldToken.isMinter(address(1234)), false);
+    }
 
-        assertEq(proposedBurners[0], C);
-        assertEq(proposedBurners[1], D);
-
-        // only owner can accept 
+    function test_OnlyOwnerCanSetBurner() public {
         vm.expectRevert("Owned/not-owner");
-        boldToken.acceptMinterBurnerProposal();
+        boldToken.setBurner(address(1234), true);
 
-        // cannot accept before 3 days 
-        vm.prank(boldToken.getOwner());
-        vm.expectRevert("Invalid");
-        boldToken.acceptMinterBurnerProposal();
+        vm.prank(boldToken.owner());
+        boldToken.setBurner(address(1234), true);
 
-        // roll 3 days and accept
-        vm.warp(block.timestamp + 3 days);
-        
-        vm.prank(boldToken.getOwner());
-        boldToken.acceptMinterBurnerProposal();
+        assertEq(boldToken.isBurner(address(1234)), true);
 
-        // new minters are stored
-        assertTrue(boldContract.minterAddresses(A));
-        assertTrue(boldContract.minterAddresses(B));
+        vm.prank(boldToken.owner());
+        boldToken.setBurner(address(1234), false);
 
-        // new burners are stored
-        assertTrue(boldContract.burnerAddresses(C));
-        assertTrue(boldContract.burnerAddresses(D));
-
-        // proposal is deleted
-        (proposalTimestamp, proposedMinters, proposedBurners) = boldContract.getMinterBurnerProposal();
-        assertEq(proposalTimestamp, 0);
-        assertEq(proposedMinters.length, 0);
-        assertEq(proposedBurners.length, 0);
+        assertEq(boldToken.isBurner(address(1234)), false);
     }
 
-    function test_only_minters_can_mint() external {
-        address[] memory newMinters = new address[](2);
-        newMinters[0] = A;
-        newMinters[1] = B;
-
-        address[] memory newBurners;
-    
-        _proposeAndAcceptMintersBurners(newMinters, newBurners);
-
-        // C cannot mint
-        vm.prank(C);
-        vm.expectRevert();
-        boldToken.mint(C, 100);
-
-        // mint and check balance
-        uint256 boldBalanceBefore = boldToken.balanceOf(A);
-
-        vm.prank(A);
-        boldToken.mint(A, 100);
-
-        vm.prank(B);
-        boldToken.mint(A, 100);
-
-        assertEq(boldToken.balanceOf(A), boldBalanceBefore + 200);
-
-        // minters cannot burn 
-        vm.prank(A);
-        vm.expectRevert();
-        boldToken.burn(A, 100);
-
-        vm.prank(B);
-        vm.expectRevert();
-        boldToken.burn(A, 100);
-    }
-
-    function test_only_owner_can_remove_minters() external {
-        address[] memory newMinters = new address[](2);
-        newMinters[0] = A;
-        newMinters[1] = B;
-
-        address[] memory newBurners;
-    
-        _proposeAndAcceptMintersBurners(newMinters, newBurners);
-
-        BoldToken boldContract = BoldToken(address(boldToken));
-
-        assertTrue(boldContract.minterAddresses(A));
-        assertTrue(boldContract.minterAddresses(B));
-
-        // onlyOwner can remove
+    function test_OnlyOwnerCanSetStabilityPool() public {
         vm.expectRevert("Owned/not-owner");
-        boldToken.removeMinters(newMinters);
+        boldToken.setStabilityPool(address(1234), true);
 
-        // owner remove
-        vm.prank(boldToken.getOwner());
-        boldToken.removeMinters(newMinters);
+        vm.prank(boldToken.owner());
+        boldToken.setStabilityPool(address(1234), true);
 
-        assertFalse(boldContract.minterAddresses(A));
-        assertFalse(boldContract.minterAddresses(B));
+        assertEq(boldToken.isStabilityPool(address(1234)), true);
+
+        vm.prank(boldToken.owner());
+        boldToken.setStabilityPool(address(1234), false);
+
+        assertEq(boldToken.isStabilityPool(address(1234)), false);
     }
 
-    function test_only_burners_can_burn() external {
-        address[] memory newMinters;
+    function test_OnlyMinterCanMint() public {
+        vm.expectRevert("BoldToken: Caller is not a minter");
+        boldToken.mint(address(1234), 100 ether);
 
-        address[] memory newBurners = new address[](2);
-        newBurners[0] = C;
-        newBurners[1] = D;
-        
-        _proposeAndAcceptMintersBurners(newMinters, newBurners);
+        vm.prank(boldToken.owner());
+        boldToken.setMinter(address(1234), true);
 
-        // deal tokens
-        deal(address(boldToken), A, 100);
-        assertEq(boldToken.balanceOf(A), 100);
+        vm.prank(address(1234));
+        boldToken.mint(address(1234), 100 ether);
 
-        // A cannot burn
-        vm.prank(A);
-        vm.expectRevert();
-        boldToken.burn(A, 100);
-        
-        // C and D can burn
-        vm.prank(C);
-        boldToken.burn(A, 50);
-
-        vm.prank(D);
-        boldToken.burn(A, 50);
-
-        assertEq(boldToken.balanceOf(A), 0);
-
-        // burners cannot mint
-        vm.prank(C);
-        vm.expectRevert();
-        boldToken.mint(A, 100);
-
-        vm.prank(D);
-        vm.expectRevert();
-        boldToken.mint(A, 100);
+        assertEq(boldToken.balanceOf(address(1234)), 100 ether);
     }
 
-    function test_only_owner_can_remove_burners() external {
-        address[] memory newMinters;
+    function test_OnlyBurnerCanBurn() public {
+        test_OnlyMinterCanMint();
 
-        address[] memory newBurners = new address[](2);
-        newBurners[0] = C;
-        newBurners[1] = D;
-        
-        _proposeAndAcceptMintersBurners(newMinters, newBurners);
+        vm.expectRevert("BoldToken: Caller is not a burner");
+        boldToken.burn(address(1234), 100 ether);
 
-        BoldToken boldContract = BoldToken(address(boldToken));
+        vm.prank(boldToken.owner());
+        boldToken.setBurner(address(1234), true);
 
-        assertTrue(boldContract.burnerAddresses(C));
-        assertTrue(boldContract.burnerAddresses(D));
+        vm.prank(address(1234));
+        boldToken.burn(address(1234), 100 ether);
 
-        // onlyOwner can remove
-        vm.expectRevert("Owned/not-owner");
-        boldToken.removeBurners(newBurners);
-
-        // owner remove
-        vm.prank(boldToken.getOwner());
-        boldToken.removeBurners(newBurners);
-
-        assertFalse(boldContract.burnerAddresses(C));
-        assertFalse(boldContract.burnerAddresses(D));
+        assertEq(boldToken.balanceOf(address(1234)), 0);
     }
 
-    function _proposeAndAcceptMintersBurners(address[] memory newMinters, address[] memory newBurners) internal {
-        vm.prank(boldToken.getOwner());
-        boldToken.proposeNewMintersAndBurners(newMinters, newBurners);
+    function test_StabilityPoolCanBurn() public {
+        test_OnlyMinterCanMint();
 
-        // roll 3 days and accept
-        vm.warp(block.timestamp + 3 days);
+        vm.expectRevert("BoldToken: Caller is not a burner");
+        boldToken.burn(address(1234), 100 ether);
 
-        vm.prank(boldToken.getOwner());
-        boldToken.acceptMinterBurnerProposal();
+        vm.prank(boldToken.owner());
+        boldToken.setStabilityPool(address(1234), true);
+
+        vm.prank(address(1234));
+        boldToken.burn(address(1234), 100 ether);
+
+        assertEq(boldToken.balanceOf(address(1234)), 0);
     }
 }

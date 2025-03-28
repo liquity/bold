@@ -114,7 +114,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       console.log("P2:");
       console.log(P_2.toString());
       assert.isTrue(P_2.eq(th.toBN(dec(1, 9))));
-    
+
       // A re-fills SP to same pre-liq level again
       const deposit_2 = deposit_0.sub(
         await stabilityPool.getTotalBoldDeposits(),
@@ -527,7 +527,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       // Check liq succeeds and P remains the same. // Pool depletes to 1 billion'th of prior size, so newProductFactor is 1e9.
       // Due to scale change, raw value of P should equal (1 * 1e9 * 1e9 / 1e18) = 1, i.e. should not change.
       const P_3 = await stabilityPool.P();
-      assert.isTrue(P_3.eq(th.toBN(dec(1,9))));
+      assert.isTrue(P_3.eq(th.toBN(dec(1, 9))));
       // console.log("P_3:");
       // console.log(P_3.toString());
       scale = (await stabilityPool.currentScale()).toString();
@@ -661,7 +661,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
         whale,
         whale,
         0,
-        { from: whale, value: dec(100000, "ether") }
+        { from: whale, value: dec(100000, "ether") },
       );
       assert.isTrue((await th.getTroveEntireDebtByAddress(contracts, whale)).eq(th.toBN(dec(100000, 18))));
 
@@ -674,11 +674,11 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
           account,
           account,
           0,
-          { from: account, value: dec(15, "ether") }
+          { from: account, value: dec(15, "ether") },
         );
       }
       assert.isTrue((await th.getTroveEntireDebtByAddress(contracts, A)).eq(th.toBN(dec(2000, 18))));
-      
+
       // Open 1 Trove with 16000 BOLD debt
       await th.openTroveWrapper(contracts, await getOpenTroveBoldAmount(dec(16001, 18)), E, E, 0, {
         from: E,
@@ -722,9 +722,9 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       await priceFeed.setPrice(dec(200, 18));
       // Check P remains at 1e9
       const P_2 = await stabilityPool.P();
-      assert.isTrue(P_2.eq(th.toBN(dec(1,9))));
+      assert.isTrue(P_2.eq(th.toBN(dec(1, 9))));
       console.log("P2:");
-      console.log(P_2.toString());// 1e-9
+      console.log(P_2.toString()); // 1e-9
       scale = (await stabilityPool.currentScale()).toString();
       // 2 scale changes
       assert.equal(scale, "3");
@@ -763,7 +763,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       th.assertIsApproximatelyEqual(
         A_Earned_Collateral,
         th.toBN(2 * dec(15, "ether") * 0.995),
-        1e5
+        1e5,
       );
 
       // // Here we will cache the amount of raw ETH in the stability pool contract, the totalBOLDDeposits, and the epoch counter.
@@ -813,7 +813,7 @@ contract("StabilityPool Scale Factor issue tests", async (accounts) => {
       assert.isTrue(A_Deposit_Value_2.eq(th.toBN(0)));
       const A_Earned_Collateral_2 = th.toBN(await stabilityPool.getDepositorCollGain(A));
       console.log("A's earned ETH collateral after complete liquidation LIQ4:");
-      console.log(A_Earned_Collateral_2.toString()); // 29.849999999999980026 
+      console.log(A_Earned_Collateral_2.toString()); // 29.849999999999980026
       assert.isTrue(A_Earned_Collateral_2.gt(A_Earned_Collateral));
     });
   });

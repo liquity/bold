@@ -149,8 +149,10 @@ contract TokenZapper is BaseTokenZapper {
         borrowerOperations.adjustTrove(
             _troveId, scaledCollateralChange, _isCollIncrease, _boldChange, _isDebtIncrease, _maxUpfrontFee
         );
-        
-        _adjustTrovePost(scaledCollateralChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
+
+        _adjustTrovePost(
+            scaledCollateralChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances
+        );
     }
 
     // close a trove and unwrap collateral into token
@@ -174,7 +176,6 @@ contract TokenZapper is BaseTokenZapper {
         require(success, "WZ: Sending ETH failed");
     }
 
-
     function adjustZombieTroveWithToken(
         uint256 _troveId,
         uint256 _collChange, // underlying token decimals
@@ -188,12 +189,21 @@ contract TokenZapper is BaseTokenZapper {
         InitialBalances memory initialBalances;
         (address receiver, uint256 scaledCollateralChange) =
             _adjustTrovePre(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease, initialBalances);
-        
+
         borrowerOperations.adjustZombieTrove(
-            _troveId, scaledCollateralChange, _isCollIncrease, _boldChange, _isDebtIncrease, _upperHint, _lowerHint, _maxUpfrontFee
+            _troveId,
+            scaledCollateralChange,
+            _isCollIncrease,
+            _boldChange,
+            _isDebtIncrease,
+            _upperHint,
+            _lowerHint,
+            _maxUpfrontFee
         );
-        
-        _adjustTrovePost(scaledCollateralChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances);
+
+        _adjustTrovePost(
+            scaledCollateralChange, _isCollIncrease, _boldChange, _isDebtIncrease, receiver, initialBalances
+        );
     }
 
     function _adjustTrovePre(
@@ -204,7 +214,8 @@ contract TokenZapper is BaseTokenZapper {
         bool _isDebtIncrease,
         InitialBalances memory _initialBalances
     ) internal returns (address, uint256) {
-        address receiver = _checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
+        address receiver =
+            _checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
 
         // Set initial balances to make sure there are not lefovers
         _setInitialTokensAndBalances(tokenWrapper, boldToken, _initialBalances);
@@ -213,8 +224,7 @@ contract TokenZapper is BaseTokenZapper {
         if (_isCollIncrease) {
             // wrap token
             scaledCollateralChange = _wrapTokenAndReturnScaledAmount(_collChange);
-        }
-        else {
+        } else {
             // withdraw collateral
             uint256 scalingDecimals = 18 - tokenWrapper.underlying().decimals();
             scaledCollateralChange = _collChange * (10 ** scalingDecimals);
@@ -250,11 +260,12 @@ contract TokenZapper is BaseTokenZapper {
         // But Collateral Token balance can be non-zero if someone accidentally send it to this contract
 
         // Unwrap collateral and transfer to receiver
-        if (!_isCollIncrease && _collChange > 0)
+        if (!_isCollIncrease && _collChange > 0) {
             _unwrapCollateralAndTransferToken(_collChange, _receiver);
+        }
     }
 
-    // token amount in underlying token decimals 
+    // token amount in underlying token decimals
     // collateral amount in 18 decimals
     function _wrapTokenAndReturnScaledAmount(uint256 tokenAmount) internal returns (uint256 collateralAmount) {
         uint256 collateralAmountBefore = tokenWrapper.balanceOf(address(this));

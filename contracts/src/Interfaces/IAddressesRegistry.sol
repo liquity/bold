@@ -39,6 +39,26 @@ interface IAddressesRegistry is IAddressesRegistryWhitelist {
         ICollateralRegistry collateralRegistry;
         IBoldToken boldToken;
         IWETH WETH;
+        IWhitelist whitelist;
+    }
+
+    struct WhitelistProposal {
+        address whitelist;
+        uint256 timestamp;
+    }
+
+    struct CRProposal {
+        uint256 CCR;
+        uint256 MCR;
+        uint256 SCR;
+        uint256 BCR;
+        uint256 timestamp;
+    }
+
+    struct LiquidationValuesProposal {
+        uint256 liquidationPenaltySP;
+        uint256 liquidationPenaltyRedistribution;
+        uint256 timestamp;
     }
 
     function CCR() external returns (uint256);
@@ -66,15 +86,15 @@ interface IAddressesRegistry is IAddressesRegistryWhitelist {
     function collateralRegistry() external view returns (ICollateralRegistry);
     function boldToken() external view returns (IBoldToken);
     function WETH() external returns (IWETH);
-    
-    function initializeWhitelist(address _whitelist) external;
+
     function proposeNewWhitelist(address _newWhitelist) external;
     function acceptNewWhitelist() external;
 
     function proposeNewCollateralValues(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR) external;
-    function acceptNewCollateralValues() external; 
+    function acceptNewCollateralValues() external;
 
-    function proposeNewLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newliquidationPenaltyRedistribution) external;
+    function proposeNewLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newliquidationPenaltyRedistribution)
+        external;
     function acceptNewLiquidationValues() external;
 
     function setAddresses(AddressVars memory _vars) external;

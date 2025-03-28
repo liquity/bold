@@ -17,9 +17,10 @@ contract WhitelistTestSetup is DevTestSetup {
 
     function _deployAndSetWhitelist(IAddressesRegistry addressRegistry) internal {
         whitelist = IWhitelist(address(new Whitelist(owner)));
-        
-        vm.prank(owner);
-        addressRegistry.initializeWhitelist(address(whitelist));
+
+        _proposeNewWhitelist(addressRegistry, address(whitelist));
+        vm.warp(block.timestamp + 3 days + 1);
+        _acceptNewWhitelist(addressRegistry);
     }
 
     function _addToWhitelist(address callingContract, address who) internal {
@@ -35,5 +36,5 @@ contract WhitelistTestSetup is DevTestSetup {
     function _acceptNewWhitelist(IAddressesRegistry addressRegistry) internal {
         vm.prank(owner);
         addressesRegistry.acceptNewWhitelist();
-    }    
+    }
 }

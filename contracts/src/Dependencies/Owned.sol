@@ -3,10 +3,12 @@
 
 pragma solidity 0.8.24;
 
+import "../Interfaces/IOwned.sol";
+
 // https://docs.synthetix.io/contracts/source/contracts/owned
-contract Owned {
-    address public owner;
-    address public nominatedOwner;
+contract Owned is IOwned {
+    address public override owner;
+    address public override nominatedOwner;
 
     event OwnerNominated(address newOwner);
     event OwnerChanged(address oldOwner, address newOwner);
@@ -18,17 +20,14 @@ contract Owned {
         emit OwnerChanged(address(0), _owner);
     }
 
-    function nominateNewOwner(address _owner) external virtual onlyOwner {
+    function nominateNewOwner(address _owner) external virtual override onlyOwner {
         nominatedOwner = _owner;
 
         emit OwnerNominated(_owner);
     }
 
-    function acceptOwnership() external virtual {
-        require(
-            msg.sender == nominatedOwner,
-            "Owned/not-nominated"
-        );
+    function acceptOwnership() external virtual override {
+        require(msg.sender == nominatedOwner, "Owned/not-nominated");
 
         emit OwnerChanged(owner, nominatedOwner);
 
@@ -42,9 +41,6 @@ contract Owned {
     }
 
     function _onlyOwner() private view {
-        require(
-            msg.sender == owner,
-            "Owned/not-owner"
-        );
+        require(msg.sender == owner, "Owned/not-owner");
     }
 }

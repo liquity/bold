@@ -29,9 +29,10 @@ interface ITroveManager is ILiquityBase {
     //function boldToken() external view returns (IBoldToken);
     function sortedTroves() external view returns (ISortedTroves);
     function borrowerOperations() external view returns (IBorrowerOperations);
-    function addressRegistry() external view returns (IAddressesRegistryWhitelist);
-    function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR) external;
-    function updateLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newliquidationPenaltyRedistribution) external;
+    function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR) external;
+    function updateLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newliquidationPenaltyRedistribution)
+        external;
+    function isWhitelisted(address user) external view returns (bool);
 
     function Troves(uint256 _id)
         external

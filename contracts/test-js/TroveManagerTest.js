@@ -145,7 +145,9 @@ contract("TroveManager", async (accounts) => {
     ];
     return Promise.all(
       batchManagers.map((batchManager) => (
-        borrowerOperations.registerBatchManager(0, toBN(dec(1, 18)), batchManager.interest, 0, 0, { from: batchManager.account })
+        borrowerOperations.registerBatchManager(0, toBN(dec(1, 18)), batchManager.interest, 0, 0, {
+          from: batchManager.account,
+        })
       )),
     );
   };
@@ -172,16 +174,24 @@ contract("TroveManager", async (accounts) => {
       it("liquidate(): closes a Trove that has ICR < MCR", async () => {
         await openTrove({
           ICR: toBN(dec(20, 18)),
-          extraParams: { from: whale, annualInterestRate: dec(1, 9), batchManager: getBatchManager(withBatchDelegation, janet) }
+          extraParams: {
+            from: whale,
+            annualInterestRate: dec(1, 9),
+            batchManager: getBatchManager(withBatchDelegation, janet),
+          },
         });
         const { troveId: aliceTroveId } = await openTrove({
           ICR: toBN(dec(4, 18)),
-          extraParams: { from: alice, annualInterestRate: dec(1, 9), batchManager: getBatchManager(withBatchDelegation, janet) }
+          extraParams: {
+            from: alice,
+            annualInterestRate: dec(1, 9),
+            batchManager: getBatchManager(withBatchDelegation, janet),
+          },
         });
 
         const price = await priceFeed.getPrice();
         const ICR_Before = await troveManager.getCurrentICR(aliceTroveId, price);
-        th.logBN('ICR_Before', ICR_Before)
+        th.logBN("ICR_Before", ICR_Before);
         th.assertIsApproximatelyEqual(ICR_Before, toBN(dec(4, 18)), 1e8);
 
         const MCR = (await troveManager.get_MCR()).toString();
@@ -358,14 +368,32 @@ contract("TroveManager", async (accounts) => {
 
       it("liquidate(): Removes the correct trove from the TroveIds array, and moves the last array element to the new empty slot", async () => {
         // --- SETUP ---
-        const { troveId: whaleTroveId } = await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: whaleTroveId } = await openTrove({
+          ICR: toBN(dec(10, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // Alice, Bob, Carol, Dennis, Erin open troves with consecutively decreasing collateral ratio
-        const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(218, 16)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(216, 16)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(214, 16)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: dennisTroveId } = await openTrove({ ICR: toBN(dec(212, 16)), extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: erinTroveId } = await openTrove({ ICR: toBN(dec(210, 16)), extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: aliceTroveId } = await openTrove({
+          ICR: toBN(dec(218, 16)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: bobTroveId } = await openTrove({
+          ICR: toBN(dec(216, 16)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: carolTroveId } = await openTrove({
+          ICR: toBN(dec(214, 16)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: dennisTroveId } = await openTrove({
+          ICR: toBN(dec(212, 16)),
+          extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: erinTroveId } = await openTrove({
+          ICR: toBN(dec(210, 16)),
+          extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // At this stage, TroveIds array should be: [W, A, B, C, D, E]
 
@@ -476,15 +504,27 @@ contract("TroveManager", async (accounts) => {
         // --- SETUP ---
         const { troveId: aliceTroveId } = await openTrove({
           ICR: toBN(dec(8, 18)),
-          extraParams: { from: alice, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: alice,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: bobTroveId } = await openTrove({
           ICR: toBN(dec(4, 18)),
-          extraParams: { from: bob, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, graham) },
+          extraParams: {
+            from: bob,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, graham),
+          },
         });
         const { troveId: carolTroveId } = await openTrove({
           ICR: toBN(dec(111, 16)),
-          extraParams: { from: carol, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, harriet) },
+          extraParams: {
+            from: carol,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, harriet),
+          },
         });
 
         // --- TEST ---
@@ -515,9 +555,9 @@ contract("TroveManager", async (accounts) => {
         const L_boldDebt_AfterCarolLiquidated = await troveManager.get_L_boldDebt();
 
         const L_coll_expected_1 = th
-              .applyLiquidationFee(C_collateral)
-              .mul(mv._1e18BN)
-              .div(A_collateral.add(B_collateral));
+          .applyLiquidationFee(C_collateral)
+          .mul(mv._1e18BN)
+          .div(A_collateral.add(B_collateral));
         const L_boldDebt_expected_1 = C_totalDebt.add(carolInterest).add(carolFee).mul(mv._1e18BN).div(
           A_collateral.add(B_collateral),
         );
@@ -598,7 +638,11 @@ contract("TroveManager", async (accounts) => {
       it("liquidate(): Liquidates undercollateralized trove if there are two troves in the system", async () => {
         const { troveId: bobTroveId } = await openTrove({
           ICR: toBN(dec(200, 18)),
-          extraParams: { from: bob, value: dec(100, "ether"), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: bob,
+            value: dec(100, "ether"),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
 
         // Alice creates a single trove with 0.7 ETH and a debt of 70 Bold, and provides 10 Bold to SP
@@ -616,10 +660,8 @@ contract("TroveManager", async (accounts) => {
 
         assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
-        const alice_ICR = (
-          await troveManager.getCurrentICR(aliceTroveId, price)
-        );
-        th.logBN('alice_ICR', alice_ICR)
+        const alice_ICR = await troveManager.getCurrentICR(aliceTroveId, price);
+        th.logBN("alice_ICR", alice_ICR);
         th.assertIsApproximatelyEqual(alice_ICR, toBN("1050000000000000000"), 1e10);
 
         const activeTrovesCount_Before = await troveManager.getTroveIdsCount();
@@ -644,8 +686,14 @@ contract("TroveManager", async (accounts) => {
       });
 
       it("liquidate(): reverts if trove is non-existent", async () => {
-        const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(21, 17)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: aliceTroveId } = await openTrove({
+          ICR: toBN(dec(4, 18)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: bobTroveId } = await openTrove({
+          ICR: toBN(dec(21, 17)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         assert.equal(await troveManager.getTroveStatus(th.addressToTroveId(carol)), 0); // check trove non-existent
 
@@ -665,9 +713,18 @@ contract("TroveManager", async (accounts) => {
       });
 
       it("liquidate(): reverts if trove has been closed", async () => {
-        await openTrove({ ICR: toBN(dec(8, 18)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(8, 18)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(4, 18)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: carolTroveId } = await openTrove({
+          ICR: toBN(dec(2, 18)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         assert.isTrue(await sortedTroves.contains(carolTroveId));
 
@@ -696,8 +753,14 @@ contract("TroveManager", async (accounts) => {
       });
 
       it("liquidate(): does nothing if trove has >= 110% ICR", async () => {
-        const { troveId: whaleTroveId } = await openTrove({ ICR: toBN(dec(3, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(3, 18)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: whaleTroveId } = await openTrove({
+          ICR: toBN(dec(3, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: bobTroveId } = await openTrove({
+          ICR: toBN(dec(3, 18)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         const TCR_Before = (await th.getTCR(contracts)).toString();
         const listSize_Before = (await sortedTroves.getSize()).toString();
@@ -738,10 +801,22 @@ contract("TroveManager", async (accounts) => {
         });
         await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
-        await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(70, 18)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(200, 18)), extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(10, 18)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(70, 18)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(2, 18)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(200, 18)),
+          extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         const TCR_Before = (await th.getTCR(contracts)).toString();
 
@@ -803,10 +878,22 @@ contract("TroveManager", async (accounts) => {
         });
         await th.provideToSPAndClaim(contracts, spDeposit, { from: whale });
 
-        await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(70, 18)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(200, 18)), extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(10, 18)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(70, 18)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(2, 18)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(200, 18)),
+          extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         const { troveId: defaulter_1_TroveId } = await openTrove({
           ICR: toBN(dec(202, 16)),
@@ -860,12 +947,27 @@ contract("TroveManager", async (accounts) => {
       });
 
       it("liquidate(): a pure redistribution reduces the TCR only as a result of compensation", async () => {
-        await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(4, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
-        await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(70, 18)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(2, 18)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(200, 18)), extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(10, 18)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(70, 18)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(2, 18)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(200, 18)),
+          extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         const { troveId: defaulter_1_TroveId } = await openTrove({
           ICR: toBN(dec(202, 16)),
@@ -898,8 +1000,8 @@ contract("TroveManager", async (accounts) => {
         const entireSystemDebtBefore = await troveManager.getEntireSystemDebt();
 
         const expectedTCR_0 = entireSystemCollBefore
-              .mul(price)
-              .div(entireSystemDebtBefore);
+          .mul(price)
+          .div(entireSystemDebtBefore);
 
         assert.isTrue(expectedTCR_0.eq(TCR_0));
 
@@ -914,9 +1016,9 @@ contract("TroveManager", async (accounts) => {
 
         // Expect only change to TCR to be due to the issued gas compensation
         const expectedTCR_1 = entireSystemCollBefore
-              .sub(gasComp_1)
-              .mul(price)
-              .div(entireSystemDebtBefore);
+          .sub(gasComp_1)
+          .mul(price)
+          .div(entireSystemDebtBefore);
 
         th.assertIsApproximatelyEqual(expectedTCR_1, TCR_1, 1e11);
 
@@ -927,10 +1029,10 @@ contract("TroveManager", async (accounts) => {
         const TCR_2 = await th.getTCR(contracts);
 
         const expectedTCR_2 = entireSystemCollBefore
-              .sub(gasComp_1)
-              .sub(gasComp_2)
-              .mul(price)
-              .div(entireSystemDebtBefore);
+          .sub(gasComp_1)
+          .sub(gasComp_2)
+          .mul(price)
+          .div(entireSystemDebtBefore);
 
         th.assertIsApproximatelyEqual(expectedTCR_2, TCR_2, 1e11);
 
@@ -942,11 +1044,11 @@ contract("TroveManager", async (accounts) => {
         const TCR_3 = await th.getTCR(contracts);
 
         const expectedTCR_3 = entireSystemCollBefore
-              .sub(gasComp_1)
-              .sub(gasComp_2)
-              .sub(gasComp_3)
-              .mul(price)
-              .div(entireSystemDebtBefore);
+          .sub(gasComp_1)
+          .sub(gasComp_2)
+          .sub(gasComp_3)
+          .mul(price)
+          .div(entireSystemDebtBefore);
 
         th.assertIsApproximatelyEqual(expectedTCR_3, TCR_3, 1e12);
 
@@ -957,18 +1059,21 @@ contract("TroveManager", async (accounts) => {
         const TCR_4 = await th.getTCR(contracts);
 
         const expectedTCR_4 = entireSystemCollBefore
-              .sub(gasComp_1)
-              .sub(gasComp_2)
-              .sub(gasComp_3)
-              .sub(gasComp_4)
-              .mul(price)
-              .div(entireSystemDebtBefore);
+          .sub(gasComp_1)
+          .sub(gasComp_2)
+          .sub(gasComp_3)
+          .sub(gasComp_4)
+          .mul(price)
+          .div(entireSystemDebtBefore);
 
         th.assertIsApproximatelyEqual(expectedTCR_4, TCR_4, 1e11);
       });
 
       it("liquidate(): does not affect the SP deposit or ETH gain when called on an SP depositor's address that has no trove", async () => {
-        await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(10, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         const spDeposit = toBN(dec(1, 24));
         await openTrove({
           ICR: toBN(dec(3, 18)),
@@ -1033,7 +1138,10 @@ contract("TroveManager", async (accounts) => {
       });
 
       it("liquidate(): does not liquidate a SP depositor's trove with ICR > 110%, and does not affect their SP deposit or ETH gain", async () => {
-        await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(10, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         const spDeposit = toBN(dec(1, 24));
         const { troveId: bobTroveId } = await openTrove({
           ICR: toBN(dec(3, 18)),
@@ -1099,21 +1207,40 @@ contract("TroveManager", async (accounts) => {
       it("liquidate(): liquidates a SP depositor's trove with ICR < 110%, and the liquidation correctly impacts their SP deposit and ETH gain", async () => {
         const A_spDeposit = toBN(dec(3, 24));
         const B_spDeposit = toBN(dec(1, 24));
-        await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(20, 18)),
+          extraParams: {
+            from: whale,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
+        });
         await openTrove({
           ICR: toBN(dec(8, 18)),
           extraBoldAmount: A_spDeposit,
-          extraParams: { from: alice, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: alice,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: bobTroveId, collateral: B_collateral } = await openTrove({
           ICR: toBN(dec(218, 16)),
           extraBoldAmount: B_spDeposit,
-          extraParams: { from: bob, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: bob,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: carolTroveId, collateral: C_collateral } = await openTrove({
           ICR: toBN(dec(210, 16)),
           extraBoldAmount: toBN(dec(100, 18)),
-          extraParams: { from: carol, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: carol,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
 
         // Bob provides Bold to SP
@@ -1216,7 +1343,10 @@ contract("TroveManager", async (accounts) => {
       });
 
       it("liquidate(): does not alter the liquidated user's token balance", async () => {
-        await openTrove({ ICR: toBN(dec(10, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(10, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         const { troveId: aliceTroveId, boldAmount: A_boldAmount } = await openTrove({
           ICR: toBN(dec(2, 18)),
           extraBoldAmount: toBN(dec(300, 18)),
@@ -1346,7 +1476,10 @@ contract("TroveManager", async (accounts) => {
         assert.isTrue(bob_rawICR.gte(mv._MCR));
 
         // Whale enters system, pulling it into Normal Mode
-        await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(20, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
         // Liquidate Alice, Bob, Carol
@@ -1372,9 +1505,18 @@ contract("TroveManager", async (accounts) => {
       // --- batchLiquidateTroves() ---
 
       it("batchLiquidateTroves(): liquidates based on entire/collateral debt (including pending rewards), not raw collateral/debt", async () => {
-        const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(400, 16)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(221, 16)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: aliceTroveId } = await openTrove({
+          ICR: toBN(dec(400, 16)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: bobTroveId } = await openTrove({
+          ICR: toBN(dec(221, 16)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: carolTroveId } = await openTrove({
+          ICR: toBN(dec(200, 16)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         const { troveId: defaulter_1_TroveId } = await openTrove({
           ICR: toBN(dec(200, 16)),
           extraParams: { from: defaulter_1, batchManager: getBatchManager(withBatchDelegation, dennis) },
@@ -1428,8 +1570,8 @@ contract("TroveManager", async (accounts) => {
           from: alice,
           value: toBN(dec(100, 18)),
         }),
-        // Confirm system is not below CT
-        assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
+          // Confirm system is not below CT
+          assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
         // liquidate A, B, C
         await troveManager.batchLiquidateTroves([aliceTroveId, bobTroveId, carolTroveId]);
@@ -1446,17 +1588,38 @@ contract("TroveManager", async (accounts) => {
       });
 
       it("batchLiquidateTroves():  liquidates troves with ICR < MCR", async () => {
-        const { troveId: whaleTroveId } = await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: whaleTroveId } = await openTrove({
+          ICR: toBN(dec(20, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // A, B, C open troves that will remain active when price drops to 100
-        const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(221, 16)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(230, 16)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(240, 16)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: aliceTroveId } = await openTrove({
+          ICR: toBN(dec(221, 16)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: bobTroveId } = await openTrove({
+          ICR: toBN(dec(230, 16)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: carolTroveId } = await openTrove({
+          ICR: toBN(dec(240, 16)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // D, E, F open troves that will fall below MCR when price drops to 100
-        const { troveId: dennisTroveId } = await openTrove({ ICR: toBN(dec(218, 16)), extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: erinTroveId } = await openTrove({ ICR: toBN(dec(216, 16)), extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: flynTroveId } = await openTrove({ ICR: toBN(dec(210, 16)), extraParams: { from: flyn, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: dennisTroveId } = await openTrove({
+          ICR: toBN(dec(218, 16)),
+          extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: erinTroveId } = await openTrove({
+          ICR: toBN(dec(216, 16)),
+          extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: flynTroveId } = await openTrove({
+          ICR: toBN(dec(210, 16)),
+          extraParams: { from: flyn, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // Check list size is 7
         assert.equal((await sortedTroves.getSize()).toString(), "7");
@@ -1512,12 +1675,24 @@ contract("TroveManager", async (accounts) => {
       });
 
       it("batchLiquidateTroves(): does not affect the liquidated user's token balances", async () => {
-        const { troveId: whaleTroveId } = await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: whaleTroveId } = await openTrove({
+          ICR: toBN(dec(20, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // D, E, F open troves that will fall below MCR when price drops to 100
-        const { troveId: dennisTroveId } = await openTrove({ ICR: toBN(dec(218, 16)), extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: erinTroveId } = await openTrove({ ICR: toBN(dec(216, 16)), extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: flynTroveId } = await openTrove({ ICR: toBN(dec(210, 16)), extraParams: { from: flyn, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: dennisTroveId } = await openTrove({
+          ICR: toBN(dec(218, 16)),
+          extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: erinTroveId } = await openTrove({
+          ICR: toBN(dec(216, 16)),
+          extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: flynTroveId } = await openTrove({
+          ICR: toBN(dec(210, 16)),
+          extraParams: { from: flyn, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         const D_balanceBefore = await boldToken.balanceOf(dennis);
         const E_balanceBefore = await boldToken.balanceOf(erin);
@@ -1567,10 +1742,22 @@ contract("TroveManager", async (accounts) => {
           from: whale,
         });
 
-        const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(4, 18)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(28, 18)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(8, 18)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: dennisTroveId } = await openTrove({ ICR: toBN(dec(80, 18)), extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: aliceTroveId } = await openTrove({
+          ICR: toBN(dec(4, 18)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: bobTroveId } = await openTrove({
+          ICR: toBN(dec(28, 18)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: carolTroveId } = await openTrove({
+          ICR: toBN(dec(8, 18)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: dennisTroveId } = await openTrove({
+          ICR: toBN(dec(80, 18)),
+          extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         const { troveId: defaulter_1_TroveId } = await openTrove({
           ICR: toBN(dec(199, 16)),
@@ -1711,19 +1898,19 @@ contract("TroveManager", async (accounts) => {
         const d4_coll = await troveManager.getTroveEntireColl(defaulter_4_TroveId);
 
         const totalCollNonDefaulters = W_coll.add(A_coll)
-              .add(B_coll)
-              .add(C_coll)
-              .add(D_coll);
+          .add(B_coll)
+          .add(C_coll)
+          .add(D_coll);
         const totalCollDefaulters = d1_coll.add(d2_coll).add(d3_coll).add(d4_coll);
         const totalColl = totalCollNonDefaulters.add(totalCollDefaulters);
         const totalDebt = W_debt.add(A_debt)
-              .add(B_debt)
-              .add(C_debt)
-              .add(D_debt)
-              .add(d1_debt)
-              .add(d2_debt)
-              .add(d3_debt)
-              .add(d4_debt);
+          .add(B_debt)
+          .add(C_debt)
+          .add(D_debt)
+          .add(d1_debt)
+          .add(d2_debt)
+          .add(d3_debt)
+          .add(d4_debt);
 
         const TCR_Before = await th.getTCR(contracts);
         assert.isAtMost(
@@ -1831,7 +2018,9 @@ contract("TroveManager", async (accounts) => {
         const B_coll = await troveManager.getTroveEntireColl(bobTroveId);
         const C_coll = await troveManager.getTroveEntireColl(carolTroveId);
         const liquidatedColl = A_coll.add(B_coll).add(C_coll);
-        const liquidatedCollMinusFee = th.applyLiquidationFee(A_coll).add(th.applyLiquidationFee(B_coll)).add(th.applyLiquidationFee(C_coll));
+        const liquidatedCollMinusFee = th.applyLiquidationFee(A_coll).add(th.applyLiquidationFee(B_coll)).add(
+          th.applyLiquidationFee(C_coll),
+        );
         const liquidatedDebt = A_debt.add(B_debt).add(C_debt);
 
         // Liquidate
@@ -1950,11 +2139,26 @@ contract("TroveManager", async (accounts) => {
 
       it("batchLiquidateTroves(): liquidates a Trove that a) was skipped in a previous liquidation and b) has pending rewards", async () => {
         // A, B, C, D, E open troves
-        const { troveId: CTroveId } = await openTrove({ ICR: toBN(dec(300, 16)), extraParams: { from: C, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: DTroveId } = await openTrove({ ICR: toBN(dec(364, 16)), extraParams: { from: D, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: ETroveId } = await openTrove({ ICR: toBN(dec(364, 16)), extraParams: { from: E, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: ATroveId } = await openTrove({ ICR: toBN(dec(120, 16)), extraParams: { from: A, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: BTroveId } = await openTrove({ ICR: toBN(dec(133, 16)), extraParams: { from: B, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: CTroveId } = await openTrove({
+          ICR: toBN(dec(300, 16)),
+          extraParams: { from: C, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: DTroveId } = await openTrove({
+          ICR: toBN(dec(364, 16)),
+          extraParams: { from: D, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: ETroveId } = await openTrove({
+          ICR: toBN(dec(364, 16)),
+          extraParams: { from: E, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: ATroveId } = await openTrove({
+          ICR: toBN(dec(120, 16)),
+          extraParams: { from: A, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: BTroveId } = await openTrove({
+          ICR: toBN(dec(133, 16)),
+          extraParams: { from: B, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // Price drops
         await priceFeed.setPrice(dec(175, 18));
@@ -2035,16 +2239,31 @@ contract("TroveManager", async (accounts) => {
 
       it("batchLiquidateTroves(): closes every trove with ICR < MCR in the given array", async () => {
         // --- SETUP ---
-        await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(100, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
-        const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(133, 16)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: aliceTroveId } = await openTrove({
+          ICR: toBN(dec(200, 16)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: bobTroveId } = await openTrove({
+          ICR: toBN(dec(133, 16)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: carolTroveId } = await openTrove({
+          ICR: toBN(dec(200, 16)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         const { troveId: dennisTroveId } = await openTrove({
           ICR: toBN(dec(2000, 16)),
           extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
         });
-        const { troveId: erinTroveId } = await openTrove({ ICR: toBN(dec(1800, 16)), extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: erinTroveId } = await openTrove({
+          ICR: toBN(dec(1800, 16)),
+          extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // Check full sorted list size is 6
         assert.equal((await sortedTroves.getSize()).toString(), "6");
@@ -2098,11 +2317,23 @@ contract("TroveManager", async (accounts) => {
 
       it("batchLiquidateTroves(): does not liquidate troves that are not in the given array", async () => {
         // --- SETUP ---
-        await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(100, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
-        const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(180, 16)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: aliceTroveId } = await openTrove({
+          ICR: toBN(dec(200, 16)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: bobTroveId } = await openTrove({
+          ICR: toBN(dec(180, 16)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: carolTroveId } = await openTrove({
+          ICR: toBN(dec(200, 16)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         const { troveId: dennisTroveId } = await openTrove({
           ICR: toBN(dec(200, 16)),
           extraBoldAmount: toBN(dec(500, 18)),
@@ -2167,16 +2398,31 @@ contract("TroveManager", async (accounts) => {
 
       it("batchLiquidateTroves(): does not close troves with ICR >= MCR in the given array", async () => {
         // --- SETUP ---
-        const { troveId: whaleTroveId } = await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: whaleTroveId } = await openTrove({
+          ICR: toBN(dec(100, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
-        const { troveId: aliceTroveId } = await openTrove({ ICR: toBN(dec(190, 16)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: bobTroveId } = await openTrove({ ICR: toBN(dec(120, 16)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(195, 16)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: aliceTroveId } = await openTrove({
+          ICR: toBN(dec(190, 16)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: bobTroveId } = await openTrove({
+          ICR: toBN(dec(120, 16)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        const { troveId: carolTroveId } = await openTrove({
+          ICR: toBN(dec(195, 16)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         const { troveId: dennisTroveId } = await openTrove({
           ICR: toBN(dec(2000, 16)),
           extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
         });
-        const { troveId: erinTroveId } = await openTrove({ ICR: toBN(dec(1800, 16)), extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: erinTroveId } = await openTrove({
+          ICR: toBN(dec(1800, 16)),
+          extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // Check full sorted list size is 6
         assert.equal((await sortedTroves.getSize()).toString(), "6");
@@ -2230,16 +2476,31 @@ contract("TroveManager", async (accounts) => {
 
       it("batchLiquidateTroves(): reverts if array is empty", async () => {
         // --- SETUP ---
-        await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(100, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
-        await openTrove({ ICR: toBN(dec(190, 16)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(120, 16)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(195, 16)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(190, 16)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(120, 16)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(195, 16)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         await openTrove({
           ICR: toBN(dec(2000, 16)),
           extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
         });
-        await openTrove({ ICR: toBN(dec(1800, 16)), extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(1800, 16)),
+          extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // Check full sorted list size is 6
         assert.equal((await sortedTroves.getSize()).toString(), "6");
@@ -2291,7 +2552,10 @@ contract("TroveManager", async (accounts) => {
           ICR: toBN(dec(2000, 16)),
           extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
         });
-        const { troveId: erinTroveId } = await openTrove({ ICR: toBN(dec(1800, 16)), extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: erinTroveId } = await openTrove({
+          ICR: toBN(dec(1800, 16)),
+          extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         assert.equal(await troveManager.getTroveStatus(th.addressToTroveId(carol)), 0); // check trove non-existent
 
@@ -2350,7 +2614,7 @@ contract("TroveManager", async (accounts) => {
         th.assertIsApproximatelyEqual(
           (await stabilityPool.getTotalBoldDeposits()).toString(),
           spDeposit.sub(A_debt).sub(B_debt),
-          1e14
+          1e14,
         );
 
         // Confirm system is not below CT
@@ -2374,12 +2638,18 @@ contract("TroveManager", async (accounts) => {
           ICR: toBN(dec(120, 16)),
           extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
         });
-        const { troveId: carolTroveId } = await openTrove({ ICR: toBN(dec(195, 16)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: carolTroveId } = await openTrove({
+          ICR: toBN(dec(195, 16)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         const { troveId: dennisTroveId } = await openTrove({
           ICR: toBN(dec(2000, 16)),
           extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
         });
-        const { troveId: erinTroveId } = await openTrove({ ICR: toBN(dec(1800, 16)), extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        const { troveId: erinTroveId } = await openTrove({
+          ICR: toBN(dec(1800, 16)),
+          extraParams: { from: erin, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         assert.isTrue(await sortedTroves.contains(carolTroveId));
 
@@ -2448,7 +2718,7 @@ contract("TroveManager", async (accounts) => {
         th.assertIsApproximatelyEqual(
           (await stabilityPool.getTotalBoldDeposits()).toString(),
           spDeposit.sub(A_debt).sub(B_debt),
-          1e14
+          1e14,
         );
 
         // Confirm system is not below CT
@@ -2462,17 +2732,29 @@ contract("TroveManager", async (accounts) => {
         const { troveId: aliceTroveId, totalDebt: A_totalDebt } = await openTrove({
           ICR: toBN(dec(310, 16)),
           extraBoldAmount: dec(10, 18),
-          extraParams: { from: alice, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: alice,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: bobTroveId, netDebt: B_netDebt } = await openTrove({
           ICR: toBN(dec(290, 16)),
           extraBoldAmount: dec(8, 18),
-          extraParams: { from: bob, annualInterestRate: dec(4, 16), batchManager: getBatchManager(withBatchDelegation, carol) },
+          extraParams: {
+            from: bob,
+            annualInterestRate: dec(4, 16),
+            batchManager: getBatchManager(withBatchDelegation, carol),
+          },
         });
         const { troveId: carolTroveId, netDebt: C_netDebt } = await openTrove({
           ICR: toBN(dec(250, 16)),
           extraBoldAmount: dec(10, 18),
-          extraParams: { from: carol, annualInterestRate: dec(3, 16), batchManager: getBatchManager(withBatchDelegation, bob) },
+          extraParams: {
+            from: carol,
+            annualInterestRate: dec(3, 16),
+            batchManager: getBatchManager(withBatchDelegation, bob),
+          },
         });
         const partialRedemptionAmount = toBN(2);
         const redemptionAmount = C_netDebt.add(B_netDebt).add(partialRedemptionAmount).add(toBN("5398095758126238615"));
@@ -2480,7 +2762,11 @@ contract("TroveManager", async (accounts) => {
         await openTrove({
           ICR: toBN(dec(100, 18)),
           extraBoldAmount: redemptionAmount,
-          extraParams: { from: dennis, annualInterestRate: dec(50, 16), batchManager: getBatchManager(withBatchDelegation, erin) },
+          extraParams: {
+            from: dennis,
+            annualInterestRate: dec(50, 16),
+            batchManager: getBatchManager(withBatchDelegation, erin),
+          },
         });
 
         const dennis_ETHBalance_Before = toBN(await contracts.WETH.balanceOf(dennis));
@@ -2505,7 +2791,7 @@ contract("TroveManager", async (accounts) => {
           redemptionAmount,
           10,
           th._100pct,
-          GAS_PRICE
+          GAS_PRICE,
         );
 
         const alice_debt_After = await troveManager.getTroveDebt(aliceTroveId);
@@ -2550,34 +2836,62 @@ contract("TroveManager", async (accounts) => {
 
       it("redeemCollateral(): ends the redemption sequence when the token redemption request has been filled", async () => {
         // --- SETUP ---
-        await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale, annualInterestRate: dec(90, 16), batchManager: getBatchManager(withBatchDelegation, flyn) } });
+        await openTrove({
+          ICR: toBN(dec(100, 18)),
+          extraParams: {
+            from: whale,
+            annualInterestRate: dec(90, 16),
+            batchManager: getBatchManager(withBatchDelegation, flyn),
+          },
+        });
 
         // Alice, Bob, Carol, Dennis, Erin open troves
         const { troveId: aliceTroveId, netDebt: A_debt } = await openTrove({
           ICR: toBN(dec(290, 16)),
           extraBoldAmount: dec(20, 18),
-          extraParams: { from: alice, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: alice,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: bobTroveId, netDebt: B_debt } = await openTrove({
           ICR: toBN(dec(290, 16)),
           extraBoldAmount: dec(20, 18),
-          extraParams: { from: bob, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: bob,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: carolTroveId, netDebt: C_debt } = await openTrove({
           ICR: toBN(dec(290, 16)),
           extraBoldAmount: dec(20, 18),
-          extraParams: { from: carol, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: carol,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: dennisTroveId, totalDebt: D_totalDebt, collateral: D_coll } = await openTrove({
           ICR: toBN(dec(300, 16)),
           extraBoldAmount: dec(10, 18),
-          extraParams: { from: dennis, annualInterestRate: dec(6, 16), batchManager: getBatchManager(withBatchDelegation, erin) },
+          extraParams: {
+            from: dennis,
+            annualInterestRate: dec(6, 16),
+            batchManager: getBatchManager(withBatchDelegation, erin),
+          },
         });
-        const { troveId: erinTroveId, totalDebt: E_totalDebt, netDebt: E_netDebt, collateral: E_coll } = await openTrove({
-          ICR: toBN(dec(300, 16)),
-          extraBoldAmount: dec(10, 18),
-          extraParams: { from: erin, annualInterestRate: dec(6, 16), batchManager: getBatchManager(withBatchDelegation, erin) },
-        });
+        const { troveId: erinTroveId, totalDebt: E_totalDebt, netDebt: E_netDebt, collateral: E_coll } =
+          await openTrove({
+            ICR: toBN(dec(300, 16)),
+            extraBoldAmount: dec(10, 18),
+            extraParams: {
+              from: erin,
+              annualInterestRate: dec(6, 16),
+              batchManager: getBatchManager(withBatchDelegation, erin),
+            },
+          });
 
         // --- TEST ---
 
@@ -2585,7 +2899,11 @@ contract("TroveManager", async (accounts) => {
         const { boldAmount: F_boldAmount } = await openTrove({
           ICR: toBN(dec(200, 18)),
           extraBoldAmount: A_debt.add(B_debt).add(C_debt).mul(toBN(2)),
-          extraParams: { from: flyn, annualInterestRate: dec(50, 16), batchManager: getBatchManager(withBatchDelegation, flyn) },
+          extraParams: {
+            from: flyn,
+            annualInterestRate: dec(50, 16),
+            batchManager: getBatchManager(withBatchDelegation, flyn),
+          },
         });
 
         // skip bootstrapping phase
@@ -2647,33 +2965,60 @@ contract("TroveManager", async (accounts) => {
 
       it("redeemCollateral(): ends the redemption sequence when the token redemption request has been filled", async () => {
         // --- SETUP ---
-        await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale, annualInterestRate: dec(90, 16), batchManager: getBatchManager(withBatchDelegation, whale) } });
+        await openTrove({
+          ICR: toBN(dec(100, 18)),
+          extraParams: {
+            from: whale,
+            annualInterestRate: dec(90, 16),
+            batchManager: getBatchManager(withBatchDelegation, whale),
+          },
+        });
 
         // Alice, Bob, Carol, Dennis, Erin open troves
         const { troveId: aliceTroveId, netDebt: A_debt } = await openTrove({
           ICR: toBN(dec(290, 16)),
           extraBoldAmount: dec(20, 18),
-          extraParams: { from: alice, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: alice,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: bobTroveId, netDebt: B_debt } = await openTrove({
           ICR: toBN(dec(290, 16)),
           extraBoldAmount: dec(20, 18),
-          extraParams: { from: bob, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: bob,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: carolTroveId, netDebt: C_debt } = await openTrove({
           ICR: toBN(dec(290, 16)),
           extraBoldAmount: dec(20, 18),
-          extraParams: { from: carol, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: carol,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: dennisTroveId, totalDebt: D_totalDebt, collateral: D_coll } = await openTrove({
           ICR: toBN(dec(300, 16)),
           extraBoldAmount: dec(10, 18),
-          extraParams: { from: dennis, annualInterestRate: dec(6, 16), batchManager: getBatchManager(withBatchDelegation, erin) },
+          extraParams: {
+            from: dennis,
+            annualInterestRate: dec(6, 16),
+            batchManager: getBatchManager(withBatchDelegation, erin),
+          },
         });
         const { troveId: erinTroveId, totalDebt: E_totalDebt, collateral: E_coll } = await openTrove({
           ICR: toBN(dec(300, 16)),
           extraBoldAmount: dec(10, 18),
-          extraParams: { from: erin, annualInterestRate: dec(6, 16), batchManager: getBatchManager(withBatchDelegation, erin) },
+          extraParams: {
+            from: erin,
+            annualInterestRate: dec(6, 16),
+            batchManager: getBatchManager(withBatchDelegation, erin),
+          },
         });
 
         // --- TEST ---
@@ -2682,7 +3027,11 @@ contract("TroveManager", async (accounts) => {
         const { troveId: flynTroveId, boldAmount: F_boldAmount } = await openTrove({
           ICR: toBN(dec(200, 18)),
           extraBoldAmount: A_debt.add(B_debt).add(C_debt).mul(toBN(2)),
-          extraParams: { from: flyn, annualInterestRate: dec(50, 16), batchManager: getBatchManager(withBatchDelegation, flyn) },
+          extraParams: {
+            from: flyn,
+            annualInterestRate: dec(50, 16),
+            batchManager: getBatchManager(withBatchDelegation, flyn),
+          },
         });
 
         // skip bootstrapping phase
@@ -2752,23 +3101,42 @@ contract("TroveManager", async (accounts) => {
 
       it("redeemCollateral(): ends the redemption sequence when max iterations have been reached", async () => {
         // --- SETUP ---
-        await openTrove({ ICR: toBN(dec(100, 18)), extraParams: { from: whale, annualInterestRate: dec(90, 16), batchManager: getBatchManager(withBatchDelegation, whale) } });
+        await openTrove({
+          ICR: toBN(dec(100, 18)),
+          extraParams: {
+            from: whale,
+            annualInterestRate: dec(90, 16),
+            batchManager: getBatchManager(withBatchDelegation, whale),
+          },
+        });
 
         // Alice, Bob, Carol open troves with equal collateral ratio
         const { troveId: aliceTroveId, netDebt: A_debt, totalDebt: A_totalDebt } = await openTrove({
           ICR: toBN(dec(286, 16)),
           extraBoldAmount: dec(20, 18),
-          extraParams: { from: alice, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: alice,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: bobTroveId, netDebt: B_debt, totalDebt: B_totalDebt } = await openTrove({
           ICR: toBN(dec(286, 16)),
           extraBoldAmount: dec(20, 18),
-          extraParams: { from: bob, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: bob,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: carolTroveId, netDebt: C_debt, totalDebt: C_totalDebt } = await openTrove({
           ICR: toBN(dec(286, 16)),
           extraBoldAmount: dec(20, 18),
-          extraParams: { from: carol, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: carol,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
 
         // --- TEST ---
@@ -2777,7 +3145,11 @@ contract("TroveManager", async (accounts) => {
         const { troveId: flynTroveId, boldAmount: F_boldAmount } = await openTrove({
           ICR: toBN(dec(200, 18)),
           extraBoldAmount: C_debt.add(B_debt).mul(toBN(2)),
-          extraParams: { from: flyn, annualInterestRate: dec(95, 16), batchManager: getBatchManager(withBatchDelegation, ida) },
+          extraParams: {
+            from: flyn,
+            annualInterestRate: dec(95, 16),
+            batchManager: getBatchManager(withBatchDelegation, ida),
+          },
         });
 
         // skip bootstrapping phase
@@ -2805,7 +3177,7 @@ contract("TroveManager", async (accounts) => {
         th.assertIsApproximatelyEqual(
           flynBalance,
           F_boldAmount.sub(redemptionAmount),
-          1e15
+          1e15,
         );
 
         // Check debt of Alice, Bob, Carol
@@ -2885,7 +3257,13 @@ contract("TroveManager", async (accounts) => {
 
         // A's remaining debt = 29800 + 19800 + 9800 + 200 - 55000 = 4600, + interest
         const A_debt = await troveManager.getTroveDebt(ATroveId);
-        await th.assertIsApproximatelyEqual(A_debt, AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55000, 18))).add(interestA).add(interestB).add(interestC), 6e15);
+        await th.assertIsApproximatelyEqual(
+          A_debt,
+          AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55000, 18))).add(interestA).add(interestB).add(
+            interestC,
+          ),
+          6e15,
+        );
       });
 
       it("redeemCollateral(): hits trove even if resultant debt would be < minimum net debt", async () => {
@@ -2949,7 +3327,13 @@ contract("TroveManager", async (accounts) => {
         // A's remaining debt would be 29800 + 19800 + 6000 - 55000 + interest = 600 + interest.
         // This is below the min net debt of 2000, but still it’s redeemed and debt gets reduced
         const A_debt = await troveManager.getTroveDebt(ATroveId);
-        await th.assertIsApproximatelyEqual(A_debt, AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55000, 18))).add(interestA).add(interestB).add(interestC), 6e15);
+        await th.assertIsApproximatelyEqual(
+          A_debt,
+          AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55000, 18))).add(interestA).add(interestB).add(
+            interestC,
+          ),
+          6e15,
+        );
       });
 
       // active debt cannot be zero, as there’s a positive min debt enforced, and at least a trove must exist
@@ -2957,7 +3341,10 @@ contract("TroveManager", async (accounts) => {
         // --- SETUP ---
 
         const amount = await getOpenTroveBoldAmount(dec(2110, 18));
-        await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(20, 18)),
+          extraParams: { from: alice, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
         const { troveId: bobTroveId } = await openTrove({
           ICR: toBN(dec(133, 16)),
           extraBoldAmount: amount,
@@ -3009,12 +3396,20 @@ contract("TroveManager", async (accounts) => {
 
         const { troveId: aliceTroveId, netDebt: A_debt } = await openTrove({
           ICR: toBN(dec(13, 18)),
-          extraParams: { from: alice, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: alice,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: bobTroveId, boldAmount: B_boldAmount, totalDebt: B_totalDebt } = await openTrove({
           ICR: toBN(dec(133, 16)),
           extraBoldAmount: A_debt,
-          extraParams: { from: bob, annualInterestRate: dec(4, 16), batchManager: getBatchManager(withBatchDelegation, carol) },
+          extraParams: {
+            from: bob,
+            annualInterestRate: dec(4, 16),
+            batchManager: getBatchManager(withBatchDelegation, carol),
+          },
         });
 
         await boldToken.transfer(carol, B_boldAmount, { from: bob });
@@ -3048,7 +3443,10 @@ contract("TroveManager", async (accounts) => {
       });
 
       it("redeemCollateral(): reverts when argument _amount is 0", async () => {
-        await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(20, 18)),
+          extraParams: { from: whale, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // Alice opens trove and transfers 500Bold to Erin, the would-be redeemer
         await openTrove({
@@ -3059,9 +3457,18 @@ contract("TroveManager", async (accounts) => {
         await boldToken.transfer(erin, dec(500, 18), { from: alice });
 
         // B, C and D open troves
-        await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) } });
-        await openTrove({ ICR: toBN(dec(200, 16)), extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) } });
+        await openTrove({
+          ICR: toBN(dec(200, 16)),
+          extraParams: { from: bob, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(200, 16)),
+          extraParams: { from: carol, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
+        await openTrove({
+          ICR: toBN(dec(200, 16)),
+          extraParams: { from: dennis, batchManager: getBatchManager(withBatchDelegation, dennis) },
+        });
 
         // skip bootstrapping phase
         await time.increase(timeValues.SECONDS_IN_ONE_WEEK * 2);
@@ -3281,38 +3688,65 @@ contract("TroveManager", async (accounts) => {
       });
 
       it("redeemCollateral(): doesn't affect the Stability Pool deposits or ETH gain of redeemed-from troves", async () => {
-        await openTrove({ ICR: toBN(dec(20, 18)), extraParams: { from: whale, annualInterestRate: dec(90, 16), batchManager: getBatchManager(withBatchDelegation, whale) } });
+        await openTrove({
+          ICR: toBN(dec(20, 18)),
+          extraParams: {
+            from: whale,
+            annualInterestRate: dec(90, 16),
+            batchManager: getBatchManager(withBatchDelegation, whale),
+          },
+        });
 
         // B, C, D, F open trove
         const { troveId: bobTroveId, totalDebt: B_totalDebt } = await openTrove({
           ICR: toBN(dec(200, 16)),
           extraBoldAmount: dec(100, 18),
-          extraParams: { from: bob, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: bob,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: carolTroveId, totalDebt: C_totalDebt } = await openTrove({
           ICR: toBN(dec(195, 16)),
           extraBoldAmount: dec(200, 18),
-          extraParams: { from: carol, annualInterestRate: dec(4, 16), batchManager: getBatchManager(withBatchDelegation, carol) },
+          extraParams: {
+            from: carol,
+            annualInterestRate: dec(4, 16),
+            batchManager: getBatchManager(withBatchDelegation, carol),
+          },
         });
         const { troveId: dennisTroveId, totalDebt: D_totalDebt } = await openTrove({
           ICR: toBN(dec(190, 16)),
           extraBoldAmount: dec(400, 18),
-          extraParams: { from: dennis, annualInterestRate: dec(3, 16), batchManager: getBatchManager(withBatchDelegation, bob) },
+          extraParams: {
+            from: dennis,
+            annualInterestRate: dec(3, 16),
+            batchManager: getBatchManager(withBatchDelegation, bob),
+          },
         });
         const { troveId: flynTroveId, totalDebt: F_totalDebt } = await openTrove({
           ICR: toBN(dec(200, 16)),
           extraBoldAmount: dec(100, 18),
-          extraParams: { from: flyn, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: flyn,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
 
         const redemptionAmount = B_totalDebt.add(C_totalDebt)
-              .add(D_totalDebt)
-              .add(F_totalDebt);
+          .add(D_totalDebt)
+          .add(F_totalDebt);
         // Alice opens trove and transfers Bold to Erin, the would-be redeemer
         await openTrove({
           ICR: toBN(dec(300, 16)),
           extraBoldAmount: redemptionAmount,
-          extraParams: { from: alice, annualInterestRate: dec(10, 16), batchManager: getBatchManager(withBatchDelegation, flyn) },
+          extraParams: {
+            from: alice,
+            annualInterestRate: dec(10, 16),
+            batchManager: getBatchManager(withBatchDelegation, flyn),
+          },
         });
         await boldToken.transfer(erin, redemptionAmount, { from: alice });
 
@@ -3464,9 +3898,9 @@ contract("TroveManager", async (accounts) => {
         const D_coll = await troveManager.getTroveEntireColl(dennisTroveId);
 
         const totalDebt = W_totalDebt.add(A_totalDebt)
-              .add(B_totalDebt)
-              .add(C_totalDebt)
-              .add(D_totalDebt);
+          .add(B_totalDebt)
+          .add(C_totalDebt)
+          .add(D_totalDebt);
         const totalColl = W_coll.add(A_coll).add(B_coll).add(C_coll).add(D_coll);
 
         // Get active debt and coll before redemption
@@ -3495,7 +3929,7 @@ contract("TroveManager", async (accounts) => {
         th.assertIsApproximatelyEqual(
           activePool_debt_before.sub(activePool_debt_after),
           toBN(dec(400, 18)),
-          1e14
+          1e14,
         );
 
         /* Check ActivePool coll reduced by $400 worth of Ether: at ETH:USD price of $200, this should be 2 ETH.
@@ -3555,9 +3989,9 @@ contract("TroveManager", async (accounts) => {
         const D_totalDebt = await troveManager.getTroveEntireDebt(dennisTroveId);
 
         const totalDebt = W_totalDebt.add(A_totalDebt)
-              .add(B_totalDebt)
-              .add(C_totalDebt)
-              .add(D_totalDebt);
+          .add(B_totalDebt)
+          .add(C_totalDebt)
+          .add(D_totalDebt);
         const totalColl = W_coll.add(A_coll).add(B_coll).add(C_coll).add(D_coll);
 
         // Get active debt and coll before redemption
@@ -3915,32 +4349,52 @@ contract("TroveManager", async (accounts) => {
         const { netDebt: W_netDebt } = await openTrove({
           ICR: toBN(dec(20, 18)),
           extraBoldAmount: dec(10000, 18),
-          extraParams: { from: whale, annualInterestRate: dec(50, 16), batchManager: getBatchManager(withBatchDelegation, whale) },
+          extraParams: {
+            from: whale,
+            annualInterestRate: dec(50, 16),
+            batchManager: getBatchManager(withBatchDelegation, whale),
+          },
         });
 
         const { troveId: ATroveId, netDebt: A_netDebt } = await openTrove({
           ICR: toBN(dec(200, 16)),
           extraBoldAmount: dec(100, 18),
-          extraParams: { from: A, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: A,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: BTroveId, netDebt: B_netDebt } = await openTrove({
           ICR: toBN(dec(190, 16)),
           extraBoldAmount: dec(100, 18),
-          extraParams: { from: B, annualInterestRate: dec(4, 16), batchManager: getBatchManager(withBatchDelegation, carol) },
+          extraParams: {
+            from: B,
+            annualInterestRate: dec(4, 16),
+            batchManager: getBatchManager(withBatchDelegation, carol),
+          },
         });
         const { troveId: CTroveId, netDebt: C_netDebt } = await openTrove({
           ICR: toBN(dec(180, 16)),
           extraBoldAmount: dec(100, 18),
-          extraParams: { from: C, annualInterestRate: dec(3, 16), batchManager: getBatchManager(withBatchDelegation, bob) },
+          extraParams: {
+            from: C,
+            annualInterestRate: dec(3, 16),
+            batchManager: getBatchManager(withBatchDelegation, bob),
+          },
         });
         const { troveId: DTroveId, netDebt: D_netDebt } = await openTrove({
           ICR: toBN(dec(280, 16)),
           extraBoldAmount: dec(100, 18),
-          extraParams: { from: D, annualInterestRate: dec(10, 16), batchManager: getBatchManager(withBatchDelegation, flyn) },
+          extraParams: {
+            from: D,
+            annualInterestRate: dec(10, 16),
+            batchManager: getBatchManager(withBatchDelegation, flyn),
+          },
         });
         const redemptionAmount = A_netDebt.add(B_netDebt)
-              .add(C_netDebt)
-              .add(toBN(dec(10, 18)));
+          .add(C_netDebt)
+          .add(toBN(dec(10, 18)));
 
         const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
         const B_balanceBefore = toBN(await contracts.WETH.balanceOf(B));
@@ -3958,39 +4412,59 @@ contract("TroveManager", async (accounts) => {
         assert.isTrue(await sortedTroves.contains(DTroveId));
       });
 
-      const redeemCollateral3Full1Partial = async (close=false) => {
+      const redeemCollateral3Full1Partial = async (close = false) => {
         // time fast-forwards 1 year, and multisig stakes 1 LQTY
         await time.increase(timeValues.SECONDS_IN_ONE_YEAR);
 
         const { netDebt: W_netDebt } = await openTrove({
           ICR: toBN(dec(20, 18)),
           extraBoldAmount: dec(10000, 18),
-          extraParams: { from: whale, annualInterestRate: dec(90, 16), batchManager: getBatchManager(withBatchDelegation, whale) },
+          extraParams: {
+            from: whale,
+            annualInterestRate: dec(90, 16),
+            batchManager: getBatchManager(withBatchDelegation, whale),
+          },
         });
 
         const { troveId: ATroveId, netDebt: A_netDebt, collateral: A_coll } = await openTrove({
           ICR: toBN(dec(200, 16)),
           extraBoldAmount: dec(100, 18),
-          extraParams: { from: A, annualInterestRate: dec(5, 16), batchManager: getBatchManager(withBatchDelegation, dennis) },
+          extraParams: {
+            from: A,
+            annualInterestRate: dec(5, 16),
+            batchManager: getBatchManager(withBatchDelegation, dennis),
+          },
         });
         const { troveId: BTroveId, netDebt: B_netDebt, collateral: B_coll } = await openTrove({
           ICR: toBN(dec(190, 16)),
           extraBoldAmount: dec(100, 18),
-          extraParams: { from: B, annualInterestRate: dec(4, 16), batchManager: getBatchManager(withBatchDelegation, carol) },
+          extraParams: {
+            from: B,
+            annualInterestRate: dec(4, 16),
+            batchManager: getBatchManager(withBatchDelegation, carol),
+          },
         });
         const { troveId: CTroveId, netDebt: C_netDebt, collateral: C_coll } = await openTrove({
           ICR: toBN(dec(180, 16)),
           extraBoldAmount: dec(100, 18),
-          extraParams: { from: C, annualInterestRate: dec(3, 16), batchManager: getBatchManager(withBatchDelegation, bob) },
+          extraParams: {
+            from: C,
+            annualInterestRate: dec(3, 16),
+            batchManager: getBatchManager(withBatchDelegation, bob),
+          },
         });
         const { troveId: DTroveId, netDebt: D_netDebt } = await openTrove({
           ICR: toBN(dec(280, 16)),
           extraBoldAmount: dec(100, 18),
-          extraParams: { from: D, annualInterestRate: dec(10, 16), batchManager: getBatchManager(withBatchDelegation, flyn) },
+          extraParams: {
+            from: D,
+            annualInterestRate: dec(10, 16),
+            batchManager: getBatchManager(withBatchDelegation, flyn),
+          },
         });
         const redemptionAmount = A_netDebt.add(B_netDebt)
-              .add(C_netDebt)
-              .add(toBN(dec(10, 18)));
+          .add(C_netDebt)
+          .add(toBN(dec(10, 18)));
 
         const A_balanceBefore = toBN(await contracts.WETH.balanceOf(A));
         const B_balanceBefore = toBN(await contracts.WETH.balanceOf(B));
@@ -4011,7 +4485,7 @@ contract("TroveManager", async (accounts) => {
         const interestB = await troveManager.calcTroveAccruedInterest(BTroveId);
         const interestC = await troveManager.calcTroveAccruedInterest(CTroveId);
         const price = toBN(await priceFeed.getPrice());
-        const priceWithoutDecimals = price.div(toBN(dec(1,18)));
+        const priceWithoutDecimals = price.div(toBN(dec(1, 18)));
         const ETHFee = await contracts.troveManager.getEffectiveRedemptionFeeInColl(redemptionAmount, price);
 
         // whale redeems Bold.  Expect this to fully redeem A, B, C, and partially redeem D.
@@ -4038,24 +4512,30 @@ contract("TroveManager", async (accounts) => {
         const A_debtToEth = A_netDebt.add(interestA).div(priceWithoutDecimals);
         const B_debtToEth = B_netDebt.add(interestB).div(priceWithoutDecimals);
         const C_debtToEth = C_netDebt.add(interestC).div(priceWithoutDecimals);
-        const A_surplus = A_collBefore.sub(A_debtToEth).add(ETHFee.mul(A_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)));
-        const B_surplus = B_collBefore.sub(B_debtToEth).add(ETHFee.mul(B_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)));
-        const C_surplus = C_collBefore.sub(C_debtToEth).add(ETHFee.mul(C_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)));
+        const A_surplus = A_collBefore.sub(A_debtToEth).add(
+          ETHFee.mul(A_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)),
+        );
+        const B_surplus = B_collBefore.sub(B_debtToEth).add(
+          ETHFee.mul(B_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)),
+        );
+        const C_surplus = C_collBefore.sub(C_debtToEth).add(
+          ETHFee.mul(C_debtToEth).div(redemptionAmount.div(priceWithoutDecimals)),
+        );
 
         th.assertIsApproximatelyEqual(
           A_collAfter,
           A_surplus,
-          1e13
+          1e13,
         );
         th.assertIsApproximatelyEqual(
           B_collAfter,
           B_surplus,
-          1e13
+          1e13,
         );
         th.assertIsApproximatelyEqual(
           C_collAfter,
           C_surplus,
-          1e13
+          1e13,
         );
 
         // check D's trove collateral balances have decreased (the partially redeemed-from trove)
@@ -4091,17 +4571,17 @@ contract("TroveManager", async (accounts) => {
           th.assertIsApproximatelyEqual(
             A_balanceAfterClose,
             A_balanceAfter.add(A_surplus).add(ETH_GAS_COMPENSATION),
-            1e13
+            1e13,
           );
           th.assertIsApproximatelyEqual(
             B_balanceAfterClose,
             B_balanceAfter.add(B_surplus).add(ETH_GAS_COMPENSATION),
-            1e13
+            1e13,
           );
           th.assertIsApproximatelyEqual(
             C_balanceAfterClose,
             C_balanceAfter.add(C_surplus).add(ETH_GAS_COMPENSATION),
-            1e13
+            1e13,
           );
         }
 
@@ -4129,9 +4609,9 @@ contract("TroveManager", async (accounts) => {
         const B_balanceAfter = toBN(await contracts.WETH.balanceOf(B));
         const C_balanceAfter = toBN(await contracts.WETH.balanceOf(C));
 
-        assert.equal(A_balanceAfter.toString(), A_balanceBefore.toString(),);
-        assert.equal(B_balanceAfter.toString(), B_balanceBefore.toString(),);
-        assert.equal(C_balanceAfter.toString(), C_balanceBefore.toString(),);
+        assert.equal(A_balanceAfter.toString(), A_balanceBefore.toString());
+        assert.equal(B_balanceAfter.toString(), B_balanceBefore.toString());
+        assert.equal(C_balanceAfter.toString(), C_balanceBefore.toString());
       });
 
       it("redeemCollateral(): a redemption that closes a trove leaves the trove's ETH surplus (collateral - ETH drawn) available for the trove owner after re-opening trove", async () => {

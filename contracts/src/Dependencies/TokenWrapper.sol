@@ -8,20 +8,20 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 
 import {ITokenWrapper} from "../Interfaces/ITokenWrapper.sol";
 
-// token wrapper with decimal scaling 
+// token wrapper with decimal scaling
 contract TokenWrapper is ERC20, ITokenWrapper {
     IERC20Metadata private immutable _underlying;
 
-    uint256 private immutable _underlyingDecimals; 
+    uint256 private immutable _underlyingDecimals;
 
-    constructor(IERC20Metadata underlyingToken) 
+    constructor(IERC20Metadata underlyingToken)
         ERC20(
-            string(abi.encodePacked("Wrapped ", underlyingToken.name())), 
+            string(abi.encodePacked("Wrapped ", underlyingToken.name())),
             string(abi.encodePacked("w", underlyingToken.symbol()))
-        ) 
+        )
     {
         _underlying = underlyingToken;
-        _underlyingDecimals =  underlyingToken.decimals(); 
+        _underlyingDecimals = underlyingToken.decimals();
 
         require(_underlyingDecimals <= 18, "Max 18 underlying decimals");
     }
@@ -35,17 +35,17 @@ contract TokenWrapper is ERC20, ITokenWrapper {
         address sender = msg.sender;
         require(sender != address(this), "Wrapper can't deposit");
         SafeERC20.safeTransferFrom(_underlying, sender, address(this), amount);
-        
+
         uint256 scaledAmount = amount * 10 ** (18 - _underlyingDecimals);
         _mint(sender, scaledAmount);
     }
 
     // amount in wrapped token decimals (18)
-    function withdraw(uint256 amount) external override{
+    function withdraw(uint256 amount) external override {
         address sender = msg.sender;
 
         _burn(sender, amount);
-        
+
         uint256 scaledAmount = amount / 10 ** (18 - _underlyingDecimals);
 
         SafeERC20.safeTransfer(_underlying, sender, scaledAmount);

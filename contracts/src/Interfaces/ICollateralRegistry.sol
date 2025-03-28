@@ -7,7 +7,18 @@ import "./IBoldToken.sol";
 import "./ITroveManager.sol";
 
 interface ICollateralRegistry {
-    function addNewCollaterals(uint256[] memory _indexes, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers) external;
+    struct RedemptionTotals {
+        uint256 numCollaterals;
+        uint256 boldSupplyAtStart;
+        uint256 unbacked;
+        uint256 redeemedAmount;
+    }
+
+    function addNewCollaterals(
+        uint256[] memory _indexes,
+        IERC20Metadata[] memory _tokens,
+        ITroveManager[] memory _troveManagers
+    ) external;
     function removeCollateral(uint256 index) external;
 
     function baseRate() external view returns (uint256);

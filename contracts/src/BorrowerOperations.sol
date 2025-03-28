@@ -33,23 +33,23 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
     uint256 public CCR;
 
-    // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
-    // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    uint256 public SCR;
-    bool public hasBeenShutDown;
-
     // Minimum collateral ratio for individual troves
     uint256 public MCR;
 
     // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
     uint256 public BCR;
 
+    // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
+    // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
+    uint256 public SCR;
+    bool public hasBeenShutDown;
+
     /*
-    * Mapping from TroveId to individual delegate for interest rate setting.
-    *
-    * This address then has the ability to update the borrower’s interest rate, but not change its debt or collateral.
-    * Useful for instance for cold/hot wallet setups.
-    */
+     * Mapping from TroveId to individual delegate for interest rate setting.
+     *
+     * This address then has the ability to update the borrower’s interest rate, but not change its debt or collateral.
+     * Useful for instance for cold/hot wallet setups.
+     */
     mapping(uint256 => InterestIndividualDelegate) private interestIndividualDelegateOf;
 
     /*
@@ -153,7 +153,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error AnnualManagementFeeTooHigh();
     error MinInterestRateChangePeriodTooLow();
     error NewOracleFailureDetected();
-    error NotWhitelisted();
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event GasPoolAddressChanged(address _gasPoolAddress);
@@ -198,13 +197,13 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
     // --- Contracts update logic ---
     function updateCRs(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR) external override {
-        _requireCallerIsTroveManager();
-       
-        MCR = newMCR;        
+        _requireCallerIsAddressesRegistry();
+
+        MCR = newMCR;
         CCR = newCCR;
         SCR = newSCR;
         BCR = newBCR;
-    
+
         emit CRsChanged(newCCR, newSCR, newMCR, newBCR);
     }
 
@@ -224,13 +223,15 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         address _receiver
     ) external override returns (uint256) {
         _requireValidAnnualInterestRate(_annualInterestRate);
-        
-        IWhitelist whitelist = troveManager.addressRegistry().whitelist();
-        _requireWhitelisted(whitelist, _owner);
-        _requireWhitelisted(whitelist, msg.sender);
-        
-        if(_receiver != address(0))
-            _requireWhitelisted(whitelist, _receiver);
+
+        IWhitelist _whitelist = whitelist;
+        if (address(_whitelist) != address(0)) {
+            _requireWhitelisted(_whitelist, _owner);
+            _requireWhitelisted(_whitelist, msg.sender);
+            if (_receiver != address(0)) {
+                _requireWhitelisted(whitelist, _receiver);
+            }
+        }
 
         OpenTroveVars memory vars;
 
@@ -264,13 +265,15 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         returns (uint256)
     {
         _requireValidInterestBatchManager(_params.interestBatchManager);
-        
-        IWhitelist whitelist = troveManager.addressRegistry().whitelist();
-        _requireWhitelisted(whitelist, _params.owner);
-        _requireWhitelisted(whitelist, msg.sender);
-        
-        if(_params.receiver != address(0))
-            _requireWhitelisted(whitelist, _params.receiver);
+
+        IWhitelist _whitelist = whitelist;
+        if (address(_whitelist) != address(0)) {
+            _requireWhitelisted(_whitelist, _params.owner);
+            _requireWhitelisted(_whitelist, msg.sender);
+            if (_params.receiver != address(0)) {
+                _requireWhitelisted(_whitelist, _params.receiver);
+            }
+        }
 
         OpenTroveVars memory vars;
         vars.troveManager = troveManager;
@@ -578,8 +581,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     /*
-    * _adjustTrove(): Alongside a debt change, this function can perform either a collateral top-up or a collateral withdrawal.
-    */
+     * _adjustTrove(): Alongside a debt change, this function can perform either a collateral top-up or a collateral withdrawal.
+     */
     function _adjustTrove(
         ITroveManager _troveManager,
         uint256 _troveId,
@@ -885,8 +888,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireInterestRateInRange(_currentInterestRate, _minInterestRate, _maxInterestRate);
         // Not needed, implicitly checked in the condition above:
         //_requireValidAnnualInterestRate(_currentInterestRate);
-        if (_annualManagementFee > MAX_ANNUAL_BATCH_MANAGEMENT_FEE) revert AnnualManagementFeeTooHigh();
-        if (_minInterestRateChangePeriod < MIN_INTEREST_RATE_CHANGE_PERIOD) revert MinInterestRateChangePeriodTooLow();
+        if (_annualManagementFee > MAX_ANNUAL_BATCH_MANAGEMENT_FEE) {
+            revert AnnualManagementFeeTooHigh();
+        }
+        if (_minInterestRateChangePeriod < MIN_INTEREST_RATE_CHANGE_PERIOD) {
+            revert MinInterestRateChangePeriodTooLow();
+        }
 
         interestBatchManagers[msg.sender] =
             InterestBatchManager(_minInterestRate, _maxInterestRate, _minInterestRateChangePeriod);
@@ -1007,7 +1014,9 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         interestBatchManagerOf[_troveId] = _newBatchManager;
         // Can’t have both individual delegation and batch manager
-        if (interestIndividualDelegateOf[_troveId].account != address(0)) delete interestIndividualDelegateOf[_troveId];
+        if (interestIndividualDelegateOf[_troveId].account != address(0)) {
+            delete interestIndividualDelegateOf[_troveId];
+        }
 
         vars.trove = vars.troveManager.getLatestTroveData(_troveId);
         vars.newBatch = vars.troveManager.getLatestBatchData(_newBatchManager);
@@ -1207,8 +1216,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         // If the oracle failed, the above call to PriceFeed will have shut this branch down
         if (newOracleFailureDetected) return;
 
-        // check if caller is branch owner 
-        bool isBranchOwner = msg.sender == boldToken.getOwner();
+        // check if caller is branch owner
+        bool isBranchOwner = msg.sender == boldToken.owner();
 
         // Otherwise, proceed with the TCR check:
         uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);
@@ -1291,22 +1300,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     // --- 'Require' wrapper functions ---
-    function _requireWhitelisted(IWhitelist whitelist, address user) internal view {
-        bool whitelisted = true;
-        
-        if(address(whitelist) != address(0)) {
-            try whitelist.isWhitelisted(address(this), user) returns (bool w) {
-                whitelisted = w;
-            } catch {
-                whitelisted = false;
-            }
-        }
-
-        if(!whitelisted)
-            revert NotWhitelisted();
-    }
-
-
     function _requireIsNotShutDown() internal view {
         if (hasBeenShutDown) {
             revert IsShutDown();
@@ -1412,18 +1405,18 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         bool _isTroveInBatch
     ) internal view {
         /*
-        * Below Critical Threshold, it is not permitted:
-        *
-        * - Borrowing, unless it brings TCR up to CCR again
-        * - Collateral withdrawal except accompanied by a debt repayment of at least the same value
-        *
-        * In Normal Mode, ensure:
-        *
-        * - The adjustment won't pull the TCR below CCR
-        *
-        * In Both cases:
-        * - The new ICR is above MCR, or MCR+BCR if a batched trove
-        */
+         * Below Critical Threshold, it is not permitted:
+         *
+         * - Borrowing, unless it brings TCR up to CCR again
+         * - Collateral withdrawal except accompanied by a debt repayment of at least the same value
+         *
+         * In Normal Mode, ensure:
+         *
+         * - The adjustment won't pull the TCR below CCR
+         *
+         * In Both cases:
+         * - The new ICR is above MCR, or MCR+BCR if a batched trove
+         */
 
         if (_isTroveInBatch) {
             _requireICRisAboveMCRPlusBCR(_vars.newICR);

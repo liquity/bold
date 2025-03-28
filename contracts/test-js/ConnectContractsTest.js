@@ -16,9 +16,11 @@ contract("Deployment script - Sets correct contract addresses dependencies after
   let borrowerOperations;
 
   before(async () => {
-    const coreContracts = await deploymentHelper.deployLiquityCore(mocks = {
-      TroveManager: TroveManagerTester
-    });
+    const coreContracts = await deploymentHelper.deployLiquityCore(
+      mocks = {
+        TroveManager: TroveManagerTester,
+      },
+    );
 
     priceFeed = coreContracts.priceFeedTestnet;
     boldToken = coreContracts.boldToken;

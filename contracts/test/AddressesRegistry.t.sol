@@ -1,8 +1,8 @@
-
 pragma solidity 0.8.24;
 
 import "./TestContracts/WhitelistTestSetup.sol";
 import {AddressesRegistry} from "src/AddressesRegistry.sol";
+import {LiquityBase} from "src/Dependencies/LiquityBase.sol";
 
 contract AddressesRegistryWhitelist is WhitelistTestSetup {
     address[3] whitelistedUsers;
@@ -10,22 +10,15 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
 
     function setUp() public override {
         super.setUp();
-        
+
         // set internal owner
         _setOwner(address(deployer));
     }
 
-    // the addresses registry owner can directly set the whitelist only once
-    // and afterwards have the 3 days delay
     function test_initializeWhitelist() public {
         _deployAndSetWhitelist(addressesRegistry);
-        
-        assertEq(address(addressesRegistry.whitelist()), address(whitelist));
 
-        // cannot set again
-        vm.expectRevert(AddressesRegistry.AlreadyInitialized.selector);
-        vm.prank(owner);
-        addressesRegistry.initializeWhitelist(address(1234));
+        assertEq(address(addressesRegistry.whitelist()), address(whitelist));
     }
 
     function test_propose_update_whitelist() public {
@@ -40,14 +33,14 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
         address newWhitelist = address(new Whitelist(owner));
         uint256 timestamp = block.timestamp;
         _proposeNewWhitelist(addressesRegistry, newWhitelist);
-        
+
         AddressesRegistry addressesContract = AddressesRegistry(address(addressesRegistry));
         (address proposedWhitelist, uint256 proposedTimestamp) = addressesContract.proposedWhitelist();
 
         assertEq(proposedTimestamp, block.timestamp);
         assertEq(proposedWhitelist, newWhitelist);
 
-        // cannot accept before 3 days 
+        // cannot accept before 3 days
         vm.expectRevert("Invalid");
         _acceptNewWhitelist(addressesRegistry);
 
@@ -55,30 +48,19 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
         vm.warp(block.timestamp + 3 days);
 
         _acceptNewWhitelist(addressesRegistry);
-        
+
         assertEq(address(addressesRegistry.whitelist()), newWhitelist);
-        
+
         // proposal reset
         (proposedWhitelist, proposedTimestamp) = addressesContract.proposedWhitelist();
         assertEq(proposedTimestamp, 0);
         assertEq(proposedWhitelist, address(0));
     }
 
-
-    function test_whitelistInitialization_onlyOwner() public {
-        // only owner can initialise the whitelist on a branch
-        whitelist = IWhitelist(address(new Whitelist(owner)));
-        
-        vm.prank(address(1234));
-        vm.expectRevert("Owned/not-owner");
-        addressesRegistry.initializeWhitelist(address(whitelist));
-    }
-
-
     function test_whitelistUpdate_onlyOwner() public {
         // only owner can propose
         _deployAndSetWhitelist(addressesRegistry);
-        
+
         address newWhitelist = address(new Whitelist(owner));
         vm.prank(address(1234));
         vm.expectRevert("Owned/not-owner");
@@ -105,10 +87,11 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
 
         vm.prank(owner);
         addressesRegistry.proposeNewCollateralValues(newCCR, newSCR, newMCR, newBCR);
-        
+
         AddressesRegistry addressesContract = AddressesRegistry(address(addressesRegistry));
 
-        (uint256 proposedCCR, uint256 proposedMCR, uint256 proposedSCR, uint256 proposedBCR, uint256 time) = addressesContract.proposedCR();
+        (uint256 proposedCCR, uint256 proposedMCR, uint256 proposedSCR, uint256 proposedBCR, uint256 time) =
+            addressesContract.proposedCR();
         assertEq(time, block.timestamp);
         assertEq(proposedCCR, newCCR);
         assertEq(proposedMCR, newMCR);
@@ -129,7 +112,7 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
         vm.prank(owner);
         addressesRegistry.acceptNewCollateralValues();
 
-        // proposal is deleted 
+        // proposal is deleted
         (proposedCCR, proposedMCR, proposedSCR, proposedBCR, time) = addressesContract.proposedCR();
         assertEq(time, 0);
         assertEq(proposedCCR, 0);
@@ -137,7 +120,7 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
         assertEq(proposedSCR, 0);
         assertEq(proposedBCR, 0);
 
-        // values are updated 
+        // values are updated
         assertEq(addressesRegistry.CCR(), newCCR);
         assertEq(addressesRegistry.MCR(), newMCR);
         assertEq(addressesRegistry.SCR(), newSCR);
@@ -166,11 +149,12 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
         addressesRegistry.proposeNewLiquidationValues(newLiquidationPenaltySP, newLiquidationPenaltyRedistribution);
 
         vm.prank(owner);
-        addressesRegistry.proposeNewLiquidationValues(newLiquidationPenaltySP, newLiquidationPenaltyRedistribution);        
-        
+        addressesRegistry.proposeNewLiquidationValues(newLiquidationPenaltySP, newLiquidationPenaltyRedistribution);
+
         AddressesRegistry addressesContract = AddressesRegistry(address(addressesRegistry));
 
-        (uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution, uint256 time) = addressesContract.proposedLiquidationValues();
+        (uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution, uint256 time) =
+            addressesContract.proposedLiquidationValues();
         assertEq(time, block.timestamp);
         assertEq(liquidationPenaltySP, newLiquidationPenaltySP);
         assertEq(liquidationPenaltyRedistribution, newLiquidationPenaltyRedistribution);
@@ -189,13 +173,13 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
         vm.prank(owner);
         addressesRegistry.acceptNewLiquidationValues();
 
-        // proposal is deleted 
+        // proposal is deleted
         (liquidationPenaltySP, liquidationPenaltyRedistribution, time) = addressesContract.proposedLiquidationValues();
         assertEq(time, 0);
         assertEq(liquidationPenaltySP, 0);
         assertEq(liquidationPenaltyRedistribution, 0);
 
-        // values are updated 
+        // values are updated
         assertEq(addressesRegistry.LIQUIDATION_PENALTY_SP(), newLiquidationPenaltySP);
         assertEq(addressesRegistry.LIQUIDATION_PENALTY_REDISTRIBUTION(), newLiquidationPenaltyRedistribution);
 
@@ -208,23 +192,23 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
     function test_liquidationValuesUpdate_invalidValues() public {
         vm.prank(owner);
         vm.expectRevert(AddressesRegistry.SPPenaltyTooLow.selector);
-        addressesRegistry.proposeNewLiquidationValues(4e16, 10e16); 
+        addressesRegistry.proposeNewLiquidationValues(4e16, 10e16);
 
         vm.prank(owner);
         vm.expectRevert(AddressesRegistry.SPPenaltyTooLow.selector);
-        addressesRegistry.proposeNewLiquidationValues(4e16, 10e16);      
+        addressesRegistry.proposeNewLiquidationValues(4e16, 10e16);
 
         vm.prank(owner);
         vm.expectRevert(AddressesRegistry.RedistPenaltyTooHigh.selector);
-        addressesRegistry.proposeNewLiquidationValues(11e16, 25e16);             
+        addressesRegistry.proposeNewLiquidationValues(11e16, 25e16);
     }
 
     // only addressesRegistry can trigger CR, Liquidation and Whitelist values update in trove manager
     function test_troveManagerUpdate_onlyAddressesRegistry() public {
-        vm.expectRevert(TroveManager.CallerNotAddressRegistry.selector);
-        troveManager.updateCRs(100e16, 100e16, 100e16, 5e16);
+        vm.expectRevert(LiquityBase.CallerNotAddressesRegistry.selector);
+        troveManager.updateCRs(100e16, 100e16, 100e16);
 
-        vm.expectRevert(TroveManager.CallerNotAddressRegistry.selector);
+        vm.expectRevert(LiquityBase.CallerNotAddressesRegistry.selector);
         troveManager.updateLiquidationValues(10e16, 10e16);
     }
 }

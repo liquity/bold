@@ -11,22 +11,29 @@ import "../Interfaces/IPriceFeed.sol";
 import "../Interfaces/ILiquityBase.sol";
 
 /*
-* Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and
-* common functions.
-*/
+ * Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and
+ * common functions.
+ */
 contract LiquityBase is ILiquityBase {
+    IAddressesRegistry public addressesRegistry;
     IActivePool public activePool;
     IDefaultPool internal defaultPool;
     IPriceFeed internal priceFeed;
+    IWhitelist public whitelist;
 
     event ActivePoolAddressChanged(address _newActivePoolAddress);
     event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
 
+    error CallerNotAddressesRegistry();
+    error NotWhitelisted(address _user);
+
     constructor(IAddressesRegistry _addressesRegistry) {
+        addressesRegistry = _addressesRegistry;
         activePool = _addressesRegistry.activePool();
         defaultPool = _addressesRegistry.defaultPool();
         priceFeed = _addressesRegistry.priceFeed();
+        whitelist = _addressesRegistry.whitelist();
 
         emit ActivePoolAddressChanged(address(activePool));
         emit DefaultPoolAddressChanged(address(defaultPool));
@@ -64,7 +71,26 @@ contract LiquityBase is ILiquityBase {
     }
 
     function _calcInterest(uint256 _weightedDebt, uint256 _period) internal pure returns (uint256) {
-        return _weightedDebt * _period / ONE_YEAR / DECIMAL_PRECISION;
+        return (_weightedDebt * _period) / ONE_YEAR / DECIMAL_PRECISION;
     }
 
+    // --- Whitelist functions ---
+
+    function _requireWhitelisted(IWhitelist _whitelist, address _user) internal view {
+        if (!_whitelist.isWhitelisted(address(this), _user)) {
+            revert NotWhitelisted(_user);
+        }
+    }
+
+    function setWhitelist(IWhitelist _whitelist) internal {
+        whitelist = _whitelist;
+    }
+
+    // --- AddressesRegistry functions ---
+
+    function _requireCallerIsAddressesRegistry() internal view {
+        if (msg.sender != address(addressesRegistry)) {
+            revert CallerNotAddressesRegistry();
+        }
+    }
 }

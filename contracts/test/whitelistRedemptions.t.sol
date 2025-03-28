@@ -11,19 +11,19 @@ contract WhitelistedRedemptions is Redemptions, WhitelistTestSetup {
 
     function setUp() public override {
         super.setUp();
-        
+
         // set internal owner
         _setOwner(address(deployer));
 
         // add whitelist to the branch
         _deployAndSetWhitelist(addressesRegistry);
-        
+
         // whitelist users
-        whitelistedUsers = [A, B, C, D, E];             
-        for(uint8 i=0; i<5; i++){
+        whitelistedUsers = [A, B, C, D, E];
+        for (uint8 i = 0; i < 5; i++) {
             _addToWhitelist(address(borrowerOperations), whitelistedUsers[i]);
             _addToWhitelist(address(stabilityPool), whitelistedUsers[i]);
-            _addToWhitelist(address(troveManager), whitelistedUsers[i]);        
+            _addToWhitelist(address(troveManager), whitelistedUsers[i]);
         }
 
         // set a non whitelisted address
@@ -31,7 +31,7 @@ contract WhitelistedRedemptions is Redemptions, WhitelistTestSetup {
     }
 
     // a not whitelisted user try redeeming from a branch with whitelist
-    // all branch troves are skipped and remain untouched 
+    // all branch troves are skipped and remain untouched
     // redeemer bold balance is not burned
     function test_NonWhitelistedRedemption() public {
         (uint256 coll,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();

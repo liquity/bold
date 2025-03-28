@@ -21,10 +21,12 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
   let borrowerOperations;
 
   before(async () => {
-    contracts = await deploymentHelper.deployLiquityCore(mocks = {
-      PriceFeed: PriceFeedMock,
-      BorrowerOperations: BorrowerOperationsTester,
-    });
+    contracts = await deploymentHelper.deployLiquityCore(
+      mocks = {
+        PriceFeed: PriceFeedMock,
+        BorrowerOperations: BorrowerOperationsTester,
+      },
+    );
 
     boldToken = contracts.boldToken;
     sortedTroves = contracts.sortedTroves;
@@ -56,7 +58,11 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
     twice = true,
     method = "setAddresses",
   ) => {
-    const dumbContract = await GasPool.new(contracts.WETH.address, contracts.borrowerOperations.address, contracts.troveManager.address);
+    const dumbContract = await GasPool.new(
+      contracts.WETH.address,
+      contracts.borrowerOperations.address,
+      contracts.troveManager.address,
+    );
     const params = Array(numberOfAddresses).fill(dumbContract.address);
 
     // Attempt call from alice
@@ -112,7 +118,11 @@ contract("All Liquity functions with onlyOwner modifier", async (accounts) => {
 
   describe("SortedTroves", async (accounts) => {
     it("setAddresses(): reverts when called by non-owner, with wrong addresses, or twice", async () => {
-      const dumbContract = await GasPool.new(contracts.WETH.address, contracts.borrowerOperations.address, contracts.troveManager.address);
+      const dumbContract = await GasPool.new(
+        contracts.WETH.address,
+        contracts.borrowerOperations.address,
+        contracts.troveManager.address,
+      );
       const params = [dumbContract.address, dumbContract.address];
 
       // Attempt call from alice

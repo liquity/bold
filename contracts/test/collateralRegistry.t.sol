@@ -10,55 +10,48 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
     address[5] whitelistedUsers;
     address nonWhitelistedUser;
 
-    function setUp() public override (MulticollateralTest, DevTestSetup) {
+    function setUp() public override(MulticollateralTest, DevTestSetup) {
         super.setUp();
-        
+
         // set internal owner
         _setOwner(address(deployer));
 
         // add whitelist to one of the branches
         _deployAndSetWhitelist(contractsArray[0].addressesRegistry);
-        
+
         // whitelist all users involved in base tests
-        whitelistedUsers = [A, B, C, D, E];             
-        for(uint8 i=0; i<5; i++){
+        whitelistedUsers = [A, B, C, D, E];
+        for (uint8 i = 0; i < 5; i++) {
             _addToWhitelist(address(contractsArray[0].borrowerOperations), whitelistedUsers[i]);
             _addToWhitelist(address(contractsArray[0].stabilityPool), whitelistedUsers[i]);
-            _addToWhitelist(address(contractsArray[0].troveManager), whitelistedUsers[i]);        
+            _addToWhitelist(address(contractsArray[0].troveManager), whitelistedUsers[i]);
         }
 
         // set a non whitelisted address
         nonWhitelistedUser = address(123);
     }
 
-    function deployNewCollateralBranch() public returns (
-        ITroveManager newTroveManager,
-        IERC20Metadata newCollateralToken
-    ) 
+    function deployNewCollateralBranch()
+        public
+        returns (ITroveManager newTroveManager, IERC20Metadata newCollateralToken)
     {
-        TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
-            new TestDeployer.TroveManagerParams[](1);
+        TestDeployer.TroveManagerParams[] memory troveManagerParamsArray = new TestDeployer.TroveManagerParams[](1);
         troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
 
         TestDeployer.LiquityContractsDev memory _contractsArray;
 
         IERC20Metadata collToken = new ERC20Faucet(
-                "TEST", // _name
-                "TST", // _symbol
-                100 ether, //     _tapAmount
-                1 days //         _tapPeriod
-            );
-
-        (_contractsArray, ) = deployer.deployBranch(
-            troveManagerParamsArray[0],
-            collToken,
-            WETH,
-            boldToken,
-            collateralRegistry
+            "TEST", // _name
+            "TST", // _symbol
+            100 ether, //     _tapAmount
+            1 days //         _tapPeriod
         );
 
+        (_contractsArray,) =
+            deployer.deployBranch(troveManagerParamsArray[0], collToken, WETH, boldToken, collateralRegistry);
+
         contractsArray.push(_contractsArray);
-                
+
         // Set price feeed
         contractsArray[4].priceFeed.setPrice(2000e18);
 
@@ -68,10 +61,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         for (uint256 i = 0; i < 6; i++) {
             // A to F
             giveAndApproveCollateral(
-                collToken,
-                accountsList[i],
-                initialCollateralAmount,
-                address(contractsArray[4].borrowerOperations)
+                collToken, accountsList[i], initialCollateralAmount, address(contractsArray[4].borrowerOperations)
             );
             // Approve WETH for gas compensation in all branches
             vm.startPrank(accountsList[i]);
@@ -89,7 +79,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         IERC20Metadata[] memory _tokens = new IERC20Metadata[](1);
         ITroveManager[] memory _troveManagers = new ITroveManager[](1);
 
-        // deploy the branch 
+        // deploy the branch
         (_troveManagers[0], _tokens[0]) = deployNewCollateralBranch();
 
         uint256[] memory indexes = new uint256[](1);
@@ -97,8 +87,8 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
 
         vm.expectRevert("Only owner");
         collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
-    
-        vm.prank(boldToken.getOwner());
+
+        vm.prank(boldToken.owner());
         collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
 
         assertEq(collateralRegistry.totalCollaterals(), 5);
@@ -106,11 +96,11 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
 
     // add a branch after initialisation and then perform a multicollateral redemption
     function test_addNewBranch_multiCollateralRedemption() public {
-        // deploy the branch 
+        // deploy the branch
         (ITroveManager troveManager, IERC20Metadata collateralToken) = deployNewCollateralBranch();
 
         uint256[] memory indexes = new uint256[](1);
-        indexes[0] = 4; 
+        indexes[0] = 4;
 
         IERC20Metadata[] memory _tokens = new IERC20Metadata[](1);
         _tokens[0] = collateralToken;
@@ -118,12 +108,12 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         ITroveManager[] memory _troveManagers = new ITroveManager[](1);
         _troveManagers[0] = troveManager;
 
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
 
         assertEq(collateralRegistry.totalCollaterals(), 5);
 
-        // OPEN TROVES AND REDEEM 
+        // OPEN TROVES AND REDEEM
         TestValues memory testValues1;
         TestValues memory testValues2;
         TestValues memory testValues3;
@@ -151,7 +141,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         testValues5.troveId = openMulticollateralTroveNoHints100pctWithIndex(4, A, 0, 10e18, 10000e18, 5e16);
         vm.prank(A);
         boldToken.approve(address(contractsArray[4].stabilityPool), type(uint256).max);
-        
+
         makeMulticollateralSPDepositAndClaim(4, A, 9000e18);
 
         // let time go by to reduce redemption rate (/16)
@@ -177,8 +167,8 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         testValues5.unbackedPortion = contractsArray[4].troveManager.getTroveEntireDebt(testValues4.troveId) - 9000e18;
 
         // branch 1 is not counted as it's skipped
-        uint256 totalUnbacked = testValues2.unbackedPortion + testValues3.unbackedPortion
-            + testValues4.unbackedPortion + testValues5.unbackedPortion;
+        uint256 totalUnbacked = testValues2.unbackedPortion + testValues3.unbackedPortion + testValues4.unbackedPortion
+            + testValues5.unbackedPortion;
 
         // testValues1.redeemAmount = redeemAmount * testValues1.unbackedPortion / totalUnbacked; // whitelisted branch
         testValues2.redeemAmount = redeemAmount * testValues2.unbackedPortion / totalUnbacked;
@@ -232,12 +222,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         testValues5.collFinalBalance = contractsArray[4].collToken.balanceOf(nonWhitelistedUser);
 
         // first branch was not redeemed
-        assertApproxEqAbs(
-            testValues1.collFinalBalance, 
-            testValues1.collInitialBalance,
-            1,
-            "Wrong Collateral 1 balance"
-        );
+        assertApproxEqAbs(testValues1.collFinalBalance, testValues1.collInitialBalance, 1, "Wrong Collateral 1 balance");
         assertApproxEqAbs(
             testValues2.collFinalBalance - testValues2.collInitialBalance,
             testValues2.redeemAmount * DECIMAL_PRECISION / testValues2.price - testValues2.fee,
@@ -266,29 +251,28 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
 
     // cannot add more thna 10 branches
     function test_revert_AddMoreThan10Branches() public {
-         assertEq(collateralRegistry.totalCollaterals(), 4);
+        assertEq(collateralRegistry.totalCollaterals(), 4);
 
         IERC20Metadata[] memory _tokens = new IERC20Metadata[](7);
         ITroveManager[] memory _troveManagers = new ITroveManager[](7);
         uint256[] memory indexes = new uint256[](7);
 
-         (_troveManagers[0], _tokens[0]) = deployNewCollateralBranch();
-         (_troveManagers[1], _tokens[1]) = deployNewCollateralBranch();
-         (_troveManagers[2], _tokens[2]) = deployNewCollateralBranch();
-         (_troveManagers[3], _tokens[3]) = deployNewCollateralBranch();
-         (_troveManagers[4], _tokens[4]) = deployNewCollateralBranch();
-         (_troveManagers[5], _tokens[5]) = deployNewCollateralBranch();
-         (_troveManagers[6], _tokens[6]) = deployNewCollateralBranch();
+        (_troveManagers[0], _tokens[0]) = deployNewCollateralBranch();
+        (_troveManagers[1], _tokens[1]) = deployNewCollateralBranch();
+        (_troveManagers[2], _tokens[2]) = deployNewCollateralBranch();
+        (_troveManagers[3], _tokens[3]) = deployNewCollateralBranch();
+        (_troveManagers[4], _tokens[4]) = deployNewCollateralBranch();
+        (_troveManagers[5], _tokens[5]) = deployNewCollateralBranch();
+        (_troveManagers[6], _tokens[6]) = deployNewCollateralBranch();
 
-             
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         vm.expectRevert("Max collaterals");
         collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
     }
 
     // cannot overwrite an existing branch
     function test_revert_OverwriteBranch() public {
-         assertEq(collateralRegistry.totalCollaterals(), 4);
+        assertEq(collateralRegistry.totalCollaterals(), 4);
 
         IERC20Metadata[] memory _tokens = new IERC20Metadata[](1);
         ITroveManager[] memory _troveManagers = new ITroveManager[](1);
@@ -297,7 +281,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
 
         (_troveManagers[0], _tokens[0]) = deployNewCollateralBranch();
 
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         vm.expectRevert("Collateral already initialised");
         collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
     }
@@ -313,7 +297,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
 
         (_troveManagers[0], _tokens[0]) = deployNewCollateralBranch();
 
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         vm.expectRevert("Invalid index");
         collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
     }
@@ -324,7 +308,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         IERC20Metadata[] memory _tokens = new IERC20Metadata[](1);
         ITroveManager[] memory _troveManagers = new ITroveManager[](1);
 
-        // deploy the branch 
+        // deploy the branch
         (_troveManagers[0], _tokens[0]) = deployNewCollateralBranch();
 
         uint256 removeIndex = 4;
@@ -332,7 +316,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         uint256[] memory indexes = new uint256[](1);
         indexes[0] = 4; // append new branch
 
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
 
         assertEq(collateralRegistry.totalCollaterals(), 5);
@@ -347,19 +331,19 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         // cannot remove a not initialised branch
         uint256 invalidIndex = 8;
 
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         vm.expectRevert("Branch not initialised");
         collateralRegistry.removeCollateral(invalidIndex);
 
         // invalid index
         invalidIndex = 11;
 
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         vm.expectRevert("Invalid index");
         collateralRegistry.removeCollateral(invalidIndex);
 
         // branch not in shutdown
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         vm.expectRevert("Branch is not shutdown");
         collateralRegistry.removeCollateral(removeIndex);
 
@@ -375,7 +359,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         address managerAt3 = address(collateralRegistry.getTroveManager(3));
 
         // owner remove
-        vm.startPrank(boldToken.getOwner());
+        vm.startPrank(boldToken.owner());
         IBorrowerOperations(contractsArray[4].borrowerOperations).shutdown();
         collateralRegistry.removeCollateral(removeIndex);
         vm.stopPrank();
@@ -415,7 +399,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         address managerAt3 = address(collateralRegistry.getTroveManager(3));
 
         // owner remove
-        vm.startPrank(boldToken.getOwner());
+        vm.startPrank(boldToken.owner());
         IBorrowerOperations(contractsArray[0].borrowerOperations).shutdown();
         collateralRegistry.removeCollateral(removeIndex);
         vm.stopPrank();
@@ -454,7 +438,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         address managerAt3 = address(collateralRegistry.getTroveManager(3));
 
         // owner remove
-        vm.startPrank(boldToken.getOwner());
+        vm.startPrank(boldToken.owner());
         IBorrowerOperations(contractsArray[2].borrowerOperations).shutdown();
         collateralRegistry.removeCollateral(removeIndex);
         vm.stopPrank();

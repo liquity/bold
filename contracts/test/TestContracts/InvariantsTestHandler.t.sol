@@ -2558,7 +2558,12 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     //     info("]");
     // }
 
-    function _mintYield(uint256 i, TestDeployer.LiquityContractsDev memory c, uint256 pendingInterest, uint256 upfrontFee) internal {
+    function _mintYield(
+        uint256 i,
+        TestDeployer.LiquityContractsDev memory c,
+        uint256 pendingInterest,
+        uint256 upfrontFee
+    ) internal {
         uint256 mintedYield = pendingInterest + upfrontFee;
         uint256 mintedSPBoldYield = mintedYield * c.activePool.SP_YIELD_SPLIT() / DECIMAL_PRECISION;
 

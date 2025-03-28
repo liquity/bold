@@ -9,21 +9,21 @@ contract MultiCollateralWhitelistedRedemptions is MulticollateralTest, Whitelist
     address[5] whitelistedUsers;
     address nonWhitelistedUser;
 
-    function setUp() public override (MulticollateralTest, DevTestSetup) {
+    function setUp() public override(MulticollateralTest, DevTestSetup) {
         super.setUp();
-        
+
         // set internal owner
         _setOwner(address(deployer));
 
         // add whitelist to one of the branches
         _deployAndSetWhitelist(contractsArray[0].addressesRegistry);
-        
+
         // whitelist all users involved in base tests
-        whitelistedUsers = [A, B, C, D, E];             
-        for(uint8 i=0; i<5; i++){
+        whitelistedUsers = [A, B, C, D, E];
+        for (uint8 i = 0; i < 5; i++) {
             _addToWhitelist(address(contractsArray[0].borrowerOperations), whitelistedUsers[i]);
             _addToWhitelist(address(contractsArray[0].stabilityPool), whitelistedUsers[i]);
-            _addToWhitelist(address(contractsArray[0].troveManager), whitelistedUsers[i]);       
+            _addToWhitelist(address(contractsArray[0].troveManager), whitelistedUsers[i]);
         }
 
         // set a non whitelisted address
@@ -31,14 +31,14 @@ contract MultiCollateralWhitelistedRedemptions is MulticollateralTest, Whitelist
     }
 
     // a not whitelisted user try redeeming from a branch with whitelist
-    // all whitelisted branch troves are skipped and remain untouched 
+    // all whitelisted branch troves are skipped and remain untouched
     // redeemer can redeem only non whitelisted branches
     function test_multiCollateralRedemption_Whitelist() public {
         TestValues memory testValues1;
         TestValues memory testValues2;
         TestValues memory testValues3;
         TestValues memory testValues4;
-    
+
         uint256 redeemAmount = 1600e18;
 
         // First collateral unbacked Bold: 10k (SP empty) - but whitelisted
@@ -76,8 +76,7 @@ contract MultiCollateralWhitelistedRedemptions is MulticollateralTest, Whitelist
         testValues4.unbackedPortion = contractsArray[3].troveManager.getTroveEntireDebt(testValues4.troveId) - 10000e18;
 
         // branch 1 is not counted as it's skipped
-        uint256 totalUnbacked = testValues2.unbackedPortion + testValues3.unbackedPortion
-            + testValues4.unbackedPortion;
+        uint256 totalUnbacked = testValues2.unbackedPortion + testValues3.unbackedPortion + testValues4.unbackedPortion;
 
         // testValues1.redeemAmount = redeemAmount * testValues1.unbackedPortion / totalUnbacked; // whitelisted branch
         testValues2.redeemAmount = redeemAmount * testValues2.unbackedPortion / totalUnbacked;
@@ -128,12 +127,7 @@ contract MultiCollateralWhitelistedRedemptions is MulticollateralTest, Whitelist
         testValues4.collFinalBalance = contractsArray[3].collToken.balanceOf(nonWhitelistedUser);
 
         // first branch was not redeemed
-        assertApproxEqAbs(
-            testValues1.collFinalBalance, 
-            testValues1.collInitialBalance,
-            1,
-            "Wrong Collateral 1 balance"
-        );
+        assertApproxEqAbs(testValues1.collFinalBalance, testValues1.collInitialBalance, 1, "Wrong Collateral 1 balance");
         assertApproxEqAbs(
             testValues2.collFinalBalance - testValues2.collInitialBalance,
             testValues2.redeemAmount * DECIMAL_PRECISION / testValues2.price - testValues2.fee,

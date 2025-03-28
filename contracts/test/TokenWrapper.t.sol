@@ -20,12 +20,11 @@ contract TestToken is ERC20 {
     }
 }
 
-contract TokenWrapperTest is Test { 
+contract TokenWrapperTest is Test {
     IERC20Metadata public token18Decimals;
     IERC20Metadata public token8Decimals;
     TokenWrapper public wrapper18Decimals;
     TokenWrapper public wrapper8Decimals;
-
 
     function setUp() public {
         token18Decimals = IERC20Metadata(new ERC20("Ethereum", "ETH"));
@@ -48,11 +47,11 @@ contract TokenWrapperTest is Test {
         uint256 amount = 10e18;
 
         deal(address(token18Decimals), user, amount);
-        
+
         vm.startPrank(user);
-        
-        token18Decimals.approve(address(wrapper18Decimals), type(uint).max);
-        
+
+        token18Decimals.approve(address(wrapper18Decimals), type(uint256).max);
+
         // wrap
         wrapper18Decimals.deposit(amount);
 
@@ -71,14 +70,14 @@ contract TokenWrapperTest is Test {
     function test_wrap_unwrap_8_decimals_token() public {
         address user = address(1234);
         uint256 tokenAmount = 10e18;
-        uint256 wrappedAmount = 10e18 * 10**10;
+        uint256 wrappedAmount = 10e18 * 10 ** 10;
 
         deal(address(token8Decimals), user, tokenAmount);
-        
+
         vm.startPrank(user);
-        
-        token8Decimals.approve(address(wrapper8Decimals), type(uint).max);
-        
+
+        token8Decimals.approve(address(wrapper8Decimals), type(uint256).max);
+
         // wrap
         wrapper8Decimals.deposit(tokenAmount);
 

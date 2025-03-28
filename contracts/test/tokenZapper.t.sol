@@ -57,9 +57,9 @@ contract TokenZapperTest is DevTestSetup {
         TestDeployer.Zappers[] memory zappersArray;
 
         TestDeployer.LiquityContractsDev[] memory _contractsArray;
-        (_contractsArray, collateralRegistry, boldToken,,,zappersArray) =
+        (_contractsArray, collateralRegistry, boldToken,,, zappersArray) =
             deployer.deployAndConnectContracts(troveManagerParams, WETH);
-        
+
         contractsArray.push(_contractsArray[0]);
 
         // BTC BRANCH
@@ -67,13 +67,8 @@ contract TokenZapperTest is DevTestSetup {
         wrapper8Decimals = new TokenWrapper(token8Decimals);
 
         TestDeployer.LiquityContractsDev memory btcBranchArray;
-        (btcBranchArray, ) = deployer.deployBranch(
-            troveManagerParams[0],
-            wrapper8Decimals,
-            WETH,
-            boldToken,
-            collateralRegistry
-        );
+        (btcBranchArray,) =
+            deployer.deployBranch(troveManagerParams[0], wrapper8Decimals, WETH, boldToken, collateralRegistry);
 
         // btc branch is index 1
         contractsArray.push(btcBranchArray);
@@ -99,16 +94,16 @@ contract TokenZapperTest is DevTestSetup {
         ITroveManager[] memory troveManagers = new ITroveManager[](1);
         troveManagers[0] = troveManager;
 
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         collateralRegistry.addNewCollaterals(indexes, tokens, troveManagers);
 
         // A to F
         for (uint256 i = 0; i < 6; i++) {
             deal(accountsList[i], 10 ether);
-            deal(address(token8Decimals), accountsList[i], initialCollateralAmount);  
+            deal(address(token8Decimals), accountsList[i], initialCollateralAmount);
 
             vm.prank(accountsList[i]);
-            token8Decimals.approve(address(tokenZapper), type(uint256).max);      
+            token8Decimals.approve(address(tokenZapper), type(uint256).max);
         }
     }
 
@@ -254,7 +249,7 @@ contract TokenZapperTest is DevTestSetup {
         uint256 collateralAmount = 10e8;
         uint256 collateralToWithdraw = 2e18; // 2e8 in underlying
         uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8) - collateralToWithdraw;
-    
+
         uint256 boldAmount = 10000e18;
 
         uint256 ethBalanceBefore = A.balance;
@@ -404,7 +399,7 @@ contract TokenZapperTest is DevTestSetup {
         vm.startPrank(A);
         tokenZapper.setRemoveManagerWithReceiver(troveId, B, A);
         vm.stopPrank();
-    
+
         // Withdraw bold
         vm.startPrank(B);
         tokenZapper.withdrawBold(troveId, boldAmount2, boldAmount2);
@@ -424,10 +419,10 @@ contract TokenZapperTest is DevTestSetup {
     function testCanAdjustTroveWithdrawCollAndBold() external {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
-        
+
         uint256 collateralAmount = 10e8;
         uint256 collateralAmount2 = 1e8;
-    
+
         ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
@@ -449,7 +444,7 @@ contract TokenZapperTest is DevTestSetup {
 
         uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
         uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
-        
+
         uint256 boldBalanceBeforeB = boldToken.balanceOf(B);
         uint256 collateralBalanceBeforeB = token8Decimals.balanceOf(B);
 
@@ -463,7 +458,11 @@ contract TokenZapperTest is DevTestSetup {
         tokenZapper.adjustTroveWithToken(troveId, collateralAmount2, false, boldAmount2, true, boldAmount2);
         vm.stopPrank();
 
-        assertEq(troveManager.getTroveEntireColl(troveId), (collateralAmount - collateralAmount2) * 10 ** (18 - 8), "Trove coll mismatch");
+        assertEq(
+            troveManager.getTroveEntireColl(troveId),
+            (collateralAmount - collateralAmount2) * 10 ** (18 - 8),
+            "Trove coll mismatch"
+        );
         assertApproxEqAbs(
             troveManager.getTroveEntireDebt(troveId), boldAmount1 + boldAmount2, 2e18, "Trove  debt mismatch"
         );
@@ -476,10 +475,10 @@ contract TokenZapperTest is DevTestSetup {
     function testCanAdjustTroveAddCollAndBold() external {
         uint256 boldAmount1 = 10000e18;
         uint256 boldAmount2 = 1000e18;
-        
+
         uint256 collateralAmount = 10e8;
         uint256 collateralAmount2 = 1e8;
-    
+
         ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
             owner: A,
             ownerIndex: 0,
@@ -502,10 +501,10 @@ contract TokenZapperTest is DevTestSetup {
 
         uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
         uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
-        
+
         uint256 boldBalanceBeforeB = boldToken.balanceOf(B);
         uint256 collateralBalanceBeforeB = token8Decimals.balanceOf(B);
-        
+
         // Add an add manager for the zapper
         vm.startPrank(A);
         tokenZapper.setAddManager(troveId, B);
@@ -517,7 +516,11 @@ contract TokenZapperTest is DevTestSetup {
         tokenZapper.adjustTroveWithToken(troveId, collateralAmount2, true, boldAmount2, false, boldAmount2);
         vm.stopPrank();
 
-        assertEq(troveManager.getTroveEntireColl(troveId), (collateralAmount + collateralAmount2) * 10 ** (18 - 8), "Trove coll mismatch");
+        assertEq(
+            troveManager.getTroveEntireColl(troveId),
+            (collateralAmount + collateralAmount2) * 10 ** (18 - 8),
+            "Trove coll mismatch"
+        );
         assertApproxEqAbs(
             troveManager.getTroveEntireDebt(troveId), boldAmount1 - boldAmount2, 2e18, "Trove  debt mismatch"
         );
@@ -529,7 +532,7 @@ contract TokenZapperTest is DevTestSetup {
 
     function testCanAdjustZombieTroveWithdrawCollAndBold() external {
         uint256 boldAmount1 = 10000e18;
-        
+
         uint256 collateralAmount = 10e8;
         uint256 collateralAmount2 = 1e8;
         uint256 boldAmount2 = 1000e18;
@@ -564,7 +567,7 @@ contract TokenZapperTest is DevTestSetup {
         vm.stopPrank();
 
         uint256 troveCollBefore = troveManager.getTroveEntireColl(troveId);
-        
+
         uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
         uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
         uint256 collateralBalanceBeforeB = token8Decimals.balanceOf(B);
@@ -574,7 +577,11 @@ contract TokenZapperTest is DevTestSetup {
         tokenZapper.adjustZombieTroveWithToken(troveId, collateralAmount2, false, boldAmount2, true, 0, 0, boldAmount2);
         vm.stopPrank();
 
-        assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore - collateralAmount2 * 10 ** (18 - 8), "Trove coll mismatch");
+        assertEq(
+            troveManager.getTroveEntireColl(troveId),
+            troveCollBefore - collateralAmount2 * 10 ** (18 - 8),
+            "Trove coll mismatch"
+        );
         assertApproxEqAbs(troveManager.getTroveEntireDebt(troveId), 2 * boldAmount2, 2e18, "Trove  debt mismatch");
         assertEq(boldToken.balanceOf(A), boldBalanceBeforeA + boldAmount2, "A BOLD bal mismatch");
         assertEq(token8Decimals.balanceOf(A), collateralBalanceBefore + collateralAmount2, "A ETH bal mismatch");
@@ -622,12 +629,14 @@ contract TokenZapperTest is DevTestSetup {
 
         // Adjust (add coll and withdraw Bold)
         vm.startPrank(B);
-        tokenZapper.adjustZombieTroveWithToken(
-            troveId, collateralAmount2, true, boldAmount2, true, 0, 0, boldAmount2
-        );
+        tokenZapper.adjustZombieTroveWithToken(troveId, collateralAmount2, true, boldAmount2, true, 0, 0, boldAmount2);
         vm.stopPrank();
 
-        assertEq(troveManager.getTroveEntireColl(troveId), troveCollBefore + collateralAmount2 * 10 ** (18 - 8), "Trove coll mismatch");
+        assertEq(
+            troveManager.getTroveEntireColl(troveId),
+            troveCollBefore + collateralAmount2 * 10 ** (18 - 8),
+            "Trove coll mismatch"
+        );
         assertApproxEqAbs(troveManager.getTroveEntireDebt(troveId), 2 * boldAmount2, 2e18, "Trove  debt mismatch");
         assertEq(boldToken.balanceOf(A), boldBalanceBeforeA + boldAmount2, "A BOLD bal mismatch");
         assertEq(token8Decimals.balanceOf(A), collateralBalanceBefore, "A ETH bal mismatch");
@@ -683,7 +692,6 @@ contract TokenZapperTest is DevTestSetup {
 
         boldToken.transfer(A, troveManager.getTroveEntireDebt(troveId) - boldAmount);
         vm.stopPrank();
-
 
         vm.startPrank(A);
         boldToken.approve(address(tokenZapper), type(uint256).max);

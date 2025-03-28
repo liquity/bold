@@ -124,17 +124,17 @@ contract ShutdownTest is DevTestSetup {
 
     function test_OnlyOwnerCanAlwaysShutdown() public {
         openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 10000e18, 5e16);
-        
+
         // not owner
         vm.expectRevert(BorrowerOperations.TCRNotBelowSCR.selector);
         contractsArray[0].borrowerOperations.shutdown();
-        
+
         // owner
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         contractsArray[0].borrowerOperations.shutdown();
 
         // can't shutdown twice
-        vm.prank(boldToken.getOwner());
+        vm.prank(boldToken.owner());
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         contractsArray[0].borrowerOperations.shutdown();
     }
