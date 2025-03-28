@@ -85,13 +85,11 @@ export function Positions({
 
   return (
     <PositionsGroup
-      columns={columns ?? (
-        breakpoint === "small"
-          ? 1
-          : breakpoint === "medium"
-          ? 2
-          : undefined
-      )}
+      columns={breakpoint === "small"
+        ? 1
+        : breakpoint === "medium"
+        ? 2
+        : columns}
       mode={mode}
       positions={positions ?? []}
       showNewPositionCard={showNewPositionCard}

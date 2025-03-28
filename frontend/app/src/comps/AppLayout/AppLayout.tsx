@@ -54,13 +54,13 @@ export function AppLayout({
         <TopBar />
         <div
           className={css({
+            overflow: "auto",
             width: "100%",
             minHeight: 0,
             padding: {
               base: "0 12px",
               medium: "0 24px",
             },
-            overflow: "auto",
             medium: {
               overflow: "visible",
               maxWidth: "100%",

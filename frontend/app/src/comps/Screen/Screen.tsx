@@ -140,6 +140,7 @@ export function Screen({
           position: "relative",
           flexGrow: 1,
           display: "grid",
+          justifyItems: "center",
           gap: 48,
           gridTemplateColumns: "1fr",
           gridTemplateRows: "auto 1fr",
@@ -203,8 +204,7 @@ export function Screen({
       )}
       <a.div
         className={css({
-          display: "flex",
-          flexDirection: "column",
+          display: "grid",
           position: "relative",
           transformOrigin: "50% 0",
           willChange: "transform, opacity",
