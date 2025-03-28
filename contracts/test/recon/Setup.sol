@@ -226,7 +226,8 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         // === Before === ///
         // Bold and interst router
         interestRouter = new InterestRouter();
-        boldToken = boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), ISuperTokenFactory(factory))));
+        boldToken = boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this))));
+        
         // NOTE: Unclear interface?
         IInitializableBold(address(boldToken)).initialize(ISuperTokenFactory(factory));
 
