@@ -115,7 +115,7 @@ contract BoldToken is Owned, IBoldToken, ERC20Permit {
     }
 
     function _requireCallerIsBurner() internal view {
-        require(msg.sender == collateralRegistryAddress || isBurner[msg.sender], "Bold: Caller is not a burner");
+        require(msg.sender == collateralRegistryAddress || isBurner[msg.sender], "BoldToken: Caller is not a burner");
     }
 
     function _requireCallerIsStabilityPool() internal view {

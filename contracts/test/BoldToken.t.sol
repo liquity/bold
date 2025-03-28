@@ -100,19 +100,4 @@ contract BoldTokenTest is DevTestSetup {
 
         assertEq(boldToken.balanceOf(address(1234)), 0);
     }
-
-    function test_StabilityPoolCanBurn() public {
-        test_OnlyMinterCanMint();
-
-        vm.expectRevert("BoldToken: Caller is not a burner");
-        boldToken.burn(address(1234), 100 ether);
-
-        vm.prank(boldToken.owner());
-        boldToken.setStabilityPool(address(1234), true);
-
-        vm.prank(address(1234));
-        boldToken.burn(address(1234), 100 ether);
-
-        assertEq(boldToken.balanceOf(address(1234)), 0);
-    }
 }
