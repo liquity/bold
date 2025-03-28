@@ -279,7 +279,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             require(boldToken.collateralRegistryAddress() == address(0), "Collateral registry already set");
             require(BoldToken(payable(address(boldToken))).owner() == deployer, "Not BOLD owner");
         } else {
-            boldToken = IBoldToken(address(new BoldToken{salt: SALT}(deployer, superTokenFactory)));
+            boldToken = IBoldToken(address(new BoldToken{salt: SALT}(deployer)));
+            //boldToken.initialize(superTokenFactory);
             assert(address(boldToken) == boldAddress);
         }
 

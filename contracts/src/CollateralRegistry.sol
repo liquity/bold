@@ -174,7 +174,7 @@ contract CollateralRegistry is ICollateralRegistry {
         uint256 timePassed = block.timestamp - lastFeeOperationTime;
 
         if (timePassed >= ONE_MINUTE) {
-            lastFeeOperationTime = block.timestamp;
+            lastFeeOperationTime += _minutesPassedSinceLastFeeOp()*60; // 60 seconds in 1 minute.
             emit LastFeeOpTimeUpdated(block.timestamp);
         }
     }
@@ -312,7 +312,7 @@ contract CollateralRegistry is ICollateralRegistry {
         //limited to increasing by 2x at a time, maximum. Decrease by any amount.
         uint256 currentDebtLimit = getTroveManager(_indexTroveManager).getDebtLimit();
         if (_newDebtLimit > currentDebtLimit) {
-            require(_newDebtLimit <= currentDebtLimit * 2, "CollateralRegistry: Debt limit increase by more than 2x is not allowed");
+            require(_newDebtLimit <= currentDebtLimit * 2 || _newDebtLimit <= getTroveManager(_indexTroveManager).getInitalDebtLimit(), "CollateralRegistry: Debt limit increase by more than 2x is not allowed");
         }
         getTroveManager(_indexTroveManager).setDebtLimit(_newDebtLimit);
     }
