@@ -9,7 +9,7 @@ import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken, isEarnPositionActive } from "@/src/liquity-utils";
+import { getCollToken, isEarnPositionActive, useEarnPool } from "@/src/liquity-utils";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
@@ -41,15 +41,16 @@ export function PanelUpdateDeposit({
   const isActive = isEarnPositionActive(position ?? null);
 
   const parsedValue = parseInputFloat(value);
-
+  const depositDifference = dn.mul(parsedValue ?? DNUM_0, mode === "remove" ? -1 : 1);
   const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0)) ? value : `${fmtnum(parsedValue, "full")}`;
-
-  const depositDifference = mode === "remove" ? dn.mul(parsedValue ?? DNUM_0, -1) : (parsedValue ?? DNUM_0);
-
   const updatedDeposit = dnumMax(
     dn.add(position?.deposit ?? DNUM_0, depositDifference),
     DNUM_0,
   );
+
+  const earnPool = useEarnPool(branchId);
+  const poolDeposit = earnPool.data.totalDeposited;
+  const updatedPoolDeposit = poolDeposit && dn.add(poolDeposit, depositDifference);
 
   const boldBalance = useBalance(account.address, "BOLD");
 
@@ -257,7 +258,13 @@ export function PanelUpdateDeposit({
           size="large"
           wide
           onClick={() => {
-            if (!account.address || !collateral || (mode === "remove" && !position)) {
+            if (
+              !account.address
+              || !collateral
+              || (mode === "remove" && !position)
+              || !poolDeposit
+              || !updatedPoolDeposit
+            ) {
               return;
             }
 
@@ -279,7 +286,10 @@ export function PanelUpdateDeposit({
               successMessage: mode === "remove"
                 ? "The withdrawal has been processed successfully."
                 : "The deposit has been processed successfully.",
+
               branchId,
+              poolDeposit: updatedPoolDeposit,
+              prevPoolDeposit: poolDeposit,
               prevEarnPosition,
               earnPosition: {
                 ...prevEarnPosition,
