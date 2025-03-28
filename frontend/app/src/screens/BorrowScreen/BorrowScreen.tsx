@@ -10,7 +10,7 @@ import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS, ETH_MAX_RESERVE, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
 import content from "@/src/content";
-import { dnum18, dnumMax } from "@/src/dnum-utils";
+import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
@@ -58,11 +58,11 @@ export function BorrowScreen() {
   const collateral = getCollToken(branch.id);
   const collaterals = branches.map((b) => getCollToken(b.branchId));
 
-  const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
+  const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol];
 
   const deposit = useInputFieldValue(fmtnum, {
     validate: (parsed, value) => {
-      const isAboveMax = maxCollDeposit && parsed && dn.gt(parsed, maxCollDeposit);
+      const isAboveMax = parsed && dn.gt(parsed, maxCollDeposit);
       return {
         parsed: isAboveMax ? maxCollDeposit : parsed,
         value: isAboveMax ? dn.toString(maxCollDeposit) : value,
@@ -134,9 +134,13 @@ export function BorrowScreen() {
     })
     : null;
 
-  const maxAmount = collBalance.data && dnumMax(
-    dn.sub(collBalance.data, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0), // Only keep a reserve for ETH, not LSTs
-    dnum18(0),
+  const maxAmount = collBalance.data && dnumMin(
+    maxCollDeposit,
+    dnumMax(
+      // Only keep a reserve for ETH, not LSTs
+      dn.sub(collBalance.data, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0),
+      dnum18(0),
+    ),
   );
 
   const isBelowMinDebt = debt.parsed && !debt.isEmpty && dn.lt(debt.parsed, MIN_DEBT);
