@@ -70,7 +70,7 @@ export function HomeScreen() {
   );
 }
 
-function TokenCard({
+export function TokenCard({
   token,
   link,
   subValues
@@ -94,6 +94,7 @@ function TokenCard({
         flexDirection: "row",
         justifyContent: "space-between",
         alignItems: "baseline",
+        paddingBottom: 12,
       })}>
         <h1
           className={css({
@@ -118,15 +119,15 @@ function TokenCard({
         flexDirection: "row",
         justifyContent: "space-between"
       })}>
-        {subValues.map((subValue) => (
-          <SubValue key={subValue.label} label={subValue.label} value={subValue.value} />
+        {subValues.map((subValue, i) => (
+          <SubValue key={subValue.label} label={subValue.label} value={subValue.value} index={i} />
         ))}
       </div>
     </div>
   )
 }
 
-function SubValue({ label, value }: { label: string, value: string }) {
+function SubValue({ label, value, index }: { label: string, value: string, index: number }) {
   return (
     <div
       className={css({
@@ -137,6 +138,7 @@ function SubValue({ label, value }: { label: string, value: string }) {
         className={css({
           fontSize: 16,
           color: "contentAlt",
+          justifySelf: index === 0 ? "start" : "end",
         })}
       >
         {label}
@@ -144,7 +146,7 @@ function SubValue({ label, value }: { label: string, value: string }) {
       <p
         className={css({
           fontSize: 28,
-          // fontWeight: "bold",
+          justifySelf: index === 0 ? "start" : "end",
         })}
       >
         {value}

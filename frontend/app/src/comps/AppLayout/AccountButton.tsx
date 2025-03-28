@@ -8,11 +8,11 @@ import { ConnectKitButton } from "connectkit";
 import { match, P } from "ts-pattern";
 import { MenuItem } from "./MenuItem";
 
-export function AccountButton() {
+export function AccountButton({ size = "small" }: { size?: "small" | "mini" }) {
   return (
     <ShowAfter delay={500}>
       <ConnectKitButton.Custom>
-        {(props) => <CKButton {...props} />}
+        {(props) => <CKButton {...props} size={size} />}
       </ConnectKitButton.Custom>
     </ShowAfter>
   );
@@ -25,13 +25,14 @@ function CKButton({
   address,
   ensName,
   show,
+  size = "small",
 }: Parameters<
   NonNullable<
     ComponentPropsWithRef<
       typeof ConnectKitButton.Custom
     >["children"]
   >
->[0]) {
+>[0] & { size?: "small" | "mini" }) {
   const status = match({ chain, isConnected, isConnecting, address })
     .returnType<
       | { mode: "connected"; address: `0x${string}` }
@@ -69,12 +70,13 @@ function CKButton({
             label={ensName ?? shortenAddress(address, 3)}
             onClick={show}
             title={address}
+            size={size}
           />
         )
         : (
           <Button
             mode="primary"
-            size="small"
+            size={size}
             shape="rounded"
             wide
             label={mode === "connecting"
@@ -93,10 +95,12 @@ function ButtonConnected({
   label,
   onClick,
   title,
+  size = "small",
 }: {
   label: ReactNode;
   onClick?: () => void;
   title?: string;
+  size?: "small" | "mini";
 }) {
   return (
     <button
@@ -106,19 +110,19 @@ function ButtonConnected({
         display: "flex",
         height: "100%",
         maxWidth: 140,
-        padding: "8px 16px",
+        padding: size === "small" ? "8px 16px" : "4px 12px",
         whiteSpace: "nowrap",
         textAlign: "center",
         _active: {
           translate: "0 1px",
         },
-        border: "2px solid token(colors.fieldBorder)",
+        border: size === "small" ? "2px solid token(colors.fieldBorder)" : "1px solid token(colors.fieldBorder)",
         borderRadius: 20,
         background: "neutralDimmed300",
       })}
     >
       <MenuItem
-        icon={undefined} //{<IconAccount />}
+        icon={undefined}
         label={label}
       />
     </button>
