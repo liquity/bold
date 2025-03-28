@@ -24,8 +24,6 @@ import "./Interfaces/IBoldToken.sol";
  * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move Bold tokens between Liquity <-> user.
  */
 
- //TODO double check the erc20 the proxy is using implements permit. Add just the permit function without the rest of erc20.
- //TODO: remove erc20 from constructor. Ask bold if removing permit breaks anything else.
  //INFO: permit involves approve, so invoke safeApproveFor in supertoken
 
 contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy {
@@ -49,12 +47,7 @@ contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy
     event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
     event ActivePoolAddressAdded(address _newActivePoolAddress);
 
-    //TODO update deployment script for new constructor params.
-    //TODO move supertoken init to another function possibley.
-    //TODO lookup address of factory deployment and include that in the deployment scripts to int the factory.
-    //TODO BOLD token now has a payable fallback function. verify this is not a problem.
-    //TODO clean up construtor and update tests that use the constructor to not have the factory param.
-    constructor(address _owner) Ownable(_owner) {}
+    constructor(address _owner, ISuperTokenFactory factory) Ownable(_owner) {}
 
     function initialize(ISuperTokenFactory factory) external {
         // This call to the factory invokes `UUPSProxy.initialize`, which connects the proxy to the canonical SuperToken implementation.
@@ -109,7 +102,6 @@ contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy
         ISuperToken(address(this)).selfBurn(_account, _amount, "");
     }
 
-    //TODO verify spender is correct when making pool calls.
     function sendToPool(address _sender, address _poolAddress, uint256 _amount) external override {
         _requireCallerIsStabilityPool();
         ISuperToken(address(this)).selfTransferFrom(_sender, _sender, _poolAddress, _amount);
