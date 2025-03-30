@@ -42,6 +42,8 @@ function addCollateral(
   addresses.token = tokenAddress;
   addresses.troveManager = troveManagerAddress;
   addresses.troveNft = troveManagerContract.troveNFT();
+  // Add debt limit to the collateral addresses (Nerite specific)
+  addresses.debtLimit = troveManagerContract.debtLimit();
 
   collateral.minCollRatio = BorrowerOperationsContract.bind(
     Address.fromBytes(addresses.borrowerOperations),

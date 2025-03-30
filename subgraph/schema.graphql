@@ -26,6 +26,7 @@ type CollateralAddresses @entity(immutable: true) {
   token: Bytes!
   troveManager: Bytes!
   troveNft: Bytes!
+  debtLimit: BigInt! # Nerite specific - maximum debt limit for the collateral
 }
 
 type InterestRateBracket @entity {
