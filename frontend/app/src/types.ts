@@ -110,7 +110,6 @@ export type PositionStake = {
   type: "stake";
   owner: Address;
   deposit: Dnum;
-  share: Dnum;
   totalStaked: Dnum;
   rewards: {
     lusd: Dnum;

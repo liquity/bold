@@ -167,7 +167,6 @@ export function vPositionStake() {
     type: v.literal("stake"),
     owner: vAddress(),
     deposit: vDnum(),
-    share: vDnum(),
     totalStaked: vDnum(),
     rewards: v.object({
       lusd: vDnum(),

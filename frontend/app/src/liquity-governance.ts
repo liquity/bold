@@ -1,11 +1,14 @@
-import type { Address, Initiative } from "@/src/types";
+import type { Address, Dnum, Initiative } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
 import { getProtocolContract } from "@/src/contracts";
+import { dnum18 } from "@/src/dnum-utils";
 import { KNOWN_INITIATIVES_URL } from "@/src/env";
-import { useGovernanceInitiatives } from "@/src/subgraph-hooks";
+import { useGovernanceInitiatives, useGovernanceStats, useGovernanceUser } from "@/src/subgraph-hooks";
 import { vAddress } from "@/src/valibot-utils";
+import { useRaf } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
+import * as dn from "dnum";
 import * as v from "valibot";
 import { useConfig as useWagmiConfig, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
@@ -232,4 +235,54 @@ export function useKnownInitiatives() {
     },
     enabled: KNOWN_INITIATIVES_URL !== undefined,
   });
+}
+
+// votingPower(t) = lqty * t - offset
+export function votingPower(
+  stakedLQTY: bigint,
+  offset: bigint,
+  timestampInSeconds: bigint,
+) {
+  return stakedLQTY * timestampInSeconds - offset;
+}
+
+export function useVotingPower(
+  account: Address | null,
+  callback: (share: Dnum | null) => void,
+  updatesPerSecond: number = 30,
+) {
+  const govUser = useGovernanceUser(account);
+  const govStats = useGovernanceStats();
+
+  useRaf(() => {
+    const { totalLQTYStaked, totalOffset } = govStats.data ?? {};
+    const { stakedLQTY, stakedOffset } = govUser.data ?? {};
+
+    if (
+      stakedLQTY === undefined
+      || stakedOffset === undefined
+      || totalLQTYStaked === undefined
+      || totalOffset === undefined
+    ) {
+      callback(null);
+      return;
+    }
+
+    const now = Date.now();
+    const nowInSeconds = BigInt(Math.floor(now / 1000));
+
+    const userVp = votingPower(stakedLQTY, stakedOffset, nowInSeconds);
+    const userVpNext = votingPower(stakedLQTY, stakedOffset, nowInSeconds + 1n);
+    const totalVP = votingPower(totalLQTYStaked, totalOffset, nowInSeconds);
+    const totalVPNext = votingPower(totalLQTYStaked, totalOffset, nowInSeconds + 1n);
+
+    // progress of current second, scaled to 1000
+    const progressScaled = BigInt(Math.floor(((now % 1000) / 1000) * 1000));
+
+    const userVpLive = userVp + (userVpNext - userVp) * progressScaled / 1000n;
+    const totalVpLive = totalVP + (totalVPNext - totalVP) * progressScaled / 1000n;
+
+    // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
+    callback(dn.div(dnum18(userVpLive), dnum18(totalVpLive)));
+  }, updatesPerSecond);
 }

@@ -29,7 +29,7 @@ export function EarnPositionSummary({
   }
   & (
     | { poolDeposit: Dnum; prevPoolDeposit: Dnum }
-    | { poolDeposit: undefined; prevPoolDeposit: undefined }
+    | { poolDeposit?: undefined; prevPoolDeposit?: undefined }
   ))
 {
   const collToken = getCollToken(branchId);
