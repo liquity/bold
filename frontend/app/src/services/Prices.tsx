@@ -21,12 +21,15 @@ function useCollateralPrice(symbol: null | CollateralSymbol): UseQueryResult<Dnu
   // query object from the PriceFeed ABI, while the query stays disabled
   const PriceFeed = getBranchContract(symbol ?? "ETH", "PriceFeed");
 
-  if (!PriceFeed) {
-    throw new Error(`Price feed contract not found for ${symbol}`);
+  // this is a workaround to make the fetchPrice stateMutability "view"
+  const FetchPriceAbi = PriceFeed.abi.find((fn) => fn.name === "fetchPrice");
+  if (!FetchPriceAbi) {
+    throw new Error("fetchPrice ABI not found");
   }
 
   return useReadContract({
-    ...PriceFeed,
+    abi: [{ ...FetchPriceAbi, stateMutability: "view" }] as const,
+    address: PriceFeed.address,
     functionName: "fetchPrice",
     query: {
       enabled: symbol !== null,
