@@ -382,7 +382,8 @@ export function BorrowScreen() {
             wide
             onClick={() => {
               if (
-                deposit.parsed
+                interestRate
+                && deposit.parsed
                 && debt.parsed
                 && account.address
                 && typeof nextOwnerIndex.data === "number"

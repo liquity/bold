@@ -468,7 +468,12 @@ export function useGovernanceUser(account: Address | null, options?: Options) {
 export function useGovernanceStats(options?: Options) {
   let queryFn = async () => {
     const { governanceStats } = await graphQuery(GovernanceStats);
-    return governanceStats;
+    return governanceStats && {
+      ...governanceStats,
+      totalLQTYStaked: BigInt(governanceStats.totalLQTYStaked),
+      totalOffset: BigInt(governanceStats.totalOffset),
+      totalInitiatives: BigInt(governanceStats.totalInitiatives),
+    };
   };
 
   // TODO: demo mode

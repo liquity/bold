@@ -1,22 +1,41 @@
 import type { PositionStake } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { fmtnum } from "@/src/formatting";
+import { useVotingPower } from "@/src/liquity-governance";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
+import { useRef } from "react";
 import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows } from "./shared";
 
 export function PositionCardStake({
   deposit,
+  owner,
   rewards,
-  share,
 }: Pick<
   PositionStake,
   | "deposit"
+  | "owner"
   | "rewards"
-  | "share"
 >) {
+  const votingPowerRef = useRef<HTMLDivElement>(null);
+  useVotingPower(owner, (share) => {
+    if (!votingPowerRef.current) {
+      return;
+    }
+
+    if (!share) {
+      votingPowerRef.current.innerHTML = "−";
+      votingPowerRef.current.title = "";
+      return;
+    }
+
+    const shareFormatted = fmtnum(share, { preset: "12z", scale: 100 }) + "%";
+    votingPowerRef.current.innerHTML = fmtnum(share, "pct2z") + "%";
+    votingPowerRef.current.title = shareFormatted;
+  });
   return (
     <Link
       href="/stake"
@@ -82,10 +101,7 @@ export function PositionCardStake({
                       color: "positionContent",
                     })}
                   >
-                    <Amount
-                      value={share}
-                      percentage
-                    />
+                    <div ref={votingPowerRef} />
                   </div>
                 </div>
               }

@@ -2,12 +2,13 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import content from "@/src/content";
-import { dnumMax } from "@/src/dnum-utils";
+import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { useAccountVotingPower, useStakePosition } from "@/src/liquity-utils";
+import { useStakePosition } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { useGovernanceStats, useGovernanceUser } from "@/src/subgraph-hooks";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -24,6 +25,9 @@ export function PanelStaking() {
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
 
+  const govStats = useGovernanceStats();
+  const govUser = useGovernanceUser(account.address ?? null);
+
   const stakePosition = useStakePosition(account.address ?? null);
 
   const parsedValue = parseInputFloat(value);
@@ -33,21 +37,36 @@ export function PanelStaking() {
     : fmtnum(parsedValue, "full");
 
   const depositDifference = dn.mul(
-    parsedValue ?? dn.from(0, 18),
+    parsedValue ?? DNUM_0,
     mode === "withdraw" ? -1 : 1,
   );
 
-  const updatedShare = useAccountVotingPower(
-    account.address ?? null,
-    depositDifference[0],
-  );
+  const updatedShare = (() => {
+    const { totalLQTYStaked } = govStats.data ?? {};
+    const { stakedLQTY } = govUser.data ?? {};
+
+    if (!totalLQTYStaked || !stakedLQTY) {
+      return DNUM_0;
+    }
+
+    const updatedUserLqtyStaked = stakedLQTY + depositDifference[0];
+    const updatedTotalLqtyStaked = totalLQTYStaked + depositDifference[0];
+
+    // make sure we don't divide by zero or show negative percentages
+    return (updatedUserLqtyStaked <= 0n || updatedTotalLqtyStaked <= 0n)
+      ? DNUM_0
+      : dn.div(
+        [updatedUserLqtyStaked, 18],
+        [updatedTotalLqtyStaked, 18],
+      );
+  })();
 
   const updatedDeposit = stakePosition.data?.deposit
     ? dnumMax(
       dn.add(stakePosition.data?.deposit, depositDifference),
-      dn.from(0, 18),
+      DNUM_0,
     )
-    : dn.from(0, 18);
+    : DNUM_0;
 
   const lqtyBalance = useBalance(account.address, "LQTY");
   const isDepositFilled = parsedValue && dn.gt(parsedValue, 0);
@@ -70,8 +89,8 @@ export function PanelStaking() {
       && !insufficientBalance,
   );
 
-  const rewardsLusd = stakePosition.data?.rewards.lusd ?? dn.from(0, 18);
-  const rewardsEth = stakePosition.data?.rewards.eth ?? dn.from(0, 18);
+  const rewardsLusd = stakePosition.data?.rewards.lusd ?? DNUM_0;
+  const rewardsEth = stakePosition.data?.rewards.eth ?? DNUM_0;
 
   return (
     <>
@@ -125,9 +144,15 @@ export function PanelStaking() {
             value={value_}
             placeholder="0.00"
             secondary={{
-              start: parsedValue && lqtyPrice.data
-                ? fmtnum(dn.mul(parsedValue, lqtyPrice.data), { digits: 2, prefix: "$" })
-                : null,
+              start: (
+                <Amount
+                  prefix="$"
+                  value={dn.mul(
+                    parsedValue ?? DNUM_0,
+                    lqtyPrice.data ?? DNUM_0,
+                  )}
+                />
+              ),
               end: mode === "deposit"
                 ? (
                   lqtyBalance.data && dn.gt(lqtyBalance.data, 0) && (
@@ -155,7 +180,7 @@ export function PanelStaking() {
           />
         }
         footer={{
-          start: null, /* (
+          start: (
             <Field.FooterInfo
               label="New voting power"
               value={
@@ -169,7 +194,7 @@ export function PanelStaking() {
                 </HFlex>
               }
             />
-          )*/
+          ),
         }}
       />
       <div
@@ -256,9 +281,8 @@ export function PanelStaking() {
                   type: "stake",
                   owner: account.address,
                   deposit: updatedDeposit,
-                  share: updatedShare ?? dn.from(0, 18),
                   totalStaked: dn.add(
-                    stakePosition.data?.totalStaked ?? dn.from(0, 18),
+                    stakePosition.data?.totalStaked ?? DNUM_0,
                     depositDifference,
                   ),
                   rewards: {
