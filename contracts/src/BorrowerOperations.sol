@@ -224,13 +224,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ) external override returns (uint256) {
         _requireValidAnnualInterestRate(_annualInterestRate);
 
-        IWhitelist _whitelist = whitelist;
-        if (address(_whitelist) != address(0)) {
-            _requireWhitelisted(_whitelist, _owner);
-            _requireWhitelisted(_whitelist, msg.sender);
-            if (_receiver != address(0)) {
-                _requireWhitelisted(whitelist, _receiver);
-            }
+        _requireWhitelisted(_owner);
+        _requireWhitelisted(msg.sender);
+        if (_receiver != address(0)) {
+            _requireWhitelisted(_receiver);
         }
 
         OpenTroveVars memory vars;
@@ -266,13 +263,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     {
         _requireValidInterestBatchManager(_params.interestBatchManager);
 
-        IWhitelist _whitelist = whitelist;
-        if (address(_whitelist) != address(0)) {
-            _requireWhitelisted(_whitelist, _params.owner);
-            _requireWhitelisted(_whitelist, msg.sender);
-            if (_params.receiver != address(0)) {
-                _requireWhitelisted(_whitelist, _params.receiver);
-            }
+        _requireWhitelisted(_params.owner);
+        _requireWhitelisted(msg.sender);
+        if (_params.receiver != address(0)) {
+            _requireWhitelisted(_params.receiver);
         }
 
         OpenTroveVars memory vars;

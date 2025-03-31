@@ -38,7 +38,7 @@ contract WhitelistedBasicOps is BasicOps, WhitelistTestSetup {
         assertEq(trovesCount, 0);
 
         vm.startPrank(notWhitelistedUser);
-        vm.expectRevert(LiquityBase.NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(LiquityBase.NotWhitelisted.selector, notWhitelistedUser));
         borrowerOperations.openTrove(
             notWhitelistedUser,
             0,
@@ -63,7 +63,7 @@ contract WhitelistedBasicOps is BasicOps, WhitelistTestSetup {
         assertEq(trovesCount, 0);
 
         vm.startPrank(A);
-        vm.expectRevert(LiquityBase.NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(LiquityBase.NotWhitelisted.selector, notWhitelistedUser));
         borrowerOperations.openTrove(
             A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), notWhitelistedUser
         );
@@ -77,7 +77,7 @@ contract WhitelistedBasicOps is BasicOps, WhitelistTestSetup {
         assertEq(trovesCount, 0);
 
         vm.startPrank(notWhitelistedUser);
-        vm.expectRevert(LiquityBase.NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(LiquityBase.NotWhitelisted.selector, notWhitelistedUser));
         borrowerOperations.openTrove(
             A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), A
         );
@@ -93,7 +93,7 @@ contract WhitelistedBasicOps is BasicOps, WhitelistTestSetup {
         registerBatchManager(B);
 
         vm.startPrank(notWhitelistedUser);
-        vm.expectRevert(LiquityBase.NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(LiquityBase.NotWhitelisted.selector, notWhitelistedUser));
 
         IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory params = IBorrowerOperations
             .OpenTroveAndJoinInterestBatchManagerParams(
@@ -114,7 +114,7 @@ contract WhitelistedBasicOps is BasicOps, WhitelistTestSetup {
         registerBatchManager(B);
 
         vm.startPrank(A);
-        vm.expectRevert(LiquityBase.NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(LiquityBase.NotWhitelisted.selector, notWhitelistedUser));
 
         IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory params = IBorrowerOperations
             .OpenTroveAndJoinInterestBatchManagerParams(
@@ -134,7 +134,7 @@ contract WhitelistedBasicOps is BasicOps, WhitelistTestSetup {
         registerBatchManager(B);
 
         vm.startPrank(notWhitelistedUser);
-        vm.expectRevert(LiquityBase.NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(LiquityBase.NotWhitelisted.selector, notWhitelistedUser));
 
         IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory params = IBorrowerOperations
             .OpenTroveAndJoinInterestBatchManagerParams(A, 0, 2e18, 2000e18, 0, 0, B, 1000e18, address(0), address(0), A);
@@ -157,7 +157,7 @@ contract WhitelistedBasicOps is BasicOps, WhitelistTestSetup {
         vm.stopPrank();
 
         // notWhitelistedUser makes an SP deposit
-        vm.expectRevert(LiquityBase.NotWhitelisted.selector);
+        vm.expectRevert(abi.encodeWithSelector(LiquityBase.NotWhitelisted.selector, notWhitelistedUser));
         makeSPDepositAndClaim(notWhitelistedUser, 100e18);
     }
 }
