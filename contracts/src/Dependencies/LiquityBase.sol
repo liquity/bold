@@ -82,7 +82,8 @@ contract LiquityBase is ILiquityBase {
         }
     }
 
-    function setWhitelist(IWhitelist _whitelist) internal {
+    function setWhitelist(IWhitelist _whitelist) external override {
+        _requireCallerIsAddressesRegistry();
         whitelist = _whitelist;
     }
 

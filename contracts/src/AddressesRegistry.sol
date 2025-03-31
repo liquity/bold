@@ -179,6 +179,10 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         // update/remove whitelist
         whitelist = IWhitelist(newWhitelist);
 
+        troveManager.setWhitelist(whitelist);
+        borrowerOperations.setWhitelist(whitelist);
+        stabilityPool.setWhitelist(whitelist);
+
         // reset proposal
         delete proposedWhitelist;
 
