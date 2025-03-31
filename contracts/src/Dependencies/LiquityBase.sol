@@ -19,6 +19,7 @@ contract LiquityBase is ILiquityBase {
     IActivePool public activePool;
     IDefaultPool internal defaultPool;
     IPriceFeed internal priceFeed;
+    IWhitelist public whitelist;
 
     event ActivePoolAddressChanged(address _newActivePoolAddress);
     event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
@@ -32,6 +33,7 @@ contract LiquityBase is ILiquityBase {
         activePool = _addressesRegistry.activePool();
         defaultPool = _addressesRegistry.defaultPool();
         priceFeed = _addressesRegistry.priceFeed();
+        whitelist = _addressesRegistry.whitelist();
 
         emit ActivePoolAddressChanged(address(activePool));
         emit DefaultPoolAddressChanged(address(defaultPool));
@@ -74,13 +76,14 @@ contract LiquityBase is ILiquityBase {
 
     // --- Whitelist functions ---
 
-    function _requireWhitelisted(address _user) internal view {
-        IWhitelist _whitelist = addressesRegistry.whitelist();
-        if (address(_whitelist) != address(0)) {
-            if (!_whitelist.isWhitelisted(address(this), _user)) {
-                revert NotWhitelisted(_user);
-            }
+    function _requireWhitelisted(IWhitelist _whitelist, address _user) internal view {
+        if (!_whitelist.isWhitelisted(address(this), _user)) {
+            revert NotWhitelisted(_user);
         }
+    }
+
+    function setWhitelist(IWhitelist _whitelist) internal {
+        whitelist = _whitelist;
     }
 
     // --- AddressesRegistry functions ---

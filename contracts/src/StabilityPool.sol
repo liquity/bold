@@ -225,7 +225,10 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     * - Sends depositor's accumulated Coll gains to depositor
     */
     function provideToSP(uint256 _topUp, bool _doClaim) external override {
-        _requireWhitelisted(msg.sender);
+        IWhitelist _whitelist = whitelist;
+        if (address(_whitelist) != address(0)) {
+            _requireWhitelisted(_whitelist, msg.sender);
+        }
 
         _requireNonZeroAmount(_topUp);
 

@@ -85,7 +85,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         uint256[] memory indexes = new uint256[](1);
         indexes[0] = 4; // append new branch
 
-        vm.expectRevert("Owned/not-owner");
+        vm.expectRevert("Only owner");
         collateralRegistry.addNewCollaterals(indexes, _tokens, _troveManagers);
 
         vm.prank(boldToken.owner());
@@ -325,7 +325,7 @@ contract CollateralRegistry is MulticollateralTest, WhitelistTestSetup {
         assertEq(address(collateralRegistry.getTroveManager(4)), address(_troveManagers[0]));
 
         // only owner can remove branch
-        vm.expectRevert("Owned/not-owner");
+        vm.expectRevert("Only owner");
         collateralRegistry.removeCollateral(removeIndex);
 
         // cannot remove a not initialised branch
