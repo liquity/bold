@@ -74,7 +74,6 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     event BoldTokenAddressChanged(address _boldTokenAddress);
     event WETHAddressChanged(address _wethAddress);
     event WhitelistChanged(address _whitelistAddress);
-    event WhitelistProposed(address _newWhitelistAddress);
     event LiquidationValuesChanged(uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution);
     event LiquidationValuesProposed(
         uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution, uint256 timestamp
@@ -161,32 +160,16 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
     }
 
     // --- WHITELIST UPDATE LOGIC ---- //
-    WhitelistProposal public proposedWhitelist;
 
-    // set to address 0 to remove the whitelist
-    function proposeNewWhitelist(address _newWhitelist) external onlyOwner {
-        proposedWhitelist.whitelist = _newWhitelist;
-        proposedWhitelist.timestamp = block.timestamp;
+    // @dev set to address 0 to remove the whitelist
+    function setWhitelist(IWhitelist _newWhitelist) external override onlyOwner {
+        whitelist = _newWhitelist;
 
-        emit WhitelistProposed(_newWhitelist);
-    }
+        troveManager.setWhitelist(_newWhitelist);
+        borrowerOperations.setWhitelist(_newWhitelist);
+        stabilityPool.setWhitelist(_newWhitelist);
 
-    function acceptNewWhitelist() external onlyOwner {
-        require(proposedWhitelist.timestamp + 3 days <= block.timestamp && proposedWhitelist.timestamp != 0, "Invalid");
-
-        address newWhitelist = proposedWhitelist.whitelist;
-
-        // update/remove whitelist
-        whitelist = IWhitelist(newWhitelist);
-
-        troveManager.setWhitelist(whitelist);
-        borrowerOperations.setWhitelist(whitelist);
-        stabilityPool.setWhitelist(whitelist);
-
-        // reset proposal
-        delete proposedWhitelist;
-
-        emit WhitelistChanged(newWhitelist);
+        emit WhitelistChanged(address(_newWhitelist));
     }
 
     // --- CRs UPDATE LOGIC ---- //

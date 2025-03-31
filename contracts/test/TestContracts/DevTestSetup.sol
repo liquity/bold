@@ -88,7 +88,6 @@ contract DevTestSetup is BaseTest {
         LIQUIDATION_PENALTY_REDISTRIBUTION = troveManager.get_LIQUIDATION_PENALTY_REDISTRIBUTION();
 
         SP_YIELD_SPLIT = activePool.SP_YIELD_SPLIT();
-        console.log("SETUP", SP_YIELD_SPLIT);
     }
 
     function _setupForWithdrawCollGainToTrove() internal returns (uint256, uint256, uint256) {

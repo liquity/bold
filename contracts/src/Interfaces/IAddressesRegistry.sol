@@ -87,8 +87,7 @@ interface IAddressesRegistry is IAddressesRegistryWhitelist {
     function boldToken() external view returns (IBoldToken);
     function WETH() external returns (IWETH);
 
-    function proposeNewWhitelist(address _newWhitelist) external;
-    function acceptNewWhitelist() external;
+    function setWhitelist(IWhitelist _newWhitelist) external;
 
     function proposeNewCollateralValues(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR) external;
     function acceptNewCollateralValues() external;

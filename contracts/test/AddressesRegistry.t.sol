@@ -21,58 +21,20 @@ contract AddressesRegistryWhitelist is WhitelistTestSetup {
         assertEq(address(addressesRegistry.whitelist()), address(whitelist));
     }
 
-    function test_propose_update_whitelist() public {
+    function test_onlyOwnerCanSetWhitelist() public {
         // cannot be "accepted" before initialization
-        vm.expectRevert("Invalid");
-        _acceptNewWhitelist(addressesRegistry);
+        vm.prank(address(1234));
+        vm.expectRevert("Owned/not-owner");
+        addressesRegistry.setWhitelist(whitelist);
 
-        _deployAndSetWhitelist(addressesRegistry);
+        vm.prank(owner);
+        addressesRegistry.setWhitelist(whitelist);
+
         assertEq(address(addressesRegistry.whitelist()), address(whitelist));
 
-        // propose update
-        address newWhitelist = address(new Whitelist(owner));
-        uint256 timestamp = block.timestamp;
-        _proposeNewWhitelist(addressesRegistry, newWhitelist);
-
-        AddressesRegistry addressesContract = AddressesRegistry(address(addressesRegistry));
-        (address proposedWhitelist, uint256 proposedTimestamp) = addressesContract.proposedWhitelist();
-
-        assertEq(proposedTimestamp, block.timestamp);
-        assertEq(proposedWhitelist, newWhitelist);
-
-        // cannot accept before 3 days
-        vm.expectRevert("Invalid");
-        _acceptNewWhitelist(addressesRegistry);
-
-        // roll 3 days and accept
-        vm.warp(block.timestamp + 3 days);
-
-        _acceptNewWhitelist(addressesRegistry);
-
-        assertEq(address(addressesRegistry.whitelist()), newWhitelist);
-
-        // proposal reset
-        (proposedWhitelist, proposedTimestamp) = addressesContract.proposedWhitelist();
-        assertEq(proposedTimestamp, 0);
-        assertEq(proposedWhitelist, address(0));
-    }
-
-    function test_whitelistUpdate_onlyOwner() public {
-        // only owner can propose
-        _deployAndSetWhitelist(addressesRegistry);
-
-        address newWhitelist = address(new Whitelist(owner));
-        vm.prank(address(1234));
-        vm.expectRevert("Owned/not-owner");
-        addressesRegistry.proposeNewWhitelist(newWhitelist);
-
-        // only owner can accept proposal after 3 days
-        _proposeNewWhitelist(addressesRegistry, newWhitelist);
-
-        vm.warp(block.timestamp + 3 days);
-        vm.prank(address(1234));
-        vm.expectRevert("Owned/not-owner");
-        addressesRegistry.acceptNewWhitelist();
+        vm.prank(owner);
+        addressesRegistry.setWhitelist(IWhitelist(address(0)));
+        assertEq(address(addressesRegistry.whitelist()), address(0));
     }
 
     function test_collateralValuesUpdate_onlyOwner() public {
