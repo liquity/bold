@@ -14,6 +14,7 @@ import {
   INTEREST_RATE_DEFAULT,
   MAX_ANNUAL_INTEREST_RATE,
   MAX_COLLATERAL_DEPOSITS,
+  MAX_DEBT_LIMITS,
   MIN_ANNUAL_INTEREST_RATE,
   MIN_DEBT,
 } from "@/src/constants";
@@ -87,6 +88,8 @@ export function BorrowScreen() {
   }
 
   const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
+
+  const maxDebtLimit = MAX_DEBT_LIMITS[collSymbol] ?? null;
 
   const deposit = useInputFieldValue(fmtnum, {
     validate: (parsed, value) => {
@@ -183,6 +186,25 @@ export function BorrowScreen() {
   const isBelowMinDebt =
     debt.parsed && !debt.isEmpty && dn.lt(debt.parsed, MIN_DEBT);
 
+  const isAboveMaxDebtLimit =
+    debt.parsed && !debt.isEmpty && dn.gt(debt.parsed, maxDebtLimit);
+
+  function getDebtAmountErrorMsg() {
+    if (isBelowMinDebt) {
+      return `You must borrow at least ${fmtnum(
+        MIN_DEBT,
+        2
+      )} USDN.`;
+    }
+    if (isAboveMaxDebtLimit) {
+      return `You cannot borrow more than ${fmtnum(
+        maxDebtLimit,
+        2
+      )} USDN against ${collateral?.name}.`;
+    }
+    return '';
+  }
+
   const allowSubmit =
     account.isConnected &&
     deposit.parsed &&
@@ -190,7 +212,9 @@ export function BorrowScreen() {
     debt.parsed &&
     dn.gt(debt.parsed, 0) &&
     interestRate &&
-    dn.gt(interestRate, 0);
+    dn.gt(interestRate, 0) &&
+    !isBelowMinDebt &&
+    !isAboveMaxDebtLimit;
 
   return (
     <Screen
@@ -290,14 +314,11 @@ export function BorrowScreen() {
                 />
               }
               drawer={
-                debt.isFocused || !isBelowMinDebt
+                debt.isFocused || (!isBelowMinDebt && !isAboveMaxDebtLimit)
                   ? null
                   : {
                       mode: "error",
-                      message: `You must borrow at least ${fmtnum(
-                        MIN_DEBT,
-                        2
-                      )} USDN.`,
+                      message: getDebtAmountErrorMsg(),
                     }
               }
               label='Loan'
