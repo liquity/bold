@@ -1,0 +1,26 @@
+{
+    "numBranches": "1",
+    "branches": [
+        {
+            "collateralName": "btc",
+            "collateralSymbol": "btc",
+            "config": {
+                "bcr": 10e16,
+                "ccr": 150e16,
+                "collateralAddress": "0x0000000000000000000000000000000000000000",
+                "collateralIndex" : 0,
+                "liqPenaltyDistr": 10e16,
+                "liqPenaltySP": 5e16,
+                "mcr": 120e16,         
+                "scr": 110e16
+            }
+        }
+    ],
+    "globalContracts": {
+        "gasToken": "0x0000000000000000000000000000000000000000",
+        "bvUSD": "0x0000000000000000000000000000000000000000",
+        "collateralRegistry": "0x0000000000000000000000000000000000000000",
+        "hintHelpers": "0x0000000000000000000000000000000000000000",
+        "multiTroveGetter": "0x0000000000000000000000000000000000000000"
+    }
+}
