@@ -265,6 +265,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         );
 
         if (isTroveInBatch) {
+            // the parenthesis in the old weighted term equals `recordedDebt + accruedInterest + accruedBatchManagementFee`
+            // We want to capture last 2 ones, as the batch part only has recorded debt. The recorded debt of the trove is duplicated there,
+            // but it needs to be, because it’s also included in `entireDebtWithoutRedistribution` in the next line.
+            // So in the end we add it once and subtract it twice, which is the same as subtracting it once.
             singleLiquidation.oldWeightedRecordedDebt =
                 batch.weightedRecordedDebt + (trove.entireDebt - trove.redistBoldDebtGain) * batch.annualInterestRate;
             singleLiquidation.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
