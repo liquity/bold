@@ -79,18 +79,20 @@ export const legacyEarnWithdrawAll: FlowDeclaration<LegacyEarnWithdrawAllRequest
 
   // doing this is easier than supporting dynamic steps,
   // since this is the only tx flow using them
-  steps: {
-    withdrawFromStabilityPool0: getWithdrawStep(0),
-    withdrawFromStabilityPool1: getWithdrawStep(1),
-    withdrawFromStabilityPool2: getWithdrawStep(2),
-    withdrawFromStabilityPool3: getWithdrawStep(3),
-    withdrawFromStabilityPool4: getWithdrawStep(4),
-    withdrawFromStabilityPool5: getWithdrawStep(5),
-    withdrawFromStabilityPool6: getWithdrawStep(6),
-    withdrawFromStabilityPool7: getWithdrawStep(7),
-    withdrawFromStabilityPool8: getWithdrawStep(8),
-    withdrawFromStabilityPool9: getWithdrawStep(9),
-  },
+  steps: LEGACY_CHECK
+    ? {
+      withdrawFromStabilityPool0: getWithdrawStep(0),
+      withdrawFromStabilityPool1: getWithdrawStep(1),
+      withdrawFromStabilityPool2: getWithdrawStep(2),
+      withdrawFromStabilityPool3: getWithdrawStep(3),
+      withdrawFromStabilityPool4: getWithdrawStep(4),
+      withdrawFromStabilityPool5: getWithdrawStep(5),
+      withdrawFromStabilityPool6: getWithdrawStep(6),
+      withdrawFromStabilityPool7: getWithdrawStep(7),
+      withdrawFromStabilityPool8: getWithdrawStep(8),
+      withdrawFromStabilityPool9: getWithdrawStep(9),
+    }
+    : {},
 
   async getSteps({ request }) {
     return request.pools.map(
