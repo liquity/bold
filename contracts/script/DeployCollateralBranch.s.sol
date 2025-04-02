@@ -14,7 +14,7 @@ import "src/HintHelpers.sol";
 import "src/MultiTroveGetter.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
-import "src/PriceFeeds/WETHPriceFeed.sol";
+import "src/PriceFeeds/CollateralPriceFeed.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "src/Zappers/TokenZapper.sol";
 import "src/Dependencies/TokenWrapper.sol";
@@ -48,8 +48,18 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         uint256 liqPenaltyDistr;
         uint256 liqPenaltySP;
         uint256 MCR;
+        address oracleAddress;
+        uint256 oracleStalenessThreshold;
         uint256 SCR;
     }
+
+    struct BranchDeployment {
+        address collateralAddress;
+        bool createWrapper;
+        address oracleAddress;
+        uint256 oracleStalenessThreshold;
+    }
+
 
     struct TroveManagerParams {
         uint256 CCR;
@@ -157,11 +167,11 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         _log("Number of branches:               ", numBranches.toString());
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](numBranches);
-        address[] memory collateralAddresses = new address[](numBranches);
+        BranchDeployment [] memory branchDeploymentConfigs = new BranchDeployment[](numBranches);
         uint256[] memory collateralIndexes = new uint256[](numBranches);
         string[] memory collNames = new string[](numBranches);
         string[] memory collSymbols = new string[](numBranches);
-        bool[] memory deployZappers = new bool[](numBranches);
+
 
         for(uint256 i=0; i<numBranches; i++) {
             string memory collName = abi.decode(
@@ -187,8 +197,6 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             );
 
             // deploy collateral wrapper and set as actual collateral if necessary
-            deployZappers[i] = branchConfig.createWrapper;
-            collateralAddresses[i] = branchConfig.createWrapper ? deployCollateralWrapper(branchConfig.collateralAddress) : branchConfig.collateralAddress;
             collateralIndexes[i] = branchConfig.collateralIndex;
             collNames[i] = collName;
             collSymbols[i] = collSymbol;
@@ -201,12 +209,19 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
                 LIQUIDATION_PENALTY_REDISTRIBUTION: branchConfig.liqPenaltyDistr
             });
 
+            branchDeploymentConfigs[i].collateralAddress = branchConfig.createWrapper ? deployCollateralWrapper(branchConfig.collateralAddress) : branchConfig.collateralAddress;
+            branchDeploymentConfigs[i].createWrapper = branchConfig.createWrapper;
+            branchDeploymentConfigs[i].oracleAddress = branchConfig.oracleAddress;
+            branchDeploymentConfigs[i].oracleStalenessThreshold = branchConfig.oracleStalenessThreshold;
+
             _log("Branch number:               ", (i + 1).toString());
             _log("Collateral Address:               ", branchConfig.collateralAddress.toHexString());
             _log("Collateral Index:               ", branchConfig.collateralIndex.toHexString());
             _log("Deploy Wrapper and Zapper:               ", branchConfig.createWrapper.toString());
             _log("Collateral Name:               ", collName);
             _log("Collateral Symbol:               ", collSymbol);
+            _log("Oracle address:               ", branchConfig.oracleAddress.toHexString());
+            _log("Oracle staleness:               ", branchConfig.oracleStalenessThreshold.toString());
             _log("CCR:               ", branchConfig.CCR.toString());
             _log("BCR:               ", branchConfig.BCR.toString());
             _log("MCR:               ", branchConfig.MCR.toString());
@@ -221,9 +236,8 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         // deploy branches and connect to base protocol
         BranchContracts[] memory branches = deployAndConnectMultiBranch(
             troveManagerParamsArray,
-            deployZappers,
             globalContracts,
-            collateralAddresses,
+            branchDeploymentConfigs,
             collateralIndexes,
             collNames,
             collSymbols
@@ -236,17 +250,15 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
     // deploy collateral registry if not present yet
     function deployAndConnectMultiBranch(
         TroveManagerParams[] memory troveManagerParamsArray,
-        bool[] memory _deployZappers,
         GlobalContracts memory globalContracts,
-        address[] memory _collateralAddresses,
-        uint256[] memory _collateralIndexes, // leave empty if first deployment
+        BranchDeployment[] memory branchConfigs,
+        uint256[] memory _collateralIndexes,
         string[] memory _collNames,
         string[] memory _collSymbols
     ) public returns (BranchContracts[] memory branches) {
         assert(_collNames.length == troveManagerParamsArray.length);
         assert(_collSymbols.length == troveManagerParamsArray.length);
-        assert(_collateralAddresses.length == troveManagerParamsArray.length);
-        assert(_deployZappers.length == troveManagerParamsArray.length);
+        assert(branchConfigs.length == troveManagerParamsArray.length);
 
         DeploymentVars memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
@@ -260,9 +272,9 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
 
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             // set collaterals
-            vars.collaterals[vars.i] = IERC20Metadata(_collateralAddresses[vars.i]);
+            vars.collaterals[vars.i] = IERC20Metadata(branchConfigs[vars.i].collateralAddress);
             // set zapper to be deployed
-            vars.deployZappers[vars.i] = _deployZappers[vars.i];
+            vars.deployZappers[vars.i] = branchConfigs[vars.i].createWrapper;
         
             // Deploy AddressesRegistries and get TroveManager addresses
             (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
@@ -271,8 +283,11 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
 
-            // TODO fix oracle
-            vars.priceFeeds[vars.i] = new PriceFeedTestnet();
+            vars.priceFeeds[vars.i] = new CollateralPriceFeed(
+                deployer, 
+                branchConfigs[vars.i].oracleAddress, 
+                branchConfigs[vars.i].oracleStalenessThreshold
+            );
         }
 
         // COLLATERAL REGISTRY
@@ -287,8 +302,6 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             ) = 
                 deployAndConnectCollateralRegistry(globalContracts.bvUSD, vars.collaterals, vars.troveManagers, deployer);
         } else {
-            assert(_collateralIndexes.length == troveManagerParamsArray.length);
-
             // only add new branches to existing collateral registry
             globalContracts.collateralRegistry.addNewCollaterals(
                 _collateralIndexes,

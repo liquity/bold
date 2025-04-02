@@ -13,6 +13,8 @@
                 "liqPenaltyDistr": 10e16,
                 "liqPenaltySP": 5e16,
                 "mcr": 120e16,         
+                "oracleAddress": "0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43",
+                "oracleStalenessThreshold": 10000000000,
                 "scr": 110e16
             }
         }
