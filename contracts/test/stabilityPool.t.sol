@@ -75,6 +75,19 @@ contract SPTest is DevTestSetup {
         uint256 initialBoldGainB;
     }
 
+    struct LiqTestVars {
+        uint256 debtABefore;
+        uint256 collABefore;
+        uint256 debtBBefore;
+        uint256 collBBefore;
+        uint256 collCBefore;
+        uint256 collGasComp;
+        uint256 spCollBalBefore;
+        uint256 spCollBalAfter;
+        uint256 collToGiveToSP;
+        uint256 collToRedist;
+    }
+
     function _setupStashedAndCurrentCollGains() internal {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
 
@@ -854,12 +867,12 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertEq(boldRewardSum_1, 0);
 
         openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertEq(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -869,13 +882,13 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertEq(pendingAggInterest, 0, "Pending interest should be zero");
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0, "BOLD reward sum 1");
 
         // Adjust a Trove in a way that doesn't incur an upfront fee
         repayBold(B, troveIDs.B, 1_000 ether);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertEq(boldRewardSum_2, boldRewardSum_1, "BOLD reward sum 2");
     }
 
@@ -887,12 +900,12 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0);
 
         openTroveNoHints100pct(E, 3 ether, 2000e18, 25e16);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -904,12 +917,12 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0);
 
         changeInterestRateNoHints(B, troveIDs.B, 75e16);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -923,7 +936,7 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0); // yield from upfront fee
 
         // F sends E his bold so he can close
@@ -932,7 +945,7 @@ contract SPTest is DevTestSetup {
         vm.stopPrank();
         closeTrove(E, troveIDs.E);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -944,12 +957,12 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0);
 
         adjustTrove100pct(A, troveIDs.A, 1, 1, true, true);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -961,13 +974,13 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0);
 
         // B applies A's pending interest
         applyPendingDebt(B, troveIDs.A);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -979,14 +992,14 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0);
 
         // A liquidates D
         liquidate(A, troveIDs.D);
         assertEq(uint8(troveManager.getTroveStatus(troveIDs.D)), uint8(ITroveManager.Status.closedByLiquidation));
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -998,7 +1011,7 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0);
 
         uint256 wethBalBefore_A = collToken.balanceOf(A);
@@ -1006,7 +1019,7 @@ contract SPTest is DevTestSetup {
         redeem(A, 1e18);
         assertGt(collToken.balanceOf(A), wethBalBefore_A);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -1019,13 +1032,13 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0); // yield from upfront fee
 
         // E Makes deposit
         makeSPDepositAndClaim(E, 1e18);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -1038,13 +1051,13 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0); // yield from upfront fee
 
         // A tops up deposit
         makeSPDepositAndClaim(A, 1e18);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -1057,13 +1070,13 @@ contract SPTest is DevTestSetup {
         uint256 pendingAggInterest = activePool.calcPendingAggInterest();
         assertGt(pendingAggInterest, 0);
 
-        uint256 boldRewardSum_1 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_1 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_1, 0); // yield from upfront fee
 
         // A withdraws some deposit
         makeSPWithdrawalAndClaim(A, 1e18);
 
-        uint256 boldRewardSum_2 = stabilityPool.epochToScaleToB(0, 0);
+        uint256 boldRewardSum_2 = stabilityPool.scaleToB(0);
         assertGt(boldRewardSum_2, boldRewardSum_1);
     }
 
@@ -1508,7 +1521,7 @@ contract SPTest is DevTestSetup {
         );
     }
 
-    function testGetDepositorBoldGain_2SPDepositor1LiqEmptiesPoolFreshDeposit_EarnFairShareOfSPYield() public {
+    function testGetDepositorBoldGain_2SPDepositor1LiqFreshDeposit_EarnFairShareOfSPYield() public {
         ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
         ABCDEF[3] memory expectedShareOfReward;
 
@@ -1527,15 +1540,24 @@ contract SPTest is DevTestSetup {
         // Confirm the expected shares sum up to the total expected yield
         assertApproximatelyEqual(expectedShareOfReward[0].A + expectedShareOfReward[0].B, expectedSpYield_0, 1e3);
 
-        // A withdraws some deposit so that D's liq will empty the pool. This also mints interest and pays the yield to the SP
+        // A withdraws some deposit so that D's liq will nearly empty the pool.
+        // A claims all gains here.
+        // This also mints interest and pays the yield to the SP
         makeSPWithdrawalAndClaim(A, 500e18);
         assertEq(stabilityPool.getDepositorYieldGain(A), 0, "A yield gain should be 0");
         assertEq(activePool.calcPendingAggInterest(), 0, "Pending agg interest should be 0");
 
         // A liquidates D
         liquidate(A, troveIDs.D);
-        // Check SP has no funds now
-        assertEq(stabilityPool.getTotalBoldDeposits(), 0, "SP total bold deposits should be 0");
+        // Check SP has only 1e18 BOLD now, and A and B have small remaining deposits
+        assertEq(stabilityPool.getTotalBoldDeposits(), 1e18, "SP total bold deposits should be 1e18");
+        assertLt(stabilityPool.getCompoundedBoldDeposit(A), 1e18, "A should have <1e18 deposit");
+        assertLt(stabilityPool.getCompoundedBoldDeposit(B), 1e18, "B should have <1e18 deposit");
+        assertLe(
+            stabilityPool.getCompoundedBoldDeposit(B) + stabilityPool.getCompoundedBoldDeposit(A),
+            1e18,
+            "A & B deposits should sum to <=1e18"
+        );
 
         // C and D makes fresh deposit
         uint256 deposit_C = 1e18;
@@ -1556,18 +1578,22 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest_1, 0);
         uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
 
-        // Expected reward round 2 calculated with a different totalSPDeposits denominator. Expect A and B to earn 0 of
+        // Expected reward round 2 calculated with a different totalSPDeposits denominator. Expect A and B to earn a small share of
         // this reward.
         expectedShareOfReward[1].A = getShareofSPReward(A, expectedSpYield_1);
         expectedShareOfReward[1].B = getShareofSPReward(B, expectedSpYield_1);
         expectedShareOfReward[1].C = getShareofSPReward(C, expectedSpYield_1);
         expectedShareOfReward[1].D = getShareofSPReward(D, expectedSpYield_1);
-        // A and B should get 0 from reward 2
-        assertEq(expectedShareOfReward[1].A, 0, "A expected share of reward should be 0");
-        assertEq(expectedShareOfReward[1].B, 0, "B expected share of reward should be 0");
-        // C and D should split the entire reward 2
+        assertGt(expectedShareOfReward[1].A, 0);
+        assertGt(expectedShareOfReward[1].B, 0);
         assertGt(expectedShareOfReward[1].C, 0);
         assertGt(expectedShareOfReward[1].D, 0);
+        // A and B should get small rewards from reward 2, as their deposits were reduced to 1e18.
+        // Confirm A, B are smaller than C, D's rewards
+        assertLt(expectedShareOfReward[1].A, expectedShareOfReward[1].C);
+        assertLt(expectedShareOfReward[1].A, expectedShareOfReward[1].D);
+        assertLt(expectedShareOfReward[1].B, expectedShareOfReward[1].C);
+        assertLt(expectedShareOfReward[1].B, expectedShareOfReward[1].D);
 
         // Confirm the expected shares sum up to the total expected yield
         assertApproximatelyEqual(
@@ -1581,16 +1607,18 @@ contract SPTest is DevTestSetup {
         // A trove gets poked again, interst minted and yield paid to SP
         applyPendingDebt(B, troveIDs.A);
 
-        // Expect A to receive 0 - they already claimed his gain 1, and gets 0 from 2nd reward
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), 0, 1e4, "A should receive 0");
-        // Expect B to receive only their share of reward 1, and get 0 for 2nd reward
+        // Expect A to receive only their share of 2nd reward, since they already claimed first
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(A), expectedShareOfReward[1].A, 1e4, "A should receive only 2nd reward"
+        );
+        // Expect B to receive their share of 1st and 2nd rewards
         assertApproximatelyEqual(
             stabilityPool.getDepositorYieldGain(B),
-            expectedShareOfReward[0].B,
+            expectedShareOfReward[0].B + expectedShareOfReward[1].B,
             1e4,
-            "B should receive only their share of reward 1"
+            "B should receive only their share of 1st and 2nd"
         );
-        // Expect C to receive a share of both reward 1 and 2
+        // Expect C to receive a share of only 2nd reward
         assertApproximatelyEqual(
             stabilityPool.getDepositorYieldGain(C),
             expectedShareOfReward[1].C,
@@ -1600,7 +1628,7 @@ contract SPTest is DevTestSetup {
     }
 
     function testGetDepositorBoldGain_2SPDepositor1LiqScaleChangeFreshDeposit_EarnFairShareOfSPYield() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustmentsBigTroves();
         ABCDEF[3] memory expectedShareOfReward;
 
         vm.warp(block.timestamp + 90 days + 1);
@@ -1618,7 +1646,7 @@ contract SPTest is DevTestSetup {
         // Confirm the expected shares sum up to the total expected yield
         assertApproximatelyEqual(expectedShareOfReward[0].A + expectedShareOfReward[0].B, expectedSpYield_0, 1e3);
 
-        // A withdraws some deposit so that D's liq will *almost* empty the pool - triggers a scale change.
+        // A withdraws some deposit so that D's liq will trigger a scale change.
         // This also mints interest and pays the yield to the SP
         uint256 debtSPDelta = totalSPDeposits_0 - troveManager.getTroveEntireDebt(troveIDs.D);
         makeSPWithdrawalAndClaim(A, debtSPDelta - 1e12);
@@ -1634,8 +1662,8 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.currentScale(), 1);
 
         // C and D makes fresh deposit
-        uint256 deposit_C = 1e18;
-        uint256 deposit_D = 1e18;
+        uint256 deposit_C = 1e27;
+        uint256 deposit_D = 1e27;
         makeSPDepositAndClaim(C, deposit_C);
         transferBold(C, D, deposit_D);
         makeSPDepositAndClaim(D, deposit_D);
@@ -1647,23 +1675,22 @@ contract SPTest is DevTestSetup {
         assertGt(pendingAggInterest_1, 0);
         uint256 expectedSpYield_1 = SP_YIELD_SPLIT * pendingAggInterest_1 / 1e18;
 
-        // Expected reward round 2 calculated with a different totalSPDeposits denominator. Expect A and B to earn 0 of
-        // this reward.
+        // Expected reward round 2 calculated with a different totalSPDeposits denominator.
         expectedShareOfReward[1].A = getShareofSPReward(A, expectedSpYield_1);
         expectedShareOfReward[1].B = getShareofSPReward(B, expectedSpYield_1);
         expectedShareOfReward[1].C = getShareofSPReward(C, expectedSpYield_1);
         expectedShareOfReward[1].D = getShareofSPReward(D, expectedSpYield_1);
 
-        // Expect A and B to get nearly 0 (in practice, 0 due to rounding)
-        assertEq(expectedShareOfReward[1].A, 0);
-        assertEq(expectedShareOfReward[1].B, 0);
-        // Expect C and D to get reward 2
+        // Expect A, B, C and D to get reward 2
+        assertGt(expectedShareOfReward[1].A, 0);
+        assertGt(expectedShareOfReward[1].B, 0);
         assertGt(expectedShareOfReward[1].C, 0);
         assertGt(expectedShareOfReward[1].D, 0);
-
-        // Expect C and D to share almost the entirety of reward 2.
-        // More precision loss tolerance here, since there's an extra div by 1e9 in A and B's reward calcs.
-        assertApproximatelyEqual(expectedShareOfReward[1].C + expectedShareOfReward[1].D, expectedSpYield_1, 1e14);
+        // ... though A, B's share should be smaller than C, D's share
+        assertLt(expectedShareOfReward[1].A, expectedShareOfReward[1].C);
+        assertLt(expectedShareOfReward[1].A, expectedShareOfReward[1].D);
+        assertLt(expectedShareOfReward[1].B, expectedShareOfReward[1].C);
+        assertLt(expectedShareOfReward[1].B, expectedShareOfReward[1].D);
 
         // A trove gets poked again, interst minted and yield paid to SP
         applyPendingDebt(B, troveIDs.A);
@@ -1671,15 +1698,17 @@ contract SPTest is DevTestSetup {
         // A only gets reward 2 since already claimed reward 1
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward[1].A, 1e15);
 
+        // B gets reward 1 + 2
         assertApproximatelyEqual(
             stabilityPool.getDepositorYieldGain(B), expectedShareOfReward[0].B + expectedShareOfReward[1].B, 1e14
         );
+        // C, D get reward 2
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward[1].C, 1e14);
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(D), expectedShareOfReward[1].D, 1e14);
     }
 
     function testGetDepositorBoldGain_2SPDepositor2LiqScaleChangesFreshDeposit_EarnFairShareOfSPYield() public {
-        ABCDEF memory troveIDs = _setupForSPDepositAdjustments();
+        ABCDEF memory troveIDs = _setupForSPDepositAdjustmentsBigTroves();
         ABCDEF[3] memory expectedShareOfReward;
         uint256[3] memory pendingAggInterest;
         uint256[3] memory expectedSpYield;
@@ -1715,8 +1744,7 @@ contract SPTest is DevTestSetup {
         assertEq(stabilityPool.currentScale(), 1);
 
         // C makes fresh deposit
-        uint256 deposit_C = 2000e18;
-        makeSPDepositAndClaim(C, deposit_C);
+        makeSPDepositAndClaim(C, 2000e27);
 
         // fast-forward time again and accrue interest
         vm.warp(block.timestamp + 90 days + 1);
@@ -1735,35 +1763,30 @@ contract SPTest is DevTestSetup {
         // SP depositors benefit from the upfront fee paid by E, in addition to interest
         expectedSpYield[1] = SP_YIELD_SPLIT * (pendingAggInterest[1] + upfrontFee_E) / 1e18;
 
-        // Expected reward round 2 calculated with a different totalSPDeposits denominator. Expect A and B to earn 0 of
-        // this reward.
+        // Expected reward round 2 calculated with a different totalSPDeposits denominator.
         expectedShareOfReward[1].A = getShareofSPReward(A, expectedSpYield[1]);
         expectedShareOfReward[1].B = getShareofSPReward(B, expectedSpYield[1]);
         expectedShareOfReward[1].C = getShareofSPReward(C, expectedSpYield[1]);
 
-        // Expect A and B to get nearly no share (in practice, 0 due to rounding down)
-        assertEq(expectedShareOfReward[1].A, 0);
-        assertEq(expectedShareOfReward[1].B, 0);
-        // Expect C to get almost the full share
+        assertGt(expectedShareOfReward[1].A, 0);
+        assertGt(expectedShareOfReward[1].B, 0);
         assertGt(expectedShareOfReward[1].C, 0);
 
-        // Expect C to get most of reward 2
-        //  More precision loss tolerance here,since there's an extra div by 1e9 in A and B's reward calcs.
-        assertApproximatelyEqual(expectedShareOfReward[1].C, expectedSpYield[1], 1e14);
+        // Expect A an B rewards to be smaller than C
+        assertLt(expectedShareOfReward[1].A, expectedShareOfReward[1].C);
+        assertLt(expectedShareOfReward[1].B, expectedShareOfReward[1].C);
 
         // Price drops slightly
         priceFeed.setPrice(price - 1e18);
         // E gets liquidated
         liquidate(E, troveIDs.E);
 
-        // 2000000001000000000000
         // Check scale increased again
         assertEq(stabilityPool.currentScale(), 2);
 
         // D makes fresh deposit (and interest minted and reward 2 yield paid to SP)
-        uint256 deposit_D = 1e18;
-        transferBold(E, D, deposit_D);
-        makeSPDepositAndClaim(D, deposit_D);
+        transferBold(E, D, 1e18);
+        makeSPDepositAndClaim(D, 1e18);
 
         // fast-forward time again and accrue interest
         vm.warp(block.timestamp + 2 * STALE_TROVE_DURATION);
@@ -1777,27 +1800,40 @@ contract SPTest is DevTestSetup {
         expectedShareOfReward[2].C = getShareofSPReward(C, expectedSpYield[2]);
         expectedShareOfReward[2].D = getShareofSPReward(D, expectedSpYield[2]);
 
-        // Expect A, B, C get nearly no share of reward 3 (in practice, 0 due to rounding down)
-        assertEq(expectedShareOfReward[2].A, 0);
-        assertEq(expectedShareOfReward[2].B, 0);
-        assertEq(expectedShareOfReward[2].C, 0);
-        // Expect D gets the entire reward 3
+        // A, B, C, D get some rewards
+        assertGt(expectedShareOfReward[2].A, 0);
+        assertGt(expectedShareOfReward[2].B, 0);
+        assertGt(expectedShareOfReward[2].C, 0);
         assertGt(expectedShareOfReward[2].D, 0);
 
-        // Expect D to get most of reward 3
-        // More precision loss tolerance here, since there's an extra div by 1e9 in B's reward calc.
-        assertApproximatelyEqual(expectedShareOfReward[2].D, expectedSpYield[2], 1e14, "1");
+        // Expect A, B to get less than C
+        assertLt(expectedShareOfReward[2].A, expectedShareOfReward[1].C);
+        assertLt(expectedShareOfReward[2].B, expectedShareOfReward[1].C);
 
         // Interest minted and reward 3 triggered again
         // A trove gets poked again, interst minted and yield paid to SP
         applyPendingDebt(B, troveIDs.A);
 
-        // Expect A only gets a share of reward 2 as they already claimed their share of reward 1
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(A), expectedShareOfReward[1].A, 1e14, "2");
+        // Expect A only gets a share of reward 2 and 3 as they already claimed their share of reward 1
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(A), expectedShareOfReward[1].A + expectedShareOfReward[2].A, 1e14, "2"
+        );
 
-        // Expect B, C and D only get shares of rewards 1, 2 and 3 respectively
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(B), expectedShareOfReward[0].B, 1e14, "3");
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(C), expectedShareOfReward[1].C, 1e14, "4");
+        // Expect B, C get shares of rewards 1, 2 and 3 respectively
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(B),
+            expectedShareOfReward[0].B + expectedShareOfReward[1].B + expectedShareOfReward[2].B,
+            1e14,
+            "3"
+        );
+        assertApproximatelyEqual(
+            stabilityPool.getDepositorYieldGain(C),
+            expectedShareOfReward[0].C + expectedShareOfReward[1].C + expectedShareOfReward[2].C,
+            1e14,
+            "4"
+        );
+
+        // Expect D gets share of 3 only
         assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(D), expectedShareOfReward[2].D, 1e14, "5");
     }
 
@@ -1805,7 +1841,7 @@ contract SPTest is DevTestSetup {
 
     function testLiquidationWithLowPDoesNotDecreaseP_Cheat_Fuzz(uint256 _cheatP, uint256 _surplus) public {
         // Choose a low value of P initially
-        _cheatP = bound(_cheatP, 1e9, 1e11);
+        _cheatP = bound(_cheatP, 1e27, 1e29);
 
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
@@ -1839,8 +1875,8 @@ contract SPTest is DevTestSetup {
         uint256 scale2 = stabilityPool.currentScale();
         assertGt(scale2, scale1, "scale didnt change");
 
-        // Confirm that P has not fallen below 1e9
-        assertGe(stabilityPool.P(), 1e9);
+        // Confirm that P has not fallen below 1e27
+        assertGe(stabilityPool.P(), 1e27);
     }
 
     function testLiquidationsWithLowPAllowFurtherRewardsForAllFreshDepositors_Cheat_Fuzz(
@@ -1850,7 +1886,7 @@ contract SPTest is DevTestSetup {
         PTestVars memory testVars;
 
         // Choose a low value of P initially
-        _cheatP = bound(_cheatP, 1e9, 1e11);
+        _cheatP = bound(_cheatP, 1e27, 1e29);
 
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
@@ -1894,10 +1930,6 @@ contract SPTest is DevTestSetup {
         uint256 scale2 = stabilityPool.currentScale();
         assertGt(scale2, scale1, "scale didnt change");
 
-        // Check A deposit reduced to ~0
-        makeSPWithdrawalAndClaim(A, stabilityPool.getCompoundedBoldDeposit(A));
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0, "A deposit should be zero");
-
         // D sends some BOLD to C
         uint256 freshDeposit = boldToken.balanceOf(D) / 2;
         assertGt(freshDeposit, 0);
@@ -1907,6 +1939,10 @@ contract SPTest is DevTestSetup {
         // D and C make deposits
         makeSPDepositAndClaim(C, freshDeposit);
         makeSPDepositAndClaim(D, freshDeposit);
+
+        // Check A deposit reduced to ~0
+        makeSPWithdrawalAndClaim(A, stabilityPool.getCompoundedBoldDeposit(A));
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0, "A deposit should be zero");
 
         vm.warp(block.timestamp + 1 days);
 
@@ -1982,7 +2018,7 @@ contract SPTest is DevTestSetup {
         PTestVars memory testVars;
 
         // Choose a low value of P initially
-        _cheatP = bound(_cheatP, 1e9, 1e11);
+        _cheatP = bound(_cheatP, 1e27, 1e29);
 
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
@@ -2117,7 +2153,7 @@ contract SPTest is DevTestSetup {
 
     function testHighFractionLiqWithLowPTriggersTwoScaleChanges_Cheat_Fuzz(uint256 _cheatP, uint256 _surplus) public {
         // Choose a low value of P initially
-        _cheatP = bound(_cheatP, 1e9, 1e11);
+        _cheatP = bound(_cheatP, 1e27, 1e29);
 
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
@@ -2134,7 +2170,10 @@ contract SPTest is DevTestSetup {
         console2.log(_cheatP, "_cheatP");
         assertEq(stabilityPool.P(), _cheatP, "P is not set");
 
-        ABCDEF memory troveIDs = _setupForPTests();
+        ABCDEF memory troveIDs;
+        (,,, troveIDs.D) = _setupForBatchLiquidateTrovesPureOffset(1e9);
+        // B leaves so only A is in the pool
+        makeSPWithdrawalAndClaim(B, stabilityPool.getCompoundedBoldDeposit(B));
 
         uint256 scale1 = stabilityPool.currentScale();
 
@@ -2157,7 +2196,7 @@ contract SPTest is DevTestSetup {
 
     function testHighFractionLiqWithLowPDoesNotDecreasePBelow1e9(uint256 _cheatP, uint256 _surplus) public {
         // Choose a low value of P initially
-        _cheatP = bound(_cheatP, 1e9, 1e11);
+        _cheatP = bound(_cheatP, 1e27, 1e29);
 
         // Cheat 1: manipulate contract state to make value of P low
         vm.store(
@@ -2192,14 +2231,432 @@ contract SPTest is DevTestSetup {
         uint256 scale2 = stabilityPool.currentScale();
         assertGt(scale2, scale1, "scale didnt change");
 
-        // Confirm that P has not fallen below 1e9
-        assertGe(stabilityPool.P(), 1e9);
+        // Confirm that P has not fallen below 1e27
+        assertGe(stabilityPool.P(), 1e27);
     }
-}
 
-// TODO:
-// 1) claim tests for withdrawCollGainToTrove (if we don't remove it)
-//
-// 2) tests for claimAllCollGains (requires deposit data & getter refactor):
-//    - updates recorded deposit value
-//    - updates deposit snapshots
+    // --- Min. 1 BOLD in SP tests ---
+
+    // --- Liq debt x in range: (totalBoldDeposits - 1e18) < x <= totalBoldDeposits ---
+
+    function testLiqDebtWithin1BOLDOfTotalDepositsLeaves1BOLDinSP_Fuzz(uint256 _toRedist) public {
+        // The portion to redistribute is the portion of the debt that would otherwise eat into the
+        // the last 1e18 BOLD in the SP.
+        // We bound this in range 0 < _toRedist <= 1e18.
+        _toRedist = bound(_toRedist, 1, 1e18);
+        console.log(_toRedist, "_toRedist");
+        assertLe(_toRedist, 1e18, "wrong _toRedist");
+
+        uint256 rate = 5e16;
+
+        priceFeed.setPrice(3000e18);
+
+        uint256 toSP = 5000e18;
+        openTroveNoHints100pct(A, 5 ether, toSP, rate);
+
+        // B's target debt should be: totalBoldDeposits - 1e18 + _toRedist
+        uint256 B_targetDebt = toSP - 1e18 + _toRedist;
+        // B opens Trove with debt equal to the amount intended to be offset
+        (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
+        uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        // A deposits to SP
+        makeSPDepositNoClaim(A, toSP);
+
+        // Confirm that B's entire debt is within 1e18 of SP total deposits
+        assertLt(stabilityPool.getTotalBoldDeposits() - troveManager.getTroveEntireDebt(troveIdB), 1e18);
+
+        priceFeed.setPrice(300e18);
+
+        // B Liquidated
+        liquidate(A, troveIdB);
+
+        // Confirm in fact 1e18 remains in SP
+        assertEq(stabilityPool.getTotalBoldDeposits(), 1e18);
+        // A's deposit after liq should be <= totalBoldDeposits, and very close to it, due to rounding error
+        assertLe(stabilityPool.getCompoundedBoldDeposit(A), stabilityPool.getTotalBoldDeposits());
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), stabilityPool.getTotalBoldDeposits(), 1e3);
+    }
+
+    function testLiqDebtWithin1BOLDOfTotalDepositsRedistributesRemainder_Fuzz(uint256 _toRedist) public {
+        // The portion to redistribute is the portion of the debt that would otherwise eat into the
+        // the last 1e18 BOLD in the SP.
+        // We bound this in range 0 < _toRedist <= 1e18.
+        _toRedist = bound(_toRedist, 1, 1e18);
+
+        uint256 rate = 5e16;
+
+        priceFeed.setPrice(3000e18);
+
+        uint256 toSP = 5000e18;
+        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP, rate);
+        uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+
+        // B's target debt should be: totalBoldDeposits - 1e18 + _toRedist
+        uint256 B_targetDebt = toSP - 1e18 + _toRedist;
+        // B opens Trove with debt equal to the amount intended to be offset
+        (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
+        uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        // A deposits to SP
+        makeSPDepositNoClaim(A, toSP);
+
+        // Confirm that B's entire debt is within 1e18 of SP total deposits
+        assertLt(stabilityPool.getTotalBoldDeposits() - troveManager.getTroveEntireDebt(troveIdB), 1e18);
+
+        priceFeed.setPrice(300e18);
+
+        // B Liquidated
+        liquidate(A, troveIdB);
+
+        // Check redistribution occured, i.e. A's debt increased by the correct amount
+        console.log(troveManager.getTroveEntireDebt(troveIdA), "A debt after");
+        console.log(debtABefore, "A debt before");
+        console.log(getTroveEntireDebt(troveIdA) - debtABefore, "A debt after - A debt before");
+        console.log(_toRedist, "_toRedist");
+
+        // Allow small error tolerance for the redistribution reward math
+        assertApproximatelyEqual(troveManager.getTroveEntireDebt(troveIdA), debtABefore + _toRedist, 1e3);
+    }
+
+    function testLiqDebtWithin1BoldOfTotalDepositsSplitsCollGainsCorrectly_Fuzz() public {
+        LiqTestVars memory vars;
+
+        // The portion to redistribute is the portion of the debt that would otherwise eat into the
+        // the last 1e18 BOLD in the SP.
+        // We bound this in range 0 < _toRedist <= 1e18.
+        // _toRedist = bound(_toRedist, 1, 1e18);
+        uint256 _toRedist = 5e17;
+
+        uint256 rate = 5e16;
+
+        priceFeed.setPrice(3000e18);
+
+        uint256 toSP = 5000e18;
+        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP, rate);
+        vars.debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+        vars.collABefore = troveManager.getTroveEntireColl(troveIdA);
+
+        // B's target debt should be: totalBoldDeposits - 1e18 + _toRedist
+        uint256 B_targetDebt = toSP - 1e18 + _toRedist;
+        // B opens Trove with debt equal to the amount intended to be offset
+        (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
+        uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+        vars.debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
+        vars.collBBefore = troveManager.getTroveEntireColl(troveIdB);
+
+        // A deposits to SP
+        makeSPDepositNoClaim(A, toSP);
+
+        // Confirm that B's entire debt is within 1e18 of SP total deposits
+        assertLt(stabilityPool.getTotalBoldDeposits() - vars.debtBBefore, 1e18);
+
+        priceFeed.setPrice(300e18);
+
+        vars.collCBefore = collToken.balanceOf(C);
+
+        // B Liquidated by C
+        liquidate(C, troveIdB);
+
+        uint256 liqDebtOffset = vars.debtBBefore - _toRedist;
+
+        // Check redistribution occured, i.e. A's debt increased by the correct amount
+        // Allow small error tolerance for the redistribution reward math
+        assertApproximatelyEqual(
+            troveManager.getTroveEntireDebt(troveIdA),
+            vars.debtABefore + _toRedist,
+            1e3,
+            "Incorrect debt increase trove A"
+        );
+
+        // For < 400 units of LST collateral, collGasComp = 0.0375 WETH + 0.5% * coll.
+        // We only need the Trove's component here.
+        vars.collGasComp = vars.collBBefore / 200;
+
+        // Check C's total WETH balance increased by the total gas comp
+        assertEq(collToken.balanceOf(C), vars.collCBefore + vars.collGasComp + 375e14, "Incorrect coll increase C");
+
+        // Check SP Coll has increased.  Expect no coll surplus for Trove owner, given massive price decrease
+        vars.spCollBalAfter = stabilityPool.getCollBalance();
+        vars.collToGiveToSP = (vars.collBBefore - vars.collGasComp) * liqDebtOffset / vars.debtBBefore;
+        vars.collToRedist = vars.collBBefore - vars.collGasComp - vars.collToGiveToSP;
+
+        assertApproxEqAbs(vars.spCollBalAfter - vars.spCollBalBefore, vars.collToGiveToSP, 10, "Incorrect coll in SP");
+
+        //  Check correct coll is redistributed to A
+        assertApproxEqAbs(
+            troveManager.getTroveEntireColl(troveIdA) - vars.collABefore, vars.collToRedist, 10, "Incorrect coll to A"
+        );
+    }
+
+    // --- Liq debt x in range: x < (totalBoldDeposits - 1e18)
+
+    function testLiqDebtLessThanSPMinus1BOLDLeavesSurplusInSP_Fuzz(uint256 _surplusToLeaveInSP) public {
+        _surplusToLeaveInSP = bound(_surplusToLeaveInSP, 1e18, 2000e18);
+
+        uint256 rate = 5e16;
+
+        priceFeed.setPrice(3000e18);
+
+        uint256 toSP = 5000e18;
+        openTroveNoHints100pct(A, 5 ether, toSP, rate);
+
+        uint256 B_targetDebt = toSP - _surplusToLeaveInSP;
+        // B opens Trove with debt equal to the amount intended to be offset
+        (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
+        uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        // Reassign surplus based on B's actual debt, in case there was rounding error when calculating B's exact debt
+        _surplusToLeaveInSP = toSP - troveManager.getTroveEntireDebt(troveIdB);
+        assertGe(_surplusToLeaveInSP, 1e18);
+
+        // A deposits to SP
+        makeSPDepositNoClaim(A, toSP);
+
+        // Confirm that B's entire debt is less than (totalBoldDeposits - 1e18)
+        assertLe(troveManager.getTroveEntireDebt(troveIdB), stabilityPool.getTotalBoldDeposits() - 1e18);
+
+        priceFeed.setPrice(300e18);
+
+        // B Liquidated
+        liquidate(A, troveIdB);
+
+        // Confirm the surplus remains in the SP
+        assertEq(stabilityPool.getTotalBoldDeposits(), _surplusToLeaveInSP);
+        // A's deposit after liq should be <= totalBoldDeposits, and very close to it, due to rounding error
+        assertLe(stabilityPool.getCompoundedBoldDeposit(A), stabilityPool.getTotalBoldDeposits());
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), stabilityPool.getTotalBoldDeposits(), 1e3);
+    }
+
+    function testLiqDebtLessThanSPMinus1BOLDDoesNotRedistribute_Fuzz(uint256 _surplusToLeaveInSP) public {
+        _surplusToLeaveInSP = bound(_surplusToLeaveInSP, 1e18, 2000e18);
+
+        uint256 rate = 5e16;
+
+        priceFeed.setPrice(3000e18);
+
+        uint256 toSP = 5000e18;
+        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP, rate);
+        uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+
+        uint256 B_targetDebt = toSP - _surplusToLeaveInSP;
+        // B opens Trove with debt equal to the amount intended to be offset
+        (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
+        uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        // Reassign surplus based on B's actual debt, in case there was rounding error in calculating B's exact debt
+        _surplusToLeaveInSP = toSP - troveManager.getTroveEntireDebt(troveIdB);
+        assertGe(_surplusToLeaveInSP, 1e18);
+
+        // A deposits to SP
+        makeSPDepositNoClaim(A, toSP);
+
+        // Confirm that B's entire debt is less than (totalBoldDeposits - 1e18)
+        assertLe(troveManager.getTroveEntireDebt(troveIdB), stabilityPool.getTotalBoldDeposits() - 1e18);
+
+        priceFeed.setPrice(300e18);
+
+        // B Liquidated
+        liquidate(A, troveIdB);
+
+        // Check redistribution did not occur, i.e. A's debt did not change
+        assertEq(troveManager.getTroveEntireDebt(troveIdA), debtABefore);
+    }
+
+    // --- Liq debt x for x > totalBoldDeposits ---
+
+    function testLiqDebtGreaterThanTotalSPLeaves1BOLDInSP_Fuzz(uint256 _toRedist) public {
+        _toRedist = bound(_toRedist, 1e18 + 1, 1000e18);
+
+        uint256 rate = 5e16;
+
+        priceFeed.setPrice(3000e18);
+
+        uint256 toSP = 5000e18;
+        openTroveNoHints100pct(A, 5 ether, toSP, rate);
+
+        uint256 B_targetDebt = toSP - 1e18 + _toRedist;
+        // B opens Trove with debt equal to the amount intended to be offset
+        (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
+        uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        // A deposits to SP
+        makeSPDepositNoClaim(A, toSP);
+
+        // Confirm that B's entire debt is greater than totalBoldDeposits
+        assertGt(troveManager.getTroveEntireDebt(troveIdB), stabilityPool.getTotalBoldDeposits());
+
+        priceFeed.setPrice(300e18);
+
+        // B Liquidated
+        liquidate(A, troveIdB);
+
+        // Confirm that 1e18 remains in the SP
+        assertEq(stabilityPool.getTotalBoldDeposits(), 1e18);
+        // A's deposit after liq should be <= totalBoldDeposits, and very close to it, due to rounding error
+        assertLe(stabilityPool.getCompoundedBoldDeposit(A), stabilityPool.getTotalBoldDeposits());
+        assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), stabilityPool.getTotalBoldDeposits(), 1e3);
+    }
+
+    function testLiqDebtGreaterThanTotalSPRedistributesTheRemainder_Fuzz(uint256 _toRedist) public {
+        _toRedist = bound(_toRedist, 1e18 + 1, 1000e18);
+
+        uint256 rate = 5e16;
+
+        priceFeed.setPrice(3000e18);
+
+        uint256 toSP = 5000e18;
+        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP, rate);
+        uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+
+        uint256 B_targetDebt = toSP - 1e18 + _toRedist;
+        // B opens Trove with debt equal to the amount intended to be offset
+        (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
+        uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        // A deposits to SP
+        makeSPDepositNoClaim(A, toSP);
+
+        // Confirm that B's entire debt is greater than totalBoldDeposits
+        assertGt(troveManager.getTroveEntireDebt(troveIdB), stabilityPool.getTotalBoldDeposits());
+
+        priceFeed.setPrice(300e18);
+
+        // B Liquidated
+        liquidate(A, troveIdB);
+
+        // Check redistribution occured, i.e. A's debt increased by the correct amount
+        // Allow small error tolerance for the redistribution reward math
+        assertApproximatelyEqual(troveManager.getTroveEntireDebt(troveIdA), debtABefore + _toRedist, 1e3);
+    }
+
+    function testLiqDebtGreaterThanTotalSSplitsCollGainsCorrectly_Fuzz(uint256 _toRedist) public {
+        LiqTestVars memory vars;
+
+        _toRedist = bound(_toRedist, 1e18 + 1, 1000e18);
+        // uint256 _toRedist = 1000e18;
+
+        uint256 rate = 5e16;
+
+        priceFeed.setPrice(3000e18);
+
+        uint256 toSP = 5000e18;
+        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP, rate);
+        vars.debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+        vars.collABefore = troveManager.getTroveEntireColl(troveIdA);
+
+        uint256 B_targetDebt = toSP - 1e18 + _toRedist;
+        // B opens Trove with debt equal to the amount intended to be offset
+        (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
+        uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        vars.debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
+
+        vars.collBBefore = troveManager.getTroveEntireColl(troveIdB);
+        assertEq(vars.collBBefore, 5 ether);
+
+        // A deposits to SP
+        makeSPDepositNoClaim(A, toSP);
+
+        uint256 spBefore = stabilityPool.getTotalBoldDeposits();
+
+        // Reassign _toRedist based on B's actual debt, in case there was rounding error in calculating B's exact debt
+        _toRedist = troveManager.getTroveEntireDebt(troveIdB) - spBefore + 1e18;
+
+        // Confirm that B's entire debt is greater than totalBoldDeposits
+        assertGt(troveManager.getTroveEntireDebt(troveIdB), spBefore);
+
+        priceFeed.setPrice(300e18);
+
+        vars.collCBefore = collToken.balanceOf(C);
+        vars.spCollBalBefore = stabilityPool.getCollBalance();
+
+        // B Liquidated by C
+        liquidate(C, troveIdB);
+
+        uint256 liqDebtOffset = vars.debtBBefore - _toRedist;
+
+        assertEq(stabilityPool.getTotalBoldDeposits(), spBefore - liqDebtOffset);
+
+        // Check debt redistribution occured, i.e. A's debt increased by the correct amount
+        // Allow small error tolerance for the redistribution reward math
+        assertApproximatelyEqual(troveManager.getTroveEntireDebt(troveIdA), vars.debtABefore + _toRedist, 1e3);
+
+        // Check coll redistribution is correct
+
+        // For < 400 units of LST collateral, collGasComp = 0.0375 WETH + 0.5% * coll.
+        // We only need the Trove's component here.
+        vars.collGasComp = vars.collBBefore / 200;
+
+        // Check C's total WETH balance increased by the total gas comp
+        assertEq(collToken.balanceOf(C), vars.collCBefore + vars.collGasComp + 375e14);
+
+        // Check SP Coll has increased.  Expect no coll surplus for Trove owner, given massive price decrease
+        vars.spCollBalAfter = stabilityPool.getCollBalance();
+        vars.collToGiveToSP = (vars.collBBefore - vars.collGasComp) * liqDebtOffset / vars.debtBBefore;
+        vars.collToRedist = vars.collBBefore - vars.collGasComp - vars.collToGiveToSP;
+
+        assertApproxEqAbs(vars.spCollBalAfter - vars.spCollBalBefore, vars.collToGiveToSP, 10, "Incorrect coll in SP");
+
+        //  Check correct coll is redistributed to A
+        assertApproxEqAbs(
+            troveManager.getTroveEntireColl(troveIdA) - vars.collABefore, vars.collToRedist, 10, "Incorrect coll to A"
+        );
+    }
+
+    // --- Withdrawals from SP ---
+
+    function testSingleDepositorCantWithdrawWhenLeavingLessThan1BoldInPool_Fuzz(uint256 _withdrawal) public {
+        priceFeed.setPrice(3000e18);
+        openTroveNoHints100pct(A, 5 ether, 2000e18, 5e16);
+
+        _withdrawal = bound(_withdrawal, 1e18 + 1, 2e18);
+        // uint256 _withdrawal = 2e18;
+
+        // A deposits to SP
+        makeSPDepositNoClaim(A, 2e18);
+
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 2e18);
+        assertEq(stabilityPool.getTotalBoldDeposits(), 2e18);
+
+        vm.startPrank(A);
+        vm.expectRevert("Withdrawal must leave totalBoldDeposits >= MIN_BOLD_IN_SP");
+        // Claim all gains here so they don't get added to deposit
+        stabilityPool.withdrawFromSP(_withdrawal, true);
+    }
+
+    function testSingleDepositorCanWithdrawWhenLeavingAtLeast1BoldInPool_Fuzz(uint256 _withdrawal) public {
+        priceFeed.setPrice(3000e18);
+        openTroveNoHints100pct(A, 5 ether, 2000e18, 5e16);
+
+        // Withdraw up to 1e18, leaving 1e18 in pool
+        _withdrawal = bound(_withdrawal, 0, 1e18);
+
+        // A deposits to SP
+        makeSPDepositNoClaim(A, 2e18);
+
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 2e18);
+        assertEq(stabilityPool.getTotalBoldDeposits(), 2e18);
+
+        uint256 ABalBefore = boldToken.balanceOf(A);
+        // A has some accrued yield from upfront fee of first Trove
+        uint256 accruedYieldGains = stabilityPool.getDepositorYieldGainWithPending(A);
+
+        // Claim all gains here so they don't get added to deposit
+        makeSPWithdrawalAndClaim(A, _withdrawal);
+
+        // Check deposit decreases and A's balance increases by correct amt
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 2e18 - _withdrawal);
+        assertEq(boldToken.balanceOf(A), ABalBefore + _withdrawal + accruedYieldGains);
+
+        // Confirm SP has >= 1e18
+        assertGe(stabilityPool.getTotalBoldDeposits(), 1e18);
+    }
+
+    // Tests TODO:
+    // - Collateral gains split correctly across mixed offset + redist
+    // - Liquidations when SP.totalBoldDeposits <1e18
+    // - Depleted deposits can't withdraw if would leave <1e18 in SP
+    // - When A can't withdraw, B can top up SP, then A can withdraw
+    // - Bold yield gains added to depsosit, allowing withdrawal
+}

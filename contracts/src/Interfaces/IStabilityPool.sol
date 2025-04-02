@@ -98,11 +98,12 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
      */
     function getCompoundedBoldDeposit(address _depositor) external view returns (uint256);
 
-    function epochToScaleToS(uint128 _epoch, uint128 _scale) external view returns (uint256);
+    function scaleToS(uint256 _scale) external view returns (uint256);
 
-    function epochToScaleToB(uint128 _epoch, uint128 _scale) external view returns (uint256);
+    function scaleToB(uint256 _scale) external view returns (uint256);
 
     function P() external view returns (uint256);
-    function currentScale() external view returns (uint128);
-    function currentEpoch() external view returns (uint128);
+    function currentScale() external view returns (uint256);
+
+    function P_PRECISION() external view returns (uint256);
 }

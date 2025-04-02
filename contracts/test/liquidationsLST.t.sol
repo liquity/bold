@@ -24,8 +24,9 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev memory contracts;
-        (contracts, collateralRegistry, boldToken,,,,) =
-            deployer.deployAndConnectContracts(TestDeployer.TroveManagerParams(160e16, 120e16, 1.2 ether, 5e16, 10e16));
+        (contracts, collateralRegistry, boldToken,,,,) = deployer.deployAndConnectContracts(
+            TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16)
+        );
         collToken = contracts.collToken;
         activePool = contracts.activePool;
         borrowerOperations = contracts.borrowerOperations;
@@ -198,6 +199,8 @@ contract LiquidationsLSTTest is DevTestSetup {
             address(0)
         );
         vm.stopPrank();
+        // A makes a deposit to ensure there's MIN_BOLD_IN_SP left after liquidation
+        makeSPDepositAndClaim(A, MIN_BOLD_IN_SP);
 
         vm.startPrank(B);
         uint256 BTroveId = borrowerOperations.openTrove(

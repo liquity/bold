@@ -167,11 +167,11 @@ contract CollateralRegistry is ICollateralRegistry {
 
     // Update the last fee operation time only if time passed >= decay interval. This prevents base rate griefing.
     function _updateLastFeeOpTime() internal {
-        uint256 timePassed = block.timestamp - lastFeeOperationTime;
+        uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
 
-        if (timePassed >= ONE_MINUTE) {
-            lastFeeOperationTime = block.timestamp;
-            emit LastFeeOpTimeUpdated(block.timestamp);
+        if (minutesPassed > 0) {
+            lastFeeOperationTime += ONE_MINUTE * minutesPassed;
+            emit LastFeeOpTimeUpdated(lastFeeOperationTime);
         }
     }
 

@@ -34,8 +34,6 @@ import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
   useAllInterestRateBrackets,
-  useGovernanceStats,
-  useGovernanceUser,
   useInterestRateBrackets,
   useLoanById,
   useStabilityPool,
@@ -235,31 +233,7 @@ export function useEarnPosition(
   });
 }
 
-export function useAccountVotingPower(account: Address | null, lqtyDiff: bigint = 0n) {
-  const govUser = useGovernanceUser(account);
-  const govStats = useGovernanceStats();
-
-  return useMemo(() => {
-    if (!govStats.data || !govUser.data) {
-      return null;
-    }
-
-    const t = BigInt(Math.floor(Date.now() / 1000));
-
-    const { totalLQTYStaked, totalOffset } = govStats.data;
-    const totalVp = (BigInt(totalLQTYStaked) + lqtyDiff) * t - BigInt(totalOffset);
-
-    const { stakedLQTY, stakedOffset } = govUser.data;
-    const userVp = (BigInt(stakedLQTY) + lqtyDiff) * t - BigInt(stakedOffset);
-
-    // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
-    return dn.div([userVp, 18], [totalVp, 18]);
-  }, [govUser.data, govStats.data, lqtyDiff]);
-}
-
 export function useStakePosition(address: null | Address) {
-  const votingPower = useAccountVotingPower(address);
-
   const LqtyStaking = getProtocolContract("LqtyStaking");
   const LusdToken = getProtocolContract("LusdToken");
   const Governance = getProtocolContract("Governance");
@@ -331,15 +305,12 @@ export function useStakePosition(address: null | Address) {
             eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
             lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
           },
-          share: DNUM_0,
         };
       },
     },
   });
 
-  return stakePosition.data && votingPower
-    ? { ...stakePosition, data: { ...stakePosition.data, share: votingPower } }
-    : stakePosition;
+  return stakePosition;
 }
 
 export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveId) {

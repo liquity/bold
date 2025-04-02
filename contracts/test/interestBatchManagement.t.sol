@@ -1345,4 +1345,172 @@ contract InterestBatchManagementTest is DevTestSetup {
         LatestTroveData memory CTroveData = troveManager.getLatestTroveData(CTroveId);
         assertEq(CTroveData.lastInterestRateAdjTime, block.timestamp, "Wrong interest rate adj time for C");
     }
+
+    // BCR
+
+    function testCannotOpenAndJoinIfBelowMCRPlusBCR() public {
+        // Make sure TCR is big
+        openTroveNoHints100pct(C, 100e18, 5000e18, MIN_ANNUAL_INTEREST_RATE);
+
+        registerBatchManager(B);
+
+        uint256 price = 2000e18;
+        priceFeed.setPrice(price);
+
+        uint256 boldAmount = 10000e18;
+        uint256 collAmount = boldAmount * (MCR + BCR) / price; // upfront fee will put it slightly below
+
+        IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory params = IBorrowerOperations
+            .OpenTroveAndJoinInterestBatchManagerParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: collAmount,
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            interestBatchManager: B,
+            maxUpfrontFee: 1e24,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.ICRBelowMCRPlusBCR.selector);
+        borrowerOperations.openTroveAndJoinInterestBatchManager(params);
+        vm.stopPrank();
+    }
+
+    function testCannotJoinBatchAfterOpeningIfBelowMCRPlusBCR() public {
+        registerBatchManager(B);
+
+        // Make sure TCR is big
+        openTroveNoHints100pct(C, 100e18, 5000e18, MIN_ANNUAL_INTEREST_RATE);
+
+        uint256 price = 2000e18;
+        priceFeed.setPrice(price);
+
+        uint256 boldAmount = 10000e18;
+        uint256 collAmount = boldAmount * (MCR + BCR) / price; // upfront fee will put it slightly below
+
+        uint256 troveId = openTroveNoHints100pct(A, collAmount, boldAmount, MIN_ANNUAL_INTEREST_RATE);
+
+        uint256 ICR = troveManager.getCurrentICR(troveId, price);
+        assertLt(ICR, MCR + BCR, "ICR too high");
+        assertGt(ICR, MCR, "ICR too low");
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.ICRBelowMCRPlusBCR.selector);
+        borrowerOperations.setInterestBatchManager(troveId, B, 0, 0, 1e24);
+        vm.stopPrank();
+    }
+
+    function testCannotBorrowInsideABatchIfBelowMCRPlusBCR() public {
+        uint256 price = 2000e18;
+        priceFeed.setPrice(price);
+
+        // Make sure TCR is big
+        openTroveNoHints100pct(C, 100e18, 5000e18, MIN_ANNUAL_INTEREST_RATE);
+
+        uint256 troveId = openTroveAndJoinBatchManager();
+        uint256 debt = troveManager.getTroveEntireDebt(troveId);
+        uint256 coll = troveManager.getTroveEntireColl(troveId);
+
+        uint256 boldAmount = coll * price / (MCR + BCR) - debt;
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.ICRBelowMCRPlusBCR.selector);
+        borrowerOperations.withdrawBold(troveId, boldAmount, boldAmount);
+        vm.stopPrank();
+    }
+
+    function testCannotWithdrawCollateralInsideABatchIfBelowMCRPlusBCR() public {
+        uint256 price = 2000e18;
+        priceFeed.setPrice(price);
+
+        // Make sure TCR is big
+        openTroveNoHints100pct(C, 100e18, 5000e18, MIN_ANNUAL_INTEREST_RATE);
+
+        uint256 troveId = openTroveAndJoinBatchManager();
+        uint256 debt = troveManager.getTroveEntireDebt(troveId);
+        uint256 coll = troveManager.getTroveEntireColl(troveId);
+
+        uint256 collAmount = coll - debt * (MCR + BCR) / price;
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.ICRBelowMCRPlusBCR.selector);
+        borrowerOperations.withdrawColl(troveId, collAmount);
+        vm.stopPrank();
+    }
+
+    function testCannotAdjustInsideABatchIfBelowMCRPlusBCR1() public {
+        uint256 price = 2000e18;
+        priceFeed.setPrice(price);
+
+        // Make sure TCR is big
+        openTroveNoHints100pct(C, 100e18, 5000e18, MIN_ANNUAL_INTEREST_RATE);
+
+        uint256 troveId = openTroveAndJoinBatchManager();
+        uint256 debt = troveManager.getTroveEntireDebt(troveId);
+        uint256 coll = troveManager.getTroveEntireColl(troveId);
+
+        uint256 withdrawColl = 97.5 ether;
+        uint256 repayBold = debt - (coll - withdrawColl) * price / (MCR + BCR) - 1;
+        //console2.log(coll - withdrawColl, "coll - withdrawColl");
+        //console2.log(debt - repayBold, "debt - repayBold");
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.ICRBelowMCRPlusBCR.selector);
+        borrowerOperations.adjustTrove(troveId, withdrawColl, false, repayBold, false, 10000e18);
+        vm.stopPrank();
+    }
+
+    function testCannotAdjustInsideABatchIfBelowMCRPlusBCR2() public {
+        uint256 price = 2000e18;
+        priceFeed.setPrice(price);
+
+        // Make sure TCR is big
+        openTroveNoHints100pct(C, 100e18, 5000e18, MIN_ANNUAL_INTEREST_RATE);
+
+        uint256 troveId = openTroveAndJoinBatchManager();
+        uint256 debt = troveManager.getTroveEntireDebt(troveId);
+        uint256 coll = troveManager.getTroveEntireColl(troveId);
+
+        uint256 borrowBold = 195000e18;
+        uint256 addColl = (debt + borrowBold) * (MCR + BCR) / price - coll;
+        //console2.log(debt+borrowBold, "debt+borrowBold");
+        //console2.log(coll+addColl, "coll+addColl");
+
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.ICRBelowMCRPlusBCR.selector);
+        borrowerOperations.adjustTrove(troveId, addColl, true, borrowBold, true, 10000e18);
+        vm.stopPrank();
+    }
+
+    function testCannotAdjustInsideABatchIfBelowMCRPlusBCRIfItWasAlreadyBelow() public {
+        uint256 price = 2000e18;
+        priceFeed.setPrice(price);
+
+        // Make sure TCR is big
+        openTroveNoHints100pct(C, 100e18, 5000e18, MIN_ANNUAL_INTEREST_RATE);
+
+        // Open trove to adjust
+        uint256 troveId = openTroveAndJoinBatchManager();
+
+        // Price goes down
+        price = 58e18;
+        priceFeed.setPrice(price);
+
+        // Trove is below MCR + BCR
+        uint256 ICR = troveManager.getCurrentICR(troveId, price);
+        //console2.log(ICR, "ICR");
+        assertLt(ICR, MCR + BCR, "ICR too high");
+        assertGt(ICR, MCR, "ICR too low");
+
+        // Change would improve ICR, but not enough
+        vm.startPrank(A);
+        vm.expectRevert(BorrowerOperations.ICRBelowMCRPlusBCR.selector);
+        borrowerOperations.adjustTrove(troveId, 1 ether, true, 100e18, false, 1000e18);
+        vm.stopPrank();
+    }
 }

@@ -10,15 +10,15 @@ import "./Interfaces/IBoldToken.sol";
  * --- Functionality added specific to the BoldToken ---
  *
  * 1) Transfer protection: blacklist of addresses that are invalid recipients (i.e. core Liquity contracts) in external
- * transfer() and transferFrom() calls. The purpose is to protect users from losing tokens by mistakenly sending Bold directly to a Liquity
+ * transfer() and transferFrom() calls. The purpose is to protect users from losing tokens by mistakenly sending BOLD directly to a Liquity
  * core contract, when they should rather call the right function.
  *
- * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move Bold tokens between Liquity <-> user.
+ * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move BOLD tokens between Liquity <-> user.
  */
 
 contract BoldToken is Ownable, IBoldToken, ERC20Permit {
-    string internal constant _NAME = "Bold Stablecoin";
-    string internal constant _SYMBOL = "Bold";
+    string internal constant _NAME = "BOLD Stablecoin";
+    string internal constant _SYMBOL = "BOLD";
 
     // --- Addresses ---
 
@@ -106,7 +106,7 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
     function _requireValidRecipient(address _recipient) internal view {
         require(
             _recipient != address(0) && _recipient != address(this),
-            "Bold: Cannot transfer tokens directly to the Bold token contract or the zero address"
+            "BoldToken: Cannot transfer tokens directly to the Bold token contract or the zero address"
         );
     }
 
@@ -121,11 +121,11 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
         require(
             msg.sender == collateralRegistryAddress || borrowerOperationsAddresses[msg.sender]
                 || troveManagerAddresses[msg.sender] || stabilityPoolAddresses[msg.sender],
-            "Bold: Caller is neither CR nor BorrowerOperations nor TroveManager nor StabilityPool"
+            "BoldToken: Caller is neither CR nor BorrowerOperations nor TroveManager nor StabilityPool"
         );
     }
 
     function _requireCallerIsStabilityPool() internal view {
-        require(stabilityPoolAddresses[msg.sender], "Bold: Caller is not the StabilityPool");
+        require(stabilityPoolAddresses[msg.sender], "BoldToken: Caller is not the StabilityPool");
     }
 }

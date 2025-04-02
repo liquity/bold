@@ -59,44 +59,36 @@ import "./Dependencies/LiquityBase.sol";
  * Unfortunately, Solidity floor division always reaches 0, sooner or later.
  *
  * A series of liquidations that nearly empty the Pool (and thus each multiply P by a very small number in range ]0,1[ ) may push P
- * to its 18 digit decimal limit, and round it to 0, when in fact the Pool hasn't been emptied: this would break deposit tracking.
+ * to its 36 digit decimal limit, and round it to 0, when in fact the Pool hasn't been emptied: this would break deposit tracking.
+ * 
+ * P is stored at 36-digit precision as a uint. That is, a value of "1" is represented by a value of 1e36 in the code.
  *
- * So, to track P accurately, we use a scale factor: if a liquidation would cause P to decrease to <1e-9 (and be rounded to 0 by Solidity),
+ * So, to track P accurately, we use a scale factor: if a liquidation would cause P to decrease below 1e27,
  * we first multiply P by 1e9, and increment a currentScale factor by 1.
  *
- * The added benefit of using 1e9 for the scale factor (rather than 1e18) is that it ensures negligible precision loss close to the
- * scale boundary: when P is at its minimum value of 1e9, the relative precision loss in P due to floor division is only on the
- * order of 1e-9.
+ * The added benefit of using 1e9 for the scale factor that it ensures negligible precision loss close to the
+ * scale boundary: when P is at its minimum value of 1e27, the relative precision loss in P due to floor division is only on the
+ * order of 1e-27.
  *
- * --- EPOCHS ---
+ * --- MIN BOLD IN SP ---
  *
- * Whenever a liquidation fully empties the Stability Pool, all deposits should become 0. However, setting P to 0 would make P be 0
- * forever, and break all future reward calculations.
+ * Once totalBoldDeposits has become >= MIN_BOLD_IN_SP, a liquidation may never fully empty the Pool - a minimum of 1 BOLD remains in the SP at all times thereafter.
+ * This is enforced for liquidations in TroveManager.batchLiquidateTroves, and for withdrawals in StabilityPool.withdrawFromSP.
+ * As such, it is impossible to empty the Stability Pool via liquidations, and P can never become 0.
  *
- * So, every time the Stability Pool is emptied by a liquidation, we reset P = 1 and currentScale = 0, and increment the currentEpoch by 1.
+ * --- TRACKING DEPOSIT OVER SCALE CHANGES ---
  *
- * --- TRACKING DEPOSIT OVER SCALE CHANGES AND EPOCHS ---
+ * When a deposit is made, it gets a snapshot of the currentScale.
  *
- * When a deposit is made, it gets snapshots of the currentEpoch and the currentScale.
+ * When calculating a compounded deposit, we compare the current scale to the deposit's scale snapshot. If they're equal, the compounded deposit is given by d_t * P/P_t.
+ * If it spans one scale change, it is given by d_t * P/(P_t * 1e9).
  *
- * When calculating a compounded deposit, we compare the current epoch to the deposit's epoch snapshot. If the current epoch is newer,
- * then the deposit was present during a pool-emptying liquidation, and necessarily has been depleted to 0.
- *
- * Otherwise, we then compare the current scale to the deposit's scale snapshot. If they're equal, the compounded deposit is given by d_t * P/P_t.
- * If it spans one scale change, it is given by d_t * P/(P_t * 1e9). If it spans more than one scale change, we define the compounded deposit
- * as 0, since it is now less than 1e-9'th of its initial value (e.g. a deposit of 1 billion Bold has depleted to < 1 Bold).
- *
- *
- *  --- TRACKING DEPOSITOR'S Coll GAIN OVER SCALE CHANGES AND EPOCHS ---
- *
- * In the current epoch, the latest value of S is stored upon each scale change, and the mapping (scale -> S) is stored for each epoch.
- *
- * This allows us to calculate a deposit's accumulated Coll gain, during the epoch in which the deposit was non-zero and earned Coll.
+ *  --- TRACKING DEPOSITOR'S COLL GAIN OVER SCALE CHANGES  ---
  *
  * We calculate the depositor's accumulated Coll gain for the scale at which they made the deposit, using the Coll gain formula:
  * e_1 = d_t * (S - S_t) / P_t
  *
- * and also for scale after, taking care to divide the latter by a factor of 1e9:
+ * and also for the scale after, taking care to divide the latter by a factor of 1e9:
  * e_2 = d_t * S / (P_t * 1e9)
  *
  * The gain in the second scale will be full, as the starting point was in the previous scale, thus no need to subtract anything.
@@ -114,9 +106,7 @@ import "./Dependencies/LiquityBase.sol";
  *         i            i+1
  *
  * The sum of (e_1 + e_2) captures the depositor's total accumulated Coll gain, handling the case where their
- * deposit spanned one scale change. We only care about gains across one scale change, since the compounded
- * deposit is defined as being 0 once it has spanned more than one scale change.
- *
+ * deposit spanned one scale change.
  *
  * --- UPDATING P WHEN A LIQUIDATION OCCURS ---
  *
@@ -156,8 +146,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 S; // Coll reward sum liqs
         uint256 P;
         uint256 B; // Bold reward sum from minted interest
-        uint128 scale;
-        uint128 epoch;
+        uint256 scale;
     }
 
     mapping(address => Deposit) public deposits; // depositor address -> Deposit struct
@@ -170,34 +159,30 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     * During its lifetime, a deposit's value evolves from d_t to d_t * P / P_t , where P_t
     * is the snapshot of P taken at the instant the deposit was made. 18-digit decimal.
     */
-    uint256 public P = DECIMAL_PRECISION;
+    uint256 public P = P_PRECISION;
 
+    uint256 public constant P_PRECISION = 1e36;
+
+    // A scale change will happen if P decreases by a factor of at least this much
     uint256 public constant SCALE_FACTOR = 1e9;
 
-    // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
-    uint128 public currentScale;
+    // Highest power `SCALE_FACTOR` can be raised to without overflow
+    uint256 public constant MAX_SCALE_FACTOR_EXPONENT = 8;
 
-    // With each offset that fully empties the Pool, the epoch is incremented by 1
-    uint128 public currentEpoch;
+    // The number of scale changes after which an untouched deposit stops receiving yield / coll gains
+    uint256 public constant SCALE_SPAN = 2;
+
+    // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
+    uint256 public currentScale;
 
     /* Coll Gain sum 'S': During its lifetime, each deposit d_t earns an Coll gain of ( d_t * [S - S_t] )/P_t, where S_t
     * is the depositor's snapshot of S taken at the time t when the deposit was made.
     *
-    * The 'S' sums are stored in a nested mapping (epoch => scale => sum):
-    *
-    * - The inner mapping records the sum S at different scales
-    * - The outer mapping records the (scale => sum) mappings, for different epochs.
+    * The 'S' sums are stored in a mapping (scale => sum).
+    * - The mapping records the sum S at different scales.
     */
-    mapping(uint128 => mapping(uint128 => uint256)) public epochToScaleToS;
-    mapping(uint128 => mapping(uint128 => uint256)) public epochToScaleToB;
-
-    // Error trackers for the error correction in the offset calculation
-    uint256 public lastCollError_Offset;
-    uint256 public lastBoldLossErrorByP_Offset;
-    uint256 public lastBoldLossError_TotalDeposits;
-
-    // Error tracker fror the error correction in the BOLD reward calculation
-    uint256 public lastYieldError;
+    mapping(uint256 => uint256) public scaleToS;
+    mapping(uint256 => uint256) public scaleToB;
 
     // --- Events ---
 
@@ -326,13 +311,11 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         _updateDepositAndSnapshots(msg.sender, newDeposit, newStashedColl);
         _decreaseYieldGainsOwed(currentYieldGain);
-        _updateTotalBoldDeposits(keptYieldGain, boldToWithdraw);
+        uint256 newTotalBoldDeposits = _updateTotalBoldDeposits(keptYieldGain, boldToWithdraw);
         _sendBoldtoDepositor(msg.sender, boldToWithdraw + yieldGainToSend);
         _sendCollGainToDepositor(collToSend);
 
-        // If there were pending yields and with the new deposit we are reaching the threshold, let’s move the yield to owed
-        // (it may happen if the user is not claiming)
-        _updateYieldRewardsSum(0);
+        require(newTotalBoldDeposits >= MIN_BOLD_IN_SP, "Withdrawal must leave totalBoldDeposits >= MIN_BOLD_IN_SP");
     }
 
     function _getNewStashedCollAndCollToSend(address _depositor, uint256 _currentCollGain, bool _doClaim)
@@ -360,7 +343,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         stashedColl[msg.sender] = 0;
 
         emit DepositOperation(msg.sender, Operation.claimAllCollGains, 0, 0, 0, 0, 0, collToSend);
-        emit DepositUpdated(msg.sender, 0, 0, 0, 0, 0, 0, 0);
+        emit DepositUpdated(msg.sender, 0, 0, 0, 0, 0, 0);
 
         _sendCollGainToDepositor(collToSend);
     }
@@ -369,8 +352,6 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     function triggerBoldRewards(uint256 _boldYield) external {
         _requireCallerIsActivePool();
-        assert(_boldYield > 0); // TODO: remove before deploying
-
         _updateYieldRewardsSum(_boldYield);
     }
 
@@ -378,10 +359,9 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         uint256 accumulatedYieldGains = yieldGainsPending + _newYield;
         if (accumulatedYieldGains == 0) return;
 
-        // When total deposits is very small, B is not updated. In this case, the BOLD issued is hold
+        // When total deposits is very small, B is not updated. In this case, the BOLD issued is held
         // until the total deposits reach 1 BOLD (remains in the balance of the SP).
-        uint256 totalBoldDepositsCached = totalBoldDeposits; // cached to save an SLOAD
-        if (totalBoldDepositsCached < DECIMAL_PRECISION) {
+        if (totalBoldDeposits < MIN_BOLD_IN_SP) {
             yieldGainsPending = accumulatedYieldGains;
             return;
         }
@@ -389,26 +369,8 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         yieldGainsOwed += accumulatedYieldGains;
         yieldGainsPending = 0;
 
-        /*
-         * Calculate the BOLD-per-unit staked.  Division uses a "feedback" error correction, to keep the
-         * cumulative error low in the running total B:
-         *
-         * 1) Form a numerator which compensates for the floor division error that occurred the last time this
-         * function was called.
-         * 2) Calculate "per-unit-staked" ratio.
-         * 3) Multiply the ratio back by its denominator, to reveal the current floor division error.
-         * 4) Store this error for use in the next correction when this function is called.
-         * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
-         */
-        uint256 yieldNumerator = accumulatedYieldGains * DECIMAL_PRECISION + lastYieldError;
-
-        uint256 yieldPerUnitStaked = yieldNumerator / totalBoldDepositsCached;
-        lastYieldError = yieldNumerator - yieldPerUnitStaked * totalBoldDepositsCached;
-
-        uint256 marginalYieldGain = yieldPerUnitStaked * (P - 1);
-        epochToScaleToB[currentEpoch][currentScale] = epochToScaleToB[currentEpoch][currentScale] + marginalYieldGain;
-
-        emit B_Updated(epochToScaleToB[currentEpoch][currentScale], currentEpoch, currentScale);
+        scaleToB[currentScale] += P * accumulatedYieldGains / totalBoldDeposits;
+        emit B_Updated(scaleToB[currentScale], currentScale);
     }
 
     // --- Liquidation functions ---
@@ -420,153 +382,38 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     */
     function offset(uint256 _debtToOffset, uint256 _collToAdd) external override {
         _requireCallerIsTroveManager();
-        uint256 totalBold = totalBoldDeposits; // cached to save an SLOAD
-        if (totalBold == 0 || _debtToOffset == 0) return;
 
-        _updateCollRewardSumAndProduct(_collToAdd, _debtToOffset, totalBold); // updates S and P
+        scaleToS[currentScale] += P * _collToAdd / totalBoldDeposits;
+        emit S_Updated(scaleToS[currentScale], currentScale);
 
-        _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
-    }
+        uint256 numerator = P * (totalBoldDeposits - _debtToOffset);
+        uint256 newP = numerator / totalBoldDeposits;
 
-    // --- Offset helper functions ---
+        // For `P` to turn zero, `totalBoldDeposits` has to be greater than `P * (totalBoldDeposits - _debtToOffset)`.
+        // - As the offset must leave at least 1 BOLD in the SP (MIN_BOLD_IN_SP),
+        //   the minimum value of `totalBoldDeposits - _debtToOffset` is `1e18`
+        // - It can be shown that `P` is always in range (1e27, 1e36].
+        // Thus, to turn `P` zero, `totalBoldDeposits` has to be greater than `(1e27 + 1) * 1e18`,
+        // and the offset has to be (near) maximal.
+        // In other words, there needs to be octillions of BOLD in the SP, which is unlikely to happen in practice.
+        require(newP > 0, "P must never decrease to 0");
 
-    function _computeCollRewardsPerUnitStaked(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits)
-        internal
-        returns (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked, uint256 newLastBoldLossErrorOffset)
-    {
-        /*
-        * Compute the Bold and Coll rewards. Uses a "feedback" error correction, to keep
-        * the cumulative error in the P and S state variables low:
-        *
-        * 1) Form numerators which compensate for the floor division errors that occurred the last time this
-        * function was called.
-        * 2) Calculate "per-unit-staked" ratios.
-        * 3) Multiply each ratio back by its denominator, to reveal the current floor division error.
-        * 4) Store these errors for use in the next correction when this function is called.
-        * 5) Note: static analysis tools complain about this "division before multiplication", however, it is intended.
-        */
-        uint256 collNumerator = _collToAdd * DECIMAL_PRECISION + lastCollError_Offset;
-
-        assert(_debtToOffset <= _totalBoldDeposits);
-        if (_debtToOffset == _totalBoldDeposits) {
-            boldLossPerUnitStaked = DECIMAL_PRECISION; // When the Pool depletes to 0, so does each deposit
-            newLastBoldLossErrorOffset = 0;
-        } else {
-            uint256 boldLossNumerator = _debtToOffset * DECIMAL_PRECISION;
-            /*
-            * Add 1 to make error in quotient positive. We want "slightly too much" Bold loss,
-            * which ensures the error in any given compoundedBoldDeposit favors the Stability Pool.
-            */
-            boldLossPerUnitStaked = boldLossNumerator / _totalBoldDeposits + 1;
-            newLastBoldLossErrorOffset = boldLossPerUnitStaked * _totalBoldDeposits - boldLossNumerator;
-        }
-
-        collGainPerUnitStaked = collNumerator / _totalBoldDeposits;
-        lastCollError_Offset = collNumerator - collGainPerUnitStaked * _totalBoldDeposits;
-
-        return (collGainPerUnitStaked, boldLossPerUnitStaked, newLastBoldLossErrorOffset);
-    }
-
-    // Update the Stability Pool reward sum S and product P
-    function _updateCollRewardSumAndProduct(uint256 _collToAdd, uint256 _debtToOffset, uint256 _totalBoldDeposits)
-        internal
-    {
-        (uint256 collGainPerUnitStaked, uint256 boldLossPerUnitStaked, uint256 newLastBoldLossErrorOffset) =
-            _computeCollRewardsPerUnitStaked(_collToAdd, _debtToOffset, _totalBoldDeposits);
-
-        uint256 currentP = P;
-        uint256 newP;
-
-        assert(boldLossPerUnitStaked <= DECIMAL_PRECISION);
-        /*
-        * The newProductFactor is the factor by which to change all deposits, due to the depletion of Stability Pool Bold in the liquidation.
-        * We make the product factor 0 if there was a pool-emptying. Otherwise, it is (1 - boldLossPerUnitStaked)
-        */
-        uint256 newProductFactor = uint256(DECIMAL_PRECISION) - boldLossPerUnitStaked;
-
-        uint128 currentScaleCached = currentScale;
-        uint128 currentEpochCached = currentEpoch;
-        uint256 currentS = epochToScaleToS[currentEpochCached][currentScaleCached];
-
-        /*
-        * Calculate the new S first, before we update P.
-        * The Coll gain for any given depositor from a liquidation depends on the value of their deposit
-        * (and the value of totalDeposits) prior to the Stability being depleted by the debt in the liquidation.
-        *
-        * Since S corresponds to Coll gain, and P to deposit loss, we update S first.
-        */
-        uint256 marginalCollGain = collGainPerUnitStaked * (currentP - 1);
-        uint256 newS = currentS + marginalCollGain;
-        epochToScaleToS[currentEpochCached][currentScaleCached] = newS;
-        emit S_Updated(newS, currentEpochCached, currentScaleCached);
-
-        // If the Stability Pool was emptied, increment the epoch, and reset the scale and product P
-        if (newProductFactor == 0) {
-            currentEpoch = currentEpochCached + 1;
-            emit EpochUpdated(currentEpoch);
-            currentScale = 0;
+        // Overflow analyisis of scaling up P:
+        // We know that the resulting P is <= 1e36, and it's the result of dividing numerator by totalBoldDeposits.
+        // Thus, numerator <= 1e36 * totalBoldDeposits, so unless totalBoldDeposits is septillions of BOLD, it won’t overflow.
+        // That holds on every iteration as an upper bound. We multiply numerator by SCALE_FACTOR,
+        // but numerator is by definition smaller than 1e36 * totalBoldDeposits / SCALE_FACTOR.
+        while (newP < P_PRECISION / SCALE_FACTOR) {
+            numerator *= SCALE_FACTOR;
+            newP = numerator / totalBoldDeposits;
+            currentScale += 1;
             emit ScaleUpdated(currentScale);
-            newP = DECIMAL_PRECISION;
-        } else {
-            uint256 lastBoldLossErrorByP_Offset_Cached = lastBoldLossErrorByP_Offset;
-            uint256 lastBoldLossError_TotalDeposits_Cached = lastBoldLossError_TotalDeposits;
-            newP = _getNewPByScale(
-                currentP,
-                newProductFactor,
-                lastBoldLossErrorByP_Offset_Cached,
-                lastBoldLossError_TotalDeposits_Cached,
-                1
-            );
-
-            // If multiplying P by a non-zero product factor would reduce P below the scale boundary, increment the scale
-            if (newP < SCALE_FACTOR) {
-                newP = _getNewPByScale(
-                    currentP,
-                    newProductFactor,
-                    lastBoldLossErrorByP_Offset_Cached,
-                    lastBoldLossError_TotalDeposits_Cached,
-                    SCALE_FACTOR
-                );
-                currentScale = currentScaleCached + 1;
-
-                // Increment the scale again if it's still below the boundary. This ensures the invariant P >= 1e9 holds and
-                // addresses this issue from Liquity v1: https://github.com/liquity/dev/security/advisories/GHSA-m9f3-hrx8-x2g3
-                if (newP < SCALE_FACTOR) {
-                    newP = _getNewPByScale(
-                        currentP,
-                        newProductFactor,
-                        lastBoldLossErrorByP_Offset_Cached,
-                        lastBoldLossError_TotalDeposits_Cached,
-                        SCALE_FACTOR * SCALE_FACTOR
-                    );
-                    currentScale = currentScaleCached + 2;
-                }
-            }
-            emit ScaleUpdated(currentScale);
-            // If there's no scale change and no pool-emptying, just do a standard multiplication
         }
-        lastBoldLossErrorByP_Offset = currentP * newLastBoldLossErrorOffset;
-        lastBoldLossError_TotalDeposits = _totalBoldDeposits;
-
-        assert(newP > 0);
-        P = newP;
 
         emit P_Updated(newP);
-    }
+        P = newP;
 
-    function _getNewPByScale(
-        uint256 _currentP,
-        uint256 _newProductFactor,
-        uint256 _lastBoldLossErrorByP_Offset,
-        uint256 _lastBoldLossError_TotalDeposits,
-        uint256 _scale
-    ) internal pure returns (uint256) {
-        uint256 errorFactor;
-        if (_lastBoldLossErrorByP_Offset > 0) {
-            errorFactor = _lastBoldLossErrorByP_Offset * _newProductFactor * _scale / _lastBoldLossError_TotalDeposits
-                / DECIMAL_PRECISION;
-        }
-        return (_currentP * _newProductFactor * _scale + errorFactor) / DECIMAL_PRECISION;
+        _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
     }
 
     function _moveOffsetCollAndDebt(uint256 _collToAdd, uint256 _debtToOffset) internal {
@@ -586,11 +433,13 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         emit StabilityPoolCollBalanceUpdated(newCollBalance);
     }
 
-    function _updateTotalBoldDeposits(uint256 _depositIncrease, uint256 _depositDecrease) internal {
-        if (_depositIncrease == 0 && _depositDecrease == 0) return;
+    function _updateTotalBoldDeposits(uint256 _depositIncrease, uint256 _depositDecrease) internal returns (uint256) {
+        if (_depositIncrease == 0 && _depositDecrease == 0) return totalBoldDeposits;
         uint256 newTotalBoldDeposits = totalBoldDeposits + _depositIncrease - _depositDecrease;
         totalBoldDeposits = newTotalBoldDeposits;
+
         emit StabilityPoolBoldBalanceUpdated(newTotalBoldDeposits);
+        return newTotalBoldDeposits;
     }
 
     function _decreaseYieldGainsOwed(uint256 _amount) internal {
@@ -601,152 +450,87 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
     // --- Reward calculator functions for depositor ---
 
-    /* Calculates the Coll gain earned by the deposit since its last snapshots were taken.
-    * Given by the formula:  E = d0 * (S - S(0))/P(0)
-    * where S(0) and P(0) are the depositor's snapshots of the sum S and product P, respectively.
-    * d0 is the last recorded deposit value.
-    */
     function getDepositorCollGain(address _depositor) public view override returns (uint256) {
         uint256 initialDeposit = deposits[_depositor].initialValue;
-
         if (initialDeposit == 0) return 0;
 
-        Snapshots memory snapshots = depositSnapshots[_depositor];
+        Snapshots storage snapshots = depositSnapshots[_depositor];
 
-        /*
-         * Grab the sum 'S' from the epoch at which the stake was made. The Coll gain may span up to one scale change.
-         * If it does, the second portion of the Coll gain is scaled by 1e9.
-         * If the gain spans no scale change, the second portion will be 0.
-         */
-        uint128 epochSnapshot = snapshots.epoch;
-        uint128 scaleSnapshot = snapshots.scale;
-        uint256 S_Snapshot = snapshots.S;
-        uint256 P_Snapshot = snapshots.P;
+        // Coll gains from the same scale in which the deposit was made need no scaling
+        uint256 normalizedGains = scaleToS[snapshots.scale] - snapshots.S;
 
-        uint256 firstPortion = epochToScaleToS[epochSnapshot][scaleSnapshot] - S_Snapshot;
-        uint256 secondPortion = epochToScaleToS[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
+        // Scale down further coll gains by a power of `SCALE_FACTOR` depending on how many scale changes they span
+        for (uint256 i = 1; i <= SCALE_SPAN; ++i) {
+            normalizedGains += scaleToS[snapshots.scale + i] / SCALE_FACTOR ** i;
+        }
 
-        uint256 collGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
-
-        return LiquityMath._min(collGain, collBalance);
+        return LiquityMath._min(initialDeposit * normalizedGains / snapshots.P, collBalance);
     }
 
     function getDepositorYieldGain(address _depositor) public view override returns (uint256) {
         uint256 initialDeposit = deposits[_depositor].initialValue;
-
         if (initialDeposit == 0) return 0;
 
-        Snapshots memory snapshots = depositSnapshots[_depositor];
+        Snapshots storage snapshots = depositSnapshots[_depositor];
 
-        /*
-         * Grab the sum 'B' from the epoch at which the stake was made. The Bold gain may span up to one scale change.
-         * If it does, the second portion of the Bold gain is scaled by 1e9.
-         * If the gain spans no scale change, the second portion will be 0.
-         */
-        uint128 epochSnapshot = snapshots.epoch;
-        uint128 scaleSnapshot = snapshots.scale;
-        uint256 B_Snapshot = snapshots.B;
-        uint256 P_Snapshot = snapshots.P;
+        // Yield gains from the same scale in which the deposit was made need no scaling
+        uint256 normalizedGains = scaleToB[snapshots.scale] - snapshots.B;
 
-        uint256 firstPortion = epochToScaleToB[epochSnapshot][scaleSnapshot] - B_Snapshot;
-        uint256 secondPortion = epochToScaleToB[epochSnapshot][scaleSnapshot + 1] / SCALE_FACTOR;
+        // Scale down further yield gains by a power of `SCALE_FACTOR` depending on how many scale changes they span
+        for (uint256 i = 1; i <= SCALE_SPAN; ++i) {
+            normalizedGains += scaleToB[snapshots.scale + i] / SCALE_FACTOR ** i;
+        }
 
-        uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / P_Snapshot / DECIMAL_PRECISION;
-
-        return LiquityMath._min(yieldGain, yieldGainsOwed);
+        return LiquityMath._min(initialDeposit * normalizedGains / snapshots.P, yieldGainsOwed);
     }
 
     function getDepositorYieldGainWithPending(address _depositor) external view override returns (uint256) {
-        uint256 initialDeposit = deposits[_depositor].initialValue;
+        if (totalBoldDeposits < MIN_BOLD_IN_SP) return 0;
 
+        uint256 initialDeposit = deposits[_depositor].initialValue;
         if (initialDeposit == 0) return 0;
 
-        Snapshots memory snapshots = depositSnapshots[_depositor];
+        Snapshots storage snapshots = depositSnapshots[_depositor];
+        uint256 newYieldGainsOwed = yieldGainsOwed;
 
-        uint256 pendingSPYield = activePool.calcPendingSPYield() + yieldGainsPending;
-        uint256 newYieldGainsOwed = yieldGainsOwed + (totalBoldDeposits >= DECIMAL_PRECISION ? pendingSPYield : 0);
-        uint256 firstPortionPending;
-        uint256 secondPortionPending;
+        // Yield gains from the same scale in which the deposit was made need no scaling
+        uint256 normalizedGains = scaleToB[snapshots.scale] - snapshots.B;
 
-        if (pendingSPYield > 0 && snapshots.epoch == currentEpoch && totalBoldDeposits >= DECIMAL_PRECISION) {
-            uint256 yieldNumerator = pendingSPYield * DECIMAL_PRECISION + lastYieldError;
-            uint256 yieldPerUnitStaked = yieldNumerator / totalBoldDeposits;
-            uint256 marginalYieldGain = yieldPerUnitStaked * (P - 1);
-
-            if (currentScale == snapshots.scale) firstPortionPending = marginalYieldGain;
-            else if (currentScale == snapshots.scale + 1) secondPortionPending = marginalYieldGain;
+        // Scale down further yield gains by a power of `SCALE_FACTOR` depending on how many scale changes they span
+        for (uint256 i = 1; i <= SCALE_SPAN; ++i) {
+            normalizedGains += scaleToB[snapshots.scale + i] / SCALE_FACTOR ** i;
         }
 
-        uint256 firstPortion = epochToScaleToB[snapshots.epoch][snapshots.scale] + firstPortionPending - snapshots.B;
-        uint256 secondPortion =
-            (epochToScaleToB[snapshots.epoch][snapshots.scale + 1] + secondPortionPending) / SCALE_FACTOR;
+        // Pending gains
+        uint256 pendingSPYield = activePool.calcPendingSPYield();
+        newYieldGainsOwed += pendingSPYield;
 
-        uint256 yieldGain = initialDeposit * (firstPortion + secondPortion) / snapshots.P / DECIMAL_PRECISION;
+        if (currentScale <= snapshots.scale + SCALE_SPAN) {
+            normalizedGains += P * pendingSPYield / totalBoldDeposits / SCALE_FACTOR ** (currentScale - snapshots.scale);
+        }
 
-        return LiquityMath._min(yieldGain, newYieldGainsOwed);
+        return LiquityMath._min(initialDeposit * normalizedGains / snapshots.P, newYieldGainsOwed);
     }
 
     // --- Compounded deposit ---
 
-    /*
-    * Return the user's compounded deposit. Given by the formula:  d = d0 * P/P(0)
-    * where P(0) is the depositor's snapshot of the product P, taken when they last updated their deposit.
-    */
-    function getCompoundedBoldDeposit(address _depositor) public view override returns (uint256) {
+    function getCompoundedBoldDeposit(address _depositor) public view override returns (uint256 compoundedDeposit) {
         uint256 initialDeposit = deposits[_depositor].initialValue;
         if (initialDeposit == 0) return 0;
 
-        Snapshots memory snapshots = depositSnapshots[_depositor];
+        Snapshots storage snapshots = depositSnapshots[_depositor];
 
-        uint256 compoundedDeposit = _getCompoundedStakeFromSnapshots(initialDeposit, snapshots);
-        return compoundedDeposit;
-    }
+        uint256 scaleDiff = currentScale - snapshots.scale;
 
-    // Internal function, used to calculcate compounded deposits and compounded front end stakes.
-    function _getCompoundedStakeFromSnapshots(uint256 initialStake, Snapshots memory snapshots)
-        internal
-        view
-        returns (uint256)
-    {
-        uint256 snapshot_P = snapshots.P;
-        uint128 scaleSnapshot = snapshots.scale;
-        uint128 epochSnapshot = snapshots.epoch;
-
-        // If stake was made before a pool-emptying event, then it has been fully cancelled with debt -- so, return 0
-        if (epochSnapshot < currentEpoch) return 0;
-
-        uint256 compoundedStake;
-        uint128 scaleDiff = currentScale - scaleSnapshot;
-
-        // To make sure rouning errors favour the system, we use P - 1 if P decreased
-        uint256 cachedP = P;
-        uint256 currentPToUse = cachedP != snapshot_P ? cachedP - 1 : cachedP;
-
-        /* Compute the compounded stake. If a scale change in P was made during the stake's lifetime,
-        * account for it. If more than one scale change was made, then the stake has decreased by a factor of
-        * at least 1e-9 -- so return 0.
-        */
-        if (scaleDiff == 0) {
-            compoundedStake = initialStake * currentPToUse / snapshot_P;
-        } else if (scaleDiff == 1) {
-            compoundedStake = initialStake * currentPToUse / snapshot_P / SCALE_FACTOR;
+        // Compute the compounded deposit. If one or more scale changes in `P` were made during the deposit's lifetime,
+        // account for them.
+        // If more than `MAX_SCALE_FACTOR_EXPONENT` scale changes were made, then the divisor is greater than 2^256 so
+        // any deposit amount would be rounded down to zero.
+        if (scaleDiff <= MAX_SCALE_FACTOR_EXPONENT) {
+            compoundedDeposit = initialDeposit * P / snapshots.P / SCALE_FACTOR ** scaleDiff;
         } else {
-            // if scaleDiff >= 2
-            compoundedStake = 0;
+            compoundedDeposit = 0;
         }
-
-        /*
-        * If compounded deposit is less than a billionth of the initial deposit, return 0.
-        *
-        * NOTE: originally, this line was in place to stop rounding errors making the deposit too large. However, the error
-        * corrections should ensure the error in P "favors the Pool", i.e. any given compounded deposit should slightly less
-        * than it's theoretical value.
-        *
-        * Thus it's unclear whether this line is still really needed.
-        */
-        if (compoundedStake < initialStake / 1e9) return 0;
-
-        return compoundedStake;
     }
 
     // --- Sender functions for Bold deposit and Coll gains ---
@@ -774,35 +558,24 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
 
         if (_newDeposit == 0) {
             delete depositSnapshots[_depositor];
-            emit DepositUpdated(_depositor, 0, _newStashedColl, 0, 0, 0, 0, 0);
+            emit DepositUpdated(_depositor, 0, _newStashedColl, 0, 0, 0, 0);
             return;
         }
 
-        uint128 currentScaleCached = currentScale;
-        uint128 currentEpochCached = currentEpoch;
+        uint256 currentScaleCached = currentScale;
         uint256 currentP = P;
 
-        // Get S for the current epoch and current scale
-        uint256 currentS = epochToScaleToS[currentEpochCached][currentScaleCached];
-        uint256 currentB = epochToScaleToB[currentEpochCached][currentScaleCached];
+        // Get S for the current scale
+        uint256 currentS = scaleToS[currentScaleCached];
+        uint256 currentB = scaleToB[currentScaleCached];
 
         // Record new snapshots of the latest running product P and sum S for the depositor
         depositSnapshots[_depositor].P = currentP;
         depositSnapshots[_depositor].S = currentS;
         depositSnapshots[_depositor].B = currentB;
         depositSnapshots[_depositor].scale = currentScaleCached;
-        depositSnapshots[_depositor].epoch = currentEpochCached;
 
-        emit DepositUpdated(
-            _depositor,
-            _newDeposit,
-            _newStashedColl,
-            currentP,
-            currentS,
-            currentB,
-            currentScaleCached,
-            currentEpochCached
-        );
+        emit DepositUpdated(_depositor, _newDeposit, _newStashedColl, currentP, currentS, currentB, currentScaleCached);
     }
 
     // --- 'require' functions ---
