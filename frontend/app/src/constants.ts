@@ -1,6 +1,6 @@
 "use client";
 
-import type { CollateralSymbol, RiskLevel } from "@/src/types";
+import type { Address, CollateralSymbol, RiskLevel } from "@/src/types";
 
 import { CHAIN_ID, CHECK_LEGACY_POSITIONS } from "@/src/env";
 import { norm } from "@liquity2/uikit";
@@ -78,13 +78,58 @@ export const REDEMPTION_RISK: Record<Exclude<RiskLevel, "high">, number> = {
   low: 5 / 100,
 };
 
-// TODO: use mainnet addresses
-export const LEGACY_CHECK = !CHECK_LEGACY_POSITIONS || CHAIN_ID !== 11155111 ? null : {
+const LEGACY_CHECKS = new Map<number, {
+  BOLD_TOKEN: Address;
+  COLLATERAL_REGISTRY: Address;
+  GOVERNANCE: Address;
+  INITIATIVES_SNAPSHOT_URL: string;
+  TROVES_SNAPSHOT_URL: string;
+  BRANCHES: {
+    symbol: CollateralSymbol;
+    name: string;
+    COLL_TOKEN: Address;
+    LEVERAGE_ZAPPER: Address;
+    STABILITY_POOL: Address;
+    TROVE_MANAGER: Address;
+  }[];
+}>();
+
+LEGACY_CHECKS.set(1, {
+  BOLD_TOKEN: "0xb01dd87b29d187f3e3a4bf6cdaebfb97f3d9ab98",
+  COLLATERAL_REGISTRY: "0xd99de73b95236f69a559117ecd6f519af780f3f7",
+  GOVERNANCE: "0x636deb767cd7d0f15ca4ab8ea9a9b26e98b426ac",
+  INITIATIVES_SNAPSHOT_URL: "/initiatives-snapshot-1.json",
+  TROVES_SNAPSHOT_URL: "/troves-snapshot-1.json",
+  BRANCHES: [{
+    symbol: "ETH",
+    name: "ETH",
+    COLL_TOKEN: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    LEVERAGE_ZAPPER: "0x978d7188ae01881d254ad7e94874653b0c268004",
+    STABILITY_POOL: "0xf69eb8c0d95d4094c16686769460f678727393cf",
+    TROVE_MANAGER: "0x81d78814df42da2cab0e8870c477bc3ed861de66",
+  }, {
+    symbol: "WSTETH",
+    name: "wstETH",
+    COLL_TOKEN: "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+    LEVERAGE_ZAPPER: "0xc3d864adc2a9b49d52e640b697241408d896179f",
+    STABILITY_POOL: "0xcf46dab575c364a8b91bda147720ff4361f4627f",
+    TROVE_MANAGER: "0xb47ef60132deabc89580fd40e49c062d93070046",
+  }, {
+    symbol: "RETH",
+    name: "rETH",
+    COLL_TOKEN: "0xae78736cd615f374d3085123a210448e74fc6393",
+    LEVERAGE_ZAPPER: "0x7d5f19a1e48479a95c4eb40fd1a534585026e7e5",
+    STABILITY_POOL: "0xc4463b26be1a6064000558a84ef9b6a58abe4f7a",
+    TROVE_MANAGER: "0xde026433882a9dded65cac4fff8402fafff40fca",
+  }],
+});
+
+LEGACY_CHECKS.set(11155111, {
   BOLD_TOKEN: "0xb01d32c05f4aa066eef2bfd4d461833fddd56d0a",
   COLLATERAL_REGISTRY: "0x55cefb9c04724ba3c67d92df5e386c6f1585a83b",
   GOVERNANCE: "0xe3f9ca5398cc3d0099c3ad37d3252e37431555b8",
-  INITIATIVES_SNAPSHOT_URL: "/initiatives-snapshot-sepolia.json",
-  TROVES_SNAPSHOT_URL: "/troves-snapshot-sepolia.json",
+  INITIATIVES_SNAPSHOT_URL: "/initiatives-snapshot-11155111.json",
+  TROVES_SNAPSHOT_URL: "/troves-snapshot-11155111.json",
   BRANCHES: [{
     symbol: "ETH",
     name: "ETH",
@@ -107,4 +152,8 @@ export const LEGACY_CHECK = !CHECK_LEGACY_POSITIONS || CHAIN_ID !== 11155111 ? n
     STABILITY_POOL: "0x8492ad1df9f89e4b6c54c81149058172592e1c94",
     TROVE_MANAGER: "0x310fa1d1d711c75da45952029861bcf0d330aa81",
   }],
-} as const;
+});
+
+export const LEGACY_CHECK = CHECK_LEGACY_POSITIONS && LEGACY_CHECKS.has(CHAIN_ID)
+  ? LEGACY_CHECKS.get(CHAIN_ID)
+  : null;
