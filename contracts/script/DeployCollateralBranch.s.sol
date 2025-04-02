@@ -243,7 +243,9 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             collSymbols
         );
 
-        // TODO save to json?  TODO oracle and zapper
+        vm.stopBroadcast();
+
+        vm.writeFile("deployment-manifest.json", _getManifestJson(branches, globalContracts));
     }
 
     // deploy branches and connect 
@@ -479,4 +481,75 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
     function getBytecode(bytes memory _creationCode, address _addressesRegistry) public pure returns (bytes memory) {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
+
+    function _getManifestJson(BranchContracts[] memory branches, GlobalContracts memory globalContracts)
+        internal
+        view
+        returns (string memory)
+    {
+        string[] memory strBranches = new string[](branches.length);
+
+        // Poor man's .map()
+        for (uint256 i = 0; i < branches.length; ++i) {
+            strBranches[i] = _getBranchContractsJson(branches[i]);
+        }
+
+        return string.concat(
+            "{",
+            string.concat(
+                string.concat('"constants":', _getDeploymentConstants(), ","),
+                string.concat('"collateralRegistry":"', address(globalContracts.collateralRegistry).toHexString(), '",'),
+                string.concat('"bvUSD Token":"', address(globalContracts.bvUSD).toHexString(), '",'),
+                string.concat('"hintHelpers":"', address(globalContracts.hintHelpers).toHexString(), '",'),
+                string.concat('"multiTroveGetter":"', address(globalContracts.multiTroveGetter).toHexString(), '",'),
+                string.concat('"branches":[', strBranches.join(","), "],")
+            ),
+            "}"
+        );
+    }
+
+    function _getBranchContractsJson(BranchContracts memory c) internal view returns (string memory) {
+        return string.concat(
+            "{",
+            string.concat(
+                // Avoid stack too deep by chunking concats
+                string.concat(
+                    string.concat('"collSymbol":"', c.collToken.symbol(), '",'), // purely for human-readability
+                    string.concat('"collToken":"', address(c.collToken).toHexString(), '",'),
+                    string.concat('"addressesRegistry":"', address(c.addressesRegistry).toHexString(), '",'),
+                    string.concat('"activePool":"', address(c.activePool).toHexString(), '",'),
+                    string.concat('"borrowerOperations":"', address(c.borrowerOperations).toHexString(), '",'),
+                    string.concat('"collSurplusPool":"', address(c.collSurplusPool).toHexString(), '",'),
+                    string.concat('"defaultPool":"', address(c.defaultPool).toHexString(), '",'),
+                    string.concat('"sortedTroves":"', address(c.sortedTroves).toHexString(), '",')
+                ),
+                string.concat(
+                    string.concat('"stabilityPool":"', address(c.stabilityPool).toHexString(), '",'),
+                    string.concat('"troveManager":"', address(c.troveManager).toHexString(), '",'),
+                    string.concat('"troveNFT":"', address(c.troveNFT).toHexString(), '",'),
+                    string.concat('"metadataNFT":"', address(c.metadataNFT).toHexString(), '",'),
+                    string.concat('"priceFeed":"', address(c.priceFeed).toHexString(), '",'),
+                    string.concat('"gasPool":"', address(c.gasPool).toHexString(), '",'),
+                    string.concat('"collateral zapper":"', address(c.collZapper).toHexString(), '",')
+                )
+            ),
+            "}"
+        );
+    }
+
+    function _getDeploymentConstants() internal view returns (string memory) {
+        return string.concat(
+            "{",
+            string.concat(
+                string.concat('"ETH_GAS_COMPENSATION":"', ETH_GAS_COMPENSATION.toString(), '",'),
+                string.concat('"INTEREST_RATE_ADJ_COOLDOWN":"', INTEREST_RATE_ADJ_COOLDOWN.toString(), '",'),
+                string.concat('"MAX_ANNUAL_INTEREST_RATE":"', MAX_ANNUAL_INTEREST_RATE.toString(), '",'),
+                string.concat('"MIN_ANNUAL_INTEREST_RATE":"', MIN_ANNUAL_INTEREST_RATE.toString(), '",'),
+                string.concat('"MIN_DEBT":"', MIN_DEBT.toString(), '",'),
+                string.concat('"UPFRONT_INTEREST_PERIOD":"', UPFRONT_INTEREST_PERIOD.toString(), '"') // no comma
+            ),
+            "}"
+        );
+    }
+
 }
