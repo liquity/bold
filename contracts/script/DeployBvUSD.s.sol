@@ -25,9 +25,9 @@ contract DeployBaseProtocol is Logging, MetadataDeployment {
     bool deployEmptyCollateralRegistry;
 
     struct GlobalContracts {
-        IWETH gasToken;
         BoldToken bvUSD;
         CollateralRegistry collateralRegistry;
+        IWETH gasToken;
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
     }

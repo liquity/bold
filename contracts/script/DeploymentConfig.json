@@ -7,8 +7,9 @@
             "config": {
                 "bcr": 10e16,
                 "ccr": 150e16,
-                "collateralAddress": "0x0000000000000000000000000000000000000000",
+                "collateralAddress": "0xf8Fb3713D459D7C1018BD0A49D19b4C44290EBE5",
                 "collateralIndex" : 0,
+                "createWrapper": true,
                 "liqPenaltyDistr": 10e16,
                 "liqPenaltySP": 5e16,
                 "mcr": 120e16,         
@@ -17,9 +18,9 @@
         }
     ],
     "globalContracts": {
-        "gasToken": "0x0000000000000000000000000000000000000000",
         "bvUSD": "0x0000000000000000000000000000000000000000",
         "collateralRegistry": "0x0000000000000000000000000000000000000000",
+        "gasToken": "0x7b79995e5f793a07bc00c21412e50ecae098e7f9",
         "hintHelpers": "0x0000000000000000000000000000000000000000",
         "multiTroveGetter": "0x0000000000000000000000000000000000000000"
     }

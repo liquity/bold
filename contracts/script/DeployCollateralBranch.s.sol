@@ -14,24 +14,21 @@ import "src/HintHelpers.sol";
 import "src/MultiTroveGetter.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
-import "./DeployBvUSD.s.sol";
-import {stdJson} from "forge-std/StdJson.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
+import "src/Zappers/TokenZapper.sol";
+import "src/Dependencies/TokenWrapper.sol";
+import "./DeployBvUSD.s.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 // to deploy only base protocol: 
-// deployBVUSD = true;
-// deployEmptyCollRegistry = true;
-// troveManagerData.json with empty array of data
+// DeploymentConfig.json -> globalContracts with zero addresses
 
 // to deploy base protocol and collateral branches: 
-// deployBVUSD = true;
-// deployEmptyCollRegistry = true;
-// troveManagerData.json with branch data to be deployed
+// DeploymentConfig.json -> globalContracts with zero addresses and branch data to be deployed
 
 // to deploy new branches and add to existing protocol
-// deployBVUSD = false;
-// troveManagerData.json with branches to be deployed
+// DeploymentConfig.json -> globalContracts with deployed addresses and branch data to be deployed
 
 contract DeployCollateralBranchScript is DeployBaseProtocol {
     using Strings for *;
@@ -47,6 +44,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         uint256 CCR;
         address collateralAddress;
         uint256 collateralIndex;
+        bool createWrapper;
         uint256 liqPenaltyDistr;
         uint256 liqPenaltySP;
         uint256 MCR;
@@ -76,6 +74,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         IPriceFeed priceFeed;
         GasPool gasPool;
         IERC20Metadata collToken;
+        ITokenZapper collZapper;
     }
 
     struct BranchContractsAddresses {
@@ -94,6 +93,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
 
     struct DeploymentVars {
         uint256 numCollaterals;
+        bool[] deployZappers;
         IERC20Metadata[] collaterals;
         IPriceFeed[] priceFeeds;
         IAddressesRegistry[] addressesRegistries;
@@ -161,6 +161,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         uint256[] memory collateralIndexes = new uint256[](numBranches);
         string[] memory collNames = new string[](numBranches);
         string[] memory collSymbols = new string[](numBranches);
+        bool[] memory deployZappers = new bool[](numBranches);
 
         for(uint256 i=0; i<numBranches; i++) {
             string memory collName = abi.decode(
@@ -185,7 +186,9 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
                 (BranchConfig)
             );
 
-            collateralAddresses[i] = branchConfig.collateralAddress;
+            // deploy collateral wrapper and set as actual collateral if necessary
+            deployZappers[i] = branchConfig.createWrapper;
+            collateralAddresses[i] = branchConfig.createWrapper ? deployCollateralWrapper(branchConfig.collateralAddress) : branchConfig.collateralAddress;
             collateralIndexes[i] = branchConfig.collateralIndex;
             collNames[i] = collName;
             collSymbols[i] = collSymbol;
@@ -199,8 +202,9 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             });
 
             _log("Branch number:               ", (i + 1).toString());
-            _log("Collateral Addresses:               ", branchConfig.collateralAddress.toHexString());
+            _log("Collateral Address:               ", branchConfig.collateralAddress.toHexString());
             _log("Collateral Index:               ", branchConfig.collateralIndex.toHexString());
+            _log("Deploy Wrapper and Zapper:               ", branchConfig.createWrapper.toString());
             _log("Collateral Name:               ", collName);
             _log("Collateral Symbol:               ", collSymbol);
             _log("CCR:               ", branchConfig.CCR.toString());
@@ -217,6 +221,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         // deploy branches and connect to base protocol
         BranchContracts[] memory branches = deployAndConnectMultiBranch(
             troveManagerParamsArray,
+            deployZappers,
             globalContracts,
             collateralAddresses,
             collateralIndexes,
@@ -231,6 +236,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
     // deploy collateral registry if not present yet
     function deployAndConnectMultiBranch(
         TroveManagerParams[] memory troveManagerParamsArray,
+        bool[] memory _deployZappers,
         GlobalContracts memory globalContracts,
         address[] memory _collateralAddresses,
         uint256[] memory _collateralIndexes, // leave empty if first deployment
@@ -240,6 +246,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         assert(_collNames.length == troveManagerParamsArray.length);
         assert(_collSymbols.length == troveManagerParamsArray.length);
         assert(_collateralAddresses.length == troveManagerParamsArray.length);
+        assert(_deployZappers.length == troveManagerParamsArray.length);
 
         DeploymentVars memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
@@ -249,11 +256,14 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
-    
+        vars.deployZappers = new bool[](vars.numCollaterals);
+
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             // set collaterals
             vars.collaterals[vars.i] = IERC20Metadata(_collateralAddresses[vars.i]);
-            
+            // set zapper to be deployed
+            vars.deployZappers[vars.i] = _deployZappers[vars.i];
+        
             // Deploy AddressesRegistries and get TroveManager addresses
             (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
                 _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
@@ -291,6 +301,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             vars.contracts = deployAndConnectBranch(
                 vars.collaterals[vars.i],
+                vars.deployZappers[vars.i],
                 vars.priceFeeds[vars.i],
                 globalContracts.bvUSD,
                 globalContracts.collateralRegistry,
@@ -306,6 +317,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
     // deploy a new branch and connects it to the existing system
     function deployAndConnectBranch(
         IERC20Metadata _collToken,
+        bool deployZapper,
         IPriceFeed _priceFeed,
         IBoldToken _bvUSD,
         ICollateralRegistry _collateralRegistry,
@@ -398,6 +410,10 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         assert(address(branchContracts.collSurplusPool) == addresses.collSurplusPool);
         assert(address(branchContracts.sortedTroves) == addresses.sortedTroves);
 
+        // deploy zapper
+        if(deployZapper)
+            branchContracts.collZapper = deployCollateralZapper(ITokenWrapper(address(branchContracts.collToken)), branchContracts.addressesRegistry);
+
         // Connect contracts
         _bvUSD.setStabilityPool(address(branchContracts.stabilityPool), true);
 
@@ -412,10 +428,19 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         _bvUSD.setBurner(address(branchContracts.stabilityPool), true);
     }
 
-    // deploy token wrapper and zapper TODO
-    function deployZapper() public {
-        // (branchContracts.gasCompZapper, branchContracts.wethZapper, branchContracts.leverageZapper) =
-        //     _deployZappers(branchContracts.addressesRegistry, branchContracts.collToken, _bvUSD, _usdcCurvePool);
+    // deploy token wrapper and zapper
+    function deployCollateralWrapper(address underlyingToken) 
+        public returns (address collateralWrapper) 
+    {
+        collateralWrapper = address(new TokenWrapper(IERC20Metadata(underlyingToken)));
+    }
+
+    function deployCollateralZapper(
+        ITokenWrapper collateralWrapper, 
+        IAddressesRegistry addressRegistry
+    ) public returns (ITokenZapper collateralZapper) 
+    {
+        collateralZapper = new TokenZapper(addressRegistry, collateralWrapper);
     }
 
     function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)

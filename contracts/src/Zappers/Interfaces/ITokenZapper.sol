@@ -2,9 +2,6 @@
 
 pragma solidity ^0.8.0;
 
-import "./IFlashLoanProvider.sol";
-import "./IExchange.sol";
-
 interface ITokenZapper {
     struct OpenTroveParams {
         address owner;
@@ -21,17 +18,29 @@ interface ITokenZapper {
         address receiver;
     }
 
-    struct CloseTroveParams {
-        uint256 troveId;
-        uint256 flashLoanAmount;
-        address receiver;
-    }
-
-    // function flashLoanProvider() external view returns (IFlashLoanProvider);
-
-    // function exchange() external view returns (IExchange);
-
     function openTroveWithToken(OpenTroveParams calldata _params) external payable returns (uint256);
 
-    // function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external;
+    function addCollWithToken(uint256 _troveId, uint256 tokenAmount) external; 
+    function withdrawCollToToken(uint256 _troveId, uint256 _amount) external;
+    function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external;
+    function repayBold(uint256 _troveId, uint256 _boldAmount) external;
+    function adjustTroveWithToken(
+        uint256 _troveId,
+        uint256 _collChange, // underlying token decimals
+        bool _isCollIncrease,
+        uint256 _boldChange,
+        bool _isDebtIncrease,
+        uint256 _maxUpfrontFee
+    ) external;
+    function closeTroveToUnderlyingToken(uint256 _troveId) external;
+    function adjustZombieTroveWithToken(
+        uint256 _troveId,
+        uint256 _collChange, // underlying token decimals
+        bool _isCollIncrease,
+        uint256 _boldChange,
+        bool _isDebtIncrease,
+        uint256 _upperHint,
+        uint256 _lowerHint,
+        uint256 _maxUpfrontFee
+    ) external payable;
 }
