@@ -67,24 +67,27 @@ contract AddRemoveManagers is IAddRemoveManagers {
     }
 
     function _setRemoveManagerAndReceiver(uint256 _troveId, address _manager, address _receiver) internal {
-        _requireNonZeroManagerUnlessWiping(_manager, _receiver);
+        // _requireNonZeroManagerUnlessWiping(_manager, _receiver);
+        if (_manager == address(0) && _receiver != address(0)) {
+            revert EmptyManager();
+        }
         removeManagerReceiverOf[_troveId].manager = _manager;
         removeManagerReceiverOf[_troveId].receiver = _receiver;
         emit RemoveManagerAndReceiverUpdated(_troveId, _manager, _receiver);
     }
 
-    function _wipeAddRemoveManagers(uint256 _troveId) internal {
-        delete addManagerOf[_troveId];
-        delete removeManagerReceiverOf[_troveId];
-        emit AddManagerUpdated(_troveId, address(0));
-        emit RemoveManagerAndReceiverUpdated(_troveId, address(0), address(0));
-    }
+    // function _wipeAddRemoveManagers(uint256 _troveId) internal {
+    //     delete addManagerOf[_troveId];
+    //     delete removeManagerReceiverOf[_troveId];
+    //     emit AddManagerUpdated(_troveId, address(0));
+    //     emit RemoveManagerAndReceiverUpdated(_troveId, address(0), address(0));
+    // }
 
-    function _requireNonZeroManagerUnlessWiping(address _manager, address _receiver) internal pure {
-        if (_manager == address(0) && _receiver != address(0)) {
-            revert EmptyManager();
-        }
-    }
+    // function _requireNonZeroManagerUnlessWiping(address _manager, address _receiver) internal pure {
+    //     if (_manager == address(0) && _receiver != address(0)) {
+    //         revert EmptyManager();
+    //     }
+    // }
 
     function _requireCallerIsBorrower(uint256 _troveId) internal view {
         if (msg.sender != troveNFT.ownerOf(_troveId)) {
