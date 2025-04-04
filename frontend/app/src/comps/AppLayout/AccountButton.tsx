@@ -1,60 +1,54 @@
-import type { ComponentPropsWithRef, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 import content from "@/src/content";
 import { useDemoMode } from "@/src/demo-mode";
+import { CHAIN_ID } from "@/src/env";
+import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { Button, IconAccount, shortenAddress, ShowAfter } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
-import { ConnectKitButton } from "connectkit";
 import { match, P } from "ts-pattern";
 import { MenuItem } from "./MenuItem";
 
 export function AccountButton() {
+  const {
+    address,
+    chain,
+    connect,
+    ensName,
+    isConnected,
+    isConnecting,
+  } = useAccount();
+
   const demoMode = useDemoMode();
   if (demoMode.enabled) {
     return <DemoModeAccountButton />;
   }
-  return (
-    <ShowAfter delay={500}>
-      <ConnectKitButton.Custom>
-        {(props) => <CKButton {...props} />}
-      </ConnectKitButton.Custom>
-    </ShowAfter>
-  );
-}
 
-function CKButton({
-  chain,
-  isConnected,
-  isConnecting,
-  address,
-  ensName,
-  show,
-}: Parameters<
-  NonNullable<
-    ComponentPropsWithRef<
-      typeof ConnectKitButton.Custom
-    >["children"]
-  >
->[0]) {
-  const status = match({ chain, isConnected, isConnecting, address })
+  const status = match({
+    address,
+    chain,
+    isChainSupported: chain ? chain.id === CHAIN_ID : undefined,
+    isConnected,
+    isConnecting,
+  })
     .returnType<
       | { mode: "connected"; address: `0x${string}` }
       | { mode: "connecting" | "disconnected" | "unsupported"; address?: never }
     >()
-    .with(
-      P.union(
-        { chain: { unsupported: true } },
-        { isConnected: true, chain: P.nullish },
-      ),
-      () => ({ mode: "unsupported" }),
-    )
+    .with({ isChainSupported: false }, () => ({
+      mode: "unsupported",
+    }))
+    .with({ isConnecting: true }, () => ({
+      mode: "connecting",
+    }))
     .with({ isConnected: true, address: P.nonNullable }, ({ address }) => ({
       address,
       mode: "connected",
     }))
-    .with({ isConnecting: true }, () => ({ mode: "connecting" }))
-    .otherwise(() => ({ mode: "disconnected" }));
+    .otherwise(() => ({
+      mode: "disconnected",
+    }));
 
   const transition = useTransition(status, {
     keys: ({ mode }) => String(mode === "connected"),
@@ -64,29 +58,33 @@ function CKButton({
     config: { mass: 1, tension: 2400, friction: 80 },
   });
 
-  return transition((spring, { mode, address }) => (
-    <a.div style={spring}>
-      {mode === "connected"
-        ? (
-          <ButtonConnected
-            label={ensName ?? shortenAddress(address, 3)}
-            onClick={show}
-            title={address}
-          />
-        )
-        : (
-          <Button
-            mode="primary"
-            label={mode === "connecting"
-              ? "Connecting…"
-              : mode === "unsupported"
-              ? content.accountButton.wrongNetwork
-              : content.accountButton.connectAccount}
-            onClick={show}
-          />
-        )}
-    </a.div>
-  ));
+  return (
+    <ShowAfter delay={500}>
+      {transition((spring, { mode, address }) => (
+        <a.div style={spring}>
+          {mode === "connected"
+            ? (
+              <ButtonConnected
+                label={ensName ?? shortenAddress(address, 3)}
+                onClick={connect}
+                title={address}
+              />
+            )
+            : (
+              <Button
+                mode="primary"
+                label={mode === "connecting"
+                  ? "Connecting…"
+                  : mode === "unsupported"
+                  ? content.accountButton.wrongNetwork
+                  : content.accountButton.connectAccount}
+                onClick={connect}
+              />
+            )}
+        </a.div>
+      ))}
+    </ShowAfter>
+  );
 }
 
 function DemoModeAccountButton() {

@@ -6,9 +6,9 @@ import { dnum18 } from "@/src/dnum-utils";
 import { CONTRACT_BOLD_TOKEN, CONTRACT_LQTY_TOKEN, CONTRACT_LUSD_TOKEN } from "@/src/env";
 import { getBranch } from "@/src/liquity-utils";
 import { getSafeStatus } from "@/src/safe-utils";
+import { reownModal } from "@/src/services/Ethereum";
 import { isCollateralSymbol } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
-import { useModal as useConnectKitModal } from "connectkit";
 import { match } from "ts-pattern";
 import { erc20Abi } from "viem";
 import { useAccount as useWagmiAccount, useBalance as useWagmiBalance, useEnsName, useReadContract } from "wagmi";
@@ -68,7 +68,6 @@ export function useAccount():
 {
   const demoMode = useDemoMode();
   const account = useWagmiAccount();
-  const connectKitModal = useConnectKitModal();
   const ensName = useEnsName({ address: account?.address });
 
   const safeStatus = useQuery({
@@ -92,7 +91,7 @@ export function useAccount():
   return {
     ...account,
     connect: () => {
-      connectKitModal.setOpen(true);
+      reownModal.open();
     },
     ensName: ensName.data ?? undefined,
     safeStatus: safeStatus.data ?? null,
