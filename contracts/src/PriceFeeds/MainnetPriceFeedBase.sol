@@ -49,7 +49,6 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
         assert(ethUsdOracle.decimals == 8);
     }
 
-    // TODO: remove this and set address in constructor, since we'll use CREATE2
     function setAddresses(address _borrowOperationsAddress) external onlyOwner {
         borrowerOperations = IBorrowerOperations(_borrowOperationsAddress);
 
