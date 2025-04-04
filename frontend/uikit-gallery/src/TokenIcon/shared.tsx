@@ -5,6 +5,8 @@ import { useFixtureSelect } from "react-cosmos/client";
 
 const options = [
   "bvUSD" as const,
+  "WETH" as const,
+  "BTCB" as const,
   "ETH" as const,
 ];
 

@@ -27,6 +27,7 @@ export function TokenIcon({
     .otherwise(() => size);
 
   const token = TOKENS_BY_SYMBOL[symbol];
+  console.log("token: ", token);
 
   return (
     <div

@@ -58,6 +58,7 @@ export function EarnPoolsListScreen() {
       width={67 * 8}
       gap={16}
     >
+      <Vault />
       {poolsTransition((style, branchId) => (
         <a.div style={style}>
           <EarnPool branchId={branchId} />
@@ -82,7 +83,6 @@ function EarnPool({
         gap: 16,
       })}
     >
-      <Vault />
       <EarnPositionSummary
         branchId={branchId}
         earnPosition={earnPosition.data ?? null}

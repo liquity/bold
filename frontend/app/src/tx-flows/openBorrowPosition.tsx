@@ -378,7 +378,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
     const branch = getBranch(ctx.request.branchId);
 
     // ETH doesn't need approval
-    if (branch.symbol === "ETH") {
+    if (branch.symbol === "WETH") {
       return ["openTroveEth"];
     }
 

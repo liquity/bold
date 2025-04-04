@@ -19,9 +19,9 @@ export function useBalance(
 
   const tokenAddress = match(token)
     .when(
-      (symbol) => Boolean(symbol && isCollateralSymbol(symbol) && symbol !== "ETH"),
+      (symbol) => Boolean(symbol && isCollateralSymbol(symbol) && symbol !== "WETH"),
       (symbol) => {
-        if (!symbol || !isCollateralSymbol(symbol) || symbol === "ETH") {
+        if (!symbol || !isCollateralSymbol(symbol) || symbol === "WETH") {
           return null;
         }
         return null // getBranch(symbol)?.contracts.CollToken.address ?? null;

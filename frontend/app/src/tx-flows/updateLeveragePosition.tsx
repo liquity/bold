@@ -221,7 +221,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         const branch = getBranch(ctx.request.loan.branchId);
 
         // add ETH
-        if (branch.symbol === "ETH") {
+        if (branch.symbol === "WETH") {
           return ctx.writeContract({
             ...branch.contracts.LeverageWETHZapper,
             functionName: "addCollWithRawETH",
@@ -260,7 +260,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         ] as const;
 
         // withdraw ETH
-        if (branch.symbol === "ETH") {
+        if (branch.symbol === "WETH") {
           return ctx.writeContract({
             ...branch.contracts.LeverageWETHZapper,
             functionName: "withdrawCollToRawETH",
@@ -310,7 +310,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }] as const;
 
         // leverage up ETH trove
-        if (branch.symbol === "ETH") {
+        if (branch.symbol === "WETH") {
           return ctx.writeContract({
             ...branch.contracts.LeverageWETHZapper,
             functionName: "leverUpTrove",
@@ -358,7 +358,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           minBoldAmount: params.minBoldAmount,
         }] as const;
 
-        if (branch.symbol === "ETH") {
+        if (branch.symbol === "WETH") {
           return ctx.writeContract({
             ...branch.contracts.LeverageWETHZapper,
             functionName: "leverDownTrove",

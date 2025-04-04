@@ -65,7 +65,7 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
         />
         {branches.map(({ symbol }) => {
           const collChange = collChanges?.find((change) => symbol === change.symbol)?.change;
-          const symbol_ = symbol === "ETH" ? "WETH" : symbol;
+          const symbol_ = symbol === "WETH" ? "WETH" : symbol;
           return (
             <TransactionDetailsRow
               key={symbol}
@@ -234,15 +234,15 @@ export function useSimulatedBalancesChange({
         account,
         calls: [
           boldBalanceCall,
-          // ...branchesBalanceCalls,
-          // {
-          //   to: CollateralRegistry.address,
-          //   abi: CollateralRegistry.abi,
-          //   functionName: "redeemCollateral",
-          //   args: [request.amount[0], 0n, request.maxFee[0]],
-          // },
-          // boldBalanceCall,
-          // ...branchesBalanceCalls,
+          ...branchesBalanceCalls,
+          {
+            to: CollateralRegistry.address,
+            abi: CollateralRegistry.abi,
+            functionName: "redeemCollateral",
+            args: [request.amount[0], 0n, request.maxFee[0]],
+          },
+          boldBalanceCall,
+          ...branchesBalanceCalls,
         ],
       });
       console.log(simulation)

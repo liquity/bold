@@ -21,7 +21,7 @@ function useCollateralPrice(
 ): UseQueryResult<Dnum> {
   // "ETH" is a fallback when null is passed, so we can return a standard
   // query object from the PriceFeed ABI, while the query stays disabled
-  const PriceFeed = getBranchContract(symbol ?? "ETH", "PriceFeed");
+  const PriceFeed = getBranchContract(symbol ?? "WETH", "PriceFeed");
 
   if (!PriceFeed) {
     throw new Error(`Price feed contract not found for ${symbol}`);
@@ -43,11 +43,12 @@ function useCollateralPrice(
   });
 }
 
-type CoinGeckoSymbol = TokenSymbol & ("ETH");
+type CoinGeckoSymbol = TokenSymbol & ("WETH" | "BTCB");
 const coinGeckoTokenIds: {
   [key in CoinGeckoSymbol]: string;
 } = {
-  ETH: "ethereum",
+  WETH: "ethereum",
+  BTCB: "bitcoin",
 };
 
 function useCoinGeckoPrice(
@@ -117,7 +118,7 @@ function useCoinGeckoPrice(
 export function usePrice<PT extends PriceToken>(
   symbol: PT | null
 ): UseQueryResult<Dnum> {
-  const fromCoinGecko = symbol === "ETH";
+  const fromCoinGecko = symbol === "WETH" || symbol === "BTCB";
   const fromPriceFeed =
     !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
 

@@ -27,10 +27,10 @@
       "startBlock": 7533021
     }
   },
-  "arbitrum": {
+  "bsc": {
     "BoldToken": {
-      "address": "0xdb68937ED884CE87A23719B9d08b1e01a0dB879B",
-      "startBlock": 316628886
+      "address": "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262",
+      "startBlock": 48060064 
     }
   }
 }

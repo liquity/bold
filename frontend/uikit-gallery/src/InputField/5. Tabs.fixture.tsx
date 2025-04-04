@@ -40,8 +40,8 @@ export default function InputFieldFixture() {
       <InputField
         contextual={
           <InputTokenBadge
-            icon={<TokenIcon symbol="ETH" />}
-            label="ETH"
+            icon={<TokenIcon symbol="WETH" />}
+            label="WETH"
           />
         }
         label={{

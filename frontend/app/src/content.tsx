@@ -62,9 +62,9 @@ export default {
       <>The collateral price at which a loan can be liquidated.</>,
     ],
     ethPrice: [
-      "BTC Price",
+      "Price",
       <>
-        The current price of BTC, as reported by the oracle. The BTC price is used to calculate the Loan-To-Value (LTV)
+        The current price of your collateral, as reported by the oracle. The collateral price is used to calculate the Loan-To-Value (LTV)
         ratio of a loan.
       </>,
     ],
@@ -239,7 +239,7 @@ export default {
   borrowScreen: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Borrow {boldIcon} bvUSD with {tokensIcons} ETH
+        Borrow {boldIcon} bvUSD with {tokensIcons} BTCB or WETH
       </>
     ),
     depositField: {

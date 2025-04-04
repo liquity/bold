@@ -133,7 +133,7 @@ export function AccountScreen({
                   address={address}
                   tokenSymbol={symbol}
                   tapButton={tapEnabled
-                    && symbol !== "ETH" && account.address
+                    && symbol !== "WETH" && account.address
                     && addressesEqual(address, account.address)}
                 />
               </GridItem>

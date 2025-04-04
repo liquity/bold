@@ -2,11 +2,12 @@ import type { Token } from "./types";
 
 import tokenBold from "./token-icons/bold.svg";
 import tokenEth from "./token-icons/eth.svg";
- 
-export type CollateralSymbol = "ETH";
+import tokenBtcb from "./token-icons/btcb.svg";
+
+export type CollateralSymbol = "WETH" | "ETH" | "BTCB";
 
 export function isCollateralSymbol(symbol: string): symbol is CollateralSymbol {
-  return symbol === "ETH";
+  return symbol === "WETH" || symbol === "ETH" || symbol === "BTCB";
 }
 
 export type CollateralToken = Token & {
@@ -20,11 +21,25 @@ export const bvUSD: Token = {
   symbol: "bvUSD" as const,
 } as const;
 
+export const WETH: CollateralToken = {
+  collateralRatio: 1.1,
+  icon: tokenEth,
+  name: "WETH",
+  symbol: "WETH" as const,
+} as const;
+
 export const ETH: CollateralToken = {
   collateralRatio: 1.1,
   icon: tokenEth,
   name: "ETH",
   symbol: "ETH" as const,
+} as const;
+
+export const BTCB: CollateralToken = {
+  collateralRatio: 1.1,
+  icon: tokenBtcb,
+  name: "BTCB",
+  symbol: "BTCB" as const,
 } as const;
 
 // export const RETH: CollateralToken = {
@@ -42,10 +57,14 @@ export const ETH: CollateralToken = {
 // } as const;
 
 export const COLLATERALS: CollateralToken[] = [
+  WETH,
   ETH,
+  BTCB,
 ];
 
 export const TOKENS_BY_SYMBOL = {
   bvUSD,
+  WETH,
   ETH,
+  BTCB,
 } as const;

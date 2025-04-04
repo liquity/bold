@@ -25,7 +25,7 @@ const KNOWN_COLLATERAL_SYMBOLS = COLLATERALS.map(({ symbol }) => symbol);
 export function BuyScreen() {
   const account = useAccount();
 
-  const collPrice = usePrice("ETH");
+  const collPrice = usePrice("WETH");
 
   const balances = Object.fromEntries(KNOWN_COLLATERAL_SYMBOLS.map((symbol) => ([
     symbol,
@@ -33,9 +33,9 @@ export function BuyScreen() {
     useBalance(account.address, symbol),
   ] as const)));
 
-  const collBalance = balances["ETH"];
+  const collBalance = balances["WETH"];
   if (!collBalance) {
-    throw new Error(`Unknown collateral symbol: ETH`);
+    throw new Error(`Unknown collateral symbol: WETH`);
   }
 
   const maxAmount = collBalance.data && dnumMax(
@@ -77,8 +77,8 @@ export function BuyScreen() {
               id="input-sell"
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol="ETH" />}
-                  label="ETH"
+                  icon={<TokenIcon symbol="WETH" />}
+                  label="WETH"
                 />
               }
               label="Sell Amount"
@@ -90,7 +90,7 @@ export function BuyScreen() {
                   }`,
                 end: maxAmount && dn.gt(maxAmount, 0) && (
                   <TextButton
-                    label={`Max ${fmtnum(maxAmount)} ETH`}
+                    label={`Max ${fmtnum(maxAmount)} WETH`}
                     onClick={() => {
                       sellAmount.setValue(dn.toString(maxAmount));
                       setBuyAmount(dn.mul(collPrice.data ?? dnum18(0), maxAmount));
@@ -105,7 +105,7 @@ export function BuyScreen() {
             start: collPrice.data && (
               <Field.FooterInfoCollPrice
                 collPriceUsd={collPrice.data}
-                collName="ETH"
+                collName="WETH"
               />
             ),
           }}

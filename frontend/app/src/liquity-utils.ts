@@ -521,7 +521,6 @@ const StatsSchema = v.pipe(
     branch: Object.fromEntries(
       Object.entries(value.branch).map(([symbol, branch]) => {
         symbol = symbol.toUpperCase();
-        if (symbol === "WETH") symbol = "ETH";
         return [symbol, {
           collActive: dnumOrNull(branch.coll_active, 18),
           collDefault: dnumOrNull(branch.coll_default, 18),
