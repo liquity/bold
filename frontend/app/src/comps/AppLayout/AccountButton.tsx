@@ -1,11 +1,13 @@
 import type { ComponentPropsWithRef, ReactNode } from "react";
 
+import { useBreakpoint } from "@/src/breakpoints";
 import content from "@/src/content";
 import { useDemoMode } from "@/src/demo-mode";
 import { css } from "@/styled-system/css";
 import { Button, IconAccount, shortenAddress, ShowAfter } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { ConnectKitButton } from "connectkit";
+import { useState } from "react";
 import { match, P } from "ts-pattern";
 import { MenuItem } from "./MenuItem";
 
@@ -60,33 +62,76 @@ function CKButton({
     keys: ({ mode }) => String(mode === "connected"),
     from: { opacity: 0, transform: "scale(0.9)" },
     enter: { opacity: 1, transform: "scale(1)" },
-    leave: { opacity: 0, immediate: true },
+    leave: { opacity: 0, display: "none", immediate: true },
     config: { mass: 1, tension: 2400, friction: 80 },
   });
 
-  return transition((spring, { mode, address }) => (
-    <a.div style={spring}>
-      {mode === "connected"
-        ? (
+  return transition((spring, { mode, address }) => {
+    const containerProps = {
+      className: css({
+        display: "flex",
+        alignItems: "center",
+        height: "100%",
+      }),
+      style: spring,
+    } as const;
+    return mode === "connected"
+      ? (
+        <a.div {...containerProps}>
           <ButtonConnected
             label={ensName ?? shortenAddress(address, 3)}
             onClick={show}
             title={address}
           />
-        )
-        : (
-          <Button
-            mode="primary"
-            label={mode === "connecting"
-              ? "Connecting…"
-              : mode === "unsupported"
-              ? content.accountButton.wrongNetwork
-              : content.accountButton.connectAccount}
-            onClick={show}
+        </a.div>
+      )
+      : (
+        <a.div {...containerProps}>
+          <ButtonNotConnected
+            mode={mode}
+            show={show}
           />
-        )}
-    </a.div>
-  ));
+        </a.div>
+      );
+  });
+}
+
+function ButtonNotConnected({
+  mode,
+  show,
+}: {
+  mode: "connecting" | "disconnected" | "unsupported";
+  show?: () => void;
+}) {
+  const props = {
+    mode: "primary",
+    label: mode === "connecting"
+      ? "Connecting…"
+      : mode === "unsupported"
+      ? content.accountButton.wrongNetwork
+      : content.accountButton.connectAccount,
+    onClick: show,
+  } as const;
+
+  return (
+    <>
+      <Button
+        {...props}
+        size="medium"
+        className={css({
+          hideBelow: "medium",
+        })}
+      />
+      <Button
+        {...props}
+        size="medium"
+        className={css({
+          hideFrom: "medium",
+          height: "32px!",
+        })}
+      />
+    </>
+  );
 }
 
 function DemoModeAccountButton() {
@@ -108,6 +153,10 @@ function ButtonConnected({
   onClick?: () => void;
   title?: string;
 }) {
+  const [showIcon, setShowIcon] = useState(false);
+  useBreakpoint((breakpoint) => {
+    setShowIcon(breakpoint.medium);
+  });
   return (
     <button
       onClick={onClick}
@@ -115,7 +164,6 @@ function ButtonConnected({
       className={css({
         display: "flex",
         height: "100%",
-        maxWidth: 140,
         padding: 0,
         whiteSpace: "nowrap",
         textAlign: "center",
@@ -129,7 +177,7 @@ function ButtonConnected({
       })}
     >
       <MenuItem
-        icon={<IconAccount />}
+        icon={showIcon && <IconAccount />}
         label={label}
       />
     </button>

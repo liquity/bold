@@ -139,10 +139,11 @@ export function Screen({
         css({
           position: "relative",
           flexGrow: 1,
-          display: "flex",
+          display: "grid",
+          justifyItems: "center",
           gap: 48,
-          flexDirection: "column",
-          alignItems: "center",
+          gridTemplateColumns: "1fr",
+          gridTemplateRows: "auto 1fr",
           width: "100%",
           padding: 24,
           transformOrigin: "50% 0",
@@ -203,8 +204,7 @@ export function Screen({
       )}
       <a.div
         className={css({
-          display: "flex",
-          flexDirection: "column",
+          display: "grid",
           position: "relative",
           transformOrigin: "50% 0",
           willChange: "transform, opacity",

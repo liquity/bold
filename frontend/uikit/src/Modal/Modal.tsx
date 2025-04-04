@@ -83,7 +83,10 @@ export function Modal({
               display: "grid",
               placeItems: "center",
               overflowX: "auto",
-              background: "rgba(18, 27, 68, 0.7)",
+              background: "transparent",
+              medium: {
+                background: "rgba(18, 27, 68, 0.7)",
+              },
             })}
             style={{
               overflowY: visible ? "scroll" : "hidden",
@@ -113,7 +116,10 @@ export function Modal({
                     }
                   }}
                   className={css({
-                    padding: 64,
+                    padding: {
+                      base: 0,
+                      medium: 64,
+                    },
                     // and this is to re-enable the onMouseDown event
                     pointerEvents: "auto",
                   })}
@@ -125,7 +131,10 @@ export function Modal({
                       padding: 24,
                       outline: "2px solid accent",
                       background: "background",
-                      borderRadius: 8,
+                      borderRadius: {
+                        base: 0,
+                        medium: 8,
+                      },
                     })}
                     style={{
                       maxWidth,

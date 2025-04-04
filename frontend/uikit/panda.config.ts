@@ -23,6 +23,13 @@ const semanticColors = Object.fromEntries(
 export const liquityUiKitPreset = definePreset({
   name: "liquity-ui-kit",
   theme: {
+    extend: {
+      breakpoints: {
+        small: "360px",
+        medium: "624px",
+        large: "960px",
+      },
+    },
     tokens: {
       colors: tokenColors,
       fonts: {
