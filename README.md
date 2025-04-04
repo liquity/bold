@@ -93,8 +93,7 @@
   - [14 - Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1](#14---urgent-redemptions-premium-can-worsen-the-icr-when-trove-coll-value--debt-value--1)
   - [15 - Overflow threshold in SP calculations](#15---Overflow-threshold-in-sp-calculations)
   - [16 - Path dependence of redistributions - sequential vs batch liquidations](#16---path-dependence-of-redistributions---sequential-vs-batch-liquidations)
-  - [17 - TODOs in code comments](#17---todos-in-code-comments)
-  - [18 - Just in time StabilityPool deposits](#18---just-in-time-stabilitypool-deposits)
+  - [17 - Just in time StabilityPool deposits](#18---just-in-time-stabilitypool-deposits)
   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
 
 ## Significant changes in Liquity v2
@@ -1703,17 +1702,7 @@ The impact of redistributions on the remaining active Troves is that they see th
 
 Past simulation has shown that this potential knock-on drag-down effect is minor, though does depend on the system state - i.e. the distribution of ICRs and collateral sizes.
 
-### 17 - TODOs in code comments
-
-A number of TODOs remain in comments in core smart contracts:
-
-- TroveManager L1281 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1281 L1537 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1537 
-L1593 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1593
-L1734 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1734 These `assert` check that certain debt quantities on a live Trove are not 0, which always holds true. 
-
-- MainnetPriceFeedBase L52: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/PriceFeeds/MainnetPriceFeedBase.sol#L52  This is irrelevant now that contracts have been deployed.
-
-### 18 - Just in time StabilityPool deposits
+### 17 - Just in time StabilityPool deposits
 
 It is possible for a depositor to front-run a liquidation transaction with a large SP deposit and reap most of the liquidation gains.
 
