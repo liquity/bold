@@ -10,13 +10,15 @@ import "../Interfaces/IRETHPriceFeed.sol";
 
 contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
     constructor(
-        address _owner,
         address _ethUsdOracleAddress,
         address _rEthEthOracleAddress,
         address _rEthTokenAddress,
         uint256 _ethUsdStalenessThreshold,
-        uint256 _rEthEthStalenessThreshold
-    ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _rEthTokenAddress, _ethUsdStalenessThreshold) {
+        uint256 _rEthEthStalenessThreshold,
+        address _borrowerOperationsAddress
+    )
+        CompositePriceFeed(_ethUsdOracleAddress, _rEthTokenAddress, _ethUsdStalenessThreshold, _borrowerOperationsAddress)
+    {
         // Store RETH-ETH oracle
         rEthEthOracle.aggregator = AggregatorV3Interface(_rEthEthOracleAddress);
         rEthEthOracle.stalenessThreshold = _rEthEthStalenessThreshold;

@@ -14,13 +14,15 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
     uint256 public constant STETH_USD_DEVIATION_THRESHOLD = 1e16; // 1%
 
     constructor(
-        address _owner,
         address _ethUsdOracleAddress,
         address _stEthUsdOracleAddress,
         address _wstEthTokenAddress,
         uint256 _ethUsdStalenessThreshold,
-        uint256 _stEthUsdStalenessThreshold
-    ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _wstEthTokenAddress, _ethUsdStalenessThreshold) {
+        uint256 _stEthUsdStalenessThreshold,
+        address _borrowerOperationsAddress
+    )
+        CompositePriceFeed(_ethUsdOracleAddress, _wstEthTokenAddress, _ethUsdStalenessThreshold, _borrowerOperationsAddress)
+    {
         stEthUsdOracle.aggregator = AggregatorV3Interface(_stEthUsdOracleAddress);
         stEthUsdOracle.stalenessThreshold = _stEthUsdStalenessThreshold;
         stEthUsdOracle.decimals = stEthUsdOracle.aggregator.decimals();
