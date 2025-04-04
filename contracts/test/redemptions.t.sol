@@ -453,9 +453,7 @@ contract Redemptions is DevTestSetup {
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
         assertGt(debt_B, 0, "B debt should be non zero");
 
-        vm.startPrank(address(borrowerOperations));
-        boldToken.mint(B, debt_B);
-        vm.stopPrank();
+        deal(address(boldToken), B, debt_B);
         closeTrove(B, troveIDs.B);
 
         // Check B is closed
@@ -481,9 +479,7 @@ contract Redemptions is DevTestSetup {
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
         assertGt(debt_B, 0, "B debt should be non zero");
 
-        vm.startPrank(address(borrowerOperations));
-        boldToken.mint(B, debt_B);
-        vm.stopPrank();
+        deal(address(boldToken), B, debt_B);
         closeTrove(B, troveIDs.B);
 
         // Check B is closed
@@ -1056,7 +1052,7 @@ contract Redemptions is DevTestSetup {
         );
     }
 
-        function testBaseRateDecayCannotBeSlowedDown() external {
+    function testBaseRateDecayCannotBeSlowedDown() external {
         openTroveHelper({
             _account: A,
             _index: 0,
@@ -1084,7 +1080,6 @@ contract Redemptions is DevTestSetup {
             "wrong final base rate"
         );
     }
-
 
     // TODO: tests borrower for combined adjustments - debt changes and coll add/withdrawals.
     // Borrower should only be able to close OR leave Trove at >= min net debt.

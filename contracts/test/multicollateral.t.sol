@@ -65,14 +65,12 @@ contract MulticollateralTest is DevTestSetup {
             accountsList[6]
         );
 
-        uint256 MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 125e16, 5e16, 10e16, MAX_INT/2);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
+        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16);
+        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16);
+        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 10e16, 125e16, 5e16, 10e16);
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _contractsArray;
@@ -345,10 +343,10 @@ contract MulticollateralTest is DevTestSetup {
         testValues3.collInitialBalance = contractsArray[2].collToken.balanceOf(A);
         testValues4.collInitialBalance = contractsArray[3].collToken.balanceOf(A);
 
-        testValues1.unbackedPortion = contractsArray[0].troveManager.getEntireSystemDebt() - _spBoldAmount1;
-        testValues2.unbackedPortion = contractsArray[1].troveManager.getEntireSystemDebt() - _spBoldAmount2;
-        testValues3.unbackedPortion = contractsArray[2].troveManager.getEntireSystemDebt() - _spBoldAmount3;
-        testValues4.unbackedPortion = contractsArray[3].troveManager.getEntireSystemDebt() - _spBoldAmount4;
+        testValues1.unbackedPortion = contractsArray[0].troveManager.getEntireBranchDebt() - _spBoldAmount1;
+        testValues2.unbackedPortion = contractsArray[1].troveManager.getEntireBranchDebt() - _spBoldAmount2;
+        testValues3.unbackedPortion = contractsArray[2].troveManager.getEntireBranchDebt() - _spBoldAmount3;
+        testValues4.unbackedPortion = contractsArray[3].troveManager.getEntireBranchDebt() - _spBoldAmount4;
         uint256 totalUnbacked = testValues1.unbackedPortion + testValues2.unbackedPortion + testValues3.unbackedPortion
             + testValues4.unbackedPortion;
 
@@ -457,10 +455,10 @@ contract MulticollateralTest is DevTestSetup {
         assertGt(expectedFeePct, 0);
 
         // Get BOLD debts from each branch
-        testValues0.branchDebt = contractsArray[0].troveManager.getEntireSystemDebt();
-        testValues1.branchDebt = contractsArray[1].troveManager.getEntireSystemDebt();
-        testValues2.branchDebt = contractsArray[2].troveManager.getEntireSystemDebt();
-        testValues3.branchDebt = contractsArray[3].troveManager.getEntireSystemDebt();
+        testValues0.branchDebt = contractsArray[0].troveManager.getEntireBranchDebt();
+        testValues1.branchDebt = contractsArray[1].troveManager.getEntireBranchDebt();
+        testValues2.branchDebt = contractsArray[2].troveManager.getEntireBranchDebt();
+        testValues3.branchDebt = contractsArray[3].troveManager.getEntireBranchDebt();
 
         testValues0.collTokenBalBefore_A = contractsArray[0].collToken.balanceOf(A);
         testValues1.collTokenBalBefore_A = contractsArray[1].collToken.balanceOf(A);
@@ -471,10 +469,10 @@ contract MulticollateralTest is DevTestSetup {
         redeem(A, redeemAmount);
 
         // Check how much BOLD was redeemed from each branch
-        testValues0.redeemed = testValues0.branchDebt - contractsArray[0].troveManager.getEntireSystemDebt();
-        testValues1.redeemed = testValues1.branchDebt - contractsArray[1].troveManager.getEntireSystemDebt();
-        testValues2.redeemed = testValues2.branchDebt - contractsArray[2].troveManager.getEntireSystemDebt();
-        testValues3.redeemed = testValues3.branchDebt - contractsArray[3].troveManager.getEntireSystemDebt();
+        testValues0.redeemed = testValues0.branchDebt - contractsArray[0].troveManager.getEntireBranchDebt();
+        testValues1.redeemed = testValues1.branchDebt - contractsArray[1].troveManager.getEntireBranchDebt();
+        testValues2.redeemed = testValues2.branchDebt - contractsArray[2].troveManager.getEntireBranchDebt();
+        testValues3.redeemed = testValues3.branchDebt - contractsArray[3].troveManager.getEntireBranchDebt();
 
         assertGt(testValues0.redeemed, 0);
         assertGt(testValues1.redeemed, 0);

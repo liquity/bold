@@ -50,8 +50,6 @@ contract troveNFTTest is DevTestSetup {
         vm.stopPrank();
     }
 
-    uint256 public MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
     function setUp() public override {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -71,9 +69,9 @@ contract troveNFTTest is DevTestSetup {
 
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT/2);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
+        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16);
+        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16);
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _contractsArray;
@@ -137,14 +135,14 @@ contract troveNFTTest is DevTestSetup {
     }
 
     function testTroveNFTMetadata() public view {
-        assertEq(troveNFTWETH.name(), "Liquity v2 Trove - Wrapped Ether Tester", "Invalid Trove Name");
-        assertEq(troveNFTWETH.symbol(), "Lv2T_WETH", "Invalid Trove Symbol");
+        assertEq(troveNFTWETH.name(), "Liquity V2 - Wrapped Ether Tester", "Invalid Trove Name");
+        assertEq(troveNFTWETH.symbol(), "LV2_WETH", "Invalid Trove Symbol");
 
-        assertEq(troveNFTWstETH.name(), "Liquity v2 Trove - Wrapped Staked Ether", "Invalid Trove Name");
-        assertEq(troveNFTWstETH.symbol(), "Lv2T_wstETH", "Invalid Trove Symbol");
+        assertEq(troveNFTWstETH.name(), "Liquity V2 - Wrapped Staked Ether", "Invalid Trove Name");
+        assertEq(troveNFTWstETH.symbol(), "LV2_wstETH", "Invalid Trove Symbol");
 
-        assertEq(troveNFTRETH.name(), "Liquity v2 Trove - Rocket Pool ETH", "Invalid Trove Name");
-        assertEq(troveNFTRETH.symbol(), "Lv2T_rETH", "Invalid Trove Symbol");
+        assertEq(troveNFTRETH.name(), "Liquity V2 - Rocket Pool ETH", "Invalid Trove Name");
+        assertEq(troveNFTRETH.symbol(), "LV2_rETH", "Invalid Trove Symbol");
     }
 
     string topMulti =
@@ -201,6 +199,15 @@ contract troveNFTTest is DevTestSetup {
         string memory decodedUri = string(Base64.decode(uriSplit));
 
         // Check for expected attributes
+        assertTrue(LibString.contains(decodedUri, '"name": "Liquity V2 - '), "NFT Name attribute missing");
+
+        assertTrue(
+            LibString.contains(
+                decodedUri, '"description": "Liquity V2 is a collateralized debt platform. Users can lock up'
+            ),
+            "NFT description attribute missing"
+        );
+
         assertTrue(
             LibString.contains(decodedUri, '"trait_type": "Collateral Token"'), "Collateral Token attribute missing"
         );
