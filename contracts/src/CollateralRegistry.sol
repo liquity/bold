@@ -176,6 +176,7 @@ contract CollateralRegistry is ICollateralRegistry {
         if (minutesPassed > 0) {
             lastFeeOperationTime += ONE_MINUTE * minutesPassed;
             emit LastFeeOpTimeUpdated(lastFeeOperationTime);
+        }
     }
 
     function _minutesPassedSinceLastFeeOp() internal view returns (uint256) {
