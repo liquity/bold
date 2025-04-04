@@ -6,8 +6,6 @@ import "./WETHZapper.sol";
 import "../Dependencies/Constants.sol";
 import "./Interfaces/ILeverageZapper.sol";
 
-// TODO: unwrap WETH in _returnLeftovers
-
 contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
         WETHZapper(_addressesRegistry, _flashLoanProvider, _exchange)

@@ -231,7 +231,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     function _liquidate(
         IDefaultPool _defaultPool,
         uint256 _troveId,
-        uint256 _boldInStabPool,
+        uint256 _boldInSPForOffsets,
         uint256 _price,
         LatestTroveData memory trove,
         LiquidationValues memory singleLiquidation
@@ -255,7 +255,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             singleLiquidation.debtToRedistribute,
             singleLiquidation.collToRedistribute,
             singleLiquidation.collSurplus
-        ) = _getOffsetAndRedistributionVals(trove.entireDebt, collToLiquidate, _boldInStabPool, _price);
+        ) = _getOffsetAndRedistributionVals(trove.entireDebt, collToLiquidate, _boldInSPForOffsets, _price);
 
         TroveChange memory troveChange;
         troveChange.collDecrease = trove.entireColl;
@@ -340,7 +340,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     function _getOffsetAndRedistributionVals(
         uint256 _entireTroveDebt,
         uint256 _collToLiquidate, // gas compensation is already subtracted
-        uint256 _boldInStabPool,
+        uint256 _boldInSPForOffsets,
         uint256 _price
     )
         internal
@@ -364,8 +364,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
          *  - Send a fraction of the trove's collateral to the Stability Pool, equal to the fraction of its offset debt
          *
          */
-        if (_boldInStabPool > 0) {
-            debtToOffset = LiquityMath._min(_entireTroveDebt, _boldInStabPool);
+        if (_boldInSPForOffsets > 0) {
+            debtToOffset = LiquityMath._min(_entireTroveDebt, _boldInSPForOffsets);
             collSPPortion = _collToLiquidate * debtToOffset / _entireTroveDebt;
             (collToSendToSP, collSurplus) =
                 _getCollPenaltyAndSurplus(collSPPortion, debtToOffset, LIQUIDATION_PENALTY_SP, _price);
@@ -413,7 +413,11 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         IActivePool activePoolCached = activePool;
         IDefaultPool defaultPoolCached = defaultPool;
-        IStabilityPool stabilityPoolCached = stabilityPool;
+        // - If the SP has total deposits >= 1e18, we leave 1e18 in it untouched.
+        // - If it has 0 < x < 1e18 total deposits, we leave x in it.
+        uint256 totalBoldDeposits = stabilityPoolCached.getTotalBoldDeposits();
+        uint256 boldToLeaveInSP = LiquityMath._min(MIN_BOLD_IN_SP, totalBoldDeposits);
+        uint256 boldInSPForOffsets = totalBoldDeposits - boldToLeaveInSP;
 
         TroveChange memory troveChange;
         LiquidationValues memory totals;
@@ -422,7 +426,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 boldInStabPool = stabilityPoolCached.getTotalBoldDeposits();
 
         // Perform the appropriate liquidation sequence - tally values and obtain their totals.
-        _batchLiquidateTroves(defaultPoolCached, price, boldInStabPool, _troveArray, totals, troveChange);
+        _batchLiquidateTroves(defaultPoolCached, price, boldInSPForOffsets, _troveArray, totals, troveChange);
 
         if (troveChange.debtDecrease == 0) {
             revert NothingToLiquidate();
@@ -469,12 +473,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     function _batchLiquidateTroves(
         IDefaultPool _defaultPool,
         uint256 _price,
-        uint256 _boldInStabPool,
+        uint256 _boldInSPForOffsets,
         uint256[] memory _troveArray,
         LiquidationValues memory totals,
         TroveChange memory troveChange
     ) internal {
-        uint256 remainingBoldInStabPool = _boldInStabPool;
+        uint256 remainingBoldInSPForOffsets = _boldInSPForOffsets;
 
         for (uint256 i = 0; i < _troveArray.length; i++) {
             uint256 troveId = _troveArray[i];
@@ -488,8 +492,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 LiquidationValues memory singleLiquidation;
                 LatestTroveData memory trove;
 
-                _liquidate(_defaultPool, troveId, remainingBoldInStabPool, _price, trove, singleLiquidation);
-                remainingBoldInStabPool -= singleLiquidation.debtToOffset;
+                _liquidate(_defaultPool, troveId, remainingBoldInSPForOffsets, _price, trove, singleLiquidation);
+                remainingBoldInSPForOffsets -= singleLiquidation.debtToOffset;
 
                 // Add liquidation values to their respective running totals
                 _addLiquidationValuesToTotals(trove, singleLiquidation, totals, troveChange);

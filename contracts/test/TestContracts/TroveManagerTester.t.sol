@@ -13,7 +13,12 @@ for testing the parent's internal functions. */
 contract TroveManagerTester is ITroveManagerTester, TroveManager {
     uint256 constant STALE_TROVE_DURATION = 90 days;
 
-    constructor(IAddressesRegistry _addressesRegistry) TroveManager(_addressesRegistry) {}
+    // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
+    uint256 public immutable BCR;
+
+    constructor(IAddressesRegistry _addressesRegistry) TroveManager(_addressesRegistry) {
+        BCR = _addressesRegistry.BCR();
+    }
 
     // Single liquidation function. Closes the trove if its ICR is lower than the minimum collateral ratio.
     function liquidate(uint256 _troveId) external override {
@@ -28,6 +33,10 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
 
     function get_MCR() external view returns (uint256) {
         return MCR;
+    }
+
+    function get_BCR() external view returns (uint256) {
+        return BCR;
     }
 
     function get_SCR() external view returns (uint256) {
@@ -236,11 +245,6 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
     }
     */
 
-    function getTroveBatchDebtShares(uint256 _troveId) external view returns (uint256) {
-        Trove memory trove = Troves[_troveId];
-        return trove.batchDebtShares;
-    }
-
     function getTroveStake(uint256 _troveId) external view override returns (uint256) {
         return Troves[_troveId].stake;
     }
@@ -254,17 +258,6 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
             return batch.debt * trove.batchDebtShares / batch.totalDebtShares;
         }
         return trove.debt;
-    }
-
-    function getbatchDebtAndShares(address batchAddress) external view returns (uint256, uint256) {
-        LatestBatchData memory batch;
-
-        _getLatestBatchData(batchAddress, batch);
-
-        // Shares are in this mapping
-        uint256 totalDebtShares = batches[batchAddress].totalDebtShares;
-
-        return (batch.entireDebtWithoutRedistribution, totalDebtShares);
     }
 
     function getTroveWeightedRecordedDebt(uint256 _troveId) external view returns (uint256) {
@@ -351,16 +344,6 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         Batch memory batch = batches[_batchAddress];
         // convert annual interest to per-second and multiply by the principal
         return _calcInterest(batch.debt * batch.annualManagementFee, block.timestamp - batch.lastDebtUpdateTime);
-    }
-
-
-    function getTroveInterestRate(uint256 troveId) external view returns (uint256) {
-        address batchAddress = _getBatchManager(troveId);
-        if (batchAddress != address(0)) {
-            return batches[batchAddress].annualInterestRate;
-        }
-
-        return Troves[troveId].annualInterestRate;
     }
 
     function getBatchAnnualInterestRate(address _batchAddress) external view returns (uint256) {

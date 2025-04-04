@@ -218,7 +218,6 @@ contract WETHZapper is BaseZapper {
             (bool success,) = _receiver.call{value: _collChange}("");
             require(success, "WZ: Sending ETH failed");
         }
-        // TODO: remove before deployment!!
         assert(address(this).balance == 0);
         assert(WETH.balanceOf(address(this)) == 0);
     }

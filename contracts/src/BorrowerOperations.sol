@@ -1120,7 +1120,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _troveEntireDebt,
         TroveChange memory _troveChange,
         uint256 _maxUpfrontFee,
-         bool _isTroveInBatch
+        bool _isTroveInBatch
     ) internal returns (uint256) {
         uint256 price = _requireOraclesLive();
 

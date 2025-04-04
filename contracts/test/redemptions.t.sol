@@ -1056,6 +1056,36 @@ contract Redemptions is DevTestSetup {
         );
     }
 
+        function testBaseRateDecayCannotBeSlowedDown() external {
+        openTroveHelper({
+            _account: A,
+            _index: 0,
+            _coll: 1e4 ether,
+            _boldAmount: 1e6 ether,
+            _annualInterestRate: MIN_ANNUAL_INTEREST_RATE
+        });
+
+        uint256 initialBaseRate = collateralRegistry.baseRate();
+
+        for (uint256 i = 0; i < 60; ++i) {
+            skip(2 minutes - 1 seconds);
+            redeem(A, 1 wei);
+        }
+
+        uint256 finalBaseRate = collateralRegistry.baseRate();
+
+        // In total, 119 minutes have passed, so we expect base rate to have
+        // decayed to REDEMPTION_MINUTE_DECAY_FACTOR^119 of its original value
+        assertApproxEqAbsDecimal(
+            finalBaseRate,
+            initialBaseRate * LiquityMath._decPow(REDEMPTION_MINUTE_DECAY_FACTOR, 119) / DECIMAL_PRECISION,
+            100,
+            18,
+            "wrong final base rate"
+        );
+    }
+
+
     // TODO: tests borrower for combined adjustments - debt changes and coll add/withdrawals.
     // Borrower should only be able to close OR leave Trove at >= min net debt.
 }
