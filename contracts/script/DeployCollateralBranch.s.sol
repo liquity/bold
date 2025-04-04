@@ -14,6 +14,7 @@ import "src/HintHelpers.sol";
 import "src/MultiTroveGetter.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
+import "src/Dependencies/Whitelist.sol";
 import "src/PriceFeeds/CollateralPriceFeed.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "src/Zappers/TokenZapper.sol";
@@ -44,6 +45,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         uint256 CCR;
         address collateralAddress;
         uint256 collateralIndex;
+        bool createWhitelist;
         bool createWrapper;
         uint256 liqPenaltyDistr;
         uint256 liqPenaltySP;
@@ -56,6 +58,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
     struct BranchDeployment {
         address collateralAddress;
         bool createWrapper;
+        bool createWhitelist;
         address oracleAddress;
         uint256 oracleStalenessThreshold;
     }
@@ -85,6 +88,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         GasPool gasPool;
         IERC20Metadata collToken;
         ITokenZapper collZapper;
+        IWhitelist whitelist;
     }
 
     struct BranchContractsAddresses {
@@ -99,11 +103,13 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         address metadataNFT;
         address priceFeed;
         address gasPool;
+        address whitelist;
     }
 
     struct DeploymentVars {
         uint256 numCollaterals;
         bool[] deployZappers;
+        bool[] deployWhitelist;
         IERC20Metadata[] collaterals;
         IPriceFeed[] priceFeeds;
         IAddressesRegistry[] addressesRegistries;
@@ -211,6 +217,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
 
             branchDeploymentConfigs[i].collateralAddress = branchConfig.createWrapper ? deployCollateralWrapper(branchConfig.collateralAddress) : branchConfig.collateralAddress;
             branchDeploymentConfigs[i].createWrapper = branchConfig.createWrapper;
+            branchDeploymentConfigs[i].createWhitelist = branchConfig.createWhitelist;
             branchDeploymentConfigs[i].oracleAddress = branchConfig.oracleAddress;
             branchDeploymentConfigs[i].oracleStalenessThreshold = branchConfig.oracleStalenessThreshold;
 
@@ -238,9 +245,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             troveManagerParamsArray,
             globalContracts,
             branchDeploymentConfigs,
-            collateralIndexes,
-            collNames,
-            collSymbols
+            collateralIndexes
         );
 
         vm.stopBroadcast();
@@ -254,12 +259,8 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         TroveManagerParams[] memory troveManagerParamsArray,
         GlobalContracts memory globalContracts,
         BranchDeployment[] memory branchConfigs,
-        uint256[] memory _collateralIndexes,
-        string[] memory _collNames,
-        string[] memory _collSymbols
+        uint256[] memory _collateralIndexes
     ) public returns (BranchContracts[] memory branches) {
-        assert(_collNames.length == troveManagerParamsArray.length);
-        assert(_collSymbols.length == troveManagerParamsArray.length);
         assert(branchConfigs.length == troveManagerParamsArray.length);
 
         DeploymentVars memory vars;
@@ -271,13 +272,17 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
         vars.deployZappers = new bool[](vars.numCollaterals);
+        vars.deployWhitelist = new bool[](vars.numCollaterals);
 
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             // set collaterals
             vars.collaterals[vars.i] = IERC20Metadata(branchConfigs[vars.i].collateralAddress);
             // set zapper to be deployed
             vars.deployZappers[vars.i] = branchConfigs[vars.i].createWrapper;
-        
+            
+            // set whitelist to be deployed
+            vars.deployWhitelist[vars.i] = branchConfigs[vars.i].createWhitelist;
+
             // Deploy AddressesRegistries and get TroveManager addresses
             (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
                 _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
@@ -317,6 +322,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             vars.contracts = deployAndConnectBranch(
                 vars.collaterals[vars.i],
                 vars.deployZappers[vars.i],
+                vars.deployWhitelist[vars.i],
                 vars.priceFeeds[vars.i],
                 globalContracts.bvUSD,
                 globalContracts.collateralRegistry,
@@ -333,6 +339,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
     function deployAndConnectBranch(
         IERC20Metadata _collToken,
         bool deployZapper,
+        bool deployWhitelist,
         IPriceFeed _priceFeed,
         IBoldToken _bvUSD,
         ICollateralRegistry _collateralRegistry,
@@ -380,6 +387,13 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         addresses.sortedTroves = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(SortedTroves).creationCode, address(branchContracts.addressesRegistry)))
         );
+        
+        if(deployWhitelist) {
+            addresses.whitelist =  vm.computeCreate2Address(
+                SALT, keccak256(getBytecode(type(Whitelist).creationCode, deployer))
+            );
+            branchContracts.whitelist = new Whitelist{salt: SALT}(deployer);
+        }
 
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
             collToken: _collToken,
@@ -400,7 +414,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             collateralRegistry: _collateralRegistry,
             boldToken: _bvUSD,
             WETH: gasToken,
-            whitelist: IWhitelist(address(0)) // TODO
+            whitelist: IWhitelist(addresses.whitelist)
         });
         branchContracts.addressesRegistry.setAddresses(addressVars);
         branchContracts.priceFeed.setAddresses(addresses.borrowerOperations);
@@ -502,6 +516,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
                 string.concat('"bvUSD Token":"', address(globalContracts.bvUSD).toHexString(), '",'),
                 string.concat('"hintHelpers":"', address(globalContracts.hintHelpers).toHexString(), '",'),
                 string.concat('"multiTroveGetter":"', address(globalContracts.multiTroveGetter).toHexString(), '",'),
+                string.concat('"Gas token":"', address(gasToken).toHexString(), '",'),
                 string.concat('"branches":[', strBranches.join(","), "],")
             ),
             "}"
@@ -530,7 +545,8 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
                     string.concat('"metadataNFT":"', address(c.metadataNFT).toHexString(), '",'),
                     string.concat('"priceFeed":"', address(c.priceFeed).toHexString(), '",'),
                     string.concat('"gasPool":"', address(c.gasPool).toHexString(), '",'),
-                    string.concat('"collateral zapper":"', address(c.collZapper).toHexString(), '",')
+                    string.concat('"collateral zapper":"', address(c.collZapper).toHexString(), '",'),
+                    string.concat('"whitelist":"', address(c.whitelist).toHexString(), '",')
                 )
             ),
             "}"
