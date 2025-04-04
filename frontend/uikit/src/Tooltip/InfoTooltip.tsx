@@ -16,16 +16,24 @@ type ContentObject = {
 
 export function InfoTooltip(
   props:
-    | { children?: ReactNode; heading?: ReactNode }
-    | {
-      content:
-        // one item = body only
-        | [ReactNode]
-        // two items = heading + body
-        | [ReactNode, ReactNode]
-        // object format
-        | ContentObject;
-    },
+    & {
+      level?: "info" | "warning";
+    }
+    & (
+      | {
+        children?: ReactNode;
+        heading?: ReactNode;
+      }
+      | {
+        content:
+          // one item = body only
+          | [ReactNode]
+          // two items = heading + body
+          | [ReactNode, ReactNode]
+          // object format
+          | ContentObject;
+      }
+    ),
 ) {
   const heading = "content" in props
     ? Array.isArray(props.content) ? props.content.length === 2 && props.content[0] : props.content.heading
@@ -82,12 +90,28 @@ export function InfoTooltip(
     )
     : <Body>{props.children}</Body>;
 
+  const level = props.level ?? "info";
+
   return (
     <Tooltip
       opener={({ buttonProps, setReference }) => (
         <TextButton
           ref={setReference}
-          label={<IconInfo size={16} />}
+          label={
+            <div
+              className={css({
+                display: "flex",
+                width: 16,
+                height: 16,
+                "--color-warning": "token(colors.warning)",
+              })}
+              style={{
+                color: level === "warning" ? "var(--color-warning)" : "inherit",
+              }}
+            >
+              <IconInfo size={16} />
+            </div>
+          }
           className={css({
             color: "contentAlt2!",
           })}

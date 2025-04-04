@@ -62,8 +62,8 @@ const InputField = forwardRef<HTMLInputElement, {
   onFocus,
   placeholder,
   secondary,
-  secondaryHeight = 12,
-  secondarySpacing = 20,
+  secondaryHeight = 24,
+  secondarySpacing = 14,
   value,
   valueUnfocused,
 }, ref) {
@@ -165,7 +165,7 @@ const InputField = forwardRef<HTMLInputElement, {
           background: "fieldSurface",
           border: "1px solid token(colors.fieldBorder)",
           borderRadius: 8,
-          padding: 16,
+          padding: "16px 16px 10px",
         })}
       >
         <div
@@ -319,9 +319,8 @@ const InputField = forwardRef<HTMLInputElement, {
         {(secondary_.start || secondary_.end) && (
           <div
             className={css({
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
               gap: 16,
               fontSize: 16,
               fontWeight: 500,
@@ -333,34 +332,33 @@ const InputField = forwardRef<HTMLInputElement, {
             })}
             style={{
               height: secondaryHeight + secondarySpacing,
-              paddingTop: secondarySpacing,
             }}
           >
             {secondary_.start
               ? (
                 <div
                   className={css({
-                    flexGrow: 0,
-                    flexShrink: 1,
                     display: "flex",
+                    alignItems: "flex-end",
+                    overflow: "hidden",
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
-                    maxWidth: "50%",
                   })}
                 >
-                  {secondary_.start}
+                  <span>
+                    {secondary_.start}
+                  </span>
                 </div>
               )
               : <div />}
             {secondary_.end && (
               <div
                 className={css({
-                  flexGrow: 0,
-                  flexShrink: 1,
                   display: "flex",
+                  alignItems: "flex-end",
                   whiteSpace: "nowrap",
                   textOverflow: "ellipsis",
-                  overflow: "hidden",
+                  justifyContent: "flex-end",
                 })}
               >
                 {secondary_.end}
