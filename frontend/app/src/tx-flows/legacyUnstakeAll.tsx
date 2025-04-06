@@ -2,7 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Governance } from "@/src/abi/Governance";
 import { Amount } from "@/src/comps/Amount/Amount";
-import { LEGACY_CHECK } from "@/src/constants";
+import { LEGACY_CHECK } from "@/src/env";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";

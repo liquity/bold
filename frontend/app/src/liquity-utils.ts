@@ -26,11 +26,10 @@ import {
   INTEREST_RATE_INCREMENT_PRECISE,
   INTEREST_RATE_PRECISE_UNTIL,
   INTEREST_RATE_START,
-  LEGACY_CHECK,
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
+import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
   useAllInterestRateBrackets,
@@ -873,30 +872,32 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
     query: {
       enabled: checkLegacyPositions,
       refetchInterval: DATA_REFRESH_INTERVAL,
-      select: (results) => (
-        results
-          .map((data, index) => {
-            const prefixedTroveId = legacyTrovesFromSnapshot.data?.[index];
-            if (!prefixedTroveId) {
-              throw new Error("Trove ID not found");
-            }
-            const { branchId, troveId } = parsePrefixedTroveId(prefixedTroveId);
-            const branch = LEGACY_CHECK?.BRANCHES[branchId as number];
-            if (!branch) {
-              throw new Error(`Invalid branch ID: ${branchId}`);
-            }
-            return {
-              ...data,
-              branchId,
-              collToken: {
-                name: branch.name,
-                symbol: branch.symbol,
-              },
-              troveId,
-            };
-          })
-          .filter((trove) => trove.entireDebt > 0n)
-      ),
+      select: (results) => {
+        return (
+          results
+            .map((data, index) => {
+              const prefixedTroveId = legacyTrovesFromSnapshot.data?.[index];
+              if (!prefixedTroveId) {
+                throw new Error("Trove ID not found");
+              }
+              const { branchId, troveId } = parsePrefixedTroveId(prefixedTroveId);
+              const branch = LEGACY_CHECK?.BRANCHES[branchId as number];
+              if (!branch) {
+                throw new Error(`Invalid branch ID: ${branchId}`);
+              }
+              return {
+                ...data,
+                branchId,
+                collToken: {
+                  name: branch.name,
+                  symbol: branch.symbol,
+                },
+                troveId,
+              };
+            })
+            .filter((trove) => trove.entireDebt > 0n)
+        );
+      },
     },
   });
 

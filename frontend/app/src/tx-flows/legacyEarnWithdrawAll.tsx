@@ -2,7 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { Amount } from "@/src/comps/Amount/Amount";
-import { LEGACY_CHECK } from "@/src/constants";
+import { LEGACY_CHECK } from "@/src/env";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { vDnum } from "@/src/valibot-utils";

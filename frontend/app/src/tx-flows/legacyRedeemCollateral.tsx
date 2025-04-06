@@ -3,8 +3,9 @@ import type { Address } from "@/src/types";
 
 import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { Amount } from "@/src/comps/Amount/Amount";
-import { LEGACY_CHECK, LOCAL_STORAGE_PREFIX } from "@/src/constants";
+import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { dnum18, jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { LEGACY_CHECK } from "@/src/env";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { vDnum } from "@/src/valibot-utils";

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { Banner } from "@/Banner";
 import { LegacyPositionsBanner } from "@/src/comps/LegacyPositionsBanner/LegacyPositionsBanner";
-import { LEGACY_CHECK } from "@/src/constants";
+import { LEGACY_CHECK } from "@/src/env";
 import { css } from "@/styled-system/css";
 import { AnchorTextButton } from "@liquity2/uikit";
 import Link from "next/link";
