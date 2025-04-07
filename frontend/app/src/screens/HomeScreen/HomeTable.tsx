@@ -7,6 +7,7 @@ type HomeTableProps<Cols extends readonly ReactNode[]> = {
   columns: Cols;
   icon: ReactNode;
   loading?: ReactNode;
+  placeholder?: ReactNode;
   rows: Array<ReactNode | { [K in keyof Cols]: ReactNode }>;
   subtitle: ReactNode;
   title: ReactNode;
@@ -16,6 +17,7 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
   columns,
   icon,
   loading,
+  placeholder,
   rows,
   subtitle,
   title,
@@ -71,6 +73,35 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
             })}
           >
             {loading}
+          </div>
+        )
+        : rows.length === 0
+        ? (
+          <div
+            className={css({
+              display: "grid",
+              placeItems: "center",
+              height: 64,
+              margin: "-16px 0",
+              padding: "0 0 16px",
+              fontSize: 14,
+              color: "contentAlt",
+              userSelect: "none",
+            })}
+          >
+            <div
+              className={css({
+                display: "grid",
+                placeItems: "center",
+                width: "100%",
+                padding: "12px 16px",
+                color: "disabledContent",
+                background: "disabledSurface",
+                borderRadius: 8,
+              })}
+            >
+              {placeholder ?? "No data"}
+            </div>
           </div>
         )
         : (
