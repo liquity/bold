@@ -13,8 +13,6 @@ import {
   TroveNFT as TroveNFTTemplate,
 } from "../generated/templates";
 
-
-
 function addCollateral(
   collIndex: i32,
   totalCollaterals: i32,
@@ -38,12 +36,12 @@ function addCollateral(
 
   let addresses = new CollateralAddresses(collId);
   addresses.collateral = collId;
-  addresses.borrowerOperations = Address.fromString(collIndex === 0 ? "0x353cE8AFdDb9905181C4C09323f3498cb1a486aE" : "0xd66D247C022D22f8E8AB714b6e42bDe65a21FA1d");
-  addresses.sortedTroves = Address.fromString(collIndex === 0 ? "0x048a7F6916B309ea2E648B0DEf4375eA12725aeB" : "0xc38C95800c1047DB91FA04C194D376a4591007f4");
-  addresses.stabilityPool = Address.fromString(collIndex === 0 ? "0x8b9E876f20885236d10524eEA1bB214c7197a699" : "0x35bEc4781d669f757169ce02789c9372755d5A62");
+  addresses.borrowerOperations = Address.fromString(collIndex === 0 ? "0x267f27704cb5c4fd85cab6b62acffbc3a0dd5097" : "0xe04dcc3422b75036c6b5e20e784043031e9bef9e");
+  addresses.sortedTroves = Address.fromString(collIndex === 0 ? "0x8ecfd497d61c0798319134da322eb77447e37466" : "0xa3c7062d84de691aeee99cefaf04c78655829c7c");
+  addresses.stabilityPool = Address.fromString(collIndex === 0 ? "0xc800a61ef17228b5f941b240620a48ff74db8019" : "0x4169ce06f30b39771d887b1e5e990c66011f1689");
   addresses.token = tokenAddress;
   addresses.troveManager = troveManagerAddress;
-  addresses.troveNft = Address.fromString(collIndex === 0 ? "0x97728aCB7Cdfb1edb83A7E25829eA8A3FD28E7CB" : "0x765B390BA4EE85853f975AC3041bfe407C890dcf");
+  addresses.troveNft = Address.fromString(collIndex === 0 ? "0x87e14803d0d705ac60ebb1c655634a5f84a6ee3b" : "0x256bc91a0159ecf159dab2d4289272249b266ad4");
 
   collateral.minCollRatio = BigInt.fromI64(1200000000000000000)
 
