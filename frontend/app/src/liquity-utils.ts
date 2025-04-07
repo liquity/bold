@@ -901,7 +901,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
     },
   });
 
-  const hasAnyLegacyTrove = (legacyTroves.data?.length ?? 0) > 0;
+  const hasAnyLegacyTrove = (legacyTrovesFromSnapshot.data?.length ?? 0) > 0;
 
   const spDeposits = useReadContracts({
     contracts: LEGACY_CHECK
@@ -1015,7 +1015,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
     enabled: (
       checkLegacyPositions
       && legacyBoldBalance.isSuccess
-      && legacyTroves.isSuccess
+      && (legacyTroves.isSuccess || !hasAnyLegacyTrove)
       && spDeposits.isSuccess
       && stakedLqty.isSuccess
     ),
