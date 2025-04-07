@@ -50,7 +50,15 @@ export function LegacyScreen() {
   const account = useAccount();
   const legacyPositions = useLegacyPositions(account.address ?? null);
 
-  const positionsTransition = useTransition(account.isConnected, {
+  const positionsTransition = useTransition({
+    account,
+    legacyPositions,
+  }, {
+    keys: ({ account, legacyPositions }) => (
+      !account.address
+        ? "no-account"
+        : `${account.address}${legacyPositions.data?.hasAnyPosition}`
+    ),
     from: {
       opacity: 0,
       transform: `
@@ -64,6 +72,7 @@ export function LegacyScreen() {
         scale3d(1, 1, 1)
         translate3d(0, 0px, 0)
       `,
+      immediate: !account.address,
     },
     leave: {
       display: "none",
@@ -82,8 +91,8 @@ export function LegacyScreen() {
         title: "Liquity V2-Legacy Positions",
       }}
     >
-      {positionsTransition((style, show) => (
-        show
+      {positionsTransition((style, { account, legacyPositions }) => (
+        account.address
           ? (
             <a.div
               className={css({
@@ -108,11 +117,12 @@ export function LegacyScreen() {
                 })}
               >
                 {legacyPositions.isLoading
-                  ? `Fetching your legacy positions…`
+                  ? "Fetching your legacy positions…"
                   : legacyPositions.data?.hasAnyPosition
-                  ? `You have active positions in Liquity V2-Legacy. These positions are not compatible with Liquity V2.
-                         You can withdraw these positions from here at any time.`
-                  : `You do not have any active positions in Liquity V2-Legacy.`}
+                  ? "You have active positions in Liquity V2-Legacy."
+                    + " These positions are not compatible with Liquity V2."
+                    + " You can withdraw these positions from here at any time."
+                  : "You do not have any active positions in Liquity V2-Legacy."}
               </div>
               {legacyPositions.isSuccess && (
                 <div
@@ -143,12 +153,7 @@ export function LegacyScreen() {
             </a.div>
           )
           : (
-            <a.div
-              className={css({
-                willChange: "transform, opacity",
-              })}
-              style={style}
-            >
+            <a.div style={style}>
               <ConnectWarningBox />
             </a.div>
           )
@@ -176,7 +181,8 @@ function EarnPositionsTable() {
         "Deposit",
         "Rewards",
       ] as const}
-      rows={[
+      placeholder="No active positions."
+      rows={legacyPositions.isSuccess && spDeposits.length === 0 ? [] : [
         ...spDeposits.map((spPosition) => {
           const branch = getLegacyBranch(spPosition.branchId);
           return (
@@ -294,6 +300,7 @@ function LoanPositionsTable() {
         "Borrowed",
         null,
       ] as const}
+      placeholder="No opened loans."
       rows={troves.map((trove) => {
         const debt = dnum18(trove.entireDebt);
         const coll = dnum18(trove.entireColl);
@@ -403,7 +410,8 @@ function StakingPositionsTable() {
       loading={legacyPositions.isLoading && "Fetching legacy staking position…"}
       icon={<IconStake />}
       columns={["Staked LQTY", null] as const}
-      rows={[
+      placeholder="No active staking position."
+      rows={stakeDeposit && dn.eq(stakeDeposit, 0) ? [] : [
         <tr>
           <td>
             <TokenAmount
@@ -507,7 +515,8 @@ function RedeemSection() {
                 display: "flex",
                 flexDirection: "column",
                 gap: 24,
-                padding: 16,
+                padding: "8px 0 0",
+                marginBottom: -8,
               })}
             >
               <Field
