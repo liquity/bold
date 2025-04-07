@@ -74,7 +74,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
           deposit: request.collAmount,
           interestRate: request.annualInterestRate,
         }}
-        onRetry={() => {}}
+        onRetry={() => { }}
         txPreviewMode
       />
     );
@@ -212,9 +212,9 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
           value={[
             <div
               key="start"
-              title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}
+              title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} BNB`}
             >
-              {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
+              {fmtnum(ETH_GAS_COMPENSATION, 4)} BNB
             </div>,
             "Only used in case of liquidation",
           ]}
@@ -258,7 +258,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
 
     // LeverageLSTZapper mode
     openTroveLst: {
-      name: () => "Open Position",
+      name: () => "Open LeverageLSTZapper mode Position",
       Status: TransactionStatus,
 
       async commit(ctx) {
@@ -270,6 +270,29 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
         });
 
         const branch = getBranch(ctx.request.branchId);
+        console.log({
+          ...branch.contracts.LeverageLSTZapper,
+          functionName: "openTroveWithRawETH" as const,
+          args: [{
+            owner: ctx.request.owner,
+            ownerIndex: BigInt(ctx.request.ownerIndex),
+            collAmount: ctx.request.collAmount[0],
+            boldAmount: ctx.request.boldAmount[0],
+            upperHint,
+            lowerHint,
+            annualInterestRate: ctx.request.interestRateDelegate
+              ? 0n
+              : ctx.request.annualInterestRate[0],
+            batchManager: ctx.request.interestRateDelegate
+              ? ctx.request.interestRateDelegate
+              : ADDRESS_ZERO,
+            maxUpfrontFee: ctx.request.maxUpfrontFee[0],
+            addManager: ADDRESS_ZERO,
+            removeManager: ADDRESS_ZERO,
+            receiver: ctx.request.owner,
+          }],
+          value: ETH_GAS_COMPENSATION[0],
+        })
         return ctx.writeContract({
           ...branch.contracts.LeverageLSTZapper,
           functionName: "openTroveWithRawETH" as const,
@@ -378,9 +401,9 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
     const branch = getBranch(ctx.request.branchId);
 
     // ETH doesn't need approval
-    if (branch.symbol === "WETH") {
-      return ["openTroveEth"];
-    }
+    // if (branch.symbol === "WETH") {
+    //   return ["openTroveEth"];
+    // }
 
     // Check if approval is needed
     const allowance = await readContract(ctx.wagmiConfig, {

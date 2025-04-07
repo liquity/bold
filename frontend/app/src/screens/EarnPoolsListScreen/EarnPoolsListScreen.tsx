@@ -59,11 +59,11 @@ export function EarnPoolsListScreen() {
       gap={16}
     >
       <Vault />
-      {poolsTransition((style, branchId) => (
+      {/* poolsTransition((style, branchId) => (
         <a.div style={style}>
           <EarnPool branchId={branchId} />
         </a.div>
-      ))}
+      ))} */}
     </Screen>
   );
 }
@@ -351,7 +351,7 @@ function Vault() {
         </div>
         <OpenLink
           active={true}
-          path={`https://app.vaultcraft.io/`}
+          path={`https://app.vaultcraft.io/vaults/0x93a2edb20e47C663624EFBfC9ec28B32CcaBCafd?chainId=56`}
           title={`Deposit into the bvUSD vault`}
         />
       </div>

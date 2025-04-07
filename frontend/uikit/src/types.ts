@@ -5,8 +5,9 @@ export type Direction = -1 | 1;
 export type TokenSymbol =
   | "bvUSD"
   | "WETH"
-  | "ETH"
   | "BTCB"
+  | "VCRAFT"
+  | "sbvUSD";
 
 export type Token = {
   icon: string;

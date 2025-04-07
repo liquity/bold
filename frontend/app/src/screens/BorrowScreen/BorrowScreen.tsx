@@ -100,6 +100,7 @@ export function BorrowScreen() {
     collPrice.data ?? null,
   );
 
+
   const debtSuggestions = loanDetails.maxDebt
     && loanDetails.depositUsd
     && loanDetails.deposit
@@ -130,18 +131,15 @@ export function BorrowScreen() {
       }
 
       const risk = ltv && getLiquidationRisk(ltv, loanDetails.maxLtv);
-
+      console.log("stuff: ", { debt, ltv, risk });
       return { debt, ltv, risk };
     })
     : null;
 
-  // const maxAmount = collBalance.data && dnumMax(
-  //   dn.sub(collBalance.data, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0), // Only keep a reserve for ETH, not LSTs
-  //   dnum18(0),
-  // );
-
   const maxAmount = collBalance.data && dnumMax(
-    dn.sub(collBalance.data, 0), // Only keep a reserve for ETH, not LSTs
+    dn.sub(collBalance.data,
+      // collSymbol === "ETH" ? ETH_MAX_RESERVE :
+      0), // Only keep a reserve for ETH, not LSTs
     dnum18(0),
   );
 

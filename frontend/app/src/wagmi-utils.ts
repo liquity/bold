@@ -2,7 +2,6 @@ import type { Token } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
 import { dnum18 } from "@/src/dnum-utils";
-import { CONTRACT_BOLD_TOKEN, CONTRACT_LQTY_TOKEN, CONTRACT_LUSD_TOKEN } from "@/src/env";
 import { getBranch } from "@/src/liquity-utils";
 import { getSafeStatus } from "@/src/safe-utils";
 import { isCollateralSymbol } from "@liquity2/uikit";
@@ -16,19 +15,28 @@ export function useBalance(
   address: Address | undefined,
   token: Token["symbol"] | undefined,
 ) {
-
   const tokenAddress = match(token)
     .when(
-      (symbol) => Boolean(symbol && isCollateralSymbol(symbol) && symbol !== "WETH"),
+      (symbol) => Boolean(symbol),
       (symbol) => {
-        if (!symbol || !isCollateralSymbol(symbol) || symbol === "WETH") {
+        if (!symbol) {
           return null;
         }
-        return null // getBranch(symbol)?.contracts.CollToken.address ?? null;
+        if(symbol === "bvUSD") {
+          return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";
+        }
+        if(symbol === "sbvUSD") {
+          return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";
+        }
+        if(symbol === "VCRAFT") {
+          return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";
+        }
+        return getBranch(symbol)?.contracts.CollToken.address ?? null;
       },
     )
     .otherwise(() => null);
-
+  
+  // TODO -- find a better solution to parse the balance based on the token decimals
   const tokenBalance = useReadContract({
     address: tokenAddress ?? undefined,
     abi: erc20Abi,
@@ -36,19 +44,19 @@ export function useBalance(
     args: address && [address],
     query: {
       select: (value) => dnum18(value ?? 0n),
-      enabled: Boolean(address && token !== "ETH"),
+      enabled: Boolean(address),
     },
   });
 
-  const ethBalance = useWagmiBalance({
-    address,
-    query: {
-      select: ({ value }) => dnum18(value ?? 0n),
-      enabled: Boolean(address && token === "ETH"),
-    },
-  });
+  // const ethBalance = useWagmiBalance({
+  //   address,
+  //   query: {
+  //     select: ({ value }) => dnum18(value ?? 0n),
+  //     enabled: Boolean(address && token === "ETH"),
+  //   },
+  // });
 
-  return (token === "ETH" ? ethBalance : tokenBalance);
+  return (tokenBalance);
 }
 
 export function useAccount():
@@ -57,8 +65,7 @@ export function useAccount():
     connect: () => void;
     ensName: string | undefined;
     safeStatus: Awaited<ReturnType<typeof getSafeStatus>> | null;
-  }
-{
+  } {
   const account = useWagmiAccount();
   const connectKitModal = useConnectKitModal();
   const ensName = useEnsName({ address: account?.address });

@@ -17,6 +17,7 @@ const contractsEnvNames = [
   "BORROWER_OPERATIONS",
   "COLL_SURPLUS_POOL",
   "COLL_TOKEN",
+  "UNDERLYING_TOKEN",
   "DEFAULT_POOL",
   "LEVERAGE_ZAPPER",
   "PRICE_FEED",
@@ -38,6 +39,7 @@ function vBranchEnvVars(branchId: BranchId) {
     [`${prefix}_CONTRACT_BORROWER_OPERATIONS`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_COLL_SURPLUS_POOL`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_COLL_TOKEN`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_UNDERLYING_TOKEN`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_DEFAULT_POOL`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_LEVERAGE_ZAPPER`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_PRICE_FEED`]: v.optional(vAddress()),
@@ -202,7 +204,6 @@ export const EnvSchema = v.pipe(
 
     ...vBranchEnvVars(0).entries,
     ...vBranchEnvVars(1).entries,
-    ...vBranchEnvVars(2).entries,
   }),
   v.transform((data) => {
     const env = { ...data };
@@ -321,6 +322,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   COLL_0_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_BORROWER_OPERATIONS,
   COLL_0_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_COLL_SURPLUS_POOL,
   COLL_0_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_COLL_TOKEN,
+  COLL_0_CONTRACT_UNDERLYING_TOKEN: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_UNDERLYING_TOKEN,
   COLL_0_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_DEFAULT_POOL,
   COLL_0_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_LEVERAGE_ZAPPER,
   COLL_0_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_PRICE_FEED,
@@ -333,6 +335,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   COLL_1_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_BORROWER_OPERATIONS,
   COLL_1_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_COLL_SURPLUS_POOL,
   COLL_1_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_COLL_TOKEN,
+  COLL_1_CONTRACT_UNDERLYING_TOKEN: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_UNDERLYING_TOKEN,
   COLL_1_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_DEFAULT_POOL,
   COLL_1_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_LEVERAGE_ZAPPER,
   COLL_1_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_PRICE_FEED,

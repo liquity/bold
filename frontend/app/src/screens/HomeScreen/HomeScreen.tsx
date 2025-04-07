@@ -1,12 +1,24 @@
 "use client";
 
+import * as dn from "dnum";
 import { Positions } from "@/src/comps/Positions/Positions";
-import { useAccount } from "@/src/wagmi-utils";
+import { fmtnum } from "@/src/formatting";
+import { usePrice } from "@/src/services/Prices";
+import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 
 
 export function HomeScreen() {
   const account = useAccount();
+
+  const bvusdBalance = useBalance(account.address, "bvUSD");
+  const sbvusdBalance = useBalance(account.address, "sbvUSD");
+  const vcraftBalance = useBalance(account.address, "VCRAFT");
+
+  const bvusdPrice = usePrice("bvUSD");
+  const sbvusdPrice = usePrice("sbvUSD");
+  const vcraftPrice = usePrice("VCRAFT");
+
   return (
     <div
       className={css({
@@ -43,25 +55,52 @@ export function HomeScreen() {
         >
           <TokenCard
             token="bvUSD"
-            link={{ label: "Buy", href: "#" }}
+            link={{ label: "Buy", href: "/buy" }}
             subValues={[
-              { label: "Value", value: "$10" },
-              { label: "Locked", value: "$10" },
+              {
+                label: "Value",
+                value: `$${bvusdBalance.data && bvusdPrice.data
+                  ? fmtnum(dn.mul(bvusdBalance.data, bvusdPrice.data), "2z")
+                  : "0.00"
+                  }`
+              },
+              {
+                label: "Locked",
+                value: `$${sbvusdBalance.data && sbvusdPrice.data
+                  ? fmtnum(dn.mul(sbvusdBalance.data, sbvusdPrice.data), "2z")
+                  : "0.00"
+                  }`
+              },
             ]}
           />
           <TokenCard
             token="sbvUSD"
-            link={{ label: "Earn", href: "#" }}
+            link={{ label: "Earn", href: "/earn" }}
             subValues={[
-              { label: "Value", value: "$10" },
-              { label: "Apy", value: "10%" },
+              {
+                label: "Value",
+                value: `$${sbvusdBalance.data && sbvusdPrice.data
+                  ? fmtnum(dn.mul(sbvusdBalance.data, sbvusdPrice.data), "2z")
+                  : "0.00"
+                  }`
+              },
+              {
+                label: "Apy",
+                value: "10%"
+              },
             ]}
           />
           <TokenCard
             token="VCRAFT"
             link={{ label: "Buy", href: "#" }}
             subValues={[
-              { label: "Value", value: "$10" },
+              {
+                label: "Value",
+                value: `$${vcraftBalance.data && vcraftPrice.data
+                  ? fmtnum(dn.mul(vcraftBalance.data, vcraftBalance.data), "2z")
+                  : "0.00"
+                  }`
+              },
             ]}
           />
         </div>

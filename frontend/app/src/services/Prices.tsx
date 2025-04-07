@@ -14,7 +14,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol;
+type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol | "sbvUSD" | "VCRAFT";
 
 function useCollateralPrice(
   symbol: null | CollateralSymbol
@@ -124,16 +124,26 @@ export function usePrice<PT extends PriceToken>(
 
   const collPrice = useCollateralPrice(fromPriceFeed ? symbol : null);
   const coinGeckoPrice = useCoinGeckoPrice(fromCoinGecko ? symbol : null);
-  const boldPrice = useQuery({
-    queryKey: ["boldPrice"],
+  const bvusdPrice = useQuery({
+    queryKey: ["bvusdPrice"],
     queryFn: () => dn.from(1, 18),
-    enabled: symbol === "BOLD" || symbol === "bvUSD",
+    enabled: symbol === "bvUSD",
+  });
+  const sbvusdPrice = useQuery({
+    queryKey: ["sbvusdPrice"],
+    queryFn: () => dn.from(1, 18),
+    enabled: symbol === "sbvUSD",
+  });
+  const vcraftPrice = useQuery({
+    queryKey: ["vcraftPrice"],
+    queryFn: () => dn.from(0.02, 18),
+    enabled: symbol === "VCRAFT",
   });
 
   // could be any of the three, we just need
   // to return a disabled query result object
   if (symbol === null) {
-    return boldPrice;
+    return bvusdPrice;
   }
 
   if (fromCoinGecko) {
@@ -144,8 +154,16 @@ export function usePrice<PT extends PriceToken>(
     return collPrice;
   }
 
-  if (symbol === "BOLD" || symbol === "bvUSD") {
-    return boldPrice;
+  if (symbol === "bvUSD") {
+    return bvusdPrice;
+  }
+
+  if (symbol === "sbvUSD") {
+    return sbvusdPrice;
+  }
+
+  if (symbol === "VCRAFT") {
+    return vcraftPrice;
   }
 
   throw new Error(`Unsupported token: ${symbol}`);

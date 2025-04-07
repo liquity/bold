@@ -54,6 +54,7 @@ const collateralAbis = {
   BorrowerOperations,
   CollSurplusPool,
   CollToken: erc20Abi,
+  UnderlyingToken: erc20Abi,
   DefaultPool,
   LeverageLSTZapper: [
     ...LeverageLSTZapper,
@@ -139,13 +140,16 @@ export const CONTRACTS: Contracts = {
         abi: abis.CollSurplusPool,
       },
       CollToken: { address: contracts.COLL_TOKEN, abi: abis.CollToken },
+      // @dev underlying token for wrapped collateral token
+      UnderlyingToken: { address: contracts.UNDERLYING_TOKEN, abi: abis.CollToken },
       DefaultPool: { address: contracts.DEFAULT_POOL, abi: abis.DefaultPool },
       LeverageLSTZapper: {
-        address: symbol === "ETH" ? zeroAddress : contracts.LEVERAGE_ZAPPER,
+        address: contracts.LEVERAGE_ZAPPER,
         abi: abis.LeverageLSTZapper,
       },
+      // @dev only for native token
       LeverageWETHZapper: {
-        address: symbol === "ETH" ? contracts.LEVERAGE_ZAPPER : zeroAddress,
+        address: zeroAddress,
         abi: abis.LeverageWETHZapper,
       },
       PriceFeed: { address: contracts.PRICE_FEED, abi: abis.PriceFeed },
