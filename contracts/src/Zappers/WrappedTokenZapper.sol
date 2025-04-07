@@ -2,15 +2,16 @@
 
 pragma solidity 0.8.24;
 
-import "./BaseTokenZapper.sol";
+import "./BaseWrappedTokenZapper.sol";
 import "../Dependencies/Constants.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract TokenZapper is BaseTokenZapper {
+// zapper for token with a wrapper
+contract WrappedTokenZapper is BaseWrappedTokenZapper {
     using SafeERC20 for IERC20;
 
     constructor(IAddressesRegistry _addressesRegistry, ITokenWrapper tokenWrapper)
-        BaseTokenZapper(_addressesRegistry, tokenWrapper)
+        BaseWrappedTokenZapper(_addressesRegistry, tokenWrapper)
     {
         require(address(tokenWrapper) == address(_addressesRegistry.collToken()), "WZ: Wrong coll branch");
 
@@ -88,71 +89,8 @@ contract TokenZapper is BaseTokenZapper {
         return troveId;
     }
 
-    // open a trove using the 18 decimals wrapped token
-    // wraps ETH into WETH for ETH_GAS_COMPENSATION
-    function openTroveWithWrappedTokens(OpenTroveParams calldata _params) external payable returns (uint256) {
-        require(msg.value == ETH_GAS_COMPENSATION, "WZ: Insufficient ETH");
-        require(
-            _params.batchManager == address(0) || _params.annualInterestRate == 0,
-            "WZ: Cannot choose interest if joining a batch"
-        );
-
-        // Convert ETH to WETH
-        WETH.deposit{value: ETH_GAS_COMPENSATION}();
-
-        // Pull wrapped coll
-        IERC20(address(tokenWrapper)).safeTransferFrom(msg.sender, address(this), _params.collAmount);
-
-        uint256 troveId;
-        if (_params.batchManager == address(0)) {
-            troveId = borrowerOperations.openTrove(
-                _params.owner,
-                _params.ownerIndex,
-                _params.collAmount,
-                _params.boldAmount,
-                _params.upperHint,
-                _params.lowerHint,
-                _params.annualInterestRate,
-                _params.maxUpfrontFee,
-                // Add this contract as add/receive manager to be able to fully adjust trove,
-                // while keeping the same management functionality
-                address(this), // add manager
-                address(this), // remove manager
-                address(this) // receiver for remove manager
-            );
-        } else {
-            IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory
-                openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
-                    .OpenTroveAndJoinInterestBatchManagerParams({
-                    owner: _params.owner,
-                    ownerIndex: _params.ownerIndex,
-                    collAmount: _params.collAmount,
-                    boldAmount: _params.boldAmount,
-                    upperHint: _params.upperHint,
-                    lowerHint: _params.lowerHint,
-                    interestBatchManager: _params.batchManager,
-                    maxUpfrontFee: _params.maxUpfrontFee,
-                    // Add this contract as add/receive manager to be able to fully adjust trove,
-                    // while keeping the same management functionality
-                    addManager: address(this), // add manager
-                    removeManager: address(this), // remove manager
-                    receiver: address(this) // receiver for remove manager
-                });
-            troveId =
-                borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
-        }
-
-        boldToken.transfer(msg.sender, _params.boldAmount);
-
-        // Set add/remove managers
-        _setAddManager(troveId, _params.addManager);
-        _setRemoveManagerAndReceiver(troveId, _params.removeManager, _params.receiver);
-
-        return troveId;
-    }
-
     // tokenAmount in underlying token decimals
-    function addCollWithToken(uint256 _troveId, uint256 tokenAmount) external {
+    function addCollWithRawETH(uint256 _troveId, uint256 tokenAmount) external {
         address owner = troveNFT.ownerOf(_troveId);
         _requireSenderIsOwnerOrAddManager(_troveId, owner);
 
@@ -162,7 +100,7 @@ contract TokenZapper is BaseTokenZapper {
     }
 
     // _amount in 18 decimals
-    function withdrawCollToToken(uint256 _troveId, uint256 _amount) external {
+    function withdrawCollToRawETH(uint256 _troveId, uint256 _amount) external {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
 
@@ -199,7 +137,7 @@ contract TokenZapper is BaseTokenZapper {
         _returnLeftovers(initialBalances);
     }
 
-    function adjustTroveWithToken(
+    function adjustTroveWithRawETH(
         uint256 _troveId,
         uint256 _collChange, // underlying token decimals
         bool _isCollIncrease,
@@ -222,7 +160,7 @@ contract TokenZapper is BaseTokenZapper {
 
     // close a trove and unwrap collateral into token
     // unwrap ETH_GAS_COMPENSATION amount of WETH and trasfer ETH
-    function closeTroveToUnderlyingToken(uint256 _troveId) external {
+    function closeTroveToRawETH(uint256 _troveId) external {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
 
@@ -241,7 +179,7 @@ contract TokenZapper is BaseTokenZapper {
         require(success, "WZ: Sending ETH failed");
     }
 
-    function adjustZombieTroveWithToken(
+    function adjustZombieTroveWithRawETH(
         uint256 _troveId,
         uint256 _collChange, // underlying token decimals
         bool _isCollIncrease,

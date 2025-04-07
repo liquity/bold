@@ -17,7 +17,7 @@ import "src/StabilityPool.sol";
 import "src/Dependencies/Whitelist.sol";
 import "src/PriceFeeds/CollateralPriceFeed.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
-import "src/Zappers/TokenZapper.sol";
+import "src/Zappers/WrappedTokenZapper.sol";
 import "src/Dependencies/TokenWrapper.sol";
 import "./DeployBvUSD.s.sol";
 import {stdJson} from "forge-std/StdJson.sol";
@@ -469,7 +469,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         IAddressesRegistry addressRegistry
     ) public returns (ITokenZapper collateralZapper) 
     {
-        collateralZapper = new TokenZapper(addressRegistry, collateralWrapper);
+        collateralZapper = new WrappedTokenZapper(addressRegistry, collateralWrapper);
     }
 
     function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)
