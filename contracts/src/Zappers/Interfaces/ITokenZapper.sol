@@ -18,7 +18,8 @@ interface ITokenZapper {
         address receiver;
     }
 
-    function openTroveWithToken(OpenTroveParams calldata _params) external payable returns (uint256);
+    function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256);
+    function openTroveWithWrappedTokens(OpenTroveParams calldata _params) external payable returns (uint256);
 
     function addCollWithToken(uint256 _troveId, uint256 tokenAmount) external; 
     function withdrawCollToToken(uint256 _troveId, uint256 _amount) external;

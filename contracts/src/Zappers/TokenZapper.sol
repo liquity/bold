@@ -7,6 +7,8 @@ import "../Dependencies/Constants.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract TokenZapper is BaseTokenZapper {
+    using SafeERC20 for IERC20;
+
     constructor(IAddressesRegistry _addressesRegistry, ITokenWrapper tokenWrapper)
         BaseTokenZapper(_addressesRegistry, tokenWrapper)
     {
@@ -26,7 +28,7 @@ contract TokenZapper is BaseTokenZapper {
 
     // wraps a token into its 18 decimals wrapper which serves as the actual collateral
     // wraps ETH into WETH for ETH_GAS_COMPENSATION
-    function openTroveWithToken(OpenTroveParams calldata _params) external payable returns (uint256) {
+    function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256) {
         require(msg.value == ETH_GAS_COMPENSATION, "WZ: Insufficient ETH");
         require(
             _params.batchManager == address(0) || _params.annualInterestRate == 0,
@@ -62,6 +64,69 @@ contract TokenZapper is BaseTokenZapper {
                     owner: _params.owner,
                     ownerIndex: _params.ownerIndex,
                     collAmount: scaledCollateralToDeposit,
+                    boldAmount: _params.boldAmount,
+                    upperHint: _params.upperHint,
+                    lowerHint: _params.lowerHint,
+                    interestBatchManager: _params.batchManager,
+                    maxUpfrontFee: _params.maxUpfrontFee,
+                    // Add this contract as add/receive manager to be able to fully adjust trove,
+                    // while keeping the same management functionality
+                    addManager: address(this), // add manager
+                    removeManager: address(this), // remove manager
+                    receiver: address(this) // receiver for remove manager
+                });
+            troveId =
+                borrowerOperations.openTroveAndJoinInterestBatchManager(openTroveAndJoinInterestBatchManagerParams);
+        }
+
+        boldToken.transfer(msg.sender, _params.boldAmount);
+
+        // Set add/remove managers
+        _setAddManager(troveId, _params.addManager);
+        _setRemoveManagerAndReceiver(troveId, _params.removeManager, _params.receiver);
+
+        return troveId;
+    }
+
+    // open a trove using the 18 decimals wrapped token
+    // wraps ETH into WETH for ETH_GAS_COMPENSATION
+    function openTroveWithWrappedTokens(OpenTroveParams calldata _params) external payable returns (uint256) {
+        require(msg.value == ETH_GAS_COMPENSATION, "WZ: Insufficient ETH");
+        require(
+            _params.batchManager == address(0) || _params.annualInterestRate == 0,
+            "WZ: Cannot choose interest if joining a batch"
+        );
+
+        // Convert ETH to WETH
+        WETH.deposit{value: ETH_GAS_COMPENSATION}();
+
+        // Pull wrapped coll
+        IERC20(address(tokenWrapper)).safeTransferFrom(msg.sender, address(this), _params.collAmount);
+
+        uint256 troveId;
+        if (_params.batchManager == address(0)) {
+            troveId = borrowerOperations.openTrove(
+                _params.owner,
+                _params.ownerIndex,
+                _params.collAmount,
+                _params.boldAmount,
+                _params.upperHint,
+                _params.lowerHint,
+                _params.annualInterestRate,
+                _params.maxUpfrontFee,
+                // Add this contract as add/receive manager to be able to fully adjust trove,
+                // while keeping the same management functionality
+                address(this), // add manager
+                address(this), // remove manager
+                address(this) // receiver for remove manager
+            );
+        } else {
+            IBorrowerOperations.OpenTroveAndJoinInterestBatchManagerParams memory
+                openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
+                    .OpenTroveAndJoinInterestBatchManagerParams({
+                    owner: _params.owner,
+                    ownerIndex: _params.ownerIndex,
+                    collAmount: _params.collAmount,
                     boldAmount: _params.boldAmount,
                     upperHint: _params.upperHint,
                     lowerHint: _params.lowerHint,

@@ -107,7 +107,7 @@ contract TokenZapperTest is DevTestSetup {
         }
     }
 
-    function testCanOpenTrove() external {
+    function testCanOpenTroveWithRawToken() external {
         uint256 collateralAmount = 10e8;
         uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
         uint256 boldAmount = 10000e18;
@@ -131,7 +131,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         assertEq(troveNFT.ownerOf(troveId), A, "Wrong owner");
@@ -143,7 +143,7 @@ contract TokenZapperTest is DevTestSetup {
         assertEq(token8Decimals.balanceOf(A), collateralBalanceBefore - collateralAmount, "Coll bal mismatch");
     }
 
-    function testCanOpenTroveWithBatchManager() external {
+    function testCanOpenTroveWithRawTokenWithBatchManager() external {
         uint256 collateralAmount = 10e8;
         uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
         uint256 boldAmount = 10000e18;
@@ -167,7 +167,7 @@ contract TokenZapperTest is DevTestSetup {
             receiver: address(0)
         });
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         assertEq(troveNFT.ownerOf(troveId), A, "Wrong owner");
@@ -179,6 +179,49 @@ contract TokenZapperTest is DevTestSetup {
         assertEq(borrowerOperations.interestBatchManagerOf(troveId), B, "Wrong batch manager");
         (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
         assertEq(tmBatchManagerAddress, B, "Wrong batch manager (TM)");
+    }
+
+    function testCanOpenTroveWithWrappedTokens() external {
+        uint256 collateralAmount = 10e8;
+        uint256 expectedScaledCollateralAmount = collateralAmount * 10 ** (18 - 8);
+        uint256 boldAmount = 10000e18;
+        uint256 collateralBalanceBefore = token8Decimals.balanceOf(A);
+
+        uint256 ethBalanceBefore = A.balance;
+
+        // wrap and open position with wrapped tokens
+        vm.startPrank(A);
+        token8Decimals.approve(address(wrapper8Decimals), collateralAmount);
+        wrapper8Decimals.deposit(collateralAmount);
+        wrapper8Decimals.approve(address(tokenZapper), expectedScaledCollateralAmount);
+        vm.stopPrank();
+
+        ITokenZapper.OpenTroveParams memory params = ITokenZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: expectedScaledCollateralAmount,
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: 5e16,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+
+        vm.startPrank(A);
+        uint256 troveId = tokenZapper.openTroveWithWrappedTokens{value: ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        assertEq(troveNFT.ownerOf(troveId), A, "Wrong owner");
+        assertGt(troveId, 0, "Trove id should be set");
+        assertEq(troveManager.getTroveEntireColl(troveId), expectedScaledCollateralAmount, "Coll mismatch");
+        assertGt(troveManager.getTroveEntireDebt(troveId), boldAmount, "Debt mismatch");
+        assertEq(boldToken.balanceOf(A), boldAmount, "BOLD bal mismatch");
+        assertEq(A.balance, ethBalanceBefore - ETH_GAS_COMPENSATION, "ETH bal mismatch");
+        assertEq(token8Decimals.balanceOf(A), collateralBalanceBefore - collateralAmount, "Coll bal mismatch");
     }
 
     function testCanNotOpenTroveWithBatchManagerAndInterest() external {
@@ -203,7 +246,7 @@ contract TokenZapperTest is DevTestSetup {
         });
         vm.startPrank(A);
         vm.expectRevert("WZ: Cannot choose interest if joining a batch");
-        tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
     }
 
@@ -232,7 +275,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         vm.startPrank(A);
@@ -270,7 +313,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         vm.startPrank(A);
@@ -303,7 +346,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         // Try to add a receiver for the zapper without remove manager
@@ -335,7 +378,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
@@ -387,7 +430,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
@@ -439,7 +482,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         uint256 boldBalanceBeforeA = boldToken.balanceOf(A);
@@ -495,7 +538,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         boldToken.transfer(B, boldAmount2);
         vm.stopPrank();
 
@@ -553,7 +596,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         // Add a remove manager for the zapper
@@ -606,7 +649,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         // Add a remove manager for the zapper
@@ -666,7 +709,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         // open a 2nd trove so we can close the 1st one, and send Bold to account for interest and fee
@@ -724,7 +767,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         uint256 tokenBalanceBefore = token8Decimals.balanceOf(A);
@@ -765,7 +808,7 @@ contract TokenZapperTest is DevTestSetup {
         });
 
         vm.startPrank(A);
-        uint256 troveId = tokenZapper.openTroveWithToken{value: ETH_GAS_COMPENSATION}(params);
+        uint256 troveId = tokenZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
         uint256 boldDebtBefore = troveManager.getTroveEntireDebt(troveId);
