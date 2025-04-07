@@ -258,7 +258,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
 
     // LeverageLSTZapper mode
     openTroveLst: {
-      name: () => "Open LeverageLSTZapper mode Position",
+      name: () => "Open Position",
       Status: TransactionStatus,
 
       async commit(ctx) {

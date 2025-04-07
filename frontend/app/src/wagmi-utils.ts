@@ -23,7 +23,7 @@ export function useBalance(
           return null;
         }
         if(symbol === "bvUSD") {
-          return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";
+          return "0x242a2f669224b225d38514c1785411a6036981f1";
         }
         if(symbol === "sbvUSD") {
           return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";
