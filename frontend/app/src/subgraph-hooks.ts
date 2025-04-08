@@ -1,18 +1,14 @@
 // TODO: Remove this file and move the hooks into liquity-*.ts files instead,
 // since some need to do more than just fetch data from the subgraph.
 
-import type {
-  StabilityPoolDepositQuery as StabilityPoolDepositQueryType,
-  TrovesByAccountQuery as TrovesByAccountQueryType,
-} from "@/src/graphql/graphql";
-import type { Address, BranchId, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
+import type { StabilityPoolDepositQuery as StabilityPoolDepositQueryType } from "@/src/graphql/graphql";
+import type { Address, BranchId, PositionEarn } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { DEMO_MODE } from "@/src/env";
-import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
-import { sleep } from "@/src/utils";
+import { isBranchId, isPositionLoanCommitted } from "@/src/types";
 import { isAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
@@ -27,8 +23,6 @@ import {
   StabilityPoolDepositsByAccountQuery,
   StabilityPoolEpochScaleQuery,
   StabilityPoolsQuery,
-  TroveByIdQuery,
-  TrovesByAccountQuery,
 } from "./subgraph-queries";
 
 type Options = {
@@ -73,65 +67,6 @@ export function useNextOwnerIndex(
 
   return useQuery({
     queryKey: ["NextTroveId", borrower, branchId],
-    queryFn,
-    ...prepareOptions(options),
-  });
-}
-
-export function useLoansByAccount(
-  account?: Address | null,
-  options?: Options,
-) {
-  let queryFn = async () => {
-    if (!account) return null;
-    const { troves } = await graphQuery(
-      TrovesByAccountQuery,
-      { account: account.toLowerCase() },
-    );
-    return troves.map(subgraphTroveToLoan);
-  };
-
-  if (DEMO_MODE) {
-    queryFn = async () =>
-      account
-        ? ACCOUNT_POSITIONS.filter(isPositionLoanCommitted)
-        : null;
-  }
-
-  return useQuery({
-    queryKey: ["TrovesByAccount", account],
-    queryFn,
-    ...prepareOptions(options),
-  });
-}
-
-export function useLoanById(
-  id?: null | PrefixedTroveId,
-  options?: Options,
-) {
-  let queryFn: () => Promise<PositionLoanCommitted | null>;
-
-  queryFn = async () => {
-    if (!isPrefixedtroveId(id)) return null;
-    const { trove } = await graphQuery(TroveByIdQuery, { id });
-    return trove ? subgraphTroveToLoan(trove) : null;
-  };
-
-  if (DEMO_MODE) {
-    queryFn = async () => {
-      if (!isPrefixedtroveId(id)) return null;
-      await sleep(500);
-      for (const pos of ACCOUNT_POSITIONS) {
-        if (isPositionLoanCommitted(pos) && `${pos.branchId}:${pos.troveId}` === id) {
-          return pos;
-        }
-      }
-      return null;
-    };
-  }
-
-  return useQuery<PositionLoanCommitted | null>({
-    queryKey: ["TroveById", id],
     queryFn,
     ...prepareOptions(options),
   });
@@ -486,39 +421,6 @@ export function useGovernanceStats(options?: Options) {
     queryFn,
     ...prepareOptions(options),
   });
-}
-
-function subgraphTroveToLoan(
-  trove: TrovesByAccountQueryType["troves"][number],
-): PositionLoanCommitted {
-  if (!isTroveId(trove.troveId)) {
-    throw new Error(`Invalid trove ID: ${trove.id} / ${trove.troveId}`);
-  }
-
-  const branchId = trove.collateral.collIndex;
-  if (!isBranchId(branchId)) {
-    throw new Error(`Invalid branch: ${branchId}`);
-  }
-
-  if (!isAddress(trove.borrower)) {
-    throw new Error(`Invalid borrower: ${trove.borrower}`);
-  }
-
-  return {
-    type: trove.mightBeLeveraged ? "multiply" : "borrow",
-    batchManager: isAddress(trove.interestBatch?.batchManager)
-      ? trove.interestBatch.batchManager
-      : null,
-    borrowed: dnum18(trove.debt),
-    borrower: trove.borrower,
-    branchId,
-    createdAt: Number(trove.createdAt) * 1000,
-    deposit: dnum18(trove.deposit),
-    interestRate: dnum18(trove.interestBatch?.annualInterestRate ?? trove.interestRate),
-    troveId: trove.troveId,
-    updatedAt: Number(trove.updatedAt) * 1000,
-    status: trove.status,
-  };
 }
 
 function subgraphStabilityPoolDepositToEarnPosition(

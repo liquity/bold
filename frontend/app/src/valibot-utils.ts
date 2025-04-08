@@ -199,7 +199,6 @@ export function vPositionLoanCommited() {
     VPositionLoanBase,
     v.object({
       troveId: vTroveId(),
-      updatedAt: v.number(),
       createdAt: v.number(),
     }),
   ]);
