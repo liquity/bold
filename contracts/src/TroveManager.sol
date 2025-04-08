@@ -155,6 +155,14 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         LatestBatchData batch;
     }
 
+    // --- Variable container structs for batch liquidations ---
+    struct BatchLiquidateTrovesValues {
+        uint256 remainingBoldInSPForOffsets;
+        uint256 troveId;
+        address batchAddress;
+        uint256 ICR;
+    }
+
     // --- Errors ---
 
     error EmptyData();
@@ -223,24 +231,19 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // Liquidate one trove
     function _liquidate(
         IDefaultPool _defaultPool,
-        uint256 _troveId,
-        uint256 _boldInSPForOffsets,
+        BatchLiquidateTrovesValues memory _params,
         uint256 _price,
         LatestTroveData memory trove,
         LiquidationValues memory singleLiquidation
     ) internal {
-        address owner = troveNFT.ownerOf(_troveId);
-
-        _getLatestTroveData(_troveId, trove);
-        address batchAddress = _getBatchManager(_troveId);
-        bool isTroveInBatch = batchAddress != address(0);
+        _getLatestTroveData(_params.troveId, trove);
+        bool isTroveInBatch = _params.batchAddress != address(0);
         LatestBatchData memory batch;
-        if (isTroveInBatch) _getLatestBatchData(batchAddress, batch);
+        if (isTroveInBatch) _getLatestBatchData(_params.batchAddress, batch);
 
         _movePendingTroveRewardsToActivePool(_defaultPool, trove.redistBoldDebtGain, trove.redistCollGain);
 
         singleLiquidation.collGasCompensation = _getCollGasCompensation(trove.entireColl);
-        uint256 collToLiquidate = trove.entireColl - singleLiquidation.collGasCompensation;
 
         (
             singleLiquidation.debtToOffset,
@@ -248,7 +251,18 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             singleLiquidation.debtToRedistribute,
             singleLiquidation.collToRedistribute,
             singleLiquidation.collSurplus
-        ) = _getOffsetAndRedistributionVals(trove.entireDebt, collToLiquidate, _boldInSPForOffsets, _price);
+        ) = _getOffsetAndRedistributionVals(
+            trove.entireDebt,
+            trove.entireColl - singleLiquidation.collGasCompensation, // collToLiquidate
+            _params.remainingBoldInSPForOffsets,
+            _price
+        );
+
+        // Differencen between liquidation penalty and liquidation threshold
+        if (singleLiquidation.collSurplus > 0) {
+            address owner = troveNFT.ownerOf(_params.troveId);
+            collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
+        }
 
         TroveChange memory troveChange;
         troveChange.collDecrease = trove.entireColl;
@@ -256,9 +270,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         troveChange.appliedRedistCollGain = trove.redistCollGain;
         troveChange.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
         _closeTrove(
-            _troveId,
+            _params.troveId,
             troveChange,
-            batchAddress,
+            _params.batchAddress,
             batch.entireCollWithoutRedistribution,
             batch.entireDebtWithoutRedistribution,
             Status.closedByLiquidation
@@ -274,21 +288,16 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 + (trove.entireDebt - trove.redistBoldDebtGain) * batch.annualManagementFee;
             troveChange.newWeightedRecordedBatchManagementFee =
                 batch.entireDebtWithoutRedistribution * batch.annualManagementFee;
-            activePool.mintBatchManagementFeeAndAccountForChange(troveChange, batchAddress);
+            activePool.mintBatchManagementFeeAndAccountForChange(troveChange, _params.batchAddress);
         } else {
             singleLiquidation.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
         }
 
-        // Differencen between liquidation penalty and liquidation threshold
-        if (singleLiquidation.collSurplus > 0) {
-            collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
-        }
-
         // Wipe out state in BO
-        borrowerOperations.onLiquidateTrove(_troveId);
+        borrowerOperations.onLiquidateTrove(_params.troveId);
 
         emit TroveUpdated({
-            _troveId: _troveId,
+            _troveId: _params.troveId,
             _debt: 0,
             _coll: 0,
             _stake: 0,
@@ -298,7 +307,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         });
 
         emit TroveOperation({
-            _troveId: _troveId,
+            _troveId: _params.troveId,
             _operation: Operation.liquidate,
             _annualInterestRate: 0,
             _debtIncreaseFromRedist: trove.redistBoldDebtGain,
@@ -310,13 +319,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         if (isTroveInBatch) {
             emit BatchUpdated({
-                _interestBatchManager: batchAddress,
+                _interestBatchManager: _params.batchAddress,
                 _operation: BatchOperation.exitBatch,
-                _debt: batches[batchAddress].debt,
-                _coll: batches[batchAddress].coll,
+                _debt: batches[_params.batchAddress].debt,
+                _coll: batches[_params.batchAddress].coll,
                 _annualInterestRate: batch.annualInterestRate,
                 _annualManagementFee: batch.annualManagementFee,
-                _totalDebtShares: batches[batchAddress].totalDebtShares,
+                _totalDebtShares: batches[_params.batchAddress].totalDebtShares,
                 _debtIncreaseFromUpfrontFee: 0
             });
         }
@@ -464,6 +473,16 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         return _status == Status.active || _status == Status.zombie;
     }
 
+    function _isRecent(uint256 _troveId, address _batchAddress) internal view returns (bool) {
+        if (uint256(Troves[_troveId].lastDebtUpdateTime) >= block.timestamp - LIQUIDATION_GRACE_PERIOD) return true;
+        if (
+            _batchAddress != address(0)
+                && uint256(batches[_batchAddress].lastDebtUpdateTime) >= block.timestamp - LIQUIDATION_GRACE_PERIOD
+        ) return true;
+
+        return false;
+    }
+
     function _batchLiquidateTroves(
         IDefaultPool _defaultPool,
         uint256 _price,
@@ -472,22 +491,26 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         LiquidationValues memory totals,
         TroveChange memory troveChange
     ) internal {
-        uint256 remainingBoldInSPForOffsets = _boldInSPForOffsets;
+        BatchLiquidateTrovesValues memory vars;
+        vars.remainingBoldInSPForOffsets = _boldInSPForOffsets;
 
         for (uint256 i = 0; i < _troveArray.length; i++) {
-            uint256 troveId = _troveArray[i];
+            vars.troveId = _troveArray[i];
+            vars.batchAddress = _getBatchManager(vars.troveId);
 
             // Skip non-liquidatable troves
-            if (!_isActiveOrZombie(Troves[troveId].status)) continue;
+            if (!_isActiveOrZombie(Troves[vars.troveId].status)) continue;
+            // Skip recent troves (opened or adjusted before grace period)
+            if (_isRecent(vars.troveId, vars.batchAddress)) continue;
 
-            uint256 ICR = getCurrentICR(troveId, _price);
+            vars.ICR = getCurrentICR(vars.troveId, _price);
 
-            if (ICR < MCR) {
+            if (vars.ICR < MCR) {
                 LiquidationValues memory singleLiquidation;
                 LatestTroveData memory trove;
 
-                _liquidate(_defaultPool, troveId, remainingBoldInSPForOffsets, _price, trove, singleLiquidation);
-                remainingBoldInSPForOffsets -= singleLiquidation.debtToOffset;
+                _liquidate(_defaultPool, vars, _price, trove, singleLiquidation);
+                vars.remainingBoldInSPForOffsets -= singleLiquidation.debtToOffset;
 
                 // Add liquidation values to their respective running totals
                 _addLiquidationValuesToTotals(trove, singleLiquidation, totals, troveChange);

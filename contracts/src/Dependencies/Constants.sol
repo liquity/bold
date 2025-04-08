@@ -36,6 +36,11 @@ uint256 constant LIQUIDATION_PENALTY_SP_SETH = 5 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_WETH = 10 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SETH = 20 * _1pct;
 
+// Number of seconds that need to pass since last debt update for a trove be liquidatable
+// Zero means only troves adjusted in the same block cannot be liquidated
+// This is to prevent attacks involving sandwiching a price update to self-liquidate
+uint256 constant LIQUIDATION_GRACE_PERIOD = 0;
+
 // Fraction of collateral awarded to liquidator
 uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%
 uint256 constant COLL_GAS_COMPENSATION_CAP = 2 ether; // Max coll gas compensation capped at 2 ETH
