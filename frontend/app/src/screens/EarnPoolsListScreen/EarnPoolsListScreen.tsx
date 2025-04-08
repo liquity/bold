@@ -59,11 +59,11 @@ export function EarnPoolsListScreen() {
       gap={16}
     >
       <Vault />
-      {/* poolsTransition((style, branchId) => (
+      {poolsTransition((style, branchId) => (
         <a.div style={style}>
           <EarnPool branchId={branchId} />
         </a.div>
-      ))} */}
+      ))}
     </Screen>
   );
 }
