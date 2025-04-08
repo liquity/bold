@@ -9,8 +9,8 @@ import "forge-std/Script.sol";
 
 contract DeployWrappedTokenZapper is Logging, Script { 
     // modify 
-    IAddressesRegistry addressesRegistry = IAddressesRegistry(0xa5A4e62E16C71E9bb6EF785ab242669B98173c0F);
-    ITokenWrapper tokenWrapper = ITokenWrapper(0xF329F1BF880760bE580f0422475f8d101cb29Ad6);
+    IAddressesRegistry addressesRegistry = IAddressesRegistry(address(0));
+    ITokenWrapper tokenWrapper = ITokenWrapper(address(0));
     address deployer;
 
     function run() external {
@@ -37,8 +37,8 @@ contract DeployWrappedTokenZapper is Logging, Script {
 
 contract DeployCollateralZapper is Logging, Script { 
     // modify 
-    IAddressesRegistry addressesRegistry = IAddressesRegistry(0xC3A86dAE98Ef5D92E872cb02b1B85D5D4917eB1b);
-    IERC20 collateralToken = IERC20(0x2170Ed0880ac9A755fd29B2688956BD959F933F8);
+    IAddressesRegistry addressesRegistry = IAddressesRegistry(address(0));
+    IERC20 collateralToken = IERC20(address(0));
     address deployer;
 
     function run() external {

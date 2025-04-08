@@ -121,6 +121,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
     }
 
     IWETH gasToken; // gas token
+    address interestRouter; // 
 
     function run() external override {
         GlobalContracts memory globalContracts;
@@ -169,6 +170,9 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         // populate branch configs data
         uint256 numBranches = jsonData.readUint(".numBranches");
         assert(numBranches <= 10);
+
+        interestRouter = jsonData.readAddress(".interestRouter");
+        assert(interestRouter != address(0));
 
         _log("Number of branches:               ", numBranches.toString());
 
@@ -408,7 +412,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             gasPoolAddress: addresses.gasPool,
             collSurplusPool: ICollSurplusPool(addresses.collSurplusPool),
             sortedTroves: ISortedTroves(addresses.sortedTroves),
-            interestRouter: IInterestRouter(address(0)),
+            interestRouter: IInterestRouter(interestRouter),
             hintHelpers: _hintHelpers,
             multiTroveGetter: _multiTroveGetter,
             collateralRegistry: _collateralRegistry,
