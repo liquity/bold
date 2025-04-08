@@ -1,6 +1,5 @@
-import type { Address, BranchId, CollateralSymbol } from "@/src/types";
+import type { Address, BranchId, CollateralSymbol, Dnum } from "@/src/types";
 import type { UseQueryResult } from "@tanstack/react-query";
-import type { Dnum } from "dnum";
 
 import { SP_YIELD_SPLIT } from "@/src/constants";
 import { getBranchContract } from "@/src/contracts";

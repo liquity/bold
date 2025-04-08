@@ -22,7 +22,6 @@ import {
   StabilityPoolDepositQuery,
   StabilityPoolDepositsByAccountQuery,
   StabilityPoolEpochScaleQuery,
-  StabilityPoolsQuery,
 } from "./subgraph-queries";
 
 type Options = {
@@ -184,47 +183,6 @@ export function useStabilityPoolDeposit(
   >({
     queryKey: ["StabilityPoolDeposit", account, branchId],
     queryFn,
-    ...prepareOptions(options),
-  });
-}
-
-export function useStabilityPool(
-  branchId?: null | number,
-  options?: Options,
-) {
-  let queryFn = async () => {
-    const { stabilityPools } = await graphQuery(
-      StabilityPoolsQuery,
-    );
-    return stabilityPools.map((stabilityPool) => ({
-      branchId: parseInt(stabilityPool.id, 10),
-      apr: dnum18(0),
-      totalDeposited: dnum18(stabilityPool.totalDeposited),
-    }));
-  };
-
-  if (DEMO_MODE) {
-    queryFn = async () =>
-      Array.from({ length: 10 }, (_, branchId) => ({
-        branchId,
-        apr: dnum18(0),
-        totalDeposited: dnum18(0),
-      }));
-  }
-
-  return useQuery({
-    queryKey: ["StabilityPool"],
-    queryFn,
-    select: (pools) => {
-      if (typeof branchId !== "number") {
-        return null;
-      }
-      const pool = pools.find((pool) => pool.branchId === branchId);
-      if (pool === undefined) {
-        throw new Error(`Stability pool not found: ${branchId}`);
-      }
-      return pool;
-    },
     ...prepareOptions(options),
   });
 }

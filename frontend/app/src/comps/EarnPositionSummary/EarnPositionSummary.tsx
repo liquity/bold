@@ -54,7 +54,7 @@ export function EarnPositionSummary({
 
   const active = txPreviewMode || isEarnPositionActive(earnPosition);
 
-  return collToken && (
+  return (
     <div
       className={css({
         position: "relative",

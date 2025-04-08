@@ -28,8 +28,8 @@ import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contrac
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, DEMO_MODE, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
-import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
-import { useAllInterestRateBrackets, useInterestRateBrackets, useStabilityPool } from "@/src/subgraph-hooks";
+import { useContinuousBoldGains, useStabilityPoolTotalDeposited } from "@/src/liquity-stability-pool";
+import { useAllInterestRateBrackets, useInterestRateBrackets } from "@/src/subgraph-hooks";
 import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { bigIntAbs, sleep } from "@/src/utils";
 import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
@@ -141,20 +141,36 @@ function statusFromEnum(status: number): PositionLoanBase["status"] {
   throw new Error(`Invalid status: ${status}`);
 }
 
-export function useEarnPool(branchId: null | BranchId) {
-  const collateral = getCollToken(branchId);
-  const pool = useStabilityPool(branchId ?? undefined);
+export function useEarnPool(branchId: BranchId) {
+  const wagmiConfig = useWagmiConfig();
   const stats = useLiquityStats();
-  const branchStats = collateral && stats.data?.branch[collateral?.symbol];
-  return {
-    ...pool,
-    data: {
-      apr: dnumOrNull(branchStats?.spApyAvg1d, 18),
-      apr7d: dnumOrNull(branchStats?.spApyAvg7d, 18),
-      collateral,
-      totalDeposited: pool.data?.totalDeposited ?? null,
+  const collateral = getCollToken(branchId);
+  const { spApyAvg1d = null, spApyAvg7d = null } = (
+    collateral && stats.data?.branch[collateral?.symbol]
+  ) ?? {};
+
+  return useQuery({
+    queryKey: [
+      "earnPool",
+      branchId,
+      jsonStringifyWithDnum(spApyAvg1d),
+      jsonStringifyWithDnum(spApyAvg7d),
+    ],
+    queryFn: async () => {
+      const totalBoldDeposits = await readContract(wagmiConfig, {
+        ...getBranchContract(branchId, "StabilityPool"),
+        functionName: "getTotalBoldDeposits",
+      });
+      return {
+        apr: spApyAvg1d,
+        apr7d: spApyAvg7d,
+        collateral,
+        totalDeposited: dnum18(totalBoldDeposits),
+      };
     },
-  };
+    refetchInterval: DATA_REFRESH_INTERVAL,
+    enabled: stats.isSuccess,
+  });
 }
 
 export function isEarnPositionActive(position: PositionEarn | null) {

@@ -73,33 +73,6 @@ export const TroveStatusByIdQuery = graphql(`
   }
 `);
 
-export const StabilityPoolsQuery = graphql(`
-  query StabilityPools {
-    stabilityPools {
-      id
-      totalDeposited
-    }
-  }
-`);
-
-export const StabilityPoolDepositQueryFragment = graphql(`
-  fragment StabilityPoolDepositFragment on StabilityPoolDeposit {
-    id
-    deposit
-    depositor
-    collateral {
-      collIndex
-    }
-    snapshot {
-      B
-      P
-      S
-      epoch
-      scale
-    }
-  }
-`);
-
 export const StabilityPoolDepositsByAccountQuery = graphql(`
   query StabilityPoolDepositsByAccount($account: Bytes!) {
     stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {
