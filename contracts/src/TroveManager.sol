@@ -1022,7 +1022,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         latestBatchData.entireDebtWithoutRedistribution =
             latestBatchData.recordedDebt + latestBatchData.accruedInterest + latestBatchData.accruedManagementFee;
         latestBatchData.entireCollWithoutRedistribution = batch.coll;
-        latestBatchData.lastDebtUpdateTime = batch.lastDebtUpdateTime;
         latestBatchData.lastInterestRateAdjTime = batch.lastInterestRateAdjTime;
     }
 
