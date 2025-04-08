@@ -71,7 +71,6 @@ export type PositionLoanBase = {
 
 export type PositionLoanCommitted = PositionLoanBase & {
   troveId: TroveId;
-  updatedAt: number;
   createdAt: number;
 };
 

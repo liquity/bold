@@ -17,7 +17,7 @@ import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
+import { graphQuery, TroveStatusByIdQuery } from "@/src/subgraph-queries";
 import { noop, sleep } from "@/src/utils";
 import { vPositionLoanUncommited } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
@@ -267,8 +267,10 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
         );
 
         while (true) {
-          const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
-          if (trove !== null) {
+          const { trove: troveStatus } = await graphQuery(TroveStatusByIdQuery, {
+            id: prefixedTroveId,
+          });
+          if (troveStatus !== null) {
             break;
           }
           await sleep(1000);

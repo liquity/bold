@@ -5,6 +5,7 @@ import type {
   Delegate,
   Dnum,
   PositionEarn,
+  PositionLoanBase,
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
@@ -24,17 +25,13 @@ import {
   INTEREST_RATE_START,
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
+import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
+import { CHAIN_BLOCK_EXPLORER, DEMO_MODE, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
-import {
-  useAllInterestRateBrackets,
-  useInterestRateBrackets,
-  useLoanById,
-  useStabilityPool,
-} from "@/src/subgraph-hooks";
-import { isBranchId, isTroveId } from "@/src/types";
-import { bigIntAbs } from "@/src/utils";
+import { useAllInterestRateBrackets, useInterestRateBrackets, useStabilityPool } from "@/src/subgraph-hooks";
+import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
+import { bigIntAbs, sleep } from "@/src/utils";
 import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
@@ -43,7 +40,12 @@ import * as v from "valibot";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
 import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
-import { graphQuery, InterestBatchesQuery } from "./subgraph-queries";
+import {
+  graphQuery,
+  InterestBatchesQuery,
+  TroveStatusByIdQuery,
+  TroveStatusesByAccountQuery,
+} from "./subgraph-queries";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -129,6 +131,14 @@ export function getBranch(
   }
 
   return branch;
+}
+
+function statusFromEnum(status: number): PositionLoanBase["status"] {
+  if (status === 1) return "active";
+  if (status === 2) return "closed";
+  if (status === 3) return "liquidated";
+  if (status === 4) return "redeemed";
+  throw new Error(`Invalid status: ${status}`);
 }
 
 export function useEarnPool(branchId: null | BranchId) {
@@ -799,5 +809,127 @@ export function useTroveRateUpdateCooldown(branchId: BranchId, troveId: TroveId)
       ) * 1000;
       return (now: number) => Math.max(0, cooldownEndTime - now);
     },
+  });
+}
+
+export async function fetchLoanById(
+  wagmiConfig: WagmiConfig,
+  fullId: null | PrefixedTroveId,
+): Promise<PositionLoanCommitted | null> {
+  if (!isPrefixedtroveId(fullId)) return null;
+
+  const { branchId, troveId } = parsePrefixedTroveId(fullId);
+
+  const TroveManager = getBranchContract(branchId, "TroveManager");
+  const TroveNft = getBranchContract(branchId, "TroveNFT");
+
+  const [
+    { trove: troveStatus },
+    [troveTuple, troveData, borrower],
+  ] = await Promise.all([
+    graphQuery(TroveStatusByIdQuery, { id: fullId }),
+    readContracts(wagmiConfig, {
+      allowFailure: false,
+      contracts: [{
+        ...TroveManager,
+        functionName: "Troves",
+        args: [BigInt(troveId)],
+      }, {
+        ...TroveManager,
+        functionName: "getLatestTroveData",
+        args: [BigInt(troveId)],
+      }, {
+        ...TroveNft,
+        functionName: "ownerOf",
+        args: [BigInt(troveId)],
+      }],
+    }),
+  ]);
+
+  const status = troveTuple[3];
+  const batchManager = troveTuple[8];
+
+  return {
+    type: troveStatus?.mightBeLeveraged ? "multiply" : "borrow",
+    batchManager: BigInt(batchManager) === 0n ? null : batchManager,
+    borrowed: dnum18(troveData.entireDebt),
+    borrower,
+    branchId,
+    createdAt: Number(troveStatus?.createdAt ?? 0n) * 1000,
+    deposit: dnum18(troveData.entireColl),
+    interestRate: dnum18(troveData.annualInterestRate),
+    status: troveStatus?.status ?? statusFromEnum(status),
+    troveId,
+  };
+}
+
+export function useLoanById(id?: null | PrefixedTroveId) {
+  const wagmiConfig = useWagmiConfig();
+
+  let queryFn: () => Promise<PositionLoanCommitted | null>;
+
+  queryFn = async () => (
+    id ? fetchLoanById(wagmiConfig, id) : null
+  );
+
+  if (DEMO_MODE) {
+    queryFn = async () => {
+      if (!isPrefixedtroveId(id)) return null;
+      await sleep(500);
+      for (const pos of ACCOUNT_POSITIONS) {
+        if (isPositionLoanCommitted(pos) && `${pos.branchId}:${pos.troveId}` === id) {
+          return pos;
+        }
+      }
+      return null;
+    };
+  }
+
+  return useQuery<PositionLoanCommitted | null>({
+    queryKey: ["TroveById", id],
+    queryFn,
+    refetchInterval: DATA_REFRESH_INTERVAL,
+  });
+}
+
+export async function fetchLoansByAccount(
+  wagmiConfig: WagmiConfig,
+  account?: Address | null,
+): Promise<PositionLoanCommitted[] | null> {
+  if (!account) return null;
+
+  const { troves: troveStatuses } = await graphQuery(
+    TroveStatusesByAccountQuery,
+    { account: account.toLowerCase() },
+  );
+
+  const results = await Promise.all(troveStatuses.map((troveStatus) => {
+    if (!isPrefixedtroveId(troveStatus.id)) {
+      throw new Error(`Invalid prefixed trove ID: ${troveStatus.id}`);
+    }
+    return fetchLoanById(wagmiConfig, troveStatus.id);
+  }));
+
+  return results.filter((result) => result !== null);
+}
+
+export function useLoansByAccount(account?: Address | null) {
+  const wagmiConfig = useWagmiConfig();
+
+  let queryFn: () => Promise<PositionLoanCommitted[] | null>;
+
+  queryFn = () => fetchLoansByAccount(wagmiConfig, account);
+
+  if (DEMO_MODE) {
+    queryFn = async () =>
+      account
+        ? ACCOUNT_POSITIONS.filter(isPositionLoanCommitted)
+        : null;
+  }
+
+  return useQuery({
+    queryKey: ["TrovesByAccount", account],
+    queryFn,
+    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }

@@ -9,7 +9,7 @@ import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { graphQuery, TroveByIdQuery } from "@/src/subgraph-queries";
+import { graphQuery, TroveStatusByIdQuery } from "@/src/subgraph-queries";
 import { sleep } from "@/src/utils";
 import { vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
@@ -204,8 +204,10 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
 
         // wait for the trove to be seen as closed in the subgraph
         while (true) {
-          const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
-          if (trove?.closedAt !== undefined) {
+          const { trove: troveStatus } = await graphQuery(TroveStatusByIdQuery, {
+            id: prefixedTroveId,
+          });
+          if (troveStatus?.closedAt !== undefined) {
             break;
           }
           await sleep(1000);
