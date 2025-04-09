@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {  
-  const githubUrl = `https://raw.githubusercontent.com/bvusd/frontend/app/data/stats.json`;
+  const githubUrl = `https://raw.githubusercontent.com/Popcorn-Limited/bvusd-api/main/docs/v2/bsc.json`;
 
   try {
     const res = await fetch(githubUrl);
