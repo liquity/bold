@@ -166,7 +166,7 @@ export function TokenCard({
   )
 }
 
-function SubValue({ label, value, index }: { label: string, value: string, index: number }) {
+export function SubValue({ label, value, index }: { label: string, value: string, index: number }) {
   return (
     <div
       className={css({
