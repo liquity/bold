@@ -55,7 +55,7 @@ export function BuyScreen() {
     },
   });
 
-  return (
+  return collPrice.data && (
     <Screen
       heading={{
         title: "Buy bvUSD with any token",
