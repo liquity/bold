@@ -46,6 +46,13 @@ contract DevTestSetup is BaseTest {
             accountsList[5],
             accountsList[6]
         );
+        vm.label(A, "A");
+        vm.label(B, "B");
+        vm.label(C, "C");
+        vm.label(D, "D");
+        vm.label(E, "E");
+        vm.label(F, "F");
+        vm.label(G, "G");
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev memory contracts;
@@ -97,6 +104,9 @@ contract DevTestSetup is BaseTest {
         uint256 BTroveId = openTroveNoHints100pct(B, 5 ether, troveDebtRequest_B, interestRate);
         uint256 CTroveId = openTroveNoHints100pct(C, 5 ether, troveDebtRequest_C, interestRate);
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // A and B deposit to SP
         makeSPDepositAndClaim(A, troveDebtRequest_A);
         makeSPDepositAndClaim(B, troveDebtRequest_B);
@@ -136,6 +146,9 @@ contract DevTestSetup is BaseTest {
         troveIDs.B = openTroveNoHints100pct(B, 5 ether * _magnitude, troveDebtRequest_B, interestRate);
         troveIDs.C = openTroveNoHints100pct(C, 25e17 * _magnitude, troveDebtRequest_C, interestRate);
         troveIDs.D = openTroveNoHints100pct(D, 25e17 * _magnitude, troveDebtRequest_D, interestRate);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         // A and B deposit to SP
         makeSPDepositAndClaim(A, troveDebtRequest_A);
