@@ -49,6 +49,12 @@ export const BTCB: CollateralToken = {
   symbol: "BTCB" as const,
 } as const;
 
+export const WBTC: Token = {
+  icon: tokenBtcb,
+  name: "WBTC",
+  symbol: "WBTC" as const,
+} as const;
+
 export const COLLATERALS: CollateralToken[] = [
   WETH,
   BTCB,
@@ -60,4 +66,5 @@ export const TOKENS_BY_SYMBOL = {
   BTCB,
   VCRAFT,
   sbvUSD,
+  WBTC,
 } as const;

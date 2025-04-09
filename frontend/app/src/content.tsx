@@ -20,6 +20,7 @@ export default {
     dashboard: "Dashboard",
     borrow: "Borrow",
     earn: "Earn",
+    wrap: "Wrap",
     buy: "Buy",
   },
 

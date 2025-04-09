@@ -13,8 +13,16 @@ function isAddress(address: unknown): address is Address {
   return typeof address === "string" && ADDRESS_RE.test(address);
 }
 
+function isUnderlyingToken(token: unknown): token is Address {
+  return isAddress(token)
+}
+
 export function vAddress() {
   return v.custom<Address>(isAddress, "not a valid Ethereum address");
+}
+
+export function vUnderlyingToken() {
+  return v.custom<Address>(isUnderlyingToken, "not a valid underlying token");
 }
 
 export function vHash() {

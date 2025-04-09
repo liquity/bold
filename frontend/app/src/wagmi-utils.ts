@@ -1,10 +1,9 @@
 import type { Token } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
-import { dnum18 } from "@/src/dnum-utils";
+import { dnum18, dnum8 } from "@/src/dnum-utils";
 import { getBranch } from "@/src/liquity-utils";
 import { getSafeStatus } from "@/src/safe-utils";
-import { isCollateralSymbol } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import { useModal as useConnectKitModal } from "connectkit";
 import { match } from "ts-pattern";
@@ -31,6 +30,9 @@ export function useBalance(
         if(symbol === "VCRAFT") {
           return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";
         }
+        if(symbol === "WBTC") {
+          return "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c";
+        }
         return getBranch(symbol)?.contracts.CollToken.address ?? null;
       },
     )
@@ -43,7 +45,7 @@ export function useBalance(
     functionName: "balanceOf",
     args: address && [address],
     query: {
-      select: (value) => dnum18(value ?? 0n),
+      select: (value) => tokenAddress === "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c" ? dnum8(value ?? 0n) : dnum18(value ?? 0n),
       enabled: Boolean(address),
     },
   });

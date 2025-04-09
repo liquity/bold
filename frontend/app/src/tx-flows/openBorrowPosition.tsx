@@ -270,29 +270,6 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
         });
 
         const branch = getBranch(ctx.request.branchId);
-        console.log({
-          ...branch.contracts.LeverageLSTZapper,
-          functionName: "openTroveWithRawETH" as const,
-          args: [{
-            owner: ctx.request.owner,
-            ownerIndex: BigInt(ctx.request.ownerIndex),
-            collAmount: ctx.request.collAmount[0],
-            boldAmount: ctx.request.boldAmount[0],
-            upperHint,
-            lowerHint,
-            annualInterestRate: ctx.request.interestRateDelegate
-              ? 0n
-              : ctx.request.annualInterestRate[0],
-            batchManager: ctx.request.interestRateDelegate
-              ? ctx.request.interestRateDelegate
-              : ADDRESS_ZERO,
-            maxUpfrontFee: ctx.request.maxUpfrontFee[0],
-            addManager: ADDRESS_ZERO,
-            removeManager: ADDRESS_ZERO,
-            receiver: ctx.request.owner,
-          }],
-          value: ETH_GAS_COMPENSATION[0],
-        })
         return ctx.writeContract({
           ...branch.contracts.LeverageLSTZapper,
           functionName: "openTroveWithRawETH" as const,

@@ -7,7 +7,8 @@ export type TokenSymbol =
   | "WETH"
   | "BTCB"
   | "VCRAFT"
-  | "sbvUSD";
+  | "sbvUSD"
+  | "WBTC";
 
 export type Token = {
   icon: string;
