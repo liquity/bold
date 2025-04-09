@@ -115,7 +115,7 @@ export function TokenCard({
   subValues
 }: {
   token: string,
-  link: { label: string, href: string },
+  link?: { label: string, href: string },
   subValues: { label: string, value: string }[]
 }) {
   return (
@@ -142,7 +142,7 @@ export function TokenCard({
           })}>
           {token}
         </h1>
-        <a href={link.href}
+        <a href={link?.href}
           className={css({
             color: "accent",
             textDecoration: "none",
@@ -150,7 +150,7 @@ export function TokenCard({
               color: "goldLight",
             },
           })}>
-          {link.label}
+          {link?.label}
         </a>
       </div>
       <div className={css({

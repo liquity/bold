@@ -21,6 +21,7 @@ export default {
     borrow: "Borrow",
     earn: "Earn",
     buy: "Buy",
+    stats: "Stats",
   },
 
   accountButton: {
