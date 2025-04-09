@@ -2,12 +2,16 @@
 
 import type { ReactNode } from "react";
 
+import * as dn from "dnum";
 import { css } from "@/styled-system/css";
 import { BottomBar } from "./BottomBar";
 import { TopBar } from "./TopBar";
 import Link from "next/link";
 import { TokenCard } from "@/src/screens/HomeScreen/HomeScreen";
 import { AccountButton } from "@/src/comps/AppLayout/AccountButton";
+import { fmtnum } from "@/src/formatting";
+import { useAccount, useBalance } from "@/src/wagmi-utils";
+import { usePrice } from "@/src/services/Prices";
 
 export const LAYOUT_WIDTH = 1092;
 
@@ -67,6 +71,16 @@ export function AppLayout({
 
 
 function MobileScreen() {
+  const account = useAccount();
+
+  const bvusdBalance = useBalance(account.address, "bvUSD");
+  const sbvusdBalance = useBalance(account.address, "sbvUSD");
+  const vcraftBalance = useBalance(account.address, "VCRAFT");
+
+  const bvusdPrice = usePrice("bvUSD");
+  const sbvusdPrice = usePrice("sbvUSD");
+  const vcraftPrice = usePrice("VCRAFT");
+
   return (
     <div className={css({ display: { base: "block", medium: "none" } })}>
       <div
@@ -161,25 +175,52 @@ function MobileScreen() {
         >
           <TokenCard
             token="bvUSD"
-            link={{ label: "Buy", href: "#" }}
+            link={{ label: "Buy", href: "/buy" }}
             subValues={[
-              { label: "Value", value: "$10" },
-              { label: "Locked", value: "$10" },
+              {
+                label: "Value",
+                value: `$${bvusdBalance.data && bvusdPrice.data
+                  ? fmtnum(dn.mul(bvusdBalance.data, bvusdPrice.data), "2z")
+                  : "0.00"
+                  }`
+              },
+              {
+                label: "Locked",
+                value: `$${sbvusdBalance.data && sbvusdPrice.data
+                  ? fmtnum(dn.mul(sbvusdBalance.data, sbvusdPrice.data), "2z")
+                  : "0.00"
+                  }`
+              },
             ]}
           />
           <TokenCard
             token="sbvUSD"
-            link={{ label: "Earn", href: "#" }}
+            link={{ label: "Earn", href: "/earn" }}
             subValues={[
-              { label: "Value", value: "$10" },
-              { label: "Apy", value: "10%" },
+              {
+                label: "Value",
+                value: `$${sbvusdBalance.data && sbvusdPrice.data
+                  ? fmtnum(dn.mul(sbvusdBalance.data, sbvusdPrice.data), "2z")
+                  : "0.00"
+                  }`
+              },
+              {
+                label: "Apy",
+                value: "10%"
+              },
             ]}
           />
           <TokenCard
             token="VCRAFT"
             link={{ label: "Buy", href: "#" }}
             subValues={[
-              { label: "Value", value: "$10" },
+              {
+                label: "Value",
+                value: `$${vcraftBalance.data && vcraftPrice.data
+                  ? fmtnum(dn.mul(vcraftBalance.data, vcraftBalance.data), "2z")
+                  : "0.00"
+                  }`
+              },
             ]}
           />
         </div>
