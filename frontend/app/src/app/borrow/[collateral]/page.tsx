@@ -1,7 +1,7 @@
 export function generateStaticParams() {
   return [
     { collateral: "weth" },
-    { collateral: "btcb" },
+    { collateral: "bvbtc" },
   ];
 }
 

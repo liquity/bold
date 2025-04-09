@@ -31,7 +31,7 @@ export const wrapToken: FlowDeclaration<WrapTokenRequest> = {
 
   Details({ request }) {
     const { amount, token } = request;
-    const wbtcPrice = usePrice("BTCB");
+    const wbtcPrice = usePrice("BVBTC");
 
     return wbtcPrice.data && (
       <>

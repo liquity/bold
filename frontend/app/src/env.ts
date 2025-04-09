@@ -9,7 +9,7 @@ const DEFAULT_VERSION_URL = "https://github.com/liquity/bold/releases/tag/%40liq
 
 export const CollateralSymbolSchema = v.union([
   v.literal("WETH"),
-  v.literal("BTCB"),
+  v.literal("BVBTC"),
 ]);
 
 const contractsEnvNames = [

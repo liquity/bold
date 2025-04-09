@@ -6,10 +6,10 @@ import tokenBtcb from "./token-icons/btcb.svg";
 import tokenSbvusd from "./token-icons/sbvusd.svg";
 import tokenVcraft from "./token-icons/vcraft.svg";
 
-export type CollateralSymbol = "WETH" | "BTCB";
+export type CollateralSymbol = "WETH" | "BVBTC";
 
 export function isCollateralSymbol(symbol: string): symbol is CollateralSymbol {
-  return symbol === "WETH" || symbol === "BTCB";
+  return symbol === "WETH" || symbol === "BVBTC";
 }
 
 export type CollateralToken = Token & {
@@ -42,11 +42,11 @@ export const WETH: CollateralToken = {
   symbol: "WETH" as const,
 } as const;
 
-export const BTCB: CollateralToken = {
+export const BVBTC: CollateralToken = {
   collateralRatio: 1.2,
   icon: tokenBtcb,
-  name: "BTCB",
-  symbol: "BTCB" as const,
+  name: "BVBTC",
+  symbol: "BVBTC" as const,
 } as const;
 
 export const WBTC: Token = {
@@ -57,13 +57,13 @@ export const WBTC: Token = {
 
 export const COLLATERALS: CollateralToken[] = [
   WETH,
-  BTCB,
+  BVBTC,
 ];
 
 export const TOKENS_BY_SYMBOL = {
   bvUSD,
   WETH,
-  BTCB,
+  BVBTC,
   VCRAFT,
   sbvUSD,
   WBTC,

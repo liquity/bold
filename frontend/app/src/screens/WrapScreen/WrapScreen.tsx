@@ -26,7 +26,7 @@ export function WrapScreen() {
   const txFlow = useTransactionFlow();
 
   const wbtcBalance = useBalance(account.address, "WBTC");
-  const btcbBalance = useBalance(account.address, "BTCB");
+  const btcbBalance = useBalance(account.address, "BVBTC");
 
   const collBalance = wbtcBalance;
   if (!collBalance) {
@@ -69,7 +69,7 @@ export function WrapScreen() {
               id="input-sell"
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol="BTCB" />}
+                  icon={<TokenIcon symbol="BVBTC" />}
                   label="WBTC"
                 />
               }
@@ -102,20 +102,20 @@ export function WrapScreen() {
               id="input-buy"
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol="BTCB" />}
-                  label="BTCB"
+                  icon={<TokenIcon symbol="BVBTC" />}
+                  label="BVBTC"
                 />
               }
               label="Wrapped Amount"
               placeholder="0.00"
               secondary={{
                 start: `${buyAmount
-                  ? fmtnum(buyAmount) + " BTCB"
-                  : "0.00 BTCB"
+                  ? fmtnum(buyAmount) + " BVBTC"
+                  : "0.00 BVBTC"
                   }`,
                 end: `${btcbBalance
-                  ? fmtnum(btcbBalance.data) + " BTCB"
-                  : "0.00 BTCB"
+                  ? fmtnum(btcbBalance.data) + " BVBTC"
+                  : "0.00 BVBTC"
                   }`,
               }}
               value={buyAmount ? fmtnum(buyAmount) : ""}

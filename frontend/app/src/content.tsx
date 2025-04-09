@@ -240,7 +240,7 @@ export default {
   borrowScreen: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Borrow {boldIcon} bvUSD with {tokensIcons} BTCB or WETH
+        Borrow {boldIcon} bvUSD with {tokensIcons} BVBTC or WETH
       </>
     ),
     depositField: {

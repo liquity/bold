@@ -14,7 +14,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol | "sbvUSD" | "VCRAFT";
+type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol | "sbvUSD" | "VCRAFT" | "WBTC";
 
 function useCollateralPrice(
   symbol: null | CollateralSymbol
@@ -43,12 +43,12 @@ function useCollateralPrice(
   });
 }
 
-type CoinGeckoSymbol = TokenSymbol & ("WETH" | "BTCB");
+type CoinGeckoSymbol = TokenSymbol & ("WETH" | "BVBTC");
 const coinGeckoTokenIds: {
   [key in CoinGeckoSymbol]: string;
 } = {
   WETH: "ethereum",
-  BTCB: "bitcoin",
+  BVBTC: "bitcoin",
 };
 
 function useCoinGeckoPrice(
@@ -118,7 +118,7 @@ function useCoinGeckoPrice(
 export function usePrice<PT extends PriceToken>(
   symbol: PT | null
 ): UseQueryResult<Dnum> {
-  const fromCoinGecko = symbol === "WETH" || symbol === "BTCB";
+  const fromCoinGecko = symbol === "WETH" || symbol === "BVBTC";
   const fromPriceFeed =
     !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
 
