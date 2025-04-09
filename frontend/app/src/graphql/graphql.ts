@@ -1864,20 +1864,6 @@ export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
 
 export type StabilityPoolDepositsByAccountQuery = { __typename?: 'Query', stabilityPoolDeposits: Array<{ __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } }> };
 
-export type StabilityPoolDepositQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type StabilityPoolDepositQuery = { __typename?: 'Query', stabilityPoolDeposit?: { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } } | null };
-
-export type StabilityPoolEpochScaleQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type StabilityPoolEpochScaleQuery = { __typename?: 'Query', stabilityPoolEpochScale?: { __typename?: 'StabilityPoolEpochScale', id: string, B: bigint, S: bigint } | null };
-
 export type InterestBatchesQueryVariables = Exact<{
   ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
 }>;
@@ -1988,34 +1974,6 @@ export const StabilityPoolDepositsByAccountDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
-export const StabilityPoolDepositDocument = new TypedDocumentString(`
-    query StabilityPoolDeposit($id: ID!) {
-  stabilityPoolDeposit(id: $id) {
-    id
-    deposit
-    depositor
-    collateral {
-      collIndex
-    }
-    snapshot {
-      B
-      P
-      S
-      epoch
-      scale
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>;
-export const StabilityPoolEpochScaleDocument = new TypedDocumentString(`
-    query StabilityPoolEpochScale($id: ID!) {
-  stabilityPoolEpochScale(id: $id) {
-    id
-    B
-    S
-  }
-}
-    `) as unknown as TypedDocumentString<StabilityPoolEpochScaleQuery, StabilityPoolEpochScaleQueryVariables>;
 export const InterestBatchesDocument = new TypedDocumentString(`
     query InterestBatches($ids: [ID!]!) {
   interestBatches(where: {id_in: $ids}) {

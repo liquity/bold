@@ -28,7 +28,6 @@ import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contrac
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, DEMO_MODE, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
-import { useContinuousBoldGains, useStabilityPoolTotalDeposited } from "@/src/liquity-stability-pool";
 import { useAllInterestRateBrackets, useInterestRateBrackets } from "@/src/subgraph-hooks";
 import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { bigIntAbs, sleep } from "@/src/utils";
@@ -183,25 +182,9 @@ export function isEarnPositionActive(position: PositionEarn | null) {
   );
 }
 
-export function useEarnPosition(
-  branchId: null | BranchId,
-  account: null | Address,
-): UseQueryResult<PositionEarn | null> {
-  const getBoldGains = useContinuousBoldGains(account, branchId);
-
-  const yieldGainsInBold = useQuery({
-    queryFn: () => getBoldGains.data?.(Date.now()) ?? null,
-    queryKey: ["useEarnPosition:getBoldGains", branchId, account],
-    refetchInterval: 10_000,
-    enabled: getBoldGains.status === "success",
-  });
-
+function earnPositionsContractsReadSetup(branchId: BranchId, account: Address | null) {
   const StabilityPool = getBranchContract(branchId, "StabilityPool");
-  if (!StabilityPool) {
-    throw new Error(`Invalid branch: ${branchId}`);
-  }
-
-  const spReads = useReadContracts({
+  return {
     contracts: [{
       ...StabilityPool,
       functionName: "getCompoundedBoldDeposit",
@@ -214,42 +197,92 @@ export function useEarnPosition(
       ...StabilityPool,
       functionName: "stashedColl",
       args: [account ?? "0x"],
+    }, {
+      ...StabilityPool,
+      functionName: "getDepositorYieldGainWithPending",
+      args: [account ?? "0x"],
     }],
-    allowFailure: false,
-    query: {
-      select: ([deposit, collGain, stashedColl]) => ({
-        spDeposit: dnum18(deposit),
-        spCollGain: dnum18(collGain),
-        spStashedColl: dnum18(stashedColl),
-      }),
-      enabled: account !== null,
-    },
-  });
-
-  return useQuery({
-    queryKey: ["useEarnPosition", branchId, account],
-    queryFn: () => {
-      return {
-        type: "earn" as const,
+    select: ([
+      deposit,
+      collGain,
+      stashedColl,
+      yieldGainWithPending,
+    ]: [
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+    ]) => {
+      if (!account) {
+        throw new Error(); // should never happen (see enabled)
+      }
+      return deposit === 0n ? null : {
+        type: "earn",
         owner: account,
-        deposit: spReads.data?.spDeposit ?? DNUM_0,
+        deposit: dnum18(deposit),
         branchId,
         rewards: {
-          bold: yieldGainsInBold.data ?? DNUM_0,
+          bold: dnum18(yieldGainWithPending),
           coll: dn.add(
-            spReads.data?.spCollGain ?? DNUM_0,
-            spReads.data?.spStashedColl ?? DNUM_0,
+            dnum18(collGain),
+            dnum18(stashedColl),
           ),
         },
-      };
+      } as const;
     },
-    enabled: Boolean(
-      account
-        && branchId !== null
-        && yieldGainsInBold.status === "success"
-        && getBoldGains.status === "success"
-        && spReads.status === "success",
-    ),
+  } as const;
+}
+
+export function useEarnPosition(
+  branchId: BranchId,
+  account: null | Address,
+): UseQueryResult<PositionEarn | null> {
+  const setup = earnPositionsContractsReadSetup(branchId, account);
+  return useReadContracts({
+    contracts: setup.contracts,
+    allowFailure: false,
+    query: {
+      enabled: Boolean(account),
+      refetchInterval: DATA_REFRESH_INTERVAL,
+      select: setup.select,
+    },
+  });
+}
+
+export function useEarnPositionsByAccount(account: null | Address) {
+  const wagmiConfig = useWagmiConfig();
+
+  let queryFn = async () => {
+    if (!account) return null;
+
+    const branches = getBranches();
+
+    const depositsPerBranch = await Promise.all(
+      branches.map(async (branch) => {
+        const setup = earnPositionsContractsReadSetup(branch.id, account);
+        const deposits = await readContracts(wagmiConfig, {
+          contracts: setup.contracts,
+          allowFailure: false,
+        });
+        return setup.select(deposits);
+      }),
+    );
+
+    return depositsPerBranch.filter((position) => position !== null);
+  };
+
+  if (DEMO_MODE) {
+    queryFn = async () => {
+      return account
+        ? ACCOUNT_POSITIONS.filter((position) => position.type === "earn")
+        : null;
+    };
+  }
+
+  return useQuery({
+    queryKey: ["StabilityPoolDepositsByAccount", account],
+    queryFn,
+    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }
 
