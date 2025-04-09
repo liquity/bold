@@ -6,6 +6,7 @@ import { fmtnum } from "@/src/formatting";
 import { usePrice } from "@/src/services/Prices";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
+import Link from "next/link";
 
 
 export function HomeScreen() {
@@ -142,7 +143,8 @@ export function TokenCard({
           })}>
           {token}
         </h1>
-        <a href={link.href}
+        <Link
+          href={link.href}
           className={css({
             color: "accent",
             textDecoration: "none",
@@ -151,7 +153,7 @@ export function TokenCard({
             },
           })}>
           {link.label}
-        </a>
+        </Link>
       </div>
       <div className={css({
         display: "flex",
