@@ -58,7 +58,7 @@ export function useBalance(
   //   },
   // });
 
-  return (tokenBalance);
+  return tokenBalance;
 }
 
 export function useAccount():
