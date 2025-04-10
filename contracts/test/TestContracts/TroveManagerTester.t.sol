@@ -6,6 +6,7 @@ import "src/Interfaces/IAddressesRegistry.sol";
 import "src/Interfaces/ICollateralRegistry.sol";
 import "src/TroveManager.sol";
 import "./Interfaces/ITroveManagerTester.sol";
+import "forge-std/console2.sol";
 
 /* Tester contract inherits from TroveManager, and provides external functions
 for testing the parent's internal functions. */
