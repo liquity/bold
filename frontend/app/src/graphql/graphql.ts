@@ -1857,13 +1857,6 @@ export type TroveStatusByIdQueryVariables = Exact<{
 
 export type TroveStatusByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, closedAt?: bigint | null, createdAt: bigint, mightBeLeveraged: boolean, status: TroveStatus } | null };
 
-export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
-  account: Scalars['Bytes']['input'];
-}>;
-
-
-export type StabilityPoolDepositsByAccountQuery = { __typename?: 'Query', stabilityPoolDeposits: Array<{ __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } }> };
-
 export type InterestBatchesQueryVariables = Exact<{
   ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
 }>;
@@ -1955,25 +1948,6 @@ export const TroveStatusByIdDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<TroveStatusByIdQuery, TroveStatusByIdQueryVariables>;
-export const StabilityPoolDepositsByAccountDocument = new TypedDocumentString(`
-    query StabilityPoolDepositsByAccount($account: Bytes!) {
-  stabilityPoolDeposits(where: {depositor: $account, deposit_gt: 0}) {
-    id
-    deposit
-    depositor
-    collateral {
-      collIndex
-    }
-    snapshot {
-      B
-      P
-      S
-      epoch
-      scale
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
 export const InterestBatchesDocument = new TypedDocumentString(`
     query InterestBatches($ids: [ID!]!) {
   interestBatches(where: {id_in: $ids}) {

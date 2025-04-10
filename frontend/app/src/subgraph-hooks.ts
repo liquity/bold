@@ -15,7 +15,6 @@ import {
   BorrowerInfoQuery,
   GovernanceInitiatives,
   GovernanceStats,
-  GovernanceUser,
   graphQuery,
 } from "./subgraph-queries";
 
@@ -141,42 +140,6 @@ export function useGovernanceInitiatives(options?: Options) {
 
   return useQuery({
     queryKey: ["GovernanceInitiatives"],
-    queryFn,
-    ...prepareOptions(options),
-  });
-}
-
-export function useGovernanceUser(account: Address | null, options?: Options) {
-  let queryFn = async () => {
-    if (!account) return null;
-    const { governanceUser } = await graphQuery(GovernanceUser, {
-      id: account.toLowerCase(),
-    });
-    if (!governanceUser) {
-      return null;
-    }
-    return {
-      ...governanceUser,
-      id: governanceUser.id as Address,
-      allocatedLQTY: BigInt(governanceUser.allocatedLQTY),
-      stakedLQTY: BigInt(governanceUser.stakedLQTY),
-      stakedOffset: BigInt(governanceUser.stakedOffset),
-      allocations: governanceUser.allocations.map((allocation) => ({
-        ...allocation,
-        voteLQTY: BigInt(allocation.voteLQTY),
-        vetoLQTY: BigInt(allocation.vetoLQTY),
-        initiative: allocation.initiative.id as Address,
-      })),
-    };
-  };
-
-  // TODO: demo mode
-  if (DEMO_MODE) {
-    queryFn = async () => null;
-  }
-
-  return useQuery({
-    queryKey: ["GovernanceUser", account],
     queryFn,
     ...prepareOptions(options),
   });
