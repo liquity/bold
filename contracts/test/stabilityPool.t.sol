@@ -1760,6 +1760,12 @@ contract SPTest is DevTestSetup {
         uint256 coll_E = mulDivCeil(targetDebt_E, MCR, price);
         troveIDs.E = openTroveNoHints100pct(E, coll_E, debtRequest_E, interestRate_E);
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        // make sure yield is updated
+        pendingAggInterest[1] += activePool.calcPendingAggInterest();
+        borrowerOperations.applyPendingDebt(troveIDs.A, 0, 0);
+
         // SP depositors benefit from the upfront fee paid by E, in addition to interest
         expectedSpYield[1] = SP_YIELD_SPLIT * (pendingAggInterest[1] + upfrontFee_E) / 1e18;
 
@@ -1816,7 +1822,7 @@ contract SPTest is DevTestSetup {
 
         // Expect A only gets a share of reward 2 and 3 as they already claimed their share of reward 1
         assertApproximatelyEqual(
-            stabilityPool.getDepositorYieldGain(A), expectedShareOfReward[1].A + expectedShareOfReward[2].A, 1e14, "2"
+            stabilityPool.getDepositorYieldGain(A), expectedShareOfReward[1].A + expectedShareOfReward[2].A, 1e14, "A"
         );
 
         // Expect B, C get shares of rewards 1, 2 and 3 respectively
@@ -1824,17 +1830,17 @@ contract SPTest is DevTestSetup {
             stabilityPool.getDepositorYieldGain(B),
             expectedShareOfReward[0].B + expectedShareOfReward[1].B + expectedShareOfReward[2].B,
             1e14,
-            "3"
+            "B"
         );
         assertApproximatelyEqual(
             stabilityPool.getDepositorYieldGain(C),
             expectedShareOfReward[0].C + expectedShareOfReward[1].C + expectedShareOfReward[2].C,
             1e14,
-            "4"
+            "C"
         );
 
         // Expect D gets share of 3 only
-        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(D), expectedShareOfReward[2].D, 1e14, "5");
+        assertApproximatelyEqual(stabilityPool.getDepositorYieldGain(D), expectedShareOfReward[2].D, 1e14, "D");
     }
 
     // --- 'P' tests ---
@@ -2252,13 +2258,19 @@ contract SPTest is DevTestSetup {
         priceFeed.setPrice(3000e18);
 
         uint256 toSP = 5000e18;
-        openTroveNoHints100pct(A, 5 ether, toSP, rate);
+        openTroveNoHints100pct(A, 5 ether, toSP + 1e18, rate);
 
         // B's target debt should be: totalBoldDeposits - 1e18 + _toRedist
         uint256 B_targetDebt = toSP - 1e18 + _toRedist;
         // B opens Trove with debt equal to the amount intended to be offset
         (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        uint256 debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
+        // Re-adjust SP amount due to the extra debt generated in trove B during liquidation grace period
+        toSP = debtBBefore + 1e18 - _toRedist;
 
         // A deposits to SP
         makeSPDepositNoClaim(A, toSP);
@@ -2289,14 +2301,20 @@ contract SPTest is DevTestSetup {
         priceFeed.setPrice(3000e18);
 
         uint256 toSP = 5000e18;
-        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP, rate);
-        uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP + 1e18, rate);
 
         // B's target debt should be: totalBoldDeposits - 1e18 + _toRedist
         uint256 B_targetDebt = toSP - 1e18 + _toRedist;
         // B opens Trove with debt equal to the amount intended to be offset
         (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+        uint256 debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
+        // Re-adjust SP amount due to the extra debt generated in trove B during liquidation grace period
+        toSP = debtBBefore + 1e18 - _toRedist;
 
         // A deposits to SP
         makeSPDepositNoClaim(A, toSP);
@@ -2333,8 +2351,7 @@ contract SPTest is DevTestSetup {
         priceFeed.setPrice(3000e18);
 
         uint256 toSP = 5000e18;
-        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP, rate);
-        vars.debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP + 1e18, rate);
         vars.collABefore = troveManager.getTroveEntireColl(troveIdA);
 
         // B's target debt should be: totalBoldDeposits - 1e18 + _toRedist
@@ -2344,6 +2361,13 @@ contract SPTest is DevTestSetup {
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
         vars.debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
         vars.collBBefore = troveManager.getTroveEntireColl(troveIdB);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vars.debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+        vars.debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
+        // Re-adjust SP amount due to the extra debt generated in trove B during liquidation grace period
+        toSP = vars.debtBBefore + 1e18 - _toRedist;
 
         // A deposits to SP
         makeSPDepositNoClaim(A, toSP);
@@ -2392,7 +2416,8 @@ contract SPTest is DevTestSetup {
     // --- Liq debt x in range: x < (totalBoldDeposits - 1e18)
 
     function testLiqDebtLessThanSPMinus1BOLDLeavesSurplusInSP_Fuzz(uint256 _surplusToLeaveInSP) public {
-        _surplusToLeaveInSP = bound(_surplusToLeaveInSP, 1e18, 2000e18);
+        // We leave some room in the bottom bound for the liquidation grace period debt adjustment
+        _surplusToLeaveInSP = bound(_surplusToLeaveInSP, 1e18 + 1e13, 2000e18);
 
         uint256 rate = 5e16;
 
@@ -2405,6 +2430,9 @@ contract SPTest is DevTestSetup {
         // B opens Trove with debt equal to the amount intended to be offset
         (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         // Reassign surplus based on B's actual debt, in case there was rounding error when calculating B's exact debt
         _surplusToLeaveInSP = toSP - troveManager.getTroveEntireDebt(troveIdB);
@@ -2429,7 +2457,8 @@ contract SPTest is DevTestSetup {
     }
 
     function testLiqDebtLessThanSPMinus1BOLDDoesNotRedistribute_Fuzz(uint256 _surplusToLeaveInSP) public {
-        _surplusToLeaveInSP = bound(_surplusToLeaveInSP, 1e18, 2000e18);
+        // We leave some room in the bottom bound for the liquidation grace period debt adjustment
+        _surplusToLeaveInSP = bound(_surplusToLeaveInSP, 1e18 + 1e13, 2000e18);
 
         uint256 rate = 5e16;
 
@@ -2437,16 +2466,20 @@ contract SPTest is DevTestSetup {
 
         uint256 toSP = 5000e18;
         uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP, rate);
-        uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
 
         uint256 B_targetDebt = toSP - _surplusToLeaveInSP;
         // B opens Trove with debt equal to the amount intended to be offset
         (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
+        uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+
         // Reassign surplus based on B's actual debt, in case there was rounding error in calculating B's exact debt
         _surplusToLeaveInSP = toSP - troveManager.getTroveEntireDebt(troveIdB);
-        assertGe(_surplusToLeaveInSP, 1e18);
+        assertGe(_surplusToLeaveInSP, 1e18, "Not enough SP surplus");
 
         // A deposits to SP
         makeSPDepositNoClaim(A, toSP);
@@ -2480,6 +2513,9 @@ contract SPTest is DevTestSetup {
         (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // A deposits to SP
         makeSPDepositNoClaim(A, toSP);
 
@@ -2506,13 +2542,19 @@ contract SPTest is DevTestSetup {
         priceFeed.setPrice(3000e18);
 
         uint256 toSP = 5000e18;
-        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP, rate);
-        uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP + 1e18, rate);
 
         uint256 B_targetDebt = toSP - 1e18 + _toRedist;
         // B opens Trove with debt equal to the amount intended to be offset
         (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+        uint256 debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
+        // Re-adjust SP amount due to the extra debt generated in trove B during liquidation grace period
+        toSP = debtBBefore + 1e18 - _toRedist;
 
         // A deposits to SP
         makeSPDepositNoClaim(A, toSP);
@@ -2541,8 +2583,7 @@ contract SPTest is DevTestSetup {
         priceFeed.setPrice(3000e18);
 
         uint256 toSP = 5000e18;
-        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP, rate);
-        vars.debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+        uint256 troveIdA = openTroveNoHints100pct(A, 5 ether, toSP + 1e18, rate);
         vars.collABefore = troveManager.getTroveEntireColl(troveIdA);
 
         uint256 B_targetDebt = toSP - 1e18 + _toRedist;
@@ -2550,10 +2591,17 @@ contract SPTest is DevTestSetup {
         (uint256 B_borrow,) = findAmountToBorrowWithOpenTrove(B_targetDebt, rate);
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         vars.debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
 
         vars.collBBefore = troveManager.getTroveEntireColl(troveIdB);
         assertEq(vars.collBBefore, 5 ether);
+
+        vars.debtABefore = troveManager.getTroveEntireDebt(troveIdA);
+        // Re-adjust SP amount due to the extra debt generated in trove B during liquidation grace period
+        toSP = vars.debtBBefore + 1e18 - _toRedist;
 
         // A deposits to SP
         makeSPDepositNoClaim(A, toSP);

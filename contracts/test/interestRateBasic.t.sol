@@ -709,14 +709,18 @@ contract InterestRateBasic is DevTestSetup {
         uint256 interestRate = 25e16;
 
         uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
+        uint256 initialEntireDebt = troveData.entireDebt;
 
         // Open a trove to be liquidated and redistributed
         uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, interestRate);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // Price goes down
         priceFeed.setPrice(1000e18);
         // C is liquidated
-        LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
-        uint256 initialEntireDebt = troveData.entireDebt;
         LatestTroveData memory troveDataC = troveManager.getLatestTroveData(CTroveId);
         uint256 entireDebtC = troveDataC.entireDebt;
         liquidate(A, CTroveId);

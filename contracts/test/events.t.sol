@@ -341,6 +341,9 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
 
         (uint256 liquidatedTroveId,) = openTroveWithExactICRAndDebt(A, 0, MCR, 10_000 ether, 0.01 ether);
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // drop price by 1%
         priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
 
@@ -363,6 +366,9 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         openTroveWithExactICRAndDebt(B, 0, 2 * CCR, 10_000 ether, 0.01 ether);
 
         (uint256 liquidatedTroveId,) = openTroveWithExactICRAndDebt(A, 0, MCR, 10_000 ether, 0.01 ether);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         uint256 debt = troveManager.getTroveEntireDebt(liquidatedTroveId);
         uint256 coll = troveManager.getTroveEntireColl(liquidatedTroveId);
@@ -389,14 +395,18 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         // open a Trove to keep TCR afloat and let us liquidate the 2nd one
         (, uint256 otherColl) = openTroveWithExactICRAndDebt(B, 0, 2 * CCR, 10_000 ether, 0.01 ether);
 
-        uint256 liquidatedDebt = 10_000 ether;
+        uint256 initialDebt = 10_000 ether;
         (uint256 liquidatedTroveId, uint256 liquidatedColl) =
-            openTroveWithExactICRAndDebt(A, 0, MCR, liquidatedDebt, 0.01 ether);
+            openTroveWithExactICRAndDebt(A, 0, MCR, initialDebt, 0.01 ether);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         // drop price by 1%
         uint256 price = priceFeed.getPrice() * 99 / 100;
         priceFeed.setPrice(price);
 
+        uint256 liquidatedDebt = troveManager.getTroveEntireDebt(liquidatedTroveId);
         LiquidationParams memory l;
         l.collGasCompensation = liquidatedColl / COLL_GAS_COMPENSATION_DIVISOR;
         l.collRedistributed = liquidatedColl - l.collGasCompensation;
@@ -429,6 +439,9 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
             (liquidateTroveIds[i],) = openTroveWithExactICRAndDebt(A, i, MCR, 10_000 ether, 0.01 ether);
         }
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // drop price by 1%
         priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
 
@@ -460,6 +473,9 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         for (uint256 i = 0; i < liquidateTroveIds.length; ++i) {
             (liquidateTroveIds[i],) = openTroveWithExactICRAndDebt(A, i, MCR, 10_000 ether, 0.01 ether);
         }
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         // drop price by 1%
         priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
@@ -496,36 +512,41 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         uint256 boldInSP = 25_000 ether;
         makeSPDepositNoClaim(B, boldInSP);
 
-        uint256[3] memory liquidatedDebt;
-        liquidatedDebt[0] = 10_000 ether;
-        liquidatedDebt[1] = 20_000 ether;
-        liquidatedDebt[2] = 30_000 ether;
+        uint256[3] memory debt;
+        // initial
+        debt[0] = 10_000 ether;
+        debt[1] = 20_000 ether;
+        debt[2] = 30_000 ether;
 
-        uint256[] memory liquidatedTroveIds = new uint256[](liquidatedDebt.length);
-        uint256[] memory liquidatedColl = new uint256[](liquidatedDebt.length);
+        uint256[] memory liquidatedTroveIds = new uint256[](debt.length);
+        uint256[] memory liquidatedColl = new uint256[](debt.length);
 
-        for (uint256 i = 0; i < liquidatedDebt.length; ++i) {
+        for (uint256 i = 0; i < debt.length; ++i) {
             (liquidatedTroveIds[i], liquidatedColl[i]) =
-                openTroveWithExactICRAndDebt(A, i, MCR, liquidatedDebt[i], 0.01 ether);
+                openTroveWithExactICRAndDebt(A, i, MCR, debt[i], 0.01 ether);
         }
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         // drop price by 1%
         uint256 price = priceFeed.getPrice() * 99 / 100;
         priceFeed.setPrice(price);
 
         LiquidationParams memory t;
-        for (uint256 i = 0; i < liquidatedDebt.length; ++i) {
+        for (uint256 i = 0; i < debt.length; ++i) {
             uint256 collRemaining = liquidatedColl[i];
+            debt[i] = troveManager.getTroveEntireDebt(liquidatedTroveIds[i]);
 
             LiquidationParams memory l;
-            l.debtOffsetBySP = Math.min(liquidatedDebt[i], boldInSP - t.debtOffsetBySP - 1e18);
-            l.debtRedistributed = liquidatedDebt[i] - l.debtOffsetBySP;
+            l.debtOffsetBySP = Math.min(debt[i], boldInSP - t.debtOffsetBySP - 1e18);
+            l.debtRedistributed = debt[i] - l.debtOffsetBySP;
 
             l.ethGasCompensation = ETH_GAS_COMPENSATION;
             collRemaining -= l.collGasCompensation = liquidatedColl[i] / COLL_GAS_COMPENSATION_DIVISOR;
 
             collRemaining -= l.collSentToSP = Math.min(
-                collRemaining * l.debtOffsetBySP / liquidatedDebt[i],
+                collRemaining * l.debtOffsetBySP / debt[i],
                 l.debtOffsetBySP * (DECIMAL_PRECISION + LIQUIDATION_PENALTY_SP) / price
             );
 
@@ -669,6 +690,9 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
         (liquidatedTroveId[1],) = openTroveWithExactICRAndDebt(C, 0, MCR, liquidatedDebt, 0.01 ether);
         (liquidatedTroveId[2],) = openTroveWithExactICRAndDebt(D, 0, MCR, liquidatedDebt, 0.01 ether);
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
 
         makeSPDepositNoClaim(A, liquidatedDebt);
@@ -810,7 +834,7 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
     function test_WithdrawFromSPAndClaimEmitsDepositUpdated() external {
         (Deposit memory deposit, StabilityPoolRewardsState memory current) = makeSPDepositAndGenerateRewards();
 
-        uint256 withdrawal = deposit.recordedBold / 2;
+        uint256 withdrawal = Math.min(deposit.recordedBold / 2, stabilityPool.getTotalBoldDeposits() - MIN_BOLD_IN_SP);
 
         vm.expectEmit();
         emit DepositUpdated(
@@ -849,7 +873,7 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
     function test_WithdrawFromSPAndClaimEmitsDepositOperation() external {
         (Deposit memory deposit,) = makeSPDepositAndGenerateRewards();
 
-        uint256 withdrawal = deposit.recordedBold / 2;
+        uint256 withdrawal = Math.min(deposit.recordedBold / 2, stabilityPool.getTotalBoldDeposits() - MIN_BOLD_IN_SP);
 
         vm.expectEmit();
         emit DepositOperation(

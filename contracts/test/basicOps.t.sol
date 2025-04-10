@@ -143,6 +143,9 @@ contract BasicOps is DevTestSetup {
             B, 0, 10e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
         );
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // Price drops
         priceFeed.setPrice(1200e18);
         (uint256 price,) = priceFeed.fetchPrice();

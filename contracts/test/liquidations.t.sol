@@ -56,6 +56,10 @@ contract LiquidationsTest is DevTestSetup {
             address(0)
         );
         vm.stopPrank();
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // B deposits to SP
         makeSPDepositAndClaim(B, liquidationAmount + 100e18);
 
@@ -161,6 +165,10 @@ contract LiquidationsTest is DevTestSetup {
             address(0)
         );
         vm.stopPrank();
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // B deposits to SP
         makeSPDepositAndClaim(B, liquidationAmount + 100e18);
 
@@ -247,6 +255,9 @@ contract LiquidationsTest is DevTestSetup {
             address(0),
             address(0)
         );
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         // Price drops
         priceFeed.setPrice(1100e18 - 1);
@@ -340,6 +351,10 @@ contract LiquidationsTest is DevTestSetup {
             address(0)
         );
         vm.stopPrank();
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // B deposits to SP
         makeSPDepositAndClaim(B, vars.liquidationAmount / 2);
 
@@ -427,5 +442,25 @@ contract LiquidationsTest is DevTestSetup {
         assertApproxEqAbs(
             collToken.balanceOf(A) - vars.ACollBalance, collSurplusAmount, 10, "A collateral balance mismatch"
         );
+    }
+
+    function testCannotLiquidateBeforeGracePeriod() public {
+        uint256 liquidationAmount = 2000e18;
+        uint256 collAmount = 2e18;
+
+        priceFeed.setPrice(2000e18);
+
+        uint256 troveId = openTroveNoHints100pct(A, collAmount, liquidationAmount, MIN_ANNUAL_INTEREST_RATE);
+        // Open a second one so first one can be liquidated
+        openTroveNoHints100pct(B, 2 * collAmount, liquidationAmount + 100e18, MIN_ANNUAL_INTEREST_RATE);
+
+        // B deposits to SP
+        makeSPDepositAndClaim(B, liquidationAmount + 100e18);
+
+        // Price drops
+        priceFeed.setPrice(1100e18 - 1);
+
+        vm.expectRevert(TroveManager.NothingToLiquidate.selector);
+        troveManager.liquidate(troveId);
     }
 }

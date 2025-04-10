@@ -501,6 +501,9 @@ contract Redemptions is DevTestSetup {
         // Check last Zombie trove pointer
         assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer before");
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // Liquidate B
         priceFeed.setPrice(priceFeed.getPrice() / 30);
         liquidate(A, troveIDs.B);
@@ -550,6 +553,9 @@ contract Redemptions is DevTestSetup {
 
         // E opens new Trove
         troveIDs.E = openTroveNoHints100pct(E, troveColl_E, troveDebtRequest_E, interestRate_E);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         // Price drops, E becomes liquidateable
         price = 1050e18;
@@ -632,6 +638,9 @@ contract Redemptions is DevTestSetup {
         // E  opens new Trove
         uint256 troveID_E = openTroveNoHints100pct(E, troveColl_E, troveDebtRequest_E, interestRate_E);
         // openTroveNoHints100pct(F, troveColl_F, troveDebtRequest_F, interestRate_F);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         // Price drops, E becomes liquidateable
         price = 950e18;
@@ -986,6 +995,9 @@ contract Redemptions is DevTestSetup {
         makeSPDepositAndClaim(E, boldToken.balanceOf(E));
         assertGt(stabilityPool.getTotalBoldDeposits(), troveManager.getTroveEntireDebt(troveIDs.B));
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // Price drops, B becomes liquidateable
         uint256 price = 10e18;
         priceFeed.setPrice(price);
@@ -1009,6 +1021,9 @@ contract Redemptions is DevTestSetup {
         uint256 BTroveId = openTroveAndJoinBatchManager(B, 100 ether, 10e21, B, MIN_ANNUAL_INTEREST_RATE);
         uint256 ATroveId = openTroveAndJoinBatchManager(A, 100 ether, 10e21, B, MIN_ANNUAL_INTEREST_RATE);
         uint256 CTroveId = openTroveNoHints100pct(C, 100 ether, 100e21, MIN_ANNUAL_INTEREST_RATE);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         priceFeed.setPrice(1099e18);
 

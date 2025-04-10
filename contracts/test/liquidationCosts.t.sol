@@ -24,6 +24,9 @@ contract LiquidationCostsTest is DevTestSetup {
             trovesToLiq[i] = troveId;
         }
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // Price drops
         priceFeed.setPrice(1000e18);
         (uint256 price,) = priceFeed.fetchPrice();
@@ -57,6 +60,9 @@ contract LiquidationCostsTest is DevTestSetup {
             uint256 troveId = openTroveNoHints100pctWithIndex(B, i, 219e16, 2000e18, 1e16);
             trovesToLiq[i] = troveId;
         }
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
 
         // Price drops
         priceFeed.setPrice(1000e18);

@@ -101,6 +101,9 @@ contract InterestBatchManagementTest is DevTestSetup {
         // Open another trove so that we can liquidate the first one
         openTroveNoHints100pct(B, 100e18, 5000e18, 5e16);
 
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // Price goes down
         priceFeed.setPrice(1050e18);
 
@@ -324,10 +327,13 @@ contract InterestBatchManagementTest is DevTestSetup {
     function testLowerBatchManagementFeeDoesNotApplyRedistributionGains() public {
         uint256 ATroveId = openTroveAndJoinBatchManager();
 
-        // TODO: Generate redistributions and check below
         // Open a trove to be liquidated and redistributed
         priceFeed.setPrice(2000e18);
         uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, 5e16);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // Price goes down
         priceFeed.setPrice(1000e18);
         // C is liquidated
@@ -338,6 +344,8 @@ contract InterestBatchManagementTest is DevTestSetup {
         assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
 
         uint256 troveRecordedDebtBefore = troveData.recordedDebt;
+        uint256 accruedInterest = troveData.accruedInterest;
+        uint256 accruedManagementFee = troveData.accruedBatchManagementFee;
 
         vm.startPrank(B);
         borrowerOperations.lowerBatchManagementFee(10e14);
@@ -345,7 +353,7 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         troveData = troveManager.getLatestTroveData(ATroveId);
         assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
-        assertEq(troveData.recordedDebt, troveRecordedDebtBefore, "Recorded debt should stay the same");
+        assertEq(troveData.recordedDebt, troveRecordedDebtBefore + accruedInterest + accruedManagementFee, "Recorded debt should increase only by interest and management fee");
     }
 
     function testChangeBatchInterestRate() public {
@@ -421,6 +429,10 @@ contract InterestBatchManagementTest is DevTestSetup {
         // Open a trove to be liquidated and redistributed
         priceFeed.setPrice(2000e18);
         uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, 5e16);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // Price goes down
         priceFeed.setPrice(1000e18);
         // C is liquidated
@@ -613,14 +625,18 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 interestRate = 25e16;
 
         uint256 ATroveId = openTroveAndJoinBatchManager(A, 3 ether, troveDebtRequest, B, interestRate);
+        LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
+        uint256 initialEntireDebt = troveData.entireDebt;
 
         // Open a trove to be liquidated and redistributed
         uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, interestRate);
+
+        // make sure liquidation grace period is over
+        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+
         // Price goes down
         priceFeed.setPrice(1000e18);
         // C is liquidated
-        LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
-        uint256 initialEntireDebt = troveData.entireDebt;
         LatestTroveData memory troveDataC = troveManager.getLatestTroveData(CTroveId);
         uint256 entireDebtC = troveDataC.entireDebt;
         liquidate(A, CTroveId);
