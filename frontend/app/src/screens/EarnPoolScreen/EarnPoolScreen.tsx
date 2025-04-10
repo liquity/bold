@@ -5,7 +5,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import content from "@/src/content";
-import { getBranch, isEarnPositionActive, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
+import { getBranch, getCollToken, isEarnPositionActive, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, isCollateralSymbol, Tabs } from "@liquity2/uikit";
@@ -38,6 +38,7 @@ export function EarnPoolScreen() {
   const account = useAccount();
 
   const branch = getBranch(collateralSymbol);
+  const collToken = getCollToken(branch.id);
   const earnPosition = useEarnPosition(branch.id, account.address ?? null);
   const earnPool = useEarnPool(branch.id);
 
@@ -113,7 +114,7 @@ export function EarnPoolScreen() {
                     </div>
                   </div>
                   <HFlex gap={8}>
-                    Fetching {earnPool.data.collateral?.name} Stability Pool…
+                    Fetching {collToken.name} Stability Pool…
                     <Spinner size={18} />
                   </HFlex>
                 </>
@@ -190,7 +191,7 @@ export function EarnPoolScreen() {
             {tab.action === "deposit" && active && (
               <PanelUpdateDeposit
                 branchId={branch.id}
-                deposited={earnPool.data.totalDeposited ?? dn.from(0, 18)}
+                deposited={earnPool.data?.totalDeposited ?? dn.from(0, 18)}
                 position={earnPosition.data ?? undefined}
               />
             )}

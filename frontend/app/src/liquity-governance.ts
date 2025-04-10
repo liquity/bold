@@ -1,10 +1,11 @@
 import type { Address, Dnum, Initiative } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
+import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { getProtocolContract } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
-import { KNOWN_INITIATIVES_URL } from "@/src/env";
-import { useGovernanceInitiatives, useGovernanceStats, useGovernanceUser } from "@/src/subgraph-hooks";
+import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { DEMO_MODE, KNOWN_INITIATIVES_URL } from "@/src/env";
+import { useGovernanceInitiatives, useGovernanceStats } from "@/src/subgraph-hooks";
 import { vAddress } from "@/src/valibot-utils";
 import { useRaf } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
@@ -234,6 +235,76 @@ export function useKnownInitiatives() {
       return v.parse(KnownInitiativesSchema, await response.json());
     },
     enabled: KNOWN_INITIATIVES_URL !== undefined,
+  });
+}
+
+export function useGovernanceUser(account: Address | null) {
+  const initiatives = useInitiatives();
+  const wagmiConfig = useWagmiConfig();
+
+  let queryFn = async () => {
+    if (!account) return null;
+
+    const userState = await readContract(wagmiConfig, {
+      ...getProtocolContract("Governance"),
+      functionName: "userStates",
+      args: [account],
+    });
+
+    const [
+      unallocatedLQTY,
+      unallocatedOffset,
+      allocatedLQTY,
+      allocatedOffset,
+    ] = userState;
+
+    const Governance = getProtocolContract("Governance");
+
+    const allocationsByInitiative = (await readContracts(wagmiConfig, {
+      allowFailure: false,
+      contracts: (initiatives.data ?? []).map((initiative) => ({
+        ...Governance,
+        functionName: "lqtyAllocatedByUserToInitiative",
+        args: [account, initiative.address],
+      } as const)),
+    })).map((allocation, index) => {
+      const initiative = initiatives.data?.[index]?.address;
+      if (!initiative) {
+        throw new Error(); // should never happen
+      }
+      return { allocation, initiative };
+    });
+
+    return {
+      id: account,
+      allocatedLQTY: BigInt(allocatedLQTY),
+      stakedLQTY: BigInt(unallocatedLQTY),
+      stakedOffset: BigInt(unallocatedOffset),
+      allocatedOffset: BigInt(allocatedOffset),
+      allocations: allocationsByInitiative.map(({ allocation, initiative }) => {
+        const [voteLQTY, _voteOffset, vetoLQTY, _vetoOffset] = allocation;
+        return {
+          vetoLQTY: BigInt(vetoLQTY),
+          voteLQTY: BigInt(voteLQTY),
+          initiative,
+        };
+      }),
+    };
+  };
+
+  // TODO: demo mode
+  if (DEMO_MODE) {
+    queryFn = async () => null;
+  }
+
+  return useQuery({
+    queryKey: [
+      "GovernanceUser",
+      account,
+      jsonStringifyWithDnum(initiatives.data),
+    ],
+    queryFn,
+    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }
 

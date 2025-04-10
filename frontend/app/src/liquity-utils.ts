@@ -5,6 +5,7 @@ import type {
   Delegate,
   Dnum,
   PositionEarn,
+  PositionLoanBase,
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
@@ -28,17 +29,12 @@ import {
   INTEREST_RATE_START,
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
+import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
-import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
-import {
-  useAllInterestRateBrackets,
-  useInterestRateBrackets,
-  useLoanById,
-  useStabilityPool,
-} from "@/src/subgraph-hooks";
-import { isBranchId, isTroveId } from "@/src/types";
-import { bigIntAbs, jsonStringifyWithBigInt } from "@/src/utils";
+import { CHAIN_BLOCK_EXPLORER, DEMO_MODE, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
+import { useAllInterestRateBrackets, useInterestRateBrackets } from "@/src/subgraph-hooks";
+import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
+import { bigIntAbs, jsonStringifyWithBigInt, sleep } from "@/src/utils";
 import { vAddress, vPrefixedTroveId } from "@/src/valibot-utils";
 import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
@@ -48,7 +44,12 @@ import * as v from "valibot";
 import { encodeAbiParameters, erc20Abi, keccak256, parseAbiParameters } from "viem";
 import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
-import { graphQuery, InterestBatchesQuery } from "./subgraph-queries";
+import {
+  graphQuery,
+  InterestBatchesQuery,
+  TroveStatusByIdQuery,
+  TroveStatusesByAccountQuery,
+} from "./subgraph-queries";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -136,20 +137,44 @@ export function getBranch(
   return branch;
 }
 
-export function useEarnPool(branchId: null | BranchId) {
-  const collateral = getCollToken(branchId);
-  const pool = useStabilityPool(branchId ?? undefined);
+function statusFromEnum(status: number): PositionLoanBase["status"] {
+  if (status === 1) return "active";
+  if (status === 2) return "closed";
+  if (status === 3) return "liquidated";
+  if (status === 4) return "redeemed";
+  throw new Error(`Invalid status: ${status}`);
+}
+
+export function useEarnPool(branchId: BranchId) {
+  const wagmiConfig = useWagmiConfig();
   const stats = useLiquityStats();
-  const branchStats = collateral && stats.data?.branch[collateral?.symbol];
-  return {
-    ...pool,
-    data: {
-      apr: dnumOrNull(branchStats?.spApyAvg1d, 18),
-      apr7d: dnumOrNull(branchStats?.spApyAvg7d, 18),
-      collateral,
-      totalDeposited: pool.data?.totalDeposited ?? null,
+  const collateral = getCollToken(branchId);
+  const { spApyAvg1d = null, spApyAvg7d = null } = (
+    collateral && stats.data?.branch[collateral?.symbol]
+  ) ?? {};
+
+  return useQuery({
+    queryKey: [
+      "earnPool",
+      branchId,
+      jsonStringifyWithDnum(spApyAvg1d),
+      jsonStringifyWithDnum(spApyAvg7d),
+    ],
+    queryFn: async () => {
+      const totalBoldDeposits = await readContract(wagmiConfig, {
+        ...getBranchContract(branchId, "StabilityPool"),
+        functionName: "getTotalBoldDeposits",
+      });
+      return {
+        apr: spApyAvg1d,
+        apr7d: spApyAvg7d,
+        collateral,
+        totalDeposited: dnum18(totalBoldDeposits),
+      };
     },
-  };
+    refetchInterval: DATA_REFRESH_INTERVAL,
+    enabled: stats.isSuccess,
+  });
 }
 
 export function isEarnPositionActive(position: PositionEarn | null) {
@@ -162,25 +187,9 @@ export function isEarnPositionActive(position: PositionEarn | null) {
   );
 }
 
-export function useEarnPosition(
-  branchId: null | BranchId,
-  account: null | Address,
-): UseQueryResult<PositionEarn | null> {
-  const getBoldGains = useContinuousBoldGains(account, branchId);
-
-  const yieldGainsInBold = useQuery({
-    queryFn: () => getBoldGains.data?.(Date.now()) ?? null,
-    queryKey: ["useEarnPosition:getBoldGains", branchId, account],
-    refetchInterval: 10_000,
-    enabled: getBoldGains.status === "success",
-  });
-
+function earnPositionsContractsReadSetup(branchId: BranchId, account: Address | null) {
   const StabilityPool = getBranchContract(branchId, "StabilityPool");
-  if (!StabilityPool) {
-    throw new Error(`Invalid branch: ${branchId}`);
-  }
-
-  const spReads = useReadContracts({
+  return {
     contracts: [{
       ...StabilityPool,
       functionName: "getCompoundedBoldDeposit",
@@ -193,42 +202,92 @@ export function useEarnPosition(
       ...StabilityPool,
       functionName: "stashedColl",
       args: [account ?? "0x"],
+    }, {
+      ...StabilityPool,
+      functionName: "getDepositorYieldGainWithPending",
+      args: [account ?? "0x"],
     }],
-    allowFailure: false,
-    query: {
-      select: ([deposit, collGain, stashedColl]) => ({
-        spDeposit: dnum18(deposit),
-        spCollGain: dnum18(collGain),
-        spStashedColl: dnum18(stashedColl),
-      }),
-      enabled: account !== null,
-    },
-  });
-
-  return useQuery({
-    queryKey: ["useEarnPosition", branchId, account],
-    queryFn: () => {
-      return {
-        type: "earn" as const,
+    select: ([
+      deposit,
+      collGain,
+      stashedColl,
+      yieldGainWithPending,
+    ]: [
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+    ]) => {
+      if (!account) {
+        throw new Error(); // should never happen (see enabled)
+      }
+      return deposit === 0n ? null : {
+        type: "earn",
         owner: account,
-        deposit: spReads.data?.spDeposit ?? DNUM_0,
+        deposit: dnum18(deposit),
         branchId,
         rewards: {
-          bold: yieldGainsInBold.data ?? DNUM_0,
+          bold: dnum18(yieldGainWithPending),
           coll: dn.add(
-            spReads.data?.spCollGain ?? DNUM_0,
-            spReads.data?.spStashedColl ?? DNUM_0,
+            dnum18(collGain),
+            dnum18(stashedColl),
           ),
         },
-      };
+      } as const;
     },
-    enabled: Boolean(
-      account
-        && branchId !== null
-        && yieldGainsInBold.status === "success"
-        && getBoldGains.status === "success"
-        && spReads.status === "success",
-    ),
+  } as const;
+}
+
+export function useEarnPosition(
+  branchId: BranchId,
+  account: null | Address,
+): UseQueryResult<PositionEarn | null> {
+  const setup = earnPositionsContractsReadSetup(branchId, account);
+  return useReadContracts({
+    contracts: setup.contracts,
+    allowFailure: false,
+    query: {
+      enabled: Boolean(account),
+      refetchInterval: DATA_REFRESH_INTERVAL,
+      select: setup.select,
+    },
+  });
+}
+
+export function useEarnPositionsByAccount(account: null | Address) {
+  const wagmiConfig = useWagmiConfig();
+
+  let queryFn = async () => {
+    if (!account) return null;
+
+    const branches = getBranches();
+
+    const depositsPerBranch = await Promise.all(
+      branches.map(async (branch) => {
+        const setup = earnPositionsContractsReadSetup(branch.id, account);
+        const deposits = await readContracts(wagmiConfig, {
+          contracts: setup.contracts,
+          allowFailure: false,
+        });
+        return setup.select(deposits);
+      }),
+    );
+
+    return depositsPerBranch.filter((position) => position !== null);
+  };
+
+  if (DEMO_MODE) {
+    queryFn = async () => {
+      return account
+        ? ACCOUNT_POSITIONS.filter((position) => position.type === "earn")
+        : null;
+    };
+  }
+
+  return useQuery({
+    queryKey: ["StabilityPoolDepositsByAccount", account],
+    queryFn,
+    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }
 
@@ -804,6 +863,128 @@ export function useTroveRateUpdateCooldown(branchId: BranchId, troveId: TroveId)
       ) * 1000;
       return (now: number) => Math.max(0, cooldownEndTime - now);
     },
+  });
+}
+
+export async function fetchLoanById(
+  wagmiConfig: WagmiConfig,
+  fullId: null | PrefixedTroveId,
+): Promise<PositionLoanCommitted | null> {
+  if (!isPrefixedtroveId(fullId)) return null;
+
+  const { branchId, troveId } = parsePrefixedTroveId(fullId);
+
+  const TroveManager = getBranchContract(branchId, "TroveManager");
+  const TroveNft = getBranchContract(branchId, "TroveNFT");
+
+  const [
+    { trove: troveStatus },
+    [troveTuple, troveData, borrower],
+  ] = await Promise.all([
+    graphQuery(TroveStatusByIdQuery, { id: fullId }),
+    readContracts(wagmiConfig, {
+      allowFailure: false,
+      contracts: [{
+        ...TroveManager,
+        functionName: "Troves",
+        args: [BigInt(troveId)],
+      }, {
+        ...TroveManager,
+        functionName: "getLatestTroveData",
+        args: [BigInt(troveId)],
+      }, {
+        ...TroveNft,
+        functionName: "ownerOf",
+        args: [BigInt(troveId)],
+      }],
+    }),
+  ]);
+
+  const status = troveTuple[3];
+  const batchManager = troveTuple[8];
+
+  return {
+    type: troveStatus?.mightBeLeveraged ? "multiply" : "borrow",
+    batchManager: BigInt(batchManager) === 0n ? null : batchManager,
+    borrowed: dnum18(troveData.entireDebt),
+    borrower,
+    branchId,
+    createdAt: Number(troveStatus?.createdAt ?? 0n) * 1000,
+    deposit: dnum18(troveData.entireColl),
+    interestRate: dnum18(troveData.annualInterestRate),
+    status: troveStatus?.status ?? statusFromEnum(status),
+    troveId,
+  };
+}
+
+export function useLoanById(id?: null | PrefixedTroveId) {
+  const wagmiConfig = useWagmiConfig();
+
+  let queryFn: () => Promise<PositionLoanCommitted | null>;
+
+  queryFn = async () => (
+    id ? fetchLoanById(wagmiConfig, id) : null
+  );
+
+  if (DEMO_MODE) {
+    queryFn = async () => {
+      if (!isPrefixedtroveId(id)) return null;
+      await sleep(500);
+      for (const pos of ACCOUNT_POSITIONS) {
+        if (isPositionLoanCommitted(pos) && `${pos.branchId}:${pos.troveId}` === id) {
+          return pos;
+        }
+      }
+      return null;
+    };
+  }
+
+  return useQuery<PositionLoanCommitted | null>({
+    queryKey: ["TroveById", id],
+    queryFn,
+    refetchInterval: DATA_REFRESH_INTERVAL,
+  });
+}
+
+export async function fetchLoansByAccount(
+  wagmiConfig: WagmiConfig,
+  account?: Address | null,
+): Promise<PositionLoanCommitted[] | null> {
+  if (!account) return null;
+
+  const { troves: troveStatuses } = await graphQuery(
+    TroveStatusesByAccountQuery,
+    { account: account.toLowerCase() },
+  );
+
+  const results = await Promise.all(troveStatuses.map((troveStatus) => {
+    if (!isPrefixedtroveId(troveStatus.id)) {
+      throw new Error(`Invalid prefixed trove ID: ${troveStatus.id}`);
+    }
+    return fetchLoanById(wagmiConfig, troveStatus.id);
+  }));
+
+  return results.filter((result) => result !== null);
+}
+
+export function useLoansByAccount(account?: Address | null) {
+  const wagmiConfig = useWagmiConfig();
+
+  let queryFn: () => Promise<PositionLoanCommitted[] | null>;
+
+  queryFn = () => fetchLoansByAccount(wagmiConfig, account);
+
+  if (DEMO_MODE) {
+    queryFn = async () =>
+      account
+        ? ACCOUNT_POSITIONS.filter(isPositionLoanCommitted)
+        : null;
+  }
+
+  return useQuery({
+    queryKey: ["TrovesByAccount", account],
+    queryFn,
+    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }
 

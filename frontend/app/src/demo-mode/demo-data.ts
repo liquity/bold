@@ -45,7 +45,6 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     branchId: 1,
     batchManager: null,
     createdAt: getTime(),
-    updatedAt: getTime(),
   },
   {
     type: "multiply",
@@ -58,7 +57,6 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     branchId: 0,
     batchManager: null,
     createdAt: getTime(),
-    updatedAt: getTime(),
   },
   {
     type: "earn",

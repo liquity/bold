@@ -42,40 +42,8 @@ export const BorrowerInfoQuery = graphql(`
   }
 `);
 
-export const FullTroveQueryFragment = graphql(`
-  fragment FullTroveFragment on Trove {
-    id
-    borrower
-    closedAt
-    createdAt
-    debt
-    deposit
-    interestRate
-    mightBeLeveraged
-    stake
-    status
-    troveId
-    updatedAt
-    collateral {
-      id
-      token {
-        symbol
-        name
-      }
-      minCollRatio
-      collIndex
-    }
-    interestBatch {
-      id
-      annualInterestRate
-      annualManagementFee
-      batchManager
-    }
-  }
-`);
-
-export const TrovesByAccountQuery = graphql(`
-  query TrovesByAccount($account: Bytes!) {
+export const TroveStatusesByAccountQuery = graphql(`
+  query TroveStatusesByAccount($account: Bytes!) {
     troves(
       where: {
         borrower: $account,
@@ -85,143 +53,22 @@ export const TrovesByAccountQuery = graphql(`
       orderDirection: desc
     ) {
       id
-      borrower
       closedAt
       createdAt
-      debt
-      deposit
-      interestRate
       mightBeLeveraged
-      stake
       status
-      troveId
-      updatedAt
-      collateral {
-        id
-        token {
-          symbol
-          name
-        }
-        minCollRatio
-        collIndex
-      }
-      interestBatch {
-        id
-        annualInterestRate
-        annualManagementFee
-        batchManager
-      }
     }
   }
 `);
 
-export const TroveByIdQuery = graphql(`
-  query TroveById($id: ID!) {
+export const TroveStatusByIdQuery = graphql(`
+  query TroveStatusById($id: ID!) {
     trove(id: $id) {
       id
-      borrower
       closedAt
       createdAt
-      debt
-      deposit
-      interestRate
       mightBeLeveraged
-      stake
       status
-      troveId
-      updatedAt
-      collateral {
-        id
-        token {
-          symbol
-          name
-        }
-        minCollRatio
-        collIndex
-      }
-      interestBatch {
-        id
-        annualInterestRate
-        annualManagementFee
-        batchManager
-      }
-    }
-  }
-`);
-
-export const StabilityPoolsQuery = graphql(`
-  query StabilityPools {
-    stabilityPools {
-      id
-      totalDeposited
-    }
-  }
-`);
-
-export const StabilityPoolDepositQueryFragment = graphql(`
-  fragment StabilityPoolDepositFragment on StabilityPoolDeposit {
-    id
-    deposit
-    depositor
-    collateral {
-      collIndex
-    }
-    snapshot {
-      B
-      P
-      S
-      epoch
-      scale
-    }
-  }
-`);
-
-export const StabilityPoolDepositsByAccountQuery = graphql(`
-  query StabilityPoolDepositsByAccount($account: Bytes!) {
-    stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {
-      id
-      deposit
-      depositor
-      collateral {
-        collIndex
-      }
-      snapshot {
-        B
-        P
-        S
-        epoch
-        scale
-      }
-    }
-  }
-`);
-
-export const StabilityPoolDepositQuery = graphql(`
-  query StabilityPoolDeposit($id: ID!) {
-    stabilityPoolDeposit(id: $id) {
-      id
-      deposit
-      depositor
-      collateral {
-        collIndex
-      }
-      snapshot {
-        B
-        P
-        S
-        epoch
-        scale
-      }
-    }
-  }
-`);
-
-export const StabilityPoolEpochScaleQuery = graphql(`
-  query StabilityPoolEpochScale($id: ID!) {
-    stabilityPoolEpochScale(id: $id) {
-      id
-      B
-      S
     }
   }
 `);
