@@ -182,7 +182,7 @@ export function BorrowScreen() {
           width: 534,
         })}
       >
-        <Field
+        {/* <Field
           // “You deposit”
           field={
             <InputField
@@ -413,7 +413,7 @@ export function BorrowScreen() {
             />
             : <AccountButton />
           }
-        </div>
+        </div> */}
       </div>
     </Screen>
   );
