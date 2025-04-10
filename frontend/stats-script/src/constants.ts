@@ -1,0 +1,1 @@
+export const DUNE_SPV2_AVERAGE_APY_URL_MAINNET = "";

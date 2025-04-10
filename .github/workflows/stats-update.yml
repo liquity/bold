@@ -1,0 +1,41 @@
+name: Update Protocol Statistics
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour
+  workflow_dispatch:     # allow manual trigger
+
+jobs:
+  run-update-script:
+    name: Run stats-script
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend/stats-script
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 23.4.0
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Run update-stats script
+        run: yarn run update-stats
+        env:
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_API_KEY }}
+      
+      - name: Commit & push changes 
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Update protocol stats file via cron"
+          git push origin feat/stats-page
