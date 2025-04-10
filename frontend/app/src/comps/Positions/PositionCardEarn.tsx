@@ -19,7 +19,6 @@ export function PositionCardEarn({
   const token = getCollToken(branchId);
   const earnPool = useEarnPool(branchId);
   const earnPosition = useEarnPosition(branchId, owner ?? null);
-
   return (
     <Link
       href={token ? `/earn/${token.symbol.toLowerCase()}` : ""}
@@ -98,7 +97,7 @@ export function PositionCardEarn({
                       <Amount
                         fallback="−"
                         percentage
-                        value={earnPool.data.apr}
+                        value={earnPool.data?.apr}
                       />
                     </div>
                   </div>
@@ -123,7 +122,7 @@ export function PositionCardEarn({
                       <Amount
                         fallback="−"
                         percentage
-                        value={earnPool.data.apr7d}
+                        value={earnPool.data?.apr7d}
                       />
                     </div>
                   </div>

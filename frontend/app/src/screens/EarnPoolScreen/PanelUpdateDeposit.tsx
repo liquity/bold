@@ -49,7 +49,7 @@ export function PanelUpdateDeposit({
   );
 
   const earnPool = useEarnPool(branchId);
-  const poolDeposit = earnPool.data.totalDeposited;
+  const poolDeposit = earnPool.data?.totalDeposited;
   const updatedPoolDeposit = poolDeposit && dn.add(poolDeposit, depositDifference);
 
   const boldBalance = useBalance(account.address, "BOLD");
