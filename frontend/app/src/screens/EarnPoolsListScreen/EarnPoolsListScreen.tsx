@@ -11,8 +11,10 @@ import { css } from "@/styled-system/css";
 import { InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { Amount } from "@/src/comps/Amount/Amount";
+import { AccountButton } from "@/src/comps/AppLayout/AccountButton";
 
 export function EarnPoolsListScreen() {
+  const account = useAccount();
   const branches = getBranches();
   const collSymbols = branches.map((b) => b.symbol);
 
@@ -58,12 +60,17 @@ export function EarnPoolsListScreen() {
       width={67 * 8}
       gap={16}
     >
-      <Vault />
-      {poolsTransition((style, branchId) => (
-        <a.div style={style}>
-          <EarnPool branchId={branchId} />
-        </a.div>
-      ))}
+      {account.isConnected ?
+        <>
+          <Vault />
+          {poolsTransition((style, branchId) => (
+            <a.div style={style}>
+              <EarnPool branchId={branchId} />
+            </a.div>
+          ))}
+        </>
+        : <AccountButton />
+      }
     </Screen>
   );
 }
@@ -75,6 +82,7 @@ function EarnPool({
 }) {
   const account = useAccount();
   const earnPosition = useEarnPosition(branchId, account.address ?? null);
+
   return (
     <div
       className={css({
@@ -83,11 +91,13 @@ function EarnPool({
         gap: 16,
       })}
     >
-      <EarnPositionSummary
-        branchId={branchId}
-        earnPosition={earnPosition.data ?? null}
-        linkToScreen
-      />
+      {earnPosition.data &&
+        <EarnPositionSummary
+          branchId={branchId}
+          earnPosition={earnPosition.data ?? null}
+          linkToScreen
+        />
+      }
     </div>
   );
 }
@@ -286,6 +296,7 @@ function Vault() {
                   height: 24,
                 })}
               >
+                0.0
                 <TokenIcon symbol="bvUSD" size="mini" title={null} />
               </div>
             </div>

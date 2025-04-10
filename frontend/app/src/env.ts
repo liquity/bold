@@ -164,6 +164,7 @@ export const EnvSchema = v.pipe(
         };
       }),
     ),
+    DEFILLAMA_API_KEY: v.string(),
     CONTRACTS_COMMIT_HASH: v.string(),
     CONTRACTS_COMMIT_URL: v.pipe(
       vEnvUrlOrDefault(DEFAULT_COMMIT_URL),
@@ -283,6 +284,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
   CHAIN_RPC_URL: process.env.NEXT_PUBLIC_CHAIN_RPC_URL,
   COINGECKO_API_KEY: process.env.NEXT_PUBLIC_COINGECKO_API_KEY,
+  DEFILLAMA_API_KEY: process.env.NEXT_PUBLIC_DEFILLAMA_API_KEY,
   CONTRACTS_COMMIT_HASH: (
     // CONTRACTS_COMMIT_HASH_FROM_BUILD is set at build time (see next.config.js)
     // and gets overridden by NEXT_PUBLIC_CONTRACTS_COMMIT_HASH if set.
@@ -387,6 +389,7 @@ export const {
   CHAIN_NAME,
   CHAIN_RPC_URL,
   COINGECKO_API_KEY,
+  DEFILLAMA_API_KEY,
   ENV_BRANCHES,
   CONTRACTS_COMMIT_HASH,
   CONTRACTS_COMMIT_URL,

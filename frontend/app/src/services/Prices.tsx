@@ -7,7 +7,7 @@ import type { Dnum } from "dnum";
 import { PRICE_REFRESH_INTERVAL } from "@/src/constants";
 import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
-import { COINGECKO_API_KEY } from "@/src/env";
+import { COINGECKO_API_KEY, DEFILLAMA_API_KEY } from "@/src/env";
 import { isCollateralSymbol } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
@@ -115,6 +115,61 @@ function useCoinGeckoPrice(
   });
 }
 
+const defiLlamaTokenIds: {
+  [key in CoinGeckoSymbol]: string;
+} = {
+  WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  BVBTC: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+};
+
+function useDefiLlamaPrice(
+  supportedSymbol: null | CoinGeckoSymbol
+): UseQueryResult<Dnum> {
+  return useQuery({
+    queryKey: ["defiLlamaPrice", ...Object.keys(defiLlamaTokenIds)],
+    queryFn: async () => {
+      if (supportedSymbol === null) {
+        throw new Error("Unsupported symbol");
+      }
+
+      const url = new URL(`https://pro-api.llama.fi/${DEFILLAMA_API_KEY}/coins/prices/current/ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,ethereum:0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599`);
+
+      const headers: HeadersInit = { accept: "application/json" };
+
+      const response = await fetch(url, { headers });
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch price for ${Object.keys(defiLlamaTokenIds).join(
+            ","
+          )}`
+        );
+      }
+
+      const result = await response.json()
+
+      const prices = {} as { [key in CoinGeckoSymbol]: Dnum | null };
+      
+      for (const key of Object.keys(defiLlamaTokenIds) as CoinGeckoSymbol[]) {
+        const value = result.coins[`ethereum:${defiLlamaTokenIds[key]}`].price;
+        if (value) {
+          prices[key] = value? dn.from(value, 18) : null;
+        }
+      }
+
+      return prices;
+    },
+    select: (data) => {
+      if (supportedSymbol === null || !data[supportedSymbol]) {
+        throw new Error("Unsupported symbol");
+      }
+      return data[supportedSymbol];
+    },
+    enabled: supportedSymbol !== null,
+    refetchInterval: PRICE_REFRESH_INTERVAL,
+  });
+}
+
 export function usePrice<PT extends PriceToken>(
   symbol: PT | null
 ): UseQueryResult<Dnum> {
@@ -123,7 +178,8 @@ export function usePrice<PT extends PriceToken>(
     !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
 
   const collPrice = useCollateralPrice(fromPriceFeed ? symbol : null);
-  const coinGeckoPrice = useCoinGeckoPrice(fromCoinGecko ? symbol : null);
+  //const coinGeckoPrice = useCoinGeckoPrice(fromCoinGecko ? symbol : null);
+  const defiLlamaPrice = useDefiLlamaPrice(fromCoinGecko ? symbol : null);
   const bvusdPrice = useQuery({
     queryKey: ["bvusdPrice"],
     queryFn: () => dn.from(1, 18),
@@ -147,7 +203,7 @@ export function usePrice<PT extends PriceToken>(
   }
 
   if (fromCoinGecko) {
-    return coinGeckoPrice;
+    return defiLlamaPrice;
   }
 
   if (fromPriceFeed) {
