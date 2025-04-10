@@ -5,6 +5,8 @@ on:
     - cron: '0 * * * *'  # every hour
   workflow_dispatch:     # allow manual trigger
 
+# test action is not indexing
+
 jobs:
   run-update-script:
     name: Run stats-script
