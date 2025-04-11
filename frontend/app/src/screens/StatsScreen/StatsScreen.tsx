@@ -1,7 +1,6 @@
 "use client";
 
-import { StatsScreenCard } from "@/src/comps/Screen/StatsScreenCard";
-import { Screen } from "@/src/comps/Screen/Screen";
+import { StatsScreenCard, StatsTitle } from "@/src/comps/Screen/StatsScreenCard";
 import { COLLATERALS } from "@liquity2/uikit";
 import { useLiquityStats } from "@/src/liquity-utils";
 import { match } from "ts-pattern";
@@ -10,8 +9,7 @@ import { HFlex, LoadingSurface } from "@liquity2/uikit";
 import { TokenCard } from "@/src/screens/HomeScreen/HomeScreen";
 import { fmtnum } from "@/src/formatting";
 
-const KNOWN_COLLATERAL_SYMBOLS = COLLATERALS.map(({ symbol }) => symbol);
-
+// TODO fix branch symbol after production deployment
 export function StatsScreen() {
   const liquityStats = useLiquityStats();
   const loadingState =
@@ -22,64 +20,53 @@ export function StatsScreen() {
         : "success";
 
   return (
-    <Screen
-      heading={{
-        title: "BvUSD stats",
-        subtitle: "Transparency page",
-      }}
+    <div
+      className={css({
+        flexGrow: 1,
+        display: "flex",
+        flexDirection: "column",
+        gap: 64,
+        width: "100%",
+      })}
     >
-      <div
-        className={css({
-          flexGrow: 1,
-          display: "flex",
-          flexDirection: "column",
-          gap: 64,
-          width: "100%",
-        })}
+      <StatsScreenCard
+        finalHeight={200}
+        mode={match(loadingState)
+          .returnType<"ready" | "loading" | "error">()
+          .with("loading", () => "loading")
+          .with("error", () => "error")
+          .otherwise(() => "ready")}
       >
-        <StatsScreenCard
-          finalHeight={200}
-          mode={match(loadingState)
-            .returnType<"ready" | "loading" | "error">()
-            .with("loading", () => "loading")
-            .with("error", () => "error")
-            .otherwise(() => "ready")}
-        >
-          {match(loadingState)
-            .with("loading", () => (
-              <div
-                className={css({
-                  display: "grid",
-                  placeItems: "center",
-                  height: "100%",
-                })}
-              >
-                <div
-                  className={css({
-                    position: "absolute",
-                    top: 16,
-                    left: 16,
-                  })}
-                ></div>
-                <LoadingSurface />
-              </div>
-            ))
-            .with("error", () => (
-              <HFlex gap={8}>
-                Error fetching data
-                {/* <Button
+        {match(loadingState)
+          .with("loading", () => (
+            <div
+              className={css({
+                display: "grid",
+                placeItems: "center",
+                height: "100%",
+              })}
+            >
+              <LoadingSurface />
+            </div>
+          ))
+          .with("error", () => (
+            <HFlex gap={8}>
+              Error fetching data
+              {/* <Button
               mode="primary"
               label="Try again"
               size="mini"
               onClick={onRetry}
             /> */}
-              </HFlex>
-            ))
-            .otherwise(() => {
-              if (!liquityStats) {
-                <HFlex gap={8}>Invalid Data</HFlex>;
-              }
-              return (
+            </HFlex>
+          ))
+          .otherwise(() => {
+            if (!liquityStats) {
+              <HFlex gap={8}>Invalid Data</HFlex>;
+            }
+            return (
+              <>
+                <StatsTitle title="Transparency Page" subtitle="bvUSD statistics" />
                 <div
                   className={css({
                     display: "grid",
@@ -87,7 +74,7 @@ export function StatsScreen() {
                     width: "100%",
                   })}
                   style={{
-                    gridTemplateColumns: `repeat(2, 1fr)`,
+                    gridTemplateColumns: `repeat(4, 1fr)`,
                     gridAutoRows: 180,
                   }}
                 >
@@ -127,6 +114,19 @@ export function StatsScreen() {
                       },
                     ]}
                   />
+                </div>
+                <div
+                  className={css({
+                    marginTop: "10%",
+                    display: "grid",
+                    gap: 24,
+                    width: "100%",
+                  })}
+                  style={{
+                    gridTemplateColumns: `repeat(2, 1fr)`,
+                    gridAutoRows: 180,
+                  }}
+                >
                   <TokenCard
                     token="BTC Branch"
                     subValues={[
@@ -135,8 +135,12 @@ export function StatsScreen() {
                         value: `${fmtnum(Number(liquityStats.data.branch["WETH"].collActive), "2z")} BTC`,
                       },
                       {
-                        label: "Value",
+                        label: "Collateral Value",
                         value: `${fmtnum(Number(liquityStats.data.branch["WETH"].collValue), "2z")} $`,
+                      },
+                      {
+                        label: "TVL",
+                        value: `${fmtnum(Number(liquityStats.data.branch["WETH"].valueLocked), "2z")} $`
                       },
                     ]}
                   />
@@ -145,19 +149,25 @@ export function StatsScreen() {
                     subValues={[
                       {
                         label: "Collateral",
-                        value: `${fmtnum(Number(liquityStats.data.branch["ETH"].collValue), "2z")} ETH`,
+                        value: `${fmtnum(Number(liquityStats.data.branch["ETH"].collActive), "2z")} ETH`,
                       },
                       {
-                        label: "Value",
+                        label: "Collateral Value",
                         value: `${fmtnum(Number(liquityStats.data.branch["ETH"].collValue), "2z")} $`,
+                      },
+                      {
+                        label: "TVL",
+                        value: `${fmtnum(Number(liquityStats.data.branch["ETH"].valueLocked), "2z")} $`,
                       },
                     ]}
                   />
                 </div>
-              );
-            })}
-        </StatsScreenCard>
-      </div>
-    </Screen>
+              </>
+
+            );
+          })}
+      </StatsScreenCard>
+    </div>
   );
 }
+

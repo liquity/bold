@@ -20,22 +20,23 @@ export function StatsScreenCard({
   const scaleRatio = LOADING_CARD_WIDTH / FINAL_CARD_WIDTH;
 
   const spring = useSpring({
-    to: mode === "ready"
-      ? {
-        cardtransform: "scale3d(1, 1, 1)",
-        containerHeight: finalHeight,
-      }
-      : {
-        cardtransform: `scale3d(${scaleRatio}, ${scaleRatio}, 1)`,
-        containerHeight: Math.max(
-          finalHeight,
-          window.innerHeight
-            - 120 // top bar
-            - 24 * 2 // padding
-            - 48 // bottom bar 1
-            - 40,
-        ),
-      },
+    to:
+      mode === "ready"
+        ? {
+            cardtransform: "scale3d(1, 1, 1)",
+            containerHeight: finalHeight,
+          }
+        : {
+            cardtransform: `scale3d(${scaleRatio}, ${scaleRatio}, 1)`,
+            containerHeight: Math.max(
+              finalHeight,
+              window.innerHeight -
+                120 - // top bar
+                24 * 2 - // padding
+                48 - // bottom bar 1
+                40
+            ),
+          },
     config: {
       mass: 1,
       tension: 2000,
@@ -52,7 +53,7 @@ export function StatsScreenCard({
         flexDirection: "column",
       })}
       style={{
-        width: FINAL_CARD_WIDTH,
+        width: "100%",
         height: spring.containerHeight,
       }}
     >
@@ -128,5 +129,48 @@ export function StatsScreenCard({
           .exhaustive()}
       </a.div>
     </a.div>
+  );
+}
+
+export function StatsTitle({
+  title,
+  subtitle,
+}: {
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <header
+      className={css({
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 12,
+        paddingBottom: 55,
+      })}
+    >
+      <h1
+        className={css({
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 28,
+        })}
+      >
+        {title}
+      </h1>
+      {subtitle && (
+        <div
+          className={css({
+            maxWidth: 540,
+            textAlign: "center",
+            color: "contentAlt",
+          })}
+        >
+          {subtitle}
+        </div>
+      )}
+    </header>
   );
 }
