@@ -6,8 +6,6 @@ import { Banner } from "@/Banner";
 import { LegacyPositionsBanner } from "@/src/comps/LegacyPositionsBanner/LegacyPositionsBanner";
 import { LEGACY_CHECK } from "@/src/env";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton } from "@liquity2/uikit";
-import Link from "next/link";
 import { BottomBar } from "./BottomBar";
 import { TopBar } from "./TopBar";
 
@@ -45,7 +43,6 @@ export function AppLayout({
           })}
         >
           <Banner />
-          {!LEGACY_CHECK && <EarnRiskBanner />}
         </div>
       </div>
       <div
@@ -69,49 +66,6 @@ export function AppLayout({
           {children}
         </div>
         <BottomBar />
-      </div>
-    </div>
-  );
-}
-
-function EarnRiskBanner() {
-  return (
-    <div
-      className={css({
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        maxWidth: "100%",
-        width: "100%",
-        height: 40,
-        padding: "0 16px",
-        textAlign: "center",
-        color: "#fff",
-        background: "strongSurface",
-      })}
-    >
-      <div
-        className={css({
-          width: "100%",
-          maxWidth: LAYOUT_WIDTH,
-          whiteSpace: "nowrap",
-        })}
-      >
-        There is an issue affecting the Stability Pools (“Earn”).{" "}
-        <Link
-          href="https://www.liquity.org/blog/stability-pool-issue"
-          passHref
-          legacyBehavior
-        >
-          <AnchorTextButton
-            external
-            label="Please read this announcement"
-            className={css({
-              color: "inherit",
-              textDecoration: "underline",
-            })}
-          />
-        </Link>.
       </div>
     </div>
   );
