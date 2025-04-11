@@ -262,7 +262,6 @@ export function RedeemScreen() {
                   successLink: ["/", "Go to the Dashboard"],
                   successMessage: "The redemption was successful.",
 
-                  time: Date.now(),
                   amount: amount.parsed,
                   maxFee: maxFee.parsed,
                 });

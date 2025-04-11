@@ -14,7 +14,7 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, Checkbox, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
+import { Button, Checkbox, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
@@ -32,7 +32,7 @@ export function PanelUpdateDeposit({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const [mode, _setMode] = useState<ValueUpdateMode>("remove");
+  const [mode, setMode] = useState<ValueUpdateMode>("add");
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [claimRewards, setClaimRewards] = useState(true);
@@ -115,11 +115,11 @@ export function PanelUpdateDeposit({
               start: mode === "remove"
                 ? content.earnScreen.withdrawPanel.label
                 : content.earnScreen.depositPanel.label,
-              end: null, /*(
+              end: (
                 <Tabs
                   compact
                   items={[
-                    { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit", disabled: true },
+                    { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
                     { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
                   ]}
                   onSelect={(index, { origin, event }) => {
@@ -132,7 +132,7 @@ export function PanelUpdateDeposit({
                   }}
                   selected={mode === "remove" ? 1 : 0}
                 />
-              )*/
+              ),
             }}
             labelHeight={32}
             onFocus={() => setFocused(true)}

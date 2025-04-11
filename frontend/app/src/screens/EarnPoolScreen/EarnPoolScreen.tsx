@@ -65,81 +65,51 @@ export function EarnPoolScreen() {
         label: content.earnScreen.backButton,
       }}
       heading={
-        <div
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            gap: 24,
-          })}
+        <ScreenCard
+          mode={match(loadingState)
+            .returnType<"ready" | "loading">()
+            .with("success", () => "ready")
+            .with("loading", () => "loading")
+            .exhaustive()}
+          finalHeight={140}
         >
-          <ScreenCard
-            mode={match(loadingState)
-              .returnType<"ready" | "loading">()
-              .with("success", () => "ready")
-              .with("loading", () => "loading")
-              .exhaustive()}
-            finalHeight={140}
-          >
-            {loadingState === "success"
-              ? (
-                <EarnPositionSummary
-                  earnPosition={earnPosition.data ?? null}
-                  branchId={branch.id}
-                />
-              )
-              : (
-                <>
+          {loadingState === "success"
+            ? (
+              <EarnPositionSummary
+                earnPosition={earnPosition.data ?? null}
+                branchId={branch.id}
+              />
+            )
+            : (
+              <>
+                <div
+                  className={css({
+                    position: "absolute",
+                    top: 16,
+                    left: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    textTransform: "uppercase",
+                    userSelect: "none",
+                    fontSize: 12,
+                  })}
+                >
                   <div
                     className={css({
-                      position: "absolute",
-                      top: 16,
-                      left: 16,
                       display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      textTransform: "uppercase",
-                      userSelect: "none",
-                      fontSize: 12,
                     })}
                   >
-                    <div
-                      className={css({
-                        display: "flex",
-                      })}
-                    >
-                      <IconEarn size={16} />
-                    </div>
-                    <div>
-                      Earn Pool
-                    </div>
+                    <IconEarn size={16} />
                   </div>
                   <HFlex gap={8}>
                     Fetching {collToken.name} Stability Pool…
                     <Spinner size={18} />
                   </HFlex>
-                </>
-              )}
-          </ScreenCard>
-          {active && (
-            <div
-              className={css({
-                display: "flex",
-                flexDirection: "column",
-                gap: 32,
-                marginBottom: -24,
-                padding: 16,
-                textAlign: "center",
-                textWrap: "balance",
-                color: "content",
-                background: "infoSurface",
-                border: "1px solid token(colors.infoSurfaceBorder)",
-                borderRadius: 8,
-              })}
-            >
-              Please withdraw your Earn position. See the top banner for more information.
-            </div>
-          )}
-        </div>
+                </div>
+              </>
+            )}
+        </ScreenCard>
       }
       className={css({
         position: "relative",
