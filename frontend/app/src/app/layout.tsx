@@ -19,7 +19,7 @@ import { GeistSans } from "geist/font/sans";
 
 export const metadata: Metadata = {
   title: content.appName,
-  icons: "/favicon.svg",
+  icons: "/nerite.svg",
 };
 
 export default function Layout({ children }: { children: ReactNode }) {

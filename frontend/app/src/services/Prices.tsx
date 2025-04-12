@@ -14,7 +14,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "LQTY" | "USDN" | "LUSD" | CollateralSymbol;
+type PriceToken = "LQTY" | "NERI" | "USDN" | "LUSD" | CollateralSymbol;
 
 function useCollateralPrice(
   symbol: null | CollateralSymbol
@@ -141,6 +141,10 @@ export function usePrice<PT extends PriceToken>(
 
   if (symbol === "USDN") {
     return boldPrice;
+  }
+
+  if (symbol === "NERI") {
+    return coinGeckoPrice;
   }
 
   throw new Error(`Unsupported token: ${symbol}`);

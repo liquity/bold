@@ -256,7 +256,7 @@ export default {
   borrowScreen: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Borrow {boldIcon} USDN with {tokensIcons} ETH
+        Borrow {boldIcon} USDN with {tokensIcons}
       </>
     ),
     depositField: {

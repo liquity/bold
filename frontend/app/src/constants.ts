@@ -41,6 +41,28 @@ export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = {
   ETH: dn.from(100_000_000n, 18),
   WSTETH: dn.from(100_000_000n, 18),
   RETH: dn.from(100_000_000n, 18),
+  COMP: dn.from(100_000_000n, 18),
+  PUFETH: dn.from(100_000_000n, 18),
+  SFRXETH: dn.from(100_000_000n, 18),
+  TBTC: dn.from(100_000_000n, 18),
+  TETH: dn.from(100_000_000n, 18),
+  WETH: dn.from(100_000_000n, 18),
+  WEETH: dn.from(100_000_000n, 18),
+};
+
+// Debt limits, as max amounts of USDN that can be borrowed against a collateral
+// These will be queried from the subgraph, but for now we're using these values
+export const MAX_DEBT_LIMITS: Record<CollateralSymbol, dn.Dnum> = {
+  ETH: dn.from(100_000_000n, 18),
+  WSTETH: dn.from(100_000_000n, 18),
+  RETH: dn.from(100_000_000n, 18),
+  COMP: dn.from(100_000_000n, 18),
+  PUFETH: dn.from(100_000_000n, 18),
+  SFRXETH: dn.from(100_000_000n, 18),
+  TBTC: dn.from(100_000_000n, 18),
+  TETH: dn.from(100_000_000n, 18),
+  WETH: dn.from(100_000_000n, 18),
+  WEETH: dn.from(100_000_000n, 18),
 };
 
 // LTV factor suggestions, as ratios of the multiply factor range

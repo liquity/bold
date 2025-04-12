@@ -4,11 +4,19 @@ export type Direction = -1 | 1;
 
 export type TokenSymbol =
   | "USDN"
+  | "NERI"
   | "ETH"
   | "LQTY"
   | "RETH"
   | "LUSD"
-  | "WSTETH";
+  | "WSTETH"
+  | "COMP"
+  | "PUFETH"
+  | "SFRXETH"
+  | "TBTC"
+  | "TETH"
+  | "WETH"
+  | "WEETH";
 
 export type Token = {
   icon: string;
