@@ -47,7 +47,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     /*
     * Mapping from TroveId to individual delegate for interest rate setting.
     *
-    * This address then has the ability to update the borrower’s interest rate, but not change its debt or collateral.
+    * This address then has the ability to update the borrower's interest rate, but not change its debt or collateral.
     * Useful for instance for cold/hot wallet setups.
     */
     mapping(uint256 => InterestIndividualDelegate) private interestIndividualDelegateOf;
@@ -249,7 +249,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         vars.batch = vars.troveManager.getLatestBatchData(_params.interestBatchManager);
 
-        // We set old weighted values here, as it’s only necessary for batches, so we don’t need to pass them to _openTrove func
+        // We set old weighted values here, as it's only necessary for batches, so we don't need to pass them to _openTrove func
         vars.change.batchAccruedManagementFee = vars.batch.accruedManagementFee;
         vars.change.oldWeightedRecordedDebt = vars.batch.weightedRecordedDebt;
         vars.change.oldWeightedRecordedBatchManagementFee = vars.batch.weightedRecordedBatchManagementFee;
@@ -334,7 +334,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireUserAcceptsUpfrontFee(_change.upfrontFee, _maxUpfrontFee);
 
         vars.entireDebt = _change.debtIncrease + _change.upfrontFee;
-        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + vars.entireDebt, "BorrowerOperations: Debt limit exceeded.");
+        require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt() + vars.entireDebt, "BorrowerOperations: Debt limit exceeded.");
         _requireAtLeastMinDebt(vars.entireDebt);
 
         vars.ICR = LiquityMath._computeCR(_collAmount, vars.entireDebt, vars.price);
@@ -573,7 +573,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireTroveIsOpen(_troveManager, _troveId);
 
         address owner = troveNFT.ownerOf(_troveId);
-        address receiver = owner; // If it’s a withdrawal, and manager has receive privilege, manager would be the receiver
+        address receiver = owner; // If it's a withdrawal, and manager has receive privilege, manager would be the receiver
 
         if (_troveChange.collDecrease > 0 || _troveChange.debtIncrease > 0) {
             receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
@@ -786,7 +786,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         );
         activePool.mintAggInterestAndAccountForTroveChange(change, batchManager);
 
-        // If the trove was zombie, and now it’s not anymore, put it back in the list
+        // If the trove was zombie, and now it's not anymore, put it back in the list
         if (_checkTroveIsZombie(troveManagerCached, _troveId) && trove.entireDebt >= MIN_DEBT) {
             troveManagerCached.setTroveStatusToActive(_troveId);
             _reInsertIntoSortedTroves(
@@ -825,7 +825,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         interestIndividualDelegateOf[_troveId] =
             InterestIndividualDelegate(_delegate, _minInterestRate, _maxInterestRate, _minInterestRateChangePeriod);
-        // Can’t have both individual delegation and batch manager
+        // Can't have both individual delegation and batch manager
         if (interestBatchManagerOf[_troveId] != address(0)) {
             // Not needed, implicitly checked in removeFromBatch
             //_requireValidAnnualInterestRate(_newAnnualInterestRate);
@@ -979,7 +979,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireIsNotInBatch(_troveId);
 
         interestBatchManagerOf[_troveId] = _newBatchManager;
-        // Can’t have both individual delegation and batch manager
+        // Can't have both individual delegation and batch manager
         if (interestIndividualDelegateOf[_troveId].account != address(0)) delete interestIndividualDelegateOf[_troveId];
 
         vars.trove = vars.troveManager.getLatestTroveData(_troveId);
@@ -1175,8 +1175,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function shutdown() external {
         if (hasBeenShutDown) revert IsShutDown();
 
-        uint256 totalColl = getEntireSystemColl();
-        uint256 totalDebt = getEntireSystemDebt();
+        uint256 totalColl = getEntireBranchColl();
+        uint256 totalDebt = getEntireBranchDebt();
         (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
         // If the oracle failed, the above call to PriceFeed will have shut this branch down
         if (newOracleFailureDetected) return;
@@ -1235,11 +1235,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         IBoldToken _boldToken,
         IActivePool _activePool
     ) internal {
-        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt(), "BorrowerOperations: Debt limit exceeded.");
+        require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt(), "BorrowerOperations: Debt limit exceeded.");
 
         if (_troveChange.debtIncrease > 0) {
             // Check if the debt limit is exceeded only when increasing debt.
-            require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + _troveChange.debtIncrease, "BorrowerOperations: Debt limit exceeded.");
+            require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt() + _troveChange.debtIncrease, "BorrowerOperations: Debt limit exceeded.");
             _boldToken.mint(withdrawalReceiver, _troveChange.debtIncrease);
         } else if (_troveChange.debtDecrease > 0) {
             //debt can be repaid without checking the debt limit.
@@ -1297,7 +1297,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ) internal view {
         InterestIndividualDelegate memory individualDelegate = interestIndividualDelegateOf[_troveId];
         // We have previously checked that sender is either owner or delegate
-        // If it’s owner, this restriction doesn’t apply
+        // If it's owner, this restriction doesn't apply
         if (individualDelegate.account == msg.sender) {
             _requireInterestRateInRange(
                 _annualInterestRate, individualDelegate.minInterestRate, individualDelegate.maxInterestRate
@@ -1562,11 +1562,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         view
         returns (uint256 newTCR)
     {
-        uint256 totalColl = getEntireSystemColl();
+        uint256 totalColl = getEntireBranchColl();
         totalColl += _troveChange.collIncrease;
         totalColl -= _troveChange.collDecrease;
 
-        uint256 totalDebt = getEntireSystemDebt();
+        uint256 totalDebt = getEntireBranchDebt();
         totalDebt += _troveChange.debtIncrease;
         totalDebt += _troveChange.upfrontFee;
         totalDebt -= _troveChange.debtDecrease;

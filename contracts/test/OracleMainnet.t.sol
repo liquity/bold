@@ -26,6 +26,8 @@ import "forge-std/Test.sol";
 import "lib/forge-std/src/console2.sol";
 
 contract OraclesMainnet is TestAccounts {
+
+    uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
     AggregatorV3Interface ethOracle;
     AggregatorV3Interface stethOracle;
     AggregatorV3Interface rethOracle;
@@ -79,7 +81,7 @@ contract OraclesMainnet is TestAccounts {
 
         vars.numCollaterals = 3;
         TestDeployer.TroveManagerParams memory tmParams =
-            TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
+            TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, MAX_INT/2);
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](vars.numCollaterals);
         for (uint256 i = 0; i < troveManagerParamsArray.length; i++) {

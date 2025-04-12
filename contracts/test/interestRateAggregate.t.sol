@@ -1468,7 +1468,7 @@ contract InterestRateAggregate is DevTestSetup {
         assertEq(entireSystemDebt, recordedDebt_A + recordedDebt_B + recordedDebt_C);
     }
 
-    function testGetEntireSystemDebtWithNoRedistGainsReturnsSumOfTroveRecordedDebtsPlusIndividualInterests() public {
+    function testGetEntireBranchDebtWithNoRedistGainsReturnsSumOfTroveRecordedDebtsPlusIndividualInterests() public {
         uint256 troveDebtRequest_A = 2000e18;
         uint256 troveDebtRequest_B = 3000e18;
         uint256 troveDebtRequest_C = 4000e18;

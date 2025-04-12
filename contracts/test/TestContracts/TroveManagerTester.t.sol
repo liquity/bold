@@ -271,6 +271,20 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         return trove.debt * trove.annualInterestRate;
     }
 
+    function getTroveInterestRate(uint256 _troveId) external view returns (uint256) {
+        Trove memory trove = Troves[_troveId];
+        address batchAddress = _getBatchManager(trove);
+        if (batchAddress != address(0)) {
+            return batches[batchAddress].annualInterestRate;
+        }
+        return trove.annualInterestRate;
+    }
+
+    function getbatchDebtAndShares(address _batchManager) external view returns (uint256 debt, uint256 shares) {
+        Batch memory batch = batches[_batchManager];
+        return (batch.debt, batch.totalDebtShares);
+    }
+
     function getTroveColl(uint256 _troveId) external view override returns (uint256) {
         Trove memory trove = Troves[_troveId];
         return trove.coll;
@@ -329,7 +343,7 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
     function calcTroveAccruedBatchManagementFee(uint256 _troveId) external view returns (uint256) {
         Trove memory trove = Troves[_troveId];
 
-        // If trove doesn’t belong to a batch, there’s no fee
+        // If trove doesn't belong to a batch, there's no fee
         address batchAddress = _getBatchManager(_troveId);
         if (batchAddress == address(0)) return 0;
 

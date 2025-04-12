@@ -102,7 +102,7 @@ contract RebasingBatchShares is DevTestSetup {
         _logTrovesAndBatch(B, BTroveId);
 
         // === 4: Free Loans === //
-        // uint256 debtB4 = borrowerOperations.getEntireSystemDebt();
+        // uint256 debtB4 = borrowerOperations.getEntireBranchDebt();
         // We should be able to open a new Trove now
         //uint256 anotherATroveId = openTroveExpectRevert(A, x + 1, 100 ether, MIN_DEBT, B);
         //assertEq(anotherATroveId, 0);
@@ -122,7 +122,7 @@ contract RebasingBatchShares is DevTestSetup {
         uint256 balAfter = boldToken.balanceOf(A);
 
         // And we can repeat this to get free debt
-        uint256 debtAfter = borrowerOperations.getEntireSystemDebt();
+        uint256 debtAfter = borrowerOperations.();
 
         assertGt(debtAfter, debtB4, "Debt should have increased");
         assertLt(balB4, balAfter, "Something should have benn paid");

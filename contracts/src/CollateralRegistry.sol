@@ -129,7 +129,7 @@ contract CollateralRegistry is ICollateralRegistry {
             }
         }
 
-        // There’s an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
+        // There's an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
         // In that case, we redeem proportinally to branch size
         if (totals.unbacked == 0) {
             unbackedPortions = new uint256[](totals.numCollaterals);
@@ -137,7 +137,7 @@ contract CollateralRegistry is ICollateralRegistry {
                 ITroveManager troveManager = getTroveManager(index);
                 (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
                 if (redeemable) {
-                    uint256 unbackedPortion = troveManager.getEntireSystemDebt();
+                    uint256 unbackedPortion = troveManager.getEntireBranchDebt();
                     totals.unbacked += unbackedPortion;
                     unbackedPortions[index] = unbackedPortion;
                 }

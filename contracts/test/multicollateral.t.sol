@@ -4,6 +4,8 @@ pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
+uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
 contract MulticollateralTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 4;
     TestDeployer.LiquityContractsDev[] public contractsArray;
@@ -67,10 +69,10 @@ contract MulticollateralTest is DevTestSetup {
 
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
-        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16);
-        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16);
-        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 10e16, 125e16, 5e16, 10e16);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, MAX_INT/2);
+        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16, MAX_INT/2);
+        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16, MAX_INT/2);
+        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 10e16, 125e16, 5e16, 10e16, MAX_INT/2);
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _contractsArray;
@@ -169,7 +171,7 @@ contract MulticollateralTest is DevTestSetup {
         // let time go by to reduce redemption rate (/16)
         vm.warp(block.timestamp + 1 days);
 
-        // Check A’s final bal
+        // Check A's final bal
         assertEq(boldToken.balanceOf(A), 16000e18, "Wrong Bold balance before redemption");
 
         // initial balances
@@ -329,7 +331,7 @@ contract MulticollateralTest is DevTestSetup {
         if (_spBoldAmount4 > 0) makeMulticollateralSPDepositAndClaim(3, A, _spBoldAmount4);
 
         uint256 boldBalance = boldToken.balanceOf(A);
-        // Check A’s final bal
+        // Check A's final bal
         // TODO: change when we switch to new gas compensation
         //assertEq(boldToken.balanceOf(A), _boldAmount * 4 - _spBoldAmount1 - _spBoldAmount2 - _spBoldAmount3 - _spBoldAmount4, "Wrong Bold balance before redemption");
         // Stack too deep
@@ -539,7 +541,7 @@ contract MulticollateralTest is DevTestSetup {
         testValues4.troveId = openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 10e18, 2000e18, 5e16);
         makeMulticollateralSPDepositAndClaim(3, A, 2100e18); // we put some more for interest
 
-        // Check A’s final bal
+        // Check A's final bal
         // 10k of first branch - 3 * 100 in the other SPs
         assertEq(boldToken.balanceOf(A), 9700e18, "Wrong Bold balance before redemption");
 
@@ -648,7 +650,7 @@ contract MulticollateralTest is DevTestSetup {
         testValues4.troveId = openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 10e18, 2000e18, 5e16);
         makeMulticollateralSPDepositAndClaim(3, A, 2100e18); // we put some more for interest
 
-        // Check A’s final bal
+        // Check A's final bal
         // 10k of first branch - 3 * 100 in the other SPs
         assertEq(boldToken.balanceOf(A), 9700e18, "Wrong Bold balance before redemption");
 

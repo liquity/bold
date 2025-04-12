@@ -4,6 +4,8 @@ pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
+uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+
 contract LiquidationsLSTTest is DevTestSetup {
     function setUp() public override {
         // Start tests at a non-zero timestamp
@@ -25,7 +27,7 @@ contract LiquidationsLSTTest is DevTestSetup {
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev memory contracts;
         (contracts, collateralRegistry, boldToken,,,,) = deployer.deployAndConnectContracts(
-            TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16)
+            TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16, MAX_INT/2)
         );
         collToken = contracts.collToken;
         activePool = contracts.activePool;

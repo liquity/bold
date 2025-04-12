@@ -253,7 +253,7 @@ contract("TroveManager", async (accounts) => {
         assert.isFalse(await th.checkBelowCriticalThreshold(contracts));
 
         /* close Bob's Trove. Should liquidate his ether and Bold,
-           leaving Alice’s ether and Bold debt in the ActivePool. */
+           leaving Alice's ether and Bold debt in the ActivePool. */
         await troveManager.liquidate(bobTroveId, { from: owner });
 
         // check ActivePool ETH and Bold debt
@@ -456,7 +456,7 @@ contract("TroveManager", async (accounts) => {
         /* check snapshots after. Total stakes should be equal to the  remaining stake then the system:
            10 ether, Alice's stake.
 
-           Total collateral should be equal to Alice's collateral plus her pending ETH reward (Bob’s collaterale*0.995 ether), earned
+           Total collateral should be equal to Alice's collateral plus her pending ETH reward (Bob's collaterale*0.995 ether), earned
            from the liquidation of Bob's Trove */
         const totalStakesSnapshot_After = (
           await troveManager.getTotalStakesSnapshot()
@@ -894,8 +894,8 @@ contract("TroveManager", async (accounts) => {
 
         const TCR_0 = await th.getTCR(contracts);
 
-        const entireSystemCollBefore = await troveManager.getEntireSystemColl();
-        const entireSystemDebtBefore = await troveManager.getEntireSystemDebt();
+        const entireSystemCollBefore = await troveManager.getEntireBranchColl();
+        const entireSystemDebtBefore = await troveManager.getEntireBranchDebt();
 
         const expectedTCR_0 = entireSystemCollBefore
               .mul(price)
@@ -2826,7 +2826,7 @@ contract("TroveManager", async (accounts) => {
         assert.equal(carol_Status, 4);
       });
 
-      it("redeemCollateral(): doesn’t perform partial redemption if resultant debt is > minimum net debt", async () => {
+      it("redeemCollateral(): doesn't perform partial redemption if resultant debt is > minimum net debt", async () => {
         const ATroveId = await th.openTroveWrapper(
           contracts,
           await getOpenTroveBoldAmount(dec(10000, 18)),
@@ -2947,12 +2947,12 @@ contract("TroveManager", async (accounts) => {
         assert.isFalse(await sortedTroves.contains(CTroveId));
 
         // A's remaining debt would be 29800 + 19800 + 6000 - 55000 + interest = 600 + interest.
-        // This is below the min net debt of 2000, but still it’s redeemed and debt gets reduced
+        // This is below the min net debt of 2000, but still it's redeemed and debt gets reduced
         const A_debt = await troveManager.getTroveDebt(ATroveId);
         await th.assertIsApproximatelyEqual(A_debt, AInitialDebt.add(BInitialDebt).add(CInitialDebt).sub(toBN(dec(55000, 18))).add(interestA).add(interestB).add(interestC), 6e15);
       });
 
-      // active debt cannot be zero, as there’s a positive min debt enforced, and at least a trove must exist
+      // active debt cannot be zero, as there's a positive min debt enforced, and at least a trove must exist
       it("redeemCollateral(): can redeem if there is zero active debt but non-zero debt in DefaultPool", async () => {
         // --- SETUP ---
 
@@ -3004,7 +3004,7 @@ contract("TroveManager", async (accounts) => {
         assert.equal(carol_BoldBalance_After, "0");
       });
 
-      it("redeemCollateral(): doesn’t redeem Troves with ICR < 100%", async () => {
+      it("redeemCollateral(): doesn't redeem Troves with ICR < 100%", async () => {
         // --- SETUP ---
 
         const { troveId: aliceTroveId, netDebt: A_debt } = await openTrove({
@@ -3763,7 +3763,7 @@ contract("TroveManager", async (accounts) => {
         );
       });
 
-      // it doesn’t make much sense as there’s now min debt enforced and at least one trove must remain active
+      // it doesn't make much sense as there's now min debt enforced and at least one trove must remain active
       // the only way to test it is before any trove is opened
       it("redeemCollateral(): reverts if there is zero outstanding system debt", async () => {
         // --- SETUP --- illegally mint Bold to Bob
@@ -4030,7 +4030,7 @@ contract("TroveManager", async (accounts) => {
         const C_balanceAfter = toBN(await contracts.WETH.balanceOf(C));
         const D_balanceAfter = toBN(await contracts.WETH.balanceOf(D));
 
-        // Check A, B, C’s trove collateral balance
+        // Check A, B, C's trove collateral balance
         const A_collAfter = await troveManager.getTroveColl(ATroveId);
         const B_collAfter = await troveManager.getTroveColl(BTroveId);
         const C_collAfter = await troveManager.getTroveColl(CTroveId);
@@ -4079,7 +4079,7 @@ contract("TroveManager", async (accounts) => {
         );
 
         if (close) {
-          // redemptions don’t close troves, so we need to close them manually
+          // redemptions don't close troves, so we need to close them manually
           await borrowerOperations.closeTrove(ATroveId, { from: A });
           await borrowerOperations.closeTrove(BTroveId, { from: B });
           await borrowerOperations.closeTrove(CTroveId, { from: C });
@@ -4182,7 +4182,7 @@ contract("TroveManager", async (accounts) => {
         });
 
         const totalDebt = await troveManager.getTroveEntireDebt(defaulter_1_TroveId);
-        const spAmount = totalDebt.mul(toBN(11)).div(toBN(10)); // let’s put some more to account for interest
+        const spAmount = totalDebt.mul(toBN(11)).div(toBN(10)); // let's put some more to account for interest
 
         const { troveId: carolTroveId } = await openTrove({
           ICR: toBN(dec(3, 18)),
@@ -4227,7 +4227,7 @@ contract("TroveManager", async (accounts) => {
         });
 
         const totalDebt = await troveManager.getTroveEntireDebt(defaulter_1_TroveId);
-        const spAmount = totalDebt.mul(toBN(11)).div(toBN(10)); // let’s put some more to account for interest
+        const spAmount = totalDebt.mul(toBN(11)).div(toBN(10)); // let's put some more to account for interest
 
         const { troveId: carolTroveId } = await openTrove({
           ICR: toBN(dec(3, 18)),

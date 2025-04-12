@@ -201,8 +201,8 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             params.CCR,
             params.MCR,
             params.SCR,
-            type(uint256).max, // TODO: DEBT LIMIT?
-            // TODO: Debt Limit
+            params.BCR,
+            params.debtLimit,
             params.LIQUIDATION_PENALTY_SP,
             params.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
@@ -236,6 +236,8 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             CCR: 150e16,                          // 150%
             MCR: 110e16,                          // 110%
             SCR: 130e16,                          // 130%
+            BCR: 120e16,                          // 120%
+            debtLimit: type(uint256).max, 
             LIQUIDATION_PENALTY_SP: 1e17,         // 10%
             LIQUIDATION_PENALTY_REDISTRIBUTION: 1e17  // 10%
         });
@@ -273,7 +275,8 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             IAddressesRegistry(newAddressesRegistryAddr),
             ICollateralRegistry(address(collateralRegistry)),
             IHintHelpers(address(hintHelpers)),
-            IMultiTroveGetter(address(multiTroveGetter))
+            IMultiTroveGetter(address(multiTroveGetter)),
+            _troveManagerParams
         ));
 
         _switchToActiveBranch(0);
@@ -324,6 +327,8 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         uint256 CCR;
         uint256 MCR;
         uint256 SCR;
+        uint256 BCR;
+        uint256 debtLimit;      
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
     }
@@ -336,12 +341,22 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         IAddressesRegistry _addressesRegistry,
         ICollateralRegistry _collateralRegistry,
         IHintHelpers _hintHelpers,
-        IMultiTroveGetter _multiTroveGetter
+        IMultiTroveGetter _multiTroveGetter,
+        TroveManagerParams memory _troveManagerParams
     ) internal returns (LiquityContractsDev memory contracts) {
         LiquityContractAddresses memory addresses;
 
         // Deploy all contracts, using testers for TM and PriceFeed
-        contracts.addressesRegistry = AddressesRegistry(address(_addressesRegistry));
+        contracts.addressesRegistry = IAddressesRegistry(address(new AddressesRegistry(
+            address(this),
+            _troveManagerParams.CCR,
+            _troveManagerParams.MCR,
+            _troveManagerParams.SCR,
+            _troveManagerParams.BCR,
+            _troveManagerParams.debtLimit,
+            _troveManagerParams.LIQUIDATION_PENALTY_SP,
+            _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
+        )));
         contracts.priceFeed = new MultiTokenPriceFeedTestnet();
         contracts.interestRouter = new InterestRouter();
         contracts.collToken = MockERC20(address(_collToken));
