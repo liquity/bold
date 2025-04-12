@@ -5,6 +5,7 @@ type Collateral @entity {
   minCollRatio: BigInt!
   troves: [Trove!]! @derivedFrom(field: "collateral")
   addresses: CollateralAddresses! @derivedFrom(field: "collateral")
+  debtLimit: BigInt! # Nerite specific - maximum debt limit for the collateral
   stabilityPoolDeposits: [StabilityPoolDeposit!]!
   @derivedFrom(field: "collateral")
 }
@@ -74,6 +75,7 @@ type BorrowerInfo @entity {
 type StabilityPool @entity {
   id: ID! # "collIndex", e.g. "0"
   totalDeposited: BigInt!
+  collBalance: BigInt!
 }
 
 type StabilityPoolDeposit @entity {

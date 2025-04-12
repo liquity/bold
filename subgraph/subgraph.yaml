@@ -29,11 +29,16 @@ dataSources:
           file: ../contracts/out/TroveManager.sol/TroveManager.json
         - name: TroveNFT
           file: ../contracts/out/TroveNFT.sol/TroveNFT.json
+        - name: ActivePool
+          file: ../contracts/out/ActivePool.sol/ActivePool.json
+        - name: AddressesRegistry
+          file: ../contracts/out/AddressesRegistry.sol/AddressesRegistry.json
       eventHandlers:
         - event: CollateralRegistryAddressChanged(address)
           handler: handleCollateralRegistryAddressChanged
       file: ./src/BoldToken.mapping.ts
     network: mainnet
+    # TODO: This does not exist in the contracts. Remove?
   - kind: ethereum/contract
     name: Governance
     source:
@@ -101,6 +106,14 @@ templates:
         - event: BatchUpdated(indexed
             address,uint8,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleBatchUpdated
+          # TODO: test handler for this event
+        - event: TroveUpdated(indexed
+            uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleTroveUpdated
+          # TODO: test handler for this event
+        - event: BatchedTroveUpdated(indexed
+            uint256,address,uint256,uint256,uint256,uint256,uint256)
+          handler: handleBatchedTroveUpdated
   - name: TroveNFT
     kind: ethereum/contract
     network: mainnet
@@ -144,3 +157,13 @@ templates:
           handler: handleSUpdated
         - event: B_Updated(uint256,uint128,uint128)
           handler: handleBUpdated
+          # TODO: test handler for this event
+        - event: DepositOperation(indexed
+            address,uint8,uint256,int256,uint256,uint256,uint256,uint256)
+          handler: handleDepositOperation
+          # TODO: test handler for this event
+        - event: StabilityPoolCollBalanceUpdated(uint256)
+          handler: handleStabilityPoolCollBalanceUpdated
+          # TODO: test handler for this event
+        - event: StabilityPoolBoldBalanceUpdated(uint256)
+          handler: handleStabilityPoolBoldBalanceUpdated
