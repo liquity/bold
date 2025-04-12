@@ -330,8 +330,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](3);
         // TODO: move params out of here
         troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, MAX_INT/2); // WETH
-        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16, MAX_INT/2); // wstETH
-        troveManagerParamsArray[2] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16, MAX_INT/2); // rETH
+        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2); // wstETH
+        troveManagerParamsArray[2] = TroveManagerParams(150e16, 120e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2); // rETH
 
         string[] memory collNames = new string[](2);
         string[] memory collSymbols = new string[](2);
@@ -644,6 +644,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
             _troveManagerParams.SCR,
+            _troveManagerParams.BCR,
             _troveManagerParams.debtLimit,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
