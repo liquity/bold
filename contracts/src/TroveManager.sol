@@ -413,17 +413,18 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         IActivePool activePoolCached = activePool;
         IDefaultPool defaultPoolCached = defaultPool;
-        // - If the SP has total deposits >= 1e18, we leave 1e18 in it untouched.
-        // - If it has 0 < x < 1e18 total deposits, we leave x in it.
-        uint256 totalBoldDeposits = stabilityPoolCached.getTotalBoldDeposits();
-        uint256 boldToLeaveInSP = LiquityMath._min(MIN_BOLD_IN_SP, totalBoldDeposits);
-        uint256 boldInSPForOffsets = totalBoldDeposits - boldToLeaveInSP;
+        IStabilityPool stabilityPoolCached = stabilityPool;
 
         TroveChange memory troveChange;
         LiquidationValues memory totals;
 
         (uint256 price,) = priceFeed.fetchPrice();
-        uint256 boldInStabPool = stabilityPoolCached.getTotalBoldDeposits();
+        
+        // - If the SP has total deposits >= 1e18, we leave 1e18 in it untouched.
+        // - If it has 0 < x < 1e18 total deposits, we leave x in it.
+        uint256 totalBoldDeposits = stabilityPoolCached.getTotalBoldDeposits();
+        uint256 boldToLeaveInSP = LiquityMath._min(MIN_BOLD_IN_SP, totalBoldDeposits);
+        uint256 boldInSPForOffsets = totalBoldDeposits - boldToLeaveInSP;
 
         // Perform the appropriate liquidation sequence - tally values and obtain their totals.
         _batchLiquidateTroves(defaultPoolCached, price, boldInSPForOffsets, _troveArray, totals, troveChange);
