@@ -196,7 +196,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         address coll,
         TroveManagerParams memory params
     ) internal returns (address, address) {
-        IAddressesRegistry addressesRegistry = new AddressesRegistry(
+        IAddressesRegistry newAddressesRegistry = new AddressesRegistry(
             address(this),
             params.CCR,
             params.MCR,
@@ -207,9 +207,9 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             params.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
         address troveManagerAddress =
-            getAddress(address(this), getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry)), SALT);
+            getAddress(address(this), getBytecode(type(TroveManagerTester).creationCode, address(newAddressesRegistry)), SALT);
         
-        return (address(addressesRegistry), troveManagerAddress);
+        return (address(newAddressesRegistry), troveManagerAddress);
     }
 
     function setup() internal virtual override {
@@ -240,7 +240,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             LIQUIDATION_PENALTY_REDISTRIBUTION: 1e17  // 10%
         });
 
-        (address addressesRegistry, address troveManagerAddress) = _setupAddressRegistryAndTroveManager(
+        (address newAddressesRegistryAddr, address troveManagerAddress) = _setupAddressRegistryAndTroveManager(
             address(weth),
             _troveManagerParams
         );
@@ -270,7 +270,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             IBoldToken(address(boldToken)),
             IWETH(address(weth)),
             troveManagerAddress,
-            IAddressesRegistry(addressesRegistry),
+            IAddressesRegistry(newAddressesRegistryAddr),
             ICollateralRegistry(address(collateralRegistry)),
             IHintHelpers(address(hintHelpers)),
             IMultiTroveGetter(address(multiTroveGetter))
