@@ -237,7 +237,8 @@ abstract contract Properties is BeforeAfter, Asserts {
             
             if(borrowerOperations.interestBatchManagerOf(trove) == clampedBatchManager) {
                 sumBatchDebt += troveManager.getTroveEntireDebt(trove);
-                sumbBatchShares += troveManager.getTroveBatchDebtShares(trove); 
+                (, , , , , , , , , uint256 batchShares) = troveManager.Troves(trove);
+                sumbBatchShares += batchShares;
             }
 
             trove = sortedTroves.getNext(trove);
@@ -247,7 +248,8 @@ abstract contract Properties is BeforeAfter, Asserts {
         uint256 lastZombieTroveId = troveManager.lastZombieTroveId();
         if(borrowerOperations.interestBatchManagerOf(lastZombieTroveId) == clampedBatchManager) {
             sumBatchDebt += troveManager.getTroveEntireDebt(lastZombieTroveId);
-            sumbBatchShares += troveManager.getTroveBatchDebtShares(lastZombieTroveId);
+            (, , , , , , , , , uint256 batchShares) = troveManager.Troves(lastZombieTroveId);
+            sumbBatchShares += batchShares;
         }
     }
 

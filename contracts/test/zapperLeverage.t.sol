@@ -126,9 +126,9 @@ contract ZapperLeverageMainnet is DevTestSetup {
 
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
-        for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
-            troveManagerParamsArray[c] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, type(uint256).max);
+        for (uint256 c = 1; c < NUM_COLLATERALS; c++) {
+            troveManagerParamsArray[c] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16, type(uint256).max);
         }
 
         TestDeployer deployer = new TestDeployer();
@@ -777,7 +777,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
             boldAmount: effectiveBoldAmount,
             maxUpfrontFee: 1000e18
         });
-        // B tries to lever up A’s trove
+        // B tries to lever up A's trove
         vm.startPrank(B);
         vm.expectRevert(AddRemoveManagers.NotOwnerNorRemoveManager.selector);
         _leverageZapper.leverUpTrove(params);
@@ -839,7 +839,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         getterParams.branch = _branch;
         (uint256 flashLoanAmount, uint256 effectiveBoldAmount) = _getLeverUpFlashLoanAndBoldAmount(getterParams);
 
-        // B tries to lever up A’s trove calling our flash loan provider module
+        // B tries to lever up A's trove calling our flash loan provider module
         ILeverageZapper.LeverUpTroveParams memory params = ILeverageZapper.LeverUpTroveParams({
             troveId: troveId,
             flashLoanAmount: flashLoanAmount,
@@ -902,7 +902,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         openTroveParams.batchManager = address(0);
         (uint256 troveId,) = openLeveragedTroveWithIndex(openTroveParams);
 
-        // B tries to lever up A’s trove calling Balancer Vault directly
+        // B tries to lever up A's trove calling Balancer Vault directly
         LeverUpParams memory getterParams;
         getterParams.leverageZapper = _leverageZapper;
         getterParams.collToken = contractsArray[_branch].collToken;
@@ -1050,7 +1050,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         // CR
         // When getting flashloan amount, we allow the min debt to deviate up to 5%
         // That deviation can translate into CR, specially for UniV3 exchange which is the less efficient
-        // With UniV3, the quoter gives a price “too good”, meaning we exchange less, so the deleverage is lower
+        // With UniV3, the quoter gives a price "too good", meaning we exchange less, so the deleverage is lower
         uint256 CRTolerance = _exchangeType == ExchangeType.UniV3 ? 9e16 : 17e15;
         uint256 ICR = contractsArray[_branch].troveManager.getCurrentICR(vars.troveId, vars.price);
         assertTrue(
@@ -1150,7 +1150,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         openTroveParams.batchManager = address(0);
         (uint256 troveId,) = openLeveragedTroveWithIndex(openTroveParams);
 
-        // B tries to lever up A’s trove
+        // B tries to lever up A's trove
         (uint256 flashLoanAmount, uint256 minBoldDebt) = _getLeverDownFlashLoanAndBoldAmount(
             _leverageZapper,
             troveId,
@@ -1218,7 +1218,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         openTroveParams.batchManager = address(0);
         (uint256 troveId,) = openLeveragedTroveWithIndex(openTroveParams);
 
-        // B tries to lever down A’s trove calling our flash loan provider module
+        // B tries to lever down A's trove calling our flash loan provider module
         (uint256 flashLoanAmount, uint256 minBoldDebt) = _getLeverDownFlashLoanAndBoldAmount(
             _leverageZapper,
             troveId,
@@ -1288,7 +1288,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         openTroveParams.batchManager = address(0);
         (uint256 troveId,) = openLeveragedTroveWithIndex(openTroveParams);
 
-        // B tries to lever down A’s trove calling Balancer Vault directly
+        // B tries to lever down A's trove calling Balancer Vault directly
         (uint256 flashLoanAmount, uint256 minBoldDebt) = _getLeverDownFlashLoanAndBoldAmount(
             _leverageZapper,
             troveId,
@@ -1512,7 +1512,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         bool lst = _branch > 0;
         uint256 troveId = openTrove(_zapper, A, 0, collAmount, boldAmount, lst);
 
-        // B tries to close A’s trove
+        // B tries to close A's trove
         uint256 flashLoanAmount =
             _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
 
@@ -1557,7 +1557,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         bool lst = _branch > 0;
         uint256 troveId = openTrove(_zapper, A, 0, collAmount, boldAmount, lst);
 
-        // B tries to close A’s trove calling our flash loan provider module
+        // B tries to close A's trove calling our flash loan provider module
         uint256 flashLoanAmount =
             _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
 
@@ -1608,7 +1608,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         bool lst = _branch > 0;
         uint256 troveId = openTrove(_zapper, A, 0, collAmount, boldAmount, lst);
 
-        // B tries to close A’s trove calling Balancer Vault directly
+        // B tries to close A's trove calling Balancer Vault directly
         uint256 flashLoanAmount =
             _getCloseFlashLoanAmount(troveId, contractsArray[_branch].troveManager, contractsArray[_branch].priceFeed);
 
@@ -1695,7 +1695,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         uint256 step = (_maxBoldAmount - _boldAmount) / 5; // In max 5 iterations we should reach the target, unless price is lower
         uint256 dy;
         // TODO: Optimizations: binary search, change the step depending on last dy, ...
-        // Or check if there’s any helper implemented anywhere
+        // Or check if there's any helper implemented anywhere
         uint256 lastBoldAmount = _maxBoldAmount + step;
         do {
             lastBoldAmount -= step;
