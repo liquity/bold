@@ -15,21 +15,21 @@ import "./Dependencies/Ownable.sol";
 import "./Interfaces/IBoldToken.sol";
 
 /*
- * --- Functionality added specific to the BoldToken ---
+ * --- Functionality added specific to the USDNer ---
  *
  * 1) Transfer protection: blacklist of addresses that are invalid recipients (i.e. core Liquity contracts) in external
- * transfer() and transferFrom() calls. The purpose is to protect users from losing tokens by mistakenly sending Bold directly to a Liquity
+ * transfer() and transferFrom() calls. The purpose is to protect users from losing tokens by mistakenly sending USDNer directly to a Liquity
  * core contract, when they should rather call the right function.
  *
- * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move Bold tokens between Liquity <-> user.
+ * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move USDNer tokens between Liquity <-> user.
  */
 
  //INFO: permit involves approve, so invoke safeApproveFor in supertoken
 
 contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy {
 
-    string internal constant _NAME = "Nerite Stablecoin";
-    string internal constant _SYMBOL = "USDN";
+    string internal constant _NAME = "USD Nerite";
+    string internal constant _SYMBOL = "USDNer";
 
 
     // --- Addresses ---
@@ -119,14 +119,14 @@ contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy
     function _requireValidRecipient(address _recipient) internal view {
         require(
             _recipient != address(0) && _recipient != address(this),
-            "Bold: Cannot transfer tokens directly to the Bold token contract or the zero address"
+            "USDNer: Cannot transfer tokens directly to the Bold token contract or the zero address"
         );
     }
 
     function _requireCallerIsBOorAP() internal view {
         require(
             borrowerOperationsAddresses[msg.sender] || activePoolAddresses[msg.sender],
-            "BoldToken: Caller is not BO or AP"
+            "USDNer: Caller is not BO or AP"
         );
     }
 
@@ -134,12 +134,12 @@ contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy
         require(
             msg.sender == collateralRegistryAddress || borrowerOperationsAddresses[msg.sender]
                 || troveManagerAddresses[msg.sender] || stabilityPoolAddresses[msg.sender],
-            "Bold: Caller is neither CR nor BorrowerOperations nor TroveManager nor StabilityPool"
+            "USDNer: Caller is neither CR nor BorrowerOperations nor TroveManager nor StabilityPool"
         );
     }
 
     function _requireCallerIsStabilityPool() internal view {
-        require(stabilityPoolAddresses[msg.sender], "Bold: Caller is not the StabilityPool");
+        require(stabilityPoolAddresses[msg.sender], "USDNer: Caller is not the StabilityPool");
     }
 
     //[================================]

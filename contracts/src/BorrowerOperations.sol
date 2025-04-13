@@ -41,10 +41,13 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     // Minimum collateral ratio for individual troves
     uint256 public immutable MCR;
 
+    // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
+     uint256 public immutable BCR;
+
     /*
     * Mapping from TroveId to individual delegate for interest rate setting.
     *
-    * This address then has the ability to update the borrower’s interest rate, but not change its debt or collateral.
+    * This address then has the ability to update the borrower's interest rate, but not change its debt or collateral.
     * Useful for instance for cold/hot wallet setups.
     */
     mapping(uint256 => InterestIndividualDelegate) private interestIndividualDelegateOf;
@@ -131,6 +134,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error TroveWithZeroDebt();
     error UpfrontFeeTooHigh();
     error ICRBelowMCR();
+    error ICRBelowMCRPlusBCR();
     error RepaymentNotMatchingCollWithdrawal();
     error TCRBelowCCR();
     error DebtBelowMin();
@@ -172,6 +176,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         CCR = _addressesRegistry.CCR();
         SCR = _addressesRegistry.SCR();
         MCR = _addressesRegistry.MCR();
+        BCR = _addressesRegistry.BCR();
 
         troveManager = _addressesRegistry.troveManager();
         gasPoolAddress = _addressesRegistry.gasPoolAddress();
@@ -244,7 +249,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         vars.batch = vars.troveManager.getLatestBatchData(_params.interestBatchManager);
 
-        // We set old weighted values here, as it’s only necessary for batches, so we don’t need to pass them to _openTrove func
+        // We set old weighted values here, as it's only necessary for batches, so we don't need to pass them to _openTrove func
         vars.change.batchAccruedManagementFee = vars.batch.accruedManagementFee;
         vars.change.oldWeightedRecordedDebt = vars.batch.weightedRecordedDebt;
         vars.change.oldWeightedRecordedBatchManagementFee = vars.batch.weightedRecordedBatchManagementFee;
@@ -329,22 +334,27 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireUserAcceptsUpfrontFee(_change.upfrontFee, _maxUpfrontFee);
 
         vars.entireDebt = _change.debtIncrease + _change.upfrontFee;
-        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + vars.entireDebt, "BorrowerOperations: Debt limit exceeded.");
+        require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt() + vars.entireDebt, "BorrowerOperations: Debt limit exceeded.");
         _requireAtLeastMinDebt(vars.entireDebt);
+
+        vars.ICR = LiquityMath._computeCR(_collAmount, vars.entireDebt, vars.price);
 
         // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee, and the batch fee if needed
         if (_interestBatchManager == address(0)) {
             _change.newWeightedRecordedDebt = vars.entireDebt * _annualInterestRate;
+
+            // ICR is based on the requested Bold amount + upfront fee.
+             _requireICRisAboveMCR(vars.ICR);
         } else {
             // old values have been set outside, before calling this function
             _change.newWeightedRecordedDebt = (_batchEntireDebt + vars.entireDebt) * _annualInterestRate;
             _change.newWeightedRecordedBatchManagementFee =
                 (_batchEntireDebt + vars.entireDebt) * _batchManagementAnnualFee;
-        }
 
-        // ICR is based on the requested Bold amount + upfront fee.
-        vars.ICR = LiquityMath._computeCR(_collAmount, vars.entireDebt, vars.price);
-        _requireICRisAboveMCR(vars.ICR);
+            // ICR is based on the requested Bold amount + upfront fee.
+            // Troves in a batch have a stronger requirement (MCR+BCR)
+            _requireICRisAboveMCRPlusBCR(vars.ICR);
+        }
 
         vars.newTCR = _getNewTCRFromTroveChange(_change, vars.price);
         _requireNewTCRisAboveCCR(vars.newTCR);
@@ -524,12 +534,9 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         troveChange.newWeightedRecordedDebt = newDebt * _newAnnualInterestRate;
         troveChange.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
 
-        // Apply upfront fee on premature adjustments
-        if (
-            trove.annualInterestRate != _newAnnualInterestRate
-                && block.timestamp < trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
-        ) {
-            newDebt = _applyUpfrontFee(trove.entireColl, newDebt, troveChange, _maxUpfrontFee);
+        // Apply upfront fee on premature adjustments. It checks the resulting ICR
+         if (block.timestamp < trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN) {
+             newDebt = _applyUpfrontFee(trove.entireColl, newDebt, troveChange, _maxUpfrontFee, false);
         }
 
         // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
@@ -566,7 +573,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireTroveIsOpen(_troveManager, _troveId);
 
         address owner = troveNFT.ownerOf(_troveId);
-        address receiver = owner; // If it’s a withdrawal, and manager has receive privilege, manager would be the receiver
+        address receiver = owner; // If it's a withdrawal, and manager has receive privilege, manager would be the receiver
 
         if (_troveChange.collDecrease > 0 || _troveChange.debtIncrease > 0) {
             receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
@@ -646,7 +653,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.newICR = LiquityMath._computeCR(vars.newColl, vars.newDebt, vars.price);
 
         // Check the adjustment satisfies all conditions for the current system mode
-        _requireValidAdjustmentInCurrentMode(_troveChange, vars);
+        _requireValidAdjustmentInCurrentMode(_troveChange, vars, isTroveInBatch);
 
         // --- Effects and interactions ---
 
@@ -779,7 +786,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         );
         activePool.mintAggInterestAndAccountForTroveChange(change, batchManager);
 
-        // If the trove was zombie, and now it’s not anymore, put it back in the list
+        // If the trove was zombie, and now it's not anymore, put it back in the list
         if (_checkTroveIsZombie(troveManagerCached, _troveId) && trove.entireDebt >= MIN_DEBT) {
             troveManagerCached.setTroveStatusToActive(_troveId);
             _reInsertIntoSortedTroves(
@@ -818,7 +825,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         interestIndividualDelegateOf[_troveId] =
             InterestIndividualDelegate(_delegate, _minInterestRate, _maxInterestRate, _minInterestRateChangePeriod);
-        // Can’t have both individual delegation and batch manager
+        // Can't have both individual delegation and batch manager
         if (interestBatchManagerOf[_troveId] != address(0)) {
             // Not needed, implicitly checked in removeFromBatch
             //_requireValidAnnualInterestRate(_newAnnualInterestRate);
@@ -972,7 +979,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireIsNotInBatch(_troveId);
 
         interestBatchManagerOf[_troveId] = _newBatchManager;
-        // Can’t have both individual delegation and batch manager
+        // Can't have both individual delegation and batch manager
         if (interestIndividualDelegateOf[_troveId].account != address(0)) delete interestIndividualDelegateOf[_troveId];
 
         vars.trove = vars.troveManager.getLatestTroveData(_troveId);
@@ -989,8 +996,9 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         // An upfront fee is always charged upon joining a batch to ensure that borrowers can not game the fee logic
         // and gain free interest rate updates (e.g. if they also manage the batch they joined)
+        //Check the resulting ICR
         vars.trove.entireDebt =
-            _applyUpfrontFee(vars.trove.entireColl, vars.trove.entireDebt, newBatchTroveChange, _maxUpfrontFee);
+            _applyUpfrontFee(vars.trove.entireColl, vars.trove.entireDebt, newBatchTroveChange, _maxUpfrontFee, true);
 
         // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
         newBatchTroveChange.newWeightedRecordedDebt =
@@ -1058,14 +1066,14 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         batchChange.oldWeightedRecordedDebt = vars.batch.weightedRecordedDebt;
         batchChange.newWeightedRecordedDebt =
             batchFutureDebt * vars.batch.annualInterestRate + vars.trove.entireDebt * _newAnnualInterestRate;
-
+        // It checks the resulting ICR
         // Apply upfront fee on premature adjustments
         if (
             vars.batch.annualInterestRate != _newAnnualInterestRate
                 && block.timestamp < vars.trove.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
         ) {
             vars.trove.entireDebt =
-                _applyUpfrontFee(vars.trove.entireColl, vars.trove.entireDebt, batchChange, _maxUpfrontFee);
+                _applyUpfrontFee(vars.trove.entireColl, vars.trove.entireDebt, batchChange, _maxUpfrontFee, false);
         }
 
         // Recalculate newWeightedRecordedDebt, now taking into account the upfront fee
@@ -1111,7 +1119,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 _troveEntireColl,
         uint256 _troveEntireDebt,
         TroveChange memory _troveChange,
-        uint256 _maxUpfrontFee
+        uint256 _maxUpfrontFee,
+        bool _isTroveInBatch
     ) internal returns (uint256) {
         uint256 price = _requireOraclesLive();
 
@@ -1124,6 +1133,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         // ICR is based on the requested Bold amount + upfront fee.
         uint256 newICR = LiquityMath._computeCR(_troveEntireColl, _troveEntireDebt, price);
         _requireICRisAboveMCR(newICR);
+        if (_isTroveInBatch) {
+             _requireICRisAboveMCRPlusBCR(newICR);
+         } else {
+             _requireICRisAboveMCR(newICR);
+         }
 
         // Disallow a premature adjustment if it would result in TCR < CCR
         // (which includes the case when TCR is already below CCR before the adjustment).
@@ -1161,8 +1175,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function shutdown() external {
         if (hasBeenShutDown) revert IsShutDown();
 
-        uint256 totalColl = getEntireSystemColl();
-        uint256 totalDebt = getEntireSystemDebt();
+        uint256 totalColl = getEntireBranchColl();
+        uint256 totalDebt = getEntireBranchDebt();
         (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
         // If the oracle failed, the above call to PriceFeed will have shut this branch down
         if (newOracleFailureDetected) return;
@@ -1221,11 +1235,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         IBoldToken _boldToken,
         IActivePool _activePool
     ) internal {
-        require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt(), "BorrowerOperations: Debt limit exceeded.");
+        require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt(), "BorrowerOperations: Debt limit exceeded.");
 
         if (_troveChange.debtIncrease > 0) {
             // Check if the debt limit is exceeded only when increasing debt.
-            require(troveManager.getDebtLimit() >= troveManager.getEntireSystemDebt() + _troveChange.debtIncrease, "BorrowerOperations: Debt limit exceeded.");
+            require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt() + _troveChange.debtIncrease, "BorrowerOperations: Debt limit exceeded.");
             _boldToken.mint(withdrawalReceiver, _troveChange.debtIncrease);
         } else if (_troveChange.debtDecrease > 0) {
             //debt can be repaid without checking the debt limit.
@@ -1283,7 +1297,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ) internal view {
         InterestIndividualDelegate memory individualDelegate = interestIndividualDelegateOf[_troveId];
         // We have previously checked that sender is either owner or delegate
-        // If it’s owner, this restriction doesn’t apply
+        // If it's owner, this restriction doesn't apply
         if (individualDelegate.account == msg.sender) {
             _requireInterestRateInRange(
                 _annualInterestRate, individualDelegate.minInterestRate, individualDelegate.maxInterestRate
@@ -1355,7 +1369,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
     function _requireValidAdjustmentInCurrentMode(
         TroveChange memory _troveChange,
-        LocalVariables_adjustTrove memory _vars
+        LocalVariables_adjustTrove memory _vars,
+        bool _isTroveInBatch
     ) internal view {
         /*
         * Below Critical Threshold, it is not permitted:
@@ -1368,9 +1383,13 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         * - The adjustment won't pull the TCR below CCR
         *
         * In Both cases:
-        * - The new ICR is above MCR
+        * - The new ICR is above MCR, or MCR+BCR if a batched trove
         */
-        _requireICRisAboveMCR(_vars.newICR);
+        if (_isTroveInBatch) {
+            _requireICRisAboveMCRPlusBCR(_vars.newICR);
+        } else {
+            _requireICRisAboveMCR(_vars.newICR);
+        }
 
         uint256 newTCR = _getNewTCRFromTroveChange(_troveChange, _vars.price);
         if (_vars.isBelowCriticalThreshold) {
@@ -1381,6 +1400,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             _requireNewTCRisAboveCCR(newTCR);
         }
     }
+
+    function _requireICRisAboveMCRPlusBCR(uint256 _newICR) internal view {
+         if (_newICR < MCR + BCR) {
+             revert ICRBelowMCRPlusBCR();
+         }
+     }
 
     function _requireICRisAboveMCR(uint256 _newICR) internal view {
         if (_newICR < MCR) {
@@ -1537,11 +1562,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         view
         returns (uint256 newTCR)
     {
-        uint256 totalColl = getEntireSystemColl();
+        uint256 totalColl = getEntireBranchColl();
         totalColl += _troveChange.collIncrease;
         totalColl -= _troveChange.collDecrease;
 
-        uint256 totalDebt = getEntireSystemDebt();
+        uint256 totalDebt = getEntireBranchDebt();
         totalDebt += _troveChange.debtIncrease;
         totalDebt += _troveChange.upfrontFee;
         totalDebt -= _troveChange.debtDecrease;

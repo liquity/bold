@@ -129,7 +129,7 @@ contract CollateralRegistry is ICollateralRegistry {
             }
         }
 
-        // There’s an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
+        // There's an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
         // In that case, we redeem proportinally to branch size
         if (totals.unbacked == 0) {
             unbackedPortions = new uint256[](totals.numCollaterals);
@@ -137,7 +137,7 @@ contract CollateralRegistry is ICollateralRegistry {
                 ITroveManager troveManager = getTroveManager(index);
                 (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
                 if (redeemable) {
-                    uint256 unbackedPortion = troveManager.getEntireSystemDebt();
+                    uint256 unbackedPortion = troveManager.getEntireBranchDebt();
                     totals.unbacked += unbackedPortion;
                     unbackedPortions[index] = unbackedPortion;
                 }
@@ -171,11 +171,11 @@ contract CollateralRegistry is ICollateralRegistry {
 
     // Update the last fee operation time only if time passed >= decay interval. This prevents base rate griefing.
     function _updateLastFeeOpTime() internal {
-        uint256 timePassed = block.timestamp - lastFeeOperationTime;
+        uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
 
-        if (timePassed >= ONE_MINUTE) {
-            lastFeeOperationTime += _minutesPassedSinceLastFeeOp()*60; // 60 seconds in 1 minute.
-            emit LastFeeOpTimeUpdated(block.timestamp);
+        if (minutesPassed > 0) {
+            lastFeeOperationTime += ONE_MINUTE * minutesPassed;
+            emit LastFeeOpTimeUpdated(lastFeeOperationTime);
         }
     }
 

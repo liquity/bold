@@ -196,20 +196,20 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         address coll,
         TroveManagerParams memory params
     ) internal returns (address, address) {
-        IAddressesRegistry addressesRegistry = new AddressesRegistry(
+        AddressesRegistry newAddressesRegistry = new AddressesRegistry(
             address(this),
             params.CCR,
             params.MCR,
             params.SCR,
-            type(uint256).max, // TODO: DEBT LIMIT?
-            // TODO: Debt Limit
+            params.BCR,
+            params.debtLimit,
             params.LIQUIDATION_PENALTY_SP,
             params.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
         address troveManagerAddress =
-            getAddress(address(this), getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry)), SALT);
+            getAddress(address(this), getBytecode(type(TroveManagerTester).creationCode, address(newAddressesRegistry)), SALT);
         
-        return (address(addressesRegistry), troveManagerAddress);
+        return (address(newAddressesRegistry), troveManagerAddress);
     }
 
     function setup() internal virtual override {
@@ -237,11 +237,13 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             CCR: 150e16,                          // 150%
             MCR: 110e16,                          // 110%
             SCR: 130e16,                          // 130%
+            BCR: 120e16,                          // 120%
+            debtLimit: type(uint256).max, 
             LIQUIDATION_PENALTY_SP: 1e17,         // 10%
             LIQUIDATION_PENALTY_REDISTRIBUTION: 1e17  // 10%
         });
 
-        (address addressesRegistry, address troveManagerAddress) = _setupAddressRegistryAndTroveManager(
+        (address newAddressesRegistryAddr, address troveManagerAddress) = _setupAddressRegistryAndTroveManager(
             address(weth),
             _troveManagerParams
         );
@@ -271,10 +273,11 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             IBoldToken(address(boldToken)),
             IWETH(address(weth)),
             troveManagerAddress,
-            IAddressesRegistry(addressesRegistry),
+            AddressesRegistry(newAddressesRegistryAddr),
             ICollateralRegistry(address(collateralRegistry)),
             IHintHelpers(address(hintHelpers)),
-            IMultiTroveGetter(address(multiTroveGetter))
+            IMultiTroveGetter(address(multiTroveGetter)),
+            _troveManagerParams
         ));
 
         _switchToActiveBranch(0);
@@ -325,6 +328,8 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         uint256 CCR;
         uint256 MCR;
         uint256 SCR;
+        uint256 BCR;
+        uint256 debtLimit;      
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
     }
@@ -334,15 +339,26 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         IBoldToken _boldToken,
         IWETH _weth,
         address _troveManagerAddress,
-        IAddressesRegistry _addressesRegistry,
+        AddressesRegistry _addressesRegistry,
         ICollateralRegistry _collateralRegistry,
         IHintHelpers _hintHelpers,
-        IMultiTroveGetter _multiTroveGetter
+        IMultiTroveGetter _multiTroveGetter,
+        TroveManagerParams memory _troveManagerParams
     ) internal returns (LiquityContractsDev memory contracts) {
         LiquityContractAddresses memory addresses;
 
         // Deploy all contracts, using testers for TM and PriceFeed
-        contracts.addressesRegistry = AddressesRegistry(address(_addressesRegistry));
+        AddressesRegistry newRegistry = new AddressesRegistry(
+            address(this),
+            _troveManagerParams.CCR,
+            _troveManagerParams.MCR,
+            _troveManagerParams.SCR,
+            _troveManagerParams.BCR,
+            _troveManagerParams.debtLimit,
+            _troveManagerParams.LIQUIDATION_PENALTY_SP,
+            _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
+        );
+        contracts.addressesRegistry = AddressesRegistry(address(newRegistry));
         contracts.priceFeed = new MultiTokenPriceFeedTestnet();
         contracts.interestRouter = new InterestRouter();
         contracts.collToken = MockERC20(address(_collToken));
