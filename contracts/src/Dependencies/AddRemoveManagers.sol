@@ -59,10 +59,6 @@ contract AddRemoveManagers is HasWhitelist, IAddRemoveManagers {
         emit AddManagerUpdated(_troveId, _manager);
     }
 
-    function setRemoveManager(uint256 _troveId, address _manager) external {
-        setRemoveManagerWithReceiver(_troveId, _manager, troveNFT.ownerOf(_troveId));
-    }
-
     function setRemoveManagerWithReceiver(uint256 _troveId, address _manager, address _receiver) public {
         _requireCallerIsBorrower(_troveId);
         
