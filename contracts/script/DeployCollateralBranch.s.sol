@@ -44,8 +44,6 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         uint256 BCR;
         uint256 CCR;
         address collateralAddress;
-        uint256 collateralIndex;
-        bool createWhitelist;
         bool createWrapper;
         uint256 liqPenaltyDistr;
         uint256 liqPenaltySP;
@@ -174,7 +172,6 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](numBranches);
         BranchDeployment [] memory branchDeploymentConfigs = new BranchDeployment[](numBranches);
-        uint256[] memory collateralIndexes = new uint256[](numBranches);
         string[] memory collNames = new string[](numBranches);
         string[] memory collSymbols = new string[](numBranches);
 
@@ -203,7 +200,6 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             );
 
             // deploy collateral wrapper and set as actual collateral if necessary
-            collateralIndexes[i] = branchConfig.collateralIndex;
             collNames[i] = collName;
             collSymbols[i] = collSymbol;
             troveManagerParamsArray[i] = TroveManagerParams({
@@ -221,9 +217,11 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             branchDeploymentConfigs[i].oracleAddress = branchConfig.oracleAddress;
             branchDeploymentConfigs[i].oracleStalenessThreshold = branchConfig.oracleStalenessThreshold;
 
+            // uint256 collateralIndex = 
+
             _log("Branch number:               ", (i + 1).toString());
             _log("Collateral Address:               ", branchConfig.collateralAddress.toHexString());
-            _log("Collateral Index:               ", branchConfig.collateralIndex.toHexString());
+            // _log("Collateral Index:               ", collateralIndex.toHexString());
             _log("Deploy Wrapper and Zapper:               ", branchConfig.createWrapper.toString());
             _log("Collateral Name:               ", collName);
             _log("Collateral Symbol:               ", collSymbol);
@@ -245,7 +243,8 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             troveManagerParamsArray,
             globalContracts,
             branchDeploymentConfigs,
-            collateralIndexes
+            collNames,
+            collSymbols
         );
 
         vm.stopBroadcast();
@@ -259,7 +258,8 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         TroveManagerParams[] memory troveManagerParamsArray,
         GlobalContracts memory globalContracts,
         BranchDeployment[] memory branchConfigs,
-        uint256[] memory _collateralIndexes
+        string[] memory _collNames,
+        string[] memory _collSymbols
     ) public returns (BranchContracts[] memory branches) {
         assert(branchConfigs.length == troveManagerParamsArray.length);
 
@@ -311,7 +311,6 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         } else {
             // only add new branches to existing collateral registry
             globalContracts.collateralRegistry.addNewCollaterals(
-                _collateralIndexes,
                 vars.collaterals,
                 vars.troveManagers
             );

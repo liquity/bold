@@ -30,6 +30,9 @@ contract CollateralRegistry is Owned, ICollateralRegistry {
     event NewCollateralAdded(address collateral, address troveManager);
     event CollateralRemoved(address collateral, address troveManager);
     event WhitelistSet(address whitelist);
+    
+    error ZeroAddressCollateral();
+    error ZeroAddressManager();
 
     // --- Constructor ---
 
@@ -47,8 +50,13 @@ contract CollateralRegistry is Owned, ICollateralRegistry {
         boldToken = _boldToken;
 
         for (uint8 i; i < numTokens; i++) {
-            collateralTokens[i] = _tokens[i];
-            troveManagers[i] = _troveManagers[i];
+            IERC20Metadata collateral = _tokens[i];
+            ITroveManager manager = _troveManagers[i];
+
+            _requireValidCollateralAndManager(collateral, manager);
+
+            collateralTokens[i] = collateral;
+            troveManagers[i] = manager;
         }
 
         // Initialize the baseRate state variable
@@ -58,27 +66,31 @@ contract CollateralRegistry is Owned, ICollateralRegistry {
     }
 
     function addNewCollaterals(
-        uint256[] memory _indexes,
         IERC20Metadata[] memory _tokens,
         ITroveManager[] memory _troveManagers
     ) external override onlyOwner {
-        uint256 numTokens = _indexes.length;
-        require(numTokens > 0 && numTokens == _tokens.length && numTokens == _troveManagers.length, "Invalid input");
+        uint256 numTokens = _tokens.length;
+        require(numTokens > 0 && numTokens == _troveManagers.length, "Invalid input");
 
         require(totalCollaterals + numTokens <= 10, "Max collaterals");
 
         // add new collaterals and trove managers
+        uint256 pushIndex = totalCollaterals; 
         for (uint8 i = 0; i < numTokens; i++) {
-            uint256 index = _indexes[i];
-
             // can't overwrite an existing branch
-            require(index <= 9, "Invalid index");
-            require(address(collateralTokens[index]) == address(0), "Collateral already initialised");
+            assert(address(collateralTokens[pushIndex]) == address(0));
 
-            collateralTokens[index] = _tokens[i];
-            troveManagers[index] = _troveManagers[i];
+            IERC20Metadata collateral = _tokens[i];
+            ITroveManager manager = _troveManagers[i];
 
-            emit NewCollateralAdded(address(_tokens[i]), address(_troveManagers[i]));
+            _requireValidCollateralAndManager(collateral, manager);
+
+            collateralTokens[pushIndex] = collateral;
+            troveManagers[pushIndex] = manager;
+
+            pushIndex ++;
+    
+            emit NewCollateralAdded(address(collateral), address(manager));
         }
 
         // update total Collaterals
@@ -316,5 +328,13 @@ contract CollateralRegistry is Owned, ICollateralRegistry {
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
         require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
+    }
+
+    function _requireValidCollateralAndManager(IERC20Metadata collateral, ITroveManager manager) internal pure {
+        if(address(collateral) == address(0))
+            revert ZeroAddressCollateral();            
+                
+        if(address(manager) == address(0))
+            revert ZeroAddressManager();
     }
 }
