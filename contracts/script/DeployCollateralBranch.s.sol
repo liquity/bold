@@ -44,6 +44,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         uint256 BCR;
         uint256 CCR;
         address collateralAddress;
+        bool createWhitelist;
         bool createWrapper;
         uint256 liqPenaltyDistr;
         uint256 liqPenaltySP;
@@ -217,11 +218,8 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             branchDeploymentConfigs[i].oracleAddress = branchConfig.oracleAddress;
             branchDeploymentConfigs[i].oracleStalenessThreshold = branchConfig.oracleStalenessThreshold;
 
-            // uint256 collateralIndex = 
-
             _log("Branch number:               ", (i + 1).toString());
             _log("Collateral Address:               ", branchConfig.collateralAddress.toHexString());
-            // _log("Collateral Index:               ", collateralIndex.toHexString());
             _log("Deploy Wrapper and Zapper:               ", branchConfig.createWrapper.toString());
             _log("Collateral Name:               ", collName);
             _log("Collateral Symbol:               ", collSymbol);
@@ -242,9 +240,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         BranchContracts[] memory branches = deployAndConnectMultiBranch(
             troveManagerParamsArray,
             globalContracts,
-            branchDeploymentConfigs,
-            collNames,
-            collSymbols
+            branchDeploymentConfigs
         );
 
         vm.stopBroadcast();
@@ -257,9 +253,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
     function deployAndConnectMultiBranch(
         TroveManagerParams[] memory troveManagerParamsArray,
         GlobalContracts memory globalContracts,
-        BranchDeployment[] memory branchConfigs,
-        string[] memory _collNames,
-        string[] memory _collSymbols
+        BranchDeployment[] memory branchConfigs
     ) public returns (BranchContracts[] memory branches) {
         assert(branchConfigs.length == troveManagerParamsArray.length);
 
