@@ -2,11 +2,13 @@
 
 pragma solidity 0.8.24;
 
+import "./HasWhitelist.sol";
 import "../Interfaces/IAddRemoveManagers.sol";
 import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/ITroveNFT.sol";
+import "../Interfaces/IWhitelist.sol";
 
-contract AddRemoveManagers is IAddRemoveManagers {
+contract AddRemoveManagers is HasWhitelist, IAddRemoveManagers {
     ITroveNFT internal immutable troveNFT;
 
     struct RemoveManagerReceiver {
@@ -63,6 +65,12 @@ contract AddRemoveManagers is IAddRemoveManagers {
 
     function setRemoveManagerWithReceiver(uint256 _troveId, address _manager, address _receiver) public {
         _requireCallerIsBorrower(_troveId);
+        
+        IWhitelist _whitelist = whitelist;
+        if (address(_whitelist) != address(0)) {
+            _requireWhitelisted(_whitelist, _receiver);
+        }
+
         _setRemoveManagerAndReceiver(_troveId, _manager, _receiver);
     }
 
