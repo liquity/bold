@@ -276,19 +276,19 @@ contract CollateralRegistryTest is MulticollateralTest, WhitelistTestSetup {
         validManager[0] = troveManager;
 
         // in constructor 
-        vm.expectRevert(CollateralRegistry.ZeroAddressCollateral.selector);
+        vm.expectRevert(CollateralRegistry.ZeroAddress.selector);
         new CollateralRegistry(boldToken, zeroAddressColl, validManager, A);
 
-        vm.expectRevert(CollateralRegistry.ZeroAddressManager.selector);
+        vm.expectRevert(CollateralRegistry.ZeroAddress.selector);
         new CollateralRegistry(boldToken, validColl, zeroAddressManager, A);
 
         // in addCollaterals
         vm.startPrank(boldToken.owner());
         
-        vm.expectRevert(CollateralRegistry.ZeroAddressCollateral.selector);
+        vm.expectRevert(CollateralRegistry.ZeroAddress.selector);
         collateralRegistry.addNewCollaterals(zeroAddressColl, validManager);
 
-        vm.expectRevert(CollateralRegistry.ZeroAddressManager.selector);
+        vm.expectRevert(CollateralRegistry.ZeroAddress.selector);
         collateralRegistry.addNewCollaterals(validColl, zeroAddressManager);
 
         vm.stopPrank();
