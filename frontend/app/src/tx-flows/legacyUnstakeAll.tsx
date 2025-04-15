@@ -57,7 +57,12 @@ export const legacyUnstakeAll: FlowDeclaration<LegacyUnstakeAllRequest> = {
           throw new Error("LEGACY_CHECK is not defined");
         }
 
-        const initiativesFromSnapshotResult = await fetch(LEGACY_CHECK.INITIATIVES_SNAPSHOT_URL);
+        const initiativesFromSnapshotResult = await fetch(LEGACY_CHECK.INITIATIVES_SNAPSHOT_URL).catch((err) => {
+          console.error("Error fetching initiatives from snapshot.");
+          console.error("LEGACY_CHECK.INITIATIVES_SNAPSHOT_URL:", LEGACY_CHECK?.INITIATIVES_SNAPSHOT_URL);
+          throw err;
+        });
+
         const initiativesFromSnapshot = v.parse(
           v.array(vAddress()),
           await initiativesFromSnapshotResult.json(),

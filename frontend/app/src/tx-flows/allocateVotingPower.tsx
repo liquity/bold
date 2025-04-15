@@ -221,7 +221,7 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
           ...ctx.contracts.Governance,
           functionName: "allocateLQTY",
           args: [
-            (allocated.governanceUser?.allocated ?? []) as Address[],
+            (allocated.governanceUser?.allocated ?? []) as Address[], // to reset
             allocationArgs.initiatives,
             allocationArgs.votes,
             allocationArgs.vetos,

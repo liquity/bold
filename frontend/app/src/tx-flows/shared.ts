@@ -32,6 +32,7 @@ export async function verifyTransaction(
   wagmiConfig: WagmiConfig,
   hash: string,
   isSafe: boolean,
+  waitForSubgraphIndexation: boolean = true,
 ) {
   const tx = await (
     isSafe
@@ -47,7 +48,9 @@ export async function verifyTransaction(
   );
 
   // wait for the block number to be indexed by the subgraph
-  await verifyBlockNumberIndexation(tx.blockNumber);
+  if (waitForSubgraphIndexation) {
+    await verifyBlockNumberIndexation(tx.blockNumber);
+  }
 
   return tx;
 }

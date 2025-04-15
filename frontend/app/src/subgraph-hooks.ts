@@ -10,13 +10,7 @@ import { DEMO_MODE } from "@/src/env";
 import { isPositionLoanCommitted } from "@/src/types";
 import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
-import {
-  AllInterestRateBracketsQuery,
-  BorrowerInfoQuery,
-  GovernanceInitiatives,
-  GovernanceStats,
-  graphQuery,
-} from "./subgraph-queries";
+import { AllInterestRateBracketsQuery, BorrowerInfoQuery, GovernanceInitiatives, graphQuery } from "./subgraph-queries";
 
 type Options = {
   refetchInterval?: number;
@@ -140,29 +134,6 @@ export function useGovernanceInitiatives(options?: Options) {
 
   return useQuery({
     queryKey: ["GovernanceInitiatives"],
-    queryFn,
-    ...prepareOptions(options),
-  });
-}
-
-export function useGovernanceStats(options?: Options) {
-  let queryFn = async () => {
-    const { governanceStats } = await graphQuery(GovernanceStats);
-    return governanceStats && {
-      ...governanceStats,
-      totalLQTYStaked: BigInt(governanceStats.totalLQTYStaked),
-      totalOffset: BigInt(governanceStats.totalOffset),
-      totalInitiatives: BigInt(governanceStats.totalInitiatives),
-    };
-  };
-
-  // TODO: demo mode
-  if (DEMO_MODE) {
-    queryFn = async () => null;
-  }
-
-  return useQuery({
-    queryKey: ["GovernanceStats"],
     queryFn,
     ...prepareOptions(options),
   });

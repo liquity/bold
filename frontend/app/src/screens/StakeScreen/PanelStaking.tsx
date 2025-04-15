@@ -5,11 +5,10 @@ import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { useGovernanceUser } from "@/src/liquity-governance";
+import { useGovernanceStats, useGovernanceUser } from "@/src/liquity-governance";
 import { useStakePosition } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useGovernanceStats } from "@/src/subgraph-hooks";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -44,20 +43,23 @@ export function PanelStaking() {
 
   const updatedShare = (() => {
     const { totalLQTYStaked } = govStats.data ?? {};
-    const { stakedLQTY } = govUser.data ?? {};
+    const { allocatedLQTY } = govUser.data ?? {};
 
-    if (!totalLQTYStaked || !stakedLQTY) {
+    if (
+      allocatedLQTY === undefined
+      || totalLQTYStaked === undefined
+    ) {
       return DNUM_0;
     }
 
-    const updatedUserLqtyStaked = stakedLQTY + depositDifference[0];
+    const updatedUserLqtyAllocated = allocatedLQTY + depositDifference[0];
     const updatedTotalLqtyStaked = totalLQTYStaked + depositDifference[0];
 
     // make sure we don't divide by zero or show negative percentages
-    return (updatedUserLqtyStaked <= 0n || updatedTotalLqtyStaked <= 0n)
+    return (updatedUserLqtyAllocated <= 0n || updatedTotalLqtyStaked <= 0n)
       ? DNUM_0
       : dn.div(
-        [updatedUserLqtyStaked, 18],
+        [updatedUserLqtyAllocated, 18],
         [updatedTotalLqtyStaked, 18],
       );
   })();
@@ -183,14 +185,15 @@ export function PanelStaking() {
         footer={{
           start: (
             <Field.FooterInfo
-              label="New voting power"
+              label="New voting share"
               value={
                 <HFlex>
                   <div>
                     <Amount value={updatedShare} percentage suffix="%" />
                   </div>
                   <InfoTooltip>
-                    Voting power is the percentage of the total staked LQTY that you own.
+                    Your voting share is the amount of LQTY have staked and that is available to vote, divided by the
+                    total amount of LQTY staked via the governance contract.
                   </InfoTooltip>
                 </HFlex>
               }
