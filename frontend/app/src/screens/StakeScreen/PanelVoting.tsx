@@ -7,6 +7,7 @@ import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
+import { DNUM_0 } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { fmtnum, formatDate } from "@/src/formatting";
 import { useGovernanceState, useGovernanceUser, useInitiatives, useInitiativesStates } from "@/src/liquity-governance";
@@ -130,7 +131,7 @@ export function PanelVoting() {
       ];
 
       allocations[allocation.initiative] = {
-        value: dn.div(qty, stakedLQTY),
+        value: dn.eq(stakedLQTY, 0) ? DNUM_0 : dn.div(qty, stakedLQTY),
         vote,
       };
     }
@@ -732,7 +733,10 @@ function InitiativeRow({
                     }, 0);
                   }}
                   disabled={disabled}
-                  share={dn.div(voteAllocation?.value ?? [0n, 18], totalStaked)}
+                  share={dn.eq(totalStaked, 0) ? DNUM_0 : dn.div(
+                    voteAllocation?.value ?? DNUM_0,
+                    totalStaked,
+                  )}
                   vote={voteAllocation?.vote ?? null}
                 />
               )

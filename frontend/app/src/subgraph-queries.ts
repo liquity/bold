@@ -108,37 +108,6 @@ export const GovernanceInitiatives = graphql(`
   }
 `);
 
-export const GovernanceUser = graphql(`
-  query GovernanceUser($id: ID!) {
-    governanceUser(id: $id) {
-      id
-      allocatedLQTY
-      stakedLQTY
-      stakedOffset
-      allocations {
-        id
-        atEpoch
-        vetoLQTY
-        voteLQTY
-        initiative {
-          id
-        }
-      }
-    }
-  }
-`);
-
-export const GovernanceStats = graphql(`
-  query GovernanceStats {
-    governanceStats(id: "stats") {
-      id
-      totalLQTYStaked
-      totalOffset
-      totalInitiatives
-    }
-  }
-`);
-
 export const GovernanceUserAllocated = graphql(`
   query GovernanceUserAllocations($id: ID!) {
     governanceUser(id: $id) {

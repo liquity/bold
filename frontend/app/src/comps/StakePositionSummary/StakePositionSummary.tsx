@@ -24,12 +24,12 @@ export function StakePositionSummary({
   stakePosition: null | PositionStake;
   txPreviewMode?: boolean;
 }) {
-  const govUser = useGovernanceUser(stakePosition?.owner ?? null);
-
   const account = useAccount();
 
+  const govUser = useGovernanceUser(stakePosition?.owner ?? null);
+
   const appear = useAppear(
-    account.isDisconnected || (
+    !account.isConnected || (
       loadingState === "success" && govUser.status === "success"
     ),
   );
@@ -310,7 +310,7 @@ export function StakePositionSummary({
                                 Your relative voting power changes over time, depending on your and others deposits of
                                 LQTY.
                               </p>
-                              {account.address && (govUser.data?.stakedLQTY ?? 0n) > 0n && (
+                              {account.address && (govUser.data?.allocatedLQTY ?? 0n) > 0n && (
                                 <div
                                   className={css({
                                     display: "flex",

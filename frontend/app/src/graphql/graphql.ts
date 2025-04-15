@@ -1874,18 +1874,6 @@ export type GovernanceInitiativesQueryVariables = Exact<{ [key: string]: never; 
 
 export type GovernanceInitiativesQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string }> };
 
-export type GovernanceUserQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GovernanceUserQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', id: string, allocatedLQTY: bigint, stakedLQTY: bigint, stakedOffset: bigint, allocations: Array<{ __typename?: 'GovernanceAllocation', id: string, atEpoch: bigint, vetoLQTY: bigint, voteLQTY: bigint, initiative: { __typename?: 'GovernanceInitiative', id: string } }> } | null };
-
-export type GovernanceStatsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GovernanceStatsQuery = { __typename?: 'Query', governanceStats?: { __typename?: 'GovernanceStats', id: string, totalLQTYStaked: bigint, totalOffset: bigint, totalInitiatives: number } | null };
-
 export type GovernanceUserAllocationsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -1980,35 +1968,6 @@ export const GovernanceInitiativesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GovernanceInitiativesQuery, GovernanceInitiativesQueryVariables>;
-export const GovernanceUserDocument = new TypedDocumentString(`
-    query GovernanceUser($id: ID!) {
-  governanceUser(id: $id) {
-    id
-    allocatedLQTY
-    stakedLQTY
-    stakedOffset
-    allocations {
-      id
-      atEpoch
-      vetoLQTY
-      voteLQTY
-      initiative {
-        id
-      }
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<GovernanceUserQuery, GovernanceUserQueryVariables>;
-export const GovernanceStatsDocument = new TypedDocumentString(`
-    query GovernanceStats {
-  governanceStats(id: "stats") {
-    id
-    totalLQTYStaked
-    totalOffset
-    totalInitiatives
-  }
-}
-    `) as unknown as TypedDocumentString<GovernanceStatsQuery, GovernanceStatsQueryVariables>;
 export const GovernanceUserAllocationsDocument = new TypedDocumentString(`
     query GovernanceUserAllocations($id: ID!) {
   governanceUser(id: $id) {
