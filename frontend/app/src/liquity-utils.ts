@@ -494,6 +494,11 @@ const StatsSchema = v.pipe(
     total_sp_deposits: v.string(),
     total_value_locked: v.string(),
     max_sp_apy: v.string(),
+    day_supply: v.array(v.object({
+      day: v.string(),
+      holders: v.string(),
+      supply: v.string(),
+    })),
     branch: v.record(
       v.string(),
       v.object({
@@ -519,6 +524,13 @@ const StatsSchema = v.pipe(
     totalSpDeposits: value.total_sp_deposits,
     totalValueLocked: value.total_value_locked,
     maxSpApy: value.max_sp_apy,
+    historicalSupply: value.day_supply.map((dailyObj) => {
+      return {
+        day: dailyObj.day,
+        holders: dailyObj.holders,
+        supply: dailyObj.supply,
+      }
+    }),
     branch: Object.fromEntries(
       Object.entries(value.branch).map(([symbol, branch]) => {
         symbol = symbol.toUpperCase();

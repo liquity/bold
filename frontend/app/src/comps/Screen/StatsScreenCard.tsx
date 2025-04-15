@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
 import { LoadingSurface } from "@liquity2/uikit";
-import { a, useSpring } from "@react-spring/web";
+import { a } from "@react-spring/web";
 import { match } from "ts-pattern";
 
 const LOADING_CARD_WIDTH = 968;
@@ -19,31 +19,6 @@ export function StatsScreenCard({
 }) {
   const scaleRatio = LOADING_CARD_WIDTH / FINAL_CARD_WIDTH;
 
-  const spring = useSpring({
-    to:
-      mode === "ready"
-        ? {
-            cardtransform: "scale3d(1, 1, 1)",
-            containerHeight: finalHeight,
-          }
-        : {
-            cardtransform: `scale3d(${scaleRatio}, ${scaleRatio}, 1)`,
-            containerHeight: Math.max(
-              finalHeight,
-              window.innerHeight -
-                120 - // top bar
-                24 * 2 - // padding
-                48 - // bottom bar 1
-                40
-            ),
-          },
-    config: {
-      mass: 1,
-      tension: 2000,
-      friction: 120,
-    },
-  });
-
   return (
     <a.div
       className={css({
@@ -54,7 +29,7 @@ export function StatsScreenCard({
       })}
       style={{
         width: "100%",
-        height: spring.containerHeight,
+        height: "100%",
       }}
     >
       <a.div
@@ -64,8 +39,7 @@ export function StatsScreenCard({
           userSelect: "none",
         })}
         style={{
-          height: finalHeight,
-          transform: spring.cardtransform,
+          height: "100%",
           willChange: "transform",
         }}
       >

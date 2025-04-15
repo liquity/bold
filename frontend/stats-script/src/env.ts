@@ -7,5 +7,6 @@ if (!process.env.ALCHEMY_API_KEY) {
 }
 
 export const env = {
-  ALCHEMY_KEY: process.env.ALCHEMY_API_KEY!
+  ALCHEMY_KEY: process.env.ALCHEMY_API_KEY!,
+  DUNE_KEY: process.env.DUNE_API_KEY!
 };

@@ -27,7 +27,8 @@ export async function fetchAndUpdateStats() {
   const [bscStats] = await Promise.all([
     fetchV2Stats({
       deployment: v2MainnetDeployment,
-      provider: bscProvider
+      provider: bscProvider,
+      duneKey: env.DUNE_KEY
     })
   ]);
   

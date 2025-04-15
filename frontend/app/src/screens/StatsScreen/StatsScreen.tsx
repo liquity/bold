@@ -8,6 +8,7 @@ import { css } from "@/styled-system/css";
 import { HFlex, LoadingSurface } from "@liquity2/uikit";
 import { TokenCard } from "@/src/screens/HomeScreen/HomeScreen";
 import { fmtnum } from "@/src/formatting";
+import SupplyChart from "./SupplyChart";
 
 // TODO fix branch symbol after production deployment
 export function StatsScreen() {
@@ -30,7 +31,6 @@ export function StatsScreen() {
       })}
     >
       <StatsScreenCard
-        finalHeight={200}
         mode={match(loadingState)
           .returnType<"ready" | "loading" | "error">()
           .with("loading", () => "loading")
@@ -117,7 +117,7 @@ export function StatsScreen() {
                 </div>
                 <div
                   className={css({
-                    marginTop: "10%",
+                    marginTop: "5%",
                     display: "grid",
                     gap: 24,
                     width: "100%",
@@ -162,12 +162,17 @@ export function StatsScreen() {
                     ]}
                   />
                 </div>
-              </>
+                <div className={css({
+                    marginTop: "5%",
+                  })}>
+                <StatsTitle title="Historical stats" subtitle="" />
+                <SupplyChart data={liquityStats.data.historicalSupply} />
+                </div>
 
+              </>
             );
           })}
       </StatsScreenCard>
     </div>
   );
 }
-

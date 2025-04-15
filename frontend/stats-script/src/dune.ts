@@ -28,10 +28,10 @@ export const duneFetch = async <T extends DuneResponse>({
   });
   const data = await response.json();
 
-  console.log(
-    `Dune response for ${url}:`,
-    util.inspect(data, { colors: true, depth: null })
-  );
+  // console.log(
+  //   `Dune response for ${url}:`,
+  //   util.inspect(data, { colors: true, depth: null })
+  // );
 
   if (!validate(data)) {
     throw new Error("Dune query returned unexpected response");
