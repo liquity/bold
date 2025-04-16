@@ -90,7 +90,8 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
             // Require that enough gas was provided to prevent an OOG revert in the external call
             // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
             // in the check itself.
-            if (gasleft() + 5000 <= gasBefore / 64) revert InsufficientGasForExternalCall();
+            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
+
 
             // If call to exchange rate reverts, return true
             return (0, true);
