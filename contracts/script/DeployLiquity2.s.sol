@@ -689,7 +689,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
         addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)))
+            SALT, keccak256(getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry), _governance))
         );
         addresses.stabilityPool = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)))
@@ -735,7 +735,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         contracts.borrowerOperations = new BorrowerOperations{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry, _governance);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
