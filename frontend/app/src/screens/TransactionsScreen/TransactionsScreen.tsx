@@ -11,7 +11,7 @@ import { css } from "@/styled-system/css";
 import { AnchorButton, AnchorTextButton, Button, HFlex, IconCross, VFlex } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import Link from "next/link";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { match, P } from "ts-pattern";
 
 export type LoadingState =
@@ -611,30 +611,97 @@ function Tick() {
 }
 
 function NoTransactionsScreen() {
+  const [showLoader, setShowLoader] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowLoader(false);
+    }, 1000);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
+
+  const transition = useTransition(showLoader, {
+    from: {
+      opacity: 0,
+      transform: "scale(0.97)",
+    },
+    enter: {
+      opacity: 1,
+      transform: "scale(1)",
+    },
+    leave: {
+      opacity: 0,
+      transform: "scale(1)",
+      immediate: true,
+    },
+    config: {
+      mass: 1,
+      tension: 2000,
+      friction: 120,
+    },
+  });
+
   return (
     <div
       className={css({
         flexGrow: 1,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: 20,
+        position: "relative",
         width: "100%",
+        height: "100%",
+        "& > div": {
+          position: "absolute",
+          inset: 0,
+          display: "grid",
+          placeItems: "center",
+        },
       })}
     >
-      <div>
-        No ongoing transactions.
-      </div>
-      <div>
-        <Link
-          href="/"
-          legacyBehavior
-          passHref
-        >
-          <AnchorTextButton label="Back to dashboard" />
-        </Link>
-      </div>
+      {transition((style, show) => (
+        show
+          ? (
+            <a.div style={style}>
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  fontSize: 16,
+                  userSelect: "none",
+                  color: "content",
+                })}
+              >
+                <Spinner size={20} />
+                <div>Preparing transactions…</div>
+              </div>
+            </a.div>
+          )
+          : (
+            <a.div style={style}>
+              <div
+                className={css({
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 20,
+                })}
+              >
+                <div>No ongoing transactions.</div>
+                <div>
+                  <Link
+                    href="/"
+                    legacyBehavior
+                    passHref
+                  >
+                    <AnchorTextButton label="Go to the dashboard" />
+                  </Link>
+                </div>
+              </div>
+            </a.div>
+          )
+      ))}
     </div>
   );
 }
