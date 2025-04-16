@@ -168,6 +168,7 @@ contract AddressesRegistry is Owned, IAddressesRegistry {
         troveManager.setWhitelist(_newWhitelist);
         borrowerOperations.setWhitelist(_newWhitelist);
         stabilityPool.setWhitelist(_newWhitelist);
+        troveNFT.setWhitelist(_newWhitelist);
 
         emit WhitelistChanged(address(_newWhitelist));
     }
