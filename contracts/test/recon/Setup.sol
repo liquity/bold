@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {BaseSetup} from "@chimera/BaseSetup.sol";
 import {vm} from "chimera/Hevm.sol";
 import "forge-std/console2.sol";
+import "forge-std/console.sol";
 
 import {MockERC20} from "./mocks/MockERC20.sol";
 
@@ -164,7 +165,6 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
     bool hasDoneRedemption;
 
     // Fake addresses
-    address factory = address(this);
     address governor = address(this);
 
     function setNewClampedTroveId(uint256 entropy) public returns (uint256) {
@@ -200,8 +200,8 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             address(this),
             params.CCR,
             params.MCR,
-            params.SCR,
             params.BCR,
+            params.SCR,
             params.debtLimit,
             params.LIQUIDATION_PENALTY_SP,
             params.LIQUIDATION_PENALTY_REDISTRIBUTION
@@ -221,7 +221,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         SuperfluidFrameworkDeployer sfDeployer = new SuperfluidFrameworkDeployer();
         sfDeployer.deployTestFramework();
         _sf = sfDeployer.getFramework();
-        factory = address(_sf.superTokenFactory);
+        address factory = address(_sf.superTokenFactory);
 
         // === Before === ///
         // Bold and interst router
@@ -229,6 +229,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         boldToken = boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), _sf.superTokenFactory)));
         
         // NOTE: Unclear interface?
+        console.log("Initializing bold token in Setup. Please work :pray:");
         IInitializableBold(address(boldToken)).initialize(ISuperTokenFactory(factory));
 
         weth = MockERC20(_newAsset(18));
@@ -352,8 +353,8 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             address(this),
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
-            _troveManagerParams.SCR,
             _troveManagerParams.BCR,
+            _troveManagerParams.SCR,
             _troveManagerParams.debtLimit,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION

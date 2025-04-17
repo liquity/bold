@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import "./BaseTest.sol";
 import {TestDeployer} from "./Deployment.t.sol";
+import "forge-std/console.sol";
 
 import { ISuperToken } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
 import { SuperfluidFrameworkDeployer } from "@superfluid-finance/ethereum-contracts/contracts/utils/SuperfluidFrameworkDeployer.t.sol";
@@ -45,6 +46,7 @@ contract DevTestSetup is BaseTest {
 		SuperfluidFrameworkDeployer sfDeployer = new SuperfluidFrameworkDeployer();
 		sfDeployer.deployTestFramework();
 		_sf = sfDeployer.getFramework();
+        console.log("Superfluid framework deployed in DevTestSetup with setupSuperToken");
     }
 
     function setUp() public virtual {
@@ -64,6 +66,7 @@ contract DevTestSetup is BaseTest {
             accountsList[6]
         );
 
+        console.log("Setting up super token in DevTestSetup");
         setupSuperToken();
 
         TestDeployer deployer = new TestDeployer();
@@ -79,6 +82,8 @@ contract DevTestSetup is BaseTest {
         gasPool = contracts.pools.gasPool;
         priceFeed = contracts.priceFeed;
         sortedTroves = contracts.sortedTroves;
+
+        console.log("just did sortedTroves in DevTestSetup 69");
         stabilityPool = contracts.stabilityPool;
         troveManager = contracts.troveManager;
         troveNFT = contracts.troveNFT;

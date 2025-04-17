@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 import { BoldToken, IBoldToken } from "../src/BoldToken.sol";
+import {console} from "forge-std/console.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {ISuperTokenFactory} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
@@ -29,6 +30,7 @@ contract SFBold is Test {
         _sf = sfDeployer.getFramework();
 
         BoldToken superTokenPermitProxy = new BoldToken(_OWNER, _sf.superTokenFactory);
+        console.log("Deploying super token permit proxy in Setup for SF Bold. superTokenPermitProxy", address(superTokenPermitProxy));
         superTokenPermitProxy.initialize(_sf.superTokenFactory);
         _boldToken = IBoldToken(address(superTokenPermitProxy));
 
