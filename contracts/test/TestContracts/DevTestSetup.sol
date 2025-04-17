@@ -82,6 +82,8 @@ contract DevTestSetup is BaseTest {
         gasPool = contracts.pools.gasPool;
         priceFeed = contracts.priceFeed;
         sortedTroves = contracts.sortedTroves;
+
+        console.log("just did sortedTroves in DevTestSetup 69");
         stabilityPool = contracts.stabilityPool;
         troveManager = contracts.troveManager;
         troveNFT = contracts.troveNFT;
