@@ -236,6 +236,35 @@ contract troveNFTTest is DevTestSetup {
         assertTrue(LibString.contains(decodedUri, '"value": "Active"'), "Incorrect Status value");
     }
 
+    function testGovernanceFunctions() public {
+        // Setup test addresses
+        address newGovernance = address(0x456);
+        address nonGovernance = address(0x789);
+        address externalNFTUri = address(0xABC);
+
+        // Test updateGovernance
+        // Only current governance can update governance
+        vm.prank(nonGovernance);
+        vm.expectRevert("TroveNFT: Caller is not the governor.");
+        troveNFTWETH.updateGovernor(newGovernance);
+
+        // Governance can update governance
+        vm.prank(address(0));
+        troveNFTWETH.updateGovernor(newGovernance);
+        assertEq(troveNFTWETH.governor(), newGovernance, "Governance not updated");
+
+        // Test governorUpdateURI
+        // Only governance can update URI
+        vm.prank(nonGovernance);
+        vm.expectRevert("TroveNFT: Caller is not the governor.");
+        troveNFTWETH.governorUpdateURI(externalNFTUri);
+
+        // Governance can update URI
+        vm.prank(newGovernance);
+        troveNFTWETH.governorUpdateURI(externalNFTUri);
+        assertEq(troveNFTWETH.externalNFTUriAddress(), externalNFTUri, "External NFT URI address not updated");
+    }
+
     function test_toLocale() public pure {
         string memory result = numUtils.toLocale("123456789");
         //console.log(result);

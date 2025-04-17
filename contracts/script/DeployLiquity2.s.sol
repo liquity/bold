@@ -105,6 +105,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ICurveStableswapNGFactory(0x6A8cbed756804B16E05E741eDaBd5cB544AE21bf);
     uint128 constant BOLD_TOKEN_INDEX = 0;
     uint128 constant OTHER_TOKEN_INDEX = 1;
+    address constant mainnetDAO = 0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d; //arbitrum mainnet DAO address. Used for voting on updates to non-logic changes.
 
     // Uni V3
     uint24 constant UNIV3_FEE = 0.3e4;
@@ -280,7 +281,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             require(boldToken.collateralRegistryAddress() == address(0), "Collateral registry already set");
             require(BoldToken(payable(address(boldToken))).owner() == deployer, "Not BOLD owner");
         } else {
-            boldToken = IBoldToken(address(new BoldToken{salt: SALT}(deployer)));
+            boldToken = IBoldToken(address(new BoldToken{salt: SALT}(deployer, superTokenFactory)));
             //boldToken.initialize(superTokenFactory);
             assert(address(boldToken) == boldAddress);
         }
@@ -735,7 +736,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         contracts.borrowerOperations = new BorrowerOperations{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry, mainnetDAO);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);

@@ -226,7 +226,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         // === Before === ///
         // Bold and interst router
         interestRouter = new InterestRouter();
-        boldToken = boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this))));
+        boldToken = boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), _sf.superTokenFactory)));
         
         // NOTE: Unclear interface?
         IInitializableBold(address(boldToken)).initialize(ISuperTokenFactory(factory));
@@ -421,7 +421,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
 
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry, address(0));
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);

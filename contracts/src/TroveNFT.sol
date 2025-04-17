@@ -18,7 +18,10 @@ contract TroveNFT is ERC721, ITroveNFT {
 
     IMetadataNFT public immutable metadataNFT;
 
-    constructor(IAddressesRegistry _addressesRegistry)
+    address public governor;
+    address public externalNFTUriAddress = address(0);
+
+    constructor(IAddressesRegistry _addressesRegistry, address _governor)
         ERC721(
             string.concat("Liquity V2 - ", _addressesRegistry.collToken().name()),
             string.concat("LV2_", _addressesRegistry.collToken().symbol())
@@ -28,9 +31,17 @@ contract TroveNFT is ERC721, ITroveNFT {
         collToken = _addressesRegistry.collToken();
         metadataNFT = _addressesRegistry.metadataNFT();
         boldToken = _addressesRegistry.boldToken();
+        governor = _governor;
     }
 
     function tokenURI(uint256 _tokenId) public view override(ERC721, IERC721Metadata) returns (string memory) {
+        
+        //governor can update the URI externally at any time 
+        //without effecting the NFT storage or other parts of the protocol.
+        if (externalNFTUriAddress != address(0)) {
+            return IExternalNFTUri(externalNFTUriAddress).tokenURI(_tokenId);
+        }
+
         LatestTroveData memory latestTroveData = troveManager.getLatestTroveData(_tokenId);
 
         IMetadataNFT.TroveData memory troveData = IMetadataNFT.TroveData({
@@ -59,5 +70,15 @@ contract TroveNFT is ERC721, ITroveNFT {
 
     function _requireCallerIsTroveManager() internal view {
         require(msg.sender == address(troveManager), "TroveNFT: Caller is not the TroveManager contract");
+    }
+
+    function governorUpdateURI(address _externalNFTUriAddress) external {
+        require(msg.sender == governor, "TroveNFT: Caller is not the governor.");
+        externalNFTUriAddress = _externalNFTUriAddress;
+    }
+
+    function updateGovernor(address _governor) external {
+        require(msg.sender == governor, "TroveNFT: Caller is not the governor.");
+        governor = _governor;
     }
 }
