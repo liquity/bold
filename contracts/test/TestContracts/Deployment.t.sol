@@ -282,6 +282,8 @@ contract TestDeployer is MetadataDeployment {
             100 ether, //     _tapAmount
             1 days //         _tapPeriod
         );
+
+        // The Superfluid framework will be initialized in deployAndConnectContracts
         (contractsArray, collateralRegistry, boldToken, hintHelpers, multiTroveGetter, zappersArray) =
             deployAndConnectContracts(troveManagerParamsArray, WETH);
     }
