@@ -28,7 +28,7 @@ contract SFBold is Test {
         sfDeployer.deployTestFramework();
         _sf = sfDeployer.getFramework();
 
-        BoldToken superTokenPermitProxy = new BoldToken(_OWNER);
+        BoldToken superTokenPermitProxy = new BoldToken(_OWNER, _sf.superTokenFactory);
         superTokenPermitProxy.initialize(_sf.superTokenFactory);
         _boldToken = IBoldToken(address(superTokenPermitProxy));
 
@@ -118,7 +118,7 @@ contract SFBold is Test {
     }
 
     function testStorageLayout() public {
-        SFBoldStorageLayoutTest testContract = new SFBoldStorageLayoutTest(_OWNER);
+        SFBoldStorageLayoutTest testContract = new SFBoldStorageLayoutTest(_OWNER, _sf.superTokenFactory);
         testContract.validateStorageLayout();
     }
 
@@ -143,7 +143,7 @@ contract SFBold is Test {
 /// Validation of the storage layout
 contract SFBoldStorageLayoutTest is BoldToken {
 
-    constructor(address _owner) BoldToken(_owner) {}
+    constructor(address _owner, ISuperTokenFactory _sf) BoldToken(_owner, _sf) {}
     error STORAGE_LOCATION_CHANGED(string _name);
 
     function validateStorageLayout() public pure {

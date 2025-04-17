@@ -246,11 +246,11 @@ contract troveNFTTest is DevTestSetup {
         // Only current governance can update governance
         vm.prank(nonGovernance);
         vm.expectRevert("TroveNFT: Caller is not the governor.");
-        troveNFTWETH.updateGovernance(newGovernance);
+        troveNFTWETH.updateGovernor(newGovernance);
 
         // Governance can update governance
-        vm.prank(address("gov"));
-        troveNFTWETH.updateGovernance(newGovernance);
+        vm.prank(address(0));
+        troveNFTWETH.updateGovernor(newGovernance);
         assertEq(troveNFTWETH.governor(), newGovernance, "Governance not updated");
 
         // Test governorUpdateURI
