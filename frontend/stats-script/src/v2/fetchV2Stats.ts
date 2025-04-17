@@ -4,6 +4,7 @@ import { resolveProperties } from "@ethersproject/properties";
 import { Decimal } from "@liquity/lib-base";
 import {
   BOLD_SUPPLY_DAILY_QUERY,
+  COLLATERAL_RATIO_QUERY,
   DUNE_SPV2_AVERAGE_APY_URL_MAINNET,
 } from "../constants";
 
@@ -131,6 +132,30 @@ const isDuneHistoricalSupplyResponse = (
       typeof row.token_balance === "number"
   );
 
+const isDuneHistoricalCRResponse = (
+  data: unknown
+): data is DuneResponse<{
+  hour: string;
+  col_ratio_perc: number;
+  avg_col_ratio_perc: number;
+  collateral_type: string;
+}> =>
+  isDuneResponse(data) &&
+  data.result.rows.length > 0 &&
+  data.result.rows.every(
+    (row: unknown) =>
+      typeof row === "object" &&
+      row !== null &&
+      "hour" in row &&
+      typeof row.hour === "string" &&
+      "col_ratio_perc" in row &&
+      typeof row.col_ratio_perc === "number" &&
+      "avg_col_ratio_perc" in row &&
+      typeof row.avg_col_ratio_perc === "number" &&
+      "collateral_type" in row &&
+      typeof row.collateral_type === "string"
+  );
+
 const fetchSpAverageApysFromDune = async ({
   branches,
   apiKey,
@@ -214,6 +239,31 @@ const fetchHistSupplyFromDune = async ({
   });
 };
 
+const fetchHistCRFromDune = async ({
+  apiKey,
+  network,
+}: {
+  apiKey: string;
+  network: "bnb" | "mainnet";
+}) => {
+  // TODO use network for different queries
+  const url = COLLATERAL_RATIO_QUERY;
+
+  if (!url) {
+    return null;
+  }
+
+  const {
+    result: { rows: histCR },
+  } = await duneFetch({
+    apiKey,
+    url: `${url}`,
+    validate: isDuneHistoricalCRResponse,
+  });
+
+  return histCR;
+};
+
 export const fetchV2Stats = async ({
   provider,
   deployment,
@@ -232,54 +282,63 @@ export const fetchV2Stats = async ({
 
   const deployed = true;
 
-  const [total_bold_supply, branches, historicalSupply] = await Promise.all([
-    // total_bold_supply
-    deployed
-      ? contracts.boldToken.totalSupply({ blockTag }).then(decimalify)
-      : Decimal.ZERO,
+  const [total_bold_supply, branches, historicalSupply, historicalCR] =
+    await Promise.all([
+      // total_bold_supply
+      deployed
+        ? contracts.boldToken.totalSupply({ blockTag }).then(decimalify)
+        : Decimal.ZERO,
 
-    // branches
-    (deployed ? fetchBranchData : emptyBranchData)(contracts.branches)
-      .then((branches) =>
-        branches.map((branch) => ({
-          ...branch,
-          debt_pending: branch.interest_pending.add(
-            branch.batch_management_fees_pending
-          ),
-          coll_value: branch.coll_active
-            .add(branch.coll_default)
-            .mul(branch.coll_price),
-          sp_apy:
-            (SP_YIELD_SPLIT * Number(branch.interest_accrual_1y)) /
-            Number(branch.sp_deposits),
-        }))
-      )
-      .then((branches) =>
-        branches.map((branch) => ({
-          ...branch,
-          value_locked: branch.coll_value.add(branch.sp_deposits), // taking BOLD at face value
-        }))
-      ),
+      // branches
+      (deployed ? fetchBranchData : emptyBranchData)(contracts.branches)
+        .then((branches) =>
+          branches.map((branch) => ({
+            ...branch,
+            debt_pending: branch.interest_pending.add(
+              branch.batch_management_fees_pending
+            ),
+            coll_value: branch.coll_active
+              .add(branch.coll_default)
+              .mul(branch.coll_price),
+            sp_apy:
+              (SP_YIELD_SPLIT * Number(branch.interest_accrual_1y)) /
+              Number(branch.sp_deposits),
+          }))
+        )
+        .then((branches) =>
+          branches.map((branch) => ({
+            ...branch,
+            value_locked: branch.coll_value.add(branch.sp_deposits), // taking BOLD at face value
+          }))
+        ),
 
-    // SP AVERAGE APY
-    deployed
-      ? fetchSpAverageApysFromDune({
-          branches: contracts.branches,
-          apiKey: duneKey,
-          network: "bnb",
-        })
-      : null,
+      // SP AVERAGE APY
+      // deployed
+      //   ? fetchSpAverageApysFromDune({
+      //       branches: contracts.branches,
+      //       apiKey: duneKey,
+      //       network: "bnb",
+      //     })
+      //   : null,
 
-    // HISTORICALS SUPPLY
-    deployed
-      ? fetchHistSupplyFromDune({
-          apiKey: duneKey,
-          network: "bnb",
-        })
-      : emptySupplyData(),
-  ]);
+      // HISTORICALS SUPPLY
+      deployed
+        ? fetchHistSupplyFromDune({
+            apiKey: duneKey,
+            network: "bnb",
+          })
+        : emptySupplyData(),
 
-  console.log(historicalSupply![0]);
+      // HISTORICAL CR
+      deployed
+        ? fetchHistCRFromDune({
+            apiKey: duneKey,
+            network: "bnb",
+          })
+        : null,
+    ]);
+
+  console.log("LOL", historicalCR);
 
   const sp_apys = branches.map((b) => b.sp_apy).filter((x) => !isNaN(x));
 
@@ -306,24 +365,56 @@ export const fetchV2Stats = async ({
         (x) => `${x}`
       )
     ),
+    collateral_ratio: historicalCR!
+      .filter(
+        (item, index, self) =>
+          index === self.findIndex((t) => t.hour === item.hour)
+      )
+      .map((daily) => {
+        const crObj = mapObj(
+          {
+            ...daily,
+          },
+          (x) => `${x}`
+        );
+        return {
+          avg_cr: crObj.avg_col_ratio_perc,
+          time: crObj.hour,
+        };
+      }),
     branch: Object.fromEntries(
       branches.map(({ coll_symbol, sp_apy, ...branch }) => {
+        const historicalBranchCR = historicalCR
+          // ?.filter((branchCR) => branchCR.collateral_type === coll_symbol)
+          ?.filter((branchCR) => branchCR.collateral_type === "WETH") // TODO
+          .filter(
+            (item, index, self) =>
+              index === self.findIndex((t) => t.hour === item.hour)
+          )
+          .map((branch) => ({
+            time: branch.hour,
+            collateral_ratio: branch.col_ratio_perc.toString(),
+          }));
+
         // const {
         //   apy_avg_1d: sp_apy_avg_1d,
         //   apy_avg_7d: sp_apy_avg_7d,
         // } = spV2AverageApys?.[coll_symbol] ?? {};
         return [
           coll_symbol,
-          mapObj(
-            {
-              ...branch,
-              sp_apy,
-              apy_avg: sp_apy,
-              // ...(sp_apy_avg_1d !== undefined ? { sp_apy_avg_1d } : {}),
-              // ...(sp_apy_avg_7d !== undefined ? { sp_apy_avg_7d } : {})
-            },
-            (x) => `${x}`
-          ),
+          {
+            ...mapObj(
+              {
+                ...branch,
+                sp_apy,
+                apy_avg: sp_apy,
+                // ...(sp_apy_avg_1d !== undefined ? { sp_apy_avg_1d } : {}),
+                // ...(sp_apy_avg_7d !== undefined ? { sp_apy_avg_7d } : {})
+              },
+              (x) => `${x}`
+            ),
+            historical_cr: historicalBranchCR,
+          },
         ];
       })
     ),

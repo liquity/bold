@@ -499,6 +499,10 @@ const StatsSchema = v.pipe(
       holders: v.string(),
       supply: v.string(),
     })),
+    collateral_ratio: v.array(v.object({
+      avg_cr: v.string(),
+      time: v.string(),
+    })),
     branch: v.record(
       v.string(),
       v.object({
@@ -514,6 +518,10 @@ const StatsSchema = v.pipe(
         value_locked: v.string(),
         sp_apy: v.string(),
         apy_avg: v.string(),
+        historical_cr: v.array(v.object({
+          time: v.string(),
+          collateral_ratio: v.string(),
+        })),
       }),
     ),
   }),
@@ -529,6 +537,12 @@ const StatsSchema = v.pipe(
         day: dailyObj.day,
         holders: dailyObj.holders,
         supply: dailyObj.supply,
+      }
+    }),
+    historicalGlobalCR: value.collateral_ratio.map((dailyObj) => {
+      return {
+        day: dailyObj.time,
+        collateral_ratio: dailyObj.avg_cr
       }
     }),
     branch: Object.fromEntries(
@@ -547,6 +561,12 @@ const StatsSchema = v.pipe(
           valueLocked: branch.value_locked,
           spApy: branch.sp_apy,
           apyAvg: branch.apy_avg,
+          historicalCR: branch.historical_cr.map((dailyObj) => {
+            return {
+              day: dailyObj.time,
+              collateral_ratio: dailyObj.collateral_ratio
+            }
+          }),
         }];
       }),
     ),
