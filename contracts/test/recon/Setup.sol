@@ -230,7 +230,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         
         // NOTE: Unclear interface?
         console.log("Initializing bold token in Setup. Please work :pray:");
-        //IInitializableBold(address(boldToken)).initialize(ISuperTokenFactory(factory));
+        IInitializableBold(address(boldToken)).initialize(ISuperTokenFactory(factory));
 
         weth = MockERC20(_newAsset(18));
 
