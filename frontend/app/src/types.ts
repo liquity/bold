@@ -51,6 +51,12 @@ export type MenuSection = {
   label: ReactNode;
 };
 
+export type TroveStatus =
+  | "active"
+  | "closed"
+  | "liquidated"
+  | "redeemed";
+
 export type PositionLoanBase = {
   // TODO: rename the type to "loan" and move "borrow" | "multiply" to
   // a "mode" field. The two separate types come from a previous design
@@ -62,11 +68,7 @@ export type PositionLoanBase = {
   branchId: BranchId;
   deposit: Dnum;
   interestRate: Dnum;
-  status:
-    | "active"
-    | "closed"
-    | "liquidated"
-    | "redeemed";
+  status: TroveStatus;
 };
 
 export type PositionLoanCommitted = PositionLoanBase & {

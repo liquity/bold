@@ -5,19 +5,13 @@ import { ETH_GAS_COMPENSATION, MAX_UPFRONT_FEE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { getOpenLeveragedTroveParams } from "@/src/liquity-leverage";
-import {
-  getBranch,
-  getCollToken,
-  getPrefixedTroveId,
-  getTroveOperationHints,
-  usePredictOpenTroveUpfrontFee,
-} from "@/src/liquity-utils";
+import { getBranch, getCollToken, getTroveOperationHints, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { graphQuery, TroveStatusByIdQuery } from "@/src/subgraph-queries";
+import { getIndexedTroveById } from "@/src/subgraph";
 import { noop, sleep } from "@/src/utils";
 import { vPositionLoanUncommited } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
@@ -261,16 +255,12 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
         }
 
         // Wait for trove to appear in subgraph
-        const prefixedTroveId = getPrefixedTroveId(
-          ctx.request.loan.branchId,
-          `0x${troveOperation.args._troveId.toString(16)}`,
-        );
-
         while (true) {
-          const { trove: troveStatus } = await graphQuery(TroveStatusByIdQuery, {
-            id: prefixedTroveId,
-          });
-          if (troveStatus !== null) {
+          const trove = await getIndexedTroveById(
+            branch.branchId,
+            `0x${troveOperation.args._troveId.toString(16)}`,
+          );
+          if (trove !== null) {
             break;
           }
           await sleep(1000);

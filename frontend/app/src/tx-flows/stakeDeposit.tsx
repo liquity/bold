@@ -1,5 +1,4 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
-import type { Address } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
@@ -8,7 +7,7 @@ import { signPermit } from "@/src/permit";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
+import { getIndexedUserAllocated } from "@/src/subgraph";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import * as dn from "dnum";
@@ -141,12 +140,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
 
         const inputs: `0x${string}`[] = [];
 
-        const allocatedInitiatives = await graphQuery(
-          GovernanceUserAllocated,
-          { id: ctx.account.toLowerCase() },
-        ).then(({ governanceUser }) => (
-          (governanceUser?.allocated ?? []) as Address[]
-        ));
+        const allocatedInitiatives = await getIndexedUserAllocated(ctx.account);
 
         // reset allocations if the user has any
         if (allocatedInitiatives.length > 0) {
