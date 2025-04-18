@@ -81,7 +81,7 @@ export function StatsScreen() {
                     width: "100%",
                   })}
                   style={{
-                    gridTemplateColumns: `repeat(3, 1fr)`,
+                    gridTemplateColumns: `repeat(4, 1fr)`,
                     gridAutoRows: 180,
                   }}
                 >
@@ -106,6 +106,18 @@ export function StatsScreen() {
                           Number(liquityStats.data.totalCollValue),
                           "2z"
                         )} $`,
+                      },
+                    ]}
+                  />
+                  <TokenCard
+                    token="Collateralization Ratio"
+                    subValues={[
+                      {
+                        label: "",
+                        value: `${fmtnum(
+                          Number(liquityStats.data.totalCollValue) / Number(liquityStats.data.totalBoldSupply) * 100,
+                          "2z"
+                        )} %`,
                       },
                     ]}
                   />
@@ -145,18 +157,18 @@ export function StatsScreen() {
                         )} BTC`,
                       },
                       {
-                        label: "Collateral Value",
+                        label: "Debt",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["WETH"].collValue),
+                          Number(liquityStats.data.branch["WETH"].totalDebt),
                           "2z"
-                        )} $`,
+                        )} bvUSD`,
                       },
                       {
-                        label: "TVL",
+                        label: "Collateral Ratio",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["WETH"].valueLocked),
+                          Number(liquityStats.data.branch["WETH"].totalDebt) > 0 ? Number(liquityStats.data.branch["WETH"].collValue) / Number(liquityStats.data.branch["WETH"].totalDebt) * 100 : 0,
                           "2z"
-                        )} $`,
+                        )} %`,
                       },
                     ]}
                   />
@@ -171,18 +183,18 @@ export function StatsScreen() {
                         )} ETH`,
                       },
                       {
-                        label: "Collateral Value",
+                        label: "Debt",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["ETH"].collValue),
+                          Number(liquityStats.data.branch["ETH"].totalDebt),
                           "2z"
-                        )} $`,
+                        )} bvUSD`,
                       },
                       {
-                        label: "TVL",
+                        label: "Collateral Ratio",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["ETH"].valueLocked),
+                          Number(liquityStats.data.branch["ETH"].totalDebt) > 0 ? Number(liquityStats.data.branch["ETH"].collValue) / Number(liquityStats.data.branch["ETH"].totalDebt) * 100 : 0,
                           "2z"
-                        )} $`,
+                        )} %`,
                       },
                     ]}
                   />

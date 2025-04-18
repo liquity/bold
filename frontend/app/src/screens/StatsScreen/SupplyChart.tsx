@@ -23,7 +23,6 @@ export default function SupplyChart({ data }: SupplyChartProps) {
     supply: parseFloat(fmtnum(Number(item.supply), "2z").replace(/,/g, "")),
     holders: parseFloat(fmtnum(Number(item.holders), "2z").replace(/,/g, "")),
   }));
-  console.log(day_supply);
 
   return (
     <>
