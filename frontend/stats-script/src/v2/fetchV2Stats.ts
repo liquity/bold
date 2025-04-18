@@ -3,17 +3,15 @@ import type { BigNumber } from "@ethersproject/bignumber";
 import { resolveProperties } from "@ethersproject/properties";
 import { Decimal } from "@liquity/lib-base";
 import {
-  BOLD_SUPPLY_DAILY_QUERY,
-  COLLATERAL_RATIO_QUERY,
-  DUNE_SPV2_AVERAGE_APY_URL_MAINNET,
-} from "../constants";
-
-import { duneFetch, type DuneResponse, isDuneResponse } from "../dune";
-import {
   getContracts,
   LiquityV2BranchContracts,
   type LiquityV2Deployment,
 } from "./contracts";
+import {
+  fetchHistCRFromDune,
+  fetchHistSupplyFromDune,
+  fetchSpAverageApysFromDune,
+} from "./duneQueries";
 
 const ONE_WEI = Decimal.fromBigNumberString("1");
 
@@ -56,6 +54,9 @@ const fetchBranchData = async (
         interest_pending: branch.activePool
           .calcPendingAggInterest({ blockTag })
           .then(decimalify),
+        total_debt: branch.activePool
+          .aggRecordedDebt({ blockTag })
+          .then(decimalify),
         batch_management_fees_pending: Promise.all([
           branch.activePool
             .aggBatchManagementFees({ blockTag })
@@ -80,189 +81,10 @@ const emptyBranchData = (
       sp_deposits: Decimal.ZERO,
       interest_accrual_1y: Decimal.ZERO,
       interest_pending: Decimal.ZERO,
+      total_debt: Decimal.ZERO,
       batch_management_fees_pending: Decimal.ZERO,
     }))
   );
-
-const emptySupplyData = () =>
-  Promise.resolve([
-    {
-      day: "",
-      holders: 0,
-      supply: 0,
-    },
-  ]);
-
-const isDuneSpAverageApyResponse = (
-  data: unknown
-): data is DuneResponse<{
-  apr: number;
-  collateral_type: string;
-}> =>
-  isDuneResponse(data) &&
-  data.result.rows.length > 0 &&
-  data.result.rows.every(
-    (row: unknown) =>
-      typeof row === "object" &&
-      row !== null &&
-      "collateral_type" in row &&
-      typeof row.collateral_type === "string" &&
-      "apr" in row &&
-      typeof row.apr === "number"
-  );
-
-const isDuneHistoricalSupplyResponse = (
-  data: unknown
-): data is DuneResponse<{
-  day: string;
-  num_holders: number;
-  token_balance: number;
-}> =>
-  isDuneResponse(data) &&
-  data.result.rows.length > 0 &&
-  data.result.rows.every(
-    (row: unknown) =>
-      typeof row === "object" &&
-      row !== null &&
-      "day" in row &&
-      typeof row.day === "string" &&
-      "num_holders" in row &&
-      typeof row.num_holders === "number" &&
-      "token_balance" in row &&
-      typeof row.token_balance === "number"
-  );
-
-const isDuneHistoricalCRResponse = (
-  data: unknown
-): data is DuneResponse<{
-  hour: string;
-  col_ratio_perc: number;
-  avg_col_ratio_perc: number;
-  collateral_type: string;
-}> =>
-  isDuneResponse(data) &&
-  data.result.rows.length > 0 &&
-  data.result.rows.every(
-    (row: unknown) =>
-      typeof row === "object" &&
-      row !== null &&
-      "hour" in row &&
-      typeof row.hour === "string" &&
-      "col_ratio_perc" in row &&
-      typeof row.col_ratio_perc === "number" &&
-      "avg_col_ratio_perc" in row &&
-      typeof row.avg_col_ratio_perc === "number" &&
-      "collateral_type" in row &&
-      typeof row.collateral_type === "string"
-  );
-
-const fetchSpAverageApysFromDune = async ({
-  branches,
-  apiKey,
-  network,
-}: {
-  branches: LiquityV2BranchContracts[];
-  apiKey: string;
-  network: "bnb" | "mainnet";
-}) => {
-  // const url = network === "sepolia"
-  //   ? DUNE_SPV2_AVERAGE_APY_URL_SEPOLIA
-  //   : DUNE_SPV2_AVERAGE_APY_URL_MAINNET;
-
-  const url = DUNE_SPV2_AVERAGE_APY_URL_MAINNET;
-
-  // disabled when DUNE_SPV2_AVERAGE_APY_URL_* is null
-  if (!url) {
-    return null;
-  }
-
-  const {
-    result: { rows: sevenDaysApys },
-  } = await duneFetch({
-    apiKey,
-    url: `${url}?limit=${branches.length * 7}`,
-    validate: isDuneSpAverageApyResponse,
-  });
-
-  // console.log(sevenDaysApys);
-
-  return Object.fromEntries(
-    branches.map((branch) => {
-      const apys = sevenDaysApys.filter(
-        (row) => row.collateral_type === branch.collSymbol
-      );
-      return [
-        branch.collSymbol,
-        {
-          apy_avg_1d: apys[0].apr,
-          apy_avg_7d: apys.reduce((acc, { apr }) => acc + apr, 0) / apys.length,
-        },
-      ];
-    })
-  ) as Record<
-    string,
-    {
-      apy_avg_1d: number;
-      apy_avg_7d: number;
-    }
-  >;
-};
-
-const fetchHistSupplyFromDune = async ({
-  apiKey,
-  network,
-}: {
-  apiKey: string;
-  network: "bnb" | "mainnet";
-}) => {
-  // TODO use network for different queries
-  const url = BOLD_SUPPLY_DAILY_QUERY;
-
-  if (!url) {
-    return emptySupplyData();
-  }
-
-  const {
-    result: { rows: histSupply },
-  } = await duneFetch({
-    apiKey,
-    url: `${url}`,
-    validate: isDuneHistoricalSupplyResponse,
-  });
-
-  return histSupply.map((daily) => {
-    return {
-      day: daily.day,
-      holders: daily.num_holders,
-      supply: daily.token_balance,
-    };
-  });
-};
-
-const fetchHistCRFromDune = async ({
-  apiKey,
-  network,
-}: {
-  apiKey: string;
-  network: "bnb" | "mainnet";
-}) => {
-  // TODO use network for different queries
-  const url = COLLATERAL_RATIO_QUERY;
-
-  if (!url) {
-    return null;
-  }
-
-  const {
-    result: { rows: histCR },
-  } = await duneFetch({
-    apiKey,
-    url: `${url}`,
-    validate: isDuneHistoricalCRResponse,
-  });
-
-  return histCR;
-};
 
 export const fetchV2Stats = async ({
   provider,
@@ -314,12 +136,12 @@ export const fetchV2Stats = async ({
 
       // SP AVERAGE APY
       // deployed
-      //   ? fetchSpAverageApysFromDune({
-      //       branches: contracts.branches,
-      //       apiKey: duneKey,
-      //       network: "bnb",
-      //     })
-      //   : null,
+      // ? fetchSpAverageApysFromDune({
+      //     branches: contracts.branches,
+      //     apiKey: duneKey,
+      //     network: "bnb",
+      //   })
+      // : null,
 
       // HISTORICALS SUPPLY
       deployed
@@ -327,7 +149,7 @@ export const fetchV2Stats = async ({
             apiKey: duneKey,
             network: "bnb",
           })
-        : emptySupplyData(),
+        : null,
 
       // HISTORICAL CR
       deployed
@@ -337,8 +159,6 @@ export const fetchV2Stats = async ({
           })
         : null,
     ]);
-
-  console.log("LOL", historicalCR);
 
   const sp_apys = branches.map((b) => b.sp_apy).filter((x) => !isNaN(x));
 
@@ -357,7 +177,7 @@ export const fetchV2Stats = async ({
       .map((b) => b.value_locked)
       .reduce((a, b) => a.add(b))}`,
     max_sp_apy: `${sp_apys.length > 0 ? Math.max(...sp_apys) : NaN}`,
-    day_supply: historicalSupply.map((daily) =>
+    day_supply: historicalSupply!.map((daily) =>
       mapObj(
         {
           ...daily,

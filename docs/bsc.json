@@ -1,9 +1,9 @@
 {
   "total_bold_supply": "21.004877479387252937",
-  "total_debt_pending": "0.003437082206167846",
-  "total_coll_value": "59.851172474153344787",
+  "total_debt_pending": "0.003443268572886116",
+  "total_coll_value": "59.736818600804158998",
   "total_sp_deposits": "1",
-  "total_value_locked": "60.851172474153344787",
+  "total_value_locked": "60.736818600804158998",
   "max_sp_apy": "0.0945219286954198",
   "day_supply": [
     {
@@ -1799,15 +1799,15 @@
     "wETH": {
       "coll_active": "0.000706400398953832",
       "coll_default": "0",
-      "coll_price": "84726.98",
+      "coll_price": "84565.09748476",
       "sp_deposits": "1",
       "interest_accrual_1y": "0.126029238260559729",
-      "interest_pending": "0.003437082206167846",
+      "interest_pending": "0.003443268572886116",
       "total_debt": "21.004877479387252937",
       "batch_management_fees_pending": "0",
-      "debt_pending": "0.003437082206167846",
-      "coll_value": "59.851172474153344787",
-      "value_locked": "60.851172474153344787",
+      "debt_pending": "0.003443268572886116",
+      "coll_value": "59.736818600804158998",
+      "value_locked": "60.736818600804158998",
       "sp_apy": "0.0945219286954198",
       "apy_avg": "0.0945219286954198",
       "historical_cr": [
@@ -3168,7 +3168,7 @@
     "ETH": {
       "coll_active": "0",
       "coll_default": "0",
-      "coll_price": "1590.8196",
+      "coll_price": "1584.41",
       "sp_deposits": "0",
       "interest_accrual_1y": "0",
       "interest_pending": "0",
