@@ -5,7 +5,7 @@ import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { KNOWN_INITIATIVES_URL } from "@/src/env";
-import { useGovernanceInitiatives } from "@/src/subgraph-hooks";
+import { getIndexedInitiatives } from "@/src/subgraph";
 import { vAddress } from "@/src/valibot-utils";
 import { useRaf } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
@@ -148,14 +148,31 @@ export async function getUserStates(
   };
 }
 
-export function useInitiatives() {
-  const initiatives = useGovernanceInitiatives();
-  const knownInitiatives = useKnownInitiatives();
-  return {
-    ...initiatives,
-    data: initiatives.data && knownInitiatives.data
-      ? initiatives.data.map((address): Initiative => {
-        const knownInitiative = knownInitiatives.data[address];
+const KnownInitiativesSchema = v.record(
+  v.pipe(
+    vAddress(),
+    v.transform((address) => address.toLowerCase()),
+  ),
+  v.object({ name: v.string(), group: v.string() }),
+);
+
+export async function getKnownInitiatives(knownInitiativesUrl: string) {
+  const response = await fetch(knownInitiativesUrl);
+  return v.parse(KnownInitiativesSchema, await response.json());
+}
+
+export function useNamedInitiatives() {
+  return useQuery({
+    queryKey: ["useNamedInitiatives"],
+    queryFn: async () => {
+      const [initiatives, knownInitiatives] = await Promise.all([
+        getIndexedInitiatives(),
+        KNOWN_INITIATIVES_URL
+          ? getKnownInitiatives(KNOWN_INITIATIVES_URL)
+          : null,
+      ]);
+      return initiatives.map((address): Initiative => {
+        const knownInitiative = knownInitiatives?.[address];
         return {
           address,
           name: knownInitiative?.name ?? null,
@@ -164,9 +181,9 @@ export function useInitiatives() {
           tvl: null,
           votesDistribution: null,
         };
-      })
-      : null,
-  };
+      });
+    },
+  });
 }
 
 export function useInitiativesStates(initiatives: Address[]) {
@@ -210,31 +227,6 @@ export function useInitiativesStates(initiatives: Address[]) {
 
       return initiativesStates;
     },
-  });
-}
-
-const KnownInitiativesSchema = v.record(
-  v.pipe(
-    vAddress(),
-    v.transform((address) => address.toLowerCase()),
-  ),
-  v.object({
-    name: v.string(),
-    group: v.string(),
-  }),
-);
-
-export function useKnownInitiatives() {
-  return useQuery({
-    queryKey: ["knownInitiatives"],
-    queryFn: async () => {
-      if (KNOWN_INITIATIVES_URL === undefined) {
-        throw new Error("KNOWN_INITIATIVES_URL is not defined");
-      }
-      const response = await fetch(KNOWN_INITIATIVES_URL);
-      return v.parse(KnownInitiativesSchema, await response.json());
-    },
-    enabled: KNOWN_INITIATIVES_URL !== undefined,
   });
 }
 
@@ -289,7 +281,7 @@ export async function getUserState(
 }
 
 export function useGovernanceUser(account: Address | null) {
-  const initiatives = useInitiatives();
+  const initiatives = useNamedInitiatives();
   const wagmiConfig = useWagmiConfig();
 
   let queryFn = async () => {

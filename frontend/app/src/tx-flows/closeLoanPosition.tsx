@@ -4,12 +4,12 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
 import { getCloseFlashLoanAmount } from "@/src/liquity-leverage";
-import { getBranch, getCollToken, getPrefixedTroveId } from "@/src/liquity-utils";
+import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { graphQuery, TroveStatusByIdQuery } from "@/src/subgraph-queries";
+import { getIndexedTroveById } from "@/src/subgraph";
 import { sleep } from "@/src/utils";
 import { vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
@@ -197,17 +197,13 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       async verify(ctx, hash) {
         await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
 
-        const prefixedTroveId = getPrefixedTroveId(
-          ctx.request.loan.branchId,
-          ctx.request.loan.troveId,
-        );
-
         // wait for the trove to be seen as closed in the subgraph
         while (true) {
-          const { trove: troveStatus } = await graphQuery(TroveStatusByIdQuery, {
-            id: prefixedTroveId,
-          });
-          if (troveStatus?.closedAt !== undefined) {
+          const trove = await getIndexedTroveById(
+            ctx.request.loan.branchId,
+            ctx.request.loan.troveId,
+          );
+          if (trove?.status === "closed") {
             break;
           }
           await sleep(1000);

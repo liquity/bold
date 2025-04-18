@@ -1836,12 +1836,17 @@ export enum _SubgraphErrorPolicy_ {
   Deny = 'deny'
 }
 
+export type BlockNumberQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type BlockNumberQuery = { __typename?: 'Query', _meta?: { __typename?: '_Meta_', block: { __typename?: '_Block_', number: number } } | null };
+
 export type BorrowerInfoQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type BorrowerInfoQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', nextOwnerIndexes: Array<number>, troves: number, trovesByCollateral: Array<number> } | null };
+export type BorrowerInfoQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', nextOwnerIndexes: Array<number> } | null };
 
 export type TroveStatusesByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
@@ -1881,11 +1886,6 @@ export type GovernanceUserAllocationsQueryVariables = Exact<{
 
 export type GovernanceUserAllocationsQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', allocated: Array<string> } | null };
 
-export type BlockNumberQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type BlockNumberQuery = { __typename?: 'Query', _meta?: { __typename?: '_Meta_', block: { __typename?: '_Block_', number: number } } | null };
-
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
@@ -1901,12 +1901,19 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
+export const BlockNumberDocument = new TypedDocumentString(`
+    query BlockNumber {
+  _meta {
+    block {
+      number
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<BlockNumberQuery, BlockNumberQueryVariables>;
 export const BorrowerInfoDocument = new TypedDocumentString(`
     query BorrowerInfo($id: ID!) {
   borrowerInfo(id: $id) {
     nextOwnerIndexes
-    troves
-    trovesByCollateral
   }
 }
     `) as unknown as TypedDocumentString<BorrowerInfoQuery, BorrowerInfoQueryVariables>;
@@ -1975,12 +1982,3 @@ export const GovernanceUserAllocationsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GovernanceUserAllocationsQuery, GovernanceUserAllocationsQueryVariables>;
-export const BlockNumberDocument = new TypedDocumentString(`
-    query BlockNumber {
-  _meta {
-    block {
-      number
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<BlockNumberQuery, BlockNumberQueryVariables>;

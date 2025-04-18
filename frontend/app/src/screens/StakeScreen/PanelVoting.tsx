@@ -10,7 +10,12 @@ import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { fmtnum, formatDate } from "@/src/formatting";
-import { useGovernanceState, useGovernanceUser, useInitiatives, useInitiativesStates } from "@/src/liquity-governance";
+import {
+  useGovernanceState,
+  useGovernanceUser,
+  useInitiativesStates,
+  useNamedInitiatives,
+} from "@/src/liquity-governance";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { jsonStringifyWithBigInt } from "@/src/utils";
 import { useAccount } from "@/src/wagmi-utils";
@@ -79,7 +84,7 @@ export function PanelVoting() {
   const account = useAccount();
   const governanceState = useGovernanceState();
   const governanceUser = useGovernanceUser(account.address ?? null);
-  const initiatives = useInitiatives();
+  const initiatives = useNamedInitiatives();
   const initiativesStates = useInitiativesStates(initiatives.data?.map((i) => i.address) ?? []);
 
   const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
