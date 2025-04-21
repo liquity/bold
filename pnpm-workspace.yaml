@@ -1,6 +1,0 @@
-packages:
-  - './contracts'
-  - './frontend/app'
-  - './frontend/uikit'
-  - './frontend/uikit-gallery'
-  - './subgraph'
