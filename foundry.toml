@@ -36,4 +36,12 @@ broadcast = 'broadcast-e2e'
 # Anvil is going to be caching any storage requests that hit the underlying RPC anyway.
 no_storage_caching = true
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+[fmt]
+line_length = 90
+tab_width = 2
+bracket_spacing = true
+int_types = "long"
+func_attrs_with_params_multiline = true
+quote_style = "double"
+number_underscore = "thousands"
+wrap_comments = true

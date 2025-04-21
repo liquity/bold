@@ -1,0 +1,45 @@
+[
+
+    {
+        "chainId": 31337,
+        "name": "localhost",
+        "testnetChainId": 31337,
+        "testnetName": "localhost"
+    },
+    {
+        "chainId": 1,
+        "name": "ethereum",
+        "testnetChainId": 11155111,
+        "testnetName": "sepolia"
+    },
+    {
+        "chainId": 56,
+        "name": "bsc",
+        "testnetChainId": 97,
+        "testnetName": "bscTestnet"
+    },
+    {
+        "chainId": 137,
+        "name": "polygon",
+        "testnetChainId": 80001,
+        "testnetName": "polygonTestnet"
+    },
+    {
+        "chainId": 10,
+        "name": "optimism",
+        "testnetChainId": 420,
+        "testnetName": "optimismTestnet"
+    },
+    {
+        "chainId": 42161,
+        "name": "arbitrum",
+        "testnetChainId": 421614,
+        "testnetName": "arbitrumSepolia"
+    },
+    {
+        "chainId": 100,
+        "name": "gnosis",
+        "testnetChainId": 10200,
+        "testnetName": "gnosisTestnet"
+    }
+]

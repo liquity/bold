@@ -2,15 +2,15 @@
 
 pragma solidity ^0.8.18;
 
-import {ERC20Faucet} from "./ERC20Faucet.sol";
 import "src/Interfaces/IWETH.sol";
+import {DefaultFaucetERC20} from "test/mock/DefaultFaucetERC20.t.sol";
 
-contract WETHTester is ERC20Faucet, IWETH {
+contract WETHTester is DefaultFaucetERC20, IWETH {
     event Deposit(address indexed dst, uint256 wad);
     event Withdrawal(address indexed src, uint256 wad);
 
-    constructor(uint256 _tapAmount, uint256 _tapPeriod)
-        ERC20Faucet("Wrapped Ether Tester", "WETH", _tapAmount, _tapPeriod)
+    constructor(uint256 _tapAmount)
+        ERC20Faucet("Wrapped Ether Tester", "WETH", _tapAmount)
     {}
 
     receive() external payable {

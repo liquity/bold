@@ -12,11 +12,11 @@ contract ERC20Faucet is ERC20Permit, Ownable {
     mapping(address => uint256) public lastTapped;
     mapping(address spender => bool) public mock_isWildcardSpender;
 
-    constructor(string memory _name, string memory _symbol, uint256 _tapAmount, uint256 _tapPeriod)
+    constructor(string memory _name, string memory _symbol)
         ERC20Permit(_name)
         ERC20(_name, _symbol)
     {
-        tapAmount = _tapAmount;
+        tapAmount = 10e18;
         tapPeriod = _tapPeriod;
     }
 
@@ -25,20 +25,11 @@ contract ERC20Faucet is ERC20Permit, Ownable {
     }
 
     function tapTo(address receiver) public {
-        uint256 timeNow = _requireNotRecentlyTapped(receiver);
-
         _mint(receiver, tapAmount);
-        lastTapped[receiver] = timeNow;
     }
 
     function tap() external {
         tapTo(msg.sender);
-    }
-
-    function _requireNotRecentlyTapped(address receiver) internal view returns (uint256 timeNow) {
-        timeNow = block.timestamp;
-
-        require(timeNow >= lastTapped[receiver] + tapPeriod, "ERC20Faucet: must wait before tapping again");
     }
 
     // LQTY-like allowance

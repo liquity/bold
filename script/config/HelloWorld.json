@@ -1,0 +1,9 @@
+{
+    "localhost":
+    {
+        "03_exampleString": "HelloWorld",
+        "01_owner": "0xADaE1798F761Fa7fce29B6673D453d1a48A2931A",
+        "04_ownerTwo": "0x912ce59144191c1204e64559fe8253a0e49e6548",
+        "02_exampleInt": 102
+    }
+}
