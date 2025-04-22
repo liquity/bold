@@ -185,6 +185,10 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         return status == Status.zombie;
     }
 
+    function isRecent(uint256 _troveId) external view returns (bool) {
+        return _isRecent(_troveId);
+    }
+
     function hasRedistributionGains(uint256 _troveId) external view override returns (bool) {
         /*
          * A Trove has redistribution gains if its snapshot is less than the current rewards per-unit-staked sum:

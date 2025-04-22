@@ -2680,7 +2680,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     function _planLiquidation(uint256 i) internal returns (LiquidationTransientState storage l) {
-        ITroveManager troveManager = branches[i].troveManager;
+        ITroveManagerTester troveManager = branches[i].troveManager;
         l = _liquidation;
         l.remaining.add(_troveIds[i]);
 
@@ -2688,6 +2688,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             if (l.liquidated.has(l.batch[j])) continue; // skip duplicate entry
 
             uint256 troveId = _troveIdOf(i, l.batch[j]);
+            if (troveManager.isRecent(troveId)) continue; // skip recently borrowed troves
+
             address batchManager = _batchManagerOf[i][troveId];
 
             LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);

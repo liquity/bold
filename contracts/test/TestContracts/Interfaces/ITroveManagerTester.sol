@@ -44,6 +44,7 @@ interface ITroveManagerTester is ITroveManager {
     function checkTroveIsActive(uint256 _troveId) external view returns (bool);
     function checkTroveIsOpen(uint256 _troveId) external view returns (bool);
     function checkTroveIsZombie(uint256 _troveId) external view returns (bool);
+    function isRecent(uint256 _troveId) external view returns (bool);
 
     function hasRedistributionGains(uint256 _troveId) external view returns (bool);
 
