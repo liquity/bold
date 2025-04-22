@@ -48,7 +48,7 @@ export const legacyUnstakeAll: FlowDeclaration<LegacyUnstakeAllRequest> = {
   },
 
   steps: {
-    resetVotesAndWithdraw: {
+    resetVotesAndWithdrawAll: {
       name: () => "Unstake",
       Status: TransactionStatus,
       async commit(ctx) {
@@ -104,7 +104,7 @@ export const legacyUnstakeAll: FlowDeclaration<LegacyUnstakeAllRequest> = {
           }));
         }
 
-        // withdraw LQTY
+        // withdraw all staked LQTY
         inputs.push(encodeFunctionData({
           abi: Governance,
           functionName: "withdrawLQTY",
@@ -125,7 +125,7 @@ export const legacyUnstakeAll: FlowDeclaration<LegacyUnstakeAllRequest> = {
   },
 
   async getSteps() {
-    return ["resetVotesAndWithdraw"];
+    return ["resetVotesAndWithdrawAll"];
   },
 
   parseRequest(request) {
