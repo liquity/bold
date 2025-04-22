@@ -95,7 +95,7 @@ contract LiquidationsLSTTest is DevTestSetup {
         );
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price drops
         priceFeed.setPrice(1200e18 - 1);
@@ -226,7 +226,7 @@ contract LiquidationsLSTTest is DevTestSetup {
         }
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price drops
         priceFeed.setPrice(_finalPrice);

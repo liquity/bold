@@ -502,7 +502,7 @@ contract Redemptions is DevTestSetup {
         assertEq(troveManager.lastZombieTroveId(), troveIDs.B, "Wrong last zombie trove pointer before");
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Liquidate B
         priceFeed.setPrice(priceFeed.getPrice() / 30);
@@ -555,7 +555,7 @@ contract Redemptions is DevTestSetup {
         troveIDs.E = openTroveNoHints100pct(E, troveColl_E, troveDebtRequest_E, interestRate_E);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price drops, E becomes liquidateable
         price = 1050e18;
@@ -640,7 +640,7 @@ contract Redemptions is DevTestSetup {
         // openTroveNoHints100pct(F, troveColl_F, troveDebtRequest_F, interestRate_F);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price drops, E becomes liquidateable
         price = 950e18;
@@ -996,7 +996,7 @@ contract Redemptions is DevTestSetup {
         assertGt(stabilityPool.getTotalBoldDeposits(), troveManager.getTroveEntireDebt(troveIDs.B));
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price drops, B becomes liquidateable
         uint256 price = 10e18;
@@ -1023,7 +1023,7 @@ contract Redemptions is DevTestSetup {
         uint256 CTroveId = openTroveNoHints100pct(C, 100 ether, 100e21, MIN_ANNUAL_INTEREST_RATE);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         priceFeed.setPrice(1099e18);
 

@@ -1761,7 +1761,7 @@ contract SPTest is DevTestSetup {
         troveIDs.E = openTroveNoHints100pct(E, coll_E, debtRequest_E, interestRate_E);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
         // make sure yield is updated
         pendingAggInterest[1] += activePool.calcPendingAggInterest();
         borrowerOperations.applyPendingDebt(troveIDs.A, 0, 0);
@@ -2267,7 +2267,7 @@ contract SPTest is DevTestSetup {
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
         uint256 debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
         // Re-adjust SP amount due to the extra debt generated in trove B during liquidation grace period
         toSP = debtBBefore + 1e18 - _toRedist;
@@ -2310,7 +2310,7 @@ contract SPTest is DevTestSetup {
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
         uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
         uint256 debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
         // Re-adjust SP amount due to the extra debt generated in trove B during liquidation grace period
@@ -2363,7 +2363,7 @@ contract SPTest is DevTestSetup {
         vars.collBBefore = troveManager.getTroveEntireColl(troveIdB);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
         vars.debtABefore = troveManager.getTroveEntireDebt(troveIdA);
         vars.debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
         // Re-adjust SP amount due to the extra debt generated in trove B during liquidation grace period
@@ -2432,7 +2432,7 @@ contract SPTest is DevTestSetup {
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Reassign surplus based on B's actual debt, in case there was rounding error when calculating B's exact debt
         _surplusToLeaveInSP = toSP - troveManager.getTroveEntireDebt(troveIdB);
@@ -2473,7 +2473,7 @@ contract SPTest is DevTestSetup {
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
 
@@ -2514,7 +2514,7 @@ contract SPTest is DevTestSetup {
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // A deposits to SP
         makeSPDepositNoClaim(A, toSP);
@@ -2550,7 +2550,7 @@ contract SPTest is DevTestSetup {
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
         uint256 debtABefore = troveManager.getTroveEntireDebt(troveIdA);
         uint256 debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
         // Re-adjust SP amount due to the extra debt generated in trove B during liquidation grace period
@@ -2592,7 +2592,7 @@ contract SPTest is DevTestSetup {
         uint256 troveIdB = openTroveNoHints100pct(B, 5 ether, B_borrow, rate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         vars.debtBBefore = troveManager.getTroveEntireDebt(troveIdB);
 

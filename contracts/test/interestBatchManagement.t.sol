@@ -102,7 +102,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         openTroveNoHints100pct(B, 100e18, 5000e18, 5e16);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price goes down
         priceFeed.setPrice(1050e18);
@@ -332,7 +332,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, 5e16);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price goes down
         priceFeed.setPrice(1000e18);
@@ -431,7 +431,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, 5e16);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price goes down
         priceFeed.setPrice(1000e18);
@@ -632,7 +632,7 @@ contract InterestBatchManagementTest is DevTestSetup {
         uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, interestRate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price goes down
         priceFeed.setPrice(1000e18);

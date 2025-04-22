@@ -716,7 +716,7 @@ contract InterestRateBasic is DevTestSetup {
         uint256 CTroveId = openTroveNoHints100pct(C, 2.1 ether, 2000e18, interestRate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price goes down
         priceFeed.setPrice(1000e18);

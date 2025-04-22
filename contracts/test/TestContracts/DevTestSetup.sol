@@ -105,7 +105,7 @@ contract DevTestSetup is BaseTest {
         uint256 CTroveId = openTroveNoHints100pct(C, 5 ether, troveDebtRequest_C, interestRate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // A and B deposit to SP
         makeSPDepositAndClaim(A, troveDebtRequest_A);
@@ -148,7 +148,7 @@ contract DevTestSetup is BaseTest {
         troveIDs.D = openTroveNoHints100pct(D, 25e17 * _magnitude, troveDebtRequest_D, interestRate);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // A and B deposit to SP
         makeSPDepositAndClaim(A, troveDebtRequest_A);

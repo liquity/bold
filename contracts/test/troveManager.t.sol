@@ -123,7 +123,7 @@ contract TroveManagerTest is DevTestSetup {
         priceFeed.setPrice(2_000e18);
         uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 100_000e18, 1e17);
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         priceFeed.setPrice(1_000e18);
 
@@ -209,7 +209,7 @@ contract TroveManagerTest is DevTestSetup {
         troveIDs.C = openTroveNoHints100pct(C, coll, borrow, interestRate);
         troveIDs.D = openTroveNoHints100pct(D, 1_000 ether, borrow, interestRate); // whale to keep TCR afloat
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         uint256 dropPrice = 110 ether;
         priceFeed.setPrice(dropPrice);

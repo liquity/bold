@@ -58,7 +58,7 @@ contract LiquidationsTest is DevTestSetup {
         vm.stopPrank();
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // B deposits to SP
         makeSPDepositAndClaim(B, liquidationAmount + 100e18);
@@ -167,7 +167,7 @@ contract LiquidationsTest is DevTestSetup {
         vm.stopPrank();
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // B deposits to SP
         makeSPDepositAndClaim(B, liquidationAmount + 100e18);
@@ -257,7 +257,7 @@ contract LiquidationsTest is DevTestSetup {
         );
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // Price drops
         priceFeed.setPrice(1100e18 - 1);
@@ -353,7 +353,7 @@ contract LiquidationsTest is DevTestSetup {
         vm.stopPrank();
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // B deposits to SP
         makeSPDepositAndClaim(B, vars.liquidationAmount / 2);

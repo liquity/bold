@@ -474,13 +474,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         return _status == Status.active || _status == Status.zombie;
     }
 
+    // Troves with debt adjusted in the same block cannot be liquidated
+    // This is to prevent attacks involving sandwiching a price update to self-liquidate
     function _isRecent(uint256 _troveId) internal view returns (bool) {
-        if (uint256(Troves[_troveId].lastDebtUpdateTime) >= block.timestamp - LIQUIDATION_GRACE_PERIOD) return true;
+        if (uint256(Troves[_troveId].lastDebtUpdateTime) >= block.timestamp) return true;
         address batchAddress = _getBatchManager(_troveId);
-        if (
-            batchAddress != address(0)
-                && uint256(batches[batchAddress].lastDebtUpdateTime) >= block.timestamp - LIQUIDATION_GRACE_PERIOD
-        ) return true;
+        if (batchAddress != address(0) && uint256(batches[batchAddress].lastDebtUpdateTime) >= block.timestamp) return true;
 
         return false;
     }
@@ -496,7 +495,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         BatchLiquidateTrovesValues memory vars;
         vars.remainingBoldInSPForOffsets = _boldInSPForOffsets;
 
-        // Skip recent troves (opened or adjusted before grace period)
+        // Skip recent troves (opened or adjusted in the same block)
         // We have to prune the array first, because otherwise 2 troves in the same batch would never be liquidated in the same tx
         // as the liquidation updates the batch lastDebtUpdateTime
         for (uint256 i = 0; i < _troveArray.length; i++) {
@@ -507,7 +506,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         for (uint256 i = 0; i < _troveArray.length; i++) {
             vars.troveId = _troveArray[i];
 
-            // Skip recent troves (opened or adjusted before grace period)
+            // Skip recent troves (opened or adjusted in the same block)
             if (vars.troveId == 0) continue;
 
             // Skip non-liquidatable troves

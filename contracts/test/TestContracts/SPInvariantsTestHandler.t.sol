@@ -21,8 +21,7 @@ import {
     ETH_GAS_COMPENSATION,
     COLL_GAS_COMPENSATION_DIVISOR,
     MIN_ANNUAL_INTEREST_RATE,
-    MIN_BOLD_IN_SP,
-    LIQUIDATION_GRACE_PERIOD
+    MIN_BOLD_IN_SP
 } from "src/Dependencies/Constants.sol";
 
 using {mulDivCeil} for uint256;
@@ -187,7 +186,7 @@ contract SPInvariantsTestHandler is BaseHandler {
         vm.assume(troveManager.getTroveStatus(troveId) == ITroveManager.Status.active);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         (uint256 debt, uint256 coll,,,) = troveManager.getEntireDebtAndColl(troveId);
         vm.assume(debt <= (spBold > MIN_BOLD_IN_SP ? spBold - MIN_BOLD_IN_SP : 0)); // only interested in SP offset, no redistribution

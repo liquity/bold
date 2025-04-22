@@ -342,7 +342,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         (uint256 liquidatedTroveId,) = openTroveWithExactICRAndDebt(A, 0, MCR, 10_000 ether, 0.01 ether);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // drop price by 1%
         priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
@@ -368,7 +368,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         (uint256 liquidatedTroveId,) = openTroveWithExactICRAndDebt(A, 0, MCR, 10_000 ether, 0.01 ether);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         uint256 debt = troveManager.getTroveEntireDebt(liquidatedTroveId);
         uint256 coll = troveManager.getTroveEntireColl(liquidatedTroveId);
@@ -400,7 +400,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
             openTroveWithExactICRAndDebt(A, 0, MCR, initialDebt, 0.01 ether);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // drop price by 1%
         uint256 price = priceFeed.getPrice() * 99 / 100;
@@ -440,7 +440,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         }
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // drop price by 1%
         priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
@@ -475,7 +475,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         }
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // drop price by 1%
         priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
@@ -527,7 +527,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         }
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         // drop price by 1%
         uint256 price = priceFeed.getPrice() * 99 / 100;
@@ -691,7 +691,7 @@ contract StabilityPoolEventsTest is EventsTest, IStabilityPoolEvents {
         (liquidatedTroveId[2],) = openTroveWithExactICRAndDebt(D, 0, MCR, liquidatedDebt, 0.01 ether);
 
         // make sure liquidation grace period is over
-        vm.warp(block.timestamp + LIQUIDATION_GRACE_PERIOD + 1);
+        vm.warp(block.timestamp + 1);
 
         priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
 
