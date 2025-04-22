@@ -237,6 +237,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         LiquidationValues memory singleLiquidation
     ) internal {
         _getLatestTroveData(_params.troveId, trove);
+        _params.batchAddress = _getBatchManager(_params.troveId);
         bool isTroveInBatch = _params.batchAddress != address(0);
         LatestBatchData memory batch;
         if (isTroveInBatch) _getLatestBatchData(_params.batchAddress, batch);
@@ -473,11 +474,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         return _status == Status.active || _status == Status.zombie;
     }
 
-    function _isRecent(uint256 _troveId, address _batchAddress) internal view returns (bool) {
+    function _isRecent(uint256 _troveId) internal view returns (bool) {
         if (uint256(Troves[_troveId].lastDebtUpdateTime) >= block.timestamp - LIQUIDATION_GRACE_PERIOD) return true;
+        address batchAddress = _getBatchManager(_troveId);
         if (
-            _batchAddress != address(0)
-                && uint256(batches[_batchAddress].lastDebtUpdateTime) >= block.timestamp - LIQUIDATION_GRACE_PERIOD
+            batchAddress != address(0)
+                && uint256(batches[batchAddress].lastDebtUpdateTime) >= block.timestamp - LIQUIDATION_GRACE_PERIOD
         ) return true;
 
         return false;
@@ -494,14 +496,22 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         BatchLiquidateTrovesValues memory vars;
         vars.remainingBoldInSPForOffsets = _boldInSPForOffsets;
 
+        // Skip recent troves (opened or adjusted before grace period)
+        // We have to prune the array first, because otherwise 2 troves in the same batch would never be liquidated in the same tx
+        // as the liquidation updates the batch lastDebtUpdateTime
+        for (uint256 i = 0; i < _troveArray.length; i++) {
+            // We just set it to zero to easily keep the array order
+            if (_isRecent(_troveArray[i])) _troveArray[i] = 0;
+        }
+
         for (uint256 i = 0; i < _troveArray.length; i++) {
             vars.troveId = _troveArray[i];
-            vars.batchAddress = _getBatchManager(vars.troveId);
+
+            // Skip recent troves (opened or adjusted before grace period)
+            if (vars.troveId == 0) continue;
 
             // Skip non-liquidatable troves
             if (!_isActiveOrZombie(Troves[vars.troveId].status)) continue;
-            // Skip recent troves (opened or adjusted before grace period)
-            if (_isRecent(vars.troveId, vars.batchAddress)) continue;
 
             vars.ICR = getCurrentICR(vars.troveId, _price);
 
