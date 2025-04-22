@@ -14,7 +14,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol | "sbvUSD" | "VCRAFT" | "WBTC";
+type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol | "sbvUSD" | "VCRAFT" | "WBTC" | "USDT";
 
 function useCollateralPrice(
   symbol: null | CollateralSymbol
@@ -185,11 +185,6 @@ export function usePrice<PT extends PriceToken>(
     queryFn: () => dn.from(1, 18),
     enabled: symbol === "bvUSD",
   });
-  const sbvusdPrice = useQuery({
-    queryKey: ["sbvusdPrice"],
-    queryFn: () => dn.from(1, 18),
-    enabled: symbol === "sbvUSD",
-  });
   const vcraftPrice = useQuery({
     queryKey: ["vcraftPrice"],
     queryFn: () => dn.from(0.02, 18),
@@ -210,12 +205,8 @@ export function usePrice<PT extends PriceToken>(
     return collPrice;
   }
 
-  if (symbol === "bvUSD") {
+  if (symbol === "bvUSD" || symbol === "sbvUSD") {
     return bvusdPrice;
-  }
-
-  if (symbol === "sbvUSD") {
-    return sbvusdPrice;
   }
 
   if (symbol === "VCRAFT") {

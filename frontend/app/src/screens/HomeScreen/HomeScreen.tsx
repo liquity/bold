@@ -76,7 +76,7 @@ export function HomeScreen() {
           />
           <TokenCard
             token="sbvUSD"
-            link={{ label: "Earn", href: "/earn" }}
+            link={{ label: "Earn", href: "/vault" }}
             subValues={[
               {
                 label: "Value",

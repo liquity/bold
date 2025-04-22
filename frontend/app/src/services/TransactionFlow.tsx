@@ -35,6 +35,7 @@ import { updateBorrowPosition, type UpdateBorrowPositionRequest } from "@/src/tx
 import { updateLeveragePosition, type UpdateLeveragePositionRequest } from "@/src/tx-flows/updateLeveragePosition";
 import { updateLoanInterestRate, type UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
 import { wrapToken, type WrapTokenRequest } from "@/src/tx-flows/wrapToken";
+import { vaultUpdate, type VaultUpdateRequest } from "@/src/tx-flows/vaultUpdate";
 
 export type FlowRequestMap = {
   "claimCollateralSurplus": ClaimCollateralSurplusRequest;
@@ -48,6 +49,7 @@ export type FlowRequestMap = {
   "updateLeveragePosition": UpdateLeveragePositionRequest;
   "updateLoanInterestRate": UpdateLoanInterestRateRequest;
   "wrapToken": WrapTokenRequest;
+  "vaultUpdate": VaultUpdateRequest;
 };
 
 const FlowIdSchema = v.union([
@@ -62,6 +64,7 @@ const FlowIdSchema = v.union([
   v.literal("updateLeveragePosition"),
   v.literal("updateLoanInterestRate"),
   v.literal("wrapToken"),
+  v.literal("vaultUpdate"),
 ]);
 
 export const flows: FlowsMap = {
@@ -76,6 +79,7 @@ export const flows: FlowsMap = {
   updateLeveragePosition,
   updateLoanInterestRate,
   wrapToken,
+  vaultUpdate,
 };
 
 /* end of flows registration */

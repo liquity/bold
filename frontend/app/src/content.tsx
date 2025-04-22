@@ -347,6 +347,7 @@ export default {
     },
     tabs: {
       deposit: "Deposit",
+      withdraw: "Withdraw",
       claim: "Claim rewards",
     },
     depositPanel: {

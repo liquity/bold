@@ -1,34 +1,29 @@
-import type { BranchId, PositionEarn } from "@/src/types";
-import type { ReactNode } from "react";
+import type { PositionEarn } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken, isEarnPositionActive, useEarnPool } from "@/src/liquity-utils";
+import { isEarnPositionActive, useVault } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconArrowRight, IconPlus, InfoTooltip, TokenIcon } from "@liquity2/uikit";
+import { IconArrowRight, IconPlus, InfoTooltip, TokenIcon, USDT } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 
-export function EarnPositionSummary({
-  branchId,
+export function VaultPositionSummary({
   prevEarnPosition,
   earnPosition,
   linkToScreen,
-  title,
   txPreviewMode,
 }: {
-  branchId: BranchId;
   prevEarnPosition?: PositionEarn | null;
   earnPosition: PositionEarn | null;
   linkToScreen?: boolean;
-  title?: ReactNode;
   txPreviewMode?: boolean;
 }) {
-  const collToken = getCollToken(branchId);
-  const earnPool = useEarnPool(branchId);
+  const collToken = USDT
+  const vault = useVault()
 
-  const { totalDeposited: totalPoolDeposit } = earnPool.data;
+  const { totalDeposited: totalPoolDeposit } = vault.data;
 
   let share = dn.from(0, 18);
   let prevShare = dn.from(0, 18);
@@ -43,7 +38,7 @@ export function EarnPositionSummary({
 
   const active = txPreviewMode || isEarnPositionActive(earnPosition);
 
-  return collToken && (
+  return collToken && earnPosition && vault.data && (
     <div
       className={css({
         position: "relative",
@@ -111,7 +106,7 @@ export function EarnPositionSummary({
             })}
           >
             <div>
-              {title ?? `${collToken.name} Stability Pool`}
+              Vault
             </div>
             <div
               className={css({
@@ -129,11 +124,11 @@ export function EarnPositionSummary({
                   fallback="-"
                   format="compact"
                   prefix="$"
-                  value={totalPoolDeposit}
+                  value={dn.mul(totalPoolDeposit, vault.data.price)}
                 />
               </div>
               <InfoTooltip heading="Total Value Locked (TVL)">
-                Total amount of bvUSD deposited in this stability pool.
+                Total amount of bvUSD deposited in this vault.
               </InfoTooltip>
             </div>
           </div>
@@ -164,7 +159,7 @@ export function EarnPositionSummary({
                       fallback="-%"
                       format="1z"
                       percentage
-                      value={earnPool.data?.apr}
+                      value={vault.data?.apr}
                     />
                   </div>
                   <InfoTooltip
@@ -197,7 +192,7 @@ export function EarnPositionSummary({
                     fallback="-%"
                     format="1z"
                     percentage
-                    value={earnPool.data?.apr7d}
+                    value={vault.data?.apr7d}
                   />
                   <InfoTooltip
                     content={{
@@ -251,7 +246,7 @@ export function EarnPositionSummary({
             >
               <div
                 title={active
-                  ? `${fmtnum(earnPosition?.deposit, "full")} bvUSD`
+                  ? `${fmtnum(dn.mul(earnPosition.deposit, vault.data.price), "full")} bvUSD`
                   : undefined}
                 className={css({
                   display: "flex",
@@ -261,12 +256,12 @@ export function EarnPositionSummary({
                   height: 24,
                 })}
               >
-                {active ? fmtnum(earnPosition?.deposit) : "0.00"}
+                {active && fmtnum(dn.mul(earnPosition.deposit, vault.data.price))}
                 <TokenIcon symbol="bvUSD" size="mini" title={null} />
               </div>
               {prevEarnPosition && (
                 <div
-                  title={`${fmtnum(prevEarnPosition.deposit, "full")} bvUSD`}
+                  title={`${fmtnum(dn.mul(prevEarnPosition.deposit, vault.data.price), "full")} bvUSD`}
                   className={css({
                     display: "flex",
                     justifyContent: "flex-start",
@@ -277,64 +272,12 @@ export function EarnPositionSummary({
                     textDecoration: "line-through",
                   })}
                 >
-                  {fmtnum(prevEarnPosition.deposit)}
+                  {fmtnum(dn.mul(prevEarnPosition.deposit, vault.data.price))}
                   <TokenIcon symbol="bvUSD" size="mini" title={null} />
                 </div>
               )}
             </div>
           </div>
-          {!txPreviewMode && (
-            <div
-              className={css({
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-              })}
-            >
-              <div
-                style={{
-                  color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
-                }}
-              >
-                Rewards
-              </div>
-              <div
-                className={css({
-                  display: "flex",
-                  justifyContent: "flex-start",
-                  alignItems: "center",
-                  gap: 8,
-                  height: 24,
-                })}
-              >
-                {active
-                  ? (
-                    <>
-                      <HFlex
-                        gap={4}
-                        title={`${fmtnum(earnPosition?.rewards.bold, "full")} bvUSD`}
-                        className={css({
-                          fontVariantNumeric: "tabular-nums",
-                        })}
-                      >
-                        {fmtnum(earnPosition?.rewards.bold)}
-                        <TokenIcon symbol="bvUSD" size="mini" title={null} />
-                      </HFlex>
-                      <HFlex gap={4}>
-                        <Amount value={earnPosition?.rewards.coll} />
-                        <TokenIcon symbol={collToken.symbol} size="mini" />
-                      </HFlex>
-                    </>
-                  )
-                  : (
-                    <TokenIcon.Group size="mini">
-                      <TokenIcon symbol="bvUSD" />
-                      <TokenIcon symbol={collToken.symbol} />
-                    </TokenIcon.Group>
-                  )}
-              </div>
-            </div>
-          )}
           {active && (
             <div>
               <div
