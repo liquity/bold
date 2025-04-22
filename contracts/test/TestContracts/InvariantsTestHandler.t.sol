@@ -2649,20 +2649,21 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     function _aggregateLiquidation(uint256 i, LatestTroveData memory trove, LiquidationTotals storage t) internal {
-        // Coll gas comp
-        uint256 collRemaining = trove.entireColl;
-        uint256 collGasComp = Math.min(collRemaining / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
-        t.collGasComp += collGasComp;
-        collRemaining -= collGasComp;
-
         // Offset debt by SP
         uint256 spRemaining = spBoldDeposits[i] - t.spOffset;
         uint256 spOffset = Math.min(trove.entireDebt, spRemaining > MIN_BOLD_IN_SP ? spRemaining - MIN_BOLD_IN_SP : 0);
         t.spOffset += spOffset;
 
-        // Send coll to SP
+        // Offset debt
+        uint256 collRemaining = trove.entireColl;
         uint256 collSPPortion = collRemaining * spOffset / trove.entireDebt;
-        uint256 spCollGain = Math.min(collSPPortion, spOffset * (_100pct + LIQ_PENALTY_SP[i]) / _price[i]);
+        // Coll gas comp
+        uint256 collGasComp = Math.min(collSPPortion / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
+        t.collGasComp += collGasComp;
+        collRemaining -= collGasComp;
+
+        // Send coll to SP
+        uint256 spCollGain = Math.min(collSPPortion - collGasComp, spOffset * (_100pct + LIQ_PENALTY_SP[i]) / _price[i]);
         t.spCollGain += spCollGain;
         collRemaining -= spCollGain;
 
