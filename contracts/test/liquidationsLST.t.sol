@@ -142,8 +142,8 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         // Check A retains ~10% of the collateral (after claiming from CollSurplus)
         // collAmount - (liquidationAmount to Coll + 10%)
-        uint256 collSurplusAmount = collAmount
-            - (liquidationAmount + initialValues.AInterest) * DECIMAL_PRECISION / price * 110 / 100;
+        uint256 collSurplusAmount =
+            collAmount - (liquidationAmount + initialValues.AInterest) * DECIMAL_PRECISION / price * 110 / 100;
         assertApproxEqAbs(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusAmount,
