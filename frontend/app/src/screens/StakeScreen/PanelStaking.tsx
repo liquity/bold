@@ -2,10 +2,11 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import content from "@/src/content";
-import { dnumMax } from "@/src/dnum-utils";
+import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { useAccountVotingPower, useStakePosition } from "@/src/liquity-utils";
+import { useGovernanceStats, useGovernanceUser } from "@/src/liquity-governance";
+import { useStakePosition } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
@@ -24,6 +25,9 @@ export function PanelStaking() {
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
 
+  const govStats = useGovernanceStats();
+  const govUser = useGovernanceUser(account.address ?? null);
+
   const stakePosition = useStakePosition(account.address ?? null);
 
   const parsedValue = parseInputFloat(value);
@@ -33,21 +37,39 @@ export function PanelStaking() {
     : fmtnum(parsedValue, "full");
 
   const depositDifference = dn.mul(
-    parsedValue ?? dn.from(0, 18),
+    parsedValue ?? DNUM_0,
     mode === "withdraw" ? -1 : 1,
   );
 
-  const updatedShare = useAccountVotingPower(
-    account.address ?? null,
-    depositDifference[0],
-  );
+  const updatedShare = (() => {
+    const { totalLQTYStaked } = govStats.data ?? {};
+    const { allocatedLQTY } = govUser.data ?? {};
+
+    if (
+      allocatedLQTY === undefined
+      || totalLQTYStaked === undefined
+    ) {
+      return DNUM_0;
+    }
+
+    const updatedUserLqtyAllocated = allocatedLQTY + depositDifference[0];
+    const updatedTotalLqtyStaked = totalLQTYStaked + depositDifference[0];
+
+    // make sure we don't divide by zero or show negative percentages
+    return (updatedUserLqtyAllocated <= 0n || updatedTotalLqtyStaked <= 0n)
+      ? DNUM_0
+      : dn.div(
+        [updatedUserLqtyAllocated, 18],
+        [updatedTotalLqtyStaked, 18],
+      );
+  })();
 
   const updatedDeposit = stakePosition.data?.deposit
     ? dnumMax(
       dn.add(stakePosition.data?.deposit, depositDifference),
-      dn.from(0, 18),
+      DNUM_0,
     )
-    : dn.from(0, 18);
+    : DNUM_0;
 
   const lqtyBalance = useBalance(account.address, "LQTY");
   const isDepositFilled = parsedValue && dn.gt(parsedValue, 0);
@@ -70,8 +92,8 @@ export function PanelStaking() {
       && !insufficientBalance,
   );
 
-  const rewardsLusd = stakePosition.data?.rewards.lusd ?? dn.from(0, 18);
-  const rewardsEth = stakePosition.data?.rewards.eth ?? dn.from(0, 18);
+  const rewardsLusd = stakePosition.data?.rewards.lusd ?? DNUM_0;
+  const rewardsEth = stakePosition.data?.rewards.eth ?? DNUM_0;
 
   return (
     <>
@@ -125,9 +147,15 @@ export function PanelStaking() {
             value={value_}
             placeholder="0.00"
             secondary={{
-              start: parsedValue && lqtyPrice.data
-                ? fmtnum(dn.mul(parsedValue, lqtyPrice.data), { digits: 2, prefix: "$" })
-                : null,
+              start: (
+                <Amount
+                  prefix="$"
+                  value={dn.mul(
+                    parsedValue ?? DNUM_0,
+                    lqtyPrice.data ?? DNUM_0,
+                  )}
+                />
+              ),
               end: mode === "deposit"
                 ? (
                   lqtyBalance.data && dn.gt(lqtyBalance.data, 0) && (
@@ -155,21 +183,22 @@ export function PanelStaking() {
           />
         }
         footer={{
-          start: null, /* (
+          start: (
             <Field.FooterInfo
-              label="New voting power"
+              label="New voting share"
               value={
                 <HFlex>
                   <div>
                     <Amount value={updatedShare} percentage suffix="%" />
                   </div>
                   <InfoTooltip>
-                    Voting power is the percentage of the total staked LQTY that you own.
+                    Your voting share is the amount of LQTY have staked and that is available to vote, divided by the
+                    total amount of LQTY staked via the governance contract.
                   </InfoTooltip>
                 </HFlex>
               }
             />
-          )*/
+          ),
         }}
       />
       <div
@@ -256,9 +285,8 @@ export function PanelStaking() {
                   type: "stake",
                   owner: account.address,
                   deposit: updatedDeposit,
-                  share: updatedShare ?? dn.from(0, 18),
                   totalStaked: dn.add(
-                    stakePosition.data?.totalStaked ?? dn.from(0, 18),
+                    stakePosition.data?.totalStaked ?? DNUM_0,
                     depositDifference,
                   ),
                   rewards: {

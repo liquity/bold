@@ -7,7 +7,7 @@ import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { vBranchId, vPositionEarn } from "@/src/valibot-utils";
+import { vBranchId, vDnum, vPositionEarn } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
@@ -15,10 +15,12 @@ import { createRequestSchema, verifyTransaction } from "./shared";
 const RequestSchema = createRequestSchema(
   "earnUpdate",
   {
-    prevEarnPosition: vPositionEarn(),
-    earnPosition: vPositionEarn(),
     branchId: vBranchId(),
     claimRewards: v.boolean(),
+    earnPosition: vPositionEarn(),
+    poolDeposit: vDnum(),
+    prevEarnPosition: vPositionEarn(),
+    prevPoolDeposit: vDnum(),
   },
 );
 
@@ -49,9 +51,11 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
               : request.earnPosition.rewards.coll,
           },
         }}
+        poolDeposit={request.poolDeposit}
         prevEarnPosition={dn.eq(request.prevEarnPosition.deposit, 0)
           ? null
           : request.prevEarnPosition}
+        prevPoolDeposit={request.prevPoolDeposit}
         txPreviewMode
       />
     );

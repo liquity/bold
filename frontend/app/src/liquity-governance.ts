@@ -1,13 +1,17 @@
-import type { Address, Initiative } from "@/src/types";
+import type { Address, Dnum, Initiative } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
+import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { getProtocolContract } from "@/src/contracts";
+import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { KNOWN_INITIATIVES_URL } from "@/src/env";
-import { useGovernanceInitiatives } from "@/src/subgraph-hooks";
+import { getIndexedInitiatives } from "@/src/subgraph";
 import { vAddress } from "@/src/valibot-utils";
+import { useRaf } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
+import * as dn from "dnum";
 import * as v from "valibot";
-import { useConfig as useWagmiConfig, useReadContracts } from "wagmi";
+import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
 export type InitiativeStatus =
@@ -144,14 +148,31 @@ export async function getUserStates(
   };
 }
 
-export function useInitiatives() {
-  const initiatives = useGovernanceInitiatives();
-  const knownInitiatives = useKnownInitiatives();
-  return {
-    ...initiatives,
-    data: initiatives.data && knownInitiatives.data
-      ? initiatives.data.map((address): Initiative => {
-        const knownInitiative = knownInitiatives.data[address];
+const KnownInitiativesSchema = v.record(
+  v.pipe(
+    vAddress(),
+    v.transform((address) => address.toLowerCase()),
+  ),
+  v.object({ name: v.string(), group: v.string() }),
+);
+
+export async function getKnownInitiatives(knownInitiativesUrl: string) {
+  const response = await fetch(knownInitiativesUrl);
+  return v.parse(KnownInitiativesSchema, await response.json());
+}
+
+export function useNamedInitiatives() {
+  return useQuery({
+    queryKey: ["useNamedInitiatives"],
+    queryFn: async () => {
+      const [initiatives, knownInitiatives] = await Promise.all([
+        getIndexedInitiatives(),
+        KNOWN_INITIATIVES_URL
+          ? getKnownInitiatives(KNOWN_INITIATIVES_URL)
+          : null,
+      ]);
+      return initiatives.map((address): Initiative => {
+        const knownInitiative = knownInitiatives?.[address];
         return {
           address,
           name: knownInitiative?.name ?? null,
@@ -160,9 +181,9 @@ export function useInitiatives() {
           tvl: null,
           votesDistribution: null,
         };
-      })
-      : null,
-  };
+      });
+    },
+  });
 }
 
 export function useInitiativesStates(initiatives: Address[]) {
@@ -209,27 +230,146 @@ export function useInitiativesStates(initiatives: Address[]) {
   });
 }
 
-const KnownInitiativesSchema = v.record(
-  v.pipe(
-    vAddress(),
-    v.transform((address) => address.toLowerCase()),
-  ),
-  v.object({
-    name: v.string(),
-    group: v.string(),
-  }),
-);
+export async function getUserAllocations(
+  wagmiConfig: WagmiConfig,
+  account: Address,
+  initiatives: Initiative[],
+) {
+  const Governance = getProtocolContract("Governance");
 
-export function useKnownInitiatives() {
+  const allocationsByInitiative = await readContracts(wagmiConfig, {
+    allowFailure: false,
+    contracts: initiatives.map((initiative) => ({
+      ...Governance,
+      functionName: "lqtyAllocatedByUserToInitiative",
+      args: [account, initiative.address],
+    } as const)),
+  });
+
+  return allocationsByInitiative.map((allocation, index) => {
+    const initiative = initiatives[index]?.address;
+    if (!initiative) throw new Error(); // should never happen
+    const [voteLQTY, _voteOffset, vetoLQTY, _vetoOffset] = allocation;
+    return { vetoLQTY, voteLQTY, initiative };
+  });
+}
+
+export async function getUserState(
+  wagmiConfig: WagmiConfig,
+  account: Address,
+) {
+  const userState = await readContract(wagmiConfig, {
+    ...getProtocolContract("Governance"),
+    functionName: "userStates",
+    args: [account],
+  });
+
+  const [
+    unallocatedLQTY,
+    unallocatedOffset,
+    allocatedLQTY,
+    allocatedOffset,
+  ] = userState;
+
+  return {
+    id: account,
+    allocatedLQTY,
+    allocatedOffset,
+    stakedLQTY: unallocatedLQTY,
+    stakedOffset: unallocatedOffset,
+  };
+}
+
+export function useGovernanceUser(account: Address | null) {
+  const initiatives = useNamedInitiatives();
+  const wagmiConfig = useWagmiConfig();
+
+  let queryFn = async () => {
+    if (!account || !initiatives.data) return null;
+
+    const [userState, allocations] = await Promise.all([
+      getUserStates(wagmiConfig, account),
+      getUserAllocations(wagmiConfig, account, initiatives.data),
+    ]);
+
+    return { ...userState, allocations };
+  };
+
   return useQuery({
-    queryKey: ["knownInitiatives"],
-    queryFn: async () => {
-      if (KNOWN_INITIATIVES_URL === undefined) {
-        throw new Error("KNOWN_INITIATIVES_URL is not defined");
-      }
-      const response = await fetch(KNOWN_INITIATIVES_URL);
-      return v.parse(KnownInitiativesSchema, await response.json());
+    queryKey: [
+      "GovernanceUser",
+      account,
+      jsonStringifyWithDnum(initiatives.data),
+    ],
+    queryFn,
+    refetchInterval: DATA_REFRESH_INTERVAL,
+  });
+}
+
+// votingPower(t) = lqty * t - offset
+export function votingPower(
+  stakedLQTY: bigint,
+  offset: bigint,
+  timestampInSeconds: bigint,
+) {
+  return stakedLQTY * timestampInSeconds - offset;
+}
+
+export function useVotingPower(
+  account: Address | null,
+  callback: (share: Dnum | null) => void,
+  updatesPerSecond: number = 30,
+) {
+  const govStats = useGovernanceStats();
+  const govUser = useGovernanceUser(account);
+
+  useRaf(() => {
+    const { totalLQTYStaked, totalOffset } = govStats.data ?? {};
+    const { allocatedLQTY, allocatedOffset } = govUser.data ?? {};
+
+    if (
+      allocatedLQTY === undefined
+      || allocatedOffset === undefined
+      || totalLQTYStaked === undefined
+      || totalOffset === undefined
+    ) {
+      callback(null);
+      return;
+    }
+
+    const now = Date.now();
+    const nowInSeconds = BigInt(Math.floor(now / 1000));
+
+    const userVp = votingPower(allocatedLQTY, allocatedOffset, nowInSeconds);
+    const userVpNext = votingPower(allocatedLQTY, allocatedOffset, nowInSeconds + 1n);
+    const totalVP = votingPower(totalLQTYStaked, totalOffset, nowInSeconds);
+    const totalVPNext = votingPower(totalLQTYStaked, totalOffset, nowInSeconds + 1n);
+
+    // progress of current second, scaled to 1000
+    const progressScaled = BigInt(Math.floor(((now % 1000) / 1000) * 1000));
+
+    const userVpLive = userVp + (userVpNext - userVp) * progressScaled / 1000n;
+    const totalVpLive = totalVP + (totalVPNext - totalVP) * progressScaled / 1000n;
+
+    // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
+    callback(
+      totalVpLive === 0n ? DNUM_0 : dn.div(
+        dnum18(userVpLive),
+        dnum18(totalVpLive),
+      ),
+    );
+  }, updatesPerSecond);
+}
+
+export function useGovernanceStats() {
+  return useReadContract({
+    ...getProtocolContract("Governance"),
+    functionName: "globalState",
+    query: {
+      select: ([countedVoteLQTY, countedVoteOffset]) => ({
+        totalLQTYStaked: countedVoteLQTY,
+        totalOffset: countedVoteOffset,
+      }),
     },
-    enabled: KNOWN_INITIATIVES_URL !== undefined,
   });
 }

@@ -5,10 +5,10 @@ import { useAppear } from "@/src/anim-utils";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
-import { useGovernanceStats, useGovernanceUser } from "@/src/subgraph-hooks";
+import { useGovernanceUser, useVotingPower } from "@/src/liquity-governance";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconStake, InfoTooltip, TokenIcon, useRaf } from "@liquity2/uikit";
+import { HFlex, IconStake, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import { a } from "@react-spring/web";
 import * as dn from "dnum";
 import { useRef } from "react";
@@ -24,76 +24,39 @@ export function StakePositionSummary({
   stakePosition: null | PositionStake;
   txPreviewMode?: boolean;
 }) {
-  const govUser = useGovernanceUser(stakePosition?.owner ?? null);
-  const govStats = useGovernanceStats();
-
   const account = useAccount();
 
+  const govUser = useGovernanceUser(stakePosition?.owner ?? null);
+
   const appear = useAppear(
-    account.isDisconnected || (
+    !account.isConnected || (
       loadingState === "success" && govUser.status === "success"
     ),
   );
 
-  // totalVotingPower(t) = governanceStats.totalLQTYStaked * t - governanceStats.totalOffset
-  const totalVotingPower = (t: bigint) => {
-    if (!govStats.data) return null;
-    const { totalLQTYStaked, totalOffset } = govStats.data;
-    return BigInt(totalLQTYStaked) * t - BigInt(totalOffset);
-  };
-
-  // userVotingPower(t) = lqty * t - offset
-  const userVotingPower = (t: bigint) => {
-    if (!govUser.data) return null;
-    const { stakedLQTY, stakedOffset } = govUser.data;
-    return BigInt(stakedLQTY) * t - BigInt(stakedOffset);
-  };
-
   const votingPowerRef = useRef<HTMLDivElement>(null);
   const votingPowerTooltipRef = useRef<HTMLDivElement>(null);
 
-  useRaf(() => {
+  useVotingPower(stakePosition?.owner ?? null, (share) => {
     if (!votingPowerRef.current) {
       return;
     }
 
-    const now = Date.now();
-    const nowInSeconds = BigInt(Math.floor(now / 1000));
-
-    const userVp = userVotingPower(nowInSeconds);
-    const userVpNext = userVotingPower(nowInSeconds + 1n);
-
-    const totalVP = totalVotingPower(nowInSeconds);
-    const totalVPNext = totalVotingPower(nowInSeconds + 1n);
-
-    if (
-      userVp === null
-      || userVpNext === null
-      || totalVP === null
-      || totalVPNext === null
-    ) {
+    if (!share) {
       votingPowerRef.current.innerHTML = "−";
       votingPowerRef.current.title = "";
       return;
     }
 
-    const liveProgress = (now % 1000) / 1000;
-    const userVpLive = userVp + (userVpNext - userVp) * BigInt(Math.floor(liveProgress * 1000)) / 1000n;
-    const totalVpLive = totalVP + (totalVPNext - totalVP) * BigInt(Math.floor(liveProgress * 1000)) / 1000n;
+    const shareFormatted = fmtnum(share, { preset: "12z", scale: 100 }) + "%";
 
-    // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
-    const share = dn.div([userVpLive, 18], [totalVpLive, 18]);
-
-    const sharePctFormatted = fmtnum(share, { preset: "12z", scale: 100 }) + "%";
-    const sharePctRoundedFormatted = fmtnum(share, "pct2z") + "%";
-
-    votingPowerRef.current.innerHTML = sharePctRoundedFormatted;
-    votingPowerRef.current.title = sharePctFormatted;
+    votingPowerRef.current.innerHTML = fmtnum(share, "pct2z") + "%";
+    votingPowerRef.current.title = shareFormatted;
 
     if (votingPowerTooltipRef.current) {
-      votingPowerTooltipRef.current.innerHTML = sharePctFormatted;
+      votingPowerTooltipRef.current.innerHTML = shareFormatted;
     }
-  }, 30);
+  });
 
   return (
     <div
@@ -314,7 +277,6 @@ export function StakePositionSummary({
               >
                 Voting power
               </div>
-
               {appear((style, show) => (
                 show && (
                   <a.div
@@ -330,31 +292,8 @@ export function StakePositionSummary({
                       className={css({
                         fontVariantNumeric: "tabular-nums",
                       })}
-                      style={{
-                        color: txPreviewMode
-                            && prevStakePosition
-                            && stakePosition?.share
-                            && !dn.eq(prevStakePosition.share, stakePosition.share)
-                          ? "var(--update-color)"
-                          : "inherit",
-                      }}
                     >
                     </div>
-                    {prevStakePosition
-                      && stakePosition
-                      && !dn.eq(prevStakePosition.share, stakePosition.share) && (
-                      <div
-                        className={css({
-                          color: "contentAlt",
-                          textDecoration: "line-through",
-                        })}
-                      >
-                        <Amount
-                          percentage
-                          value={prevStakePosition?.share ?? 0}
-                        />
-                      </div>
-                    )}
                     {!txPreviewMode && (
                       <InfoTooltip
                         content={{
@@ -371,7 +310,7 @@ export function StakePositionSummary({
                                 Your relative voting power changes over time, depending on your and others deposits of
                                 LQTY.
                               </p>
-                              {account.address && (govUser.data?.stakedLQTY ?? 0n) > 0n && (
+                              {account.address && (govUser.data?.allocatedLQTY ?? 0n) > 0n && (
                                 <div
                                   className={css({
                                     display: "flex",

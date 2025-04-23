@@ -1,7 +1,7 @@
 import type { Config as WagmiConfig } from "wagmi";
 
 import { waitForSafeTransaction } from "@/src/safe-utils";
-import { BlockNumberQuery, graphQuery } from "@/src/subgraph-queries";
+import { getIndexedBlockNumber } from "@/src/subgraph";
 import { sleep } from "@/src/utils";
 import * as v from "valibot";
 import { waitForTransactionReceipt } from "wagmi/actions";
@@ -32,6 +32,7 @@ export async function verifyTransaction(
   wagmiConfig: WagmiConfig,
   hash: string,
   isSafe: boolean,
+  waitForSubgraphIndexation: boolean = true,
 ) {
   const tx = await (
     isSafe
@@ -47,15 +48,16 @@ export async function verifyTransaction(
   );
 
   // wait for the block number to be indexed by the subgraph
-  await verifyBlockNumberIndexation(tx.blockNumber);
+  if (waitForSubgraphIndexation) {
+    await verifyBlockNumberIndexation(tx.blockNumber);
+  }
 
   return tx;
 }
 
 export async function verifyBlockNumberIndexation(blockNumber: bigint) {
   while (true) {
-    const result = await graphQuery(BlockNumberQuery);
-    const indexedBlockNumber = BigInt(result._meta?.block.number ?? -1);
+    const indexedBlockNumber = await getIndexedBlockNumber();
     if (indexedBlockNumber >= blockNumber) {
       break;
     }

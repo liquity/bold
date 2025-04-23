@@ -125,8 +125,12 @@ export async function getOpenLeveragedTroveParams(
   wagmiConfig: WagmiConfig,
 ) {
   const { PriceFeed } = getBranch(branchId).contracts;
+  const FetchPriceAbi = PriceFeed.abi.find((fn) => fn.name === "fetchPrice");
+  if (!FetchPriceAbi) {
+    throw new Error("fetchPrice ABI not found");
+  }
   const [price] = await readContract(wagmiConfig, {
-    abi: PriceFeed.abi,
+    abi: [{ ...FetchPriceAbi, stateMutability: "view" }] as const,
     address: PriceFeed.address,
     functionName: "fetchPrice",
   });

@@ -45,7 +45,6 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     branchId: 1,
     batchManager: null,
     createdAt: getTime(),
-    updatedAt: getTime(),
   },
   {
     type: "multiply",
@@ -58,7 +57,6 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     branchId: 0,
     batchManager: null,
     createdAt: getTime(),
-    updatedAt: getTime(),
   },
   {
     type: "earn",
@@ -74,7 +72,6 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     type: "stake",
     owner: DEMO_ACCOUNT,
     deposit: dn.from(3414, 18),
-    share: dn.div(dn.from(3414, 18), STAKED_LQTY_TOTAL),
     totalStaked: STAKED_LQTY_TOTAL,
     rewards: {
       lusd: dn.from(789.438, 18),

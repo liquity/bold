@@ -9,12 +9,12 @@ import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken, isEarnPositionActive } from "@/src/liquity-utils";
+import { getCollToken, isEarnPositionActive, useEarnPool } from "@/src/liquity-utils";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, Checkbox, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
+import { Button, Checkbox, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
@@ -32,7 +32,7 @@ export function PanelUpdateDeposit({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const [mode, _setMode] = useState<ValueUpdateMode>("remove");
+  const [mode, setMode] = useState<ValueUpdateMode>("add");
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [claimRewards, setClaimRewards] = useState(true);
@@ -41,15 +41,16 @@ export function PanelUpdateDeposit({
   const isActive = isEarnPositionActive(position ?? null);
 
   const parsedValue = parseInputFloat(value);
-
+  const depositDifference = dn.mul(parsedValue ?? DNUM_0, mode === "remove" ? -1 : 1);
   const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0)) ? value : `${fmtnum(parsedValue, "full")}`;
-
-  const depositDifference = mode === "remove" ? dn.mul(parsedValue ?? DNUM_0, -1) : (parsedValue ?? DNUM_0);
-
   const updatedDeposit = dnumMax(
     dn.add(position?.deposit ?? DNUM_0, depositDifference),
     DNUM_0,
   );
+
+  const earnPool = useEarnPool(branchId);
+  const poolDeposit = earnPool.data?.totalDeposited;
+  const updatedPoolDeposit = poolDeposit && dn.add(poolDeposit, depositDifference);
 
   const boldBalance = useBalance(account.address, "BOLD");
 
@@ -114,11 +115,11 @@ export function PanelUpdateDeposit({
               start: mode === "remove"
                 ? content.earnScreen.withdrawPanel.label
                 : content.earnScreen.depositPanel.label,
-              end: null, /*(
+              end: (
                 <Tabs
                   compact
                   items={[
-                    { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit", disabled: true },
+                    { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
                     { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
                   ]}
                   onSelect={(index, { origin, event }) => {
@@ -131,7 +132,7 @@ export function PanelUpdateDeposit({
                   }}
                   selected={mode === "remove" ? 1 : 0}
                 />
-              )*/
+              ),
             }}
             labelHeight={32}
             onFocus={() => setFocused(true)}
@@ -257,7 +258,13 @@ export function PanelUpdateDeposit({
           size="large"
           wide
           onClick={() => {
-            if (!account.address || !collateral || (mode === "remove" && !position)) {
+            if (
+              !account.address
+              || !collateral
+              || (mode === "remove" && !position)
+              || !poolDeposit
+              || !updatedPoolDeposit
+            ) {
               return;
             }
 
@@ -279,7 +286,10 @@ export function PanelUpdateDeposit({
               successMessage: mode === "remove"
                 ? "The withdrawal has been processed successfully."
                 : "The deposit has been processed successfully.",
+
               branchId,
+              poolDeposit: updatedPoolDeposit,
+              prevPoolDeposit: poolDeposit,
               prevEarnPosition,
               earnPosition: {
                 ...prevEarnPosition,

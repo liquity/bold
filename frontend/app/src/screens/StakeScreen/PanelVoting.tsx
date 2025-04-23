@@ -7,11 +7,16 @@ import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
+import { DNUM_0 } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { fmtnum, formatDate } from "@/src/formatting";
-import { useGovernanceState, useInitiatives, useInitiativesStates } from "@/src/liquity-governance";
+import {
+  useGovernanceState,
+  useGovernanceUser,
+  useInitiativesStates,
+  useNamedInitiatives,
+} from "@/src/liquity-governance";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useGovernanceUser } from "@/src/subgraph-hooks";
 import { jsonStringifyWithBigInt } from "@/src/utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -79,7 +84,7 @@ export function PanelVoting() {
   const account = useAccount();
   const governanceState = useGovernanceState();
   const governanceUser = useGovernanceUser(account.address ?? null);
-  const initiatives = useInitiatives();
+  const initiatives = useNamedInitiatives();
   const initiativesStates = useInitiativesStates(initiatives.data?.map((i) => i.address) ?? []);
 
   const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
@@ -131,7 +136,7 @@ export function PanelVoting() {
       ];
 
       allocations[allocation.initiative] = {
-        value: dn.div(qty, stakedLQTY),
+        value: dn.eq(stakedLQTY, 0) ? DNUM_0 : dn.div(qty, stakedLQTY),
         vote,
       };
     }
@@ -733,7 +738,10 @@ function InitiativeRow({
                     }, 0);
                   }}
                   disabled={disabled}
-                  share={dn.div(voteAllocation?.value ?? [0n, 18], totalStaked)}
+                  share={dn.eq(totalStaked, 0) ? DNUM_0 : dn.div(
+                    voteAllocation?.value ?? DNUM_0,
+                    totalStaked,
+                  )}
                   vote={voteAllocation?.vote ?? null}
                 />
               )
