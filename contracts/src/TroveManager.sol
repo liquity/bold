@@ -469,7 +469,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     function _isRecent(uint256 _troveId) internal view returns (bool) {
         if (uint256(Troves[_troveId].lastDebtUpdateTime) >= block.timestamp) return true;
         address batchAddress = _getBatchManager(_troveId);
-        if (batchAddress != address(0) && uint256(batches[batchAddress].lastDebtUpdateTime) >= block.timestamp) return true;
+        if (batchAddress != address(0) && uint256(batches[batchAddress].lastDebtUpdateTime) >= block.timestamp) {
+            return true;
+        }
 
         return false;
     }

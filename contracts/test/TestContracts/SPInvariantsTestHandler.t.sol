@@ -99,7 +99,8 @@ contract SPInvariantsTestHandler is BaseHandler {
             uint256 totalDebt = borrowerOperations.getEntireBranchDebt();
             uint256 totalColl = borrowerOperations.getEntireBranchColl();
             uint256 minColl = (totalDebt + debt) * troveManager.get_CCR() / price - totalColl + 1;
-            if (minColl > coll) { // it will always hold as long as OPEN_TROVE_ICR = 150%
+            if (minColl > coll) {
+                // it will always hold as long as OPEN_TROVE_ICR = 150%
                 coll = minColl;
             }
         }

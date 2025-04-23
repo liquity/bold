@@ -522,8 +522,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         uint256[] memory liquidatedColl = new uint256[](debt.length);
 
         for (uint256 i = 0; i < debt.length; ++i) {
-            (liquidatedTroveIds[i], liquidatedColl[i]) =
-                openTroveWithExactICRAndDebt(A, i, MCR, debt[i], 0.01 ether);
+            (liquidatedTroveIds[i], liquidatedColl[i]) = openTroveWithExactICRAndDebt(A, i, MCR, debt[i], 0.01 ether);
         }
 
         // make sure liquidation grace period is over

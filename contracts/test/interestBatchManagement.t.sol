@@ -353,7 +353,11 @@ contract InterestBatchManagementTest is DevTestSetup {
 
         troveData = troveManager.getLatestTroveData(ATroveId);
         assertGt(troveData.redistBoldDebtGain, 0, "A should have redist gains");
-        assertEq(troveData.recordedDebt, troveRecordedDebtBefore + accruedInterest + accruedManagementFee, "Recorded debt should increase only by interest and management fee");
+        assertEq(
+            troveData.recordedDebt,
+            troveRecordedDebtBefore + accruedInterest + accruedManagementFee,
+            "Recorded debt should increase only by interest and management fee"
+        );
     }
 
     function testChangeBatchInterestRate() public {
