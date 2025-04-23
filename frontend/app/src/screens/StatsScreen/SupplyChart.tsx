@@ -41,7 +41,7 @@ export default function SupplyChart({ data }: SupplyChartProps) {
             height: "100%",
           }}
         >
-          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0, textAlign: "center"}}>
             bvUSD Supply
           </h2>
 
@@ -75,7 +75,7 @@ export default function SupplyChart({ data }: SupplyChartProps) {
             height: "100%",
           }}
         >
-          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>
+          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0, textAlign: "center"}}>
             bvUSD Holders
           </h2>
 

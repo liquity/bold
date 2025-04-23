@@ -40,16 +40,16 @@ export default function CollateralRatioChart({ data, title }: CRProps) {
             height: "100%",
           }}
         >
-          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0 }}>{title}</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 600, margin: 0, textAlign: "center"}}>{title}</h2>
 
           <ResponsiveContainer width="100%" height="70%">
             <LineChart data={day_CR}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-              <YAxis domain={["auto", "auto"]} />
+              <YAxis domain={["auto", "auto"]} tickFormatter={(value) => `${value.toFixed(0)}%`} />
               <Tooltip />
               <Line
-                type="monotone"
+                type="basis"
                 dataKey="CR"
                 stroke="#8884d8"
                 strokeWidth={2}

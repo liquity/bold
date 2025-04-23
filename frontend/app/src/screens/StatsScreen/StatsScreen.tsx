@@ -4,7 +4,6 @@ import {
   StatsScreenCard,
   StatsTitle,
 } from "@/src/comps/Screen/StatsScreenCard";
-import { COLLATERALS } from "@liquity2/uikit";
 import { useLiquityStats } from "@/src/liquity-utils";
 import { match } from "ts-pattern";
 import { css } from "@/styled-system/css";
@@ -115,7 +114,9 @@ export function StatsScreen() {
                       {
                         label: "",
                         value: `${fmtnum(
-                          Number(liquityStats.data.totalCollValue) / Number(liquityStats.data.totalBoldSupply) * 100,
+                          (Number(liquityStats.data.totalCollValue) /
+                            Number(liquityStats.data.totalBoldSupply)) *
+                            100,
                           "2z"
                         )} %`,
                       },
@@ -166,7 +167,15 @@ export function StatsScreen() {
                       {
                         label: "Collateral Ratio",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["WETH"].totalDebt) > 0 ? Number(liquityStats.data.branch["WETH"].collValue) / Number(liquityStats.data.branch["WETH"].totalDebt) * 100 : 0,
+                          Number(liquityStats.data.branch["WETH"].totalDebt) > 0
+                            ? (Number(
+                                liquityStats.data.branch["WETH"].collValue
+                              ) /
+                                Number(
+                                  liquityStats.data.branch["WETH"].totalDebt
+                                )) *
+                                100
+                            : 0,
                           "2z"
                         )} %`,
                       },
@@ -192,18 +201,30 @@ export function StatsScreen() {
                       {
                         label: "Collateral Ratio",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["ETH"].totalDebt) > 0 ? Number(liquityStats.data.branch["ETH"].collValue) / Number(liquityStats.data.branch["ETH"].totalDebt) * 100 : 0,
+                          Number(liquityStats.data.branch["ETH"].totalDebt) > 0
+                            ? (Number(
+                                liquityStats.data.branch["ETH"].collValue
+                              ) /
+                                Number(
+                                  liquityStats.data.branch["ETH"].totalDebt
+                                )) *
+                                100
+                            : 0,
                           "2z"
                         )} %`,
                       },
                     ]}
                   />
                 </div>
-                <div
-                  className={css({
-                    marginTop: "5%",
-                  })}
-                >
+                <hr
+                  style={{
+                    border: "none",
+                    height: "1px",
+                    backgroundColor: "#ccc",
+                    margin: "5%",
+                  }}
+                />
+                <div>
                   <StatsTitle title="Historical stats" subtitle="" />
                   <SupplyChart data={liquityStats.data.historicalSupply} />
                   <CollateralRatioChart
