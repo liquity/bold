@@ -5,14 +5,18 @@ import type { BranchId } from "@/src/types";
 import { EarnPositionSummary, OpenLink } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { getBranches, useEarnPosition } from "@/src/liquity-utils";
+import { getBranches, useEarnPosition, useVault, useVaultPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { Amount } from "@/src/comps/Amount/Amount";
+import { AccountButton } from "@/src/comps/AppLayout/AccountButton";
+import * as dn from "dnum";
+import { fmtnum } from "@/src/formatting";
 
 export function EarnPoolsListScreen() {
+  const account = useAccount();
   const branches = getBranches();
   const collSymbols = branches.map((b) => b.symbol);
 
@@ -58,12 +62,17 @@ export function EarnPoolsListScreen() {
       width={67 * 8}
       gap={16}
     >
-      <Vault />
-      {poolsTransition((style, branchId) => (
-        <a.div style={style}>
-          <EarnPool branchId={branchId} />
-        </a.div>
-      ))}
+      {account.isConnected ?
+        <>
+          <Vault />
+          {poolsTransition((style, branchId) => (
+            <a.div style={style}>
+              <EarnPool branchId={branchId} />
+            </a.div>
+          ))}
+        </>
+        : <AccountButton />
+      }
     </Screen>
   );
 }
@@ -75,6 +84,7 @@ function EarnPool({
 }) {
   const account = useAccount();
   const earnPosition = useEarnPosition(branchId, account.address ?? null);
+
   return (
     <div
       className={css({
@@ -83,17 +93,25 @@ function EarnPool({
         gap: 16,
       })}
     >
-      <EarnPositionSummary
-        branchId={branchId}
-        earnPosition={earnPosition.data ?? null}
-        linkToScreen
-      />
+      {earnPosition.data &&
+        <EarnPositionSummary
+          branchId={branchId}
+          earnPosition={earnPosition.data ?? null}
+          linkToScreen
+        />
+      }
     </div>
   );
 }
 
 function Vault() {
-  return (
+  const account = useAccount();
+
+  const vaultPosition = useVaultPosition(account.address ?? null);
+  const vault = useVault();
+  const loadingState = vault.isLoading || vaultPosition.status === "pending" ? "loading" : "success";
+  
+  return loadingState === "success" && (
     <div
       className={css({
         position: "relative",
@@ -160,7 +178,7 @@ function Vault() {
                   fallback="-"
                   format="compact"
                   prefix="$"
-                  value={1000000}
+                  value={dn.mul(vault.data.totalDeposited, vault.data.price)}
                 />
               </div>
               <InfoTooltip heading="Total Value Locked (TVL)">
@@ -277,7 +295,6 @@ function Vault() {
               })}
             >
               <div
-                title={`1000000 bvUSD`}
                 className={css({
                   display: "flex",
                   justifyContent: "flex-start",
@@ -286,72 +303,15 @@ function Vault() {
                   height: 24,
                 })}
               >
+                {vaultPosition.data && vault.data ? fmtnum(dn.mul(vaultPosition.data.deposit, vault.data.price)) : "0.00"}
                 <TokenIcon symbol="bvUSD" size="mini" title={null} />
               </div>
             </div>
           </div>
-          <div
-            className={css({
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-            })}
-          >
-            <div
-              className={css({
-                color: "contentAlt",
-              })}
-            >
-              Rewards
-            </div>
-            <div
-              className={css({
-                display: "flex",
-                justifyContent: "flex-start",
-                alignItems: "center",
-                gap: 8,
-                height: 24,
-              })}
-            >
-              <TokenIcon symbol="bvUSD" size="mini" title={null} />
-            </div>
-          </div>
-          {/* {active && (
-            <div>
-              <div
-                style={{
-                  color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
-                }}
-              >
-                Pool share
-              </div>
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  height: 24,
-                })}
-              >
-                <Amount percentage value={share} />
-                {prevEarnPosition && (
-                  <div
-                    className={css({
-                      display: "inline",
-                      color: "contentAlt",
-                      textDecoration: "line-through",
-                    })}
-                  >
-                    <Amount percentage value={prevShare} />
-                  </div>
-                )}
-              </div>
-            </div>
-          )} */}
         </div>
         <OpenLink
           active={true}
-          path={`https://app.vaultcraft.io/vaults/0x93a2edb20e47C663624EFBfC9ec28B32CcaBCafd?chainId=56`}
+          path={`/vault`}
           title={`Deposit into the bvUSD vault`}
         />
       </div>

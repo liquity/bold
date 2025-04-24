@@ -20,6 +20,7 @@ export default {
     dashboard: "Dashboard",
     borrow: "Borrow",
     earn: "Earn",
+    wrap: "Wrap",
     buy: "Buy",
     stats: "Stats",
   },
@@ -240,7 +241,7 @@ export default {
   borrowScreen: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Borrow {boldIcon} bvUSD with {tokensIcons} BTCB or WETH
+        Borrow {boldIcon} bvUSD with {tokensIcons} BVBTC or WETH
       </>
     ),
     depositField: {
@@ -347,6 +348,7 @@ export default {
     },
     tabs: {
       deposit: "Deposit",
+      withdraw: "Withdraw",
       claim: "Claim rewards",
     },
     depositPanel: {

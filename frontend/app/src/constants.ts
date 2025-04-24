@@ -46,7 +46,7 @@ export const MAX_UPFRONT_FEE = 1000n * 10n ** 18n;
 export const MIN_DEBT = dn.from(20, 18);
 
 export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = {
-  BTCB: dn.from(100_000_000n, 18),
+  BVBTC: dn.from(100_000_000n, 18),
   WETH: dn.from(100_000_000n, 18),
 };
 

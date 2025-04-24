@@ -1,15 +1,14 @@
 import type { Token } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
-import { dnum18 } from "@/src/dnum-utils";
+import { dnum18, dnum8 } from "@/src/dnum-utils";
 import { getBranch } from "@/src/liquity-utils";
 import { getSafeStatus } from "@/src/safe-utils";
-import { isCollateralSymbol } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import { useModal as useConnectKitModal } from "connectkit";
 import { match } from "ts-pattern";
 import { erc20Abi } from "viem";
-import { useAccount as useWagmiAccount, useBalance as useWagmiBalance, useEnsName, useReadContract } from "wagmi";
+import { useAccount as useWagmiAccount, useEnsName, useReadContract } from "wagmi";
 
 export function useBalance(
   address: Address | undefined,
@@ -26,10 +25,16 @@ export function useBalance(
           return "0x242a2f669224b225d38514c1785411a6036981f1";
         }
         if(symbol === "sbvUSD") {
-          return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";
+          return "0x0471D185cc7Be61E154277cAB2396cD397663da6";
         }
         if(symbol === "VCRAFT") {
           return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";
+        }
+        if(symbol === "WBTC") {
+          return "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c";
+        }
+        if(symbol === "USDT") {
+          return "0x55d398326f99059fF775485246999027B3197955";
         }
         return getBranch(symbol)?.contracts.CollToken.address ?? null;
       },
@@ -43,7 +48,7 @@ export function useBalance(
     functionName: "balanceOf",
     args: address && [address],
     query: {
-      select: (value) => dnum18(value ?? 0n),
+      select: (value) => tokenAddress === "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c" ? dnum8(value ?? 0n) : dnum18(value ?? 0n),
       enabled: Boolean(address),
     },
   });
@@ -56,7 +61,7 @@ export function useBalance(
   //   },
   // });
 
-  return (tokenBalance);
+  return tokenBalance;
 }
 
 export function useAccount():

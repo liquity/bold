@@ -1,6 +1,6 @@
 export function generateStaticParams() {
   return [
-    { pool: "btcb" },
+    { pool: "bvbtc" },
     { pool: "weth" },
   ];
 }

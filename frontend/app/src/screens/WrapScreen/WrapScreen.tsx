@@ -4,40 +4,42 @@ import type { Dnum } from "@/src/types";
 
 import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { dnum18, dnumMax } from "@/src/dnum-utils";
+import { dnum18, dnum8, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { usePrice } from "@/src/services/Prices";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
-  COLLATERALS,
   InputField,
   TextButton,
   TokenIcon,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
+import { AccountButton } from "@/src/comps/AppLayout/AccountButton";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 
-export function BuyScreen() {
+
+export function WrapScreen() {
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const collPrice = usePrice("WBTC");
-  const collBalance = useBalance(account.address, "WBTC")
+  const wbtcBalance = useBalance(account.address, "WBTC");
+  const btcbBalance = useBalance(account.address, "BVBTC");
 
-  const maxAmount = collBalance.data && dnumMax(
-    dn.sub(collBalance.data, 0), // Only keep a reserve for ETH, not LSTs
-    dnum18(0),
-  );
+  const collBalance = wbtcBalance;
+  if (!collBalance) {
+    throw new Error(`Unknown collateral symbol: WBTC`);
+  }
+  const maxAmount = collBalance.data
+
   const [buyAmount, setBuyAmount] = useState<Dnum | null>(null);
   const sellAmount = useInputFieldValue(fmtnum, {
     validate: (parsed, _) => {
-      parsed = parsed ?? dnum18(0);
+      parsed = parsed ?? dnum8(0);
       const amount = maxAmount && dn.gt(parsed, maxAmount) ? maxAmount : parsed;
-      setBuyAmount(dn.mul(collPrice.data ?? dnum18(0), amount));
+      setBuyAmount(amount);
       return {
         parsed: amount,
         value: dn.toString(amount),
@@ -45,11 +47,11 @@ export function BuyScreen() {
     },
   });
 
-  return collPrice.data && (
+  return (
     <Screen
       heading={{
-        title: "Buy bvUSD with any token",
-        subtitle: "You can adjust your loans, including your interest rate at any time",
+        title: "Wrap WBTC for usage in Troves",
+        subtitle: "",
       }}
     >
       <div
@@ -67,23 +69,23 @@ export function BuyScreen() {
               id="input-sell"
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol="WBTC" />}
+                  icon={<TokenIcon symbol="BVBTC" />}
                   label="WBTC"
                 />
               }
-              label="Sell Amount"
+              label="Wrap Amount"
               placeholder="0.00"
               secondary={{
-                start: `$${sellAmount.parsed && collPrice.data
-                  ? fmtnum(dn.mul(collPrice.data, sellAmount.parsed), "2z")
-                  : "0.00"
+                start: `${sellAmount.parsed
+                  ? fmtnum(sellAmount.parsed, "2z") + " WBTC"
+                  : "0.00 WBTC"
                   }`,
                 end: maxAmount && dn.gt(maxAmount, 0) && (
                   <TextButton
                     label={`Max ${fmtnum(maxAmount)} WBTC`}
                     onClick={() => {
                       sellAmount.setValue(dn.toString(maxAmount));
-                      setBuyAmount(dn.mul(collPrice.data ?? dnum18(0), maxAmount));
+                      setBuyAmount(maxAmount);
                     }}
                   />
                 ),
@@ -91,14 +93,6 @@ export function BuyScreen() {
               {...sellAmount.inputFieldProps}
             />
           }
-          footer={{
-            start: collPrice.data && (
-              <Field.FooterInfoCollPrice
-                collPriceUsd={collPrice.data}
-                collName="WBTC"
-              />
-            ),
-          }}
         />
 
         <Field
@@ -108,16 +102,20 @@ export function BuyScreen() {
               id="input-buy"
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol="bvUSD" />}
-                  label="bvUSD"
+                  icon={<TokenIcon symbol="BVBTC" />}
+                  label="BVBTC"
                 />
               }
-              label="Buy Amount"
+              label="Wrapped Amount"
               placeholder="0.00"
               secondary={{
-                start: `$${buyAmount
-                  ? fmtnum(buyAmount)
-                  : "0.00"
+                start: `${buyAmount
+                  ? fmtnum(buyAmount) + " BVBTC"
+                  : "0.00 BVBTC"
+                  }`,
+                end: `${btcbBalance
+                  ? fmtnum(btcbBalance.data) + " BVBTC"
+                  : "0.00 BVBTC"
                   }`,
               }}
               value={buyAmount ? fmtnum(buyAmount) : ""}
@@ -135,9 +133,9 @@ export function BuyScreen() {
             width: "100%",
           }}
         >
+          {account.isConnected ?
             <Button
-              disabled={true}
-              label={"Coming Soon"}
+              label="Next: Summary"
               mode="primary"
               size="medium"
               shape="rectangular"
@@ -147,19 +145,21 @@ export function BuyScreen() {
                   sellAmount.parsed && account.address
                 ) {
                   txFlow.start({
-                    flowId: "buyStable",
+                    flowId: "wrapToken",
                     backLink: [
-                      `/buy`,
-                      "Back to buying",
+                      `/wrap`,
+                      "Back to wrapping",
                     ],
                     successLink: ["/", "Go to the Dashboard"],
-                    successMessage: "Bought bvUSD successfully.",
+                    successMessage: "The position has been created successfully.",
                     amount: [sellAmount.parsed[0] / BigInt(10 ** 10), 8],
-                    token: "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c", // WBTC
+                    token: "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c",
                   });
                 }
               }}
             />
+            : <AccountButton />
+          }
         </div>
       </div>
     </Screen>

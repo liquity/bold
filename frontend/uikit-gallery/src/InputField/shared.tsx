@@ -73,7 +73,7 @@ export function InputFieldFixture({
         menuPlacement="end"
         items={[
           itemRow("WETH", "WETH", "10.00"),
-          itemRow("BTCB", "BTCB", "10.00"),
+          itemRow("BVBTC", "BVBTC", "10.00"),
         ]}
       />
     ))
@@ -205,12 +205,12 @@ export function InputFieldFixture({
   );
 }
 
-function Token({ name }: { name: "WETH" | "BTCB" | "BOLD" | "bvUSD" }) {
+function Token({ name }: { name: "WETH" | "BVBTC" | "BOLD" | "bvUSD" }) {
   return (
     <Action
       icon={match(name)
         .with("WETH", () => <IconEth />)
-        .with("BTCB", () => <IconBtc />)
+        .with("BVBTC", () => <IconBtc />)
         .with("BOLD", () => <IconBold />)
         .with("bvUSD", () => <IconBold />)
         .exhaustive()}

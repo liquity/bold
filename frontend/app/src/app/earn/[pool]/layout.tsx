@@ -2,7 +2,7 @@ import { EarnPoolScreen } from "@/src/screens/EarnPoolScreen/EarnPoolScreen";
 
 export function generateStaticParams() {
   return [
-    { pool: "btcb" },
+    { pool: "bvbtc" },
     { pool: "weth" },
   ];
 }

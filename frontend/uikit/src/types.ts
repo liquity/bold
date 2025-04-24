@@ -5,9 +5,11 @@ export type Direction = -1 | 1;
 export type TokenSymbol =
   | "bvUSD"
   | "WETH"
-  | "BTCB"
+  | "BVBTC"
   | "VCRAFT"
-  | "sbvUSD";
+  | "sbvUSD"
+  | "WBTC"
+  | "USDT";
 
 export type Token = {
   icon: string;
