@@ -19,24 +19,14 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
-
-const KNOWN_COLLATERAL_SYMBOLS = COLLATERALS.map(({ symbol }) => symbol);
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
 
 export function BuyScreen() {
   const account = useAccount();
+  const txFlow = useTransactionFlow();
 
-  const collPrice = usePrice("WETH");
-
-  const balances = Object.fromEntries(KNOWN_COLLATERAL_SYMBOLS.map((symbol) => ([
-    symbol,
-    // known collaterals are static so we can safely call this hook in a .map()
-    useBalance(account.address, symbol),
-  ] as const)));
-
-  const collBalance = balances["WETH"];
-  if (!collBalance) {
-    throw new Error(`Unknown collateral symbol: WETH`);
-  }
+  const collPrice = usePrice("WBTC");
+  const collBalance = useBalance(account.address, "WBTC")
 
   const maxAmount = collBalance.data && dnumMax(
     dn.sub(collBalance.data, 0), // Only keep a reserve for ETH, not LSTs
@@ -77,8 +67,8 @@ export function BuyScreen() {
               id="input-sell"
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol="WETH" />}
-                  label="WETH"
+                  icon={<TokenIcon symbol="WBTC" />}
+                  label="WBTC"
                 />
               }
               label="Sell Amount"
@@ -90,7 +80,7 @@ export function BuyScreen() {
                   }`,
                 end: maxAmount && dn.gt(maxAmount, 0) && (
                   <TextButton
-                    label={`Max ${fmtnum(maxAmount)} WETH`}
+                    label={`Max ${fmtnum(maxAmount)} WBTC`}
                     onClick={() => {
                       sellAmount.setValue(dn.toString(maxAmount));
                       setBuyAmount(dn.mul(collPrice.data ?? dnum18(0), maxAmount));
@@ -105,7 +95,7 @@ export function BuyScreen() {
             start: collPrice.data && (
               <Field.FooterInfoCollPrice
                 collPriceUsd={collPrice.data}
-                collName="WETH"
+                collName="WBTC"
               />
             ),
           }}
@@ -152,7 +142,23 @@ export function BuyScreen() {
               size="medium"
               shape="rectangular"
               wide
-              onClick={() => { }}
+              onClick={() => {
+                if (
+                  sellAmount.parsed && account.address
+                ) {
+                  txFlow.start({
+                    flowId: "buyStable",
+                    backLink: [
+                      `/buy`,
+                      "Back to buying",
+                    ],
+                    successLink: ["/", "Go to the Dashboard"],
+                    successMessage: "Bought bvUSD successfully.",
+                    amount: [sellAmount.parsed[0] / BigInt(10 ** 10), 8],
+                    token: "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c", // WBTC
+                  });
+                }
+              }}
             />
         </div>
       </div>
