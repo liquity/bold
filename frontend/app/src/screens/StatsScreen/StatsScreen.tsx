@@ -95,6 +95,7 @@ export function StatsScreen() {
                         )} bvUSD`,
                       },
                     ]}
+                    link={{ label: "", href: "" }}
                   />
                   <TokenCard
                     token="Total Collateral Value"
@@ -107,6 +108,7 @@ export function StatsScreen() {
                         )} $`,
                       },
                     ]}
+                    link={{ label: "", href: "" }}
                   />
                   <TokenCard
                     token="Collateralization Ratio"
@@ -121,6 +123,7 @@ export function StatsScreen() {
                         )} %`,
                       },
                     ]}
+                    link={{ label: "", href: "" }}
                   />
                   <TokenCard
                     token="Total Value Locked"
@@ -133,6 +136,7 @@ export function StatsScreen() {
                         )} $`,
                       },
                     ]}
+                    link={{ label: "", href: "" }}
                   />
                 </div>
                 <div
@@ -180,6 +184,7 @@ export function StatsScreen() {
                         )} %`,
                       },
                     ]}
+                    link={{ label: "", href: "" }}
                   />
                   <TokenCard
                     token="ETH Branch"
@@ -214,6 +219,7 @@ export function StatsScreen() {
                         )} %`,
                       },
                     ]}
+                    link={{ label: "", href: "" }}
                   />
                 </div>
                 <hr
