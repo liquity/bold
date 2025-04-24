@@ -20,6 +20,13 @@ import { PositionCardStake } from "./PositionCardStake";
 
 type Mode = "positions" | "loading" | "actions";
 
+const actionCards = [
+  "borrow",
+  // "multiply",
+  "earn",
+  "stake",
+] as const;
+
 export function Positions({
   address,
   columns,
@@ -112,7 +119,7 @@ function PositionsGroup({
   title: (mode: Mode) => ReactNode;
   showNewPositionCard: boolean;
 }) {
-  columns ??= mode === "actions" ? 4 : 3;
+  columns ??= mode === "actions" ? actionCards.length : 3;
 
   const title_ = title(mode);
 
@@ -152,15 +159,12 @@ function PositionsGroup({
       [1, <PositionCard key="1" loading />],
       [2, <PositionCard key="2" loading />],
     ])
-    .with("actions", () =>
-      showNewPositionCard
-        ? [
-          [0, <ActionCard key="0" type="borrow" />],
-          [1, <ActionCard key="1" type="multiply" />],
-          [2, <ActionCard key="2" type="earn" />],
-          [3, <ActionCard key="3" type="stake" />],
-        ]
-        : [])
+    .with("actions", () => (
+      (showNewPositionCard ? actionCards : []).map((type, index) => [
+        index,
+        <ActionCard key={index} type={type} />,
+      ])
+    ))
     .exhaustive();
 
   const cardHeight = mode === "actions" ? 144 : 180;
