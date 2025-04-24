@@ -51,7 +51,7 @@ import {
     URGENT_REDEMPTION_BONUS
 } from "src/Dependencies/Constants.sol";
 
-uint256 constant TIME_DELTA_MIN = 0;
+uint256 constant TIME_DELTA_MIN = 1; // should be at least 1, because a time warp of 0 is pointless
 uint256 constant TIME_DELTA_MAX = ONE_YEAR;
 
 uint256 constant BORROWED_MIN = 0 ether; // Sometimes try borrowing too little
@@ -371,11 +371,13 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     mapping(uint256 branchIdx => mapping(address owner => uint256)) _troveIndexOf;
     mapping(uint256 branchIdx => EnumerableSet) _troveIds;
     mapping(uint256 branchIdx => EnumerableSet) _zombieTroveIds;
+    mapping(uint256 branchIdx => EnumerableSet) _recentlyTouchedTroveIds;
     mapping(uint256 branchIdx => mapping(uint256 troveId => Trove)) _troves;
     mapping(uint256 branchIdx => mapping(uint256 troveId => uint256)) _timeSinceLastTroveInterestRateAdjustment;
 
     // Batch management ghost state
     mapping(uint256 branchIdx => EnumerableAddressSet) _batchManagers;
+    mapping(uint256 branchIdx => EnumerableAddressSet) _recentlyTouchedBatchManagers;
     mapping(uint256 branchIdx => mapping(address batchManager => Batch)) _batches;
     mapping(uint256 branchIdx => mapping(address batchManager => uint256)) _timeSinceLastBatchInterestRateAdjustment;
     mapping(uint256 branchIdx => mapping(uint256 troveId => address)) _batchManagerOf;
@@ -513,6 +515,9 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         _timeSinceLastRedemption += timeDelta;
 
         for (uint256 j = 0; j < branches.length; ++j) {
+            _recentlyTouchedTroveIds[j].reset();
+            _recentlyTouchedBatchManagers[j].reset();
+
             for (uint256 i = 0; i < _troveIds[j].size(); ++i) {
                 uint256 troveId = _troveIds[j].get(i);
                 address batchManager = _batchManagerOf[j][troveId];
@@ -665,6 +670,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             trove.batchManagementRate = v.join ? batch.managementRate : 0;
             _batchManagerOf[v.i][v.troveId] = v.join ? v.batchManager : address(0);
             _troveIds[v.i].add(v.troveId);
+            if (!v.join) _recentlyTouchedTroveIds[v.i].add(v.troveId);
 
             // Effects (batch)
             if (v.join) {
@@ -850,6 +856,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             _troves[i][v.troveId] = v.trove;
             _zombieTroveIds[i].remove(v.troveId);
             if (designatedVictimId[i] == v.troveId) designatedVictimId[i] = 0;
+            if (v.batchManager == address(0)) _recentlyTouchedTroveIds[i].add(v.troveId);
 
             // Effects (batch)
             if (v.batchManager != address(0)) _touchBatch(i, v.batchManager);
@@ -986,6 +993,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             v.trove.interestRate = newInterestRate;
             _troves[i][v.troveId] = v.trove;
             _timeSinceLastTroveInterestRateAdjustment[i][v.troveId] = 0;
+            _recentlyTouchedTroveIds[i].add(v.troveId);
 
             // Effects (system)
             _mintYield(i, v.pendingInterest, v.upfrontFee);
@@ -1341,6 +1349,9 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
                     _troves[j][redeemed.troveId] = trove;
 
                     if (redeemed.becomesZombie) _zombieTroveIds[j].add(redeemed.troveId);
+                    if (_batchManagerOf[j][redeemed.troveId] == address(0)) {
+                        _recentlyTouchedTroveIds[j].add(redeemed.troveId);
+                    }
                 }
 
                 designatedVictimId[j] = r[j].newDesignatedVictimId;
@@ -1492,6 +1503,10 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
                 }
 
                 _troves[i][redeemed.troveId] = trove;
+
+                if (_batchManagerOf[i][redeemed.troveId] == address(0)) {
+                    _recentlyTouchedTroveIds[i].add(redeemed.troveId);
+                }
             }
 
             // Effects (batches)
@@ -1578,6 +1593,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             // Effects (Trove)
             v.trove.applyPending();
             _troves[i][v.troveId] = v.trove;
+            if (v.batchManager == address(0)) _recentlyTouchedTroveIds[i].add(v.troveId);
 
             if (v.t.entireDebt >= MIN_DEBT) {
                 _zombieTroveIds[i].remove(v.troveId);
@@ -2209,6 +2225,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             trove.batchManagementRate = 0;
             _troves[i][v.troveId] = trove;
             _timeSinceLastTroveInterestRateAdjustment[i][v.troveId] = 0;
+            _recentlyTouchedTroveIds[i].add(v.troveId);
             delete _batchManagerOf[i][v.troveId];
 
             // Effects (batch)
@@ -2507,6 +2524,11 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         return _isOpen(i, troveId) && !_isZombie(i, troveId);
     }
 
+    function _isRecent(uint256 i, uint256 troveId) internal view returns (bool) {
+        return _recentlyTouchedTroveIds[i].has(troveId)
+            || _recentlyTouchedBatchManagers[i].has(_batchManagerOf[i][troveId]);
+    }
+
     function _pickHint(uint256 i, uint256 seed) internal view returns (uint256) {
         // We're going to pull:
         // - 50% of the time a valid ID, including 0 (end of list)
@@ -2585,6 +2607,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         }
 
         _batches[i][batchManager].pendingManagementFee = 0;
+        _recentlyTouchedBatchManagers[i].add(batchManager);
     }
 
     function _dealWETHAndApprove(address to, uint256 amount, address spender) internal {
@@ -2680,7 +2703,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     function _planLiquidation(uint256 i) internal returns (LiquidationTransientState storage l) {
-        ITroveManagerTester troveManager = branches[i].troveManager;
+        ITroveManager troveManager = branches[i].troveManager;
         l = _liquidation;
         l.remaining.add(_troveIds[i]);
 
@@ -2688,15 +2711,15 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             if (l.liquidated.has(l.batch[j])) continue; // skip duplicate entry
 
             uint256 troveId = _troveIdOf(i, l.batch[j]);
-            if (troveManager.isRecent(troveId)) continue; // skip recently borrowed troves
-
-            address batchManager = _batchManagerOf[i][troveId];
+            if (_isRecent(i, troveId)) continue; // skip recently borrowed troves
 
             LatestTroveData memory trove = troveManager.getLatestTroveData(troveId);
             if (_ICR(i, trove) >= MCR[i]) continue;
 
             l.remaining.remove(troveId);
             l.liquidated.add(l.batch[j]);
+
+            address batchManager = _batchManagerOf[i][troveId];
             if (batchManager != address(0)) l.batchManagers.add(batchManager);
 
             _aggregateLiquidation(i, trove, l.t);
