@@ -183,6 +183,44 @@ export function useVault() {
   };
 }
 
+const whitelistAbi = [
+  {
+    inputs: [
+      {
+        name: 'callingContract',
+        type: 'address',
+      },
+      {
+        name: 'user',
+        type: 'address',
+      },
+    ],
+    name: 'isWhitelisted',
+    outputs: [
+      {
+        type: 'bool',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
+  },
+] as const
+
+export function isWhitelistedUser(whitelist: Address, callingContract: Address, user: Address) {
+    const isWhitelistedUser = useReadContracts({
+      // @ts-ignore
+      contracts: [{
+        address: whitelist,
+        abi: whitelistAbi,
+        functionName: "isWhitelisted",
+        args: [callingContract, user],
+      }],
+      allowFailure: false,
+    });
+    
+    return isWhitelistedUser.data !== undefined ? isWhitelistedUser.data[0] : undefined;
+}
+
 export function isEarnPositionActive(position: PositionEarn | null) {
   return Boolean(
     position && (
