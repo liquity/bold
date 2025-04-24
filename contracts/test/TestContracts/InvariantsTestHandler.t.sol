@@ -2654,29 +2654,30 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         uint256 spOffset = Math.min(trove.entireDebt, spRemaining > MIN_BOLD_IN_SP ? spRemaining - MIN_BOLD_IN_SP : 0);
         t.spOffset += spOffset;
 
-        // Offset debt
+        // Share coll proportionally between SP and redistribution based on offset fraction
         uint256 collRemaining = trove.entireColl;
         uint256 collSPPortion = collRemaining * spOffset / trove.entireDebt;
-        // Coll gas comp
+
+        // Deduct coll gas comp from SP portion
         uint256 collGasComp = Math.min(collSPPortion / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
         t.collGasComp += collGasComp;
         collRemaining -= collGasComp;
 
-        // Send coll to SP
+        // Send remainder of SP portion to SP, capped by liq penalty
         uint256 spCollGain = Math.min(collSPPortion - collGasComp, spOffset * (_100pct + LIQ_PENALTY_SP[i]) / _price[i]);
         t.spCollGain += spCollGain;
         collRemaining -= spCollGain;
 
-        // Redistribute debt
+        // Redistribute remaining debt
         uint256 debtRedist = trove.entireDebt - spOffset;
         t.debtRedist += debtRedist;
 
-        // Redistribute coll
+        // Redistribute remaining coll, capped by redist penalty
         uint256 collRedist = Math.min(collRemaining, debtRedist * (_100pct + LIQ_PENALTY_REDIST[i]) / _price[i]);
         t.collRedist += collRedist;
         collRemaining -= collRedist;
 
-        // Surplus
+        // Send remaining coll to surplus pool
         t.collSurplus += collRemaining;
     }
 
