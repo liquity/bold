@@ -26,6 +26,7 @@ interface ITroveManager is ILiquityBase {
 
     function troveNFT() external view returns (ITroveNFT);
     function stabilityPool() external view returns (IStabilityPool);
+
     //function boldToken() external view returns (IBoldToken);
     function sortedTroves() external view returns (ISortedTroves);
     function borrowerOperations() external view returns (IBorrowerOperations);

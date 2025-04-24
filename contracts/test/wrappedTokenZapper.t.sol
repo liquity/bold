@@ -87,15 +87,13 @@ contract WrappedTokenZapperTest is DevTestSetup {
         tokenZapper = new WrappedTokenZapper(addressesRegistry, wrapper8Decimals);
 
         // add branch to collateralReegistry
-        uint256[] memory indexes = new uint256[](1);
-        indexes[0] = 1;
         IERC20Metadata[] memory tokens = new IERC20Metadata[](1);
         tokens[0] = token8Decimals;
         ITroveManager[] memory troveManagers = new ITroveManager[](1);
         troveManagers[0] = troveManager;
 
         vm.prank(boldToken.owner());
-        collateralRegistry.addNewCollaterals(indexes, tokens, troveManagers);
+        collateralRegistry.addNewCollaterals(tokens, troveManagers);
 
         // A to F
         for (uint256 i = 0; i < 6; i++) {
