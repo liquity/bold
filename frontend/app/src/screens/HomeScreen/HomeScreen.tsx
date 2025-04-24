@@ -144,7 +144,7 @@ export function TokenCard({
           {token}
         </h1>
         <Link
-          href={link?.href}
+          href={link.href}
           className={css({
             color: "accent",
             textDecoration: "none",
@@ -152,7 +152,7 @@ export function TokenCard({
               color: "goldLight",
             },
           })}>
-          {link?.label}
+          {link.label}
         </Link>
       </div>
       <div className={css({
