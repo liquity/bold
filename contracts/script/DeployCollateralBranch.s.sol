@@ -17,7 +17,7 @@ import "src/StabilityPool.sol";
 import "src/Dependencies/Whitelist.sol";
 import "src/PriceFeeds/CollateralPriceFeed.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
-import "src/Zappers/TokenZapper.sol";
+import "src/Zappers/WrappedTokenZapper.sol";
 import "src/Dependencies/TokenWrapper.sol";
 import "./DeployBvUSD.s.sol";
 import {stdJson} from "forge-std/StdJson.sol";
@@ -120,6 +120,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
     }
 
     IWETH gasToken; // gas token
+    address interestRouter; // 
 
     function run() external override {
         GlobalContracts memory globalContracts;
@@ -168,6 +169,9 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         // populate branch configs data
         uint256 numBranches = jsonData.readUint(".numBranches");
         assert(numBranches <= 10);
+
+        interestRouter = jsonData.readAddress(".interestRouter");
+        assert(interestRouter != address(0));
 
         _log("Number of branches:               ", numBranches.toString());
 
@@ -401,7 +405,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             gasPoolAddress: addresses.gasPool,
             collSurplusPool: ICollSurplusPool(addresses.collSurplusPool),
             sortedTroves: ISortedTroves(addresses.sortedTroves),
-            interestRouter: IInterestRouter(address(0)),
+            interestRouter: IInterestRouter(interestRouter),
             hintHelpers: _hintHelpers,
             multiTroveGetter: _multiTroveGetter,
             collateralRegistry: _collateralRegistry,
@@ -462,7 +466,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         IAddressesRegistry addressRegistry
     ) public returns (ITokenZapper collateralZapper) 
     {
-        collateralZapper = new TokenZapper(addressRegistry, collateralWrapper);
+        collateralZapper = new WrappedTokenZapper(addressRegistry, collateralWrapper);
     }
 
     function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)

@@ -9,7 +9,7 @@ import "../Dependencies/AddRemoveManagers.sol";
 import "./LeftoversSweep.sol";
 import "./Interfaces/ITokenZapper.sol";
 
-abstract contract BaseTokenZapper is AddRemoveManagers, LeftoversSweep, ITokenZapper {
+abstract contract BaseWrappedTokenZapper is AddRemoveManagers, LeftoversSweep, ITokenZapper {
     IBorrowerOperations public immutable borrowerOperations;
     ITroveManager public immutable troveManager;
     ITokenWrapper public immutable tokenWrapper;

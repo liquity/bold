@@ -18,13 +18,13 @@ interface ITokenZapper {
         address receiver;
     }
 
-    function openTroveWithToken(OpenTroveParams calldata _params) external payable returns (uint256);
+    function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256);
 
-    function addCollWithToken(uint256 _troveId, uint256 tokenAmount) external; 
-    function withdrawCollToToken(uint256 _troveId, uint256 _amount) external;
+    function addCollWithRawETH(uint256 _troveId, uint256 tokenAmount) external; 
+    function withdrawCollToRawETH(uint256 _troveId, uint256 _amount) external;
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external;
     function repayBold(uint256 _troveId, uint256 _boldAmount) external;
-    function adjustTroveWithToken(
+    function adjustTroveWithRawETH(
         uint256 _troveId,
         uint256 _collChange, // underlying token decimals
         bool _isCollIncrease,
@@ -32,8 +32,8 @@ interface ITokenZapper {
         bool _isDebtIncrease,
         uint256 _maxUpfrontFee
     ) external;
-    function closeTroveToUnderlyingToken(uint256 _troveId) external;
-    function adjustZombieTroveWithToken(
+    function closeTroveToRawETH(uint256 _troveId) external;
+    function adjustZombieTroveWithRawETH(
         uint256 _troveId,
         uint256 _collChange, // underlying token decimals
         bool _isCollIncrease,
