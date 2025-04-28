@@ -571,13 +571,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireTroveIsOpen(_troveManager, _troveId);
 
         address owner = troveNFT.ownerOf(_troveId);
-        address receiver = owner; // If it’s a withdrawal, and manager has receive privilege, manager would be the receiver
+        address receiver = owner; // If it’s a withdrawal, and remove manager privilege is set, a different receiver can be defined
 
         if (_troveChange.collDecrease > 0 || _troveChange.debtIncrease > 0) {
             receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
-        }
-
-        if (_troveChange.collIncrease > 0 || _troveChange.debtDecrease > 0) {
+        } else if (_troveChange.collIncrease > 0 || _troveChange.debtDecrease > 0) {
+            // RemoveManager assumes AddManager, so if the former is set, there's no need to check the latter
             _requireSenderIsOwnerOrAddManager(_troveId, owner);
         }
 

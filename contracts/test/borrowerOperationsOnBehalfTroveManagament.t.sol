@@ -365,15 +365,18 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         borrowerOperations.addColl(ATroveId, 1 ether);
         vm.stopPrank();
 
-        // Set remove manager - still won’t work
+        // Set remove manager - it works too
         vm.startPrank(A);
         borrowerOperations.setRemoveManager(ATroveId, C);
         vm.stopPrank();
 
+        uint256 CInitialCollBalance = collToken.balanceOf(C);
         vm.startPrank(C);
-        vm.expectRevert(AddRemoveManagers.NotOwnerNorAddManager.selector);
         borrowerOperations.addColl(ATroveId, 1 ether);
         vm.stopPrank();
+
+        assertEq(troveManager.getTroveColl(ATroveId), 103 ether, "Wrong trove coll");
+        assertEq(collToken.balanceOf(C), BInitialCollBalance - 1 ether, "Wrong owner balance");
     }
 
     function testAddCollWithoutAddManager() public {
@@ -508,18 +511,17 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         borrowerOperations.repayBold(ATroveId, 10e18);
         vm.stopPrank();
 
-        // Set remove manager - still won’t work
+        // Set remove manager - it works too
         vm.startPrank(A);
         borrowerOperations.setRemoveManager(ATroveId, C);
         vm.stopPrank();
 
         vm.startPrank(C);
-        vm.expectRevert(AddRemoveManagers.NotOwnerNorAddManager.selector);
         borrowerOperations.repayBold(ATroveId, 10e18);
         vm.stopPrank();
 
-        assertEq(troveManager.getTroveEntireDebt(ATroveId), initialDebt - 20e18, "Wrong trove debt 3");
-        assertEq(boldToken.balanceOf(C), CInitialBoldBalance, "Wrong manager balance 3");
+        assertEq(troveManager.getTroveEntireDebt(ATroveId), initialDebt - 30e18, "Wrong trove debt 3");
+        assertEq(boldToken.balanceOf(C), CInitialBoldBalance - 10e18, "Wrong manager balance 3");
     }
 
     function testRepayBoldWithoutAddManager() public {

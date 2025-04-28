@@ -45,9 +45,8 @@ abstract contract BaseZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanRec
 
         if ((!_isCollIncrease && _collChange > 0) || _isDebtIncrease) {
             receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
-        }
-
-        if (_isCollIncrease || (!_isDebtIncrease && _boldChange > 0)) {
+        } else if (_isCollIncrease || (!_isDebtIncrease && _boldChange > 0)) {
+            // RemoveManager assumes AddManager, so if the former is set, there's no need to check the latter
             _requireSenderIsOwnerOrAddManager(_troveId, owner);
         }
 
