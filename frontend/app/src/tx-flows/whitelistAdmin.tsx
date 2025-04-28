@@ -5,59 +5,7 @@ import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionS
 import { vAddress } from "@/src/valibot-utils";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
-
-const whitelistAbi = [
-  {
-    inputs: [
-      {
-        name: "callingContract",
-        type: "address",
-      },
-      {
-        name: "user",
-        type: "address",
-      },
-    ],
-    name: "isWhitelisted",
-    outputs: [
-      {
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        name: "callingContract",
-        type: "address",
-      },
-      {
-        name: "user",
-        type: "address",
-      },
-    ],
-    name: "addToWhitelist",
-    stateMutability: "public",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        name: "callingContract",
-        type: "address",
-      },
-      {
-        name: "user",
-        type: "address",
-      },
-    ],
-    name: "removeFromWhitelist",
-    stateMutability: "public",
-    type: "function",
-  },
-] as const;
+import { WhitelistAbi } from "../abi/Whitelist";
 
 const RemoveRequestSchema = createRequestSchema("removeFromWhitelist", {
   whitelist: vAddress(),
@@ -105,7 +53,7 @@ export const removeFromWhitelist: FlowDeclaration<RemoveFromWhitelistRequest> =
         async commit(ctx) {
           return ctx.writeContract({
             address: ctx.request.whitelist,
-            abi: whitelistAbi,
+            abi: WhitelistAbi,
             functionName: "removeFromWhitelist",
             args: [ctx.request.callingContract, ctx.request.user],
           });
@@ -168,7 +116,7 @@ export const addToWhitelist: FlowDeclaration<AddToWhitelistRequest> = {
       async commit(ctx) {
         return ctx.writeContract({
           address: ctx.request.whitelist,
-          abi: whitelistAbi,
+          abi: WhitelistAbi,
           functionName: "addToWhitelist",
           args: [ctx.request.callingContract, ctx.request.user],
         });

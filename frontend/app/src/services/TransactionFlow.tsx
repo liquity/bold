@@ -37,7 +37,7 @@ import { updateLoanInterestRate, type UpdateLoanInterestRateRequest } from "@/sr
 import { wrapToken, type WrapTokenRequest } from "@/src/tx-flows/wrapToken";
 import { vaultUpdate, type VaultUpdateRequest } from "@/src/tx-flows/vaultUpdate";
 import { buyStable, type BuyStableRequest } from "@/src/tx-flows/buyStable";
-import { addToWhitelist, type AddToWhitelistRequest, removeFromWhitelist, type RemoveFromWhitelistRequest } from "@/src/tx-flows/whitelist";
+import { addToWhitelist, type AddToWhitelistRequest, removeFromWhitelist, type RemoveFromWhitelistRequest } from "@/src/tx-flows/whitelistAdmin";
 
 export type FlowRequestMap = {
   "claimCollateralSurplus": ClaimCollateralSurplusRequest;

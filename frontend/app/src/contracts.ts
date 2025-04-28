@@ -19,9 +19,12 @@ import { SortedTroves } from "@/src/abi/SortedTroves";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import { TroveNFT } from "@/src/abi/TroveNFT";
+import { AddressesRegistry } from "@/src/abi/AddressesRegistry";
+import { WhitelistAbi } from "@/src/abi/Whitelist";
 import {
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
+  CONTRACT_ADDRESSES_REGISTRY,
   CONTRACT_EXCHANGE_HELPERS,
   CONTRACT_GOVERNANCE,
   CONTRACT_HINT_HELPERS,
@@ -36,6 +39,7 @@ import { erc20Abi, zeroAddress } from "viem";
 
 const protocolAbis = {
   BoldToken: erc20Abi,
+  AddressesRegistry,
   CollateralRegistry,
   ExchangeHelpers,
   Governance,
@@ -69,6 +73,7 @@ const collateralAbis = {
   StabilityPool,
   TroveManager,
   TroveNFT,
+  Whitelist: WhitelistAbi,
 } as const;
 
 const abis = {
@@ -110,6 +115,10 @@ export const CONTRACTS: Contracts = {
   CollateralRegistry: {
     abi: abis.CollateralRegistry,
     address: CONTRACT_COLLATERAL_REGISTRY,
+  },
+  AddressesRegistry: {
+    abi: abis.AddressesRegistry,
+    address: CONTRACT_ADDRESSES_REGISTRY,
   },
   Governance: { abi: abis.Governance, address: CONTRACT_GOVERNANCE },
   ExchangeHelpers: {
@@ -160,6 +169,7 @@ export const CONTRACTS: Contracts = {
       },
       TroveManager: { address: contracts.TROVE_MANAGER, abi: abis.TroveManager },
       TroveNFT: { address: contracts.TROVE_NFT, abi: abis.TroveNFT },
+      Whitelist: {address: contracts.WHITELIST, abi: abis.Whitelist}
     },
   })),
 };
