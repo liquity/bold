@@ -194,8 +194,7 @@ contract SPInvariantsTestHandler is BaseHandler {
 
         logCall("liquidateMe");
 
-        (uint256 price,) = priceFeed.fetchPrice();
-        priceFeed.setPrice(initialPrice * LIQUIDATION_ICR / troveManager.getCurrentICR(troveId, price));
+        priceFeed.setPrice(initialPrice * LIQUIDATION_ICR / troveManager.getCurrentICR(troveId, initialPrice));
 
         uint256 collBefore = collateralToken.balanceOf(address(this));
         uint256 accountSurplusBefore = collSurplusPool.getCollateral(msg.sender);
