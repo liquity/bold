@@ -112,8 +112,6 @@ contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy
         ISuperToken(address(this)).selfTransferFrom(_poolAddress, _poolAddress, _receiver, _amount);
     }
 
-    // TODO: check that SF already checks for no sending to 0 or this contract.
-
     // --- 'require' functions ---
 
     function _requireValidRecipient(address _recipient) internal view {
