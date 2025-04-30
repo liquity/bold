@@ -575,9 +575,13 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         if (_troveChange.collDecrease > 0 || _troveChange.debtIncrease > 0) {
             receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
-        } else if (_troveChange.collIncrease > 0 || _troveChange.debtDecrease > 0) {
+        } else {
             // RemoveManager assumes AddManager, so if the former is set, there's no need to check the latter
             _requireSenderIsOwnerOrAddManager(_troveId, owner);
+            // No need to check the type of trove change for two reasons:
+            // - If the check above fails, it means sender is not owner, nor AddManager, nor RemoveManager.
+            //   An independent 3rd party should not be allowed here.
+            // - If it's not collIncrease or debtDecrease, _requireNonZeroAdjustment would revert
         }
 
         vars.trove = _troveManager.getLatestTroveData(_troveId);

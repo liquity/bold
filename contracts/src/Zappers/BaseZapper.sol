@@ -37,7 +37,6 @@ abstract contract BaseZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanRec
         uint256 _troveId,
         uint256 _collChange,
         bool _isCollIncrease,
-        uint256 _boldChange,
         bool _isDebtIncrease
     ) internal view returns (address) {
         address owner = troveNFT.ownerOf(_troveId);
@@ -45,9 +44,13 @@ abstract contract BaseZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanRec
 
         if ((!_isCollIncrease && _collChange > 0) || _isDebtIncrease) {
             receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
-        } else if (_isCollIncrease || (!_isDebtIncrease && _boldChange > 0)) {
+        } else {
             // RemoveManager assumes AddManager, so if the former is set, there's no need to check the latter
             _requireSenderIsOwnerOrAddManager(_troveId, owner);
+            // No need to check the type of trove change for two reasons:
+            // - If the check above fails, it means sender is not owner, nor AddManager, nor RemoveManager.
+            //   An independent 3rd party should not be allowed here.
+            // - If it's not collIncrease or debtDecrease, _requireNonZeroAdjustment would revert
         }
 
         return receiver;
