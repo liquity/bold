@@ -376,7 +376,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         vm.stopPrank();
 
         assertEq(troveManager.getTroveColl(ATroveId), 103 ether, "Wrong trove coll");
-        assertEq(collToken.balanceOf(C), BInitialCollBalance - 1 ether, "Wrong owner balance");
+        assertEq(collToken.balanceOf(C), CInitialCollBalance - 1 ether, "Wrong manager balance");
     }
 
     function testAddCollWithoutAddManager() public {
