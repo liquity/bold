@@ -330,7 +330,7 @@ contract TestDeployer is MetadataDeployment {
         assert(address(boldToken) == vars.boldTokenAddress);
 
         // Initialize the BoldToken
-        BoldToken(payable(address(boldToken))).initialize(_sf.superTokenFactory);
+        BoldToken(payable(address(boldToken))).initialize();
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
         zappersArray = new Zappers[](vars.numCollaterals);

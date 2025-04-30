@@ -47,12 +47,16 @@ contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy
     event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
     event ActivePoolAddressAdded(address _newActivePoolAddress);
 
-    constructor(address _owner, ISuperTokenFactory factory) Ownable(_owner) {}
+    ISuperTokenFactory public immutable superTokenFactory;
 
-    function initialize(ISuperTokenFactory factory) external {
+    constructor(address _owner, ISuperTokenFactory factory) Ownable(_owner) {
+        superTokenFactory = factory;
+    }
+
+    function initialize() external {
         // This call to the factory invokes `UUPSProxy.initialize`, which connects the proxy to the canonical SuperToken implementation.
 		// It also emits an event which facilitates discovery of this token.
-		ISuperTokenFactory(factory).initializeCustomSuperToken(address(this));
+		ISuperTokenFactory(superTokenFactory).initializeCustomSuperToken(address(this));
 
 		// This initializes the token storage and sets the `initialized` flag of OpenZeppelin Initializable.
 		// This makes sure that it will revert if invoked more than once.
