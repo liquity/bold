@@ -56,7 +56,7 @@ import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/cont
 
 
 interface IInitializableBold {
-    function initialize(ISuperTokenFactory factory) external;
+    function initialize() external;
 }
 
 contract InterestRouter {
@@ -230,7 +230,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         
         // NOTE: Unclear interface?
         console.log("Initializing bold token in Setup. Please work :pray:");
-        IInitializableBold(address(boldToken)).initialize(ISuperTokenFactory(factory));
+        IInitializableBold(address(boldToken)).initialize();
 
         weth = MockERC20(_newAsset(18));
 

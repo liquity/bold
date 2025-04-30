@@ -31,7 +31,7 @@ contract SFBold is Test {
 
         BoldToken superTokenPermitProxy = new BoldToken(_OWNER, _sf.superTokenFactory);
         console.log("Deploying super token permit proxy in Setup for SF Bold. superTokenPermitProxy", address(superTokenPermitProxy));
-        superTokenPermitProxy.initialize(_sf.superTokenFactory);
+        superTokenPermitProxy.initialize();
         _boldToken = IBoldToken(address(superTokenPermitProxy));
 
         // Generate signer address from private key
