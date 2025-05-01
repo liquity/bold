@@ -1472,7 +1472,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // assert(closedStatus == Status.closedByLiquidation || closedStatus == Status.closedByOwner);
 
         uint256 TroveIdsArrayLength = TroveIds.length;
-        // If branch has not been shut down, or it's a liqudiation,
+        // If branch has not been shut down, or it's a liquidation,
         // require at least 1 trove in the system
         if (shutdownTime == 0 || closedStatus == Status.closedByLiquidation) {
             _requireMoreThanOneTroveInSystem(TroveIdsArrayLength);
