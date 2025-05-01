@@ -108,10 +108,11 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         pure
         returns (uint256)
     {
+        uint256 collSubjectToGasCompensation = _entireColl;
         if (_boldInSPForOffsets < _entireDebt) {
-            _entireColl = _entireColl * _boldInSPForOffsets / _entireDebt;
+            collSubjectToGasCompensation = _entireColl * _boldInSPForOffsets / _entireDebt;
         }
-        return _getCollGasCompensation(_entireColl);
+        return _getCollGasCompensation(collSubjectToGasCompensation);
     }
 
     function getCollGasCompensation(uint256 _coll) external pure returns (uint256) {
