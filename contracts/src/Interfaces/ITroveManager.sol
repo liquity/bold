@@ -61,6 +61,7 @@ interface ITroveManager is ILiquityBase {
         address _sender,
         uint256 _boldAmount,
         uint256 _price,
+        uint256 _redemptionPrice,
         uint256 _redemptionRate,
         uint256 _maxIterations
     ) external returns (uint256 _redemeedAmount);
@@ -68,7 +69,7 @@ interface ITroveManager is ILiquityBase {
     function shutdown() external;
     function urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral) external;
 
-    function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool);
+    function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, uint256, bool);
 
     function getLatestTroveData(uint256 _troveId) external view returns (LatestTroveData memory);
     function getTroveAnnualInterestRate(uint256 _troveId) external view returns (uint256);
