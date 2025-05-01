@@ -38,7 +38,10 @@ export function BottomBar() {
           alignItems: "center",
           justifyContent: "flex-end",
           height: 40,
-          hideBelow: "medium",
+          paddingRight: {
+            base: 16,
+            medium: 0,
+          },
         })}
       >
         <AboutButton />
