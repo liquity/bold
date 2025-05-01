@@ -1,4 +1,8 @@
-import { useEffect, useRef } from "react";
+"use client";
+
+import type { ReactNode } from "react";
+
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 export type BreakpointName = "small" | "medium" | "large";
 export type Breakpoint = {
@@ -43,7 +47,7 @@ export function getBreakpoint(): Breakpoint {
   };
 }
 
-export function useBreakpoint(callback: (breakpoint: Breakpoint) => void) {
+export function useBreakpoint(callback: (breakpoint: Breakpoint) => void): void {
   const currentBreakpointRef = useRef<Breakpoint | null>(null);
 
   const callbackRef = useRef(callback);
@@ -67,4 +71,28 @@ export function useBreakpoint(callback: (breakpoint: Breakpoint) => void) {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+}
+
+const BreakpointNameContext = createContext<BreakpointName | null>(null);
+
+export function BreakpointName({ children }: { children: ReactNode }) {
+  const [breakpointName, setBreakpointName] = useState<BreakpointName>(() => (
+    getBreakpointName()
+  ));
+  useBreakpoint((breakpoint) => {
+    setBreakpointName(breakpoint.name);
+  });
+  return (
+    <BreakpointNameContext.Provider value={breakpointName}>
+      {children}
+    </BreakpointNameContext.Provider>
+  );
+}
+
+export function useBreakpointName(): BreakpointName {
+  const breakpointName = useContext(BreakpointNameContext);
+  if (breakpointName === null) {
+    throw new Error("useBreakpointName must be called within BreakpointName");
+  }
+  return breakpointName;
 }
