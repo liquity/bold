@@ -258,7 +258,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         LatestTroveData t;
         address batchManager;
         uint256 batchManagementFee;
-        bool wasActive;
+        bool wasOpen;
         bool premature;
         uint256 upfrontFee;
         string errorString;
@@ -2158,7 +2158,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         v.t = v.c.troveManager.getLatestTroveData(v.troveId);
         v.batchManager = _batchManagerOf[i][v.troveId];
         v.batchManagementFee = v.c.troveManager.getLatestBatchData(v.batchManager).accruedManagementFee;
-        v.wasActive = _isActive(i, v.troveId);
+        v.wasOpen = _isOpen(i, v.troveId);
         v.premature = newInterestRate != v.t.annualInterestRate
             && Math.min(
                 _timeSinceLastTroveInterestRateAdjustment[i][v.troveId],
@@ -2192,7 +2192,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             // Preconditions
             assertFalse(isShutdown[i], "Should have failed as branch had been shut down");
-            assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
+            assertTrue(v.wasOpen, "Should have failed as Trove wasn't open");
             assertNotEq(v.batchManager, address(0), "Should have failed as Trove wasn't in a batch");
             assertGeDecimal(newInterestRate, MIN_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate < min");
             assertLeDecimal(newInterestRate, MAX_ANNUAL_INTEREST_RATE, 18, "Should have failed as rate > max");
@@ -2224,8 +2224,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             // Justify failures
             if (selector == BorrowerOperations.IsShutDown.selector) {
                 assertTrue(isShutdown[i], "Shouldn't have failed as branch hadn't been shut down");
-            } else if (selector == BorrowerOperations.TroveNotActive.selector) {
-                assertFalse(v.wasActive, "Shouldn't have failed as Trove was active");
+            } else if (selector == BorrowerOperations.TroveNotOpen.selector) {
+                assertFalse(v.wasOpen, "Shouldn't have failed as Trove was open");
             } else if (selector == BorrowerOperations.TroveNotInBatch.selector) {
                 assertEq(v.batchManager, address(0), "Shouldn't have failed as Trove was in a batch");
             } else if (selector == BorrowerOperations.InterestRateTooLow.selector) {
