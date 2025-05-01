@@ -92,9 +92,8 @@
   - [13 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards](#13---stability-pool-claiming-and-compounding-yield-can-be-used-to-gain-a-slightly-higher-rate-of-rewards)
   - [14 - Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1](#14---urgent-redemptions-premium-can-worsen-the-icr-when-trove-coll-value--debt-value--1)
   - [15 - Overflow threshold in SP calculations](#15---Overflow-threshold-in-sp-calculations)
-  - [16 - Path dependence of redistributions - sequential vs batch liquidations](#16---path-dependence-of-redistributions---sequential-vs-batch-liquidations)
-  - [17 - TODOs in code comments](#17---todos-in-code-comments)
-  - [18 - Just in time StabilityPool deposits](#18---just-in-time-stabilitypool-deposits)
+  - [16 - TODOs in code comments](#16---todos-in-code-comments)
+  - [17 - Just in time StabilityPool deposits](#17---just-in-time-stabilitypool-deposits)
   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
 
 ## Significant changes in Liquity v2
@@ -1608,102 +1607,7 @@ The same bound can be found for the sums `G` and `B`, e.g. where `B` is updated 
 
 An upper bound of ~1e23 BOLD before overflow is deemed acceptable - the USD value of total global wealth is many orders of magnitudes lower. However, forks should consider overflow calculations if they further increase precision or expect a much higher supply of their minted asset.
 
-
-### 16 - Path dependence of redistributions - sequential vs batch liquidations
-
-Liquidations via redistribution in `batchLiquidateTroves` do not distribute liquidated collateral and debt to the other Troves liquidated inside the liquidation loop. They only distribute collateral and debt to the active Troves which remain in the system after all liquidations in the loop have been resolved.
-
-#### Consequences
-
-All else equal, this leads to a slightly different end state when comparing the redistribution of a given set of Troves by a single batch liquidation to separate redistributions of those same Troves.
-
-Consider a system of Troves A,B,C,D,E.  A,B,C have `ICR < MCR` and are thus liquidateable.  D and E have `ICR > MCR` and are healthy.
-
-
-#### Scenario 1 - batch redistribution
-
-If A,B and C are redistributed in one `batchLiquidateTroves` call, the collateral and debt of A,B, and C is given purely to D and E (sans the collateral gas compensation of each).
-
-#### Scenario 2 - sequential redistribution
-
-However, if A, B and C are redistributed by sequential liquidation calls, then, collateral and debt is first “rolled” forward to the next Trove in the sequence, before finally being distributed to remaining active Troves D and E. That is:
-
-
-```
-batchLiquidateTroves(A)
--> B,C,D,E receive A’s debt and coll proportionally
-batchLiquidateTroves(B)
--> C,D,E receive B’s debt and coll proportionally
-batchLiquidateTroves(C)
--> D,E receive C’s debt and coll proportionally
-```
-
-The end result is _almost_ the same: D and E receive all debt and coll of A,B and C sans collateral gas compensation. However, the total gas compensation paid out differs between scenario 1 and 2 - and thus the total collateral D and E receive differs slightly too.
-
-#### Scenario 1 gas compensation
-
-In scenario 1, gas compensation for each liquidated Trove i is computed based on the Trove’s collateral **prior** to the `batchLiquidateTroves` call i.e. `coll_i`. Gas compensation is summed over all liquidated Troves and paid at the end.
-
-For simplicity let `gas_comp()` be the function that determines the collateral gas compensation of a given Trove. The formula is:
-
-gas_comp(coll_i) = `0.0375 WETH + min(0.5% * coll_i, 2_units_of_LST).`
-
-i.e. it is linearly increasing with trove collateral up to the point where `coll_i == 400_units_of_LST`, beyond which it is constant.
-
-So in scenario 1:
-
-
-`total_gas_comp_1  = gas_comp(coll_A) + gas_comp(coll_B) + gas_comp(coll_C)`
-
-#### Scenario 2 gas compensation
-
-In scenario 2, the collateral of all remaining Troves increases after each sequential liquidation.
-
-Since A is liquidated first it receives no redistribution shares, so A’s liquidated collateral is the same as in scenario 1, i.e. `coll_A`.
-
-However B and C’s collateral does increase before they get liquidiated. Let:
-
-
-coll_B’ denote B’s increased collateral after liquidation of A, so  `coll_B’ > coll_B`
-coll_C’ denote C’s increased collateral after liquidation of A, so `coll_C’ > coll_C`
-
-In the sequence:
-
-
-```
-liquidate(A)
--> pay gas compensation to liquidator. B and C’s collateral increases by their shares of A’s collateral
-liquidate(B)
--> pay gas compensation to liquidator based on B’s increased collateral, coll_B’
-liquidate(C)
--> D,E receive C’s debt and coll proportionally
-```
-
-Here, the total gas comp paid is:
-
-`total_gas_comp_2  = gas_comp(coll_A) + gas_comp(coll_B’) + gas_comp(coll_C’)`
-
-And since `gas_comp()` is a linear increasing function of collateral (for troves under 400 units of LST collateral), then it can be that `total_gas_comp_2 > total_gas_comp_1`.
-
-#### Impact summary
-
-In a batch liquidation where 1 or more Troves somewhere in the middle of (i.e. not first or last) the `batchLiquidateTroves` loop have under 400 units of LST collateral, then the remaining active Troves after the call receive slightly **less** collateral from the redistribution than in the case where the Troves are liquidated individually and sequentially. Accordingly,  the liquidator also receives slightly **more** gas compensation.
-
-#### Design choice: no rolling redistributions inside `batchLiquidateTroves`
-
-The choice to make `batchLiquidateTroves` behave as it does - i.e. to not roll debt and collateral shares through to other Troves inside its liquidation loop - was conscious and deliberate.
-
-The current approach is more gas efficient and makes the code simpler to reason about than inner rolling liquidations.
-
-The discrepancy between batch and sequential liquidation gas compensation is minor, and does not have negative consequences for the system. Collateral gas compensation is in any case an arbitrary design choice in the first place.
-
-#### Knock on drag-down of healthy Troves below MCR
-
-The impact of redistributions on the remaining active Troves is that they see their ICRs reduced. It’s possible that this ICR reduction causes them to fall below the MCR and thus also become liquidateable - however this knock-on “drag-down” effect can occur as a result of either batch or sequential liquidations, is a known dynamic of the system, and was also present in Liquity v1.
-
-Past simulation has shown that this potential knock-on drag-down effect is minor, though does depend on the system state - i.e. the distribution of ICRs and collateral sizes.
-
-### 17 - TODOs in code comments
+### 16 - TODOs in code comments
 
 A number of TODOs remain in comments in core smart contracts:
 
@@ -1713,7 +1617,7 @@ L1734 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49db
 
 - MainnetPriceFeedBase L52: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/PriceFeeds/MainnetPriceFeedBase.sol#L52  This is irrelevant now that contracts have been deployed.
 
-### 18 - Just in time StabilityPool deposits
+### 17 - Just in time StabilityPool deposits
 
 It is possible for a depositor to front-run a liquidation transaction with a large SP deposit and reap most of the liquidation gains.
 

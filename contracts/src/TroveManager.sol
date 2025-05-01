@@ -239,16 +239,14 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         _movePendingTroveRewardsToActivePool(_defaultPool, trove.redistBoldDebtGain, trove.redistCollGain);
 
-        singleLiquidation.collGasCompensation = _getCollGasCompensation(trove.entireColl);
-        uint256 collToLiquidate = trove.entireColl - singleLiquidation.collGasCompensation;
-
         (
             singleLiquidation.debtToOffset,
             singleLiquidation.collToSendToSP,
+            singleLiquidation.collGasCompensation,
             singleLiquidation.debtToRedistribute,
             singleLiquidation.collToRedistribute,
             singleLiquidation.collSurplus
-        ) = _getOffsetAndRedistributionVals(trove.entireDebt, collToLiquidate, _boldInSPForOffsets, _price);
+        ) = _getOffsetAndRedistributionVals(trove.entireDebt, trove.entireColl, _boldInSPForOffsets, _price);
 
         TroveChange memory troveChange;
         troveChange.collDecrease = trove.entireColl;
@@ -323,8 +321,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     // Return the amount of Coll to be drawn from a trove's collateral and sent as gas compensation.
-    function _getCollGasCompensation(uint256 _entireColl) internal pure returns (uint256) {
-        return LiquityMath._min(_entireColl / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
+    function _getCollGasCompensation(uint256 _coll) internal pure returns (uint256) {
+        // _entireDebt should never be zero, but we add the condition defensively to avoid an unexpected revert
+        return LiquityMath._min(_coll / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
     }
 
     /* In a full liquidation, returns the values for a trove's coll and debt to be offset, and coll and debt to be
@@ -332,7 +331,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     */
     function _getOffsetAndRedistributionVals(
         uint256 _entireTroveDebt,
-        uint256 _collToLiquidate, // gas compensation is already subtracted
+        uint256 _entireTroveColl,
         uint256 _boldInSPForOffsets,
         uint256 _price
     )
@@ -341,6 +340,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         returns (
             uint256 debtToOffset,
             uint256 collToSendToSP,
+            uint256 collGasCompensation,
             uint256 debtToRedistribute,
             uint256 collToRedistribute,
             uint256 collSurplus
@@ -359,15 +359,19 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
          */
         if (_boldInSPForOffsets > 0) {
             debtToOffset = LiquityMath._min(_entireTroveDebt, _boldInSPForOffsets);
-            collSPPortion = _collToLiquidate * debtToOffset / _entireTroveDebt;
+            collSPPortion = _entireTroveColl * debtToOffset / _entireTroveDebt;
+
+            collGasCompensation = _getCollGasCompensation(collSPPortion);
+            uint256 collToOffset = collSPPortion - collGasCompensation;
+
             (collToSendToSP, collSurplus) =
-                _getCollPenaltyAndSurplus(collSPPortion, debtToOffset, LIQUIDATION_PENALTY_SP, _price);
+                _getCollPenaltyAndSurplus(collToOffset, debtToOffset, LIQUIDATION_PENALTY_SP, _price);
         }
 
         // Redistribution
         debtToRedistribute = _entireTroveDebt - debtToOffset;
         if (debtToRedistribute > 0) {
-            uint256 collRedistributionPortion = _collToLiquidate - collSPPortion;
+            uint256 collRedistributionPortion = _entireTroveColl - collSPPortion;
             if (collRedistributionPortion > 0) {
                 (collToRedistribute, collSurplus) = _getCollPenaltyAndSurplus(
                     collRedistributionPortion + collSurplus, // Coll surplus from offset can be eaten up by red. penalty

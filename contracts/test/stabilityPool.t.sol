@@ -2369,17 +2369,18 @@ contract SPTest is DevTestSetup {
             "Incorrect debt increase trove A"
         );
 
+        uint256 collToOffset = vars.collBBefore * liqDebtOffset / vars.debtBBefore;
         // For < 400 units of LST collateral, collGasComp = 0.0375 WETH + 0.5% * coll.
         // We only need the Trove's component here.
-        vars.collGasComp = vars.collBBefore / 200;
+        vars.collGasComp = collToOffset / 200;
 
         // Check C's total WETH balance increased by the total gas comp
         assertEq(collToken.balanceOf(C), vars.collCBefore + vars.collGasComp + 375e14, "Incorrect coll increase C");
 
         // Check SP Coll has increased.  Expect no coll surplus for Trove owner, given massive price decrease
         vars.spCollBalAfter = stabilityPool.getCollBalance();
-        vars.collToGiveToSP = (vars.collBBefore - vars.collGasComp) * liqDebtOffset / vars.debtBBefore;
-        vars.collToRedist = vars.collBBefore - vars.collGasComp - vars.collToGiveToSP;
+        vars.collToGiveToSP = collToOffset - vars.collGasComp;
+        vars.collToRedist = vars.collBBefore - collToOffset;
 
         assertApproxEqAbs(vars.spCollBalAfter - vars.spCollBalBefore, vars.collToGiveToSP, 10, "Incorrect coll in SP");
 
@@ -2584,17 +2585,18 @@ contract SPTest is DevTestSetup {
 
         // Check coll redistribution is correct
 
+        uint256 collToOffset = vars.collBBefore * liqDebtOffset / vars.debtBBefore;
         // For < 400 units of LST collateral, collGasComp = 0.0375 WETH + 0.5% * coll.
         // We only need the Trove's component here.
-        vars.collGasComp = vars.collBBefore / 200;
+        vars.collGasComp = collToOffset / 200;
 
         // Check C's total WETH balance increased by the total gas comp
         assertEq(collToken.balanceOf(C), vars.collCBefore + vars.collGasComp + 375e14);
 
         // Check SP Coll has increased.  Expect no coll surplus for Trove owner, given massive price decrease
         vars.spCollBalAfter = stabilityPool.getCollBalance();
-        vars.collToGiveToSP = (vars.collBBefore - vars.collGasComp) * liqDebtOffset / vars.debtBBefore;
-        vars.collToRedist = vars.collBBefore - vars.collGasComp - vars.collToGiveToSP;
+        vars.collToGiveToSP = collToOffset - vars.collGasComp;
+        vars.collToRedist = vars.collBBefore - collToOffset;
 
         assertApproxEqAbs(vars.spCollBalAfter - vars.spCollBalBefore, vars.collToGiveToSP, 10, "Incorrect coll in SP");
 
