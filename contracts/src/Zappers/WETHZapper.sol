@@ -28,10 +28,12 @@ contract WETHZapper is BaseZapper {
         WETH.deposit{value: msg.value}();
 
         uint256 troveId;
+        // Include sender in index
+        uint256 index = _getTroveIndex(_params.ownerIndex);
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
-                _params.ownerIndex,
+                index,
                 msg.value - ETH_GAS_COMPENSATION,
                 _params.boldAmount,
                 _params.upperHint,
@@ -49,7 +51,7 @@ contract WETHZapper is BaseZapper {
                 openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
                     .OpenTroveAndJoinInterestBatchManagerParams({
                     owner: _params.owner,
-                    ownerIndex: _params.ownerIndex,
+                    ownerIndex: index,
                     collAmount: msg.value - ETH_GAS_COMPENSATION,
                     boldAmount: _params.boldAmount,
                     upperHint: _params.upperHint,
@@ -289,6 +291,7 @@ contract WETHZapper is BaseZapper {
 
     // Unimplemented flash loan receive functions for leverage
     function receiveFlashLoanOnOpenLeveragedTrove(
+        address _originalSender,
         ILeverageZapper.OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external virtual override {}

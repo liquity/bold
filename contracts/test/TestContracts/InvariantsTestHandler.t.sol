@@ -2460,7 +2460,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     // We open at most one Trove per actor per branch, for reasons of simplicity,
     // as Troves aren't enumerable per user, only globally.
     function _troveIdOf(uint256 i, address owner) internal view returns (uint256) {
-        return uint256(keccak256(abi.encode(owner, _troveIndexOf[i][owner])));
+        return uint256(keccak256(abi.encode(owner, owner, _troveIndexOf[i][owner])));
     }
 
     function _troveIdsFrom(uint256 i, address[] storage owners) internal view returns (uint256[] memory ret) {

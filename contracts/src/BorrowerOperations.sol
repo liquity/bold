@@ -319,7 +319,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         // --- Checks ---
 
-        vars.troveId = uint256(keccak256(abi.encode(_owner, _ownerIndex)));
+        vars.troveId = uint256(keccak256(abi.encode(msg.sender, _owner, _ownerIndex)));
         _requireTroveDoesNotExists(vars.troveManager, vars.troveId);
 
         _change.collIncrease = _collAmount;

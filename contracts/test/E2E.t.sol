@@ -21,6 +21,7 @@ import {ITroveManagerV1} from "./Interfaces/LiquityV1/ITroveManagerV1.sol";
 import {ERC20Faucet} from "./TestContracts/ERC20Faucet.sol";
 import {StringEquality} from "./Utils/StringEquality.sol";
 import {UseDeployment} from "./Utils/UseDeployment.sol";
+import {TroveId} from "./Utils/TroveId.sol";
 
 uint256 constant PRICE_TOLERANCE = 0.02 ether;
 
@@ -97,7 +98,7 @@ library SideEffectFreeGetPrice {
     }
 }
 
-contract E2ETest is Test, UseDeployment {
+contract E2ETest is Test, UseDeployment, TroveId {
     using SideEffectFreeGetPrice for IPriceFeed;
     using SideEffectFreeGetPrice for IPriceFeedV1;
     using StringEquality for string;
@@ -204,14 +205,15 @@ contract E2ETest is Test, UseDeployment {
         return boldAmount;
     }
 
-    function _troveId(address owner, uint256 ownerIndex) internal pure returns (uint256) {
-        return uint256(keccak256(abi.encode(owner, ownerIndex)));
-    }
-
-    function _closeTroveFromCollateral(uint256 i, address owner, uint256 ownerIndex) internal returns (uint256) {
-        uint256 troveId = _troveId(owner, ownerIndex);
+    function _closeTroveFromCollateral(uint256 i, address owner, uint256 ownerIndex, bool _leveraged) internal returns (uint256) {
+        IZapper zapper;
+        if (_leveraged) {
+            zapper = branches[i].leverageZapper;
+        } else {
+            zapper = branches[i].zapper;
+        }
+        uint256 troveId = addressToTroveIdThroughZapper(address(zapper), owner, ownerIndex);
         uint256 debt = branches[i].troveManager.getLatestTroveData(troveId).entireDebt;
-        IZapper zapper = IZapper(branches[i].borrowerOperations.addManagerOf(troveId));
 
         vm.startPrank(owner);
         zapper.closeTroveFromCollateral({
@@ -257,7 +259,7 @@ contract E2ETest is Test, UseDeployment {
         internal
         returns (uint256)
     {
-        uint256 troveId = _troveId(owner, ownerIndex);
+        uint256 troveId = addressToTroveIdThroughZapper(address(branches[i].leverageZapper), owner, ownerIndex);
 
         ILeverageZapper.LeverUpTroveParams memory p = ILeverageZapper.LeverUpTroveParams({
             troveId: troveId,
@@ -276,7 +278,7 @@ contract E2ETest is Test, UseDeployment {
         internal
         returns (uint256)
     {
-        uint256 troveId = _troveId(owner, ownerIndex);
+        uint256 troveId = addressToTroveIdThroughZapper(address(branches[i].leverageZapper), owner, ownerIndex);
         uint256 debtBefore = branches[i].troveManager.getLatestTroveData(troveId).entireDebt;
 
         ILeverageZapper.LeverDownTroveParams memory p = ILeverageZapper.LeverDownTroveParams({
@@ -605,12 +607,12 @@ contract E2ETest is Test, UseDeployment {
 
         for (uint256 i = 0; i < branches.length; ++i) {
             skip(5 minutes);
-            repaid += _closeTroveFromCollateral(i, leverageSeeker, 0);
+            repaid += _closeTroveFromCollateral(i, leverageSeeker, 0, true);
         }
 
         for (uint256 i = 0; i < branches.length; ++i) {
             skip(5 minutes);
-            repaid += _closeTroveFromCollateral(i, borrower, 0);
+            repaid += _closeTroveFromCollateral(i, borrower, 0, false);
         }
 
         skip(5 minutes);
@@ -752,7 +754,7 @@ contract E2ETest is Test, UseDeployment {
         }
 
         for (uint256 i = 0; i < branches.length; ++i) {
-            _closeTroveFromCollateral(i, borrower, 0);
+            _closeTroveFromCollateral(i, borrower, 0, false);
         }
 
         address leverageSeeker = makeAddr("leverageSeeker");
@@ -770,7 +772,7 @@ contract E2ETest is Test, UseDeployment {
         }
 
         for (uint256 i = 0; i < branches.length; ++i) {
-            _closeTroveFromCollateral(i, leverageSeeker, 0);
+            _closeTroveFromCollateral(i, leverageSeeker, 0, true);
         }
     }
 
