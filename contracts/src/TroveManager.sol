@@ -331,7 +331,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     */
     function _getOffsetAndRedistributionVals(
         uint256 _entireTroveDebt,
-        uint256 _entreTroveColl,
+        uint256 _entireTroveColl,
         uint256 _boldInSPForOffsets,
         uint256 _price
     )
@@ -359,7 +359,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
          */
         if (_boldInSPForOffsets > 0) {
             debtToOffset = LiquityMath._min(_entireTroveDebt, _boldInSPForOffsets);
-            collSPPortion = _entreTroveColl * debtToOffset / _entireTroveDebt;
+            collSPPortion = _entireTroveColl * debtToOffset / _entireTroveDebt;
 
             collGasCompensation = _getCollGasCompensation(collSPPortion);
             uint256 collToOffset = collSPPortion - collGasCompensation;
@@ -371,7 +371,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // Redistribution
         debtToRedistribute = _entireTroveDebt - debtToOffset;
         if (debtToRedistribute > 0) {
-            uint256 collRedistributionPortion = _entreTroveColl - collSPPortion;
+            uint256 collRedistributionPortion = _entireTroveColl - collSPPortion;
             if (collRedistributionPortion > 0) {
                 (collToRedistribute, collSurplus) = _getCollPenaltyAndSurplus(
                     collRedistributionPortion + collSurplus, // Coll surplus from offset can be eaten up by red. penalty
