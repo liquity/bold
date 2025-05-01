@@ -81,10 +81,11 @@ export function Modal({
               inset: 0,
               zIndex: 2,
               display: "grid",
-              placeItems: "center",
+              placeItems: "start center",
               overflowX: "auto",
               background: "transparent",
               medium: {
+                placeItems: "center",
                 background: "rgba(18, 27, 68, 0.7)",
               },
             })}
@@ -100,6 +101,10 @@ export function Modal({
                 justifyContent: "center",
                 // this is to let the overlay handle the onMouseDown event
                 pointerEvents: "none",
+                height: {
+                  base: "100%",
+                  medium: "auto",
+                },
               })}
             >
               <FocusTrap
@@ -116,6 +121,10 @@ export function Modal({
                     }
                   }}
                   className={css({
+                    height: {
+                      base: "100%",
+                      medium: "auto",
+                    },
                     padding: {
                       base: 0,
                       medium: 64,
@@ -128,6 +137,10 @@ export function Modal({
                     className={css({
                       position: "relative",
                       width: "100%",
+                      height: {
+                        base: "100%",
+                        medium: "auto",
+                      },
                       padding: 24,
                       outline: "2px solid accent",
                       background: "background",
