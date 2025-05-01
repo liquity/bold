@@ -370,6 +370,7 @@ contract RebasingBatchShares is DevTestSetup {
         skip(MIN_INTEREST_RATE_CHANGE_PERIOD);
         setBatchInterestRate(B, MIN_ANNUAL_INTEREST_RATE);
         redeem(A, troveManager.getTroveEntireDebt(targetTrove));
+        assertTrue(troveManager.checkTroveIsZombie(targetTrove), "not a zombie");
 
         // Open a Trove to be liquidated
         (uint256 liquidatedTrove,) = openTroveWithExactICRAndDebt({
