@@ -126,7 +126,7 @@ contract CollateralRegistry is ICollateralRegistry {
         }
 
         // There’s an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
-        // In that case, we redeem proportinally to branch size
+        // In that case, we redeem proportionally to branch size
         if (totals.unbacked == 0) {
             unbackedPortions = new uint256[](totals.numCollaterals);
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
