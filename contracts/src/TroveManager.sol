@@ -740,7 +740,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         address _redeemer,
         uint256 _boldamount,
         uint256 _price,
-        uint256 _redemptionPrice,
         uint256 _redemptionRate,
         uint256 _maxIterations
     ) external override returns (uint256 _redeemedAmount) {
@@ -752,7 +751,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         TroveChange memory totalsTroveChange;
         RedeemCollateralValues memory vars;
 
-        vars.totalCollFee;
         vars.remainingBold = _boldamount;
 
         SingleRedemptionValues memory singleRedemption;
@@ -764,6 +762,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             singleRedemption.troveId = sortedTrovesCached.getLast();
         }
         vars.lastBatchUpdatedInterest = address(0);
+
+        // Get the price to use for the redemption collateral calculations
+        uint256 redemptionPrice = priceFeed.fetchRedemptionPrice();
 
         // Loop through the Troves starting from the one with lowest interest rate until _amount of Bold is exchanged for collateral
         if (_maxIterations == 0) _maxIterations = type(uint256).max;
@@ -794,7 +795,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 vars.lastBatchUpdatedInterest = singleRedemption.batchAddress;
             }
 
-            _redeemCollateralFromTrove(defaultPool, singleRedemption, vars.remainingBold, _redemptionPrice, _redemptionRate);
+            _redeemCollateralFromTrove(defaultPool, singleRedemption, vars.remainingBold, redemptionPrice, _redemptionRate);
 
             totalsTroveChange.collDecrease += singleRedemption.collLot;
             totalsTroveChange.debtDecrease += singleRedemption.boldLot;
@@ -1197,18 +1198,17 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     // --- Trove property getters ---
 
-    function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, uint256, bool) {
+    function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool) {
         uint256 totalDebt = getEntireBranchDebt();
         uint256 spSize = stabilityPool.getTotalBoldDeposits();
         uint256 unbackedPortion = totalDebt > spSize ? totalDebt - spSize : 0;
 
         (uint256 price,) = priceFeed.fetchPrice();
-        (uint256 redemptionPrice,) = priceFeed.fetchRedemptionPrice();
         // It's redeemable if the TCR is above the shutdown threshold, and branch has not been shut down.
         // Use the normal price for the TCR check.
         bool redeemable = _getTCR(price) >= SCR && shutdownTime == 0;
 
-        return (unbackedPortion, price, redemptionPrice, redeemable);
+        return (unbackedPortion, price, redeemable);
     }
 
     // --- Trove property setters, called by BorrowerOperations ---
