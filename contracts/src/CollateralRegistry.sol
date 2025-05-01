@@ -82,13 +82,11 @@ contract CollateralRegistry is ICollateralRegistry {
         emit BaseRateUpdated(INITIAL_BASE_RATE);
     }
 
-    struct RedemptionVars {
+    struct RedemptionTotals {
         uint256 numCollaterals;
         uint256 boldSupplyAtStart;
         uint256 unbacked;
         uint256 redeemedAmount;
-        uint256 redemptionRate;
-        uint256 index;
     }
 
     function redeemCollateral(uint256 _boldAmount, uint256 _maxIterationsPerCollateral, uint256 _maxFeePercentage)
@@ -97,73 +95,71 @@ contract CollateralRegistry is ICollateralRegistry {
         _requireValidMaxFeePercentage(_maxFeePercentage);
         _requireAmountGreaterThanZero(_boldAmount);
 
-        RedemptionVars memory vars;
+        RedemptionTotals memory totals;
 
-        vars.numCollaterals = totalCollaterals;
-        uint256[] memory unbackedPortions = new uint256[](vars.numCollaterals);
-        uint256[] memory prices = new uint256[](vars.numCollaterals);
-        uint256[] memory redemptionPrices = new uint256[](vars.numCollaterals);
+        totals.numCollaterals = totalCollaterals;
+        uint256[] memory unbackedPortions = new uint256[](totals.numCollaterals);
+        uint256[] memory prices = new uint256[](totals.numCollaterals);
 
-        vars.boldSupplyAtStart = boldToken.totalSupply();
+        totals.boldSupplyAtStart = boldToken.totalSupply();
         // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
         // Use the saved total Bold supply value, from before it was reduced by the redemption.
         // We only compute it here, and update it at the end,
         // because the final redeemed amount may be less than the requested amount
         // Redeemers should take this into account in order to request the optimal amount to not overpay
-        vars.redemptionRate =
-            _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(_boldAmount, vars.boldSupplyAtStart));
-        require(vars.redemptionRate <= _maxFeePercentage, "CR: Fee exceeded provided maximum");
+        uint256 redemptionRate =
+            _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(_boldAmount, totals.boldSupplyAtStart));
+        require(redemptionRate <= _maxFeePercentage, "CR: Fee exceeded provided maximum");
         // Implicit by the above and the _requireValidMaxFeePercentage checks
         //require(newBaseRate < DECIMAL_PRECISION, "CR: Fee would eat up all collateral");
 
         // Gather and accumulate unbacked portions
-        for (vars.index = 0; vars.index < vars.numCollaterals; vars.index++) {
-            ITroveManager troveManager = getTroveManager(vars.index);
-            (uint256 unbackedPortion, uint256 price, uint256 redemptionPrice, bool redeemable) =
+        for (uint256 index = 0; index < totals.numCollaterals; index++) {
+            ITroveManager troveManager = getTroveManager(index);
+            (uint256 unbackedPortion, uint256 price, bool redeemable) =
                 troveManager.getUnbackedPortionPriceAndRedeemability();
-            prices[vars.index] = price;
-            redemptionPrices[vars.index] = redemptionPrice;
+            prices[index] = price;
             if (redeemable) {
-                vars.unbacked += unbackedPortion;
-                unbackedPortions[vars.index] = unbackedPortion;
+                totals.unbacked += unbackedPortion;
+                unbackedPortions[index] = unbackedPortion;
             }
         }
 
         // There’s an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
         // In that case, we redeem proportinally to branch size
-        if (vars.unbacked == 0) {
-            unbackedPortions = new uint256[](vars.numCollaterals);
-            for (vars.index = 0; vars.index < vars.numCollaterals; vars.index++) {
-                ITroveManager troveManager = getTroveManager(vars.index);
-                (,,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
+        if (totals.unbacked == 0) {
+            unbackedPortions = new uint256[](totals.numCollaterals);
+            for (uint256 index = 0; index < totals.numCollaterals; index++) {
+                ITroveManager troveManager = getTroveManager(index);
+                (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
                 if (redeemable) {
                     uint256 unbackedPortion = troveManager.getEntireBranchDebt();
-                    vars.unbacked += unbackedPortion;
-                    unbackedPortions[vars.index] = unbackedPortion;
+                    totals.unbacked += unbackedPortion;
+                    unbackedPortions[index] = unbackedPortion;
                 }
             }
         }
 
         // Compute redemption amount for each collateral and redeem against the corresponding TroveManager
-        for (vars.index = 0; vars.index < vars.numCollaterals; vars.index++) {
-            //uint256 unbackedPortion = unbackedPortions[vars.index];
-            if (unbackedPortions[vars.index] > 0) {
-                uint256 redeemAmount = _boldAmount * unbackedPortions[vars.index] / vars.unbacked;
+        for (uint256 index = 0; index < totals.numCollaterals; index++) {
+            //uint256 unbackedPortion = unbackedPortions[index];
+            if (unbackedPortions[index] > 0) {
+                uint256 redeemAmount = _boldAmount * unbackedPortions[index] / totals.unbacked;
                 if (redeemAmount > 0) {
-                    ITroveManager troveManager = getTroveManager(vars.index);
+                    ITroveManager troveManager = getTroveManager(index);
                     uint256 redeemedAmount = troveManager.redeemCollateral(
-                        msg.sender, redeemAmount, prices[vars.index], redemptionPrices[vars.index], vars.redemptionRate, _maxIterationsPerCollateral
+                        msg.sender, redeemAmount, prices[index], redemptionRate, _maxIterationsPerCollateral
                     );
-                    vars.redeemedAmount += redeemedAmount;
+                    totals.redeemedAmount += redeemedAmount;
                 }
             }
         }
 
-        _updateBaseRateAndGetRedemptionRate(vars.redeemedAmount, vars.boldSupplyAtStart);
+        _updateBaseRateAndGetRedemptionRate(totals.redeemedAmount, totals.boldSupplyAtStart);
 
         // Burn the total Bold that is cancelled with debt
-        if (vars.redeemedAmount > 0) {
-            boldToken.burn(msg.sender, vars.redeemedAmount);
+        if (totals.redeemedAmount > 0) {
+            boldToken.burn(msg.sender, totals.redeemedAmount);
         }
     }
 

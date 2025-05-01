@@ -764,7 +764,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         vars.lastBatchUpdatedInterest = address(0);
 
         // Get the price to use for the redemption collateral calculations
-        uint256 redemptionPrice = priceFeed.fetchRedemptionPrice();
+        (uint256 redemptionPrice,) = priceFeed.fetchRedemptionPrice();
 
         // Loop through the Troves starting from the one with lowest interest rate until _amount of Bold is exchanged for collateral
         if (_maxIterations == 0) _maxIterations = type(uint256).max;

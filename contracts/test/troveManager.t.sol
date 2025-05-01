@@ -8,7 +8,7 @@ contract TroveManagerTest is DevTestSetup {
     function testOnlyCollateralRegistryCanCallRedeem() public {
         vm.startPrank(A);
         vm.expectRevert(TroveManager.CallerNotCollateralRegistry.selector);
-        troveManager.redeemCollateral(A, 1, 2000e18, 2000e18, 1e16, 100);
+        troveManager.redeemCollateral(A, 1, 2000e18, 1e16, 100);
         vm.stopPrank();
     }
 

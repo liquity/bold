@@ -555,11 +555,11 @@ contract MulticollateralTest is DevTestSetup {
 
         // First branch is shutdown, the other 3 are fully backed
         assertGt(contractsArray[0].troveManager.shutdownTime(), 0, "First branch should be shut down");
-        (uint256 unbackedPortion1,,,) = contractsArray[1].troveManager.getUnbackedPortionPriceAndRedeemability();
+        (uint256 unbackedPortion1,,) = contractsArray[1].troveManager.getUnbackedPortionPriceAndRedeemability();
         assertEq(unbackedPortion1, 0, "Second branch should be fully backed");
-        (uint256 unbackedPortion2,,,) = contractsArray[2].troveManager.getUnbackedPortionPriceAndRedeemability();
+        (uint256 unbackedPortion2,,) = contractsArray[2].troveManager.getUnbackedPortionPriceAndRedeemability();
         assertEq(unbackedPortion2, 0, "Third branch should be fully backed");
-        (uint256 unbackedPortion3,,,) = contractsArray[3].troveManager.getUnbackedPortionPriceAndRedeemability();
+        (uint256 unbackedPortion3,,) = contractsArray[3].troveManager.getUnbackedPortionPriceAndRedeemability();
         assertEq(unbackedPortion3, 0, "Fourth branch should be fully backed");
 
         testValues1.price = contractsArray[0].priceFeed.getPrice();
@@ -673,11 +673,11 @@ contract MulticollateralTest is DevTestSetup {
             contractsArray[0].troveManager.get_SCR(),
             "First branch should be below SCR"
         );
-        (uint256 unbackedPortion1,,,) = contractsArray[1].troveManager.getUnbackedPortionPriceAndRedeemability();
+        (uint256 unbackedPortion1,,) = contractsArray[1].troveManager.getUnbackedPortionPriceAndRedeemability();
         assertEq(unbackedPortion1, 0, "Second branch should be fully backed");
-        (uint256 unbackedPortion2,,,) = contractsArray[2].troveManager.getUnbackedPortionPriceAndRedeemability();
+        (uint256 unbackedPortion2,,) = contractsArray[2].troveManager.getUnbackedPortionPriceAndRedeemability();
         assertEq(unbackedPortion2, 0, "Third branch should be fully backed");
-        (uint256 unbackedPortion3,,,) = contractsArray[3].troveManager.getUnbackedPortionPriceAndRedeemability();
+        (uint256 unbackedPortion3,,) = contractsArray[3].troveManager.getUnbackedPortionPriceAndRedeemability();
         assertEq(unbackedPortion3, 0, "Fourth branch should be fully backed");
 
         // Effectively (second loop in CollateralRegistry.redeemCollateral)
