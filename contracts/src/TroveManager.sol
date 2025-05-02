@@ -816,7 +816,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         //require(totals.totalCollDrawn > 0, "TroveManager: Unable to redeem any amount");
 
         emit Redemption(
-            _boldamount, totalsTroveChange.debtDecrease, totalsTroveChange.collDecrease, vars.totalCollFee, _price
+            _boldamount, 
+            totalsTroveChange.debtDecrease, 
+            totalsTroveChange.collDecrease, 
+            vars.totalCollFee, 
+            _price, 
+            redemptionPrice
         );
 
         activePoolCached.mintAggInterestAndAccountForTroveChange(totalsTroveChange, address(0));
@@ -903,7 +908,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             revert MinCollNotReached(totalsTroveChange.collDecrease);
         }
 
-        emit Redemption(_boldAmount, totalsTroveChange.debtDecrease, totalsTroveChange.collDecrease, 0, price);
+        emit Redemption(_boldAmount, totalsTroveChange.debtDecrease, totalsTroveChange.collDecrease, 0, price, price);
 
         // Since this branch is shut down, this will mint 0 interest.
         // We call this only to update the aggregate debt and weighted debt trackers.
