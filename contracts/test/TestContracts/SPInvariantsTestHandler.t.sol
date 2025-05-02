@@ -10,6 +10,7 @@ import {ICollSurplusPool} from "src/Interfaces/ICollSurplusPool.sol";
 import {HintHelpers} from "src/HintHelpers.sol";
 import {IPriceFeedTestnet} from "./Interfaces/IPriceFeedTestnet.sol";
 import {ITroveManagerTester} from "./Interfaces/ITroveManagerTester.sol";
+import {LiquityMath} from "src/Dependencies/LiquityMath.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
 import {BaseHandler} from "./BaseHandler.sol";
@@ -185,7 +186,9 @@ contract SPInvariantsTestHandler is BaseHandler {
 
         uint256 collBefore = collateralToken.balanceOf(address(this));
         uint256 accountSurplusBefore = collSurplusPool.getCollateral(msg.sender);
-        uint256 collCompensation = troveManager.getCollGasCompensation(coll);
+        uint256 totalBoldDeposits = stabilityPool.getTotalBoldDeposits();
+        uint256 boldInSPForOffsets = totalBoldDeposits - LiquityMath._min(MIN_BOLD_IN_SP, totalBoldDeposits);
+        uint256 collCompensation = troveManager.getCollGasCompensation(coll, debt, boldInSPForOffsets);
         // Calc claimable coll based on the remaining coll to liquidate, less the liq. penalty that goes to the SP depositors
         uint256 seizedColl = debt * (_100pct + troveManager.get_LIQUIDATION_PENALTY_SP()) / priceFeed.getPrice();
         // The Trove owner bears the gas compensation costs

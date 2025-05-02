@@ -398,8 +398,7 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
         priceFeed.setPrice(price);
 
         LiquidationParams memory l;
-        l.collGasCompensation = liquidatedColl / COLL_GAS_COMPENSATION_DIVISOR;
-        l.collRedistributed = liquidatedColl - l.collGasCompensation;
+        l.collRedistributed = liquidatedColl;
         l.debtRedistributed = liquidatedDebt;
         l.ethGasCompensation = ETH_GAS_COMPENSATION;
 
@@ -522,10 +521,11 @@ contract TroveEventsTest is EventsTest, ITroveEvents {
             l.debtRedistributed = liquidatedDebt[i] - l.debtOffsetBySP;
 
             l.ethGasCompensation = ETH_GAS_COMPENSATION;
-            collRemaining -= l.collGasCompensation = liquidatedColl[i] / COLL_GAS_COMPENSATION_DIVISOR;
+            uint256 collToOffset = liquidatedColl[i] * l.debtOffsetBySP / liquidatedDebt[i];
+            collRemaining -= l.collGasCompensation = collToOffset / COLL_GAS_COMPENSATION_DIVISOR;
 
             collRemaining -= l.collSentToSP = Math.min(
-                collRemaining * l.debtOffsetBySP / liquidatedDebt[i],
+                collToOffset - l.collGasCompensation,
                 l.debtOffsetBySP * (DECIMAL_PRECISION + LIQUIDATION_PENALTY_SP) / price
             );
 
