@@ -114,7 +114,9 @@ function Rewards({
       className={css({
         display: "grid",
         gap: 24,
-        gridTemplateColumns: "1.2fr 1fr",
+        medium: {
+          gridTemplateColumns: "1.2fr 1fr",
+        },
         alignItems: "start",
         padding: "24px 0",
         borderBottom: "1px solid token(colors.separator)",
@@ -124,10 +126,14 @@ function Rewards({
       <div
         className={css({
           display: "flex",
-          justifyContent: "flex-end",
+          justifyContent: "flex-start",
           alignItems: "center",
           gap: 8,
-          fontSize: 28,
+          fontSize: 20,
+          medium: {
+            justifyContent: "flex-end",
+            fontSize: 28,
+          },
         })}
       >
         <Amount value={amount} />

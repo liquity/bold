@@ -306,15 +306,17 @@ export default {
 
   // Earn home screen
   earnHome: {
-    headline: (tokensIcons: N, boldIcon: N) => (
+    headline: (rewards: N, bold: N) => (
       <>
-        Deposit {boldIcon} BOLD to earn rewards {tokensIcons}
+        Deposit
+        <NoWrap>{bold} BOLD</NoWrap>
+        to earn <NoWrap>rewards {rewards}</NoWrap>
       </>
     ),
     subheading: (
       <>
-        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. 
-        Also, the BOLD may be swapped to collateral in case the system needs to liquidate positions.
+        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, the BOLD may
+        be swapped to collateral in case the system needs to liquidate positions.
       </>
     ),
     learnMore: ["https://docs.liquity.org/v2-faq/bold-and-earn", "Learn more"],
@@ -482,5 +484,28 @@ function Link({
     <a href={href} {...props}>
       {children}
     </a>
+  );
+}
+
+function NoWrap({
+  children,
+  gap = 8,
+}: {
+  children: N;
+  gap?: number;
+}) {
+  return (
+    <span
+      className={css({
+        display: "inline-flex",
+        alignItems: "center",
+        whiteSpace: "nowrap",
+      })}
+      style={{
+        gap,
+      }}
+    >
+      {children}
+    </span>
   );
 }

@@ -4,6 +4,7 @@ import type { Dnum } from "dnum";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
@@ -250,14 +251,10 @@ export function PanelUpdateDeposit({
             )}
           </HFlex>
         )}
-        <ConnectWarningBox />
-        <Button
+
+        <FlowButton
           disabled={!allowSubmit}
-          label={content.earnScreen.depositPanel.action}
-          mode="primary"
-          size="large"
-          wide
-          onClick={() => {
+          request={() => {
             if (
               !account.address
               || !collateral
@@ -265,7 +262,7 @@ export function PanelUpdateDeposit({
               || !poolDeposit
               || !updatedPoolDeposit
             ) {
-              return;
+              return null;
             }
 
             const prevEarnPosition = position ?? {
@@ -276,7 +273,7 @@ export function PanelUpdateDeposit({
               rewards: { bold: DNUM_0, coll: DNUM_0 },
             };
 
-            txFlow.start({
+            return {
               flowId: "earnUpdate",
               backLink: [
                 `/earn/${collateral.name.toLowerCase()}`,
@@ -296,7 +293,7 @@ export function PanelUpdateDeposit({
                 deposit: updatedDeposit,
               },
               claimRewards,
-            });
+            };
           }}
         />
       </div>
