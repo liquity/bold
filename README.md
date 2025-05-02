@@ -37,8 +37,8 @@
   - [Rationale for fee schedule](#rationale-for-fee-schedule)
   - [Fee Schedule](#fee-schedule)
   - [Redemption fee during bootstrapping period](#redemption-fee-during-bootstrapping-period)
-- [Unredeemable Troves](#unredeemable-troves)
-  - [Full unredeemable Troves logic](#full-unredeemable-troves-logic)
+- [Zombie Troves](#zombie-troves)
+  - [Full Zombie Troves logic](#full-zombie-troves-logic)
 - [Stability Pool implementation](#stability-pool-implementation)
   - [How deposits and ETH gains are calculated](#how-deposits-and-eth-gains-are-calculated)
   - [Collateral gains from Liquidations and the Product-Sum algorithm](#collateral-gains-from-liquidations-and-the-product-sum-algorithm)
@@ -110,7 +110,7 @@
 
 - **Redemption ordering.** In a given branch, redemptions hit Troves in order of their annual interest rate, from lowest to highest. Troves with higher annual interest rates are more shielded from redemptions - they have more “debt-in-front” of them than Troves with lower interest rates. A Trove’s collateral ratio is not taken into account at all for redemption ordering.
 
-- **Unredeemable Troves.** Redemptions now do not close Troves - they leave them open. Redemptions may now leave some Troves with a zero or very small BOLD debt < MIN_DEBT. These Troves are tagged as `unredeemable` in order to eliminate a redemption griefing attack vector. They become redeemable again when the borrower brings them back above the `MIN_DEBT`.
+- **Zombie Troves.** Redemptions now do not close Troves - they leave them open. Redemptions may now leave some Troves with a zero or very small BOLD debt < MIN_DEBT. These Troves are tagged as `Zombie` in order to eliminate a redemption griefing attack vector. Zombie Troves are unredeemable (save for a special case). They become normal Troves again when their recorded debt is brought back above the `MIN_DEBT`.
 
 - **Troves represented by NFTs.** Troves are freely transferable and a given Ethereum address may own multiple Troves (by holding the corresponding NFTs).
 
@@ -249,7 +249,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 ### CollateralRegistry
 
 
-- `redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage)`: redeems `_boldAmount` of BOLD tokens from the system in exchange for a mix of collaterals. Splits the BOLD redemption according to the [redemption routing logic](#redemption-routing), redeems from a number of Troves in each collateral branch, burns `_boldAmount` from the caller’s BOLD balance, and transfers each redeemed collateral amount to the redeemer. Executes successfully if the caller has sufficient BOLD to redeem. The number of Troves redeemed from per branch is capped by `_maxIterationsPerCollateral`. The borrower has to provide a `_maxFeePercentage` that he/she is willing to accept which mitigates fee slippage, i.e. when another redemption transaction is processed first and drives up the redemption fee.  Troves left with `debt < MIN_DEBT` are flagged as `unredeemable`.
+- `redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage)`: redeems `_boldAmount` of BOLD tokens from the system in exchange for a mix of collaterals. Splits the BOLD redemption according to the [redemption routing logic](#redemption-routing), redeems from a number of Troves in each collateral branch, burns `_boldAmount` from the caller’s BOLD balance, and transfers each redeemed collateral amount to the redeemer. Executes successfully if the caller has sufficient BOLD to redeem. The number of Troves redeemed from per branch is capped by `_maxIterationsPerCollateral`. The borrower has to provide a `_maxFeePercentage` that he/she is willing to accept which mitigates fee slippage, i.e. when another redemption transaction is processed first and drives up the redemption fee.  Troves left with `debt < MIN_DEBT` are flagged as `Zombie`.
 
 ### BorrowerOperations
 
@@ -314,7 +314,7 @@ The function takes the following param struct as input:
         uint256 _upperHint,
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
-    )` - enables a borrower with a unredeemable Trove to adjust it. Any adjustment must result in the Trove’s `debt > MIN_DEBT` and `ICR > MCR`, along with the usual borrowing [CCR constraints](#critical-collateral-ratio-ccr-restrictions). The adjustment reinserts it to its previous batch, if it had one.
+    )` - enables a borrower with a Zombie Trove to adjust it. Any adjustment must result in the Trove’s `debt > MIN_DEBT` and `ICR > MCR`, along with the usual borrowing [CCR constraints](#critical-collateral-ratio-ccr-restrictions). The adjustment reinserts it to its previous batch, if it had one.
 
 - `claimCollateral()`: Claims the caller’s accumulated collateral surplus gains from their liquidated Troves which were left with a collateral surplus after collateral seizure at liquidation.  Sends the accumulated collateral surplus to the caller and zeros their recorded balance.
 
@@ -328,7 +328,7 @@ The function takes the following param struct as input:
         uint256 _maxUpfrontFee
     )`: Change’s the caller’s annual interest rate on their Trove. The update is considered “premature” if they’ve recently changed their interest rate (i.e. within `INTEREST_RATE_ADJ_COOLDOWN` seconds), and if so, they incur an upfront fee - see the [interest rate adjustment section](#interest-rate-adjustments-redemption-evasion-mitigation).  The fee is also based on the system average interest rate, so the user may provide a `_maxUpfrontFee` if they make a premature adjustment.
 
-- `applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies all pending debt to the Trove - i.e. adds its accrued interest and any redistribution debt gain, to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest and gains applied with sufficient regularity even if their owner doesn’t touch them. Also makes unredeemable Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).  If the Trove is in a batch, it applies all of the batch's accrued interest and accrued management fee to the batch's recorded debt, as well as the _individual_ Trove's redistribution debt gain.
+- `applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies all pending debt to the Trove - i.e. adds its accrued interest and any redistribution debt gain, to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest and gains applied with sufficient regularity even if their owner doesn’t touch them. Also makes Zombie Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).  If the Trove is in a batch, it applies all of the batch's accrued interest and accrued management fee to the batch's recorded debt, as well as the _individual_ Trove's redistribution debt gain.
 
 -  `setAddManager(uint256 _troveId, address _manager)`: sets an “Add” manager for the caller’s chosen Trove, who has permission to add collateral and repay debt to their Trove.
 
@@ -390,7 +390,7 @@ The function takes the following param struct as input:
 - `batchLiquidateTroves(uint256[] calldata _troveArray)`: Accepts a custom list of Troves IDs as an argument. Steps through the provided list and attempts to liquidate every Trove, until it reaches the end or it runs out of gas. A Trove is liquidated only if it meets the conditions for liquidation, i.e. ICR < MCR. Troves with ICR >= MCR are skipped in the loop. Permissionless.
 
 
-- `urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral)`: Executes successfully only when the collateral branch has already been shut down.  Redeems only from the branch it is called on. Redeems from Troves with a slight collateral bonus - that is, 1 BOLD redeems for $1.01 worth of LST collateral.  Does not flag any redeemed-from Troves as `unredeemable`. Caller specifies the `_minCollateral` they want to receive.
+- `urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral)`: Executes successfully only when the collateral branch has already been shut down.  Redeems only from the branch it is called on. Redeems from Troves with a slight collateral bonus - that is, 1 BOLD redeems for $1.01 worth of LST collateral.  Does not flag any redeemed-from Troves as `Zombie`. Caller specifies the `_minCollateral` they want to receive.
 
 ### StabilityPool
 
@@ -659,10 +659,9 @@ In order to fulfill the redemption request on a given branch, Troves are redeeme
 
 A redemption sequence of n steps will fully redeem all debt from the first n-1 Troves, and, and potentially partially redeem from the final Trove in the sequence.
 
-
 Redemptions are skipped for Troves with ICR  < 100%. This is to ensure that redemptions improve the ICR of the Trove.
 
-Unredeemable troves are also skipped - see [unredeemable Troves section](#unredeemable-troves).
+Zombie troves (save for one special case) are also skipped - see [Zombie Troves section](#zombie-troves).
 
 ### Redemption fees
 
@@ -709,7 +708,7 @@ At deployment, the `baseRate` is set to `INITIAL_REDEMPTION_RATE`, which is some
 The intention is to discourage early redemptions in the early days when the total system debt is small, and give it time to grow.
 
 
-## Unredeemable Troves
+## Zombie Troves
 
 In Liquity v2, redemptions do not close Troves (unlike v1).
 
@@ -717,36 +716,51 @@ In Liquity v2, redemptions do not close Troves (unlike v1).
 
 Hence redemptions in v2 always leave Troves open. This ensures that normal redemptions never lower the TCR* of a branch.
 
-**Need for unredeemable Troves**: Leaving Troves open at redemption means redemptions may result in Troves with very small (or zero) `debt < MIN_DEBT`.  This could create a griefing risk - by creating many Troves with tiny `debt < MIN_DEBT` at the minimum interest rate, an attacker could “clog up” the bottom of the sorted list of Troves, and future redemptions would hit many Troves without redeeming much BOLD, or even be unprofitable due to gas costs.
+**Need for zombie Troves**: Leaving Troves open at redemption means redemptions may result in Troves with very small (or zero) `debt < MIN_DEBT`.  This could create a griefing risk - by creating many Troves with tiny `debt < MIN_DEBT` at the minimum interest rate, an attacker could “clog up” the bottom of the sorted list of Troves, and future redemptions would hit many Troves without redeeming much BOLD, or even be unprofitable due to gas costs.
 
-Therefore, when a Trove is redeemed to below MIN_DEBT, it is tagged as unredeemable and removed from the sorted list.  
+Therefore, when a Trove is redeemed to below `MIN_DEBT`, it is tagged as a "Zombie" and removed from the sorted list.  
 
-When a borrower touches their unredeemable Trove, they must either bring it back to `debt > MIN_DEBT` (in which case the Trove becomes redeemable again), or close it. Adjustments that leave it with insufficient debt are not possible.
+When a borrower touches their Zombie Trove, they must either bring it back to `debt > MIN_DEBT` (in which case the Trove becomes redeemable again), or close it. Adjustments that leave it with insufficient debt are not possible.
 
-Pending debt gains from redistributions and accrued interest can bring the Trove's debt above `MIN_DEBT`, but these pending gains don't make the Trove redeemable again. Only the borrower can do that when they adjust it and leave their recorded `debt > MIN_DEBT`.
+Pending debt gains from redistributions and accrued interest can bring the Trove's debt above `MIN_DEBT`, but these pending gains don't make the Trove normal again. When the pending gains are applied - either via direct debt adjustment, or the permissionless `applyPendingDebt` - and the resulting recorded `debt > MIN_DEBT`, the Trove becomes normal.
 
-### Full unredeemable Troves logic
+### Full Zombie Troves logic
 
 When a Trove is redeemed down to `debt < MIN_DEBT`, we:
-- Change its status to `unredeemable`
+- Change its status to `Zombie`
 - Remove it from the SortedTroves list
 - _Don't_ remove it from the `TroveManager.Troves` array since this is only used for off-chain hints (also this saves gas for the borrower for future Trove touches)
 
 
-Unredeemable Troves:
+Zombie Troves:
 
-
-- Can not be redeemed
+- Can not be redeemed (save for one special case - see below)
 - Can be liquidated
 - Do receive redistribution gains
 - Do accrue interest
-- Can have their accrued interest permissionlessly applied
+- Can have their accrued interest permissionlessly applied (which, if brings `debt >= MIN_DEBT`, re-adds them to the Sorted list and changes their status to `Active`)
 - Can not have their interest rate changed by their owner/manager
-- Can not be adjusted such that they're left with debt <`MIN_DEBT` by owner/manager
+- Can not be adjusted such that they're left with `debt < MIN_DEBT` by owner/manager
 - Can be closed by their owner
-- Can be brought above `MIN_DEBT` by owner (which re-adds them to the Sorted Troves list, and changes their status back to 'Active')
+- Can have their debt adjusted to above `MIN_DEBT` by owner (which re-adds them to the Sorted Troves list, and changes their status to `Active`)
 
 _(*as long as TCR > 100%. If TCR < 100%, then normal redemptions would lower the TCR, but the shutdown threshold is set above 100%, and therefore the branch would be shut down first. See the [shutdown section](#shutdown-logic) )_
+
+## Special case: redemptions and `lastZombieTroveId`
+
+When the first Zombie Trove with non-zero debt is created by a redemption, it is tagged as the `lastZombieTroveId`. 
+
+This  `lastZombieTroveId` Zombie Trove is always first in line for future redemptions. This remains the case until one of the following events:
+
+- Its recorded debt is brought above MIN_DEBT - either by a debt adjustment, or an `applyPendingDebt` call
+- It is fully redeemed down to 0 debt - at which point, it becomes a regular zombie Trove
+- It is closed
+
+Rationale for `lastZombieTroveId`
+
+The intent is to ensure that an attacker can not deliberately create many unredeemable zombie Troves with non-zero debt via strategic redemptions. At most, they can create one (which will be first in line for future redemptions).
+
+It's still theoretically possible for multiple Zombie troves with non-zero debt to exist due to redistributions. However, redistributions are harder to deliberately engineer - they  rely on price drops, an empty Stability Pool and liquidations. The total unredeemable debt in an active branch is bounded by the total redistributed debt that Zombie Troves have received.
 
 
 ## Stability Pool implementation
@@ -1115,7 +1129,7 @@ Urgent redemptions:
 - Charge no redemption fee
 - Pay a slight collateral bonus of 2% to the redeemer. That is, in exchange for every 1 BOLD redeemed, the redeemer receives $1.02 worth of the LST collateral.
 - Do not redeem Troves in order of interest rate. Instead, the redeemer passes a list of Troves to redeem from.
-- Do not create unredeemable Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
+- Do not create Zombie Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
 
 ## Collateral choices in Liquity v2
 
