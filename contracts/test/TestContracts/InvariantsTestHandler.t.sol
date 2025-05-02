@@ -1062,7 +1062,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             // Preconditions
             assertTrue(v.wasOpen, "Should have failed as Trove wasn't open");
-            assertGt(numTroves(i), 1, "Should have failed to close last Trove in the system");
+            if (!isShutdown[i]) assertGt(numTroves(i), 1, "Should have failed to close last Trove in the system");
             if (!isShutdown[i]) assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
@@ -2649,33 +2649,35 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     function _aggregateLiquidation(uint256 i, LatestTroveData memory trove, LiquidationTotals storage t) internal {
-        // Coll gas comp
-        uint256 collRemaining = trove.entireColl;
-        uint256 collGasComp = Math.min(collRemaining / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
-        t.collGasComp += collGasComp;
-        collRemaining -= collGasComp;
-
         // Offset debt by SP
         uint256 spRemaining = spBoldDeposits[i] - t.spOffset;
         uint256 spOffset = Math.min(trove.entireDebt, spRemaining > MIN_BOLD_IN_SP ? spRemaining - MIN_BOLD_IN_SP : 0);
         t.spOffset += spOffset;
 
-        // Send coll to SP
+        // Share coll proportionally between SP and redistribution based on offset fraction
+        uint256 collRemaining = trove.entireColl;
         uint256 collSPPortion = collRemaining * spOffset / trove.entireDebt;
-        uint256 spCollGain = Math.min(collSPPortion, spOffset * (_100pct + LIQ_PENALTY_SP[i]) / _price[i]);
+
+        // Deduct coll gas comp from SP portion
+        uint256 collGasComp = Math.min(collSPPortion / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
+        t.collGasComp += collGasComp;
+        collRemaining -= collGasComp;
+
+        // Send remainder of SP portion to SP, capped by liq penalty
+        uint256 spCollGain = Math.min(collSPPortion - collGasComp, spOffset * (_100pct + LIQ_PENALTY_SP[i]) / _price[i]);
         t.spCollGain += spCollGain;
         collRemaining -= spCollGain;
 
-        // Redistribute debt
+        // Redistribute remaining debt
         uint256 debtRedist = trove.entireDebt - spOffset;
         t.debtRedist += debtRedist;
 
-        // Redistribute coll
+        // Redistribute remaining coll, capped by redist penalty
         uint256 collRedist = Math.min(collRemaining, debtRedist * (_100pct + LIQ_PENALTY_REDIST[i]) / _price[i]);
         t.collRedist += collRedist;
         collRemaining -= collRedist;
 
-        // Surplus
+        // Send remaining coll to surplus pool
         t.collSurplus += collRemaining;
     }
 
