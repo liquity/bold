@@ -2,6 +2,7 @@ import type { Address, BranchId, Delegate } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { useAppear } from "@/src/anim-utils";
+import { useBreakpointName } from "@/src/breakpoints";
 import { INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
 import { jsonStringifyWithDnum } from "@/src/dnum-utils";
@@ -118,6 +119,8 @@ export const InterestRateField = memo(
     const activeDelegateModes = DELEGATE_MODES.filter((mode) => mode !== "strategy" || hasStrategies);
 
     const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
+
+    const breakpoint = useBreakpointName();
 
     return (
       <>
@@ -270,6 +273,7 @@ export const InterestRateField = memo(
                   alignItems: "center",
                   gap: 4,
                   minWidth: 120,
+                  userSelect: "none",
                 })}
               >
                 <div>
@@ -283,15 +287,21 @@ export const InterestRateField = memo(
             end: redeemableTransition((style, show) => (
               show && (
                 <a.div
+                  title={`Redeemable before you: ${
+                    (mode === "manual" || delegate !== null)
+                      ? fmtnum(bracket?.debtInFront, "compact")
+                      : "−"
+                  } BOLD`}
                   className={css({
                     overflow: "hidden",
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
+                    userSelect: "none",
                   })}
                   style={style}
                 >
                   <span>
-                    Redeemable before you:{" "}
+                    {breakpoint === "large" ? "Redeemable before you: " : "Red. before: "}
                     <span
                       className={css({
                         fontVariantNumeric: "tabular-nums",
@@ -301,7 +311,7 @@ export const InterestRateField = memo(
                         ? fmtnum(bracket?.debtInFront, "compact")
                         : "−"}
                     </span>
-                    <span>{" BOLD"}</span>
+                    {breakpoint === "large" && <span>{" BOLD"}</span>}
                   </span>
                 </a.div>
               )
@@ -344,7 +354,7 @@ export const InterestRateField = memo(
                       fontSize: 24,
                     }}
                   >
-                    % per year
+                    %{breakpoint === "large" ? " per year" : ""}
                   </span>
                 </span>
               )
@@ -417,6 +427,8 @@ function ManualInterestRateSlider({
 
   const transition = useAppear(value !== -1);
 
+  const breakpoint = useBreakpointName();
+
   return transition((style, show) =>
     show && (
       <a.div
@@ -424,7 +436,7 @@ function ManualInterestRateSlider({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          width: 260,
+          width: breakpoint === "large" ? 260 : 200,
           paddingTop: 16,
           ...style,
         }}
