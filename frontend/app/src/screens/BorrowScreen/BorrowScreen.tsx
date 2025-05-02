@@ -3,8 +3,9 @@
 import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
 import type { Address, Dnum } from "@/src/types";
 
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { NBSP } from "@/src/characters";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
@@ -21,7 +22,6 @@ import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
-  Button,
   COLLATERALS as KNOWN_COLLATERALS,
   Dropdown,
   HFlex,
@@ -157,19 +157,43 @@ export function BorrowScreen() {
     <Screen
       heading={{
         title: (
-          <HFlex>
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexFlow: "wrap",
+              gap: "0 8px",
+            })}
+          >
             {content.borrowScreen.headline(
-              <TokenIcon.Group>
-                {collaterals.map(({ symbol }) => (
-                  <TokenIcon
-                    key={symbol}
-                    symbol={symbol}
-                  />
-                ))}
-              </TokenIcon.Group>,
-              <TokenIcon symbol="BOLD" />,
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                })}
+              >
+                <TokenIcon.Group>
+                  {collaterals.map(({ symbol }) => (
+                    <TokenIcon
+                      key={symbol}
+                      symbol={symbol}
+                    />
+                  ))}
+                </TokenIcon.Group>
+                {NBSP}BOLD
+              </div>,
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                })}
+              >
+                <TokenIcon symbol="BOLD" />
+                {NBSP}ETH
+              </div>,
             )}
-          </HFlex>
+          </div>
         ),
       }}
     >
@@ -177,8 +201,10 @@ export function BorrowScreen() {
         className={css({
           display: "flex",
           flexDirection: "column",
-          gap: 48,
-          width: 534,
+          gap: {
+            base: 32,
+            large: 48,
+          },
         })}
       >
         <Field
@@ -272,26 +298,24 @@ export function BorrowScreen() {
                 }`,
                 end: debtSuggestions && (
                   <HFlex gap={6}>
-                    {debtSuggestions.map((s) => {
-                      return s && (
-                        s.debt && s.risk && (
-                          <PillButton
-                            key={dn.toString(s.debt)}
-                            label={fmtnum(s.debt, {
-                              compact: true,
-                              digits: 0,
-                              prefix: "$",
-                            })}
-                            onClick={() => {
-                              if (s.debt) {
-                                debt.setValue(dn.toString(s.debt, 0));
-                              }
-                            }}
-                            warnLevel={s.risk}
-                          />
-                        )
-                      );
-                    })}
+                    {debtSuggestions.map((s) => (
+                      s?.debt && s?.risk && (
+                        <PillButton
+                          key={dn.toString(s.debt)}
+                          label={fmtnum(s.debt, {
+                            compact: true,
+                            digits: 0,
+                            prefix: "$",
+                          })}
+                          onClick={() => {
+                            if (s.debt) {
+                              debt.setValue(dn.toString(s.debt, 0));
+                            }
+                          }}
+                          warnLevel={s.risk}
+                        />
+                      )
+                    ))}
                   </HFlex>
                 ),
               }}
@@ -344,8 +368,9 @@ export function BorrowScreen() {
               />
             ),
             end: (
-              <span
+              <div
                 className={css({
+                  overflow: "hidden",
                   display: "flex",
                   alignItems: "center",
                   gap: 4,
@@ -353,65 +378,72 @@ export function BorrowScreen() {
                   fontSize: 14,
                 })}
               >
-                <IconSuggestion size={16} />
-                <>You can adjust this rate at any time</>
-                <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateAdjustment)} />
-              </span>
+                <div
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    flexShrink: 0,
+                  })}
+                >
+                  <IconSuggestion size={16} />
+                </div>
+                <div
+                  className={css({
+                    flexShrink: 1,
+                    display: "inline",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  })}
+                >
+                  You can adjust this rate at any time
+                </div>
+                <div
+                  className={css({
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                  })}
+                >
+                  <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateAdjustment)} />
+                </div>
+              </div>
             ),
           }}
         />
 
         <RedemptionInfo />
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: 32,
-            width: "100%",
-          }}
-        >
-          <ConnectWarningBox />
-          <Button
-            disabled={!allowSubmit}
-            label={content.borrowScreen.action}
-            mode="primary"
-            size="large"
-            wide
-            onClick={() => {
-              if (
-                interestRate
-                && deposit.parsed
-                && debt.parsed
-                && account.address
-                && interestRate
-                && typeof nextOwnerIndex.data === "number"
-              ) {
-                txFlow.start({
-                  flowId: "openBorrowPosition",
-                  backLink: [
-                    `/borrow/${collSymbol.toLowerCase()}`,
-                    "Back to editing",
-                  ],
-                  successLink: ["/", "Go to the Dashboard"],
-                  successMessage: "The position has been created successfully.",
+        <FlowButton
+          disabled={!allowSubmit}
+          label={content.borrowScreen.action}
+          request={interestRate
+              && deposit.parsed
+              && debt.parsed
+              && account.address
+              && typeof nextOwnerIndex.data === "number"
+            ? {
+              flowId: "openBorrowPosition",
+              backLink: [
+                `/borrow/${collSymbol.toLowerCase()}`,
+                "Back to editing",
+              ],
+              successLink: ["/", "Go to the Dashboard"],
+              successMessage: "The position has been created successfully.",
 
-                  branchId: branch.id,
-                  owner: account.address,
-                  ownerIndex: nextOwnerIndex.data,
-                  collAmount: deposit.parsed,
-                  boldAmount: debt.parsed,
-                  annualInterestRate: interestRate,
-                  maxUpfrontFee: dnum18(maxUint256),
-                  interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate
-                    ? null
-                    : interestRateDelegate,
-                });
-              }
-            }}
-          />
-        </div>
+              branchId: branch.id,
+              owner: account.address,
+              ownerIndex: nextOwnerIndex.data,
+              collAmount: deposit.parsed,
+              boldAmount: debt.parsed,
+              annualInterestRate: interestRate,
+              maxUpfrontFee: dnum18(maxUint256),
+              interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate
+                ? null
+                : interestRateDelegate,
+            }
+            : undefined}
+        />
       </div>
     </Screen>
   );

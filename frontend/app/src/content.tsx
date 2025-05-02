@@ -3,6 +3,8 @@
 
 import type { ReactNode as N } from "react";
 
+import { css } from "@/styled-system/css";
+
 export default {
   // Used in the top bar and other places
   appName: "Liquity V2",
@@ -238,9 +240,9 @@ export default {
 
   // Borrow screen
   borrowScreen: {
-    headline: (tokensIcons: N, boldIcon: N) => (
+    headline: (eth: N, bold: N) => (
       <>
-        Borrow {boldIcon} BOLD with {tokensIcons} ETH
+        Borrow {bold} with {eth}
       </>
     ),
     depositField: {
