@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 
+import { useBreakpoint } from "@/src/breakpoints";
 import { css, cx } from "@/styled-system/css";
 import { IconArrowBack } from "@liquity2/uikit";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import Link from "next/link";
-import { isValidElement } from "react";
+import { isValidElement, useState } from "react";
 
 export function Screen({
   back,
@@ -14,7 +15,7 @@ export function Screen({
   heading = null,
   paddingTop = 0,
   ready = true,
-  width = 534,
+  width,
 }: {
   back?: {
     href: string;
@@ -28,9 +29,16 @@ export function Screen({
     subtitle?: ReactNode;
   };
   ready?: boolean;
-  width?: number;
+  width?: number | `${number}%`;
   paddingTop?: number;
 }) {
+  const [compactMode, setCompactMode] = useState(false);
+  useBreakpoint(({ medium }) => {
+    setCompactMode(!medium);
+  });
+
+  width ??= compactMode ? "100%" : 534;
+
   const backTransition = useTransition(ready && back, {
     keys: (back) => JSON.stringify(back),
     initial: { opacity: 0, transform: "translateY(0px)" },
@@ -143,11 +151,17 @@ export function Screen({
           flexGrow: 1,
           display: "grid",
           justifyItems: "center",
-          gap: 48,
+          gap: {
+            base: 20,
+            large: 48,
+          },
           gridTemplateColumns: "1fr",
           gridTemplateRows: "auto 1fr",
           width: "100%",
-          padding: 24,
+          padding: {
+            base: 0,
+            large: 24,
+          },
           transformOrigin: "50% 0",
         }),
         className,
@@ -160,24 +174,17 @@ export function Screen({
         back && (
           <a.div
             className={css({
-              position: {
-                base: "static",
-                large: "absolute",
-              },
-              width: {
-                base: "100%",
-                large: "auto",
-              },
-              maxWidth: {
-                base: 540,
-                large: "100%",
-              },
-              marginBottom: {
-                base: -16,
-                large: 0,
-              },
+              width: "100%",
+              maxWidth: 540,
+              marginBottom: 0,
               left: 0,
               zIndex: 1,
+              large: {
+                position: "absolute",
+                width: "auto",
+                maxWidth: "100%",
+                marginBottom: 0,
+              },
             })}
             style={{
               transform: style.transform,
@@ -185,6 +192,7 @@ export function Screen({
             }}
           >
             <BackButton
+              compact={compactMode}
               href={back.href}
               label={back.label}
             />
@@ -223,10 +231,12 @@ export function Screen({
   );
 }
 
-export function BackButton({
+function BackButton({
+  compact,
   href,
   label,
 }: {
+  compact: boolean;
   href: string;
   label: ReactNode;
 }) {
@@ -240,7 +250,6 @@ export function BackButton({
           gap: 8,
           color: "secondaryContent",
           background: "secondary",
-          height: 40,
           width: "fit-content",
           whiteSpace: "nowrap",
           borderRadius: 20,
@@ -251,6 +260,9 @@ export function BackButton({
             outline: "2px solid token(colors.focused)",
           },
         })}
+        style={{
+          height: compact ? 34 : 40,
+        }}
       >
         <IconArrowBack size={20} />
         {label}
