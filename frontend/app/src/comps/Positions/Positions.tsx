@@ -1,7 +1,7 @@
 import type { Address, Position, PositionLoanUncommitted } from "@/src/types";
 import type { ReactNode } from "react";
 
-import { useBreakpoint } from "@/src/breakpoints";
+import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
@@ -84,10 +84,7 @@ export function Positions({
     mode = "loading";
   }
 
-  const [breakpoint, setBreakpoint] = useState("large");
-  useBreakpoint(({ name }) => {
-    setBreakpoint(name);
-  });
+  const breakpoint = useBreakpointName();
 
   return (
     <PositionsGroup
@@ -167,9 +164,11 @@ function PositionsGroup({
     ))
     .exhaustive();
 
+  const breakpoint = useBreakpointName();
+
   const cardHeight = mode === "actions" ? 144 : 180;
   const rows = Math.ceil(cards.length / columns);
-  const containerHeight = cardHeight * rows + 24 * (rows - 1);
+  const containerHeight = cardHeight * rows + (breakpoint === "small" ? 16 : 24) * (rows - 1);
 
   const positionTransitions = useTransition(cards, {
     keys: ([index]) => `${mode}${index}`,
