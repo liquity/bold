@@ -104,6 +104,7 @@ contract GasCompZapper is BaseZapper {
     function withdrawColl(uint256 _troveId, uint256 _amount) external {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
+        _requireZapperIsReceiver(_troveId);
 
         borrowerOperations.withdrawColl(_troveId, _amount);
 
@@ -114,6 +115,7 @@ contract GasCompZapper is BaseZapper {
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
+        _requireZapperIsReceiver(_troveId);
 
         borrowerOperations.withdrawBold(_troveId, _boldAmount, _maxUpfrontFee);
 
@@ -226,6 +228,7 @@ contract GasCompZapper is BaseZapper {
     function closeTroveToRawETH(uint256 _troveId) external {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        _requireZapperIsReceiver(_troveId);
 
         // pull Bold for repayment
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
@@ -245,6 +248,8 @@ contract GasCompZapper is BaseZapper {
     function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external override {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        _requireZapperIsReceiver(_troveId);
+
         CloseTroveParams memory params =
             CloseTroveParams({troveId: _troveId, flashLoanAmount: _flashLoanAmount, receiver: receiver});
 

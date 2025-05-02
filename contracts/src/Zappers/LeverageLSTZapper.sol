@@ -110,6 +110,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
     function leverUpTrove(LeverUpTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
+        _requireZapperIsReceiver(_params.troveId);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -155,6 +156,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
     function leverDownTrove(LeverDownTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
+        _requireZapperIsReceiver(_params.troveId);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;

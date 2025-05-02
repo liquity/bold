@@ -35,7 +35,7 @@ contract DeployGovernance is Script {
     address constant DEFI_COLLECTIVE_GRANTS_ADDRESS = 0xDc6f869d2D34E4aee3E89A51f2Af6D54F0F7f690;
 
     // Governance Constants
-    uint128 private constant REGISTRATION_FEE = 1000e18;
+    uint128 private constant REGISTRATION_FEE = 100e18;
     uint128 private constant REGISTRATION_THRESHOLD_FACTOR = 0.0001e18; // 0.01%
     uint128 private constant UNREGISTRATION_THRESHOLD_FACTOR = 1e18 + 1;
     uint16 private constant UNREGISTRATION_AFTER_EPOCHS = 4;
