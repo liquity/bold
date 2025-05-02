@@ -1,5 +1,6 @@
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
@@ -12,7 +13,7 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
+import { HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
@@ -266,40 +267,32 @@ export function PanelStaking() {
             </div>
           </HFlex>
         )}
-        <Button
-          disabled={!allowSubmit}
-          label="Next: Summary"
-          mode="primary"
-          size="large"
-          wide
-          onClick={() => {
-            if (account.address) {
-              txFlow.start({
-                flowId: mode === "deposit" ? "stakeDeposit" : "unstakeDeposit",
-                backLink: ["/stake", "Back to stake position"],
-                successLink: ["/stake/voting", "Go to Voting"],
-                successMessage: "The stake position has been updated successfully.",
 
-                lqtyAmount: dn.abs(depositDifference),
-                stakePosition: {
-                  type: "stake",
-                  owner: account.address,
-                  deposit: updatedDeposit,
-                  totalStaked: dn.add(
-                    stakePosition.data?.totalStaked ?? DNUM_0,
-                    depositDifference,
-                  ),
-                  rewards: {
-                    eth: rewardsEth,
-                    lusd: rewardsLusd,
-                  },
-                },
-                prevStakePosition: stakePosition.data
-                    && dn.gt(stakePosition.data.deposit, 0)
-                  ? stakePosition.data
-                  : null,
-              });
-            }
+        <FlowButton
+          disabled={!allowSubmit}
+          request={account.address && {
+            flowId: mode === "deposit" ? "stakeDeposit" : "unstakeDeposit",
+            backLink: ["/stake", "Back to stake position"],
+            successLink: ["/stake/voting", "Go to Voting"],
+            successMessage: "The stake position has been updated successfully.",
+            lqtyAmount: dn.abs(depositDifference),
+            stakePosition: {
+              type: "stake",
+              owner: account.address,
+              deposit: updatedDeposit,
+              totalStaked: dn.add(
+                stakePosition.data?.totalStaked ?? DNUM_0,
+                depositDifference,
+              ),
+              rewards: {
+                eth: rewardsEth,
+                lusd: rewardsLusd,
+              },
+            },
+            prevStakePosition: stakePosition.data
+                && dn.gt(stakePosition.data.deposit, 0)
+              ? stakePosition.data
+              : null,
           }}
         />
       </div>

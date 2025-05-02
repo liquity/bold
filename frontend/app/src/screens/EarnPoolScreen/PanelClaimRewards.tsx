@@ -3,7 +3,7 @@ import type { Dnum } from "dnum";
 import { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { getCollToken } from "@/src/liquity-utils";
@@ -11,7 +11,7 @@ import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, TokenIcon, VFlex } from "@liquity2/uikit";
+import { HFlex, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function PanelClaimRewards({
@@ -83,28 +83,17 @@ export function PanelClaimRewards({
         </div>
       </VFlex>
 
-      <ConnectWarningBox />
-
-      <Button
+      <FlowButton
         disabled={!allowSubmit}
-        label={content.earnScreen.rewardsPanel.action}
-        mode="primary"
-        size="large"
-        wide
-        onClick={() => {
-          if (!account.address || !position) {
-            return;
-          }
-          txFlow.start({
-            flowId: "earnClaimRewards",
-            backLink: [
-              `/earn/${collateral.name.toLowerCase()}`,
-              "Back to earn position",
-            ],
-            successLink: ["/", "Go to the Dashboard"],
-            successMessage: "The rewards have been claimed successfully.",
-            earnPosition: position,
-          });
+        request={position && {
+          flowId: "earnClaimRewards",
+          backLink: [
+            `/earn/${collateral.name.toLowerCase()}`,
+            "Back to earn position",
+          ],
+          successLink: ["/", "Go to the Dashboard"],
+          successMessage: "The rewards have been claimed successfully.",
+          earnPosition: position,
         }}
       />
     </VFlex>
