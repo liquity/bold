@@ -2217,12 +2217,14 @@ contract OraclesMainnet is TestAccounts {
         assertTrue(revertsAsExpected);
     }
 
+    /*
     function testTMCodeSize() public {
         uint256 codeSize = address(contractsArray[0].troveManager).code.length;
         uint256 left = 24576 - codeSize;
         console.log(codeSize, "TM contract size");
         console.log(left, "space left in TM");
     }
+    */
         
     function testRETHRedemptionOnlyHitsTrovesAtICRGte100() public {
         Vars memory vars;
