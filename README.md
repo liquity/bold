@@ -746,7 +746,7 @@ Zombie Troves:
 
 _(*as long as TCR > 100%. If TCR < 100%, then normal redemptions would lower the TCR, but the shutdown threshold is set above 100%, and therefore the branch would be shut down first. See the [shutdown section](#shutdown-logic) )_
 
-## Special case: redemptions and `lastZombieTroveId`
+### Special case: redemptions and `lastZombieTroveId`
 
 When the first Zombie Trove with non-zero debt is created by a redemption, it is tagged as the `lastZombieTroveId`. 
 
@@ -756,11 +756,11 @@ This  `lastZombieTroveId` Zombie Trove is always first in line for future redemp
 - It is fully redeemed down to 0 debt - at which point, it becomes a regular zombie Trove
 - It is closed
 
-Rationale for `lastZombieTroveId`
+### Rationale for `lastZombieTroveId`
 
 The intent is to ensure that an attacker can not deliberately create many unredeemable zombie Troves with non-zero debt via strategic redemptions. At most, they can create one (which will be first in line for future redemptions).
 
-It's still theoretically possible for multiple Zombie troves with non-zero debt to exist due to redistributions. However, redistributions are harder to deliberately engineer - they  rely on price drops, an empty Stability Pool and liquidations. The total unredeemable debt in an active branch is bounded by the total redistributed debt that Zombie Troves have received.
+It's still theoretically possible for multiple Zombie troves with non-zero debt to exist due to redistributions. However, redistributions are harder to deliberately engineer - they rely on price drops, an empty Stability Pool and liquidations. The total unredeemable debt in an active branch is bounded by the total redistributed debt that Zombie Troves have received.
 
 
 ## Stability Pool implementation
