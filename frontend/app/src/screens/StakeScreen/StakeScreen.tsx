@@ -5,7 +5,8 @@ import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePosi
 import content from "@/src/content";
 import { useStakePosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
-import { AnchorTextButton, HFlex, Tabs, TokenIcon, VFlex } from "@liquity2/uikit";
+import { css } from "@/styled-system/css";
+import { AnchorTextButton, Tabs, TokenIcon, VFlex } from "@liquity2/uikit";
 import { useParams, useRouter } from "next/navigation";
 import { PanelRewards } from "./PanelRewards";
 import { PanelStaking } from "./PanelStaking";
@@ -27,9 +28,17 @@ export function StakeScreen() {
     <Screen
       heading={{
         title: (
-          <HFlex>
+          <div
+            className={css({
+              display: "flex",
+              flexFlow: "wrap",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0 8px",
+            })}
+          >
             {content.stakeScreen.headline(<TokenIcon size={24} symbol="LQTY" />)}
-          </HFlex>
+          </div>
         ),
         subtitle: (
           <>
