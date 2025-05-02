@@ -38,8 +38,9 @@ export function HomeScreen() {
         display: "flex",
         flexDirection: "column",
         gap: {
-          base: 24,
-          medium: 64,
+          base: 40,
+          medium: 40,
+          large: 64,
         },
         width: "100%",
       })}
