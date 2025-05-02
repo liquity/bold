@@ -33,6 +33,14 @@ abstract contract BaseZapper is AddRemoveManagers, LeftoversSweep, IFlashLoanRec
         exchange = _exchange;
     }
 
+    function _getTroveIndex(address _sender, uint256 _ownerIndex) internal pure returns (uint256) {
+        return uint256(keccak256(abi.encode(_sender, _ownerIndex)));
+    }
+
+    function _getTroveIndex(uint256 _ownerIndex) internal view returns (uint256) {
+        return _getTroveIndex(msg.sender, _ownerIndex);
+    }
+
     function _requireZapperIsReceiver(uint256 _troveId) internal view {
         (, address receiver) = borrowerOperations.removeManagerReceiverOf(_troveId);
         require(receiver == address(this), "BZ: Zapper is not receiver for this trove");

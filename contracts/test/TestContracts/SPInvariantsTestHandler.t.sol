@@ -13,6 +13,7 @@ import {ITroveManagerTester} from "./Interfaces/ITroveManagerTester.sol";
 import {LiquityMath} from "src/Dependencies/LiquityMath.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
+import {TroveId} from "../Utils/TroveId.sol";
 import {BaseHandler} from "./BaseHandler.sol";
 
 import {
@@ -36,7 +37,7 @@ uint256 constant LIQUIDATION_ICR = MCR - _1pct;
 // Universal constants
 uint256 constant MCR = 1.1 ether;
 
-contract SPInvariantsTestHandler is BaseHandler {
+contract SPInvariantsTestHandler is BaseHandler, TroveId {
     using StringFormatting for uint256;
 
     struct Contracts {
@@ -82,13 +83,9 @@ contract SPInvariantsTestHandler is BaseHandler {
         initialPrice = priceFeed.getPrice();
     }
 
-    function _getTroveId(address owner, uint256 i) internal pure returns (uint256) {
-        return uint256(keccak256(abi.encode(owner, i)));
-    }
-
     function openTrove(uint256 borrowed) external returns (uint256 debt) {
         uint256 i = troveIndexOf[msg.sender];
-        vm.assume(troveManager.getTroveStatus(_getTroveId(msg.sender, i)) != ITroveManager.Status.active);
+        vm.assume(troveManager.getTroveStatus(addressToTroveId(msg.sender, i)) != ITroveManager.Status.active);
 
         borrowed = _bound(borrowed, OPEN_TROVE_BORROWED_MIN, OPEN_TROVE_BORROWED_MAX);
         uint256 price = priceFeed.getPrice();
@@ -174,7 +171,7 @@ contract SPInvariantsTestHandler is BaseHandler {
 
     function liquidateMe() external {
         vm.assume(troveManager.getTroveIdsCount() > 1);
-        uint256 troveId = _getTroveId(msg.sender, troveIndexOf[msg.sender]);
+        uint256 troveId = addressToTroveId(msg.sender, troveIndexOf[msg.sender]);
         vm.assume(troveManager.getTroveStatus(troveId) == ITroveManager.Status.active);
 
         (uint256 debt, uint256 coll,,,) = troveManager.getEntireDebtAndColl(troveId);
