@@ -1071,9 +1071,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.troveManager = troveManager;
         vars.sortedTroves = sortedTroves;
 
-        _requireTroveIsOpen(vars.troveManager, _troveId);
-
-        if (!_kick) {
+        if (_kick) {
+            _requireTroveIsOpen(vars.troveManager, _troveId);
+        } else {
+            _requireTroveIsActive(vars.troveManager, _troveId);
             _requireCallerIsBorrower(_troveId);
             _requireValidAnnualInterestRate(_newAnnualInterestRate);
         }
@@ -1085,9 +1086,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         if (_kick) {
             if (vars.batch.totalDebtShares * MAX_BATCH_SHARES_RATIO >= vars.batch.entireDebtWithoutRedistribution) {
                 revert BatchSharesRatioTooLow();
-            } else {
-                _newAnnualInterestRate = vars.batch.annualInterestRate;
             }
+            _newAnnualInterestRate = vars.batch.annualInterestRate;
         }
 
         delete interestBatchManagerOf[_troveId];
