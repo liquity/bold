@@ -37,8 +37,8 @@
   - [Rationale for fee schedule](#rationale-for-fee-schedule)
   - [Fee Schedule](#fee-schedule)
   - [Redemption fee during bootstrapping period](#redemption-fee-during-bootstrapping-period)
-- [Unredeemable Troves](#unredeemable-troves)
-  - [Full unredeemable Troves logic](#full-unredeemable-troves-logic)
+- [Zombie Troves](#zombie-troves)
+  - [Full Zombie Troves logic](#full-zombie-troves-logic)
 - [Stability Pool implementation](#stability-pool-implementation)
   - [How deposits and ETH gains are calculated](#how-deposits-and-eth-gains-are-calculated)
   - [Collateral gains from Liquidations and the Product-Sum algorithm](#collateral-gains-from-liquidations-and-the-product-sum-algorithm)
@@ -94,6 +94,7 @@
   - [15 - Overflow threshold in SP calculations](#15---Overflow-threshold-in-sp-calculations)
   - [16 - TODOs in code comments](#16---todos-in-code-comments)
   - [17 - Just in time StabilityPool deposits](#17---just-in-time-stabilitypool-deposits)
+  - [18 - Batch vs sequential redistributions](#18---batch-vs-sequential-redistributions)  
   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
 
 ## Significant changes in Liquity v2
@@ -110,7 +111,7 @@
 
 - **Redemption ordering.** In a given branch, redemptions hit Troves in order of their annual interest rate, from lowest to highest. Troves with higher annual interest rates are more shielded from redemptions - they have more “debt-in-front” of them than Troves with lower interest rates. A Trove’s collateral ratio is not taken into account at all for redemption ordering.
 
-- **Unredeemable Troves.** Redemptions now do not close Troves - they leave them open. Redemptions may now leave some Troves with a zero or very small BOLD debt < MIN_DEBT. These Troves are tagged as `unredeemable` in order to eliminate a redemption griefing attack vector. They become redeemable again when the borrower brings them back above the `MIN_DEBT`.
+- **Zombie Troves.** Redemptions now do not close Troves - they leave them open. Redemptions may now leave some Troves with a zero or very small BOLD debt < MIN_DEBT. These Troves are tagged as `Zombie` in order to eliminate a redemption griefing attack vector. Zombie Troves are unredeemable (save for a special case). They become normal Troves again when their recorded debt is brought back above the `MIN_DEBT`.
 
 - **Troves represented by NFTs.** Troves are freely transferable and a given Ethereum address may own multiple Troves (by holding the corresponding NFTs).
 
@@ -249,7 +250,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 ### CollateralRegistry
 
 
-- `redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage)`: redeems `_boldAmount` of BOLD tokens from the system in exchange for a mix of collaterals. Splits the BOLD redemption according to the [redemption routing logic](#redemption-routing), redeems from a number of Troves in each collateral branch, burns `_boldAmount` from the caller’s BOLD balance, and transfers each redeemed collateral amount to the redeemer. Executes successfully if the caller has sufficient BOLD to redeem. The number of Troves redeemed from per branch is capped by `_maxIterationsPerCollateral`. The borrower has to provide a `_maxFeePercentage` that he/she is willing to accept which mitigates fee slippage, i.e. when another redemption transaction is processed first and drives up the redemption fee.  Troves left with `debt < MIN_DEBT` are flagged as `unredeemable`.
+- `redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage)`: redeems `_boldAmount` of BOLD tokens from the system in exchange for a mix of collaterals. Splits the BOLD redemption according to the [redemption routing logic](#redemption-routing), redeems from a number of Troves in each collateral branch, burns `_boldAmount` from the caller’s BOLD balance, and transfers each redeemed collateral amount to the redeemer. Executes successfully if the caller has sufficient BOLD to redeem. The number of Troves redeemed from per branch is capped by `_maxIterationsPerCollateral`. The borrower has to provide a `_maxFeePercentage` that he/she is willing to accept which mitigates fee slippage, i.e. when another redemption transaction is processed first and drives up the redemption fee.  Troves left with `debt < MIN_DEBT` are flagged as `Zombie`.
 
 ### BorrowerOperations
 
@@ -314,7 +315,7 @@ The function takes the following param struct as input:
         uint256 _upperHint,
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
-    )` - enables a borrower with a unredeemable Trove to adjust it. Any adjustment must result in the Trove’s `debt > MIN_DEBT` and `ICR > MCR`, along with the usual borrowing [CCR constraints](#critical-collateral-ratio-ccr-restrictions). The adjustment reinserts it to its previous batch, if it had one.
+    )` - enables a borrower with a Zombie Trove to adjust it. Any adjustment must result in the Trove’s `debt > MIN_DEBT` and `ICR > MCR`, along with the usual borrowing [CCR constraints](#critical-collateral-ratio-ccr-restrictions). The adjustment reinserts it to its previous batch, if it had one.
 
 - `claimCollateral()`: Claims the caller’s accumulated collateral surplus gains from their liquidated Troves which were left with a collateral surplus after collateral seizure at liquidation.  Sends the accumulated collateral surplus to the caller and zeros their recorded balance.
 
@@ -328,7 +329,7 @@ The function takes the following param struct as input:
         uint256 _maxUpfrontFee
     )`: Change’s the caller’s annual interest rate on their Trove. The update is considered “premature” if they’ve recently changed their interest rate (i.e. within `INTEREST_RATE_ADJ_COOLDOWN` seconds), and if so, they incur an upfront fee - see the [interest rate adjustment section](#interest-rate-adjustments-redemption-evasion-mitigation).  The fee is also based on the system average interest rate, so the user may provide a `_maxUpfrontFee` if they make a premature adjustment.
 
-- `applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies all pending debt to the Trove - i.e. adds its accrued interest and any redistribution debt gain, to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest and gains applied with sufficient regularity even if their owner doesn’t touch them. Also makes unredeemable Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).  If the Trove is in a batch, it applies all of the batch's accrued interest and accrued management fee to the batch's recorded debt, as well as the _individual_ Trove's redistribution debt gain.
+- `applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies all pending debt to the Trove - i.e. adds its accrued interest and any redistribution debt gain, to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest and gains applied with sufficient regularity even if their owner doesn’t touch them. Also makes Zombie Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).  If the Trove is in a batch, it applies all of the batch's accrued interest and accrued management fee to the batch's recorded debt, as well as the _individual_ Trove's redistribution debt gain.
 
 -  `setAddManager(uint256 _troveId, address _manager)`: sets an “Add” manager for the caller’s chosen Trove, who has permission to add collateral and repay debt to their Trove.
 
@@ -390,7 +391,7 @@ The function takes the following param struct as input:
 - `batchLiquidateTroves(uint256[] calldata _troveArray)`: Accepts a custom list of Troves IDs as an argument. Steps through the provided list and attempts to liquidate every Trove, until it reaches the end or it runs out of gas. A Trove is liquidated only if it meets the conditions for liquidation, i.e. ICR < MCR. Troves with ICR >= MCR are skipped in the loop. Permissionless.
 
 
-- `urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral)`: Executes successfully only when the collateral branch has already been shut down.  Redeems only from the branch it is called on. Redeems from Troves with a slight collateral bonus - that is, 1 BOLD redeems for $1.01 worth of LST collateral.  Does not flag any redeemed-from Troves as `unredeemable`. Caller specifies the `_minCollateral` they want to receive.
+- `urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral)`: Executes successfully only when the collateral branch has already been shut down.  Redeems only from the branch it is called on. Redeems from Troves with a slight collateral bonus - that is, 1 BOLD redeems for $1.01 worth of LST collateral.  Does not flag any redeemed-from Troves as `Zombie`. Caller specifies the `_minCollateral` they want to receive.
 
 ### StabilityPool
 
@@ -659,10 +660,9 @@ In order to fulfill the redemption request on a given branch, Troves are redeeme
 
 A redemption sequence of n steps will fully redeem all debt from the first n-1 Troves, and, and potentially partially redeem from the final Trove in the sequence.
 
-
 Redemptions are skipped for Troves with ICR  < 100%. This is to ensure that redemptions improve the ICR of the Trove.
 
-Unredeemable troves are also skipped - see [unredeemable Troves section](#unredeemable-troves).
+Zombie troves (save for one special case) are also skipped - see [Zombie Troves section](#zombie-troves).
 
 ### Redemption fees
 
@@ -709,7 +709,7 @@ At deployment, the `baseRate` is set to `INITIAL_REDEMPTION_RATE`, which is some
 The intention is to discourage early redemptions in the early days when the total system debt is small, and give it time to grow.
 
 
-## Unredeemable Troves
+## Zombie Troves
 
 In Liquity v2, redemptions do not close Troves (unlike v1).
 
@@ -717,36 +717,51 @@ In Liquity v2, redemptions do not close Troves (unlike v1).
 
 Hence redemptions in v2 always leave Troves open. This ensures that normal redemptions never lower the TCR* of a branch.
 
-**Need for unredeemable Troves**: Leaving Troves open at redemption means redemptions may result in Troves with very small (or zero) `debt < MIN_DEBT`.  This could create a griefing risk - by creating many Troves with tiny `debt < MIN_DEBT` at the minimum interest rate, an attacker could “clog up” the bottom of the sorted list of Troves, and future redemptions would hit many Troves without redeeming much BOLD, or even be unprofitable due to gas costs.
+**Need for zombie Troves**: Leaving Troves open at redemption means redemptions may result in Troves with very small (or zero) `debt < MIN_DEBT`.  This could create a griefing risk - by creating many Troves with tiny `debt < MIN_DEBT` at the minimum interest rate, an attacker could “clog up” the bottom of the sorted list of Troves, and future redemptions would hit many Troves without redeeming much BOLD, or even be unprofitable due to gas costs.
 
-Therefore, when a Trove is redeemed to below MIN_DEBT, it is tagged as unredeemable and removed from the sorted list.  
+Therefore, when a Trove is redeemed to below `MIN_DEBT`, it is tagged as a "Zombie" and removed from the sorted list.  
 
-When a borrower touches their unredeemable Trove, they must either bring it back to `debt > MIN_DEBT` (in which case the Trove becomes redeemable again), or close it. Adjustments that leave it with insufficient debt are not possible.
+When a borrower touches their Zombie Trove, they must either bring it back to `debt > MIN_DEBT` (in which case the Trove becomes redeemable again), or close it. Adjustments that leave it with insufficient debt are not possible.
 
-Pending debt gains from redistributions and accrued interest can bring the Trove's debt above `MIN_DEBT`, but these pending gains don't make the Trove redeemable again. Only the borrower can do that when they adjust it and leave their recorded `debt > MIN_DEBT`.
+Pending debt gains from redistributions and accrued interest can bring the Trove's debt above `MIN_DEBT`, but these pending gains don't make the Trove normal again. When the pending gains are applied - either via direct debt adjustment, or the permissionless `applyPendingDebt` - and the resulting recorded `debt > MIN_DEBT`, the Trove becomes normal.
 
-### Full unredeemable Troves logic
+### Full Zombie Troves logic
 
 When a Trove is redeemed down to `debt < MIN_DEBT`, we:
-- Change its status to `unredeemable`
+- Change its status to `Zombie`
 - Remove it from the SortedTroves list
 - _Don't_ remove it from the `TroveManager.Troves` array since this is only used for off-chain hints (also this saves gas for the borrower for future Trove touches)
 
 
-Unredeemable Troves:
+Zombie Troves:
 
-
-- Can not be redeemed
+- Can not be redeemed (save for one special case - see below)
 - Can be liquidated
 - Do receive redistribution gains
 - Do accrue interest
-- Can have their accrued interest permissionlessly applied
+- Can have their accrued interest permissionlessly applied (which, if brings `debt >= MIN_DEBT`, re-adds them to the Sorted list and changes their status to `Active`)
 - Can not have their interest rate changed by their owner/manager
-- Can not be adjusted such that they're left with debt <`MIN_DEBT` by owner/manager
+- Can not be adjusted such that they're left with `debt < MIN_DEBT` by owner/manager
 - Can be closed by their owner
-- Can be brought above `MIN_DEBT` by owner (which re-adds them to the Sorted Troves list, and changes their status back to 'Active')
+- Can have their debt adjusted to above `MIN_DEBT` by owner (which re-adds them to the Sorted Troves list, and changes their status to `Active`)
 
 _(*as long as TCR > 100%. If TCR < 100%, then normal redemptions would lower the TCR, but the shutdown threshold is set above 100%, and therefore the branch would be shut down first. See the [shutdown section](#shutdown-logic) )_
+
+### Special case: redemptions and `lastZombieTroveId`
+
+When the first Zombie Trove with non-zero debt is created by a redemption, it is tagged as the `lastZombieTroveId`. 
+
+This  `lastZombieTroveId` Zombie Trove is always first in line for future redemptions. This remains the case until one of the following events:
+
+- Its recorded debt is brought above MIN_DEBT - either by a debt adjustment, or an `applyPendingDebt` call
+- It is fully redeemed down to 0 debt - at which point, it becomes a regular zombie Trove
+- It is closed
+
+### Rationale for `lastZombieTroveId`
+
+The intent is to ensure that an attacker can not deliberately create many unredeemable zombie Troves with non-zero debt via strategic redemptions. At most, they can create one (which will be first in line for future redemptions).
+
+It's still theoretically possible for multiple Zombie troves with non-zero debt to exist due to redistributions. However, redistributions are harder to deliberately engineer - they rely on price drops, an empty Stability Pool and liquidations. The total unredeemable debt in an active branch is bounded by the total redistributed debt that Zombie Troves have received.
 
 
 ## Stability Pool implementation
@@ -897,8 +912,11 @@ When a borrower touches their Trove, redistribution gains are applied - i.e. add
 
 This is the standard Batog / UniPool reward distribution scheme common across DeFi.
 
-A Trove’s redistribution gains can also be applied permissionlessly (along with accrued interest) using the function `applyTroveInterestPermissionless`. Similarly, batch redistribution gains can be applied with `applyBatchInterestAndFeePermissionless`.
+A Trove’s redistribution gains can also be applied permissionlessly (along with accrued interest) using the function `applyPendingDebt`. 
 
+Pending redistribution debt gains do not bear interest - that is, if a Trove has pending redistribution debt gain then only a part of its total debt earns interest, and the pending redistribution debt gain is not included in the interest accrual calculation. 
+
+All else equal, this means that a Trove with a pending redistribution debt gain gets a lower effective interest rate than a Trove without. However, anyone may apply a Trove's pending gains (see above) and force subsequent interest to be generated based on the entire debt.
 
 ### Redistributions and Corrected Stakes
 
@@ -939,13 +957,11 @@ When the TCR of a branch falls below its Critical Collateral Ratio (CCR), the sy
 
 Here is the full CCR-based logic:
 
-<img width="703" alt="image" src="https://github.com/user-attachments/assets/63c1d142-ed93-47c6-a996-fe228c34476d">
-
-
+<img width="672" alt="image" src="https://github.com/user-attachments/assets/6afc6deb-5301-4918-8477-e74e2753629c" />
 
 As a result, when `TCR < CCR`, the following restrictions apply:
 
-<img width="696" alt="image" src="https://github.com/user-attachments/assets/066d4bbe-58e5-4fca-8941-67341bf30e85">
+<img width="672" alt="image" src="https://github.com/user-attachments/assets/20a3d6ef-472c-44bf-84d3-8c96533d932a" />
 
 
 ### Rationale
@@ -955,7 +971,6 @@ The CCR logic has the following purposes:
 
 - Ensure that when `TCR >= CCR` borrower operations can not reduce system health too much by bringing the `TCR < CCR`
 - Ensure that when `TCR < CCR`, borrower operations only improve system health
-- Ensure that when `TCR < CCR`, borrower operations can not grow the debt of the system
 
 ##  Delegation 
 
@@ -1020,7 +1035,7 @@ The system tracks a batch’s `recordedDebt` and `annualInterestRate`. Accrued i
 
 ### Batch management fee
 
-The management fee is an annual percentage, and is calculated in the same way as annual interest.  It is initially chosen by the batch manager when they register, and can not be changed for that batch thereafter.
+The management fee is an annual percentage, and is calculated in the same way as annual interest.  It is initially chosen by the batch manager when they register. Thereafter, it can not be raised - the manager can only lower the fee via `lowerBatchManagementfee`.
 
 ### Batch `recordedDebt` updates
 
@@ -1113,9 +1128,9 @@ Urgent redemptions:
 
 - Are performed directly via the shut down branch’s `TroveManager`, and they only affect that branch. They are not routed across branches.
 - Charge no redemption fee
-- Pay a slight collateral bonus of 1% to the redeemer. That is, in exchange for every 1 BOLD redeemed, the redeemer receives $1.01 worth of the LST collateral.
+- Pay a slight collateral bonus of 2% to the redeemer. That is, in exchange for every 1 BOLD redeemed, the redeemer receives $1.02 worth of the LST collateral.
 - Do not redeem Troves in order of interest rate. Instead, the redeemer passes a list of Troves to redeem from.
-- Do not create unredeemable Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
+- Do not create Zombie Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
 
 ## Collateral choices in Liquity v2
 
@@ -1588,7 +1603,7 @@ Thus, if we compare a deposit that never claims gainst one that frequently "comp
 This simply means that frequently claiming and adding BOLD yield gains to one's deposit is the preferred strategy.
 
 ### 14 - Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1
-If ICR is less than 101% , urgent redemptions with 1% premium reduce the ICR of a Trove.
+If ICR is less than 102% , urgent redemptions with 2% premium reduce the ICR of a Trove.
 
 This may be used to lock in a bit more bad debt.
 
@@ -1639,6 +1654,34 @@ Though long-term depositors may miss out on some liquidation gains in the case o
 When new debt is drawn on a Trove, an upfront fee is charged.  Part of this fee is sent as yield rewards to the SP. A borrower may reclaim some of their borrow fees by sequentially drawing their debt in chunks, and depositing their issued BOLD into the SP. As such, they'll then earn back a portion of their borrow fee paid on the next chunk of debt. They can repeat this process until they reach their target debt.
 
 Of course, the reclaimed fee portion depends on the size of their target debt, how finely they chunk their debt, and the prior size of the SP. Existing depositors will still earn a portion of their upfront fees which are split to depositors pro-rata.
+
+### 18 - Batch vs sequential redistributions 
+
+Liquidations via redistribution in `batchLiquidateTroves` do not distribute liquidated collateral and debt to the other Troves liquidated inside the liquidation loop. They only distribute collateral and debt to the active Troves which remain in the system _after_ all liquidations in the loop have been resolved.
+
+Despite this procedural difference, 1) the redistribution of a given set of Troves by a single batch liquidation and 2) the separate redistributions of those same Troves would both result in the same end state.
+
+Consider a system of Troves A,B,C,D,E.  A,B,C have `ICR < MCR` and are thus liquidateable.  D and E have `ICR > MCR` and are healthy.
+
+#### Scenario 1 - batch redistribution
+
+If A,B and C are redistributed in one `batchLiquidateTroves` call, the collateral and debt of A,B, and C is given purely to D and E.
+
+#### Scenario 2 - sequential redistribution
+
+If A, B and C are redistributed by sequential liquidation calls, then, collateral and debt is first “rolled” forward to the next Trove in the sequence, before finally being distributed to remaining active Troves D and E. That is:
+
+
+```
+batchLiquidateTroves(A)
+-> B,C,D,E receive A’s debt and coll proportionally
+batchLiquidateTroves(B)
+-> C,D,E receive B’s debt and coll proportionally
+batchLiquidateTroves(C)
+-> D,E receive C’s debt and coll proportionally
+```
+
+In Liquity v2 the resulting collateral and debt of active Troves D and E is exactly the same in both scenarios, since the same total coll and debt is redistributed proportionally. This is not the case in Liquity v1 where redistributions pay gas compensation, and rolling vs not rolling liquidations results in slightly different gas compensation payout and thus slightly end states for active Troves.
 
 
 ### Issues identified in audits requiring no fix
