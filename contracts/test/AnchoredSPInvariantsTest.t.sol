@@ -1246,5 +1246,8 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
         // coll = 570_376_835_580_790_313.880152031558999999 ether, debt = 76_050_244_744_105_375_184.020270874533333148 ether
         vm.prank(fran);
         handler.openTrove(76_042_952_954_096_078_299.799742132137100824 ether);
+
+        // Very extreme edge case. It gets fixed with SCALE_SPAN = 3
+        // invariant_allFundsClaimable();
     }
 }
