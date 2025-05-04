@@ -1,7 +1,6 @@
 import type { Address, Dnum, Initiative } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
-import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { KNOWN_INITIATIVES_URL } from "@/src/env";
@@ -302,7 +301,6 @@ export function useGovernanceUser(account: Address | null) {
       jsonStringifyWithDnum(initiatives.data),
     ],
     queryFn,
-    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }
 
