@@ -572,8 +572,7 @@ function LoadingCard({
             - 120 // top bar
             - 24 * 2 // padding
             - 48 // bottom bar 1
-            - 40
-            // - 40 // bottom bar 2
+            - 40 // bottom bar 2
           ),
           cardHeight: s === "error" || s === "not-found" ? 180 : 120,
           cardBackground: token("colors.blue:50"),

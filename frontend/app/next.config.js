@@ -30,11 +30,7 @@ const nextConfig = {
   },
 };
 
-export default (
-  process.env.ANALYZE === "true"
-    ? bundleAnalyzer(nextConfig)
-    : nextConfig
-);
+export default (process.env.ANALYZE === "true" ? bundleAnalyzer(nextConfig) : nextConfig);
 
 function flag(value) {
   if (typeof value !== "string") {

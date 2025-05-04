@@ -372,8 +372,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   APP_VERSION: (
     // APP_VERSION_FROM_BUILD is set at build time (see next.config.js)
     // and gets overridden by NEXT_PUBLIC_APP_VERSION if set.
-    process.env.NEXT_PUBLIC_APP_VERSION
-      ?? process.env.APP_VERSION_FROM_BUILD
+    (process.env.NEXT_PUBLIC_APP_VERSION ?? process.env.APP_VERSION_FROM_BUILD)
   ),
   // APP_COMMIT_HASH_FROM_BUILD is set at build time (see next.config.js)
   // and gets overridden by NEXT_PUBLIC_APP_COMMIT_HASH if set.
@@ -400,8 +399,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   CONTRACTS_COMMIT_HASH: (
     // CONTRACTS_COMMIT_HASH_FROM_BUILD is set at build time (see next.config.js)
     // and gets overridden by NEXT_PUBLIC_CONTRACTS_COMMIT_HASH if set.
-    process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_HASH
-      ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD
+    (process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_HASH ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD)
   ),
   CONTRACTS_COMMIT_URL: process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_URL,
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,

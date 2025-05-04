@@ -214,12 +214,12 @@ export function useCheckLeverageSlippage({
   return useQuery({
     queryKey: debouncedQueryKey,
     queryFn: async () => {
-      const params = initialDeposit && await getOpenLeveragedTroveParams(
+      const params = initialDeposit && (await getOpenLeveragedTroveParams(
         branchId,
         initialDeposit[0],
         leverageFactor,
         wagmiConfig,
-      );
+      ));
 
       if (params === null) {
         return null;

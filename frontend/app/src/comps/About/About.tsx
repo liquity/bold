@@ -4,10 +4,11 @@ import type { Entries } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { useFlashTransition } from "@/src/anim-utils";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Logo } from "@/src/comps/Logo/Logo";
 import * as env from "@/src/env";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, Button, Modal } from "@liquity2/uikit";
+import { Button, Modal } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
 import Image from "next/image";
 import Link from "next/link";
@@ -147,7 +148,7 @@ export function About({ children }: { children: ReactNode }) {
               entries={{
                 "Release": env.APP_VERSION_URL
                   ? (
-                    <AnchorTextButton
+                    <LinkTextButton
                       external
                       href={env.APP_VERSION_URL.replace(/\{version\}/, env.APP_VERSION)}
                       label={`v${env.APP_VERSION}`}
@@ -156,7 +157,7 @@ export function About({ children }: { children: ReactNode }) {
                   : `v${env.APP_VERSION}`,
                 "Commit (app)": env.APP_COMMIT_URL
                   ? (
-                    <AnchorTextButton
+                    <LinkTextButton
                       external
                       href={env.APP_COMMIT_URL.replace(/\{commit\}/, env.APP_COMMIT_HASH)}
                       label={env.APP_COMMIT_HASH}
@@ -165,7 +166,7 @@ export function About({ children }: { children: ReactNode }) {
                   : env.APP_COMMIT_HASH,
                 "Commit (contracts)": env.CONTRACTS_COMMIT_URL
                   ? (
-                    <AnchorTextButton
+                    <LinkTextButton
                       external
                       href={env.CONTRACTS_COMMIT_URL.replace(/\{commit\}/, env.CONTRACTS_COMMIT_HASH)}
                       label={env.CONTRACTS_COMMIT_HASH}
@@ -268,7 +269,7 @@ export function About({ children }: { children: ReactNode }) {
                 <>
                   Liquity V2 contracts ({env.CONTRACTS_COMMIT_URL
                     ? (
-                      <AnchorTextButton
+                      <LinkTextButton
                         external
                         href={env.CONTRACTS_COMMIT_URL.replace(/\{commit\}/, env.CONTRACTS_COMMIT_HASH)}
                         label={env.CONTRACTS_COMMIT_HASH}

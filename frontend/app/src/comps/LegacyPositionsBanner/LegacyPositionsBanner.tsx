@@ -1,15 +1,16 @@
 "use client";
 
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { useLegacyPositions } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, IconChevronSmallUp, IconWarning } from "@liquity2/uikit";
+import { IconChevronSmallUp, IconWarning } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
-import Link from "next/link";
+import { memo } from "react";
 
 export const LAYOUT_WIDTH = 1092;
 
-export function LegacyPositionsBanner() {
+export const LegacyPositionsBanner = memo(function LegacyPositionsBanner() {
   const account = useAccount();
   const legacyPositions = useLegacyPositions(account.address ?? null);
 
@@ -60,41 +61,36 @@ export function LegacyPositionsBanner() {
             <IconWarning size={16} />
             <div>
               You still have open positions on Liquity V2-Legacy.{" "}
-              <Link
+              <LinkTextButton
                 href="/legacy"
-                passHref
-                legacyBehavior
-              >
-                <AnchorTextButton
-                  label={
+                label={
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    })}
+                  >
+                    <div>Check legacy positions</div>
                     <div
                       className={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
+                        transformOrigin: "50% 50%",
+                        transform: "translateY(1px) rotate(90deg)",
                       })}
                     >
-                      <div>Check legacy positions</div>
-                      <div
-                        className={css({
-                          transformOrigin: "50% 50%",
-                          transform: "translateY(1px) rotate(90deg)",
-                        })}
-                      >
-                        <IconChevronSmallUp size={12} />
-                      </div>
+                      <IconChevronSmallUp size={12} />
                     </div>
-                  }
-                  className={css({
-                    color: "yellow:400",
-                    textDecoration: "underline",
-                  })}
-                />
-              </Link>
+                  </div>
+                }
+                className={css({
+                  color: "yellow:400!",
+                  textDecoration: "underline",
+                })}
+              />
             </div>
           </div>
         </div>
       </a.div>
     )
   ));
-}
+});

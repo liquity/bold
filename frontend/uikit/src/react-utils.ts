@@ -5,11 +5,11 @@ import type { RefObject } from "react";
 import { useEffect, useState } from "react";
 
 export function useElementSize<T extends HTMLElement>(
-  ref: RefObject<T>,
+  ref: RefObject<T | null>,
   callback?: (size: ResizeObserverSize) => void,
 ): {
   size: ResizeObserverSize | null;
-  ref: RefObject<T>;
+  ref: RefObject<T | null>;
 } {
   const [size, setSize] = useState<ResizeObserverSize | null>(null);
 

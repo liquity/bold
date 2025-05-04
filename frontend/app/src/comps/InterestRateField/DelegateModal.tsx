@@ -1,9 +1,10 @@
 import type { Address, BranchId, Delegate } from "@/src/types";
 
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import content from "@/src/content";
 import { useInterestBatchDelegate } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
-import { AddressField, AnchorTextButton, Modal } from "@liquity2/uikit";
+import { AddressField, Modal } from "@liquity2/uikit";
 import { useState } from "react";
 import { DelegateBox } from "./DelegateBox";
 
@@ -120,7 +121,7 @@ export function DelegateModal({
                     : (
                       <div>
                         The address is not a valid{" "}
-                        <AnchorTextButton
+                        <LinkTextButton
                           label="delegate"
                           href={URL_WHAT_IS_DELEGATION}
                           external
@@ -134,7 +135,7 @@ export function DelegateModal({
             <>
               <div>
                 Set a valid{" "}
-                <AnchorTextButton
+                <LinkTextButton
                   label="delegate"
                   href={URL_WHAT_IS_DELEGATION}
                   external
@@ -144,7 +145,11 @@ export function DelegateModal({
 
               <div>
                 Delegate addresses can be found{"  "}
-                <AnchorTextButton label="here" href={DELEGATES_LIST_URL} external />.
+                <LinkTextButton
+                  label="here"
+                  href={DELEGATES_LIST_URL}
+                  external
+                />.
               </div>
             </>
           )}

@@ -50,9 +50,9 @@ export function Positions({
 
   const positions = isPositionsPending ? [] : (
     DEMO_MODE ? ACCOUNT_POSITIONS : [
-      ...loans.data ?? [],
-      ...earnPositions.data ?? [],
-      ...stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : [],
+      ...(loans.data ?? []),
+      ...(earnPositions.data ?? []),
+      ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : []),
     ]
   );
 

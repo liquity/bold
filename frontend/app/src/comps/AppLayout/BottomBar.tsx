@@ -4,16 +4,16 @@ import type { TokenSymbol } from "@/src/types";
 
 import { useAbout } from "@/src/comps/About/About";
 import { Amount } from "@/src/comps/Amount/Amount";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Logo } from "@/src/comps/Logo/Logo";
 import { ACCOUNT_SCREEN } from "@/src/env";
 import { useLiquityStats } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, HFlex, shortenAddress, TextButton, TokenIcon } from "@liquity2/uikit";
+import { HFlex, shortenAddress, TextButton, TokenIcon } from "@liquity2/uikit";
 import { blo } from "blo";
 import Image from "next/image";
-import Link from "next/link";
 
 const DISPLAYED_PRICES = ["LQTY", "BOLD", "ETH"] as const;
 
@@ -70,57 +70,22 @@ export function BottomBar() {
               />
             ))}
             {account.address && ACCOUNT_SCREEN && (
-              <Link
+              <LinkTextButton
                 id="footer-account-button"
                 href={`/account?address=${account.address}`}
-                passHref
-                legacyBehavior
-                scroll={true}
-              >
-                <AnchorTextButton
-                  label={
-                    <HFlex gap={4} alignItems="center">
-                      <Image
-                        alt=""
-                        width={16}
-                        height={16}
-                        src={blo(account.address)}
-                        className={css({
-                          borderRadius: "50%",
-                        })}
-                      />
-
-                      {shortenAddress(account.address, 3)}
-                    </HFlex>
-                  }
-                  className={css({
-                    color: "content",
-                    borderRadius: 4,
-                    _focusVisible: {
-                      outline: "2px solid token(colors.focused)",
-                    },
-                    _active: {
-                      translate: "0 1px",
-                    },
-                  })}
-                />
-              </Link>
-            )}
-            <Link
-              id="footer-redeem-button"
-              href="/redeem"
-              passHref
-              legacyBehavior
-              scroll={true}
-            >
-              <AnchorTextButton
                 label={
                   <HFlex gap={4} alignItems="center">
-                    <TokenIcon
-                      size={16}
-                      symbol="BOLD"
+                    <Image
+                      alt=""
+                      width={16}
+                      height={16}
+                      src={blo(account.address)}
+                      className={css({
+                        borderRadius: "50%",
+                      })}
                     />
-                    Redeem BOLD
+
+                    {shortenAddress(account.address, 3)}
                   </HFlex>
                 }
                 className={css({
@@ -134,7 +99,30 @@ export function BottomBar() {
                   },
                 })}
               />
-            </Link>
+            )}
+            <LinkTextButton
+              id="footer-redeem-button"
+              href="/redeem"
+              label={
+                <HFlex gap={4} alignItems="center">
+                  <TokenIcon
+                    size={16}
+                    symbol="BOLD"
+                  />
+                  Redeem BOLD
+                </HFlex>
+              }
+              className={css({
+                color: "content",
+                borderRadius: 4,
+                _focusVisible: {
+                  outline: "2px solid token(colors.focused)",
+                },
+                _active: {
+                  translate: "0 1px",
+                },
+              })}
+            />
           </HFlex>
         </div>
       </div>
