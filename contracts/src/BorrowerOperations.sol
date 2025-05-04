@@ -1132,7 +1132,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         // ICR is based on the requested Bold amount + upfront fee.
         uint256 newICR = LiquityMath._computeCR(_troveEntireColl, _troveEntireDebt, price);
-        _requireICRisAboveMCR(newICR);
+        
         if (_isTroveInBatch) {
              _requireICRisAboveMCRPlusBCR(newICR);
          } else {

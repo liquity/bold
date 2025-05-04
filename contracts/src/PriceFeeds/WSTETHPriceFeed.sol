@@ -14,7 +14,7 @@ interface IWSTETH_Provider{
 
 contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
     Oracle public stEthUsdOracle;
-    IWSTETH_Provider public provider = IWSTETH_Provider(0xB1552C5e96B312d0Bf8b554186F846C40614a540);
+    IWSTETH_Provider public provider = IWSTETH_Provider(0xf7c5c26B574063e7b098ed74fAd6779e65E3F836); //arbitrum rate provider via chainlink which calls mainnet rate provider directly.
 
 
     uint256 public constant STETH_USD_DEVIATION_THRESHOLD = 1e16; // 1%
