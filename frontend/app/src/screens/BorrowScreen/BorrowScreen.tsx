@@ -18,7 +18,7 @@ import { getBranch, getBranches, getCollToken, useNextOwnerIndex } from "@/src/l
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
-import { useAccount, useBalance } from "@/src/wagmi-utils";
+import { useAccount, useBalances } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
@@ -77,11 +77,7 @@ export function BorrowScreen() {
 
   const collPrice = usePrice(collateral.symbol);
 
-  const balances = Object.fromEntries(KNOWN_COLLATERAL_SYMBOLS.map((symbol) => ([
-    symbol,
-    // known collaterals are static so we can safely call this hook in a .map()
-    useBalance(account.address, symbol),
-  ] as const)));
+  const balances = useBalances(account.address, KNOWN_COLLATERAL_SYMBOLS);
 
   const collBalance = balances[collateral.symbol];
   if (!collBalance) {
