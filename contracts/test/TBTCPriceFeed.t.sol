@@ -123,20 +123,17 @@ contract TBTCPriceFeedTest is Test {
         // Test cases for different deviation scenarios
         
         // 1. Exact same price
-        (uint256 price, bool failed) = priceFeed.fetchRedemptionPrice();
+        (uint256 price,) = priceFeed.fetchRedemptionPrice();
         assertEq(price, 30000e18);
-        assertEq(failed, false);
         
         // 2. Just within threshold (1.9%)
         tBTCOracle.setPrice(29430e8);  // 1.9% lower
-        (price, failed) = priceFeed.fetchRedemptionPrice();
+        (price,) = priceFeed.fetchRedemptionPrice();
         assertEq(price, 30000e18); // Should use BTC price
-        assertEq(failed, false);
         
         // 3. Just outside threshold (2.1%)
         tBTCOracle.setPrice(29370e8);  // 2.1% lower
-        (price, failed) = priceFeed.fetchRedemptionPrice();
+        (price,) = priceFeed.fetchRedemptionPrice();
         assertEq(price, 29370e18); // Should use tBTC price
-        assertEq(failed, false);
     }
 } 

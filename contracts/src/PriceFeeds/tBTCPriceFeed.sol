@@ -42,23 +42,19 @@ contract tBTCPriceFeed is TokenPriceFeedBase {
             return (lastGoodPrice, false);
         }
         
-        // Get tBTC price
-        ChainlinkResponse memory tbtcResponse = _getCurrentChainlinkResponse(tokenUsdOracle.aggregator);
-        if (!_isValidChainlinkPrice(tbtcResponse, tokenUsdOracle.stalenessThreshold)) {
-            // tBTC oracle is down
+        // Get tBTC price using the helper function - scaled to 18 decimals
+        (uint256 tbtcPrice, bool tbtcOracleDown) = _getOracleAnswer(tokenUsdOracle);
+        if (tbtcOracleDown) {
+            // tBTC oracle is down or invalid answer
             return (_shutDownAndSwitchToLastGoodPrice(address(tokenUsdOracle.aggregator)), true);
         }
         
-        // Get BTC price
-        ChainlinkResponse memory btcResponse = _getCurrentChainlinkResponse(btcUsdOracle.aggregator);
-        if (!_isValidChainlinkPrice(btcResponse, btcUsdOracle.stalenessThreshold)) {
-            // BTC oracle is down
+        // Get BTC price using the helper function - scaled to 18 decimals
+        (uint256 btcPrice, bool btcOracleDown) = _getOracleAnswer(btcUsdOracle);
+        if (btcOracleDown) {
+            // BTC oracle is down or invalid answer
             return (_shutDownAndSwitchToLastGoodPrice(address(btcUsdOracle.aggregator)), true);
         }
-        
-        // Scale both prices to 18 decimals
-        uint256 tbtcPrice = _scaleChainlinkPriceTo18decimals(tbtcResponse.answer, tokenUsdOracle.decimals);
-        uint256 btcPrice = _scaleChainlinkPriceTo18decimals(btcResponse.answer, btcUsdOracle.decimals);
         
         // Compare prices (within 2% of each other)
         // Instead of comparing tbtcPrice/btcPrice with fractions, we cross-multiply
@@ -77,12 +73,13 @@ contract tBTCPriceFeed is TokenPriceFeedBase {
     function _fetchPricePrimary() internal returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);
         
-        ChainlinkResponse memory response = _getCurrentChainlinkResponse(tokenUsdOracle.aggregator);
-        if (!_isValidChainlinkPrice(response, tokenUsdOracle.stalenessThreshold)) {
+        (uint256 tokenUsdPrice, bool tokenUsdOracleDown) = _getOracleAnswer(tokenUsdOracle);
+        
+        // tBTC oracle is down or invalid answer
+        if (tokenUsdOracleDown) {
             return (_shutDownAndSwitchToLastGoodPrice(address(tokenUsdOracle.aggregator)), true);
         }
         
-        uint256 tokenUsdPrice = _scaleChainlinkPriceTo18decimals(response.answer, tokenUsdOracle.decimals);
         lastGoodPrice = tokenUsdPrice;
         return (tokenUsdPrice, false);
     }
