@@ -184,8 +184,7 @@ contract GasCompZapper is BaseZapper {
         bool _isDebtIncrease,
         InitialBalances memory _initialBalances
     ) internal returns (address) {
-        address receiver =
-            _checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _isDebtIncrease);
+        address receiver = _checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _isDebtIncrease);
 
         // Set initial balances to make sure there are not lefovers
         _setInitialTokensAndBalances(collToken, boldToken, _initialBalances);

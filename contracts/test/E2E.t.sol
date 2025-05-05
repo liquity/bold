@@ -205,7 +205,10 @@ contract E2ETest is Test, UseDeployment, TroveId {
         return boldAmount;
     }
 
-    function _closeTroveFromCollateral(uint256 i, address owner, uint256 ownerIndex, bool _leveraged) internal returns (uint256) {
+    function _closeTroveFromCollateral(uint256 i, address owner, uint256 ownerIndex, bool _leveraged)
+        internal
+        returns (uint256)
+    {
         IZapper zapper;
         if (_leveraged) {
             zapper = branches[i].leverageZapper;

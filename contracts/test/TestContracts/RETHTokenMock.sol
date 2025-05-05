@@ -13,6 +13,6 @@ contract RETHTokenMock is IRETHToken {
     }
 
     function setExchangeRate(uint256 _ethPerReth) external {
-        ethPerReth = _ethPerReth;   
+        ethPerReth = _ethPerReth;
     }
 }

@@ -140,7 +140,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     // --- Variable container structs for redemptions ---
 
-    struct RedeemCollateralValues {   
+    struct RedeemCollateralValues {
         uint256 totalCollFee;
         uint256 remainingBold;
         address lastBatchUpdatedInterest;
@@ -774,14 +774,14 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         if (_maxIterations == 0) _maxIterations = type(uint256).max;
         while (singleRedemption.troveId != 0 && vars.remainingBold > 0 && _maxIterations > 0) {
             _maxIterations--;
-            // Save the uint256 of the Trove preceding the current one   
+            // Save the uint256 of the Trove preceding the current one
             if (singleRedemption.isZombieTrove) {
                 vars.nextUserToCheck = sortedTrovesCached.getLast();
             } else {
                 vars.nextUserToCheck = sortedTrovesCached.getPrev(singleRedemption.troveId);
             }
 
-            // Skip if ICR < 100%, to make sure that redemptions don’t decrease the CR of hit Troves. 
+            // Skip if ICR < 100%, to make sure that redemptions don’t decrease the CR of hit Troves.
             // Use the normal price for the ICR check.
             if (getCurrentICR(singleRedemption.troveId, _price) < _100pct) {
                 singleRedemption.troveId = vars.nextUserToCheck;
@@ -793,13 +793,16 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             // We do it here outside, to avoid repeating for each trove in the same batch
             singleRedemption.batchAddress = _getBatchManager(singleRedemption.troveId);
             if (
-                singleRedemption.batchAddress != address(0) && singleRedemption.batchAddress != vars.lastBatchUpdatedInterest
+                singleRedemption.batchAddress != address(0)
+                    && singleRedemption.batchAddress != vars.lastBatchUpdatedInterest
             ) {
                 _updateBatchInterestPriorToRedemption(activePoolCached, singleRedemption.batchAddress);
                 vars.lastBatchUpdatedInterest = singleRedemption.batchAddress;
             }
 
-            _redeemCollateralFromTrove(defaultPool, singleRedemption, vars.remainingBold, redemptionPrice, _redemptionRate);
+            _redeemCollateralFromTrove(
+                defaultPool, singleRedemption, vars.remainingBold, redemptionPrice, _redemptionRate
+            );
 
             totalsTroveChange.collDecrease += singleRedemption.collLot;
             totalsTroveChange.debtDecrease += singleRedemption.boldLot;
@@ -820,11 +823,11 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         //require(totals.totalCollDrawn > 0, "TroveManager: Unable to redeem any amount");
 
         emit Redemption(
-            _boldamount, 
-            totalsTroveChange.debtDecrease, 
-            totalsTroveChange.collDecrease, 
-            vars.totalCollFee, 
-            _price, 
+            _boldamount,
+            totalsTroveChange.debtDecrease,
+            totalsTroveChange.collDecrease,
+            vars.totalCollFee,
+            _price,
             redemptionPrice
         );
 
