@@ -232,7 +232,7 @@ export function BorrowScreen() {
                   selected={branch.id}
                 />
               }
-              label="Collateral"
+              label={content.borrowScreen.depositField.label}
               placeholder="0.00"
               secondary={{
                 start: `$${
@@ -282,7 +282,7 @@ export function BorrowScreen() {
                 mode: "error",
                 message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
               }}
-              label="Loan"
+              label={content.borrowScreen.borrowField.label}
               placeholder="0.00"
               secondary={{
                 start: `$${

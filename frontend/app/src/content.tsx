@@ -246,10 +246,10 @@ export default {
       </>
     ),
     depositField: {
-      label: "You deposit",
+      label: "Collateral",
     },
     borrowField: {
-      label: "You borrow",
+      label: "Borrow",
     },
     liquidationPriceField: {
       label: "ETH liquidation price",
