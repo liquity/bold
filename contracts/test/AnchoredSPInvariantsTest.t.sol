@@ -1196,4 +1196,58 @@ contract AnchoredSPInvariantsTest is DevTestSetup {
 
         invariant_allFundsClaimable();
     }
+
+    function testSPYieldBigDispropRedeem() external {
+        // coll = 490_098_347_574_376_811.735209341223553774 ether, debt = 65_346_446_343_250_241_564.694578829807169845 ether
+        vm.prank(barb);
+        handler.openTrove(65_340_180_846_456_745_712.365995789115062922 ether);
+
+        // coll = 750_071_917_808_219_163.080753424657534401 ether, debt = 100_009_589_041_095_888_410.767123287671253375 ether
+        vm.prank(gabe);
+        handler.openTrove(99_999_999_999_999_998_000.000000000000020497 ether);
+
+        // coll = 502_539_092_456_032_564.492320686560399734 ether, debt = 67_005_212_327_471_008_598.976091541386631089 ether
+        vm.prank(hope);
+        handler.openTrove(66_998_787_786_176_443_734.508398955185448923 ether);
+
+        // pulling `deposited` from fixture
+        vm.prank(carl);
+        handler.provideToSp(65_346_446_343_250_241_630.04102517305741141 ether, false);
+
+        // totalBoldDeposits = 65_346_446_343_250_241_630.04102517305741141 ether
+
+        vm.prank(eric);
+        handler.provideToSp(0.00000000000000052 ether, false);
+
+        // totalBoldDeposits = 65_346_446_343_250_241_630.04102517305741193 ether
+
+        vm.prank(barb);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 65.346446343250242085 ether
+        // P = 1_000_000_000.000000006962260387 ether
+
+        // coll = 53_550_456_698_134_716.302091267691508688 ether, debt = 7_140_060_893_084_628_840.27883569220115827 ether
+        vm.prank(eric);
+        handler.openTrove(7_139_376_295_357_676_734.290616044087341676 ether);
+
+        // pulling `deposited` from fixture
+        vm.prank(carl);
+        handler.provideToSp(67_005_212_327_471_008_598.976091541386631089 ether, false);
+
+        // totalBoldDeposits = 67_005_212_327_471_008_664.322537884636873174 ether
+
+        vm.prank(hope);
+        handler.liquidateMe();
+
+        // totalBoldDeposits = 65.346446343250242085 ether
+        // P = 975_244_224_641_600_008.705577453466833391 ether
+
+        // coll = 570_376_835_580_790_313.880152031558999999 ether, debt = 76_050_244_744_105_375_184.020270874533333148 ether
+        vm.prank(fran);
+        handler.openTrove(76_042_952_954_096_078_299.799742132137100824 ether);
+
+        // Very extreme edge case. It gets fixed with SCALE_SPAN = 3
+        // invariant_allFundsClaimable();
+    }
 }

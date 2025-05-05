@@ -1,6 +1,6 @@
 "use client";
 
-import type { MouseEvent, MutableRefObject, ReactNode, TouchEvent } from "react";
+import type { MouseEvent, ReactNode, RefObject, TouchEvent } from "react";
 
 import { a, useSpring } from "@react-spring/web";
 import { useEffect, useRef, useState } from "react";
@@ -292,7 +292,7 @@ function useKeyboardNavigation({
   onSelect,
   selected,
 }: {
-  isFocused: MutableRefObject<boolean>;
+  isFocused: RefObject<boolean>;
   itemsLength: number;
   onSelect: (
     index: number,
@@ -330,8 +330,8 @@ function useFocusSelected({
   isFocused,
   selected,
 }: {
-  container: MutableRefObject<HTMLDivElement | null>;
-  isFocused: MutableRefObject<boolean>;
+  container: RefObject<HTMLDivElement | null>;
+  isFocused: RefObject<boolean>;
   selected: number;
 }) {
   useEffect(() => {

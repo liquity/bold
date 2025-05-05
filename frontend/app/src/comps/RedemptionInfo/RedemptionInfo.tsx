@@ -1,7 +1,7 @@
-import { useBreakpointName } from "@/src/breakpoints";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import content from "@/src/content";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, IconExternal } from "@liquity2/uikit";
+import { IconExternal } from "@liquity2/uikit";
 import { a, useInView, useTransition } from "@react-spring/web";
 import { memo } from "react";
 
@@ -43,8 +43,6 @@ export const RedemptionInfo = memo(function RedemptionInfo() {
       },
     },
   );
-
-  const breakpointName = useBreakpointName();
 
   return (
     <section
@@ -150,7 +148,7 @@ export const RedemptionInfo = memo(function RedemptionInfo() {
       </ul>
 
       <div>
-        <AnchorTextButton
+        <LinkTextButton
           href={learnMore.href}
           rel="noopener noreferrer"
           target="_blank"

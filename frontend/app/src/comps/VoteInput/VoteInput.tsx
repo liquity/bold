@@ -1,4 +1,5 @@
 import type { Dnum } from "@/src/types";
+import type { RefObject } from "react";
 
 import { dnumMax, dnumMin } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
@@ -6,25 +7,27 @@ import { css } from "@/styled-system/css";
 import { IconDownvote, IconUpvote } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
-import { forwardRef, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Vote = "for" | "against";
 
-export const VoteInput = forwardRef<HTMLInputElement, {
+export function VoteInput({
+  againstDisabled,
+  forDisabled,
+  onChange,
+  onVote,
+  ref: forwardedRef,
+  value,
+  vote,
+}: {
   againstDisabled?: boolean;
   forDisabled?: boolean;
   onChange: (value: Dnum) => void;
   onVote: (vote: "for" | "against") => void;
   value: Dnum | null;
   vote: "for" | "against" | null;
-}>(({
-  againstDisabled,
-  forDisabled,
-  onChange,
-  onVote,
-  value,
-  vote,
-}, forwardedRef) => {
+  ref?: RefObject<HTMLInputElement | null>;
+}) {
   const [isFocused, setIsFocused] = useState(false);
 
   const [inputValue, setInputValue] = useState(
@@ -100,9 +103,7 @@ export const VoteInput = forwardRef<HTMLInputElement, {
       <input
         ref={(elt) => {
           inputRef.current = elt;
-          if (typeof forwardedRef === "function") {
-            forwardedRef(elt);
-          } else if (forwardedRef) {
+          if (forwardedRef) {
             forwardedRef.current = elt;
           }
         }}
@@ -149,7 +150,7 @@ export const VoteInput = forwardRef<HTMLInputElement, {
       />
     </div>
   );
-});
+}
 
 function VoteButton({
   disabled,

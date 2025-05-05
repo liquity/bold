@@ -17,7 +17,7 @@ import { a } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
-import { memo, useId, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
 import { match } from "ts-pattern";
 import { DelegateModal } from "./DelegateModal";
 import { IcStrategiesModal } from "./IcStrategiesModal";
@@ -69,14 +69,24 @@ export const InterestRateField = memo(
       rateTouchedForBranch.current = null;
     }
 
-    if (rateTouchedForBranch.current === null && averageInterestRate.data) {
-      rateTouchedForBranch.current = branchId;
-      setTimeout(() => {
-        if (averageInterestRate.data) {
-          onChange(averageInterestRate.data);
-        }
-      }, 0);
-    }
+    useEffect(() => {
+      let cancelled = false;
+      if (rateTouchedForBranch.current === null && averageInterestRate.data) {
+        rateTouchedForBranch.current = branchId;
+        setTimeout(() => {
+          if (averageInterestRate.data && !cancelled) {
+            onChange(averageInterestRate.data);
+          }
+        }, 0);
+        return () => {
+          cancelled = true;
+        };
+      }
+    }, [
+      averageInterestRate.data,
+      branchId,
+      onChange,
+    ]);
 
     const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
       onFocusChange: ({ parsed, focused }) => {

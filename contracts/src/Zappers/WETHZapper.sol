@@ -28,10 +28,12 @@ contract WETHZapper is BaseZapper {
         WETH.deposit{value: msg.value}();
 
         uint256 troveId;
+        // Include sender in index
+        uint256 index = _getTroveIndex(_params.ownerIndex);
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
-                _params.ownerIndex,
+                index,
                 msg.value - ETH_GAS_COMPENSATION,
                 _params.boldAmount,
                 _params.upperHint,
@@ -49,7 +51,7 @@ contract WETHZapper is BaseZapper {
                 openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
                     .OpenTroveAndJoinInterestBatchManagerParams({
                     owner: _params.owner,
-                    ownerIndex: _params.ownerIndex,
+                    ownerIndex: index,
                     collAmount: msg.value - ETH_GAS_COMPENSATION,
                     boldAmount: _params.boldAmount,
                     upperHint: _params.upperHint,
@@ -87,6 +89,7 @@ contract WETHZapper is BaseZapper {
     function withdrawCollToRawETH(uint256 _troveId, uint256 _amount) external {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        _requireZapperIsReceiver(_troveId);
 
         borrowerOperations.withdrawColl(_troveId, _amount);
 
@@ -99,6 +102,7 @@ contract WETHZapper is BaseZapper {
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
+        _requireZapperIsReceiver(_troveId);
 
         borrowerOperations.withdrawBold(_troveId, _boldAmount, _maxUpfrontFee);
 
@@ -224,6 +228,7 @@ contract WETHZapper is BaseZapper {
     function closeTroveToRawETH(uint256 _troveId) external {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        _requireZapperIsReceiver(_troveId);
 
         // pull Bold for repayment
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
@@ -239,6 +244,8 @@ contract WETHZapper is BaseZapper {
     function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external override {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        _requireZapperIsReceiver(_troveId);
+
         CloseTroveParams memory params =
             CloseTroveParams({troveId: _troveId, flashLoanAmount: _flashLoanAmount, receiver: receiver});
 
@@ -289,6 +296,7 @@ contract WETHZapper is BaseZapper {
 
     // Unimplemented flash loan receive functions for leverage
     function receiveFlashLoanOnOpenLeveragedTrove(
+        address _originalSender,
         ILeverageZapper.OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external virtual override {}

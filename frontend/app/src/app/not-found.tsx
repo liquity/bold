@@ -1,10 +1,9 @@
 "use client";
 
+import { LinkButton } from "@/src/comps/LinkButton/LinkButton";
 import { sleep } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { AnchorButton } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
-import Link from "next/link";
 
 export default function NotFoundPage() {
   return (
@@ -44,16 +43,11 @@ export default function NotFoundPage() {
           Let’s get you back on track.
         </p>
         <div className={css({ height: 32 })} />
-        <Link
+        <LinkButton
           href="/"
-          passHref
-          legacyBehavior
-        >
-          <AnchorButton
-            mode="primary"
-            label="Go to dashboard"
-          />
-        </Link>
+          label="Go to dashboard"
+          mode="primary"
+        />
       </div>
     </div>
   );

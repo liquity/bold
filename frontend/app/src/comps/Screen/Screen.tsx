@@ -241,32 +241,31 @@ function BackButton({
   label: ReactNode;
 }) {
   return (
-    <Link href={href} passHref legacyBehavior>
-      <a
-        className={css({
-          display: "flex",
-          alignItems: "center",
-          padding: "0 16px",
-          gap: 8,
-          color: "secondaryContent",
-          background: "secondary",
-          width: "fit-content",
-          whiteSpace: "nowrap",
-          borderRadius: 20,
-          _active: {
-            translate: "0 1px",
-          },
-          _focusVisible: {
-            outline: "2px solid token(colors.focused)",
-          },
-        })}
-        style={{
-          height: compact ? 34 : 40,
-        }}
-      >
-        <IconArrowBack size={20} />
-        {label}
-      </a>
+    <Link
+      href={href}
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        padding: "0 16px",
+        gap: 8,
+        color: "secondaryContent",
+        background: "secondary",
+        width: "fit-content",
+        whiteSpace: "nowrap",
+        borderRadius: 20,
+        _active: {
+          translate: "0 1px",
+        },
+        _focusVisible: {
+          outline: "2px solid token(colors.focused)",
+        },
+      })}
+      style={{
+        height: compact ? 34 : 40,
+      }}
+    >
+      <IconArrowBack size={20} />
+      {label}
     </Link>
   );
 }

@@ -37,7 +37,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collToken, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
+            collToken, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(msg.sender, _params)
         );
 
         // return leftovers to user
@@ -46,6 +46,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
     // Callback from the flash loan provider
     function receiveFlashLoanOnOpenLeveragedTrove(
+        address _originalSender,
         OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external override {
@@ -56,10 +57,11 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
         // Open trove
         uint256 troveId;
+        uint256 index = _getTroveIndex(_originalSender, _params.ownerIndex);
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
-                _params.ownerIndex,
+                index,
                 totalCollAmount,
                 _params.boldAmount,
                 _params.upperHint,
@@ -77,7 +79,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
                 openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
                     .OpenTroveAndJoinInterestBatchManagerParams({
                     owner: _params.owner,
-                    ownerIndex: _params.ownerIndex,
+                    ownerIndex: index,
                     collAmount: totalCollAmount,
                     boldAmount: _params.boldAmount,
                     upperHint: _params.upperHint,
@@ -108,6 +110,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
     function leverUpTrove(LeverUpTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
+        _requireZapperIsReceiver(_params.troveId);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -153,6 +156,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
     function leverDownTrove(LeverDownTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
+        _requireZapperIsReceiver(_params.troveId);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;

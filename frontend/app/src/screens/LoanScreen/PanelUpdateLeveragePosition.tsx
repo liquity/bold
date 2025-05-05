@@ -154,12 +154,10 @@ export function PanelUpdateLeveragePosition({
     && newLoanDetails.status !== "liquidatable"
     && (
       // either the deposit or the leverage factor has changed
-      !dn.eq(
+      (!dn.eq(
         initialLoanDetails.deposit ?? dnum18(0),
         newLoanDetails.deposit ?? dnum18(0),
-      ) || (
-        initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor
-      )
+      ) || (initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor))
     )
     // above the minimum debt
     && newLoanDetails.debt && dn.gt(newLoanDetails.debt, MIN_DEBT);

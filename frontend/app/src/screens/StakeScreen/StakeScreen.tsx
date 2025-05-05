@@ -1,12 +1,13 @@
 "use client";
 
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import content from "@/src/content";
 import { useStakePosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, Tabs, TokenIcon, VFlex } from "@liquity2/uikit";
+import { Tabs, TokenIcon, VFlex } from "@liquity2/uikit";
 import { useParams, useRouter } from "next/navigation";
 import { PanelRewards } from "./PanelRewards";
 import { PanelStaking } from "./PanelStaking";
@@ -43,7 +44,7 @@ export function StakeScreen() {
         subtitle: (
           <>
             {content.stakeScreen.subheading}{" "}
-            <AnchorTextButton
+            <LinkTextButton
               label={content.stakeScreen.learnMore[1]}
               href={content.stakeScreen.learnMore[0]}
               external

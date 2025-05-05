@@ -20,7 +20,6 @@ import { Governance } from "@/src/abi/Governance";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import {
-  DATA_REFRESH_INTERVAL,
   INTEREST_RATE_ADJ_COOLDOWN,
   INTEREST_RATE_END,
   INTEREST_RATE_INCREMENT_NORMAL,
@@ -173,7 +172,6 @@ export function useEarnPool(branchId: BranchId) {
         totalDeposited: dnum18(totalBoldDeposits),
       };
     },
-    refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: stats.isSuccess,
   });
 }
@@ -249,7 +247,6 @@ export function useEarnPosition(
     allowFailure: false,
     query: {
       enabled: Boolean(account),
-      refetchInterval: DATA_REFRESH_INTERVAL,
       select: setup.select,
     },
   });
@@ -288,7 +285,6 @@ export function useEarnPositionsByAccount(account: null | Address) {
   return useQuery({
     queryKey: ["StabilityPoolDepositsByAccount", account],
     queryFn,
-    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }
 
@@ -301,12 +297,16 @@ export function useStakePosition(address: null | Address) {
     ...Governance,
     functionName: "deriveUserProxyAddress",
     args: [address ?? "0x"],
-    query: { enabled: Boolean(address) },
+    query: {
+      enabled: Boolean(address),
+    },
   });
 
   const userProxyBalance = useBalance({
     address: userProxyAddress.data ?? "0x",
-    query: { enabled: Boolean(address) && userProxyAddress.isSuccess },
+    query: {
+      enabled: Boolean(address) && userProxyAddress.isSuccess,
+    },
   });
 
   const stakePosition = useReadContracts({
@@ -338,7 +338,6 @@ export function useStakePosition(address: null | Address) {
     ],
     query: {
       enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
-      refetchInterval: DATA_REFRESH_INTERVAL,
       select: ([
         depositResult,
         totalStakedResult,
@@ -383,7 +382,6 @@ export function useInterestRateBrackets(branchId: BranchId) {
   return useQuery({
     queryKey: ["InterestRateBrackets", branchId],
     queryFn,
-    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }
 
@@ -423,7 +421,6 @@ export function useAllInterestRateBrackets() {
   return useQuery({
     queryKey: ["AllInterestRateBrackets"],
     queryFn,
-    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }
 
@@ -492,7 +489,6 @@ export function useInterestRateChartData() {
 
       return chartData;
     },
-    refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: brackets.isSuccess,
   });
 }
@@ -544,7 +540,6 @@ export function usePredictOpenTroveUpfrontFee(
       ? [BigInt(branchId), borrowedAmount[0], interestRateOrBatch]
       : [BigInt(branchId), borrowedAmount[0], interestRateOrBatch[0]],
     query: {
-      refetchInterval: DATA_REFRESH_INTERVAL,
       select: dnum18,
     },
   });
@@ -564,7 +559,6 @@ export function usePredictAdjustTroveUpfrontFee(
       debtIncrease[0],
     ],
     query: {
-      refetchInterval: DATA_REFRESH_INTERVAL,
       select: dnum18,
     },
   });
@@ -597,7 +591,6 @@ export function usePredictAdjustInterestRateUpfrontFee(
         : newInterestRateOrBatch[0],
     ],
     query: {
-      refetchInterval: DATA_REFRESH_INTERVAL,
       select: dnum18,
     },
   });
@@ -714,7 +707,6 @@ export function useBranchDebt(branchId: BranchId) {
     ...BorrowerOperations,
     functionName: "getEntireBranchDebt",
     query: {
-      refetchInterval: DATA_REFRESH_INTERVAL,
       select: dnum18,
     },
   });
@@ -743,9 +735,6 @@ export function useLatestTroveData(branchId: BranchId, troveId: TroveId) {
     ...TroveManager,
     functionName: "getLatestTroveData",
     args: [BigInt(troveId)],
-    query: {
-      refetchInterval: DATA_REFRESH_INTERVAL,
-    },
   });
 }
 
@@ -862,7 +851,6 @@ export function useInterestBatchDelegates(
         })
         .filter((delegate) => delegate !== null);
     },
-    refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: batchAddresses.length > 0,
   });
 }
@@ -961,7 +949,6 @@ export function useLoanById(id?: null | PrefixedTroveId) {
   return useQuery<PositionLoanCommitted | null>({
     queryKey: ["TroveById", id],
     queryFn,
-    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }
 
@@ -1000,7 +987,6 @@ export function useLoansByAccount(account?: Address | null) {
   return useQuery({
     queryKey: ["TrovesByAccount", account],
     queryFn,
-    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }
 
@@ -1051,6 +1037,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
       return trovesByAccount[account.toLowerCase() as `0x${string}`] ?? [];
     },
     enabled: checkLegacyPositions,
+    staleTime: Infinity,
   });
 
   const legacyTroves = useReadContracts({
@@ -1068,7 +1055,6 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
     allowFailure: false,
     query: {
       enabled: checkLegacyPositions,
-      refetchInterval: DATA_REFRESH_INTERVAL,
       select: (results) => {
         return (
           results
@@ -1126,7 +1112,6 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
     allowFailure: false,
     query: {
       enabled: checkLegacyPositions,
-      refetchInterval: DATA_REFRESH_INTERVAL,
       select: (results) => {
         if (!LEGACY_CHECK) {
           throw new Error("LEGACY_CHECK not defined");
@@ -1160,7 +1145,6 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
     args: [account ?? "0x"],
     query: {
       enabled: checkLegacyPositions,
-      refetchInterval: DATA_REFRESH_INTERVAL,
     },
   });
 
@@ -1171,7 +1155,6 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
     args: [account ?? "0x"],
     query: {
       enabled: checkLegacyPositions,
-      refetchInterval: DATA_REFRESH_INTERVAL,
       select: ([
         unallocatedLQTY,
         _unallocatedOffset,
@@ -1208,7 +1191,6 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
       };
     },
     placeholderData: (data) => data,
-    refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: (
       checkLegacyPositions
       && legacyBoldBalance.isSuccess
@@ -1242,6 +1224,5 @@ export function useNextOwnerIndex(
   return useQuery({
     queryKey: ["NextTroveId", borrower, branchId],
     queryFn,
-    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }

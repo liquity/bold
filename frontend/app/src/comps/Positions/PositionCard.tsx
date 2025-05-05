@@ -1,8 +1,9 @@
-import type { HTMLAttributes, ReactElement, ReactNode } from "react";
+import type { HTMLAttributes, ReactElement, ReactNode, RefObject } from "react";
 
 import { IconArrowRight, LoadingSurface } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
-import { forwardRef, useState } from "react";
+import Link from "next/link";
+import { useState } from "react";
 import { css, cx } from "../../../styled-system/css";
 
 type Cell = {
@@ -12,23 +13,33 @@ type Cell = {
 
 type ElementOrString = ReactElement | string;
 
-export const PositionCard = forwardRef<
-  HTMLAnchorElement,
-  {
-    contextual?: ReactNode;
-    heading?: ElementOrString | ElementOrString[];
-    loading?: boolean;
-    main?: Cell;
-    secondary?: ReactNode;
-  } & HTMLAttributes<HTMLAnchorElement>
->(function PositionCard({
+const ALink = a(Link);
+
+export function PositionCard({
   contextual,
   heading,
+  href,
   loading,
   main,
+  ref,
   secondary,
   ...anchorProps
-}, ref) {
+}:
+  & HTMLAttributes<HTMLAnchorElement>
+  & (
+    & {
+      contextual?: ReactNode;
+      heading?: ElementOrString | ElementOrString[];
+      main?: Cell;
+      ref?: RefObject<HTMLAnchorElement>;
+      secondary?: ReactNode;
+    }
+    & (
+      | { href: string; loading?: boolean }
+      | { href?: string; loading: true }
+    )
+  ))
+{
   const [heading1, heading2] = Array.isArray(heading) ? heading : [heading];
 
   const [hovered, setHovered] = useState(false);
@@ -53,8 +64,9 @@ export const PositionCard = forwardRef<
   });
 
   return (
-    <a.a
+    <ALink
       ref={ref}
+      href={href ?? ""}
       {...anchorProps}
       onBlur={() => setActive(false)}
       onMouseDown={() => setActive(true)}
@@ -169,6 +181,6 @@ export const PositionCard = forwardRef<
         )}
         {secondary}
       </section>
-    </a.a>
+    </ALink>
   );
-});
+}

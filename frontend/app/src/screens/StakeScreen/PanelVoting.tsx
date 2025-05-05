@@ -3,6 +3,7 @@ import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocation, VoteAllo
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
@@ -20,16 +21,7 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { jsonStringifyWithBigInt } from "@/src/utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import {
-  AnchorTextButton,
-  Button,
-  IconDownvote,
-  IconEdit,
-  IconExternal,
-  IconUpvote,
-  shortenAddress,
-  VFlex,
-} from "@liquity2/uikit";
+import { Button, IconDownvote, IconEdit, IconExternal, IconUpvote, shortenAddress, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -352,7 +344,7 @@ export function PanelVoting() {
             justifyContent: "end",
           })}
         >
-          <AnchorTextButton
+          <LinkTextButton
             label={
               <>
                 Discuss
@@ -711,7 +703,7 @@ function InitiativeRow({
             )}
           </div>
           <div>
-            <AnchorTextButton
+            <LinkTextButton
               external
               href={`${CHAIN_BLOCK_EXPLORER?.url}address/${initiative.address}`}
               title={initiative.address}

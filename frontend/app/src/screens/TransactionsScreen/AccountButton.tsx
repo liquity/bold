@@ -1,8 +1,9 @@
 import type { Address } from "@/src/types";
 
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, shortenAddress } from "@liquity2/uikit";
+import { shortenAddress } from "@liquity2/uikit";
 import { blo } from "blo";
 import Image from "next/image";
 
@@ -12,7 +13,7 @@ export function AccountButton({
   address: Address;
 }) {
   return (
-    <AnchorTextButton
+    <LinkTextButton
       key="start"
       label={
         <div
