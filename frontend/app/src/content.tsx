@@ -311,8 +311,8 @@ export default {
     ),
     subheading: (
       <>
-        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. 
-        Also, the BOLD may be swapped to collateral in case the system needs to liquidate positions.
+        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, the BOLD may
+        be swapped to collateral in case the system needs to liquidate positions.
       </>
     ),
     learnMore: ["https://docs.liquity.org/v2-faq/bold-and-earn", "Learn more"],
