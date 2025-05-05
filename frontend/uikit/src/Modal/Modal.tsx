@@ -70,7 +70,7 @@ export function Modal({
         transform,
       }, item) => (
         item && (
-          <a.section
+          <div
             onMouseDown={({ target, currentTarget }) => {
               if (target === currentTarget) {
                 onClose();
@@ -80,93 +80,100 @@ export function Modal({
               position: "fixed",
               inset: 0,
               zIndex: 2,
-              display: "grid",
-              placeItems: "center",
-              overflowX: "auto",
-              background: "rgba(18, 27, 68, 0.7)",
             })}
-            style={{
-              overflowY: visible ? "scroll" : "hidden",
-              opacity: overlayOpacity,
-              pointerEvents: visible ? "auto" : "none",
-            }}
           >
-            <div
+            <a.section
               className={css({
-                display: "flex",
-                justifyContent: "center",
-                // this is to let the overlay handle the onMouseDown event
-                pointerEvents: "none",
+                position: "absolute",
+                inset: 0,
+                display: "grid",
+                placeItems: "center",
+                overflowX: "auto",
+                background: "rgba(18, 27, 68, 0.7)",
               })}
+              style={{
+                overflowY: visible ? "scroll" : "hidden",
+                opacity: overlayOpacity,
+                pointerEvents: visible ? "auto" : "none",
+              }}
             >
-              <FocusTrap
-                active={visible}
-                focusTrapOptions={{
-                  onDeactivate: onClose,
-                  allowOutsideClick: true,
-                }}
+              <div
+                className={css({
+                  display: "flex",
+                  justifyContent: "center",
+                  // this is to let the overlay handle the onMouseDown event
+                  pointerEvents: "none",
+                })}
               >
-                <div
-                  onMouseDown={({ target, currentTarget }) => {
-                    if (target === currentTarget) {
-                      onClose();
-                    }
+                <FocusTrap
+                  active={visible}
+                  focusTrapOptions={{
+                    onDeactivate: onClose,
+                    allowOutsideClick: true,
                   }}
-                  className={css({
-                    padding: 64,
-                    // and this is to re-enable the onMouseDown event
-                    pointerEvents: "auto",
-                  })}
                 >
-                  <a.div
-                    className={css({
-                      position: "relative",
-                      width: "100%",
-                      padding: 24,
-                      outline: "2px solid accent",
-                      background: "background",
-                      borderRadius: 8,
-                    })}
-                    style={{
-                      maxWidth,
-                      opacity,
-                      transform,
+                  <div
+                    onMouseDown={({ target, currentTarget }) => {
+                      if (target === currentTarget) {
+                        onClose();
+                      }
                     }}
+                    className={css({
+                      padding: 64,
+                      // and this is to re-enable the onMouseDown event
+                      pointerEvents: "auto",
+                    })}
                   >
-                    <div>
-                      {title && (
-                        <h1
-                          className={css({
-                            paddingBottom: 8,
-                            fontSize: 24,
-                          })}
-                        >
-                          {title}
-                        </h1>
-                      )}
-                      {children}
-                    </div>
-                    <div
+                    <a.div
                       className={css({
-                        position: "absolute",
-                        top: 24,
-                        right: 24,
-                        display: "flex",
+                        position: "relative",
+                        width: "100%",
+                        padding: 24,
+                        outline: "2px solid accent",
+                        background: "background",
+                        borderRadius: 8,
                       })}
+                      style={{
+                        maxWidth,
+                        opacity,
+                        transform,
+                      }}
                     >
-                      <TextButton
-                        label={<IconCross size={32} />}
-                        onClick={onClose}
+                      <div>
+                        {title && (
+                          <h1
+                            className={css({
+                              paddingBottom: 8,
+                              fontSize: 24,
+                            })}
+                          >
+                            {title}
+                          </h1>
+                        )}
+                        {children}
+                      </div>
+                      <div
                         className={css({
-                          color: "content!",
+                          position: "absolute",
+                          top: 24,
+                          right: 24,
+                          display: "flex",
                         })}
-                      />
-                    </div>
-                  </a.div>
-                </div>
-              </FocusTrap>
-            </div>
-          </a.section>
+                      >
+                        <TextButton
+                          label={<IconCross size={32} />}
+                          onClick={onClose}
+                          className={css({
+                            color: "content!",
+                          })}
+                        />
+                      </div>
+                    </a.div>
+                  </div>
+                </FocusTrap>
+              </div>
+            </a.section>
+          </div>
         )
       ))}
     </Root>

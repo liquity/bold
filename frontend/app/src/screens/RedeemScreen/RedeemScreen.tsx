@@ -117,7 +117,9 @@ export function RedeemScreen() {
                     <TextButton
                       label={`Max ${fmtnum(boldBalance.data)} BOLD`}
                       onClick={() => {
-                        amount.setValue(dn.toString(boldBalance.data));
+                        if (boldBalance.data) {
+                          amount.setValue(dn.toString(boldBalance.data));
+                        }
                       }}
                     />
                   )

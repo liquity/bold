@@ -164,12 +164,12 @@ export const legacyCloseLoanPosition: FlowDeclaration<LegacyCloseLoanPositionReq
       throw new Error("BOLD token address not available");
     }
     const isBoldApproved = !dn.gt(trove.borrowed, [
-      await ctx.readContract({
+      (await ctx.readContract({
         abi: erc20Abi,
         address: LEGACY_CHECK.BOLD_TOKEN,
         functionName: "allowance",
         args: [ctx.account, branch.LEVERAGE_ZAPPER],
-      }) ?? 0n,
+      })) ?? 0n,
       18,
     ]);
 

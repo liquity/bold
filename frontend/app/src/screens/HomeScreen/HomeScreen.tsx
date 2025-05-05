@@ -3,6 +3,7 @@
 import type { CollateralSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { DNUM_1 } from "@/src/dnum-utils";
 import {
@@ -15,9 +16,8 @@ import {
 } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
+import { IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
-import Link from "next/link";
 import { HomeTable } from "./HomeTable";
 
 export function HomeScreen() {
@@ -144,50 +144,40 @@ function BorrowingRow({
             justifyContent: "flex-end",
           })}
         >
-          <Link
+          <LinkTextButton
             href={`/borrow/${symbol.toLowerCase()}`}
-            legacyBehavior
-            passHref
-          >
-            <AnchorTextButton
-              label={
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    fontSize: 14,
-                  })}
-                >
-                  Borrow
-                  <TokenIcon symbol="BOLD" size="mini" />
-                </div>
-              }
-              title={`Borrow ${collateral?.name} from ${symbol}`}
-            />
-          </Link>
-          <Link
+            label={
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 14,
+                })}
+              >
+                Borrow
+                <TokenIcon symbol="BOLD" size="mini" />
+              </div>
+            }
+            title={`Borrow ${collateral?.name} from ${symbol}`}
+          />
+          <LinkTextButton
             href={`/multiply/${symbol.toLowerCase()}`}
-            legacyBehavior
-            passHref
-          >
-            <AnchorTextButton
-              label={
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    fontSize: 14,
-                  })}
-                >
-                  Multiply
-                  <TokenIcon symbol={symbol} size="mini" />
-                </div>
-              }
-              title={`Borrow ${collateral?.name} from ${symbol}`}
-            />
-          </Link>
+            label={
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  fontSize: 14,
+                })}
+              >
+                Multiply
+                <TokenIcon symbol={symbol} size="mini" />
+              </div>
+            }
+            title={`Borrow ${collateral?.name} from ${symbol}`}
+          />
         </div>
       </td>
     </tr>
@@ -240,31 +230,26 @@ function EarnRewardsRow({
         />
       </td>
       <td>
-        <Link
+        <LinkTextButton
           href={`/earn/${symbol.toLowerCase()}`}
-          legacyBehavior
-          passHref
-        >
-          <AnchorTextButton
-            label={
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  fontSize: 14,
-                })}
-              >
-                Earn
-                <TokenIcon.Group size="mini">
-                  <TokenIcon symbol="BOLD" />
-                  <TokenIcon symbol={symbol} />
-                </TokenIcon.Group>
-              </div>
-            }
-            title={`Earn BOLD with ${collateral?.name}`}
-          />
-        </Link>
+          label={
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 14,
+              })}
+            >
+              Earn
+              <TokenIcon.Group size="mini">
+                <TokenIcon symbol="BOLD" />
+                <TokenIcon symbol={symbol} />
+              </TokenIcon.Group>
+            </div>
+          }
+          title={`Earn BOLD with ${collateral?.name}`}
+        />
       </td>
     </tr>
   );

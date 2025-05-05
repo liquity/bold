@@ -127,7 +127,7 @@ export function PercentageBars({
         <mask id={barsMaskId}>
           {barsTransitions((props, [value], _state, index) =>
             value !== undefined && ( // type guard, should never be undefined
-              <a.rect
+              (<a.rect
                 key={index}
                 fill="#fff"
                 height={value * height}
@@ -139,7 +139,7 @@ export function PercentageBars({
                 className={css({
                   transformOrigin: "0 100%",
                 })}
-              />
+              />)
             )
           )}
         </mask>

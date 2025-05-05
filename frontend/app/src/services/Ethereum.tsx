@@ -40,6 +40,7 @@ export const wagmiConfig = createConfig(
         multicall3: { address: CHAIN_CONTRACT_MULTICALL },
       },
     }],
+    enableFamily: false,
     ssr: true,
     transports: { [CHAIN_ID]: http(CHAIN_RPC_URL) },
     walletConnectProjectId: WALLET_CONNECT_PROJECT_ID,

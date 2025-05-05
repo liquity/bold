@@ -4,13 +4,14 @@ import type { FlowStepStatus } from "@/src/services/TransactionFlow";
 import type { ComponentProps, ReactNode } from "react";
 
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
+import { LinkButton } from "@/src/comps/LinkButton/LinkButton";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
-import { AnchorButton, AnchorTextButton, Button, HFlex, IconCross, VFlex } from "@liquity2/uikit";
+import { Button, HFlex, IconCross, VFlex } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
-import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import { match, P } from "ts-pattern";
 
@@ -209,18 +210,13 @@ export function TransactionsScreen() {
         >
           {step.status === "confirmed"
             ? (
-              <Link
+              <LinkButton
                 href={flow.request.successLink[0]}
-                legacyBehavior
-                passHref
-              >
-                <AnchorButton
-                  label={flow.request.successLink[1]}
-                  mode="positive"
-                  size="large"
-                  wide
-                />
-              </Link>
+                label={flow.request.successLink[1]}
+                mode="positive"
+                size="large"
+                wide
+              />
             )
             : (
               <Button
@@ -690,13 +686,10 @@ function NoTransactionsScreen() {
               >
                 <div>No ongoing transactions.</div>
                 <div>
-                  <Link
+                  <LinkTextButton
                     href="/"
-                    legacyBehavior
-                    passHref
-                  >
-                    <AnchorTextButton label="Go to the dashboard" />
-                  </Link>
+                    label="Go to the dashboard"
+                  />
                 </div>
               </div>
             </a.div>

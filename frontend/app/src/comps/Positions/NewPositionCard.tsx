@@ -58,7 +58,7 @@ const ANIMATE_ICONS = true;
 export function NewPositionCard() {
   const [hovered, setHovered_] = useState(-1);
 
-  const delayedSetHovered = useRef<ReturnType<typeof setTimeout>>();
+  const delayedSetHovered = useRef<ReturnType<typeof setTimeout>>(undefined);
   const setHovered = (index: number, delay: number = 0) => {
     clearTimeout(delayedSetHovered.current);
     delayedSetHovered.current = setTimeout(() => {
