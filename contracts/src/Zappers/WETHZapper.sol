@@ -241,13 +241,20 @@ contract WETHZapper is BaseZapper {
         require(success, "WZ: Sending ETH failed");
     }
 
-    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external override {
+    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount, uint256 _minExpectedCollateral)
+        external
+        override
+    {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
         _requireZapperIsReceiver(_troveId);
 
-        CloseTroveParams memory params =
-            CloseTroveParams({troveId: _troveId, flashLoanAmount: _flashLoanAmount, receiver: receiver});
+        CloseTroveParams memory params = CloseTroveParams({
+            troveId: _troveId,
+            flashLoanAmount: _flashLoanAmount,
+            minExpectedCollateral: _minExpectedCollateral,
+            receiver: receiver
+        });
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -271,6 +278,8 @@ contract WETHZapper is BaseZapper {
         require(msg.sender == address(flashLoanProvider), "WZ: Caller not FlashLoan provider");
 
         LatestTroveData memory trove = troveManager.getLatestTroveData(_params.troveId);
+        uint256 collLeft = trove.entireColl + ETH_GAS_COMPENSATION - _params.flashLoanAmount;
+        require(collLeft >= _params.minExpectedCollateral, "WZ: Not enough collateral received");
 
         // Swap Coll from flash loan to Bold, so we can repay and close trove
         // We swap the flash loan minus the flash loan fee
@@ -286,7 +295,6 @@ contract WETHZapper is BaseZapper {
         WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
 
         // Send coll left and gas compensation
-        uint256 collLeft = trove.entireColl + ETH_GAS_COMPENSATION - _params.flashLoanAmount;
         WETH.withdraw(collLeft);
         (bool success,) = _params.receiver.call{value: collLeft}("");
         require(success, "WZ: Sending ETH failed");
