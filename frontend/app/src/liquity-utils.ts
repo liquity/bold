@@ -185,7 +185,7 @@ export function useVault() {
   };
 }
 
-export function isWhitelistedUser(whitelist: Address, callingContract: Address, user: Address) {
+export function useIsWhitelistedUser(whitelist: Address, callingContract: Address, user: Address) {
     const isWhitelistedUser = useReadContracts({
       // @ts-ignore
       contracts: [{

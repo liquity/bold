@@ -5,7 +5,7 @@ import {
   getBranch,
   getBranches,
   getCollToken,
-  isWhitelistedUser,
+  useIsWhitelistedUser,
   useProtocolOwner,
 } from "@/src/liquity-utils";
 import { Field } from "@/src/comps/Field/Field";
@@ -36,7 +36,7 @@ export function WhitelistScreen() {
 
   const branches = getBranches();
   const [collSymbol, setCollSymbol] = useState<string>(branches[0]?.symbol);
-  const [whitelistContract, setWhitelistContract] = useState<number>(0);
+  const [contractIndex, setContractIndex] = useState<number>(0);
 
   if (!isCollateralSymbol(collSymbol)) {
     throw new Error(`Invalid collateral symbol: ${collSymbol}`);
@@ -44,25 +44,32 @@ export function WhitelistScreen() {
 
   const collaterals = branches.map((b) => getCollToken(b.branchId));
 
+  const protocolContractsFilter = [
+    "BorrowerOperations",
+    "StabilityPool",
+    "TroveManager",
+    "TroveNFT",
+  ]; // contracts that require whitelisting
   const branch = getBranch(collSymbol);
-  const branchNames = Object.keys(branch.contracts);
+  const branchContractNames = Object.keys(branch.contracts).filter((name) =>
+    protocolContractsFilter.includes(name)
+  );
 
   const whitelist = getBranchContract(branch.branchId, "Whitelist");
 
-  const [isWhitelisted, setIsWhitelisted] = useState<boolean>(false);
   const [user, setUser] = useState<Address>();
-  const [callingContract, setCallingContract] = useState<Address>(
-    branch.contracts[branchNames[0]].address
+  const [whitelistedContract, setWhitelistedContract] = useState<Address>(
+    branch.contracts[branchContractNames[0]].address
   );
   const [showPage, setShowPage] = useState<boolean>(false);
 
   const disableWhitelist = whitelist.address == zeroAddress;
   const disableButton =
-    disableWhitelist || callingContract == zeroAddress || user == undefined;
+    disableWhitelist || whitelistedContract == zeroAddress || user == undefined;
 
-  const checkWhitelist = isWhitelistedUser(
+  const isWhitelistedUser = useIsWhitelistedUser(
     whitelist.address,
-    callingContract,
+    whitelistedContract,
     user
   );
 
@@ -74,10 +81,6 @@ export function WhitelistScreen() {
       router.push("/");
     }
   }, [account]);
-
-  const handleCheckWhitelist = () => {
-    setIsWhitelisted(checkWhitelist);
-  };
 
   const handleUser = (value) => {
     setUser(value);
@@ -133,19 +136,19 @@ export function WhitelistScreen() {
               >
                 Select Branch Contract to Whitelist
                 <Dropdown
-                  items={branchNames.map((contract) => ({
+                  items={branchContractNames.map((contract) => ({
                     icon: <></>,
                     label: contract,
                   }))}
                   menuPlacement="end"
                   menuWidth={600}
                   onSelect={(index) => {
-                    setWhitelistContract(index);
-                    setCallingContract(
-                      branch.contracts[branchNames[index]].address
+                    setContractIndex(index);
+                    setWhitelistedContract(
+                      branch.contracts[branchContractNames[index]].address
                     );
                   }}
-                  selected={whitelistContract}
+                  selected={contractIndex}
                 />
               </div>
             )}
@@ -164,9 +167,14 @@ export function WhitelistScreen() {
               }
             />
 
-            {`Whitelist: ${whitelist.address}`}
-            <br></br>
-            {`User is whitelisted: ${isWhitelisted}`}
+            {`Whitelist Contract Address: ${whitelist.address}`}
+            {user && (
+              <WhitelistStatus
+                user={user}
+                isWhitelistedUser={isWhitelistedUser}
+                contractName={branchContractNames[contractIndex]}
+              />
+            )}
 
             <div
               style={{
@@ -178,16 +186,7 @@ export function WhitelistScreen() {
               }}
             >
               <Button
-                disabled={disableButton}
-                label={"Check User Whitelist Status"}
-                mode="primary"
-                size="medium"
-                shape="rectangular"
-                wide
-                onClick={handleCheckWhitelist}
-              />
-              <Button
-                disabled={disableButton}
+                disabled={disableButton || isWhitelistedUser}
                 label={"Add to whitelist"}
                 mode="primary"
                 size="medium"
@@ -200,13 +199,13 @@ export function WhitelistScreen() {
                     successLink: ["/whitelist", "Go to the Owner page"],
                     successMessage: "Added user",
                     whitelist: whitelist.address,
-                    callingContract,
+                    callingContract: whitelistedContract,
                     user,
                   });
                 }}
               />
               <Button
-                disabled={disableButton}
+                disabled={disableButton || !isWhitelistedUser}
                 label={"Remove from whitelist"}
                 mode="primary"
                 size="medium"
@@ -219,7 +218,7 @@ export function WhitelistScreen() {
                     successLink: ["/whitelist", "Go to the Owner page"],
                     successMessage: "Added user",
                     whitelist: whitelist.address,
-                    callingContract,
+                    callingContract: whitelistedContract,
                     user,
                   });
                 }}
@@ -228,6 +227,43 @@ export function WhitelistScreen() {
           </div>
         </Screen>
       )}
+    </>
+  );
+}
+
+export function WhitelistStatus({ user, isWhitelistedUser, contractName }) {
+  let statusMessage = `User ${user} `;
+  let statusColor;
+
+  if (isWhitelistedUser === true) {
+    statusMessage = statusMessage.concat(
+      `is whitelisted to transact with the ${contractName} contract`
+    );
+    statusColor = "green";
+  } else if (isWhitelistedUser === false) {
+    statusMessage = statusMessage.concat(
+      `is NOT whitelisted to transact with the ${contractName} contract`
+    );
+    statusColor = "red";
+  } else {
+    statusMessage = "Invalid User";
+  }
+
+  return (
+    <>
+      <div
+        style={{
+          fontSize: "2rem",
+          fontWeight: "bold",
+          color: "white",
+          marginTop: "10px",
+        }}
+      >
+        USER WHITELIST STATUS
+        <p style={{ fontSize: "1rem", fontWeight: "bold", color: statusColor }}>
+          {statusMessage}
+        </p>
+      </div>
     </>
   );
 }
