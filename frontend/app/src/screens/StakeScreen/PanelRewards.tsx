@@ -3,7 +3,6 @@ import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { getProtocolContract } from "@/src/contracts";
 import { useDemoMode } from "@/src/demo-mode";
@@ -11,17 +10,15 @@ import { ACCOUNT_STAKED_LQTY } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { useStakePosition } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, TokenIcon, VFlex } from "@liquity2/uikit";
+import { HFlex, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { encodeFunctionData, zeroAddress } from "viem";
 import { useEstimateGas, useGasPrice } from "wagmi";
 
 export function PanelRewards() {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
   const demoMode = useDemoMode();
 
   const ethPrice = usePrice("ETH");

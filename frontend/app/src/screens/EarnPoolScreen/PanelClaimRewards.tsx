@@ -8,7 +8,6 @@ import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { getCollToken } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, TokenIcon, VFlex } from "@liquity2/uikit";
@@ -22,7 +21,6 @@ export function PanelClaimRewards({
   position?: PositionEarn;
 }) {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
 
   const collateral = getCollToken(branchId);
   if (!collateral) {

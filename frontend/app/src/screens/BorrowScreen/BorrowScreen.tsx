@@ -17,7 +17,6 @@ import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import { getBranch, getBranches, getCollToken, useNextOwnerIndex } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalances } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -51,7 +50,6 @@ export function BorrowScreen() {
 
   const router = useRouter();
   const account = useAccount();
-  const txFlow = useTransactionFlow();
 
   const branch = getBranch(collSymbol);
   const collateral = getCollToken(branch.id);

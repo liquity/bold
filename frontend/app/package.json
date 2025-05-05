@@ -32,7 +32,7 @@
     "blo": "^2.0.0",
     "connectkit": "^1.9.0",
     "dnum": "^2.14.0",
-    "focus-trap-react": "^10.3.1",
+    "focus-trap-react": "^11.0.3",
     "geist": "^1.4.1",
     "next": "15.3.1",
     "react": "19.1.0",

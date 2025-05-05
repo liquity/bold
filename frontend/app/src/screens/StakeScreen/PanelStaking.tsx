@@ -9,7 +9,6 @@ import { fmtnum } from "@/src/formatting";
 import { useGovernanceStats, useGovernanceUser } from "@/src/liquity-governance";
 import { useStakePosition } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -19,7 +18,6 @@ import { useState } from "react";
 
 export function PanelStaking() {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
   const lqtyPrice = usePrice("LQTY");
 
   const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
