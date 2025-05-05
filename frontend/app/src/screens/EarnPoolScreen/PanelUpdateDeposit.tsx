@@ -158,7 +158,11 @@ export function PanelUpdateDeposit({
                 ? boldBalance.data && (
                   <TextButton
                     label={dn.gt(boldBalance.data, 0) ? `Max ${fmtnum(boldBalance.data, 2)} BOLD` : null}
-                    onClick={() => setValue(dn.toString(boldBalance.data))}
+                    onClick={() => {
+                      if (boldBalance.data) {
+                        setValue(dn.toString(boldBalance.data));
+                      }
+                    }}
                   />
                 )
                 : position?.deposit && dn.gt(position.deposit, 0) && (
