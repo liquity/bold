@@ -1681,7 +1681,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
             amountOutMinimum: 0
         });
 
-        uint256 amountOut = uniV3Router.exactInput(params);
+        uniV3Router.exactInput(params);
         vm.stopPrank();
 
         vm.startPrank(A);

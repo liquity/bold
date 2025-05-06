@@ -278,7 +278,7 @@ contract WETHZapper is BaseZapper {
         require(msg.sender == address(flashLoanProvider), "WZ: Caller not FlashLoan provider");
 
         LatestTroveData memory trove = troveManager.getLatestTroveData(_params.troveId);
-        uint256 collLeft = trove.entireColl + ETH_GAS_COMPENSATION - _params.flashLoanAmount;
+        uint256 collLeft = trove.entireColl - _params.flashLoanAmount;
         require(collLeft >= _params.minExpectedCollateral, "WZ: Not enough collateral received");
 
         // Swap Coll from flash loan to Bold, so we can repay and close trove
@@ -294,9 +294,10 @@ contract WETHZapper is BaseZapper {
         // Send coll back to return flash loan
         WETH.transfer(address(flashLoanProvider), _params.flashLoanAmount);
 
+        uint256 ethToSendBack = collLeft + ETH_GAS_COMPENSATION;
         // Send coll left and gas compensation
-        WETH.withdraw(collLeft);
-        (bool success,) = _params.receiver.call{value: collLeft}("");
+        WETH.withdraw(ethToSendBack);
+        (bool success,) = _params.receiver.call{value: ethToSendBack}("");
         require(success, "WZ: Sending ETH failed");
     }
 
