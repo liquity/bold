@@ -217,11 +217,14 @@ contract E2ETest is Test, UseDeployment, TroveId {
         }
         uint256 troveId = addressToTroveIdThroughZapper(address(zapper), owner, ownerIndex);
         uint256 debt = branches[i].troveManager.getLatestTroveData(troveId).entireDebt;
+        uint256 coll = branches[i].troveManager.getLatestTroveData(troveId).entireColl;
+        uint256 flashLoanAmount = debt * (1 ether + PRICE_TOLERANCE) / branches[i].priceFeed.getPrice();
 
         vm.startPrank(owner);
         zapper.closeTroveFromCollateral({
             _troveId: troveId,
-            _flashLoanAmount: debt * (1 ether + PRICE_TOLERANCE) / branches[i].priceFeed.getPrice()
+            _flashLoanAmount: flashLoanAmount,
+            _minExpectedCollateral: coll - flashLoanAmount
         });
         vm.stopPrank();
 

@@ -244,13 +244,20 @@ contract GasCompZapper is BaseZapper {
         require(success, "GCZ: Sending ETH failed");
     }
 
-    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external override {
+    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount, uint256 _minExpectedCollateral)
+        external
+        override
+    {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
         _requireZapperIsReceiver(_troveId);
 
-        CloseTroveParams memory params =
-            CloseTroveParams({troveId: _troveId, flashLoanAmount: _flashLoanAmount, receiver: receiver});
+        CloseTroveParams memory params = CloseTroveParams({
+            troveId: _troveId,
+            flashLoanAmount: _flashLoanAmount,
+            minExpectedCollateral: _minExpectedCollateral,
+            receiver: receiver
+        });
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -274,6 +281,8 @@ contract GasCompZapper is BaseZapper {
         require(msg.sender == address(flashLoanProvider), "GCZ: Caller not FlashLoan provider");
 
         LatestTroveData memory trove = troveManager.getLatestTroveData(_params.troveId);
+        uint256 collLeft = trove.entireColl - _params.flashLoanAmount;
+        require(collLeft >= _params.minExpectedCollateral, "GCZ: Not enough collateral received");
 
         // Swap Coll from flash loan to Bold, so we can repay and close trove
         // We swap the flash loan minus the flash loan fee
@@ -289,7 +298,7 @@ contract GasCompZapper is BaseZapper {
         collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
 
         // Send coll left
-        collToken.safeTransfer(_params.receiver, trove.entireColl - _params.flashLoanAmount);
+        collToken.safeTransfer(_params.receiver, collLeft);
 
         // Send gas compensation
         WETH.withdraw(ETH_GAS_COMPENSATION);
