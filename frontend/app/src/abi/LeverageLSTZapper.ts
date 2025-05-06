@@ -262,7 +262,7 @@ export const LeverageLSTZapper = [
   {
     "type": "function",
     "name": "receiveFlashLoanOnOpenLeveragedTrove",
-    "inputs": [{
+    "inputs": [{ "name": "_originalSender", "type": "address", "internalType": "address" }, {
       "name": "_params",
       "type": "tuple",
       "internalType": "struct ILeverageZapper.OpenLeveragedTroveParams",

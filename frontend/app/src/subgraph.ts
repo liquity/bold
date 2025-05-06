@@ -29,6 +29,7 @@ async function graphQuery<TResult, TVariables>(
   const result = await response.json();
 
   if (!result.data) {
+    console.error(result);
     throw new Error("Invalid response from the subgraph");
   }
 

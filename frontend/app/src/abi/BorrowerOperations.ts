@@ -8,6 +8,13 @@ export const BorrowerOperations = [
   },
   {
     "type": "function",
+    "name": "BCR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
     "name": "CCR",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
@@ -181,6 +188,17 @@ export const BorrowerOperations = [
     "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
     "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "kickFromBatch",
+    "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }, {
+      "name": "_upperHint",
+      "type": "uint256",
+      "internalType": "uint256",
+    }, { "name": "_lowerHint", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
   },
   {
     "type": "function",
@@ -500,6 +518,7 @@ export const BorrowerOperations = [
   { "type": "error", "name": "BatchInterestRateChangePeriodNotPassed", "inputs": [] },
   { "type": "error", "name": "BatchManagerExists", "inputs": [] },
   { "type": "error", "name": "BatchManagerNotNew", "inputs": [] },
+  { "type": "error", "name": "BatchSharesRatioTooLow", "inputs": [] },
   { "type": "error", "name": "CallerNotPriceFeed", "inputs": [] },
   { "type": "error", "name": "CallerNotTroveManager", "inputs": [] },
   { "type": "error", "name": "CollWithdrawalTooHigh", "inputs": [] },
@@ -507,6 +526,7 @@ export const BorrowerOperations = [
   { "type": "error", "name": "DelegateInterestRateChangePeriodNotPassed", "inputs": [] },
   { "type": "error", "name": "EmptyManager", "inputs": [] },
   { "type": "error", "name": "ICRBelowMCR", "inputs": [] },
+  { "type": "error", "name": "ICRBelowMCRPlusBCR", "inputs": [] },
   { "type": "error", "name": "InterestNotInRange", "inputs": [] },
   { "type": "error", "name": "InterestRateNotNew", "inputs": [] },
   { "type": "error", "name": "InterestRateTooHigh", "inputs": [] },
