@@ -130,7 +130,6 @@ export function LegacyScreen() {
                     display: "flex",
                     flexDirection: "column",
                     gap: 48,
-                    width: 534,
                   })}
                 >
                   <EarnPositionsTable />
