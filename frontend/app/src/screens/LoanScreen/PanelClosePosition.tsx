@@ -1,5 +1,6 @@
 import type { PositionLoanCommitted } from "@/src/types";
 
+import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Field } from "@/src/comps/Field/Field";
@@ -10,9 +11,8 @@ import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, Button, Dropdown, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
+import { addressesEqual, Button, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useState } from "react";
 
 export function PanelClosePosition({
   loan,
@@ -29,7 +29,9 @@ export function PanelClosePosition({
   const boldPriceUsd = usePrice("BOLD");
   const boldBalance = useBalance(account.address, "BOLD");
 
-  const [repayDropdownIndex, setRepayDropdownIndex] = useState(0);
+  // const [repayDropdownIndex, setRepayDropdownIndex] = useState(0);
+  const repayDropdownIndex = 0;
+
   const repayToken = TOKENS_BY_SYMBOL[repayDropdownIndex === 0 ? "BOLD" : collateral.symbol];
 
   // either in BOLD or in collateral
@@ -104,15 +106,18 @@ export function PanelClosePosition({
               >
                 <div
                   className={css({
-                    display: "flex",
-                    gap: 16,
+                    display: "grid",
                     fontSize: 28,
                     lineHeight: 1,
                   })}
                 >
-                  {fmtnum(amountToRepay)}
+                  <Amount
+                    value={amountToRepay}
+                    title={{ suffix: " BOLD" }}
+                  />
                 </div>
-                <Dropdown
+                {
+                  /*<Dropdown
                   buttonDisplay={() => ({
                     icon: <TokenIcon symbol={repayToken.symbol} />,
                     label: (
@@ -148,7 +153,27 @@ export function PanelClosePosition({
                   menuPlacement="end"
                   onSelect={setRepayDropdownIndex}
                   selected={repayDropdownIndex}
-                />
+                />*/
+                }
+                <div
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    height: 40,
+                    padding: "0 16px 0 8px",
+                    fontSize: 24,
+                    background: "fieldSurface",
+                    borderRadius: 20,
+                    userSelect: "none",
+                  })}
+                >
+                  <TokenIcon
+                    symbol="BOLD"
+                    size={24}
+                  />
+                  <div>BOLD</div>
+                </div>
               </div>
             }
             footer={{

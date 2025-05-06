@@ -720,8 +720,7 @@ function GridItem({
   return (
     <div
       className={css({
-        display: "flex",
-        flexDirection: "column",
+        display: "grid",
         gap: 4,
         fontSize: 14,
       })}
@@ -729,10 +728,20 @@ function GridItem({
       <div
         title={title}
         className={css({
+          minWidth: 0,
           color: "strongSurfaceContentAlt",
         })}
       >
-        {label}
+        <div
+          title={label}
+          className={css({
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+          })}
+        >
+          {label}
+        </div>
       </div>
       <div
         className={css({

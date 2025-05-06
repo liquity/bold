@@ -3,6 +3,8 @@
 
 import type { ReactNode as N } from "react";
 
+import { css } from "@/styled-system/css";
+
 export default {
   // Used in the top bar and other places
   appName: "Liquity V2",
@@ -238,16 +240,16 @@ export default {
 
   // Borrow screen
   borrowScreen: {
-    headline: (tokensIcons: N, boldIcon: N) => (
+    headline: (eth: N, bold: N) => (
       <>
-        Borrow {boldIcon} BOLD with {tokensIcons} ETH
+        Borrow {bold} with {eth}
       </>
     ),
     depositField: {
-      label: "You deposit",
+      label: "Collateral",
     },
     borrowField: {
-      label: "You borrow",
+      label: "Borrow",
     },
     liquidationPriceField: {
       label: "ETH liquidation price",
@@ -304,9 +306,11 @@ export default {
 
   // Earn home screen
   earnHome: {
-    headline: (tokensIcons: N, boldIcon: N) => (
+    headline: (rewards: N, bold: N) => (
       <>
-        Deposit {boldIcon} BOLD to earn rewards {tokensIcons}
+        Deposit
+        <NoWrap>{bold} BOLD</NoWrap>
+        to earn <NoWrap>rewards {rewards}</NoWrap>
       </>
     ),
     subheading: (
@@ -480,5 +484,28 @@ function Link({
     <a href={href} {...props}>
       {children}
     </a>
+  );
+}
+
+function NoWrap({
+  children,
+  gap = 8,
+}: {
+  children: N;
+  gap?: number;
+}) {
+  return (
+    <span
+      className={css({
+        display: "inline-flex",
+        alignItems: "center",
+        whiteSpace: "nowrap",
+      })}
+      style={{
+        gap,
+      }}
+    >
+      {children}
+    </span>
   );
 }

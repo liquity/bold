@@ -2,19 +2,18 @@ import type { BranchId, PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getCollToken, isEarnPositionActive, useEarnPool } from "@/src/liquity-utils";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, Checkbox, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
+import { Checkbox, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
@@ -30,7 +29,6 @@ export function PanelUpdateDeposit({
   position?: PositionEarn;
 }) {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
 
   const [mode, setMode] = useState<ValueUpdateMode>("add");
   const [value, setValue] = useState("");
@@ -254,14 +252,10 @@ export function PanelUpdateDeposit({
             )}
           </HFlex>
         )}
-        <ConnectWarningBox />
-        <Button
+
+        <FlowButton
           disabled={!allowSubmit}
-          label={content.earnScreen.depositPanel.action}
-          mode="primary"
-          size="large"
-          wide
-          onClick={() => {
+          request={() => {
             if (
               !account.address
               || !collateral
@@ -269,7 +263,7 @@ export function PanelUpdateDeposit({
               || !poolDeposit
               || !updatedPoolDeposit
             ) {
-              return;
+              return null;
             }
 
             const prevEarnPosition = position ?? {
@@ -280,7 +274,7 @@ export function PanelUpdateDeposit({
               rewards: { bold: DNUM_0, coll: DNUM_0 },
             };
 
-            txFlow.start({
+            return {
               flowId: "earnUpdate",
               backLink: [
                 `/earn/${collateral.name.toLowerCase()}`,
@@ -300,7 +294,7 @@ export function PanelUpdateDeposit({
                 deposit: updatedDeposit,
               },
               claimRewards,
-            });
+            };
           }}
         />
       </div>

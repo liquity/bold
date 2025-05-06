@@ -245,6 +245,7 @@ function Tab({
       }}
       role="tab"
       tabIndex={selected ? 0 : -1}
+      title={typeof label === "string" ? label : undefined}
       className={css({
         zIndex: 3,
         alignItems: "center",
@@ -270,11 +271,15 @@ function Tab({
       }}
     >
       <div
+        className={css({
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        })}
         style={{
           translate: compact ? "0 -0.5px" : "0 0",
         }}
       >
-        {label}
+        <span>{label}</span>
       </div>
     </button>
   );

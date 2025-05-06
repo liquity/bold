@@ -298,20 +298,34 @@ export function PanelVoting() {
         className={css({
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: "start",
           gap: 24,
+          width: "100%",
+          userSelect: "none",
         })}
       >
         {governanceState.data && (
           <div
             className={css({
-              display: "flex",
-              justifyContent: "flex-start",
+              flexShrink: 1,
+              minWidth: 0,
+              display: "grid",
+              gridTemplateColumns: "1fr auto",
               alignItems: "center",
               gap: 6,
             })}
           >
-            Current voting round ends in{" "}
+            <div
+              className={css({
+                flexShrink: 1,
+                minWidth: 0,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              })}
+            >
+              Current voting round ends in{" "}
+            </div>
             <Tag
               title={governanceState.data
                 && `Epoch ${governanceState.data.epoch} ends on the ${
@@ -323,16 +337,24 @@ export function PanelVoting() {
           </div>
         )}
 
-        <LinkTextButton
-          label={
-            <>
-              Discuss
-              <IconExternal size={16} />
-            </>
-          }
-          href="https://voting.liquity.org/"
-          external
-        />
+        <div
+          className={css({
+            flexShrink: 0,
+            display: "grid",
+            justifyContent: "end",
+          })}
+        >
+          <LinkTextButton
+            label={
+              <>
+                Discuss
+                <IconExternal size={16} />
+              </>
+            }
+            href="https://voting.liquity.org/"
+            external
+          />
+        </div>
       </div>
 
       {isCutoff && (

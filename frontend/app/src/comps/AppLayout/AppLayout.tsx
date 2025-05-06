@@ -22,6 +22,7 @@ export function AppLayout({
         display: "grid",
         gridTemplateRows: "auto 1fr",
         minHeight: "100vh",
+        minWidth: "fit-content",
         height: "100%",
         background: "background",
       })}
@@ -49,7 +50,10 @@ export function AppLayout({
         className={css({
           display: "grid",
           gridTemplateRows: "auto 1fr auto",
-          gap: 48,
+          gap: {
+            base: 24,
+            large: 48,
+          },
           maxWidth: `calc(${LAYOUT_WIDTH}px + 48px)`,
           margin: "0 auto",
           width: "100%",
@@ -60,7 +64,13 @@ export function AppLayout({
           className={css({
             width: "100%",
             minHeight: 0,
-            padding: "0 24px",
+            padding: {
+              base: "0 12px",
+              medium: "0 24px",
+            },
+            medium: {
+              maxWidth: "100%",
+            },
           })}
         >
           {children}

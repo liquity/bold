@@ -118,7 +118,7 @@ export function PanelInterestRate({
           start: (
             <Field.FooterInfo
               label={updateRateCooldown.status === "success" && (
-                <span
+                <div
                   className={css({
                     display: "flex",
                     alignItems: "center",
@@ -128,14 +128,24 @@ export function PanelInterestRate({
                   })}
                 >
                   <IconSuggestion size={16} />
-                  {updateRateCooldown.active
-                    ? (
-                      <>
-                        Adjust without fee
-                        <div ref={updateRateCooldown.remainingRef} />
-                      </>
-                    )
-                    : <>No fee for rate adjustment</>}
+                  <div
+                    className={css({
+                      flexShrink: 1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      minWidth: 0,
+                    })}
+                  >
+                    {updateRateCooldown.active
+                      ? (
+                        <>
+                          Adjust without fee
+                          <div ref={updateRateCooldown.remainingRef} />
+                        </>
+                      )
+                      : <>No fee for rate adjustment</>}
+                  </div>
                   <InfoTooltip
                     content={{
                       heading: "Interest rate updates",
@@ -151,7 +161,7 @@ export function PanelInterestRate({
                       },
                     }}
                   />
-                </span>
+                </div>
               )}
             />
           ),

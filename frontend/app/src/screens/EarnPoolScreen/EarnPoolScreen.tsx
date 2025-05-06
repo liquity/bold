@@ -1,5 +1,6 @@
 "use client";
 
+import { useBreakpointName } from "@/src/breakpoints";
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
@@ -55,6 +56,8 @@ export function EarnPoolScreen() {
     },
   });
 
+  const breakpointName = useBreakpointName();
+
   return (
     <Screen
       ready={loadingState === "success"}
@@ -69,7 +72,7 @@ export function EarnPoolScreen() {
             .with("success", () => "ready")
             .with("loading", () => "loading")
             .exhaustive()}
-          finalHeight={140}
+          finalHeight={breakpointName === "large" ? 140 : 248}
         >
           {loadingState === "success"
             ? (

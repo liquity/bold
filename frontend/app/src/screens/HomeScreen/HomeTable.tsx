@@ -28,7 +28,7 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
         display: "flex",
         flexDirection: "column",
         gap: 32,
-        padding: 16,
+        padding: "12px 16px 16px",
         background: "surface",
         border: "1px solid token(colors.tableBorder)",
         borderRadius: 8,
@@ -46,11 +46,33 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "space-between",
-            fontSize: 20,
+            gap: 8,
+            fontSize: {
+              base: 16,
+              medium: 20,
+            },
           })}
         >
-          <span>{title}</span>
-          <span>{icon}</span>
+          <span
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              minHeight: 24,
+            })}
+          >
+            {title}
+          </span>
+          <span
+            className={css({
+              transformOrigin: "50% 50%",
+              transform: {
+                base: "scale(0.8)",
+                medium: "none",
+              },
+            })}
+          >
+            {icon}
+          </span>
         </h1>
         <div
           className={css({
@@ -117,6 +139,7 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
               "& th": {
                 paddingBottom: 8,
                 color: "contentAlt2",
+                userSelect: "none",
               },
               "& td": {
                 padding: "12px 0",

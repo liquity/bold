@@ -33,6 +33,7 @@ export function ErrorBox({
     <section
       className={css({
         width: "100%",
+        minWidth: 0,
         background: "negativeSurface",
         color: "negative",
         fontSize: 14,

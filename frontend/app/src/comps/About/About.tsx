@@ -4,6 +4,7 @@ import type { Entries } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { useFlashTransition } from "@/src/anim-utils";
+import { useBreakpoint } from "@/src/breakpoints";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Logo } from "@/src/comps/Logo/Logo";
 import * as env from "@/src/env";
@@ -62,7 +63,7 @@ function getEnvGroups() {
     });
   }
 
-  delete envConfig["COLLATERAL_CONTRACTS" as keyof typeof envConfig];
+  delete envConfig["ENV_BRANCHES" as keyof typeof envConfig];
 
   const envConfigFinal = Object.fromEntries(
     Object.entries(envConfig)
@@ -104,6 +105,10 @@ const envGroups = getEnvGroups();
 export function About({ children }: { children: ReactNode }) {
   const [visible, setVisible] = useState(false);
   const copyTransition = useFlashTransition();
+
+  const [compactMode, setCompactMode] = useState(false);
+  useBreakpoint((bp) => setCompactMode(!bp.medium));
+
   return (
     <AboutContext.Provider
       value={{
@@ -220,6 +225,7 @@ export function About({ children }: { children: ReactNode }) {
               <h1
                 className={css({
                   fontSize: 20,
+                  whiteSpace: "nowrap",
                 })}
               >
                 Build environment
@@ -255,7 +261,7 @@ export function About({ children }: { children: ReactNode }) {
                 <Button
                   mode="secondary"
                   size="mini"
-                  label="Copy to clipboard"
+                  label={compactMode ? "Copy" : "Copy to clipboard"}
                   onClick={() => {
                     navigator.clipboard.writeText(JSON.stringify(envGroups, null, 2));
                     copyTransition.flash();
@@ -410,7 +416,21 @@ function AboutTable({
         <tbody>
           {Object.entries(entries).map(([key, value]) => (
             <tr key={key}>
-              <td>{key}</td>
+              <td>
+                <div
+                  title={key}
+                  className={css({
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    maxWidth: {
+                      base: 120,
+                      medium: 260,
+                    },
+                  })}
+                >
+                  {key}
+                </div>
+              </td>
               <td>
                 <div
                   className={css({

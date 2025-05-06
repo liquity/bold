@@ -30,10 +30,20 @@ export function UpdateBox({
       })}
     >
       {updates.map(({ label, before, after }, index) => (
-        <HFlex
+        <div
           key={index}
-          justifyContent="space-between"
-          gap={16}
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "start",
+            justifyContent: "space-between",
+            gap: 8,
+            medium: {
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 16,
+            },
+          })}
         >
           <HFlex gap={4}>{label}</HFlex>
           <ValueUpdate
@@ -60,7 +70,7 @@ export function UpdateBox({
               </HFlex>
             }
           />
-        </HFlex>
+        </div>
       ))}
     </div>
   );

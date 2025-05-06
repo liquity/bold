@@ -69,24 +69,36 @@ export function Field({
             <div
               key={index}
               className={css({
-                display: "flex",
+                overflow: "hidden",
+                display: "grid",
+                gridTemplateColumns: "minmax(0, auto) minmax(0, auto)",
                 justifyContent: "space-between",
                 alignItems: "flex-start",
                 gap: 16,
+                width: "100%",
               })}
             >
               <div
                 className={css({
+                  overflow: "hidden",
                   display: "flex",
                   gap: 16,
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  textOverflow: "ellipsis",
                 })}
               >
                 {start}
               </div>
               <div
                 className={css({
+                  minWidth: 0,
+                  overflow: "hidden",
                   display: "flex",
                   gap: 16,
+                  justifyContent: "flex-end",
+                  maxWidth: "100%",
+                  textOverflow: "ellipsis",
                 })}
               >
                 {end}
@@ -114,6 +126,7 @@ function FooterInfo({
       style={{
         display: "flex",
         gap: 8,
+        maxWidth: "100%",
         whiteSpace: "nowrap",
         fontSize: 14,
       }}
@@ -121,6 +134,8 @@ function FooterInfo({
       {label && (
         <div
           className={css({
+            flexShrink: 1,
+            minWidth: 0,
             color: "contentAlt",
           })}
         >
@@ -130,6 +145,8 @@ function FooterInfo({
       {value && (
         <div
           className={css({
+            flexShrink: 1,
+            minWidth: 0,
             display: "flex",
             alignItems: "center",
           })}
@@ -158,19 +175,44 @@ function FooterInfoWarnLevel({
         <div
           title={title}
           className={css({
+            overflow: "hidden",
             display: "flex",
             gap: 8,
             alignItems: "center",
             whiteSpace: "nowrap",
           })}
         >
-          <StatusDot
-            mode={riskLevelToStatusMode(level)}
-          />
-          <HFlex gap={4} alignItems="center">
-            {label}
+          <div
+            className={css({
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+            })}
+          >
+            <StatusDot
+              mode={riskLevelToStatusMode(level)}
+            />
+          </div>
+          <div
+            className={css({
+              overflow: "hidden",
+              flexShrink: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+            })}
+          >
+            <span
+              className={css({
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              })}
+            >
+              {label}
+            </span>
             {help}
-          </HFlex>
+          </div>
         </div>
       }
     />

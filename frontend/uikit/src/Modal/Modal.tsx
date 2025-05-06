@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 import { a, useTransition } from "@react-spring/web";
-import FocusTrap from "focus-trap-react";
+import { FocusTrap } from "focus-trap-react";
 import { useEffect } from "react";
 import { css } from "../../styled-system/css";
 import { IconCross } from "../icons";
@@ -84,12 +84,17 @@ export function Modal({
           >
             <a.section
               className={css({
-                position: "absolute",
+                position: "fixed",
                 inset: 0,
+                zIndex: 2,
                 display: "grid",
-                placeItems: "center",
+                placeItems: "start center",
                 overflowX: "auto",
-                background: "rgba(18, 27, 68, 0.7)",
+                background: "transparent",
+                medium: {
+                  placeItems: "center",
+                  background: "rgba(18, 27, 68, 0.7)",
+                },
               })}
               style={{
                 overflowY: visible ? "scroll" : "hidden",
@@ -119,7 +124,14 @@ export function Modal({
                       }
                     }}
                     className={css({
-                      padding: 64,
+                      height: {
+                        base: "100%",
+                        medium: "auto",
+                      },
+                      padding: {
+                        base: 0,
+                        medium: 64,
+                      },
                       // and this is to re-enable the onMouseDown event
                       pointerEvents: "auto",
                     })}
@@ -128,10 +140,17 @@ export function Modal({
                       className={css({
                         position: "relative",
                         width: "100%",
+                        height: {
+                          base: "100%",
+                          medium: "auto",
+                        },
                         padding: 24,
                         outline: "2px solid accent",
                         background: "background",
-                        borderRadius: 8,
+                        borderRadius: {
+                          base: 0,
+                          medium: 8,
+                        },
                       })}
                       style={{
                         maxWidth,

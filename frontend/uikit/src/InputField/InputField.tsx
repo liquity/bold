@@ -312,6 +312,8 @@ function InputField({
                 zIndex: 2,
                 inset: `50% 0 auto auto`,
                 transform: "translateY(-50%)",
+                display: "flex",
+                alignItems: "center",
               })}
             >
               {contextual}
@@ -322,7 +324,7 @@ function InputField({
           <div
             className={css({
               display: "grid",
-              gridTemplateColumns: "1fr 1fr",
+              gridTemplateColumns: "auto auto",
               gap: 16,
               fontSize: 16,
               fontWeight: 500,
