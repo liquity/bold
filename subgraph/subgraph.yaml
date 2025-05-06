@@ -47,7 +47,6 @@ dataSources:
       entities:
         - GovernanceAllocation
         - GovernanceInitiative
-        - GovernanceStats
         - GovernanceUser
       abis:
         - name: Governance
@@ -120,27 +119,3 @@ templates:
       eventHandlers:
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
-  - name: StabilityPool
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: StabilityPool
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.9
-      language: wasm/assemblyscript
-      file: ./src/StabilityPool.mapping.ts
-      entities:
-        - StabilityPool
-        - StabilityPoolDeposit
-      abis:
-        - name: StabilityPool
-          file: ../contracts/out/StabilityPool.sol/StabilityPool.json
-      eventHandlers:
-        - event: DepositUpdated(indexed
-            address,uint256,uint256,uint256,uint256,uint256,uint256,uint256)
-          handler: handleDepositUpdated
-        - event: S_Updated(uint256,uint128,uint128)
-          handler: handleSUpdated
-        - event: B_Updated(uint256,uint128,uint128)
-          handler: handleBUpdated

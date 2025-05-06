@@ -8,18 +8,7 @@ import {
   UnregisterInitiative as UnregisterInitiativeEvent,
   WithdrawLQTY as WithdrawLQTYEvent,
 } from "../generated/Governance/Governance";
-import { GovernanceAllocation, GovernanceInitiative, GovernanceStats, GovernanceUser } from "../generated/schema";
-
-function initializeStats(): GovernanceStats {
-  // Create initial stats
-  let stats = new GovernanceStats("stats");
-  stats.totalLQTYStaked = BigInt.fromI32(0);
-  stats.totalOffset = BigInt.fromI32(0);
-  stats.totalInitiatives = 0;
-  stats.save();
-
-  return stats;
-}
+import { GovernanceAllocation, GovernanceInitiative, GovernanceUser } from "../generated/schema";
 
 export function handleRegisterInitiative(event: RegisterInitiativeEvent): void {
   let initiative = new GovernanceInitiative(event.params.initiative.toHex());
@@ -61,11 +50,6 @@ export function handleDepositLQTY(event: DepositLQTYEvent): void {
   user.stakedOffset = user.stakedOffset.plus(offsetIncrease);
   user.stakedLQTY = user.stakedLQTY.plus(event.params.lqtyAmount);
   user.save();
-
-  let stats = getStats();
-  stats.totalOffset = stats.totalOffset.plus(offsetIncrease);
-  stats.totalLQTYStaked = stats.totalLQTYStaked.plus(event.params.lqtyAmount);
-  stats.save();
 }
 
 export function handleWithdrawLQTY(event: WithdrawLQTYEvent): void {
@@ -74,22 +58,15 @@ export function handleWithdrawLQTY(event: WithdrawLQTYEvent): void {
     return;
   }
 
-  let stats = getStats();
-
   if (event.params.lqtyReceived < user.stakedLQTY) {
     let offsetDecrease = user.stakedOffset.times(event.params.lqtyReceived).div(user.stakedLQTY);
-    stats.totalOffset = stats.totalOffset.minus(offsetDecrease);
     user.stakedOffset = user.stakedOffset.minus(offsetDecrease);
   } else {
-    stats.totalOffset = stats.totalOffset.minus(user.stakedOffset);
     user.stakedOffset = BigInt.fromI32(0);
   }
 
   user.stakedLQTY = user.stakedLQTY.minus(event.params.lqtyReceived);
   user.save();
-
-  stats.totalLQTYStaked = stats.totalLQTYStaked.minus(event.params.lqtyReceived);
-  stats.save();
 }
 
 export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
@@ -141,14 +118,6 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
   allocation.save();
   user.save();
   initiative.save();
-}
-
-function getStats(): GovernanceStats {
-  let stats = GovernanceStats.load("stats");
-  if (stats === null) {
-    return initializeStats();
-  }
-  return stats;
 }
 
 export function handleClaimForInitiative(event: ClaimForInitiativeEvent): void {
