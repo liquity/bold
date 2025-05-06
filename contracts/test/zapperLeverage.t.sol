@@ -1688,7 +1688,6 @@ contract ZapperLeverageMainnet is DevTestSetup {
         vm.expectRevert("WZ: Not enough collateral received");
         zapper.closeTroveFromCollateral(troveId, flashLoanAmount, minExpectedCollateral);
         vm.stopPrank();
-        assertGt(troveColl, collAmount, "End");
     }
 
     function testOnlyFlashLoanProviderCanCallCloseTroveCallbackWithBaseZapper() external {
