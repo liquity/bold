@@ -87,7 +87,7 @@ contract TBTCPriceFeedTest is Test {
         // Make tBTC oracle stale
         tBTCOracle.setUpdatedAt(block.timestamp - STALENESS_THRESHOLD - 1);
         
-        (uint256 price, bool failed) = priceFeed.fetchRedemptionPrice();
+        (, bool failed) = priceFeed.fetchRedemptionPrice();
         assertEq(failed, true); // Should report failure
     }
     
@@ -95,7 +95,7 @@ contract TBTCPriceFeedTest is Test {
         // Make BTC oracle stale
         btcOracle.setUpdatedAt(block.timestamp - STALENESS_THRESHOLD - 1);
         
-        (uint256 price, bool failed) = priceFeed.fetchRedemptionPrice();
+        (, bool failed) = priceFeed.fetchRedemptionPrice();
         assertEq(failed, true); // Should report failure
     }
     
@@ -104,7 +104,8 @@ contract TBTCPriceFeedTest is Test {
         (uint256 initialPrice,) = priceFeed.fetchPrice();
         
         // Make tBTC oracle stale
-        tBTCOracle.setUpdatedAt(block.timestamp - STALENESS_THRESHOLD - 1);
+        tBTCOracle.setUpdatedAt(block.timestamp + 1);
+        vm.warp(block.timestamp + STALENESS_THRESHOLD + 5000);
         
         // This should switch to last good price
         (uint256 price, bool failed) = priceFeed.fetchPrice();
