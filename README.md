@@ -32,6 +32,7 @@
 - [Supplying Hints to Trove operations](#supplying-hints-to-trove-operations)
 - [BOLD Redemptions](#bold-redemptions)
 - [Redemption routing](#redemption-routing)
+  - [True unbacked portions and `MIN_BOLD_IN_SP`](#true-unbacked-portions-and-min_bold_in_sp)
 - [Redemptions at branch level](#redemptions-at-branch-level)
   - [Redemption fees](#redemption-fees)
   - [Rationale for fee schedule](#rationale-for-fee-schedule)
@@ -68,6 +69,7 @@
   - [Interest rates and shutdown](#interest-rates-and-shutdown)
   - [Shutdown logic](#shutdown-logic)
   - [Urgent redemptions](#urgent-redemptions)
+    - [Urgent redemption best practice](#urgent-redemption-best-practice)
 - [Collateral choices in Liquity v2](#collateral-choices-in-liquity-v2)
 - [Oracles in Liquity v2](#oracles-in-liquity-v2)
   - [Choice of oracles and price calculations](#choice-of-oracles-and-price-calculations)
@@ -659,6 +661,11 @@ As can be seen in the above table and proven in generality (TBD), the outside de
 
 [TODO - GRAPH BRANCH REDEMPTION]
 
+### True unbacked portions and `MIN_BOLD_IN_SP`
+
+In practice, only `SP.getTotalBoldDeposits() - MIN_BOLD_IN_SP` is used for liquidation  - that is, there is always 1 BOLD in the SP of a given branch  - see the [min 1 BOLD in SP section](https://github.com/liquity/bold?tab=readme-ov-file#minimum-1-bold-token-in-the-sp). This 1 BOLD does not count towards the backing of a branch.
+
+Therefore the true unbacked portion of a given branch is slightly larger than the amount used in the calculation above - and in turn, the the “true” ratio of the unbacked portions of all branches is slightly distorted. However, this distortion is only significant for very small system sizes, and considered a non-issue in practice.  
 
 ## Redemptions at branch level
 
@@ -1139,6 +1146,22 @@ Urgent redemptions:
 - Pay a slight collateral bonus of 2% to the redeemer. That is, in exchange for every 1 BOLD redeemed, the redeemer receives $1.02 worth of the LST collateral.
 - Do not redeem Troves in order of interest rate. Instead, the redeemer passes a list of Troves to redeem from.
 - Do not create Zombie Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
+
+#### Urgent redemption best practice
+
+The `urgentRedeemCollateral` params are as such:
+
+- `_boldAmount` specifying the intended amount to redeem
+- `_troveIds` specifying the target Troves to redeem from 
+- `_minCollateral` allows the user specify the minimum collateral returned from the operation
+
+It’s expected that `_minCollateral` be calculated off-chain by the redeemer.
+
+Consider two redeemers Alice and Bob. Since there will be competition for urgent redemptions when they are profitable, if Alice’s redemption lands first, it may redeem from Bob’s target Troves in `_troveIds` before his redemption lands. The redemption logic skips Troves in the list that are unredeemable, and thus the actual BOLD amount redeemed by Bob could be significantly lower than `_boldAmount`. This in turn may result in the returned collateral being significantly lower than `_minCollateral`.
+
+Redemption bot creators should understand the competitive nature of redemptions, and take this dynamic into account when programming them. Mitigating frontrunning via transactions sent to private pools e.g. Flashbots may be preferable.
+
+
 
 ## Collateral choices in Liquity v2
 
