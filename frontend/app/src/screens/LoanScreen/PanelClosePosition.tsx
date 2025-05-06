@@ -13,7 +13,6 @@ import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { addressesEqual, Button, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useState } from "react";
 
 export function PanelClosePosition({
   loan,
@@ -30,7 +29,9 @@ export function PanelClosePosition({
   const boldPriceUsd = usePrice("BOLD");
   const boldBalance = useBalance(account.address, "BOLD");
 
-  const [repayDropdownIndex, setRepayDropdownIndex] = useState(0);
+  // const [repayDropdownIndex, setRepayDropdownIndex] = useState(0);
+  const repayDropdownIndex = 0;
+
   const repayToken = TOKENS_BY_SYMBOL[repayDropdownIndex === 0 ? "BOLD" : collateral.symbol];
 
   // either in BOLD or in collateral
