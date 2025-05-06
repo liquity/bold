@@ -25,7 +25,11 @@ import { MiniChart } from "./MiniChart";
 
 import icLogo from "./ic-logo.svg";
 
-const DELEGATE_MODES = ["manual", "delegate", "strategy"] as const;
+const DELEGATE_MODES = [
+  "manual",
+  "delegate",
+  "strategy",
+] as const;
 
 export type DelegateMode = typeof DELEGATE_MODES[number];
 
@@ -191,6 +195,7 @@ export const InterestRateField = memo(
                         display: "flex",
                         alignItems: "center",
                         gap: 8,
+                        fontSize: 20,
                       })}
                     >
                       <Image
@@ -254,11 +259,9 @@ export const InterestRateField = memo(
             end: (
               <div>
                 <Dropdown
-                  items={activeDelegateModes.map((
-                    mode,
-                  ) => (
-                    content.interestRateField.delegateModes[mode]
-                  ))}
+                  items={activeDelegateModes.map(
+                    (mode) => content.interestRateField.delegateModes[mode],
+                  )}
                   menuWidth={300}
                   menuPlacement="end"
                   onSelect={(index) => {
@@ -286,9 +289,17 @@ export const InterestRateField = memo(
                   userSelect: "none",
                 })}
               >
-                <div>
+                <div
+                  className={css({
+                    minWidth: 0,
+                    flexShrink: 1,
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                  })}
+                >
                   {boldInterestPerYear && (mode === "manual" || delegate !== null)
-                    ? fmtnum(boldInterestPerYear)
+                    ? fmtnum(boldInterestPerYear, breakpoint === "small" ? "compact" : "2z")
                     : "−"} BOLD / year
                 </div>
                 <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
@@ -347,7 +358,7 @@ export const InterestRateField = memo(
                     gap: 8,
                   }}
                 >
-                  {delegate !== null && <MiniChart size="medium" />}
+                  {delegate !== null && breakpoint === "large" && <MiniChart size="medium" />}
                   <span
                     style={{
                       fontVariantNumeric: "tabular-nums",
@@ -359,10 +370,13 @@ export const InterestRateField = memo(
                     )}
                   </span>
                   <span
-                    style={{
+                    className={css({
                       color: "#878AA4",
-                      fontSize: 24,
-                    }}
+                      fontSize: {
+                        base: 20,
+                        large: 24,
+                      },
+                    })}
                   >
                     %{breakpoint === "large" ? " per year" : ""}
                   </span>
