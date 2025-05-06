@@ -3,8 +3,7 @@ import type { Address } from "@/src/types";
 
 import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { Amount } from "@/src/comps/Amount/Amount";
-import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
-import { dnum18, jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { LEGACY_CHECK } from "@/src/env";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -52,7 +51,7 @@ export const legacyRedeemCollateral: FlowDeclaration<LegacyRedeemCollateralReque
             <Amount
               key="start"
               value={boldChange}
-              fallback="fetching…"
+              fallback={estimatedGains.isError ? "loading error." : "fetching…"}
               suffix=" BOLD"
             />,
             <>Estimated BOLD that will be redeemed.</>,
@@ -69,7 +68,7 @@ export const legacyRedeemCollateral: FlowDeclaration<LegacyRedeemCollateralReque
                 <Amount
                   key="start"
                   value={collChange}
-                  fallback="fetching…"
+                  fallback={estimatedGains.isError ? "loading error." : "fetching…"}
                   suffix={` ${symbol_}`}
                 />,
                 <>Estimated {symbol_} you will receive.</>,
@@ -175,22 +174,6 @@ export function useSimulatedBalancesChange({
         throw new Error("LEGACY_CHECK is not defined");
       }
 
-      let stored: v.InferOutput<typeof StoredBalancesChangeSchema> | null = null;
-      try {
-        stored = v.parse(
-          StoredBalancesChangeSchema,
-          jsonParseWithDnum(
-            localStorage.getItem(
-              `${LOCAL_STORAGE_PREFIX}:simulatedBalancesChange`,
-            ) ?? "",
-          ),
-        );
-      } catch (_) {}
-
-      if (stored && stored.stringifiedRequest === jsonStringifyWithDnum(request)) {
-        return stored.balanceChanges;
-      }
-
       const [chain] = wagmiConfig.chains;
       const [rpcUrl] = chain.rpcUrls.default.http;
       const client = createPublicClient({ chain, transport: http(rpcUrl) });
@@ -212,17 +195,25 @@ export function useSimulatedBalancesChange({
       const simulation = await client.simulateCalls({
         account,
         calls: [
+          // 1. get balances before
           boldBalanceCall,
           ...branchesBalanceCalls,
+
+          // 2. redeem
           {
             to: LEGACY_CHECK.COLLATERAL_REGISTRY,
             abi: CollateralRegistry,
             functionName: "redeemCollateral",
             args: [request.amount[0], 0n, request.maxFee[0]],
           },
+
+          // 3. get balances after
           boldBalanceCall,
           ...branchesBalanceCalls,
         ],
+
+        // This is needed to avoid a “nonce too low” error with certain RPCs
+        stateOverrides: [{ address: account, nonce: 0 }],
       });
 
       const getBalancesFromSimulated = (position: number) => {
@@ -246,7 +237,7 @@ export function useSimulatedBalancesChange({
       const balancesBefore = getBalancesFromSimulated(0);
       const balancesAfter = getBalancesFromSimulated(LEGACY_CHECK.BRANCHES.length + 2);
 
-      const balanceChanges = balancesBefore.map((balanceBefore, index) => {
+      return balancesBefore.map((balanceBefore, index) => {
         const balanceAfter = balancesAfter[index];
         if (!balanceAfter) throw new Error();
         return {
@@ -254,16 +245,6 @@ export function useSimulatedBalancesChange({
           change: dn.sub(balanceAfter.balance, balanceBefore.balance),
         };
       });
-
-      localStorage.setItem(
-        `${LOCAL_STORAGE_PREFIX}:simulatedBalancesChange`,
-        jsonStringifyWithDnum({
-          stringifiedRequest: jsonStringifyWithDnum(request),
-          balanceChanges,
-        }),
-      );
-
-      return balanceChanges;
     },
   });
 }
