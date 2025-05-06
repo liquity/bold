@@ -11,7 +11,6 @@ export function Screen({
   back,
   children,
   className,
-  gap = 48,
   heading = null,
   paddingTop = 0,
   ready = true,
@@ -23,7 +22,6 @@ export function Screen({
   } | null;
   children: ReactNode;
   className?: string;
-  gap?: number;
   heading?: ReactNode | {
     title: ReactNode;
     subtitle?: ReactNode;
@@ -117,7 +115,10 @@ export function Screen({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 28,
+            fontSize: {
+              base: 20,
+              medium: 28,
+            },
           })}
         >
           {heading.title}
@@ -214,13 +215,16 @@ export function Screen({
       )}
       <a.div
         className={css({
-          display: "grid",
           position: "relative",
+          display: "grid",
+          gap: {
+            base: 32,
+            medium: 48,
+          },
           transformOrigin: "50% 0",
           willChange: "transform, opacity",
         })}
         style={{
-          gap,
           width,
           ...screenSpring,
         }}

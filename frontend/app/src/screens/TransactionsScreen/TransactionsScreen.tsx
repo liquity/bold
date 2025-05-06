@@ -10,7 +10,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, IconCross, VFlex } from "@liquity2/uikit";
+import { Button, IconCross } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { Fragment, useEffect, useState } from "react";
 import { match, P } from "ts-pattern";
@@ -143,18 +143,28 @@ export function TransactionsScreen() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 28,
+            textAlign: "center",
+            fontSize: {
+              base: 20,
+              medium: 28,
+            },
           })}
         >
           {fd.title}
         </h1>
       </header>
 
-      <VFlex gap={32}>
+      <div
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          gap: 32,
+        })}
+      >
         <fd.Details {...flow} />
-      </VFlex>
+      </div>
 
-      <VFlex gap={0}>
+      <div>
         <div
           className={css({
             paddingBottom: 32,
@@ -247,6 +257,12 @@ export function TransactionsScreen() {
         {errorBoxTransition((style, error) => (
           error && (
             <a.div
+              className={css({
+                flexGrow: 0,
+                display: "grid",
+                overflow: "hidden",
+                maxWidth: "100%",
+              })}
               style={{
                 ...style,
                 opacity: style.opacity.to([0, 0.5, 1], [0, 0, 1]),
@@ -261,7 +277,7 @@ export function TransactionsScreen() {
             </a.div>
           )
         ))}
-      </VFlex>
+      </div>
     </Screen>
   );
 }
@@ -289,7 +305,13 @@ export function TransactionDetailsRow({
       >
         {Array.isArray(label)
           ? (
-            <VFlex gap={4}>
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+              })}
+            >
               <div
                 className={css({
                   fontSize: 16,
@@ -308,16 +330,19 @@ export function TransactionDetailsRow({
                   {secondary}
                 </div>
               ))}
-            </VFlex>
+            </div>
           )
           : (
-            <HFlex
-              alignItems="flex-start"
-              justifyContent="flex-start"
-              gap={8}
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
+                gap: 8,
+              })}
             >
               {label}
-            </HFlex>
+            </div>
           )}
       </div>
       <div
@@ -327,18 +352,25 @@ export function TransactionDetailsRow({
       >
         {Array.isArray(value)
           ? (
-            <VFlex
-              alignItems="flex-end"
-              gap={4}
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                gap: 4,
+              })}
             >
-              <HFlex
-                gap={8}
+              <div
                 className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
                   fontSize: 16,
                 })}
               >
                 {value[0]}
-              </HFlex>
+              </div>
               {value.slice(1).map((secondary, index) => (
                 <div
                   key={index}
@@ -351,16 +383,18 @@ export function TransactionDetailsRow({
                   {secondary}
                 </div>
               ))}
-            </VFlex>
+            </div>
           )
           : (
-            <HFlex
+            <div
               className={css({
+                display: "flex",
+                alignItems: "center",
                 fontSize: 24,
               })}
             >
               {value}
-            </HFlex>
+            </div>
           )}
       </div>
     </div>

@@ -52,7 +52,6 @@ export function StakeScreen() {
           </>
         ),
       }}
-      gap={48}
     >
       <StakePositionSummary
         stakePosition={stakePosition.data ?? null}

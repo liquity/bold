@@ -65,13 +65,19 @@ export function EarnPoolsListScreen() {
           </>
         ),
       }}
-      gap={16}
     >
-      {poolsTransition((style, branchId) => (
-        <a.div style={style}>
-          <EarnPool branchId={branchId} />
-        </a.div>
-      ))}
+      <div
+        className={css({
+          display: "grid",
+          gap: 16,
+        })}
+      >
+        {poolsTransition((style, branchId) => (
+          <a.div style={style}>
+            <EarnPool branchId={branchId} />
+          </a.div>
+        ))}
+      </div>
     </Screen>
   );
 }
