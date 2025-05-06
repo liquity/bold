@@ -293,7 +293,7 @@ contract OraclesMainnet is TestAccounts {
         mock.setUpdatedAt(block.timestamp);
     }
 
-    function etchMockToRethToken() internal {   
+    function etchMockToRethToken() internal {
         vm.etch(address(rethToken), address(mockRethToken).code);
         RETHTokenMock mock = RETHTokenMock(address(rethToken));
         mock.setExchangeRate(0);
@@ -2225,21 +2225,21 @@ contract OraclesMainnet is TestAccounts {
         console.log(left, "space left in TM");
     }
     */
-        
+
     function testRETHRedemptionOnlyHitsTrovesAtICRGte100() public {
         Vars memory vars;
         // Set two mock market oracles: RETH-ETH, and ETH-USD
         ChainlinkOracleMock mockRETHOracle = etchMockToRethOracle();
         ChainlinkOracleMock mockETHOracle = etchMockToEthOracle();
-       
+
         vars.usdPerEthMarket = 2000e8; // 2000 usd, 8 decimal
         // Set 1 ETH = 2000 USD on market oracle
         mockETHOracle.setPrice(vars.usdPerEthMarket);
-        
+
         vars.ethPerRethLST = rethToken.getExchangeRate();
 
         // Make market RETH price 1% lower than LST exchange rate
-        vars.ethPerRethMarket = int256(vars.ethPerRethLST) * 99 / 100; 
+        vars.ethPerRethMarket = int256(vars.ethPerRethLST) * 99 / 100;
         mockRETHOracle.setPrice(vars.ethPerRethMarket);
 
         console.log(_getLatestAnswerFromOracle(rethOracle), "reth oracle latest answer");
@@ -2253,9 +2253,9 @@ contract OraclesMainnet is TestAccounts {
         vm.stopPrank();
 
         // Get the calculated RETH-USD price directly from the system
-        (vars.systemPrice, ) = contractsArray[1].priceFeed.fetchPrice();
+        (vars.systemPrice,) = contractsArray[1].priceFeed.fetchPrice();
 
-       // Open 3 Troves with ICRs clustered together
+        // Open 3 Troves with ICRs clustered together
         vars.coll = 10 ether;
         vars.debt_B = 10000e18 + 1e18;
         vars.debt_C = 10000e18;
@@ -2293,7 +2293,7 @@ contract OraclesMainnet is TestAccounts {
         mockETHOracle.setPrice(vars.newEthPrice);
 
         // Get new system price from PriceFeed
-        (vars.newSystemPrice, ) = contractsArray[1].priceFeed.fetchPrice();
+        (vars.newSystemPrice,) = contractsArray[1].priceFeed.fetchPrice();
         // Calculate the new redemption price, given RETH-ETH market price is 1% greater than exchange rate
         vars.newSystemRedemptionPrice = vars.newSystemPrice * 100 / 99;
 
@@ -2313,11 +2313,15 @@ contract OraclesMainnet is TestAccounts {
         assertGt(vars.ICR_D, 1e18, "D ICR not > 100%");
         assertGt(vars.ICR_A, vars.ICR_D, "A ICR not > D ICR");
 
-        // TODO: Confirm that if we used the *redemption* price to calc ICRs, all ICRs would be > 100% 
-        vars.redemptionICR_A = contractsArray[1].troveManager.getCurrentICR(vars.troveId_A, vars.newSystemRedemptionPrice);
-        vars.redemptionICR_B = contractsArray[1].troveManager.getCurrentICR(vars.troveId_B, vars.newSystemRedemptionPrice);
-        vars.redemptionICR_C = contractsArray[1].troveManager.getCurrentICR(vars.troveId_C, vars.newSystemRedemptionPrice);
-        vars.redemptionICR_D = contractsArray[1].troveManager.getCurrentICR(vars.troveId_D, vars.newSystemRedemptionPrice);
+        // TODO: Confirm that if we used the *redemption* price to calc ICRs, all ICRs would be > 100%
+        vars.redemptionICR_A =
+            contractsArray[1].troveManager.getCurrentICR(vars.troveId_A, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_B =
+            contractsArray[1].troveManager.getCurrentICR(vars.troveId_B, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_C =
+            contractsArray[1].troveManager.getCurrentICR(vars.troveId_C, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_D =
+            contractsArray[1].troveManager.getCurrentICR(vars.troveId_D, vars.newSystemRedemptionPrice);
 
         // console.log(vars.redemptionICR_A, " vars.redemptionICR_A");
         // console.log(vars.redemptionICR_B, " vars.redemptionICR_B");
@@ -2371,7 +2375,7 @@ contract OraclesMainnet is TestAccounts {
         // Set two mock market oracles: STETH-USD, and ETH-USD
         ChainlinkOracleMock mockSTETHOracle = etchMockToStethOracle();
         ChainlinkOracleMock mockETHOracle = etchMockToEthOracle();
-       
+
         vars.usdPerEthMarket = 2000e8; // 2000 usd, 8 decimal
         // Set 1 ETH = 2000 USD on market oracle
         mockETHOracle.setPrice(vars.usdPerEthMarket);
@@ -2390,9 +2394,9 @@ contract OraclesMainnet is TestAccounts {
         vm.stopPrank();
 
         // Get the calculated WSTETH-USD price directly from the system
-        (vars.systemPrice, ) = contractsArray[2].priceFeed.fetchPrice();
+        (vars.systemPrice,) = contractsArray[2].priceFeed.fetchPrice();
 
-       // Open 3 Troves with ICRs clustered together
+        // Open 3 Troves with ICRs clustered together
         vars.coll = 10 ether;
         vars.debt_B = 10000e18 + 1e18;
         vars.debt_C = 10000e18;
@@ -2424,14 +2428,14 @@ contract OraclesMainnet is TestAccounts {
         console.log(contractsArray[2].troveManager.getCurrentICR(vars.troveId_C, vars.systemPrice), "C ICR");
         console.log(contractsArray[2].troveManager.getCurrentICR(vars.troveId_D, vars.systemPrice), "D ICR");
 
-        // Scale the ETH-USD price down such that C has ICR ~100% 
+        // Scale the ETH-USD price down such that C has ICR ~100%
         vars.newEthPrice = vars.usdPerEthMarket * 1e18 / int256(vars.ICR_C) + 10;
         mockETHOracle.setPrice(vars.newEthPrice);
         // Scale STETH-USD price down too, keep it 0.5% above ETH-USD
         mockSTETHOracle.setPrice(vars.newEthPrice * 1005 / 1000);
 
         // Get new system price from PriceFeed
-        (vars.newSystemPrice, ) = contractsArray[2].priceFeed.fetchPrice();
+        (vars.newSystemPrice,) = contractsArray[2].priceFeed.fetchPrice();
         vars.newSystemRedemptionPrice = vars.newSystemPrice * 1005 / 1000;
 
         // console.log(_getLatestAnswerFromOracle(stethOracle), "steth oracle latest answer after price drop");
@@ -2453,11 +2457,15 @@ contract OraclesMainnet is TestAccounts {
         assertGt(vars.ICR_D, 1e18, "D ICR not > 100%");
         assertGt(vars.ICR_A, vars.ICR_D, "A ICR not > D ICR");
 
-        // TODO: Confirm that if we used the *redemption* price to calc ICRs, all ICRs would be > 100% 
-        vars.redemptionICR_A = contractsArray[2].troveManager.getCurrentICR(vars.troveId_A, vars.newSystemRedemptionPrice);
-        vars.redemptionICR_B = contractsArray[2].troveManager.getCurrentICR(vars.troveId_B, vars.newSystemRedemptionPrice);
-        vars.redemptionICR_C = contractsArray[2].troveManager.getCurrentICR(vars.troveId_C, vars.newSystemRedemptionPrice);
-        vars.redemptionICR_D = contractsArray[2].troveManager.getCurrentICR(vars.troveId_D, vars.newSystemRedemptionPrice);
+        // TODO: Confirm that if we used the *redemption* price to calc ICRs, all ICRs would be > 100%
+        vars.redemptionICR_A =
+            contractsArray[2].troveManager.getCurrentICR(vars.troveId_A, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_B =
+            contractsArray[2].troveManager.getCurrentICR(vars.troveId_B, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_C =
+            contractsArray[2].troveManager.getCurrentICR(vars.troveId_C, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_D =
+            contractsArray[2].troveManager.getCurrentICR(vars.troveId_D, vars.newSystemRedemptionPrice);
 
         // console.log(vars.redemptionICR_A, " vars.redemptionICR_A");
         // console.log(vars.redemptionICR_B, " vars.redemptionICR_B");
