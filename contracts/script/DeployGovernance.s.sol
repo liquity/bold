@@ -33,6 +33,8 @@ contract DeployGovernance is Script {
     address constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address constant FUNDS_SAFE = 0xF06016D822943C42e3Cb7FC3a6A3B1889C1045f8;
     address constant DEFI_COLLECTIVE_GRANTS_ADDRESS = 0xDc6f869d2D34E4aee3E89A51f2Af6D54F0F7f690;
+    address constant FORWARDING_INITIATIVE_ADDRESS = 0x0000000000000000000000000000000000000000;  // update when initiative is deployed
+    address constant NERITE_DAO_TREASURY_ADDRESS = 0x108f48e558078c8ef2eb428e0774d7ecd01f6b1d;
 
     // Governance Constants
     uint128 private constant REGISTRATION_FEE = 1000e18;
@@ -78,8 +80,8 @@ contract DeployGovernance is Script {
         curveUsdcBoldPool = ICurveStableSwapNG(_curveUsdcBoldPoolAddress);
         curveLusdBoldPool = ICurveStableSwapNG(_curveLusdBoldPoolAddress);
 
-        if (block.chainid == 1) {
-            // mainnet
+        if (block.chainid == 42161) {
+            // arbitrum
             (curveUsdcBoldGauge, curveUsdcBoldInitiative) = deployCurveV2GaugeRewards({
                 _governance: governance,
                 _bold: p.bold,
