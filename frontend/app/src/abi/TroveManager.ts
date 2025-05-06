@@ -93,6 +93,7 @@ export const TroveManager = [
       "type": "tuple",
       "internalType": "struct LatestBatchData",
       "components": [
+        { "name": "totalDebtShares", "type": "uint256", "internalType": "uint256" },
         { "name": "entireDebtWithoutRedistribution", "type": "uint256", "internalType": "uint256" },
         { "name": "entireCollWithoutRedistribution", "type": "uint256", "internalType": "uint256" },
         { "name": "accruedInterest", "type": "uint256", "internalType": "uint256" },
@@ -514,7 +515,7 @@ export const TroveManager = [
       { "name": "_redemptionRate", "type": "uint256", "internalType": "uint256" },
       { "name": "_maxIterations", "type": "uint256", "internalType": "uint256" },
     ],
-    "outputs": [{ "name": "_redemeedAmount", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [{ "name": "_redeemedAmount", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "nonpayable",
   },
   {
@@ -688,6 +689,7 @@ export const TroveManager = [
       { "name": "_ETHSent", "type": "uint256", "indexed": false, "internalType": "uint256" },
       { "name": "_ETHFee", "type": "uint256", "indexed": false, "internalType": "uint256" },
       { "name": "_price", "type": "uint256", "indexed": false, "internalType": "uint256" },
+      { "name": "_redemptionPrice", "type": "uint256", "indexed": false, "internalType": "uint256" },
     ],
     "anonymous": false,
   },
