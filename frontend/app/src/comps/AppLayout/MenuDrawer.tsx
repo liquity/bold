@@ -260,7 +260,6 @@ export function MenuDrawerButton({
         }}
         type="button"
         className={css({
-          hideFrom: "large",
           display: "flex",
           alignItems: "center",
           height: "100%",

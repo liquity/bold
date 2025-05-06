@@ -1,15 +1,12 @@
-import type { ComponentPropsWithRef, ReactNode } from "react";
+import type { ComponentPropsWithRef } from "react";
 
-import { useBreakpoint } from "@/src/breakpoints";
 import content from "@/src/content";
 import { useDemoMode } from "@/src/demo-mode";
 import { css } from "@/styled-system/css";
 import { Button, IconAccount, shortenAddress, ShowAfter } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { ConnectKitButton } from "connectkit";
-import { useState } from "react";
 import { match, P } from "ts-pattern";
-import { MenuItem } from "./MenuItem";
 
 export function AccountButton() {
   const demoMode = useDemoMode();
@@ -149,20 +146,17 @@ function ButtonConnected({
   onClick,
   title,
 }: {
-  label: ReactNode;
+  label: string;
   onClick?: () => void;
   title?: string;
 }) {
-  const [showIcon, setShowIcon] = useState(false);
-  useBreakpoint((breakpoint) => {
-    setShowIcon(breakpoint.medium);
-  });
   return (
     <button
       onClick={onClick}
       title={title}
       className={css({
-        display: "flex",
+        display: "grid",
+        width: "100%",
         height: "100%",
         padding: 0,
         whiteSpace: "nowrap",
@@ -176,10 +170,51 @@ function ButtonConnected({
         },
       })}
     >
-      <MenuItem
-        icon={showIcon && <IconAccount />}
-        label={label}
-      />
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          width: "100%",
+          height: "100%",
+          cursor: "pointer",
+          userSelect: "none",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          color: "interactive",
+        })}
+      >
+        <div
+          className={css({
+            display: "grid",
+            placeItems: "center",
+            width: 24,
+            height: 24,
+          })}
+        >
+          <IconAccount />
+        </div>
+        <div
+          className={css({
+            flexShrink: 1,
+            flexGrow: 1,
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            height: "100%",
+          })}
+        >
+          <div
+            className={css({
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            })}
+          >
+            {label}
+          </div>
+        </div>
+      </div>
     </button>
   );
 }

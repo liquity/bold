@@ -33,7 +33,11 @@ export function TopBar() {
         className={css({
           position: "relative",
           zIndex: 1,
-          display: "flex",
+          display: "grid",
+          gridTemplateColumns: {
+            base: "auto auto",
+            medium: "200px auto 200px",
+          },
           justifyContent: "space-between",
           gap: 16,
           maxWidth: 1280,
@@ -48,81 +52,122 @@ export function TopBar() {
           background: "background",
         })}
       >
-        <Link
-          href="/"
+        <div
           className={css({
-            position: "relative",
             display: "flex",
             alignItems: "center",
-            gap: 16,
             height: "100%",
-            paddingRight: 8,
-            _focusVisible: {
-              borderRadius: 4,
-              outline: "2px solid token(colors.focused)",
-            },
-            _active: {
-              translate: "0 1px",
-            },
           })}
         >
-          <div
+          <Link
+            href="/"
             className={css({
-              flexShrink: 0,
-            })}
-          >
-            <Logo />
-          </div>
-          <div
-            className={css({
-              flexShrink: 0,
+              position: "relative",
               display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              medium: {
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
+              alignItems: "center",
+              gap: 16,
+              height: "100%",
+              _focusVisible: {
+                borderRadius: 4,
+                outline: "2px solid token(colors.focused)",
               },
-              whiteSpace: "nowrap",
+              _active: {
+                translate: "0 1px",
+              },
             })}
           >
-            {content.appName}
-            {DEPLOYMENT_FLAVOR && (
-              <div
-                className={css({
-                  display: "flex",
-                  transform: "translateY(-1px)",
-                })}
-              >
-                <Tag
-                  size="mini"
-                  css={{
-                    color: "accentContent",
-                    background: "brandCoral",
-                    border: 0,
-                    textTransform: "uppercase",
-                  }}
+            <div
+              className={css({
+                flexShrink: 0,
+              })}
+            >
+              <Logo />
+            </div>
+            <div
+              className={css({
+                flexShrink: 1,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                medium: {
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                },
+                whiteSpace: "nowrap",
+              })}
+            >
+              <div>{content.appName}</div>
+              {DEPLOYMENT_FLAVOR && (
+                <div
+                  className={css({
+                    display: "grid",
+                    transform: "translateY(-1px)",
+                  })}
                 >
-                  {DEPLOYMENT_FLAVOR}
-                </Tag>
-              </div>
-            )}
-          </div>
-        </Link>
-        <Menu menuItems={menuItems} />
+                  <Tag
+                    size="mini"
+                    css={{
+                      color: "accentContent",
+                      background: "brandCoral",
+                      border: 0,
+                      textTransform: "uppercase",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      className={css({
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      })}
+                    >
+                      {DEPLOYMENT_FLAVOR}
+                    </div>
+                  </Tag>
+                </div>
+              )}
+            </div>
+          </Link>
+        </div>
         <div
           className={css({
             display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: 8,
-            width: "min-content",
+            justifyContent: "center",
+            hideBelow: "medium",
           })}
         >
-          <div>
+          <Menu menuItems={menuItems} />
+        </div>
+        <div
+          className={css({
+            display: "grid",
+            gridTemplateColumns: "1fr min-content",
+            justifyContent: "end",
+            gap: {
+              base: 8,
+              large: 0,
+            },
+          })}
+        >
+          <div
+            className={css({
+              display: "grid",
+              justifyContent: "end",
+              width: "100%",
+            })}
+          >
             <AccountButton />
           </div>
-          <MenuDrawerButton menuItems={menuItems} />
+          <div
+            className={css({
+              display: "grid",
+              hideFrom: "large",
+            })}
+          >
+            <MenuDrawerButton menuItems={menuItems} />
+          </div>
         </div>
       </div>
     </div>
