@@ -43,6 +43,8 @@ import { encodeAbiParameters, erc4626Abi, keccak256, parseAbiParameters } from "
 import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 import { graphQuery, InterestBatchesQuery } from "./subgraph-queries";
+import { WhitelistAbi } from "./abi/Whitelist";
+import { AddressesRegistry } from "./abi/AddressesRegistry";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -181,6 +183,36 @@ export function useVault() {
       price: vaultReads.data?.totalSupply ? dn.div(vaultReads.data?.totalAssets, vaultReads.data?.totalSupply) : dnum18(1),
     },
   };
+}
+
+export function useIsWhitelistedUser(whitelist: Address, callingContract: Address, user: Address) {
+    const isWhitelistedUser = useReadContracts({
+      // @ts-ignore
+      contracts: [{
+        address: whitelist,
+        abi: WhitelistAbi,
+        functionName: "isWhitelisted",
+        args: [callingContract, user],
+      }],
+      allowFailure: false,
+    });
+    
+    return isWhitelistedUser.data !== undefined ? isWhitelistedUser.data[0] : undefined;
+}
+
+export function useProtocolOwner(addressesRegistry: Address) {
+  const admin = useReadContracts({
+    // @ts-ignore
+    contracts: [{
+      address: addressesRegistry,
+      abi: AddressesRegistry,
+      functionName: "owner",
+      args: []
+    }],
+    allowFailure: false,
+  });
+  
+  return admin.data !== undefined ? admin.data[0] : undefined;
 }
 
 export function isEarnPositionActive(position: PositionEarn | null) {
