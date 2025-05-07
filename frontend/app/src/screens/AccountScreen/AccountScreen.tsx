@@ -11,7 +11,7 @@ import { CHAIN_ID } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
 import { getBranches } from "@/src/liquity-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
-import { css } from "@/styled-system/css";
+import { css, cx } from "@/styled-system/css";
 import {
   addressesEqual,
   Button,
@@ -175,11 +175,14 @@ function Balance({
 
   return (
     <div
-      className={css({
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-      })}
+      className={cx(
+        `balance-${tokenSymbol.toLowerCase()}`,
+        css({
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }),
+      )}
     >
       <div
         title={`${fmtnum(balance.data, "full")} ${tokenSymbol}`}

@@ -1,17 +1,16 @@
 import type { PositionLoanCommitted } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import content from "@/src/content";
 import { fmtnum } from "@/src/formatting";
 import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, Button, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
+import { addressesEqual, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
 
 export function PanelClosePosition({
@@ -20,7 +19,6 @@ export function PanelClosePosition({
   loan: PositionLoanCommitted;
 }) {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
 
   const branch = getBranch(loan.branchId);
   const collateral = getCollToken(branch.id);
@@ -257,51 +255,32 @@ export function PanelClosePosition({
           ? content.closeLoan.repayWithBoldMessage
           : content.closeLoan.repayWithCollateralMessage}
       </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: 32,
-          width: "100%",
+
+      {error && (
+        <div>
+          <ErrorBox title={error?.name}>
+            {error?.message}
+          </ErrorBox>
+        </div>
+      )}
+
+      <FlowButton
+        disabled={!allowSubmit}
+        label={claimOnly
+          ? content.closeLoan.buttonReclaimAndClose
+          : content.closeLoan.buttonRepayAndClose}
+        request={account.address && {
+          flowId: "closeLoanPosition",
+          backLink: [
+            `/loan/close?id=${loan.branchId}:${loan.troveId}`,
+            "Back to editing",
+          ],
+          successLink: ["/", "Go to the dashboard"],
+          successMessage: "The loan position has been closed successfully.",
+          loan,
+          repayWithCollateral: claimOnly ? false : repayToken.symbol !== "BOLD",
         }}
-      >
-        <ConnectWarningBox />
-
-        {error && (
-          <div>
-            <ErrorBox title={error?.name}>
-              {error?.message}
-            </ErrorBox>
-          </div>
-        )}
-
-        <Button
-          disabled={!allowSubmit}
-          label={claimOnly
-            ? content.closeLoan.buttonReclaimAndClose
-            : content.closeLoan.buttonRepayAndClose}
-          mode="primary"
-          size="large"
-          wide
-          onClick={() => {
-            if (account.address) {
-              txFlow.start({
-                flowId: "closeLoanPosition",
-                backLink: [
-                  `/loan/close?id=${loan.branchId}:${loan.troveId}`,
-                  "Back to editing",
-                ],
-                successLink: ["/", "Go to the dashboard"],
-                successMessage: "The loan position has been closed successfully.",
-
-                loan: { ...loan },
-                repayWithCollateral: claimOnly ? false : repayToken.symbol !== "BOLD",
-              });
-            }
-          }}
-        />
-      </div>
+      />
     </>
   );
 }

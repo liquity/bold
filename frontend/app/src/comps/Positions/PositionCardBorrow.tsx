@@ -58,6 +58,7 @@ export function PositionCardBorrow({
 
   return (
     <PositionCard
+      className="position-card position-card-loan position-card-borrow"
       href={`/loan?id=${branchId}:${troveId}`}
       title={title.join("\n")}
       heading={

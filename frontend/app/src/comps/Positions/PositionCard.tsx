@@ -75,6 +75,7 @@ export function PositionCard({
       onMouseUp={() => setActive(false)}
       className={cx(
         "group",
+        anchorProps.className,
         css({
           position: "relative",
           overflow: "hidden",

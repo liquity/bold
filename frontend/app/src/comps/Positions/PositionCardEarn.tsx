@@ -20,6 +20,7 @@ export function PositionCardEarn({
   const earnPosition = useEarnPosition(branchId, owner ?? null);
   return (
     <PositionCard
+      className="position-card position-card-earn"
       href={token ? `/earn/${token.symbol.toLowerCase()}` : ""}
       heading={[
         <div

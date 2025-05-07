@@ -209,6 +209,7 @@ export function Dropdown({
         ref={floatingRefs.setReference}
         aria-expanded={showMenu}
         aria-controls={dropdownId}
+        aria-haspopup="listbox"
         type="button"
         onClick={() => {
           if (!preventOpenOnRelease.current) {

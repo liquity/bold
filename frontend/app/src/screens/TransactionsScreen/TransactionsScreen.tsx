@@ -221,6 +221,7 @@ export function TransactionsScreen() {
           {step.status === "confirmed"
             ? (
               <LinkButton
+                id="flow-success-link"
                 href={flow.request.successLink[0]}
                 label={flow.request.successLink[1]}
                 mode="positive"
@@ -230,6 +231,7 @@ export function TransactionsScreen() {
             )
             : (
               <Button
+                className={`flow-commit-step flow-commit-step-${step.id}`}
                 disabled={step.status === "awaiting-verify" || step.status === "awaiting-commit"}
                 label={(
                   step.status === "error" ? "Retry: " : ""
