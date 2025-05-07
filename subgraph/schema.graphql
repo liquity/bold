@@ -1,24 +1,15 @@
 type Collateral @entity(immutable: false) {
   id: ID! # "collIndex", e.g. "0"
   collIndex: Int!
-  token: Token!
   minCollRatio: BigInt!
   troves: [Trove!]! @derivedFrom(field: "collateral")
   addresses: CollateralAddresses! @derivedFrom(field: "collateral")
 }
 
-type Token @entity(immutable: true) {
-  id: ID! # "collIndex", e.g. "0"
-  collateral: Collateral!
-  name: String!
-  symbol: String!
-  decimals: Int!
-}
-
 type CollateralAddresses @entity(immutable: true) {
   id: ID! # "collIndex", e.g. "0"
-  borrowerOperations: Bytes!
   collateral: Collateral!
+  borrowerOperations: Bytes!
   sortedTroves: Bytes!
   stabilityPool: Bytes!
   token: Bytes!
@@ -43,25 +34,25 @@ enum TroveStatus {
 type Trove @entity(immutable: false) {
   id: ID! # "collIndex:collId", e.g. 0:0x1731afc858cad2708001a4f71851f9f775729c22f47df7c4360b1e416fd0f2de
   borrower: Bytes!
-  closedAt: BigInt
   collateral: Collateral!
+  closedAt: BigInt
   createdAt: BigInt!
+  mightBeLeveraged: Boolean!
+  status: TroveStatus!
+  updatedAt: BigInt!
   debt: BigInt!
   deposit: BigInt!
   interestBatch: InterestBatch
   interestRate: BigInt!
   stake: BigInt!
-  status: TroveStatus!
   troveId: String!
-  mightBeLeveraged: Boolean!
-  updatedAt: BigInt!
 }
 
 type BorrowerInfo @entity(immutable: false) {
   id: ID! # "borrowerAddress", e.g. "0x0000000000000000000000000000000000000000"
+  nextOwnerIndexes: [Int!]!
   troves: Int!
   trovesByCollateral: [Int!]!
-  nextOwnerIndexes: [Int!]!
 }
 
 type InterestBatch @entity(immutable: false) {
@@ -77,14 +68,13 @@ type InterestBatch @entity(immutable: false) {
 
 type GovernanceUser @entity(immutable: false) {
   id: ID! # "userAddress", e.g. "0x0000000000000000000000000000000000000000"
+  allocated: [Bytes!]!
   allocatedLQTY: BigInt!
   stakedLQTY: BigInt!
   stakedOffset: BigInt!
   allocations: [GovernanceAllocation!]! @derivedFrom(field: "user")
-  allocated: [Bytes!]!
 }
 
-# Allocation of a user to a given initiative.
 type GovernanceAllocation @entity(immutable: false) {
   id: ID! # "initiativeAddress:userAddress", e.g. "0x0000000000000000000000000000000000000000:0x0000000000000000000000000000000000000000"
   user: GovernanceUser!
@@ -96,12 +86,4 @@ type GovernanceAllocation @entity(immutable: false) {
 
 type GovernanceInitiative @entity(immutable: false) {
   id: ID! # "initiativeAddress", e.g. "0x0000000000000000000000000000000000000000"
-  lastClaimEpoch: BigInt
-  lastVoteSnapshotEpoch: BigInt
-  lastVoteSnapshotVotes: BigInt
-  registeredAt: BigInt!
-  registeredAtEpoch: BigInt!
-  registrant: Bytes!
-  unregisteredAt: BigInt
-  unregisteredAtEpoch: BigInt
 }

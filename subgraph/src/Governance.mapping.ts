@@ -1,39 +1,15 @@
 import { BigInt, Bytes } from "@graphprotocol/graph-ts";
 import {
   AllocateLQTY as AllocateLQTYEvent,
-  ClaimForInitiative as ClaimForInitiativeEvent,
   DepositLQTY as DepositLQTYEvent,
   RegisterInitiative as RegisterInitiativeEvent,
-  SnapshotVotesForInitiative as SnapshotVotesForInitiativeEvent,
-  UnregisterInitiative as UnregisterInitiativeEvent,
   WithdrawLQTY as WithdrawLQTYEvent,
 } from "../generated/Governance/Governance";
 import { GovernanceAllocation, GovernanceInitiative, GovernanceUser } from "../generated/schema";
 
 export function handleRegisterInitiative(event: RegisterInitiativeEvent): void {
   let initiative = new GovernanceInitiative(event.params.initiative.toHex());
-  initiative.registeredAt = event.block.timestamp;
-  initiative.registeredAtEpoch = event.params.atEpoch;
-  initiative.registrant = event.params.registrant;
   initiative.save();
-}
-
-export function handleUnregisterInitiative(event: UnregisterInitiativeEvent): void {
-  let initiative = GovernanceInitiative.load(event.params.initiative.toHex());
-  if (initiative) {
-    initiative.unregisteredAt = event.block.timestamp;
-    initiative.unregisteredAtEpoch = event.params.atEpoch;
-    initiative.save();
-  }
-}
-
-export function handleSnapshotVotesForInitiative(event: SnapshotVotesForInitiativeEvent): void {
-  let initiative = GovernanceInitiative.load(event.params.initiative.toHex());
-  if (initiative) {
-    initiative.lastVoteSnapshotEpoch = event.params.forEpoch;
-    initiative.lastVoteSnapshotVotes = event.params.votes;
-    initiative.save();
-  }
 }
 
 export function handleDepositLQTY(event: DepositLQTYEvent): void {
@@ -118,12 +94,4 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
   allocation.save();
   user.save();
   initiative.save();
-}
-
-export function handleClaimForInitiative(event: ClaimForInitiativeEvent): void {
-  let initiative = GovernanceInitiative.load(event.params.initiative.toHex());
-  if (initiative) {
-    initiative.lastClaimEpoch = event.params.forEpoch;
-    initiative.save();
-  }
 }
