@@ -99,6 +99,7 @@
   - [18 - Batch vs sequential redistributions](#18---batch-vs-sequential-redistributions)
   - [19 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price](#19---lastGoodPrice-used-in-urgent-redemptions-may-not-represent-a-previous-redemption-price)
   - [20 - Users Can Game Upfront Fees by Chunking Debt](#20---users-can-game-upfront-fees-by-chunking-debt)
+  - [21 - ### 21 - Users can game upfront fees by joining an empty batch[(###-21---Users-can-game-upfront-fees-by-joining-an-empty-batch)
   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
 
 ## Significant changes in Liquity v2
@@ -1727,7 +1728,7 @@ Urgent redemptions could be immediately unprofitable after oracle failure if `la
 
 Overall, the bigger factor in urgent redemption unprofitability is likely to be a market price decrease post oracle-failure, rather than a `lastGoodPrice` that is slightly too high. As mentioned in [Known Issue 4](https://github.com/liquity/bold?tab=readme-ov-file#3---path-dependent-redemptions-lower-fee-when-chunking), `lastGoodPrice` can become out of date simply due to market price movements.
 
-### 20 - Users Can Game Upfront Fees by Chunking Debt
+### 20 - Users can game upfront fees by chunking debt
 
 When a borrower opens a Trove or draws new debt, an [upfront fee](https://github.com/liquity/bold?tab=readme-ov-file#upfront-borrowing-fees) is charged based on the branch’s debt-weighted average interest rate. That is:
 
@@ -1747,6 +1748,24 @@ This is considered a minor issue since a borrower can only significantly raise t
 
 A debt increase large enough to be worth chunking corresponds to a significant expansion of branch debt, which generates significant fees for the branch’s SP.  Even if fees are gamed via chunking and somewhat reduced, they will still result in a significant yield boost and APR spike for the branch’s SP depositors.
 
+### 21 - Users can game upfront fees by joining an empty batch
+
+This issue involves a different action sequence from issue 20 and utilises a pre-made empty batch, however is it insignificant for the same reason as issue 20 is.
+
+Instead of simply opening a Trove at their desired interest rate, a borrower may do the following to (slightly) reduce the upfront fee they pay upon opening:
+
+- Create a batch manager via `registerBatchManager` and set the batch interest rate to the minimum
+- Wait for a period of `INTEREST_RATE_ADJ_COOLDOWN` 
+- Open a Trove and join the batch via `openTroveAndJoinInterestBatchManager`.  This incurs an upfront fee. The branch’s resulting debt-weighted average interest rate is calculated incorporating the Trove’s debt and the batch’s (minimum) interest rate. This rate is in turn used to calculate the fee.
+- In the same transaction, call `setBatchManagerAnnualInterestRate` and set the batch’s interest rate to the desired interest rate for the Trove. This final step incurs no fee, since the batch was created sufficiently long ago.
+
+By doing this, the borrower can pay a slightly lower upfront fee: the branch’s resulting debt-weighted average interest rate is slightly lower when it incorporates the batch’s old (minimum) interest rate, rather than the user’s new (higher) Trove interest rate.
+
+#### Impact
+
+Unless the Trove debt is very large relative to prior branch debt, the lower resulting debt-weighted interest rate attained in this approach will be negligibly lower than if the user simply opened their Trove at their desired rate. Thus, the upfront fee charged (based on that debt-weighted rate) will also only be negligibly lower.
+
+And like issue 20, a debt increase large enough to be worth gaming the upfront fee via this method is still very beneficial for SP depositors.
 
 
 ### Issues identified in audits requiring no fix
