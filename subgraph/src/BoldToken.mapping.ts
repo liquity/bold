@@ -4,9 +4,8 @@ import {
 } from "../generated/BoldToken/BoldToken";
 import { BorrowerOperations as BorrowerOperationsContract } from "../generated/BoldToken/BorrowerOperations";
 import { CollateralRegistry as CollateralRegistryContract } from "../generated/BoldToken/CollateralRegistry";
-import { ERC20 as ERC20Contract } from "../generated/BoldToken/ERC20";
 import { TroveManager as TroveManagerContract } from "../generated/BoldToken/TroveManager";
-import { Collateral, CollateralAddresses, Token } from "../generated/schema";
+import { Collateral, CollateralAddresses } from "../generated/schema";
 import { TroveManager as TroveManagerTemplate, TroveNFT as TroveNFTTemplate } from "../generated/templates";
 
 function addCollateral(
@@ -19,14 +18,6 @@ function addCollateral(
 
   let collateral = new Collateral(collId);
   collateral.collIndex = collIndex;
-  collateral.token = collId;
-
-  let token = new Token(collId);
-  let tokenContract = ERC20Contract.bind(tokenAddress);
-  token.collateral = collId;
-  token.name = tokenContract.name();
-  token.symbol = tokenContract.symbol();
-  token.decimals = tokenContract.decimals();
 
   let troveManagerContract = TroveManagerContract.bind(troveManagerAddress);
 
@@ -44,7 +35,6 @@ function addCollateral(
   ).MCR();
 
   collateral.save();
-  token.save();
   addresses.save();
 
   let context = new DataSourceContext();
