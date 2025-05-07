@@ -62,7 +62,7 @@ contract tBTCPriceFeed is CompositePriceFeed {
     }
 
     function _getCanonicalRate() internal view override returns (uint256, bool) {
-        return (1, false); // always return 1 BTC per tBTC by default.
+        return (1 * 10 ** 18, false); // always return 1 BTC per tBTC by default.
     }
 }   
 
