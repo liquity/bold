@@ -99,7 +99,7 @@
   - [18 - Batch vs sequential redistributions](#18---batch-vs-sequential-redistributions)
   - [19 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price](#19---lastGoodPrice-used-in-urgent-redemptions-may-not-represent-a-previous-redemption-price)
   - [20 - Users Can Game Upfront Fees by Chunking Debt](#20---users-can-game-upfront-fees-by-chunking-debt)
-  - [21 - Users can game upfront fees by joining an empty batch[(#-21---Users-can-game-upfront-fees-by-joining-an-empty-batch)
+  - [21 - Users can game upfront fees by joining an empty batch](#21---Users-can-game-upfront-fees-by-joining-an-empty-batch)
   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
 
 ## Significant changes in Liquity v2
