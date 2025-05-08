@@ -78,7 +78,7 @@ contract DeployGovernance is Script {
         assert(governanceAddress == address(governance));
 
         address forwardingInitiative;
-        if (block.chainid == 42161 || block.chainid == 31337) {
+        if (block.chainid == 42161) {
             // deploy forwarding initiative
             forwardingInitiative = deployForwardingInitiative(p, address(governance), _neriteDaoTreasuryAddress);
             initialInitiatives.push(forwardingInitiative);
