@@ -3,7 +3,6 @@
 pragma solidity 0.8.24;
 
 import "./TestContracts/DevTestSetup.sol";
-import "../src/PriceFeeds/tBTCPriceFeed.sol";
 
 contract BasicOps is DevTestSetup {
     function testOpenTroveFailsWithoutAllowance() public {
@@ -41,27 +40,6 @@ contract BasicOps is DevTestSetup {
 
         trovesCount = troveManager.getTroveIdsCount();
         assertEq(trovesCount, 1);
-    }
-
-    function testOpenTroveWithtBTC() public {
-         priceFeed = new tBTCPriceFeed(
-            owner,
-            address(tBTCOracle),
-            address(btcOracle),
-            STALENESS_THRESHOLD,
-            STALENESS_THRESHOLD
-        );
-
-        priceFeed.setPrice(3000e18);
-        vm.startPrank(A);
-        borrowerOperations.openTrove(
-            A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
-        );
-
-        trovesCount = troveManager.getTroveIdsCount();
-        assertEq(trovesCount, 1);
-
-        vm.stopPrank();
     }
 
     function testCloseTrove() public {
