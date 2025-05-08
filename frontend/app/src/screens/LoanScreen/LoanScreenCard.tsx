@@ -92,6 +92,7 @@ export function LoanScreenCard({
 
   return (
     <ScreenCard
+      className={`loan-screen-card loan-screen-card-${mode}`}
       finalHeight={fullyRedeemed ? 200 : undefined}
       mode={match(loadingState)
         .returnType<"ready" | "loading" | "error">()
