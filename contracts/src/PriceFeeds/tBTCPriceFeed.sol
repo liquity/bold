@@ -54,6 +54,9 @@ contract tBTCPriceFeed is CompositePriceFeed {
         if (_isRedemption && _withinDeviationThreshold(tbtcUsdPrice, btcUsdPrice, BTC_TBTC_DEVIATION_THRESHOLD)) {
             // If it's a redemption and within 2%, take the max of (tBTC-USD, BTC-USD) to prevent value leakage and convert to tBTC-USD
             tbtcUsdPrice = LiquityMath._max(tbtcUsdPrice, btcUsdPrice);
+        }else{
+            // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
+            tbtcUsdPrice = LiquityMath._min(tbtcUsdPrice, btcUsdPrice);
         }
 
         // Otherwise, just use tBTC-USD price: USD_per_tBTC.
@@ -62,7 +65,7 @@ contract tBTCPriceFeed is CompositePriceFeed {
     }
 
     function _getCanonicalRate() internal view override returns (uint256, bool) {
-        return (1, false); // always return 1 BTC per tBTC by default.
+        return (1 * 10 ** 18, false); // always return 1 BTC per tBTC by default.
     }
 }   
 
