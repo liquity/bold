@@ -8,8 +8,8 @@ import {Script} from "forge-std/Script.sol";
 import {ICurveStableSwapFactoryNG} from "test/Interfaces/Curve/ICurveStableSwapFactoryNG.sol";
 import {ICurveStableSwapNG} from "test/Interfaces/Curve/ICurveStableSwapNG.sol";
 import {ILiquidityGaugeV6} from "test/Interfaces/Curve/ILiquidityGaugeV6.sol";
-
-import {IGovernance} from "V2-gov/src/interfaces/IGovernance.sol";
+import {ForwardingInitiative} from "lib/V2-gov/src/initiatives/ForwardingInitiative.sol";
+import {IGovernance} from "lib/V2-gov/src/interfaces/IGovernance.sol";
 
 import {Governance} from "V2-gov/src/Governance.sol";
 import {CurveV2GaugeRewards} from "V2-gov/src/CurveV2GaugeRewards.sol";
@@ -33,9 +33,11 @@ contract DeployGovernance is Script {
     address constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address constant FUNDS_SAFE = 0xF06016D822943C42e3Cb7FC3a6A3B1889C1045f8;
     address constant DEFI_COLLECTIVE_GRANTS_ADDRESS = 0xDc6f869d2D34E4aee3E89A51f2Af6D54F0F7f690;
-    address constant FORWARDING_INITIATIVE_ADDRESS = 0x0000000000000000000000000000000000000000;  // update when initiative is deployed
-    address constant NERITE_DAO_TREASURY_ADDRESS = 0x108f48e558078c8ef2eb428e0774d7ecd01f6b1d;
 
+    // nerite specific addresses
+
+
+    
     // Governance Constants
     uint128 private constant REGISTRATION_FEE = 1000e18;
     uint128 private constant REGISTRATION_THRESHOLD_FACTOR = 0.0001e18; // 0.01%
@@ -64,9 +66,7 @@ contract DeployGovernance is Script {
 
     function deployGovernance(
         DeployGovernanceParams memory p,
-        address _curveFactoryAddress,
-        address _curveUsdcBoldPoolAddress,
-        address _curveLusdBoldPoolAddress
+        address _neriteDaoTreasuryAddress
     ) internal returns (address, string memory) {
         (address governanceAddress, IGovernance.Configuration memory governanceConfiguration) =
             computeGovernanceAddressAndConfig(p);
@@ -77,33 +77,21 @@ contract DeployGovernance is Script {
 
         assert(governanceAddress == address(governance));
 
-        curveUsdcBoldPool = ICurveStableSwapNG(_curveUsdcBoldPoolAddress);
-        curveLusdBoldPool = ICurveStableSwapNG(_curveLusdBoldPoolAddress);
-
-        if (block.chainid == 42161) {
-            // arbitrum
-            (curveUsdcBoldGauge, curveUsdcBoldInitiative) = deployCurveV2GaugeRewards({
-                _governance: governance,
-                _bold: p.bold,
-                _curveFactoryAddress: _curveFactoryAddress,
-                _curvePool: curveUsdcBoldPool
-            });
-
-            (curveLusdBoldGauge, curveLusdBoldInitiative) = deployCurveV2GaugeRewards({
-                _governance: governance,
-                _bold: p.bold,
-                _curveFactoryAddress: _curveFactoryAddress,
-                _curvePool: curveLusdBoldPool
-            });
-
-            initialInitiatives.push(address(curveUsdcBoldInitiative));
-            initialInitiatives.push(address(curveLusdBoldInitiative));
-            initialInitiatives.push(DEFI_COLLECTIVE_GRANTS_ADDRESS);
+        address forwardingInitiative;
+        if (block.chainid == 42161 || block.chainid == 31337) {
+            // deploy forwarding initiative
+            forwardingInitiative = deployForwardingInitiative(p, address(governance), _neriteDaoTreasuryAddress);
+            initialInitiatives.push(forwardingInitiative);
         }
 
         governance.registerInitialInitiatives{gas: 600000}(initialInitiatives);
 
-        return (governanceAddress, _getGovernanceManifestJson(p));
+        return (governanceAddress, _getGovernanceManifestJson(p, forwardingInitiative));
+    }
+
+    function deployForwardingInitiative(DeployGovernanceParams memory p, address governance, address receiver) internal returns (address) {
+        ForwardingInitiative forwardingInitiative = new ForwardingInitiative(address(governance), p.bold, receiver);
+        return address(forwardingInitiative);
     }
 
     function computeGovernanceAddress(DeployGovernanceParams memory p) internal pure returns (address) {
@@ -180,23 +168,18 @@ contract DeployGovernance is Script {
         );
     }
 
-    function _getGovernanceManifestJson(DeployGovernanceParams memory p) internal view returns (string memory) {
+    function _getGovernanceManifestJson(DeployGovernanceParams memory p, address forwardingInitiative) internal view returns (string memory) {
         return string.concat(
             "{",
             string.concat(
                 string.concat('"constants":', _getGovernanceDeploymentConstants(p), ","),
                 string.concat('"governance":"', address(governance).toHexString(), '",'),
-                string.concat('"curveUsdcBoldPool":"', address(curveUsdcBoldPool).toHexString(), '",'),
-                string.concat('"curveUsdcBoldGauge":"', address(curveUsdcBoldGauge).toHexString(), '",'),
-                string.concat('"curveUsdcBoldInitiative":"', address(curveUsdcBoldInitiative).toHexString(), '",'),
-                string.concat('"curveLusdBoldPool":"', address(curveLusdBoldPool).toHexString(), '",'),
-                string.concat('"curveLusdBoldGauge":"', address(curveLusdBoldGauge).toHexString(), '",'),
-                string.concat('"curveLusdBoldInitiative":"', address(curveLusdBoldInitiative).toHexString(), '",')
+                string.concat('"ForwardingInitiative":"', forwardingInitiative.toHexString(), '",')
             ),
             string.concat(
-                string.concat('"defiCollectiveInitiative":"', DEFI_COLLECTIVE_GRANTS_ADDRESS.toHexString(), '",'),
+                
                 string.concat('"stakingV1":"', p.stakingV1.toHexString(), '",'),
-                string.concat('"LQTYToken":"', p.lqty.toHexString(), '",'),
+                string.concat('"NERIToken":"', p.lqty.toHexString(), '",'),
                 string.concat('"LUSDToken":"', p.lusd.toHexString(), '"') // no comma
             ),
             "}"
