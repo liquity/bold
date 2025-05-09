@@ -18,12 +18,15 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
         boldToken.approve(address(_exchange), type(uint256).max);
     }
 
-    function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
+    function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams memory _params) external payable {
         require(msg.value == ETH_GAS_COMPENSATION, "LZ: Wrong ETH");
         require(
             _params.batchManager == address(0) || _params.annualInterestRate == 0,
             "LZ: Cannot choose interest if joining a batch"
         );
+
+        // Include the original sender in the index, so it is included in the final troveId
+        _params.ownerIndex = _getTroveIndex(msg.sender, _params.ownerIndex);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -37,7 +40,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            collToken, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(msg.sender, _params)
+            collToken, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
         );
 
         // return leftovers to user
@@ -46,7 +49,6 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
     // Callback from the flash loan provider
     function receiveFlashLoanOnOpenLeveragedTrove(
-        address _originalSender,
         OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external override {
@@ -57,11 +59,10 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
         // Open trove
         uint256 troveId;
-        uint256 index = _getTroveIndex(_originalSender, _params.ownerIndex);
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
-                index,
+                _params.ownerIndex,
                 totalCollAmount,
                 _params.boldAmount,
                 _params.upperHint,
@@ -79,7 +80,7 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
                 openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
                     .OpenTroveAndJoinInterestBatchManagerParams({
                     owner: _params.owner,
-                    ownerIndex: index,
+                    ownerIndex: _params.ownerIndex,
                     collAmount: totalCollAmount,
                     boldAmount: _params.boldAmount,
                     upperHint: _params.upperHint,

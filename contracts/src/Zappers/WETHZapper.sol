@@ -305,7 +305,6 @@ contract WETHZapper is BaseZapper {
 
     // Unimplemented flash loan receive functions for leverage
     function receiveFlashLoanOnOpenLeveragedTrove(
-        address _originalSender,
         ILeverageZapper.OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external virtual override {}
