@@ -64,7 +64,7 @@
   - [Batch management fee](#batch-management-fee)
   - [Batch `recordedDebt` updates](#batch-recordeddebt-updates)
   - [Batch premature adjustment fees](#batch-premature-adjustment-fees)
-  - [Batch shares and kicking Troves from a batch](batch-shares-and-kicking-Troves-from-a-batch)
+  - [Batch shares and kicking Troves from a batch](#batch-shares-and-kicking-Troves-from-a-batch)
   - [Batch invariants](#batch-invariants)
 - [Collateral branch shutdown](#collateral-branch-shutdown)
   - [Interest rates and shutdown](#interest-rates-and-shutdown)
