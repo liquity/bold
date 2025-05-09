@@ -174,7 +174,7 @@ contract WETHZapper is BaseZapper {
         }
 
         address payable receiver =
-            payable(_checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease));
+            payable(_checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _isDebtIncrease));
 
         // Set initial balances to make sure there are not lefovers
         _setInitialTokensAndBalances(WETH, boldToken, _initialBalances);
