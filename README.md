@@ -64,6 +64,7 @@
   - [Batch management fee](#batch-management-fee)
   - [Batch `recordedDebt` updates](#batch-recordeddebt-updates)
   - [Batch premature adjustment fees](#batch-premature-adjustment-fees)
+  - [Batch shares and kicking Troves from a batch](batch-shares-and-kicking-Troves-from-a-batch)
   - [Batch invariants](#batch-invariants)
 - [Collateral branch shutdown](#collateral-branch-shutdown)
   - [Interest rates and shutdown](#interest-rates-and-shutdown)
@@ -100,6 +101,8 @@
   - [19 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price](#19---lastGoodPrice-used-in-urgent-redemptions-may-not-represent-a-previous-redemption-price)
   - [20 - Users Can Game Upfront Fees by Chunking Debt](#20---users-can-game-upfront-fees-by-chunking-debt)
   - [21 - Users can game upfront fees by joining an empty batch](#21---Users-can-game-upfront-fees-by-joining-an-empty-batch)
+  - [22 - Deployment backrunning](#22---deployment-backrunning)
+  - [23 - Repeated redistribution can eventually result in zero stake Troves](#23---repeated-redistribution-can-eventually-result-in-zero-stake-Troves)
   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
 
 ## Significant changes in Liquity v2
@@ -1070,6 +1073,13 @@ When a borrower adds their Trove to a batch, there is a trust assumption: they e
 
 Generally is expected that competent batch managers will build good reputations and attract borrowers. Malicious or poor managers will likely end up with empty batches in the long-term.
 
+### Batch shares and kicking Troves from a batch
+
+The function `kickFromBatch` enables anyone to permissionlessly kick a Trove out of a batch if its debt:shares ratio has exceeded the maximum `MAX_BATCH_SHARES_RATIO`, i,e. 1e9.
+
+A batch with such a high ratio isn't allowed to mint new shares. It’s thus possible that an unredeemable (zombie) Trove receives a significant amount of redistributed debt which can’t in turn be applied via `applyPendingDebt`, since that would involve minting new shares within its batch. Such a Trove would be protected against redemptions, even if its debt becomes greater than the `MIN_DEBT` through redistribution gains or interest accrual.
+
+In this case, the `kickFromBatch` function can be used to permissionlessly remove the Trove, so that its pending debt redistribution debt gain (and interest) can be applied, and - if its resulting `debt > MIN_DEBT` - it can be redeemed against.
 
 ### Buffer Collateral Ratio (BCR)
 
@@ -1767,6 +1777,44 @@ Unless the Trove debt is very large relative to prior branch debt, the lower res
 
 And like issue 20, a debt increase large enough to be worth gaming the upfront fee via this method is still very beneficial for SP depositors.
 
+### 22 - Deployment backrunning
+
+If a user were to immediately backrun the Liquity v2 deployment before the first legitimate Troves were opened, then it could be possible to game the system for an advantage. There are several avenues by which deployment could be backrun and exploited, e.g:
+
+- Opening Troves at MCR and triggering redistributions after interest accrual in the next block order to create zero-stake Troves, i.e. an accelerated variant of issue 23
+- Opening and redeeming from many small Troves in the next block, in order to attain many small low interest rate unredeemable zombie Troves
+
+Deployment backrun attacks tend to rely on a tiny/empty system (i.e. branches with no Troves), and an empty SP.
+
+However, such attacks are unrealistic, since:
+
+- The deployer address will be unknown until public launch. There will be a delay between technical deployment and the public launch announcement with disclosure of v2 contracts. It’s expected that the first Troves opened and SP deposits made will be legitimate ones.
+- If someone does somehow manage to backrun deployment before launch announcement, the v2 team may simply redeploy via a fresh unknown address before public announcement.
+
+
+### 23 - Repeated redistribution can eventually result in zero stake Troves
+
+This issue carries over from Liquity v1, and was originally documented in [this issue](https://github.com/liquity/dev/issues/310).
+
+A Trove’s stake (for earning redistribution gains) is calculated as:
+
+https://github.com/liquity/bold/blob/a9649ab9f921950f2e7d8fbbba3294aabe7686f6/contracts/src/TroveManager.sol#L1077
+
+When a series of liquidations occur that trigger redistributions, the stakes of the liquidated Troves are removed from the system, but the collateral of the liquidated troves remains in the system - it just moves from `ActivePool` to `DefaultPool`. Thus, the `totalStakes` decreases but `totalCollateral` remains constant (ignoring gas compensation).
+
+Over time as redistributions occur, due to the stake computation, fresh stakes become smaller and smaller for a given Trove collateral size. Eventually, fresh stakes are so small and close in magnitude to 1 wei, such that they lose significant precision. Eventually new stakes may evaluate to 0 due to the floor division. 
+
+Zero-stake Troves break the proportional reward distribution mechanism. When redistributions occur on a branch with zero-stake Troves which have a significant share of branch collateral, then a significant portion of the redistributed debt and collateral will remain in limbo, unassigned to any Trove. The “limbo” collateral would be unclaimable/unredeemable, and the limbo debt would thus be bad debt, unbacked by collateral.  
+
+Furthermore, if _all_ Troves in a branch are zero-stake Troves, then `totalStakes` would be 0. This would break redistributions through a division-by-zero error, which would block all future liquidations via redistribution.
+
+#### Likelihood
+
+Previous calculations showed that it would take on the order of ~1000 redistributions of 10% of branch debt for the branch to begin creating stakes with significant precision loss. If larger fractions of branch debt can be redistributed, it would take fewer redistributions - and vice versa.  However these extreme scenarios are unlikely to occur in the normal lifetime of a Liquity v2 branch. For reference, zero redistributions have occurred in Liquity v1 from launch until present date (May 2025) - all liquidations were absorbed by the Stability Pool.
+
+Deliberately triggering sizable redistributions is difficult to engineer, since they require both the Stability Pool to be empty and large liquidateable Troves to be available.
+
+Despite this, the collateral gas compensation is now not paid out for redistributed collateral, making redistributions less profitable than in Liquity v1.
 
 ### Issues identified in audits requiring no fix
 A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/issues?q=label%3Awontfix+).
