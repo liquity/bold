@@ -21,7 +21,7 @@ export function LegacyPositionsBanner() {
   });
 
   const showTransition = useTransition(
-    Boolean(legacyPositions.data?.hasAnyPosition),
+    Boolean(account.address && legacyPositions.data?.hasAnyPosition),
     {
       from: { marginTop: -41 },
       enter: { marginTop: 0 },
