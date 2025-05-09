@@ -43,7 +43,7 @@ export function EarnPoolScreen() {
   const earnPosition = useEarnPosition(branch.id, account.address ?? null);
   const earnPool = useEarnPool(branch.id);
 
-  const loadingState = earnPool.isLoading || earnPosition.status === "pending" ? "loading" : "success";
+  const loadingState = earnPool.isLoading || earnPosition.isLoading ? "loading" : "success";
 
   const tabsTransition = useTransition(loadingState, {
     from: { opacity: 0 },
