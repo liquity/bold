@@ -103,6 +103,18 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         return LiquityMath._computeCR(_coll, _debt, _price);
     }
 
+    function getCollGasCompensation(uint256 _entireColl, uint256 _entireDebt, uint256 _boldInSPForOffsets)
+        external
+        pure
+        returns (uint256)
+    {
+        uint256 collSubjectToGasCompensation = _entireColl;
+        if (_boldInSPForOffsets < _entireDebt) {
+            collSubjectToGasCompensation = _entireColl * _boldInSPForOffsets / _entireDebt;
+        }
+        return _getCollGasCompensation(collSubjectToGasCompensation);
+    }
+
     function getCollGasCompensation(uint256 _coll) external pure returns (uint256) {
         return _getCollGasCompensation(_coll);
     }

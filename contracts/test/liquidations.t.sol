@@ -289,7 +289,7 @@ contract LiquidationsTest is DevTestSetup {
         // Check B has received all coll minus coll gas comp
         assertApproxEqAbs(
             troveManager.getTroveEntireColl(BTroveId) - BInitialColl,
-            collAmount * 995 / 1000, // Collateral - coll gas comp
+            collAmount, // no coll gas comp
             10,
             "B trove coll mismatch"
         );
@@ -404,12 +404,15 @@ contract LiquidationsTest is DevTestSetup {
         );
 
         // Check A retains ~4.5% of the collateral (after claiming from CollSurplus)
-        // vars.collAmount - 0.5% - (vars.liquidationAmount to Coll + 5%)
-        uint256 collSurplusAmount = vars.collAmount * 995 / 1000
+        // vars.collAmount - 0.5% (of offset) - (vars.liquidationAmount to Coll + 5% / 10%)
+        uint256 collSurplusAmount =
         // Portion offset
-        - (vars.liquidationAmount / 2 - 1e18) * DECIMAL_PRECISION / vars.price * 105 / 100
+        vars.collAmount * (vars.liquidationAmount / 2 - 1e18) / (vars.liquidationAmount + vars.AInterest) * 995 / 1000
+            - (vars.liquidationAmount / 2 - 1e18) * DECIMAL_PRECISION / vars.price * 105 / 100
         // Portion redistributed
-        - (vars.liquidationAmount / 2 + 1e18 + vars.AInterest) * DECIMAL_PRECISION / vars.price * 110 / 100;
+        + vars.collAmount * (vars.liquidationAmount / 2 + 1e18 + vars.AInterest)
+            / (vars.liquidationAmount + vars.AInterest)
+            - (vars.liquidationAmount / 2 + 1e18 + vars.AInterest) * DECIMAL_PRECISION / vars.price * 110 / 100;
         assertApproxEqAbs(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusAmount,
