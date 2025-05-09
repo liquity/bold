@@ -192,7 +192,7 @@ export function BorrowScreen() {
       }}
     >
       <Field
-        // “You deposit”
+        id="field-deposit"
         field={
           <InputField
             id="input-deposit"
@@ -258,7 +258,7 @@ export function BorrowScreen() {
       />
 
       <Field
-        // “You borrow”
+        id="field-debt"
         field={
           <InputField
             id="input-debt"
@@ -331,7 +331,7 @@ export function BorrowScreen() {
       />
 
       <Field
-        // “Interest rate”
+        id="field-interest-rate"
         field={
           <InterestRateField
             branchId={branch.id}

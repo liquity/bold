@@ -159,6 +159,7 @@ export function PanelStaking() {
                 ? (
                   lqtyBalance.data && dn.gt(lqtyBalance.data, 0) && (
                     <TextButton
+                      className="button-max"
                       label={`Max. ${(fmtnum(lqtyBalance.data, 2))} LQTY`}
                       onClick={() => {
                         if (lqtyBalance.data) {
@@ -171,6 +172,7 @@ export function PanelStaking() {
                 : (
                   stakePosition.data?.deposit && dn.gt(stakePosition.data?.deposit, 0) && (
                     <TextButton
+                      className="button-max"
                       label={`Max. ${fmtnum(stakePosition.data.deposit, 2)} LQTY`}
                       onClick={() => {
                         if (stakePosition.data) {

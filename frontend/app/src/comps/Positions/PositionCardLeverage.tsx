@@ -49,6 +49,7 @@ export function PositionCardLeverage({
 
   return (
     <PositionCard
+      className="position-card  position-card-loan position-card-leverage"
       href={`/loan?id=${branchId}:${troveId}`}
       heading={[
         <div

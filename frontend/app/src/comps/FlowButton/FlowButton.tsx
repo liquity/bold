@@ -31,6 +31,7 @@ export function FlowButton({
     >
       <ConnectWarningBox />
       <Button
+        className="flow-button"
         disabled={disabled || !request}
         label={label ?? "Next: Summary"}
         mode="primary"

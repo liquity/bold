@@ -20,10 +20,12 @@ type FooterRow = {
 export function Field({
   field,
   footer,
+  id,
   label,
 }: {
   field: ReactNode;
   footer?: FooterRow | FooterRow[];
+  id?: string;
   label?: ReactNode;
 }) {
   if (footer && !Array.isArray(footer)) {
@@ -31,6 +33,7 @@ export function Field({
   }
   return (
     <div
+      id={id}
       className={css({
         display: "flex",
         flexDirection: "column",

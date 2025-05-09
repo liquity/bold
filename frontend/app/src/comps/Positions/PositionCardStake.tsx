@@ -37,6 +37,7 @@ export function PositionCardStake({
   });
   return (
     <PositionCard
+      className="position-card position-card-stake"
       href="/stake"
       heading={[
         <div
