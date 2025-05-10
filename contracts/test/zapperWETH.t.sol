@@ -27,7 +27,7 @@ contract ZapperWETHTest is DevTestSetup {
         WETH = new WETH9();
 
         TestDeployer.TroveManagerParams[] memory troveManagerParams = new TestDeployer.TroveManagerParams[](1);
-        troveManagerParams[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, type(uint256).max);
+        troveManagerParams[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, 10e18);
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory contractsArray;
@@ -218,6 +218,37 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(A.balance, ethBalanceBefore + ethAmount2, "ETH bal mismatch");
     }
 
+    function testCannotWithdrawCollIfZapperIsNotReceiver() external {
+        uint256 ethAmount1 = 10 ether;
+        uint256 boldAmount = 10000e18;
+        uint256 ethAmount2 = 1 ether;
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: 5e16,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount1 + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        vm.startPrank(A);
+        // Change receiver in BO
+        borrowerOperations.setRemoveManagerWithReceiver(troveId, address(wethZapper), B);
+        vm.expectRevert("BZ: Zapper is not receiver for this trove");
+        wethZapper.withdrawCollToRawETH(troveId, ethAmount2);
+        vm.stopPrank();
+    }
+
     function testCanNotAddReceiverWithoutRemoveManager() external {
         uint256 ethAmount = 10 ether;
         uint256 boldAmount1 = 10000e18;
@@ -345,6 +376,43 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(B.balance, ethBalanceBeforeB, "B ETH bal mismatch");
     }
 
+    function testCannotWithdrawBoldIfZapperIsNotReceiver() external {
+        uint256 ethAmount = 10 ether;
+        uint256 boldAmount1 = 10000e18;
+        uint256 boldAmount2 = 1000e18;
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: boldAmount1,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        // Add a remove manager for the zapper
+        vm.startPrank(A);
+        wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
+        // Change receiver in BO
+        borrowerOperations.setRemoveManagerWithReceiver(troveId, address(wethZapper), C);
+        vm.stopPrank();
+
+        // Withdraw bold
+        vm.startPrank(B);
+        vm.expectRevert("BZ: Zapper is not receiver for this trove");
+        wethZapper.withdrawBold(troveId, boldAmount2, boldAmount2);
+        vm.stopPrank();
+    }
+
     // TODO: more adjustment combinations
     function testCanAdjustTroveWithdrawCollAndBold() external {
         uint256 ethAmount1 = 10 ether;
@@ -393,6 +461,44 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(A.balance, ethBalanceBeforeA + ethAmount2, "A ETH bal mismatch");
         assertEq(boldToken.balanceOf(B), boldBalanceBeforeB, "B BOLD bal mismatch");
         assertEq(B.balance, ethBalanceBeforeB, "B ETH bal mismatch");
+    }
+
+    function testCannotAdjustTroveWithdrawCollAndBoldIfZapperIsNotReceiver() external {
+        uint256 ethAmount1 = 10 ether;
+        uint256 ethAmount2 = 1 ether;
+        uint256 boldAmount1 = 10000e18;
+        uint256 boldAmount2 = 1000e18;
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: boldAmount1,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount1 + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        vm.startPrank(A);
+        // Add a remove manager for the zapper
+        wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
+        // Change receiver in BO
+        borrowerOperations.setRemoveManagerWithReceiver(troveId, address(wethZapper), C);
+        vm.stopPrank();
+
+        // Adjust (withdraw coll and Bold)
+        vm.startPrank(B);
+        vm.expectRevert("BZ: Zapper is not receiver for this trove");
+        wethZapper.adjustTroveWithRawETH(troveId, ethAmount2, false, boldAmount2, true, boldAmount2);
+        vm.stopPrank();
     }
 
     function testCanAdjustTroveAddCollAndBold() external {
@@ -499,6 +605,49 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(B.balance, ethBalanceBeforeB, "B ETH bal mismatch");
     }
 
+    function testCannotAdjustZombieTroveWithdrawCollAndBoldIfZapperIsNotReceiver() external {
+        uint256 ethAmount1 = 10 ether;
+        uint256 ethAmount2 = 1 ether;
+        uint256 boldAmount1 = 10000e18;
+        uint256 boldAmount2 = 1000e18;
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: boldAmount1,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount1 + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        vm.startPrank(A);
+        // Add a remove manager for the zapper
+        wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
+        // Change receiver in BO
+        borrowerOperations.setRemoveManagerWithReceiver(troveId, address(wethZapper), C);
+        vm.stopPrank();
+
+        // Redeem to make trove zombie
+        vm.startPrank(A);
+        collateralRegistry.redeemCollateral(boldAmount1 - boldAmount2, 10, 1e18);
+        vm.stopPrank();
+
+        // Adjust (withdraw coll and Bold)
+        vm.startPrank(B);
+        vm.expectRevert("BZ: Zapper is not receiver for this trove");
+        wethZapper.adjustZombieTroveWithRawETH(troveId, ethAmount2, false, boldAmount2, true, 0, 0, boldAmount2);
+        vm.stopPrank();
+    }
+
     function testCanAdjustZombieTroveAddCollAndWithdrawBold() external {
         IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
             owner: A,
@@ -549,6 +698,49 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(A.balance, ethBalanceBeforeA, "A ETH bal mismatch");
         assertEq(boldToken.balanceOf(B), 0, "B BOLD bal mismatch");
         assertEq(B.balance, ethBalanceBeforeB - ethAmount2, "B ETH bal mismatch");
+    }
+
+    function testCannotAdjustZombieTroveAddCollAndWithdrawBoldIfZapperIsNotReceiver() external {
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: 10000e18,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: 10 ether + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        vm.startPrank(A);
+        // Add a remove manager for the zapper
+        wethZapper.setRemoveManagerWithReceiver(troveId, B, A);
+        // Change receiver in BO
+        borrowerOperations.setRemoveManagerWithReceiver(troveId, address(wethZapper), C);
+        vm.stopPrank();
+
+        uint256 ethAmount2 = 1 ether;
+        uint256 boldAmount2 = 1000e18;
+
+        // Redeem to make trove zombie
+        vm.startPrank(A);
+        collateralRegistry.redeemCollateral(10000e18 - boldAmount2, 10, 1e18);
+        vm.stopPrank();
+
+        // Adjust (add coll and withdraw Bold)
+        vm.startPrank(B);
+        vm.expectRevert("BZ: Zapper is not receiver for this trove");
+        wethZapper.adjustZombieTroveWithRawETH{value: ethAmount2}(
+            troveId, ethAmount2, true, boldAmount2, true, 0, 0, boldAmount2
+        );
+        vm.stopPrank();
     }
 
     function testCanCloseTrove() external {
@@ -604,6 +796,58 @@ contract ZapperWETHTest is DevTestSetup {
         assertEq(troveManager.getTroveEntireDebt(troveId), 0, "Debt mismatch");
         assertEq(boldToken.balanceOf(A), 0, "BOLD bal mismatch");
         assertEq(A.balance, ethBalanceBefore, "ETH bal mismatch");
+    }
+
+    function testCannotCloseTroveIfZapperIsNotReceiver() external {
+        uint256 ethAmount = 10 ether;
+        uint256 boldAmount = 10000e18;
+
+        IZapper.OpenTroveParams memory params = IZapper.OpenTroveParams({
+            owner: A,
+            ownerIndex: 0,
+            collAmount: 0, // not needed
+            boldAmount: boldAmount,
+            upperHint: 0,
+            lowerHint: 0,
+            annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
+            batchManager: address(0),
+            maxUpfrontFee: 1000e18,
+            addManager: address(0),
+            removeManager: address(0),
+            receiver: address(0)
+        });
+        vm.startPrank(A);
+        uint256 troveId = wethZapper.openTroveWithRawETH{value: ethAmount + ETH_GAS_COMPENSATION}(params);
+        vm.stopPrank();
+
+        // open a 2nd trove so we can close the 1st one, and send Bold to account for interest and fee
+        vm.startPrank(B);
+        deal(address(WETH), B, 100 ether + ETH_GAS_COMPENSATION);
+        WETH.approve(address(borrowerOperations), 100 ether + ETH_GAS_COMPENSATION);
+        borrowerOperations.openTrove(
+            B,
+            0, // index,
+            100 ether, // coll,
+            10000e18, //boldAmount,
+            0, // _upperHint
+            0, // _lowerHint
+            MIN_ANNUAL_INTEREST_RATE, // annualInterestRate,
+            10000e18, // upfrontFee
+            address(0),
+            address(0),
+            address(0)
+        );
+        boldToken.transfer(A, troveManager.getTroveEntireDebt(troveId) - boldAmount);
+        vm.stopPrank();
+
+        vm.startPrank(A);
+        // Change receiver in BO
+        borrowerOperations.setRemoveManagerWithReceiver(troveId, address(wethZapper), C);
+
+        boldToken.approve(address(wethZapper), type(uint256).max);
+        vm.expectRevert("BZ: Zapper is not receiver for this trove");
+        wethZapper.closeTroveToRawETH(troveId);
+        vm.stopPrank();
     }
 
     function testExcessRepaymentByAdjustGoesBackToUser() external {
