@@ -1062,7 +1062,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             // Preconditions
             assertTrue(v.wasOpen, "Should have failed as Trove wasn't open");
-            assertGt(numTroves(i), 1, "Should have failed to close last Trove in the system");
+            if (!isShutdown[i]) assertGt(numTroves(i), 1, "Should have failed to close last Trove in the system");
             if (!isShutdown[i]) assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
