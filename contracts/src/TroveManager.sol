@@ -143,6 +143,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 newWeightedRecordedDebt;
     }
 
+    struct RedeemCollateralValues {   
+        uint256 totalCollFee;
+        uint256 remainingBold;
+        address lastBatchUpdatedInterest;
+        uint256 nextUserToCheck;
+    }
+
     // --- Variable container structs for redemptions ---
 
     struct SingleRedemptionValues {
@@ -668,7 +675,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         IDefaultPool _defaultPool,
         SingleRedemptionValues memory _singleRedemption,
         uint256 _maxBoldamount,
-        uint256 _price,
+        uint256 _redemptionPrice,
         uint256 _redemptionRate
     ) internal {
         _getLatestTroveData(_singleRedemption.troveId, _singleRedemption.trove);
@@ -677,7 +684,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         _singleRedemption.boldLot = LiquityMath._min(_maxBoldamount, _singleRedemption.trove.entireDebt);
 
         // Get the amount of Coll equal in USD value to the boldLot redeemed
-        uint256 correspondingColl = _singleRedemption.boldLot * DECIMAL_PRECISION / _price;
+        uint256 correspondingColl = _singleRedemption.boldLot * DECIMAL_PRECISION / _redemptionPrice;
         // Calculate the collFee separately (for events)
         _singleRedemption.collFee = correspondingColl * _redemptionRate / DECIMAL_PRECISION;
         // Get the final collLot to send to redeemer, leaving the fee in the Trove
@@ -745,16 +752,16 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 _price,
         uint256 _redemptionRate,
         uint256 _maxIterations
-    ) external override returns (uint256 _redemeedAmount) {
+    ) external override returns (uint256 _redeemedAmount) {
         _requireCallerIsCollateralRegistry();
 
         IActivePool activePoolCached = activePool;
         ISortedTroves sortedTrovesCached = sortedTroves;
 
         TroveChange memory totalsTroveChange;
-        uint256 totalCollFee;
+        RedeemCollateralValues memory vars;
 
-        uint256 remainingBold = _boldamount;
+        vars.remainingBold = _boldamount;
 
         SingleRedemptionValues memory singleRedemption;
         // Let's check if there's a pending zombie trove from previous redemption
@@ -764,23 +771,26 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         } else {
             singleRedemption.troveId = sortedTrovesCached.getLast();
         }
-        address lastBatchUpdatedInterest = address(0);
+        vars.lastBatchUpdatedInterest = address(0);
+
+        // Get the price to use for the redemption collateral calculations
+        (uint256 redemptionPrice,) = priceFeed.fetchRedemptionPrice();
 
         // Loop through the Troves starting from the one with lowest interest rate until _amount of Bold is exchanged for collateral
         if (_maxIterations == 0) _maxIterations = type(uint256).max;
-        while (singleRedemption.troveId != 0 && remainingBold > 0 && _maxIterations > 0) {
+        while (singleRedemption.troveId != 0 && vars.remainingBold > 0 && _maxIterations > 0) {
             _maxIterations--;
             // Save the uint256 of the Trove preceding the current one
-            uint256 nextUserToCheck;
             if (singleRedemption.isZombieTrove) {
-                nextUserToCheck = sortedTrovesCached.getLast();
+                vars.nextUserToCheck = sortedTrovesCached.getLast();
             } else {
-                nextUserToCheck = sortedTrovesCached.getPrev(singleRedemption.troveId);
+                vars.nextUserToCheck = sortedTrovesCached.getPrev(singleRedemption.troveId);
             }
 
-            // Skip if ICR < 100%, to make sure that redemptions don't decrease the CR of hit Troves
+            // Skip if ICR < 100%, to make sure that redemptions don’t decrease the CR of hit Troves. 
+            // Use the normal price for the ICR check.
             if (getCurrentICR(singleRedemption.troveId, _price) < _100pct) {
-                singleRedemption.troveId = nextUserToCheck;
+                singleRedemption.troveId = vars.nextUserToCheck;
                 singleRedemption.isZombieTrove = false;
                 continue;
             }
@@ -789,13 +799,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             // We do it here outside, to avoid repeating for each trove in the same batch
             singleRedemption.batchAddress = _getBatchManager(singleRedemption.troveId);
             if (
-                singleRedemption.batchAddress != address(0) && singleRedemption.batchAddress != lastBatchUpdatedInterest
+                singleRedemption.batchAddress != address(0) && singleRedemption.batchAddress != vars.lastBatchUpdatedInterest
             ) {
                 _updateBatchInterestPriorToRedemption(activePoolCached, singleRedemption.batchAddress);
-                lastBatchUpdatedInterest = singleRedemption.batchAddress;
+                vars.lastBatchUpdatedInterest = singleRedemption.batchAddress;
             }
 
-            _redeemCollateralFromTrove(defaultPool, singleRedemption, remainingBold, _price, _redemptionRate);
+            _redeemCollateralFromTrove(defaultPool, singleRedemption, vars.remainingBold, redemptionPrice, _redemptionRate);
 
             totalsTroveChange.collDecrease += singleRedemption.collLot;
             totalsTroveChange.debtDecrease += singleRedemption.boldLot;
@@ -805,10 +815,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             // (and weighted recorded) debt, but the accrued interest increases it.
             totalsTroveChange.newWeightedRecordedDebt += singleRedemption.newWeightedRecordedDebt;
             totalsTroveChange.oldWeightedRecordedDebt += singleRedemption.oldWeightedRecordedDebt;
-            totalCollFee += singleRedemption.collFee;
+            vars.totalCollFee += singleRedemption.collFee;
 
-            remainingBold -= singleRedemption.boldLot;
-            singleRedemption.troveId = nextUserToCheck;
+            vars.remainingBold -= singleRedemption.boldLot;
+            singleRedemption.troveId = vars.nextUserToCheck;
             singleRedemption.isZombieTrove = false;
         }
 
@@ -816,7 +826,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         //require(totals.totalCollDrawn > 0, "TroveManager: Unable to redeem any amount");
 
         emit Redemption(
-            _boldamount, totalsTroveChange.debtDecrease, totalsTroveChange.collDecrease, totalCollFee, _price
+             _boldamount, 
+            totalsTroveChange.debtDecrease, 
+            totalsTroveChange.collDecrease, 
+            vars.totalCollFee, 
+            _price, 
+            redemptionPrice
         );
 
         activePoolCached.mintAggInterestAndAccountForTroveChange(totalsTroveChange, address(0));
@@ -903,7 +918,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             revert MinCollNotReached(totalsTroveChange.collDecrease);
         }
 
-        emit Redemption(_boldAmount, totalsTroveChange.debtDecrease, totalsTroveChange.collDecrease, 0, price);
+        emit Redemption(_boldAmount, totalsTroveChange.debtDecrease, totalsTroveChange.collDecrease, 0, price, price);
 
         // Since this branch is shut down, this will mint 0 interest.
         // We call this only to update the aggregate debt and weighted debt trackers.
@@ -1203,8 +1218,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 spSize = stabilityPool.getTotalBoldDeposits();
         uint256 unbackedPortion = totalDebt > spSize ? totalDebt - spSize : 0;
 
-        (uint256 price,) = priceFeed.fetchRedemptionPrice();
-        // It's redeemable if the TCR is above the shutdown threshold, and branch has not been shut down
+        (uint256 price,) = priceFeed.fetchPrice();
+        // It's redeemable if the TCR is above the shutdown threshold, and branch has not been shut down.
+        // Use the normal price for the TCR check.
         bool redeemable = _getTCR(price) >= SCR && shutdownTime == 0;
 
         return (unbackedPortion, price, redeemable);

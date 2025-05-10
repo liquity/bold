@@ -31,7 +31,12 @@ interface ITroveEvents {
     );
 
     event Redemption(
-        uint256 _attemptedBoldAmount, uint256 _actualBoldAmount, uint256 _ETHSent, uint256 _ETHFee, uint256 _price
+        uint256 _attemptedBoldAmount, 
+        uint256 _actualBoldAmount, 
+        uint256 _ETHSent, 
+        uint256 _ETHFee, 
+        uint256 _price,
+        uint256 _redemptionPrice
     );
 
     // A snapshot of the Trove's latest state on-chain
