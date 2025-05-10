@@ -15,12 +15,15 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
         boldToken.approve(address(_exchange), type(uint256).max);
     }
 
-    function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
+    function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams memory _params) external payable {
         require(msg.value == ETH_GAS_COMPENSATION + _params.collAmount, "LZ: Wrong amount of ETH");
         require(
             _params.batchManager == address(0) || _params.annualInterestRate == 0,
             "LZ: Cannot choose interest if joining a batch"
         );
+
+        // Include the original sender in the index, so it is included in the final troveId
+        _params.ownerIndex = _getTroveIndex(msg.sender, _params.ownerIndex);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -31,7 +34,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(msg.sender, _params)
+            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
         );
 
         // return leftovers to user
@@ -40,7 +43,6 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
 
     // Callback from the flash loan provider
     function receiveFlashLoanOnOpenLeveragedTrove(
-        address _originalSender,
         OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external override {
@@ -50,12 +52,11 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
         // We compute boldAmount off-chain for efficiency
 
         uint256 troveId;
-        uint256 index = _getTroveIndex(_originalSender, _params.ownerIndex);
         // Open trove
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
-                index,
+                _params.ownerIndex,
                 totalCollAmount,
                 _params.boldAmount,
                 _params.upperHint,
@@ -73,7 +74,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
                 openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
                     .OpenTroveAndJoinInterestBatchManagerParams({
                     owner: _params.owner,
-                    ownerIndex: index,
+                    ownerIndex: _params.ownerIndex,
                     collAmount: totalCollAmount,
                     boldAmount: _params.boldAmount,
                     upperHint: _params.upperHint,
