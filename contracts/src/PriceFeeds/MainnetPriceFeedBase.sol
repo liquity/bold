@@ -7,7 +7,7 @@ import "../Dependencies/AggregatorV3Interface.sol";
 import "../Interfaces/IMainnetPriceFeed.sol";
 import "../BorrowerOperations.sol";
 
-// import "forge-std/console2.sol";
+import "forge-std/console.sol";
 
 abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
     // Determines where the PriceFeed sources data from. Possible states:
@@ -72,10 +72,12 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
     }
 
     function _shutDownAndSwitchToLastGoodPrice(address _failedOracleAddr) internal returns (uint256) {
+        console.log("shutDownAndSwitchToLastGoodPrice", address(borrowerOperations));
         // Shut down the branch
         borrowerOperations.shutdownFromOracleFailure();
-
+        console.log("borrowerOperations.shutdownFromOracleFailure");
         priceSource = PriceSource.lastGoodPrice;
+        console.log("priceSource = PriceSource.lastGoodPrice");
 
         emit ShutDownFromOracleFailure(_failedOracleAddr);
         return lastGoodPrice;
