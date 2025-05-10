@@ -87,6 +87,7 @@ contract WETHZapper is BaseZapper {
     function withdrawCollToRawETH(uint256 _troveId, uint256 _amount) external {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        _requireZapperIsReceiver(_troveId);
 
         borrowerOperations.withdrawColl(_troveId, _amount);
 
@@ -99,6 +100,7 @@ contract WETHZapper is BaseZapper {
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
+        _requireZapperIsReceiver(_troveId);
 
         borrowerOperations.withdrawBold(_troveId, _boldAmount, _maxUpfrontFee);
 
@@ -211,6 +213,7 @@ contract WETHZapper is BaseZapper {
             boldToken.transfer(_initialBalances.receiver, currentBoldBalance - _initialBalances.balances[1]);
         }
         // There shouldn’t be Collateral leftovers, everything sent should end up in the trove
+        // But ETH and WETH balance can be non-zero if someone accidentally send it to this contract
 
         // WETH -> ETH
         if (!_isCollIncrease && _collChange > 0) {
@@ -218,13 +221,12 @@ contract WETHZapper is BaseZapper {
             (bool success,) = _receiver.call{value: _collChange}("");
             require(success, "WZ: Sending ETH failed");
         }
-        assert(address(this).balance == 0);
-        assert(WETH.balanceOf(address(this)) == 0);
     }
 
     function closeTroveToRawETH(uint256 _troveId) external {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        _requireZapperIsReceiver(_troveId);
 
         // pull Bold for repayment
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
@@ -240,6 +242,8 @@ contract WETHZapper is BaseZapper {
     function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external override {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        _requireZapperIsReceiver(_troveId);
+
         CloseTroveParams memory params =
             CloseTroveParams({troveId: _troveId, flashLoanAmount: _flashLoanAmount, receiver: receiver});
 
