@@ -347,7 +347,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         vm.startPrank(A);
         vars.value = _inputParams.branch > 0 ? ETH_GAS_COMPENSATION : _inputParams.collAmount + ETH_GAS_COMPENSATION;
         _inputParams.leverageZapper.openLeveragedTroveWithRawETH{value: vars.value}(params);
-        vars.troveId = addressToTroveId(A, _inputParams.index);
+        vars.troveId = addressToTroveIdThroughZapper(address(_inputParams.leverageZapper), A, _inputParams.index);
         vm.stopPrank();
 
         return (vars.troveId, vars.effectiveBoldAmount);
@@ -533,7 +533,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         });
         vm.startPrank(A);
         vm.expectRevert("LZ: Caller not FlashLoan provider");
-        IFlashLoanReceiver(address(_leverageZapper)).receiveFlashLoanOnOpenLeveragedTrove(params, 10 ether);
+        IFlashLoanReceiver(address(_leverageZapper)).receiveFlashLoanOnOpenLeveragedTrove(A, params, 10 ether);
         vm.stopPrank();
 
         // Check receiver is back to zero
@@ -784,7 +784,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
 
     function _testOnlyFlashLoanProviderCanCallLeverUpCallback(ILeverageZapper _leverageZapper) internal {
         ILeverageZapper.LeverUpTroveParams memory params = ILeverageZapper.LeverUpTroveParams({
-            troveId: addressToTroveId(A),
+            troveId: addressToTroveIdThroughZapper(address(_leverageZapper), A),
             flashLoanAmount: 10 ether,
             boldAmount: 10000e18,
             maxUpfrontFee: 1000e18
@@ -1238,7 +1238,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
 
     function _testOnlyFlashLoanProviderCanCallLeverDownCallback(ILeverageZapper _leverageZapper) internal {
         ILeverageZapper.LeverDownTroveParams memory params = ILeverageZapper.LeverDownTroveParams({
-            troveId: addressToTroveId(A),
+            troveId: addressToTroveIdThroughZapper(address(_leverageZapper), A),
             flashLoanAmount: 10 ether,
             minBoldAmount: 10000e18
         });
@@ -1604,7 +1604,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
 
     function _testOnlyFlashLoanProviderCanCallCloseTroveCallback(IZapper _zapper, uint256 _branch) internal {
         IZapper.CloseTroveParams memory params = IZapper.CloseTroveParams({
-            troveId: addressToTroveId(A),
+            troveId: addressToTroveIdThroughZapper(address(_zapper), A),
             flashLoanAmount: 10 ether,
             receiver: address(0) // Set later
         });
