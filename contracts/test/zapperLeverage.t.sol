@@ -128,9 +128,9 @@ contract ZapperLeverageMainnet is DevTestSetup {
 
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, 100e24);
         for (uint256 c = 0; c < NUM_COLLATERALS; c++) {
-            troveManagerParamsArray[c] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16);
+            troveManagerParamsArray[c] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16, 100e24);
         }
 
         TestDeployer deployer = new TestDeployer();
