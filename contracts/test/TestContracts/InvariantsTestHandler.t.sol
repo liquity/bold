@@ -1268,6 +1268,9 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         amount = _bound(amount, 0, _handlerBold);
         maxIterationsPerCollateral = _bound(maxIterationsPerCollateral, 0, maxNumTroves * 11 / 10);
 
+        uint256 totalUnbacked = _getTotalUnbacked();
+        if (totalUnbacked > 0) amount = Math.min(amount, totalUnbacked);
+
         uint256 oldBaseRate = _getBaseRate();
         uint256 boldSupply = boldToken.totalSupply();
         uint256 redemptionRate = _getRedemptionRate(oldBaseRate + _getBaseRateIncrease(boldSupply, amount));
@@ -2415,6 +2418,13 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         return sp < totalDebt ? totalDebt - sp : 0;
     }
 
+    function _getTotalUnbacked() internal view returns (uint256 totalUnbacked) {
+        for (uint256 i = 0; i < branches.length; ++i) {
+            if (isShutdown[i] || _TCR(i) < SCR[i]) continue;
+            totalUnbacked += _getUnbacked(i);
+        }
+    }
+
     function _CR(uint256 i, uint256 coll, uint256 debt) internal view returns (uint256) {
         return debt > 0 ? coll * _price[i] / debt : type(uint256).max;
     }
@@ -2757,12 +2767,13 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             }
         }
 
-        if (totalProportions == 0) return (0, r);
-
         for (uint256 i = 0; i < branches.length; ++i) {
             r[i].newDesignatedVictimId = designatedVictimId[i];
+            if (totalProportions == 0) continue;
 
             r[i].attemptedAmount = amount * proportions[i] / totalProportions;
+            amount -= r[i].attemptedAmount;
+            totalProportions -= proportions[i];
             if (r[i].attemptedAmount == 0) continue;
 
             uint256 remainingAmount = r[i].attemptedAmount;
