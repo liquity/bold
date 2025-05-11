@@ -40,10 +40,11 @@ contract GasCompZapper is BaseZapper {
         collToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
 
         uint256 troveId;
+        int256 index = _getTroveIndex(_params.ownerIndex);
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
-                _params.ownerIndex,
+                index,
                 _params.collAmount,
                 _params.boldAmount,
                 _params.upperHint,
@@ -61,7 +62,7 @@ contract GasCompZapper is BaseZapper {
                 openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
                     .OpenTroveAndJoinInterestBatchManagerParams({
                     owner: _params.owner,
-                    ownerIndex: _params.ownerIndex,
+                    ownerIndex: index,
                     collAmount: _params.collAmount,
                     boldAmount: _params.boldAmount,
                     upperHint: _params.upperHint,
@@ -300,6 +301,7 @@ contract GasCompZapper is BaseZapper {
 
     // Unimplemented flash loan receive functions for leverage
     function receiveFlashLoanOnOpenLeveragedTrove(
+        address _originalSender,
         ILeverageZapper.OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external virtual override {}
