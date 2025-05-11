@@ -34,25 +34,7 @@ contract TBTCPriceFeedTest is Test {
         // Deploy addresses registry
         addressesRegistry = new AddressesRegistry(owner, 150e16, 110e16, 10e16, 110e16, 5e16, 10e16, 20e16);
         borrowerOperations = new MockBorrowerOperations();
-    /**
-            IERC20Metadata collToken;
-        IBorrowerOperations borrowerOperations;
-        ITroveManager troveManager;
-        ITroveNFT troveNFT;
-        IMetadataNFT metadataNFT;
-        IStabilityPool stabilityPool;
-        IPriceFeed priceFeed;
-        IActivePool activePool;
-        IDefaultPool defaultPool;
-        address gasPoolAddress;
-        ICollSurplusPool collSurplusPool;
-        ISortedTroves sortedTroves;
-        IInterestRouter interestRouter;
-        IHintHelpers hintHelpers;
-        IMultiTroveGetter multiTroveGetter;
-        ICollateralRegistry collateralRegistry;
-        IBoldToken boldToken;
-        IWETH WETH; */
+
         // set needed addresses
         IAddressesRegistry.AddressVars memory addressesParams;
         addressesParams.priceFeed = IPriceFeed(address(priceFeed));
