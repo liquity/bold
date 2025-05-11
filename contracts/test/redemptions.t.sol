@@ -455,7 +455,7 @@ contract Redemptions is DevTestSetup {
 
         vm.prank(E);
         boldToken.transfer(B, debt_B);
-        
+
         closeTrove(B, troveIDs.B);
 
         // Check B is closed

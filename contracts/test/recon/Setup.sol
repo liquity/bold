@@ -206,8 +206,9 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             params.LIQUIDATION_PENALTY_SP,
             params.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
+
         address troveManagerAddress =
-            getAddress(address(this), getBytecode(type(TroveManagerTester).creationCode, address(newAddressesRegistry)), SALT);
+            getAddress(address(this), abi.encodePacked(type(TroveManagerTester).creationCode, abi.encode(address(newAddressesRegistry))), SALT);
         
         return (address(newAddressesRegistry), troveManagerAddress);
     }
@@ -238,7 +239,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             CCR: 150e16,                          // 150%
             MCR: 110e16,                          // 110%
             SCR: 130e16,                          // 130%
-            BCR: 120e16,                          // 120%
+            BCR: 49e16,                           // max bcr is 50e16 prev setting was 120e16 which was too high
             debtLimit: type(uint256).max, 
             LIQUIDATION_PENALTY_SP: 1e17,         // 10%
             LIQUIDATION_PENALTY_REDISTRIBUTION: 1e17  // 10%
@@ -347,19 +348,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         TroveManagerParams memory _troveManagerParams
     ) internal returns (LiquityContractsDev memory contracts) {
         LiquityContractAddresses memory addresses;
-
-        // Deploy all contracts, using testers for TM and PriceFeed
-        AddressesRegistry newRegistry = new AddressesRegistry(
-            address(this),
-            _troveManagerParams.CCR,
-            _troveManagerParams.MCR,
-            _troveManagerParams.BCR,
-            _troveManagerParams.SCR,
-            _troveManagerParams.debtLimit,
-            _troveManagerParams.LIQUIDATION_PENALTY_SP,
-            _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
-        );
-        contracts.addressesRegistry = AddressesRegistry(address(newRegistry));
+        contracts.addressesRegistry = _addressesRegistry;
         contracts.priceFeed = new MultiTokenPriceFeedTestnet();
         contracts.interestRouter = new InterestRouter();
         contracts.collToken = MockERC20(address(_collToken));
@@ -376,7 +365,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         );
         addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = getAddress(
-            address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
+            address(this), abi.encodePacked(type(TroveNFT).creationCode, abi.encode(address(contracts.addressesRegistry), address(0))), SALT
         );
         addresses.stabilityPool = getAddress(
             address(this), getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)), SALT
