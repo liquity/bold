@@ -74,6 +74,7 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
     function _shutDownAndSwitchToLastGoodPrice(address _failedOracleAddr) internal returns (uint256) {
         // Shut down the branch
         borrowerOperations.shutdownFromOracleFailure();
+        
         priceSource = PriceSource.lastGoodPrice;
 
         emit ShutDownFromOracleFailure(_failedOracleAddr);

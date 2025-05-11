@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
  
 import "./CompositePriceFeed.sol";
 
+
 contract tBTCPriceFeed is CompositePriceFeed {
     Oracle public btcUsdOracle;
     Oracle public tBTCUsdOracle;
@@ -38,6 +39,7 @@ contract tBTCPriceFeed is CompositePriceFeed {
         assert(priceSource == PriceSource.primary);
         (uint256 tbtcUsdPrice, bool tbtcUsdOracleDown) = _getOracleAnswer(tBTCUsdOracle);
         (uint256 btcUsdPrice, bool btcOracleDown) = _getOracleAnswer(btcUsdOracle);
+
         // tBTC oracle is down or invalid answer
         if (tbtcUsdOracleDown) {
             return (_shutDownAndSwitchToLastGoodPrice(address(tBTCUsdOracle.aggregator)), true);
