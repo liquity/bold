@@ -310,4 +310,96 @@ contract RebasingBatchShares is DevTestSetup {
         console2.log("debt: %s", debtBefore - debtAfter);
         console2.log("allBatchDebtSharesBefore: %s", allBatchDebtSharesBefore - allBatchDebtSharesAfter);
     }
+
+
+    function test_WhenBatchSharesRatioIsTooHigh_CanKickTroveFromBatch() external {
+        registerBatchManager({
+            _account: B,
+            _minInterestRate: uint128(MIN_ANNUAL_INTEREST_RATE),
+            _maxInterestRate: uint128(MAX_ANNUAL_INTEREST_RATE),
+            _currentInterestRate: uint128(MAX_ANNUAL_INTEREST_RATE),
+            _fee: MAX_ANNUAL_BATCH_MANAGEMENT_FEE,
+            _minInterestRateChangePeriod: MIN_INTEREST_RATE_CHANGE_PERIOD
+        });
+
+        // Placeholder Trove so that the batch isn't wiped out fully when we redeem the target Trove later
+        uint256 placeholderTrove = openTroveAndJoinBatchManager({
+            _troveOwner: C,
+            _coll: 1_000_000 ether,
+            _debt: MIN_DEBT,
+            _batchAddress: B,
+            _annualInterestRate: 0 // ignored
+        });
+
+        // Open the target Trove, the one we will make irredeemable
+        uint256 targetTrove = openTroveAndJoinBatchManager({
+            _troveOwner: A,
+            _coll: 1_000_000 ether,
+            _debt: MIN_DEBT,
+            _batchAddress: B,
+            _annualInterestRate: 0 // ignored
+        });
+
+        // Another Trove to provide funds and keep the average interest rate high,
+        // which speeds up our manipulation of the batch:shares ratio
+        openTroveHelper({
+            _account: A,
+            _index: 1,
+            _coll: 1_000_000 ether,
+            _boldAmount: 10_000_000 ether,
+            _annualInterestRate: MAX_ANNUAL_INTEREST_RATE
+        });
+
+        // Increase the batch:shares ratio past the limit
+        for (uint256 i = 1;; ++i) {
+            skip(MIN_INTEREST_RATE_CHANGE_PERIOD);
+            setBatchInterestRate(B, MAX_ANNUAL_INTEREST_RATE - i % 2);
+
+            (uint256 debt,,,,,,, uint256 shares) = troveManager.getBatch(B);
+            if (shares * MAX_BATCH_SHARES_RATIO < debt) break;
+
+            // Shouldn't be able to kick the Trove yet
+            vm.expectRevert(BorrowerOperations.BatchSharesRatioTooLow.selector);
+            borrowerOperations.kickFromBatch(targetTrove, 0, 0);
+
+            // Keep debt low to minimize interest and maintain healthy TCR
+            repayBold(A, targetTrove, troveManager.getTroveEntireDebt(targetTrove) - MIN_DEBT);
+            repayBold(A, placeholderTrove, troveManager.getTroveEntireDebt(placeholderTrove) - MIN_DEBT);
+        }
+
+        // Make a zombie out of the target Trove
+        skip(MIN_INTEREST_RATE_CHANGE_PERIOD);
+        setBatchInterestRate(B, MIN_ANNUAL_INTEREST_RATE);
+        redeem(A, troveManager.getTroveEntireDebt(targetTrove));
+        assertTrue(troveManager.checkTroveIsZombie(targetTrove), "not a zombie");
+
+        // Open a Trove to be liquidated
+        (uint256 liquidatedTrove,) = openTroveWithExactICRAndDebt({
+            _account: D,
+            _index: 0,
+            _ICR: MCR,
+            _debt: 100_000 ether,
+            _interestRate: MIN_ANNUAL_INTEREST_RATE
+        });
+
+        // Liquidate by redistribution
+        priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
+        liquidate(A, liquidatedTrove);
+
+        // The target Trove has more than MIN_DEBT
+        assertGeDecimal(troveManager.getTroveEntireDebt(targetTrove), MIN_DEBT, 18, "debt < MIN_DEBT");
+
+        // Yet can't be put back into SortedTroves due to the debt:shares ratio
+        vm.expectRevert(TroveManager.BatchSharesRatioTooHigh.selector);
+        borrowerOperations.applyPendingDebt(targetTrove);
+
+        // After kicking the Trove from its batch, it can be put back into SortedTroves
+        borrowerOperations.kickFromBatch(targetTrove, 0, 0);
+        borrowerOperations.applyPendingDebt(targetTrove);
+
+        // Now it should be redeemable again
+        uint256 debtBefore = troveManager.getTroveEntireDebt(targetTrove);
+        redeem(A, 1_000 ether);
+        assertEqDecimal(troveManager.getTroveEntireDebt(targetTrove), debtBefore - 1_000 ether, 18, "wrong debt");
+    }
 }

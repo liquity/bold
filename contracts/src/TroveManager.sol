@@ -957,7 +957,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         if (batchAddress != address(0)) {
             LatestBatchData memory batch;
             _getLatestBatchData(batchAddress, batch);
-            _getLatestTroveDataFromBatch(_troveId, batchAddress, trove, batch);
+            _getLatestTroveDataFromBatch(_troveId, trove, batch);
             return;
         }
 
@@ -979,13 +979,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
     function _getLatestTroveDataFromBatch(
         uint256 _troveId,
-        address _batchAddress,
         LatestTroveData memory _latestTroveData,
         LatestBatchData memory _latestBatchData
     ) internal view {
         Trove memory trove = Troves[_troveId];
         uint256 batchDebtShares = trove.batchDebtShares;
-        uint256 totalDebtShares = batches[_batchAddress].totalDebtShares;
+        uint256 totalDebtShares = _latestBatchData.totalDebtShares;
 
         uint256 stake = trove.stake;
         _latestTroveData.redistBoldDebtGain =
@@ -1034,6 +1033,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     function _getLatestBatchData(address _batchAddress, LatestBatchData memory latestBatchData) internal view {
         Batch memory batch = batches[_batchAddress];
 
+        latestBatchData.totalDebtShares = batch.totalDebtShares;
         latestBatchData.recordedDebt = batch.debt;
         latestBatchData.annualInterestRate = batch.annualInterestRate;
         latestBatchData.weightedRecordedDebt = latestBatchData.recordedDebt * latestBatchData.annualInterestRate;
