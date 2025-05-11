@@ -453,7 +453,9 @@ contract Redemptions is DevTestSetup {
         uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
         assertGt(debt_B, 0, "B debt should be non zero");
 
-        deal(address(boldToken), B, debt_B);
+        vm.prank(E);
+        boldToken.transfer(B, debt_B);
+
         closeTrove(B, troveIDs.B);
 
         // Check B is closed

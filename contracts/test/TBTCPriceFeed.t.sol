@@ -7,12 +7,22 @@ import "forge-std/console2.sol";
 
 import "../src/PriceFeeds/tBTCPriceFeed.sol";
 import "./TestContracts/ChainlinkOracleMock.sol";
+import "src/Interfaces/IAddressesRegistry.sol";
+import "src/AddressesRegistry.sol";
+
+contract MockBorrowerOperations {
+    function shutdownFromOracleFailure() external {
+        // do nothing!
+    }
+}
 
 contract TBTCPriceFeedTest is Test {
     tBTCPriceFeed priceFeed;
     ChainlinkOracleMock tBTCOracle;
     ChainlinkOracleMock btcOracle;
-    
+    AddressesRegistry addressesRegistry;
+    MockBorrowerOperations borrowerOperations;
+
     address owner = address(1);
     uint256 constant STALENESS_THRESHOLD = 3600; // 1 hour
     
@@ -20,6 +30,16 @@ contract TBTCPriceFeedTest is Test {
         // Deploy mock oracles
         tBTCOracle = new ChainlinkOracleMock();
         btcOracle = new ChainlinkOracleMock();
+
+        // Deploy addresses registry
+        addressesRegistry = new AddressesRegistry(owner, 150e16, 110e16, 10e16, 110e16, 5e16, 10e16, 20e16);
+        borrowerOperations = new MockBorrowerOperations();
+
+        // set needed addresses
+        IAddressesRegistry.AddressVars memory addressesParams;
+        addressesParams.priceFeed = IPriceFeed(address(priceFeed));
+        addressesParams.borrowerOperations = IBorrowerOperations(address(borrowerOperations));
+
         
         // Configure the oracles
         tBTCOracle.setDecimals(8);
@@ -41,6 +61,9 @@ contract TBTCPriceFeedTest is Test {
             STALENESS_THRESHOLD,
             STALENESS_THRESHOLD
         );
+
+        vm.prank(owner);
+        priceFeed.setAddresses(address(borrowerOperations));
     }
     
     function testFetchPrice() public {
@@ -84,6 +107,7 @@ contract TBTCPriceFeedTest is Test {
     }
     
     function testFetchRedemptionPrice_tBTCOracleStale() public {
+        vm.warp(block.timestamp + STALENESS_THRESHOLD + 2);
         // Make tBTC oracle stale
         tBTCOracle.setUpdatedAt(block.timestamp - STALENESS_THRESHOLD - 1);
         
@@ -92,6 +116,7 @@ contract TBTCPriceFeedTest is Test {
     }
     
     function testFetchRedemptionPrice_BTCOracleStale() public {
+        vm.warp(block.timestamp + STALENESS_THRESHOLD + 2);
         // Make BTC oracle stale
         btcOracle.setUpdatedAt(block.timestamp - STALENESS_THRESHOLD - 1);
         
