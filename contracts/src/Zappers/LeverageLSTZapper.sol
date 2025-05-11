@@ -57,10 +57,11 @@ contract LeverageLSTZapper is GasCompZapper, ILeverageZapper {
 
         // Open trove
         uint256 troveId;
+        uint256 index = _getTroveIndex(_originalSender, _params.ownerIndex);
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
-                index, 
+                index,
                 totalCollAmount,
                 _params.boldAmount,
                 _params.upperHint,

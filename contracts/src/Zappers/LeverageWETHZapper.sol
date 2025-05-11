@@ -50,6 +50,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
         // We compute boldAmount off-chain for efficiency
 
         uint256 troveId;
+        uint256 index = _getTroveIndex(_originalSender, _params.ownerIndex);
         // Open trove
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(

@@ -40,7 +40,8 @@ contract GasCompZapper is BaseZapper {
         collToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
 
         uint256 troveId;
-        int256 index = _getTroveIndex(_params.ownerIndex);
+        // Include sender in index
+        uint256 index = _getTroveIndex(_params.ownerIndex);
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
