@@ -103,14 +103,17 @@ export function ErrorBox({
       >
         <div
           ref={contentRef}
-          className={css({
-            padding: "8px 24px 24px",
-            color: "negativeSurfaceContent",
-            overflow: "auto",
-            _focusVisible: {
-              outline: "2px solid token(colors.focused)",
-            },
-          })}
+          className={cx(
+            "content",
+            css({
+              padding: "8px 24px 24px",
+              color: "negativeSurfaceContent",
+              overflow: "auto",
+              _focusVisible: {
+                outline: "2px solid token(colors.focused)",
+              },
+            }),
+          )}
         >
           {children}
         </div>
