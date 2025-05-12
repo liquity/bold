@@ -392,8 +392,8 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         // For `P` to turn zero, `totalBoldDeposits` has to be greater than `P * (totalBoldDeposits - _debtToOffset)`.
         // - As the offset must leave at least 1 BOLD in the SP (MIN_BOLD_IN_SP),
         //   the minimum value of `totalBoldDeposits - _debtToOffset` is `1e18`
-        // - It can be shown that `P` is always in range (1e27, 1e36].
-        // Thus, to turn `P` zero, `totalBoldDeposits` has to be greater than `(1e27 + 1) * 1e18`,
+        // - It can be shown that `P` is always in range [1e27, 1e36].
+        // Thus, to turn `P` zero, `totalBoldDeposits` has to be greater than `1e27 * 1e18`,
         // and the offset has to be (near) maximal.
         // In other words, there needs to be octillions of BOLD in the SP, which is unlikely to happen in practice.
         require(newP > 0, "P must never decrease to 0");
