@@ -12,7 +12,9 @@ export default {
     Liquity V2 is a new borrowing protocol that lets users
     deposit ETH or LSTs as collateral and mint the stablecoin BOLD.
   `,
-  appUrl: "https://www.liquity.org/",
+  appUrl: typeof window === "undefined"
+    ? "https://www.liquity.org/"
+    : window.location.origin,
   appIcon: (
     typeof window === "undefined" ? "" : window.location.origin
   ) + "/favicon.svg",
