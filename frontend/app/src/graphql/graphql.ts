@@ -94,70 +94,14 @@ export enum BorrowerInfo_OrderBy {
   TrovesByCollateral = 'trovesByCollateral'
 }
 
-export type CollSurplus = {
-  __typename?: 'CollSurplus';
-  amount: Scalars['BigInt']['output'];
-  id: Scalars['String']['output'];
-};
-
-export type CollSurplus_Filter = {
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  amount?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  amount_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_not?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  and?: InputMaybe<Array<InputMaybe<CollSurplus_Filter>>>;
-  id?: InputMaybe<Scalars['String']['input']>;
-  id_contains?: InputMaybe<Scalars['String']['input']>;
-  id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  id_ends_with?: InputMaybe<Scalars['String']['input']>;
-  id_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  id_gt?: InputMaybe<Scalars['String']['input']>;
-  id_gte?: InputMaybe<Scalars['String']['input']>;
-  id_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  id_lt?: InputMaybe<Scalars['String']['input']>;
-  id_lte?: InputMaybe<Scalars['String']['input']>;
-  id_not?: InputMaybe<Scalars['String']['input']>;
-  id_not_contains?: InputMaybe<Scalars['String']['input']>;
-  id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  id_not_ends_with?: InputMaybe<Scalars['String']['input']>;
-  id_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  id_not_starts_with?: InputMaybe<Scalars['String']['input']>;
-  id_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  id_starts_with?: InputMaybe<Scalars['String']['input']>;
-  id_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  or?: InputMaybe<Array<InputMaybe<CollSurplus_Filter>>>;
-};
-
-export enum CollSurplus_OrderBy {
-  Amount = 'amount',
-  Id = 'id'
-}
-
 export type Collateral = {
   __typename?: 'Collateral';
   addresses: CollateralAddresses;
   collIndex: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
   minCollRatio: Scalars['BigInt']['output'];
-  stabilityPoolDeposits: Array<StabilityPoolDeposit>;
   token: Token;
   troves: Array<Trove>;
-};
-
-
-export type CollateralStabilityPoolDepositsArgs = {
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolDeposit_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  where?: InputMaybe<StabilityPoolDeposit_Filter>;
 };
 
 
@@ -321,7 +265,6 @@ export type Collateral_Filter = {
   minCollRatio_not?: InputMaybe<Scalars['BigInt']['input']>;
   minCollRatio_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   or?: InputMaybe<Array<InputMaybe<Collateral_Filter>>>;
-  stabilityPoolDeposits_?: InputMaybe<StabilityPoolDeposit_Filter>;
   token?: InputMaybe<Scalars['String']['input']>;
   token_?: InputMaybe<Token_Filter>;
   token_contains?: InputMaybe<Scalars['String']['input']>;
@@ -358,7 +301,6 @@ export enum Collateral_OrderBy {
   CollIndex = 'collIndex',
   Id = 'id',
   MinCollRatio = 'minCollRatio',
-  StabilityPoolDeposits = 'stabilityPoolDeposits',
   Token = 'token',
   TokenDecimals = 'token__decimals',
   TokenId = 'token__id',
@@ -584,60 +526,6 @@ export enum GovernanceInitiative_OrderBy {
   Registrant = 'registrant',
   UnregisteredAt = 'unregisteredAt',
   UnregisteredAtEpoch = 'unregisteredAtEpoch'
-}
-
-export type GovernanceStats = {
-  __typename?: 'GovernanceStats';
-  id: Scalars['ID']['output'];
-  totalInitiatives: Scalars['Int']['output'];
-  totalLQTYStaked: Scalars['BigInt']['output'];
-  totalOffset: Scalars['BigInt']['output'];
-};
-
-export type GovernanceStats_Filter = {
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<GovernanceStats_Filter>>>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  id_gt?: InputMaybe<Scalars['ID']['input']>;
-  id_gte?: InputMaybe<Scalars['ID']['input']>;
-  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  id_lt?: InputMaybe<Scalars['ID']['input']>;
-  id_lte?: InputMaybe<Scalars['ID']['input']>;
-  id_not?: InputMaybe<Scalars['ID']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  or?: InputMaybe<Array<InputMaybe<GovernanceStats_Filter>>>;
-  totalInitiatives?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_gt?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_gte?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_in?: InputMaybe<Array<Scalars['Int']['input']>>;
-  totalInitiatives_lt?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_lte?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_not?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_not_in?: InputMaybe<Array<Scalars['Int']['input']>>;
-  totalLQTYStaked?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalLQTYStaked_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_not?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalOffset?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalOffset_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_not?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-};
-
-export enum GovernanceStats_OrderBy {
-  Id = 'id',
-  TotalInitiatives = 'totalInitiatives',
-  TotalLqtyStaked = 'totalLQTYStaked',
-  TotalOffset = 'totalOffset'
 }
 
 export type GovernanceUser = {
@@ -910,8 +798,6 @@ export type Query = {
   _meta?: Maybe<_Meta_>;
   borrowerInfo?: Maybe<BorrowerInfo>;
   borrowerInfos: Array<BorrowerInfo>;
-  collSurplus?: Maybe<CollSurplus>;
-  collSurpluses: Array<CollSurplus>;
   collateral?: Maybe<Collateral>;
   collateralAddresses?: Maybe<CollateralAddresses>;
   collateralAddresses_collection: Array<CollateralAddresses>;
@@ -920,22 +806,12 @@ export type Query = {
   governanceAllocations: Array<GovernanceAllocation>;
   governanceInitiative?: Maybe<GovernanceInitiative>;
   governanceInitiatives: Array<GovernanceInitiative>;
-  governanceStats?: Maybe<GovernanceStats>;
-  governanceStats_collection: Array<GovernanceStats>;
   governanceUser?: Maybe<GovernanceUser>;
   governanceUsers: Array<GovernanceUser>;
   interestBatch?: Maybe<InterestBatch>;
   interestBatches: Array<InterestBatch>;
   interestRateBracket?: Maybe<InterestRateBracket>;
   interestRateBrackets: Array<InterestRateBracket>;
-  stabilityPool?: Maybe<StabilityPool>;
-  stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
-  stabilityPoolDepositSnapshot?: Maybe<StabilityPoolDepositSnapshot>;
-  stabilityPoolDepositSnapshots: Array<StabilityPoolDepositSnapshot>;
-  stabilityPoolDeposits: Array<StabilityPoolDeposit>;
-  stabilityPoolEpochScale?: Maybe<StabilityPoolEpochScale>;
-  stabilityPoolEpochScales: Array<StabilityPoolEpochScale>;
-  stabilityPools: Array<StabilityPool>;
   token?: Maybe<Token>;
   tokens: Array<Token>;
   trove?: Maybe<Trove>;
@@ -963,24 +839,6 @@ export type QueryBorrowerInfosArgs = {
   skip?: InputMaybe<Scalars['Int']['input']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<BorrowerInfo_Filter>;
-};
-
-
-export type QueryCollSurplusArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryCollSurplusesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<CollSurplus_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<CollSurplus_Filter>;
 };
 
 
@@ -1056,24 +914,6 @@ export type QueryGovernanceInitiativesArgs = {
 };
 
 
-export type QueryGovernanceStatsArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryGovernanceStats_CollectionArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<GovernanceStats_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<GovernanceStats_Filter>;
-};
-
-
 export type QueryGovernanceUserArgs = {
   block?: InputMaybe<Block_Height>;
   id: Scalars['ID']['input'];
@@ -1128,78 +968,6 @@ export type QueryInterestRateBracketsArgs = {
 };
 
 
-export type QueryStabilityPoolArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryStabilityPoolDepositArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryStabilityPoolDepositSnapshotArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryStabilityPoolDepositSnapshotsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolDepositSnapshot_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPoolDepositSnapshot_Filter>;
-};
-
-
-export type QueryStabilityPoolDepositsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolDeposit_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPoolDeposit_Filter>;
-};
-
-
-export type QueryStabilityPoolEpochScaleArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryStabilityPoolEpochScalesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolEpochScale_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPoolEpochScale_Filter>;
-};
-
-
-export type QueryStabilityPoolsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPool_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPool_Filter>;
-};
-
-
 export type QueryTokenArgs = {
   block?: InputMaybe<Block_Height>;
   id: Scalars['ID']['input'];
@@ -1234,265 +1002,6 @@ export type QueryTrovesArgs = {
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<Trove_Filter>;
 };
-
-export type StabilityPool = {
-  __typename?: 'StabilityPool';
-  id: Scalars['ID']['output'];
-  totalDeposited: Scalars['BigInt']['output'];
-};
-
-export type StabilityPoolDeposit = {
-  __typename?: 'StabilityPoolDeposit';
-  collateral: Collateral;
-  deposit: Scalars['BigInt']['output'];
-  depositor: Scalars['Bytes']['output'];
-  id: Scalars['ID']['output'];
-  snapshot: StabilityPoolDepositSnapshot;
-};
-
-export type StabilityPoolDepositSnapshot = {
-  __typename?: 'StabilityPoolDepositSnapshot';
-  B: Scalars['BigInt']['output'];
-  P: Scalars['BigInt']['output'];
-  S: Scalars['BigInt']['output'];
-  deposit: StabilityPoolDeposit;
-  epoch: Scalars['BigInt']['output'];
-  id: Scalars['ID']['output'];
-  scale: Scalars['BigInt']['output'];
-};
-
-export type StabilityPoolDepositSnapshot_Filter = {
-  B?: InputMaybe<Scalars['BigInt']['input']>;
-  B_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  B_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  B_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  B_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  B_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  B_not?: InputMaybe<Scalars['BigInt']['input']>;
-  B_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  P?: InputMaybe<Scalars['BigInt']['input']>;
-  P_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  P_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  P_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  P_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  P_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  P_not?: InputMaybe<Scalars['BigInt']['input']>;
-  P_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  S?: InputMaybe<Scalars['BigInt']['input']>;
-  S_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  S_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  S_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  S_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  S_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  S_not?: InputMaybe<Scalars['BigInt']['input']>;
-  S_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<StabilityPoolDepositSnapshot_Filter>>>;
-  deposit_?: InputMaybe<StabilityPoolDeposit_Filter>;
-  epoch?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  epoch_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_not?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  id_gt?: InputMaybe<Scalars['ID']['input']>;
-  id_gte?: InputMaybe<Scalars['ID']['input']>;
-  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  id_lt?: InputMaybe<Scalars['ID']['input']>;
-  id_lte?: InputMaybe<Scalars['ID']['input']>;
-  id_not?: InputMaybe<Scalars['ID']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  or?: InputMaybe<Array<InputMaybe<StabilityPoolDepositSnapshot_Filter>>>;
-  scale?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  scale_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_not?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-};
-
-export enum StabilityPoolDepositSnapshot_OrderBy {
-  B = 'B',
-  P = 'P',
-  S = 'S',
-  Deposit = 'deposit',
-  DepositDeposit = 'deposit__deposit',
-  DepositDepositor = 'deposit__depositor',
-  DepositId = 'deposit__id',
-  Epoch = 'epoch',
-  Id = 'id',
-  Scale = 'scale'
-}
-
-export type StabilityPoolDeposit_Filter = {
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<StabilityPoolDeposit_Filter>>>;
-  collateral?: InputMaybe<Scalars['String']['input']>;
-  collateral_?: InputMaybe<Collateral_Filter>;
-  collateral_contains?: InputMaybe<Scalars['String']['input']>;
-  collateral_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  collateral_ends_with?: InputMaybe<Scalars['String']['input']>;
-  collateral_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  collateral_gt?: InputMaybe<Scalars['String']['input']>;
-  collateral_gte?: InputMaybe<Scalars['String']['input']>;
-  collateral_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  collateral_lt?: InputMaybe<Scalars['String']['input']>;
-  collateral_lte?: InputMaybe<Scalars['String']['input']>;
-  collateral_not?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_contains?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_ends_with?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  collateral_not_starts_with?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  collateral_starts_with?: InputMaybe<Scalars['String']['input']>;
-  collateral_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  deposit?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  deposit_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_not?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  depositor?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_contains?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_gt?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_gte?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
-  depositor_lt?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_lte?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_not?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  id_gt?: InputMaybe<Scalars['ID']['input']>;
-  id_gte?: InputMaybe<Scalars['ID']['input']>;
-  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  id_lt?: InputMaybe<Scalars['ID']['input']>;
-  id_lte?: InputMaybe<Scalars['ID']['input']>;
-  id_not?: InputMaybe<Scalars['ID']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  or?: InputMaybe<Array<InputMaybe<StabilityPoolDeposit_Filter>>>;
-  snapshot?: InputMaybe<Scalars['String']['input']>;
-  snapshot_?: InputMaybe<StabilityPoolDepositSnapshot_Filter>;
-  snapshot_contains?: InputMaybe<Scalars['String']['input']>;
-  snapshot_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  snapshot_ends_with?: InputMaybe<Scalars['String']['input']>;
-  snapshot_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  snapshot_gt?: InputMaybe<Scalars['String']['input']>;
-  snapshot_gte?: InputMaybe<Scalars['String']['input']>;
-  snapshot_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  snapshot_lt?: InputMaybe<Scalars['String']['input']>;
-  snapshot_lte?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_contains?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_ends_with?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  snapshot_not_starts_with?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  snapshot_starts_with?: InputMaybe<Scalars['String']['input']>;
-  snapshot_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-};
-
-export enum StabilityPoolDeposit_OrderBy {
-  Collateral = 'collateral',
-  CollateralCollIndex = 'collateral__collIndex',
-  CollateralId = 'collateral__id',
-  CollateralMinCollRatio = 'collateral__minCollRatio',
-  Deposit = 'deposit',
-  Depositor = 'depositor',
-  Id = 'id',
-  Snapshot = 'snapshot',
-  SnapshotB = 'snapshot__B',
-  SnapshotP = 'snapshot__P',
-  SnapshotS = 'snapshot__S',
-  SnapshotEpoch = 'snapshot__epoch',
-  SnapshotId = 'snapshot__id',
-  SnapshotScale = 'snapshot__scale'
-}
-
-export type StabilityPoolEpochScale = {
-  __typename?: 'StabilityPoolEpochScale';
-  B: Scalars['BigInt']['output'];
-  S: Scalars['BigInt']['output'];
-  id: Scalars['ID']['output'];
-};
-
-export type StabilityPoolEpochScale_Filter = {
-  B?: InputMaybe<Scalars['BigInt']['input']>;
-  B_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  B_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  B_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  B_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  B_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  B_not?: InputMaybe<Scalars['BigInt']['input']>;
-  B_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  S?: InputMaybe<Scalars['BigInt']['input']>;
-  S_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  S_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  S_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  S_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  S_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  S_not?: InputMaybe<Scalars['BigInt']['input']>;
-  S_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<StabilityPoolEpochScale_Filter>>>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  id_gt?: InputMaybe<Scalars['ID']['input']>;
-  id_gte?: InputMaybe<Scalars['ID']['input']>;
-  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  id_lt?: InputMaybe<Scalars['ID']['input']>;
-  id_lte?: InputMaybe<Scalars['ID']['input']>;
-  id_not?: InputMaybe<Scalars['ID']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  or?: InputMaybe<Array<InputMaybe<StabilityPoolEpochScale_Filter>>>;
-};
-
-export enum StabilityPoolEpochScale_OrderBy {
-  B = 'B',
-  S = 'S',
-  Id = 'id'
-}
-
-export type StabilityPool_Filter = {
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<StabilityPool_Filter>>>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  id_gt?: InputMaybe<Scalars['ID']['input']>;
-  id_gte?: InputMaybe<Scalars['ID']['input']>;
-  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  id_lt?: InputMaybe<Scalars['ID']['input']>;
-  id_lte?: InputMaybe<Scalars['ID']['input']>;
-  id_not?: InputMaybe<Scalars['ID']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  or?: InputMaybe<Array<InputMaybe<StabilityPool_Filter>>>;
-  totalDeposited?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalDeposited_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_not?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-};
-
-export enum StabilityPool_OrderBy {
-  Id = 'id',
-  TotalDeposited = 'totalDeposited'
-}
 
 export type Token = {
   __typename?: 'Token';
