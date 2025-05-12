@@ -535,7 +535,7 @@ contract ZapperLeverageMainnet is DevTestSetup {
         });
         vm.startPrank(A);
         vm.expectRevert("LZ: Caller not FlashLoan provider");
-        IFlashLoanReceiver(address(_leverageZapper)).receiveFlashLoanOnOpenLeveragedTrove(A, params, 10 ether);
+        IFlashLoanReceiver(address(_leverageZapper)).receiveFlashLoanOnOpenLeveragedTrove(params, 10 ether);
         vm.stopPrank();
 
         // Check receiver is back to zero

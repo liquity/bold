@@ -25,9 +25,9 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
         // Data for the callback receiveFlashLoan
         bytes memory userData;
         if (_operation == Operation.OpenTrove) {
-            (address sender, ILeverageZapper.OpenLeveragedTroveParams memory openTroveParams) =
-                abi.decode(_params, (address, ILeverageZapper.OpenLeveragedTroveParams));
-            userData = abi.encode(_operation, sender, openTroveParams);
+            ILeverageZapper.OpenLeveragedTroveParams memory openTroveParams =
+                abi.decode(_params, (ILeverageZapper.OpenLeveragedTroveParams));
+            userData = abi.encode(_operation, openTroveParams);
         } else if (_operation == Operation.LeverUpTrove) {
             ILeverageZapper.LeverUpTroveParams memory leverUpTroveParams =
                 abi.decode(_params, (ILeverageZapper.LeverUpTroveParams));
@@ -70,14 +70,14 @@ contract BalancerFlashLoan is IFlashLoanRecipient, IFlashLoanProvider {
         if (operation == Operation.OpenTrove) {
             // Open
             // decode params
-            (address sender, ILeverageZapper.OpenLeveragedTroveParams memory openTroveParams) =
-                abi.decode(userData[32:], (address, ILeverageZapper.OpenLeveragedTroveParams));
+            ILeverageZapper.OpenLeveragedTroveParams memory openTroveParams =
+                abi.decode(userData[32:], (ILeverageZapper.OpenLeveragedTroveParams));
             // Flash loan minus fees
             uint256 effectiveFlashLoanAmount = amounts[0] - feeAmounts[0];
             // We send only effective flash loan, keeping fees here
             tokens[0].safeTransfer(address(receiverCached), effectiveFlashLoanAmount);
             // Zapper callback
-            receiverCached.receiveFlashLoanOnOpenLeveragedTrove(sender, openTroveParams, effectiveFlashLoanAmount);
+            receiverCached.receiveFlashLoanOnOpenLeveragedTrove(openTroveParams, effectiveFlashLoanAmount);
         } else if (operation == Operation.LeverUpTrove) {
             // Lever up
             // decode params
