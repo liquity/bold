@@ -1224,5 +1224,6 @@ export function useNextOwnerIndex(
   return useQuery({
     queryKey: ["NextTroveId", borrower, branchId],
     queryFn,
+    enabled: borrower !== null && branchId !== null,
   });
 }

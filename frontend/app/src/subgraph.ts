@@ -63,9 +63,6 @@ export async function getNextOwnerIndex(
   branchId: BranchId,
   borrower: Address,
 ): Promise<number> {
-  if (!borrower || !branchId) {
-    return 0;
-  }
   const { borrowerInfo } = await graphQuery(
     NextOwnerIndexesByBorrower,
     { id: borrower.toLowerCase() },
