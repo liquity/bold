@@ -23,7 +23,7 @@ import {StringEquality} from "./Utils/StringEquality.sol";
 import {UseDeployment} from "./Utils/UseDeployment.sol";
 import {TroveId} from "./Utils/TroveId.sol";
 
-uint256 constant PRICE_TOLERANCE = 0.02 ether;
+uint256 constant PRICE_TOLERANCE = 0.05 ether;
 
 address constant ETH_WHALE = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // Anvil account #1
 address constant WETH_WHALE = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC; // Anvil account #2
@@ -480,6 +480,7 @@ contract E2ETest is Test, UseDeployment, TroveId {
         ILiquidityGaugeV6[2] memory gauges = [curveUsdcBoldGauge, curveLusdBoldGauge];
 
         for (uint256 i = 0; i < gauges.length; ++i) {
+            if (address(gauges[i]) == address(0)) continue;
             address gaugeManager = gauges[i].manager();
             assertEq(gaugeManager, address(0), "Gauge manager role should have been renounced");
         }

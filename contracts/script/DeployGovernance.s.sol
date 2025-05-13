@@ -60,6 +60,8 @@ contract DeployGovernance is Script {
     ILiquidityGaugeV6 private curveLusdBoldGauge;
     CurveV2GaugeRewards private curveLusdBoldInitiative;
 
+    address private defiCollectiveInitiative;
+
     function deployGovernance(
         DeployGovernanceParams memory p,
         address _curveFactoryAddress,
@@ -96,7 +98,7 @@ contract DeployGovernance is Script {
 
             initialInitiatives.push(address(curveUsdcBoldInitiative));
             initialInitiatives.push(address(curveLusdBoldInitiative));
-            initialInitiatives.push(DEFI_COLLECTIVE_GRANTS_ADDRESS);
+            initialInitiatives.push(defiCollectiveInitiative = DEFI_COLLECTIVE_GRANTS_ADDRESS);
         }
 
         governance.registerInitialInitiatives{gas: 600000}(initialInitiatives);
@@ -192,7 +194,7 @@ contract DeployGovernance is Script {
                 string.concat('"curveLusdBoldInitiative":"', address(curveLusdBoldInitiative).toHexString(), '",')
             ),
             string.concat(
-                string.concat('"defiCollectiveInitiative":"', DEFI_COLLECTIVE_GRANTS_ADDRESS.toHexString(), '",'),
+                string.concat('"defiCollectiveInitiative":"', defiCollectiveInitiative.toHexString(), '",'),
                 string.concat('"stakingV1":"', p.stakingV1.toHexString(), '",'),
                 string.concat('"LQTYToken":"', p.lqty.toHexString(), '",'),
                 string.concat('"LUSDToken":"', p.lusd.toHexString(), '"') // no comma
