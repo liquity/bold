@@ -174,6 +174,7 @@ contract TestDeployer is MetadataDeployment {
     }
 
     struct DeploymentParamsMainnet {
+        uint256 branch;
         IERC20Metadata collToken;
         IPriceFeed priceFeed;
         IBoldToken boldToken;
@@ -523,37 +524,10 @@ contract TestDeployer is MetadataDeployment {
         vars.numCollaterals = 3;
         result.contractsArray = new LiquityContracts[](vars.numCollaterals);
         result.zappersArray = new Zappers[](vars.numCollaterals);
-        vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
         vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
         address troveManagerAddress;
-
-        // Price feeds
-        // ETH
-        vars.priceFeeds[0] = new WETHPriceFeed(
-            address(this), result.externalAddresses.ETHOracle, vars.oracleParams.ethUsdStalenessThreshold
-        );
-
-        // RETH
-        vars.priceFeeds[1] = new RETHPriceFeed(
-            address(this),
-            result.externalAddresses.ETHOracle,
-            result.externalAddresses.RETHOracle,
-            result.externalAddresses.RETHToken,
-            vars.oracleParams.ethUsdStalenessThreshold,
-            vars.oracleParams.rEthEthStalenessThreshold
-        );
-
-        // wstETH
-        vars.priceFeeds[2] = new WSTETHPriceFeed(
-            address(this),
-            result.externalAddresses.ETHOracle,
-            result.externalAddresses.STETHOracle,
-            result.externalAddresses.WSTETHToken,
-            vars.oracleParams.ethUsdStalenessThreshold,
-            vars.oracleParams.stEthUsdStalenessThreshold
-        );
 
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
@@ -591,8 +565,8 @@ contract TestDeployer is MetadataDeployment {
         // Deploy each set of core contracts
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             DeploymentParamsMainnet memory params;
+            params.branch = vars.i;
             params.collToken = vars.collaterals[vars.i];
-            params.priceFeed = vars.priceFeeds[vars.i];
             params.boldToken = result.boldToken;
             params.collateralRegistry = result.collateralRegistry;
             params.weth = WETH;
@@ -602,7 +576,7 @@ contract TestDeployer is MetadataDeployment {
             params.multiTroveGetter = result.multiTroveGetter;
             params.usdcCurvePool = usdcCurvePool;
             (result.contractsArray[vars.i], result.zappersArray[vars.i]) =
-                _deployAndConnectCollateralContractsMainnet(params);
+                _deployAndConnectCollateralContractsMainnet(params, result.externalAddresses, vars.oracleParams);
         }
 
         result.boldToken.setCollateralRegistry(address(result.collateralRegistry));
@@ -627,13 +601,13 @@ contract TestDeployer is MetadataDeployment {
         return (addressesRegistry, troveManagerAddress);
     }
 
-    function _deployAndConnectCollateralContractsMainnet(DeploymentParamsMainnet memory _params)
-        internal
-        returns (LiquityContracts memory contracts, Zappers memory zappers)
-    {
+    function _deployAndConnectCollateralContractsMainnet(
+        DeploymentParamsMainnet memory _params,
+        ExternalAddresses memory _externalAddresses,
+        OracleParams memory _oracleParams
+    ) internal returns (LiquityContracts memory contracts, Zappers memory zappers) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _params.collToken;
-        contracts.priceFeed = _params.priceFeed;
         contracts.interestRouter = new MockInterestRouter();
 
         contracts.addressesRegistry = _params.addressesRegistry;
@@ -673,6 +647,9 @@ contract TestDeployer is MetadataDeployment {
         addresses.sortedTroves = getAddress(
             address(this), getBytecode(type(SortedTroves).creationCode, address(contracts.addressesRegistry)), SALT
         );
+
+        contracts.priceFeed =
+            _deployPriceFeed(_params.branch, _externalAddresses, _oracleParams, addresses.borrowerOperations);
 
         // Deploy contracts
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
@@ -725,9 +702,6 @@ contract TestDeployer is MetadataDeployment {
             address(contracts.activePool)
         );
 
-        // TODO: remove this and set address in constructor as per the CREATE2 approach above
-        _params.priceFeed.setAddresses(addresses.borrowerOperations);
-
         // deploy zappers
         _deployZappers(
             contracts.addressesRegistry,
@@ -738,6 +712,42 @@ contract TestDeployer is MetadataDeployment {
             _params.usdcCurvePool,
             true,
             zappers
+        );
+    }
+
+    function _deployPriceFeed(
+        uint256 _branch,
+        ExternalAddresses memory _externalAddresses,
+        OracleParams memory _oracleParams,
+        address _borrowerOperationsAddress
+    ) internal returns (IPriceFeed) {
+        //assert(_branch < vars.numCollaterals);
+        // Price feeds
+        // ETH
+        if (_branch == 0) {
+            return new WETHPriceFeed(
+                _externalAddresses.ETHOracle, _oracleParams.ethUsdStalenessThreshold, _borrowerOperationsAddress
+            );
+        } else if (_branch == 1) {
+            // RETH
+            return new RETHPriceFeed(
+                _externalAddresses.ETHOracle,
+                _externalAddresses.RETHOracle,
+                _externalAddresses.RETHToken,
+                _oracleParams.ethUsdStalenessThreshold,
+                _oracleParams.rEthEthStalenessThreshold,
+                _borrowerOperationsAddress
+            );
+        }
+
+        // wstETH
+        return new WSTETHPriceFeed(
+            _externalAddresses.ETHOracle,
+            _externalAddresses.STETHOracle,
+            _externalAddresses.WSTETHToken,
+            _oracleParams.ethUsdStalenessThreshold,
+            _oracleParams.stEthUsdStalenessThreshold,
+            _borrowerOperationsAddress
         );
     }
 

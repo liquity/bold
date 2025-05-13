@@ -466,7 +466,6 @@ contract E2ETest is Test, UseDeployment, TroveId {
 
         for (uint256 i = 0; i < branches.length; ++i) {
             ownables.push(address(branches[i].addressesRegistry));
-            if (block.chainid == 1) ownables.push(address(branches[i].priceFeed));
         }
 
         for (uint256 i = 0; i < ownables.length; ++i) {

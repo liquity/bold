@@ -7,8 +7,8 @@ import "./MainnetPriceFeedBase.sol";
 // import "forge-std/console2.sol";
 
 contract WETHPriceFeed is MainnetPriceFeedBase {
-    constructor(address _owner, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold)
-        MainnetPriceFeedBase(_owner, _ethUsdOracleAddress, _ethUsdStalenessThreshold)
+    constructor(address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold, address _borrowerOperationsAddress)
+        MainnetPriceFeedBase(_ethUsdOracleAddress, _ethUsdStalenessThreshold, _borrowerOperationsAddress)
     {
         _fetchPricePrimary();
 

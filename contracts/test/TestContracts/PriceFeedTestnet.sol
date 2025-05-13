@@ -43,6 +43,4 @@ contract PriceFeedTestnet is IPriceFeedTestnet {
         _price = price;
         return true;
     }
-
-    function setAddresses(address _borrowerOperationsAddress) external {}
 }
