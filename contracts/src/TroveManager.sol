@@ -270,6 +270,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         );
 
         if (isTroveInBatch) {
+            // the parenthesis in the old weighted term equals `recordedDebt + accruedInterest + accruedBatchManagementFee`
+            // We want to capture last 2 ones, as the batch part only has recorded debt. The recorded debt of the trove is duplicated there,
+            // but it needs to be, because it’s also included in `entireDebtWithoutRedistribution` in the next line.
+            // So in the end we add it once and subtract it twice, which is the same as subtracting it once.
             singleLiquidation.oldWeightedRecordedDebt =
                 batch.weightedRecordedDebt + (trove.entireDebt - trove.redistBoldDebtGain) * batch.annualInterestRate;
             singleLiquidation.newWeightedRecordedDebt = batch.entireDebtWithoutRedistribution * batch.annualInterestRate;
@@ -284,7 +288,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             singleLiquidation.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
         }
 
-        // Differencen between liquidation penalty and liquidation threshold
+        // Difference between liquidation penalty and liquidation threshold
         if (singleLiquidation.collSurplus > 0) {
             collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
         }
@@ -1301,7 +1305,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // Push the trove's id to the Trove list
         TroveIds.push(_troveId);
 
-        assert(_troveChange.debtIncrease > 0); // TODO: remove before deployment
+        assert(_troveChange.debtIncrease > 0);
         _updateBatchShares(
             _troveId, _batchAddress, _troveChange, _troveChange.debtIncrease, _batchColl, _batchDebt, true
         );
@@ -1561,7 +1565,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 newStake = _updateStakeAndTotalStakes(_troveId, _newTroveColl);
 
         // Batch
-        assert(_newTroveDebt > 0); // TODO: remove before deployment
+        assert(_newTroveDebt > 0);
         _updateBatchShares(_troveId, _batchAddress, _troveChange, _newTroveDebt, _newBatchColl, _newBatchDebt, true);
 
         _movePendingTroveRewardsToActivePool(
@@ -1617,7 +1621,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         Troves[_troveId].coll = _newTroveColl;
 
         if (_batchAddress != address(0)) {
-            assert(_newTroveDebt > 0); // TODO: remove before deployment
+            assert(_newTroveDebt > 0);
             _updateBatchShares(_troveId, _batchAddress, _troveChange, _newTroveDebt, _newBatchColl, _newBatchDebt, true);
 
             emit BatchUpdated({
@@ -1758,7 +1762,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         _troveChange.collIncrease = _params.troveColl - _troveChange.appliedRedistCollGain;
         _troveChange.debtIncrease = _params.troveDebt - _troveChange.appliedRedistBoldDebtGain - _troveChange.upfrontFee;
-        assert(_params.troveDebt > 0); // TODO: remove before deployment
+        assert(_params.troveDebt > 0);
         _updateBatchShares(
             _params.troveId,
             _params.newBatchAddress,
