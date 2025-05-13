@@ -624,17 +624,11 @@ contract E2ETest is Test, UseDeployment, TroveId {
 
         skip(5 minutes);
 
-        uint256 numInitiatives;
-        Initiative[3] memory initiatives = [
-            Initiative({addr: address(curveUsdcBoldInitiative), gauge: curveUsdcBoldGauge}),
-            Initiative({addr: address(curveLusdBoldInitiative), gauge: curveLusdBoldGauge}),
-            Initiative({addr: defiCollectiveInitiative, gauge: ILiquidityGaugeV6(address(0))})
-        ];
-
+        Initiative[] memory initiatives = new Initiative[](initialInitiatives.length);
         for (uint256 i = 0; i < initiatives.length; ++i) {
-            if (initiatives[i].addr != address(0)) {
-                ++numInitiatives;
-            }
+            initiatives[i].addr = initialInitiatives[i];
+            if (initialInitiatives[i] == address(curveUsdcBoldInitiative)) initiatives[i].gauge = curveUsdcBoldGauge;
+            if (initialInitiatives[i] == address(curveLusdBoldInitiative)) initiatives[i].gauge = curveLusdBoldGauge;
         }
 
         address staker = makeAddr("staker");
@@ -659,7 +653,7 @@ contract E2ETest is Test, UseDeployment, TroveId {
 
             skip(5 minutes);
 
-            if (numInitiatives > 0) {
+            if (initiatives.length > 0) {
                 // Voting on initial initiatives opens in epoch #2
                 uint256 votingStart = _epoch(2);
                 if (block.timestamp < votingStart) vm.warp(votingStart);
@@ -667,9 +661,7 @@ contract E2ETest is Test, UseDeployment, TroveId {
                 _allocateLQTY_begin(staker);
 
                 for (uint256 i = 0; i < initiatives.length; ++i) {
-                    if (initiatives[i].addr != address(0)) {
-                        _allocateLQTY_vote(initiatives[i].addr, int256(lqtyStake / numInitiatives));
-                    }
+                    _allocateLQTY_vote(initiatives[i].addr, int256(lqtyStake / initiatives.length));
                 }
 
                 _allocateLQTY_end();
@@ -695,15 +687,13 @@ contract E2ETest is Test, UseDeployment, TroveId {
             "Stability depositor and Governance should have received the interest"
         );
 
-        if (numInitiatives > 0) {
+        if (initiatives.length > 0) {
             uint256 initiativeShareOfInterest;
 
             for (uint256 i = 0; i < initiatives.length; ++i) {
-                if (initiatives[i].addr != address(0)) {
-                    governance.claimForInitiative(initiatives[i].addr);
-                    initiativeShareOfInterest +=
-                        boldToken.balanceOf(coalesce(address(initiatives[i].gauge), initiatives[i].addr));
-                }
+                governance.claimForInitiative(initiatives[i].addr);
+                initiativeShareOfInterest +=
+                    boldToken.balanceOf(coalesce(address(initiatives[i].gauge), initiatives[i].addr));
             }
 
             assertApproxEqRelDecimal(
@@ -719,7 +709,6 @@ contract E2ETest is Test, UseDeployment, TroveId {
 
             for (uint256 i = 0; i < initiatives.length; ++i) {
                 if (address(initiatives[i].gauge) != address(0)) {
-                    assertNotEq(initiatives[i].addr, address(0), "Gauge should imply addr");
                     maxGaugeDuration = Math.max(maxGaugeDuration, CurveV2GaugeRewards(initiatives[i].addr).duration());
                     ++numGauges;
                 }

@@ -16,8 +16,29 @@ import {CurveV2GaugeRewards} from "V2-gov/src/CurveV2GaugeRewards.sol";
 
 import "forge-std/console2.sol";
 
+library AddressArray {
+    using Strings for *;
+    using AddressArray for *;
+
+    function toJSON(address addr) internal pure returns (string memory) {
+        return string.concat('"', addr.toHexString(), '"');
+    }
+
+    function toJSON(address[] memory addresses) internal pure returns (string memory) {
+        if (addresses.length == 0) return "[]";
+
+        string memory commaSeparatedStrings = addresses[0].toJSON();
+        for (uint256 i = 1; i < addresses.length; ++i) {
+            commaSeparatedStrings = string.concat(commaSeparatedStrings, ",", addresses[i].toJSON());
+        }
+
+        return string.concat("[", commaSeparatedStrings, "]");
+    }
+}
+
 contract DeployGovernance is Script {
     using Strings for *;
+    using AddressArray for *;
 
     struct DeployGovernanceParams {
         uint256 epochStart;
@@ -99,6 +120,10 @@ contract DeployGovernance is Script {
             initialInitiatives.push(address(curveUsdcBoldInitiative));
             initialInitiatives.push(address(curveLusdBoldInitiative));
             initialInitiatives.push(defiCollectiveInitiative = DEFI_COLLECTIVE_GRANTS_ADDRESS);
+        } else {
+            initialInitiatives.push(makeAddr("initiative1"));
+            initialInitiatives.push(makeAddr("initiative2"));
+            initialInitiatives.push(makeAddr("initiative3"));
         }
 
         governance.registerInitialInitiatives{gas: 600000}(initialInitiatives);
@@ -197,7 +222,8 @@ contract DeployGovernance is Script {
                 string.concat('"defiCollectiveInitiative":"', defiCollectiveInitiative.toHexString(), '",'),
                 string.concat('"stakingV1":"', p.stakingV1.toHexString(), '",'),
                 string.concat('"LQTYToken":"', p.lqty.toHexString(), '",'),
-                string.concat('"LUSDToken":"', p.lusd.toHexString(), '"') // no comma
+                string.concat('"LUSDToken":"', p.lusd.toHexString(), '",'),
+                string.concat('"initialInitiatives":', initialInitiatives.toJSON()) // no comma
             ),
             "}"
         );
