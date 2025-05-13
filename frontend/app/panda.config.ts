@@ -2,6 +2,7 @@ import type { Preset } from "@pandacss/dev";
 
 import { liquityUiKitPreset } from "@liquity2/uikit/panda.config";
 import { defineConfig, defineGlobalStyles, definePreset } from "@pandacss/dev";
+import { BREAKPOINTS } from "./src/breakpoints";
 
 export default defineConfig({
   preflight: true, // CSS reset
@@ -13,9 +14,9 @@ export default defineConfig({
       theme: {
         extend: {
           breakpoints: {
-            small: "400px",
-            medium: "800px",
-            large: "1140px",
+            small: `${BREAKPOINTS.small}px`,
+            medium: `${BREAKPOINTS.medium}px`,
+            large: `${BREAKPOINTS.large}px`,
           },
         },
       },
@@ -31,7 +32,7 @@ export default defineConfig({
   globalCss: defineGlobalStyles({
     "html, body": {
       height: "100%",
-      minWidth: 960 + 48,
+      minWidth: 360,
       lineHeight: 1.5,
       fontSize: 16,
       fontWeight: 500,

@@ -4,14 +4,9 @@ import {
 } from "../generated/BoldToken/BoldToken";
 import { BorrowerOperations as BorrowerOperationsContract } from "../generated/BoldToken/BorrowerOperations";
 import { CollateralRegistry as CollateralRegistryContract } from "../generated/BoldToken/CollateralRegistry";
-import { ERC20 as ERC20Contract } from "../generated/BoldToken/ERC20";
 import { TroveManager as TroveManagerContract } from "../generated/BoldToken/TroveManager";
-import { Collateral, CollateralAddresses, StabilityPoolEpochScale, Token } from "../generated/schema";
-import {
-  StabilityPool as StabilityPoolTemplate,
-  TroveManager as TroveManagerTemplate,
-  TroveNFT as TroveNFTTemplate,
-} from "../generated/templates";
+import { Collateral, CollateralAddresses } from "../generated/schema";
+import { TroveManager as TroveManagerTemplate, TroveNFT as TroveNFTTemplate } from "../generated/templates";
 
 function addCollateral(
   collIndex: i32,
@@ -23,14 +18,6 @@ function addCollateral(
 
   let collateral = new Collateral(collId);
   collateral.collIndex = collIndex;
-  collateral.token = collId;
-
-  let token = new Token(collId);
-  let tokenContract = ERC20Contract.bind(tokenAddress);
-  token.collateral = collId;
-  token.name = tokenContract.name();
-  token.symbol = tokenContract.symbol();
-  token.decimals = tokenContract.decimals();
 
   let troveManagerContract = TroveManagerContract.bind(troveManagerAddress);
 
@@ -47,15 +34,8 @@ function addCollateral(
     Address.fromBytes(addresses.borrowerOperations),
   ).MCR();
 
-  // initial collId + epoch + scale => S
-  let spEpochScale = new StabilityPoolEpochScale(collId + ":0:0");
-  spEpochScale.B = BigInt.fromI32(0);
-  spEpochScale.S = BigInt.fromI32(0);
-
   collateral.save();
-  token.save();
   addresses.save();
-  spEpochScale.save();
 
   let context = new DataSourceContext();
   context.setBytes("address:borrowerOperations", addresses.borrowerOperations);
@@ -70,7 +50,6 @@ function addCollateral(
 
   TroveManagerTemplate.createWithContext(troveManagerAddress, context);
   TroveNFTTemplate.createWithContext(Address.fromBytes(addresses.troveNft), context);
-  StabilityPoolTemplate.createWithContext(Address.fromBytes(addresses.stabilityPool), context);
 }
 
 export function handleCollateralRegistryAddressChanged(event: CollateralRegistryAddressChangedEvent): void {

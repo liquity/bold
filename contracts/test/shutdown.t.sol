@@ -258,6 +258,30 @@ contract ShutdownTest is DevTestSetup {
         assertEq(uint8(troveManager.getTroveStatus(troveId)), uint8(ITroveManager.Status.closedByOwner));
     }
 
+    function testCanCloseLastTroveAfterShutdown() public {
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        deal(address(boldToken), A, 20000e18);
+        vm.startPrank(A);
+        borrowerOperations.closeTrove(troveId);
+        vm.stopPrank();
+
+        // Check trove is closed
+        assertEq(uint8(troveManager.getTroveStatus(troveId)), uint8(ITroveManager.Status.closedByOwner));
+    }
+
+    function testCannotLiquidateLastTroveAfterShutdown() public {
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        vm.startPrank(B);
+        vm.expectRevert(TroveManager.OnlyOneTroveLeft.selector);
+        troveManager.liquidate(troveId);
+        vm.stopPrank();
+
+        // Check trove is not closed
+        assertEq(uint8(troveManager.getTroveStatus(troveId)), uint8(ITroveManager.Status.active));
+    }
+
     function testCannotAdjustInterestAfterShutdown() public {
         uint256 troveId = prepareAndShutdownFirstBranch();
 

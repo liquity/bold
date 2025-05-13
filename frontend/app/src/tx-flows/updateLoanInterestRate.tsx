@@ -34,7 +34,7 @@ const RequestSchema = createRequestSchema(
 export type UpdateLoanInterestRateRequest = v.InferOutput<typeof RequestSchema>;
 
 export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateRequest> = {
-  title: "Review & Confirm",
+  title: "Review & Send Transaction",
 
   Summary({ request }) {
     const { loan, prevLoan } = request;

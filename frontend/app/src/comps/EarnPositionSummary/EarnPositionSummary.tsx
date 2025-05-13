@@ -54,7 +54,7 @@ export function EarnPositionSummary({
 
   const active = txPreviewMode || isEarnPositionActive(earnPosition);
 
-  return collToken && (
+  return (
     <div
       className={css({
         position: "relative",
@@ -199,6 +199,7 @@ export function EarnPositionSummary({
                 >
                   <div
                     className={css({
+                      whiteSpace: "nowrap",
                       color: "contentAlt2",
                     })}
                   >
@@ -235,14 +236,22 @@ export function EarnPositionSummary({
           alignItems: "center",
           justifyContent: "space-between",
           paddingTop: 12,
-          height: 56,
+          height: {
+            base: "auto",
+            large: 56,
+          },
           fontSize: 14,
         })}
       >
         <div
           className={css({
             display: "flex",
-            gap: 32,
+            flexDirection: "column",
+            gap: 8,
+            large: {
+              flexDirection: "row",
+              gap: 32,
+            },
           })}
         >
           <div>
@@ -349,6 +358,9 @@ export function EarnPositionSummary({
           {active && (
             <div>
               <div
+                className={css({
+                  whiteSpace: "nowrap",
+                })}
                 style={{
                   color: `var(--fg-secondary-${active ? "active" : "inactive"})`,
                 }}
@@ -409,10 +421,15 @@ function OpenLink({
         position: "absolute",
         inset: "0 -16px -12px auto",
         display: "grid",
-        placeItems: "center",
-        padding: "0 12px 0 24px",
-        borderRadius: 10,
-        transition: "scale 80ms",
+        placeItems: {
+          base: "end center",
+          large: "center",
+        },
+        padding: {
+          base: "16px 12px",
+          large: "0 12px 0 24px",
+        },
+        borderRadius: 8,
         _focusVisible: {
           outline: "2px solid token(colors.focused)",
           outlineOffset: -2,
@@ -420,8 +437,15 @@ function OpenLink({
         _active: {
           translate: "0 1px",
         },
+
+        "& > div": {
+          transformOrigin: "50% 50%",
+          transition: "scale 80ms",
+        },
         _hover: {
-          scale: 1.05,
+          "& > div": {
+            scale: 1.05,
+          },
         },
       })}
     >

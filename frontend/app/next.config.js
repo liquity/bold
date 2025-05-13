@@ -14,12 +14,8 @@ const CONTRACTS_COMMIT_HASH_FROM_BUILD = String(execSync(
   commitHashCmd + " -- ../../contracts/addresses/11155111.json",
 )).trim();
 
-const withBundleAnalyzer = bundleAnalyzer({
-  enabled: process.env.ANALYZE === "true",
-});
-
 /** @type {import('next').NextConfig} */
-export default withBundleAnalyzer({
+const nextConfig = {
   output: "export",
   reactStrictMode: false,
   images: { unoptimized: true },
@@ -29,28 +25,12 @@ export default withBundleAnalyzer({
     APP_COMMIT_HASH_FROM_BUILD,
     CONTRACTS_COMMIT_HASH_FROM_BUILD,
   },
-  webpack: (config) => {
-    // WalletConnect 2.0 imports these
-    config.resolve.fallback = { fs: false, net: false, tls: false };
-    return config;
-  },
   eslint: {
     ignoreDuringBuilds: true,
   },
-  async headers() {
-    return [
-      {
-        source: "/known-initiatives/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "GET,OPTIONS" },
-          { key: "Access-Control-Allow-Headers", value: "Origin, Content-Type, Accept" },
-        ],
-      },
-    ];
-  },
-});
+};
+
+export default (process.env.ANALYZE === "true" ? bundleAnalyzer(nextConfig) : nextConfig);
 
 function flag(value) {
   if (typeof value !== "string") {

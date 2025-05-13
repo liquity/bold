@@ -363,22 +363,22 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     const isBoldApproved = !dn.lt(debtChange, 0) || !dn.gt(
       dn.abs(debtChange),
       [
-        await ctx.readContract({
+        (await ctx.readContract({
           ...ctx.contracts.BoldToken,
           functionName: "allowance",
           args: [ctx.account, Controller.address],
-        }) ?? 0n,
+        })) ?? 0n,
         18,
       ],
     );
 
     // Collateral token needs to be approved if collChange > 0 and collToken != "ETH" (no LeverageWETHZapper)
     const isCollApproved = branch.symbol === "ETH" || !dn.gt(collChange, 0) || !dn.gt(collChange, [
-      await ctx.readContract({
+      (await ctx.readContract({
         ...branch.contracts.CollToken,
         functionName: "allowance",
         args: [ctx.account, Controller.address],
-      }) ?? 0n,
+      })) ?? 0n,
       18,
     ]);
 

@@ -1,12 +1,12 @@
 import type { Address, Position, PositionLoanUncommitted } from "@/src/types";
 import type { ReactNode } from "react";
 
+import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
-import { useStakePosition } from "@/src/liquity-utils";
-import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/subgraph-hooks";
+import { useEarnPositionsByAccount, useLoansByAccount, useStakePosition } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
@@ -19,6 +19,13 @@ import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardStake } from "./PositionCardStake";
 
 type Mode = "positions" | "loading" | "actions";
+
+const actionCards = [
+  "borrow",
+  // "multiply",
+  "earn",
+  "stake",
+] as const;
 
 export function Positions({
   address,
@@ -51,9 +58,9 @@ export function Positions({
 
   const positions = isPositionsPending ? [] : (
     DEMO_MODE ? ACCOUNT_POSITIONS : [
-      ...loans.data ?? [],
-      ...earnPositions.data ?? [],
-      ...stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : [],
+      ...(loans.data ?? []),
+      ...(earnPositions.data ?? []),
+      ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : []),
     ]
   );
 
@@ -77,9 +84,15 @@ export function Positions({
     mode = "loading";
   }
 
+  const breakpoint = useBreakpointName();
+
   return (
     <PositionsGroup
-      columns={columns}
+      columns={breakpoint === "small"
+        ? 1
+        : breakpoint === "medium"
+        ? 2
+        : columns}
       mode={mode}
       positions={positions ?? []}
       showNewPositionCard={showNewPositionCard}
@@ -89,7 +102,7 @@ export function Positions({
 }
 
 function PositionsGroup({
-  columns = 3,
+  columns,
   mode,
   onTitleClick,
   positions,
@@ -103,6 +116,8 @@ function PositionsGroup({
   title: (mode: Mode) => ReactNode;
   showNewPositionCard: boolean;
 }) {
+  columns ??= mode === "actions" ? actionCards.length : 3;
+
   const title_ = title(mode);
 
   const cards = match(mode)
@@ -141,24 +156,19 @@ function PositionsGroup({
       [1, <PositionCard key="1" loading />],
       [2, <PositionCard key="2" loading />],
     ])
-    .with("actions", () =>
-      showNewPositionCard
-        ? [
-          [0, <ActionCard key="0" type="borrow" />],
-          [1, <ActionCard key="1" type="multiply" />],
-          [2, <ActionCard key="2" type="earn" />],
-          [3, <ActionCard key="3" type="stake" />],
-        ]
-        : [])
+    .with("actions", () => (
+      (showNewPositionCard ? actionCards : []).map((type, index) => [
+        index,
+        <ActionCard key={index} type={type} />,
+      ])
+    ))
     .exhaustive();
 
-  if (mode === "actions") {
-    columns = 4;
-  }
+  const breakpoint = useBreakpointName();
 
   const cardHeight = mode === "actions" ? 144 : 180;
   const rows = Math.ceil(cards.length / columns);
-  const containerHeight = cardHeight * rows + 24 * (rows - 1);
+  const containerHeight = cardHeight * rows + (breakpoint === "small" ? 16 : 24) * (rows - 1);
 
   const positionTransitions = useTransition(cards, {
     keys: ([index]) => `${mode}${index}`,
@@ -207,13 +217,19 @@ function PositionsGroup({
       {title_ && (
         <h1
           className={css({
-            fontSize: 32,
+            fontSize: {
+              base: 24,
+              medium: 26,
+              large: 32,
+            },
+            paddingBottom: {
+              base: 16,
+              medium: 20,
+              large: 32,
+            },
             color: "content",
             userSelect: "none",
           })}
-          style={{
-            paddingBottom: 32,
-          }}
           onClick={onTitleClick}
         >
           {title_}
@@ -230,7 +246,10 @@ function PositionsGroup({
         <a.div
           className={css({
             display: "grid",
-            gap: 24,
+            gap: {
+              base: 16,
+              medium: 24,
+            },
           })}
           style={{
             gridTemplateColumns: `repeat(${columns}, 1fr)`,

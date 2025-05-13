@@ -3,6 +3,8 @@
 
 import type { ReactNode as N } from "react";
 
+import { css } from "@/styled-system/css";
+
 export default {
   // Used in the top bar and other places
   appName: "Liquity V2",
@@ -10,7 +12,9 @@ export default {
     Liquity V2 is a new borrowing protocol that lets users
     deposit ETH or LSTs as collateral and mint the stablecoin BOLD.
   `,
-  appUrl: "https://www.liquity.org/",
+  appUrl: typeof window === "undefined"
+    ? "https://www.liquity.org/"
+    : window.location.origin,
   appIcon: (
     typeof window === "undefined" ? "" : window.location.origin
   ) + "/favicon.svg",
@@ -238,16 +242,16 @@ export default {
 
   // Borrow screen
   borrowScreen: {
-    headline: (tokensIcons: N, boldIcon: N) => (
+    headline: (eth: N, bold: N) => (
       <>
-        Borrow {boldIcon} BOLD with {tokensIcons} ETH
+        Borrow {bold} with {eth}
       </>
     ),
     depositField: {
-      label: "You deposit",
+      label: "Collateral",
     },
     borrowField: {
-      label: "You borrow",
+      label: "Borrow",
     },
     liquidationPriceField: {
       label: "ETH liquidation price",
@@ -304,15 +308,17 @@ export default {
 
   // Earn home screen
   earnHome: {
-    headline: (tokensIcons: N, boldIcon: N) => (
+    headline: (rewards: N, bold: N) => (
       <>
-        Deposit {boldIcon} BOLD to earn rewards {tokensIcons}
+        Deposit
+        <NoWrap>{bold} BOLD</NoWrap>
+        to earn <NoWrap>rewards {rewards}</NoWrap>
       </>
     ),
     subheading: (
       <>
-        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. 
-        Also, the BOLD may be swapped to collateral in case the system needs to liquidate positions.
+        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, the BOLD may
+        be swapped to collateral in case the system needs to liquidate positions.
       </>
     ),
     learnMore: ["https://docs.liquity.org/v2-faq/bold-and-earn", "Learn more"],
@@ -348,7 +354,7 @@ export default {
       rewardsLabel: "My rewards",
     },
     tabs: {
-      deposit: "Withdraw",
+      deposit: "Deposit",
       claim: "Claim rewards",
     },
     depositPanel: {
@@ -480,5 +486,28 @@ function Link({
     <a href={href} {...props}>
       {children}
     </a>
+  );
+}
+
+function NoWrap({
+  children,
+  gap = 8,
+}: {
+  children: N;
+  gap?: number;
+}) {
+  return (
+    <span
+      className={css({
+        display: "inline-flex",
+        alignItems: "center",
+        whiteSpace: "nowrap",
+      })}
+      style={{
+        gap,
+      }}
+    >
+      {children}
+    </span>
   );
 }

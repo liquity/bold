@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 
-import { css } from "@/styled-system/css";
+import { useBreakpoint } from "@/src/breakpoints";
+import { css, cx } from "@/styled-system/css";
 import { LoadingSurface } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
+import { useState } from "react";
 import { match } from "ts-pattern";
 
 const LOADING_CARD_WIDTH = 468;
@@ -10,13 +12,22 @@ const FINAL_CARD_WIDTH = 534;
 
 export function ScreenCard({
   children,
-  finalHeight = 252,
+  className,
+  finalHeight,
   mode,
 }: {
   children: ReactNode;
+  className?: string;
   finalHeight?: number;
   mode: "ready" | "loading" | "error";
 }) {
+  const [compactMode, setCompactMode] = useState(false);
+  useBreakpoint(({ medium }) => {
+    setCompactMode(!medium);
+  });
+
+  finalHeight ??= compactMode ? 320 : 252;
+
   const scaleRatio = LOADING_CARD_WIDTH / FINAL_CARD_WIDTH;
 
   const spring = useSpring({
@@ -36,6 +47,7 @@ export function ScreenCard({
             - 40,
         ),
       },
+    immediate: compactMode,
     config: {
       mass: 1,
       tension: 2000,
@@ -45,14 +57,17 @@ export function ScreenCard({
 
   return (
     <a.div
-      className={css({
-        flexShrink: 0,
-        display: "flex",
-        justifyContent: "center",
-        flexDirection: "column",
-      })}
+      className={cx(
+        className,
+        css({
+          flexShrink: 0,
+          display: "flex",
+          justifyContent: "center",
+          flexDirection: "column",
+        }),
+      )}
       style={{
-        width: FINAL_CARD_WIDTH,
+        width: compactMode ? "100%" : FINAL_CARD_WIDTH,
         height: spring.containerHeight,
       }}
     >

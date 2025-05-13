@@ -117,7 +117,9 @@ export function RedeemScreen() {
                     <TextButton
                       label={`Max ${fmtnum(boldBalance.data)} BOLD`}
                       onClick={() => {
-                        amount.setValue(dn.toString(boldBalance.data));
+                        if (boldBalance.data) {
+                          amount.setValue(dn.toString(boldBalance.data));
+                        }
                       }}
                     />
                   )
@@ -262,7 +264,6 @@ export function RedeemScreen() {
                   successLink: ["/", "Go to the Dashboard"],
                   successMessage: "The redemption was successful.",
 
-                  time: Date.now(),
                   amount: amount.parsed,
                   maxFee: maxFee.parsed,
                 });

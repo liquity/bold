@@ -3,6 +3,7 @@
 pragma solidity 0.8.24;
 
 struct LatestBatchData {
+    uint256 totalDebtShares;
     uint256 entireDebtWithoutRedistribution;
     uint256 entireCollWithoutRedistribution;
     uint256 accruedInterest;

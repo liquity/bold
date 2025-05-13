@@ -94,70 +94,14 @@ export enum BorrowerInfo_OrderBy {
   TrovesByCollateral = 'trovesByCollateral'
 }
 
-export type CollSurplus = {
-  __typename?: 'CollSurplus';
-  amount: Scalars['BigInt']['output'];
-  id: Scalars['String']['output'];
-};
-
-export type CollSurplus_Filter = {
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  amount?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  amount_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_not?: InputMaybe<Scalars['BigInt']['input']>;
-  amount_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  and?: InputMaybe<Array<InputMaybe<CollSurplus_Filter>>>;
-  id?: InputMaybe<Scalars['String']['input']>;
-  id_contains?: InputMaybe<Scalars['String']['input']>;
-  id_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  id_ends_with?: InputMaybe<Scalars['String']['input']>;
-  id_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  id_gt?: InputMaybe<Scalars['String']['input']>;
-  id_gte?: InputMaybe<Scalars['String']['input']>;
-  id_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  id_lt?: InputMaybe<Scalars['String']['input']>;
-  id_lte?: InputMaybe<Scalars['String']['input']>;
-  id_not?: InputMaybe<Scalars['String']['input']>;
-  id_not_contains?: InputMaybe<Scalars['String']['input']>;
-  id_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  id_not_ends_with?: InputMaybe<Scalars['String']['input']>;
-  id_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  id_not_starts_with?: InputMaybe<Scalars['String']['input']>;
-  id_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  id_starts_with?: InputMaybe<Scalars['String']['input']>;
-  id_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  or?: InputMaybe<Array<InputMaybe<CollSurplus_Filter>>>;
-};
-
-export enum CollSurplus_OrderBy {
-  Amount = 'amount',
-  Id = 'id'
-}
-
 export type Collateral = {
   __typename?: 'Collateral';
   addresses: CollateralAddresses;
   collIndex: Scalars['Int']['output'];
   id: Scalars['ID']['output'];
   minCollRatio: Scalars['BigInt']['output'];
-  stabilityPoolDeposits: Array<StabilityPoolDeposit>;
   token: Token;
   troves: Array<Trove>;
-};
-
-
-export type CollateralStabilityPoolDepositsArgs = {
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolDeposit_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  where?: InputMaybe<StabilityPoolDeposit_Filter>;
 };
 
 
@@ -321,7 +265,6 @@ export type Collateral_Filter = {
   minCollRatio_not?: InputMaybe<Scalars['BigInt']['input']>;
   minCollRatio_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   or?: InputMaybe<Array<InputMaybe<Collateral_Filter>>>;
-  stabilityPoolDeposits_?: InputMaybe<StabilityPoolDeposit_Filter>;
   token?: InputMaybe<Scalars['String']['input']>;
   token_?: InputMaybe<Token_Filter>;
   token_contains?: InputMaybe<Scalars['String']['input']>;
@@ -358,7 +301,6 @@ export enum Collateral_OrderBy {
   CollIndex = 'collIndex',
   Id = 'id',
   MinCollRatio = 'minCollRatio',
-  StabilityPoolDeposits = 'stabilityPoolDeposits',
   Token = 'token',
   TokenDecimals = 'token__decimals',
   TokenId = 'token__id',
@@ -584,60 +526,6 @@ export enum GovernanceInitiative_OrderBy {
   Registrant = 'registrant',
   UnregisteredAt = 'unregisteredAt',
   UnregisteredAtEpoch = 'unregisteredAtEpoch'
-}
-
-export type GovernanceStats = {
-  __typename?: 'GovernanceStats';
-  id: Scalars['ID']['output'];
-  totalInitiatives: Scalars['Int']['output'];
-  totalLQTYStaked: Scalars['BigInt']['output'];
-  totalOffset: Scalars['BigInt']['output'];
-};
-
-export type GovernanceStats_Filter = {
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<GovernanceStats_Filter>>>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  id_gt?: InputMaybe<Scalars['ID']['input']>;
-  id_gte?: InputMaybe<Scalars['ID']['input']>;
-  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  id_lt?: InputMaybe<Scalars['ID']['input']>;
-  id_lte?: InputMaybe<Scalars['ID']['input']>;
-  id_not?: InputMaybe<Scalars['ID']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  or?: InputMaybe<Array<InputMaybe<GovernanceStats_Filter>>>;
-  totalInitiatives?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_gt?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_gte?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_in?: InputMaybe<Array<Scalars['Int']['input']>>;
-  totalInitiatives_lt?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_lte?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_not?: InputMaybe<Scalars['Int']['input']>;
-  totalInitiatives_not_in?: InputMaybe<Array<Scalars['Int']['input']>>;
-  totalLQTYStaked?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalLQTYStaked_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_not?: InputMaybe<Scalars['BigInt']['input']>;
-  totalLQTYStaked_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalOffset?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalOffset_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_not?: InputMaybe<Scalars['BigInt']['input']>;
-  totalOffset_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-};
-
-export enum GovernanceStats_OrderBy {
-  Id = 'id',
-  TotalInitiatives = 'totalInitiatives',
-  TotalLqtyStaked = 'totalLQTYStaked',
-  TotalOffset = 'totalOffset'
 }
 
 export type GovernanceUser = {
@@ -910,8 +798,6 @@ export type Query = {
   _meta?: Maybe<_Meta_>;
   borrowerInfo?: Maybe<BorrowerInfo>;
   borrowerInfos: Array<BorrowerInfo>;
-  collSurplus?: Maybe<CollSurplus>;
-  collSurpluses: Array<CollSurplus>;
   collateral?: Maybe<Collateral>;
   collateralAddresses?: Maybe<CollateralAddresses>;
   collateralAddresses_collection: Array<CollateralAddresses>;
@@ -920,22 +806,12 @@ export type Query = {
   governanceAllocations: Array<GovernanceAllocation>;
   governanceInitiative?: Maybe<GovernanceInitiative>;
   governanceInitiatives: Array<GovernanceInitiative>;
-  governanceStats?: Maybe<GovernanceStats>;
-  governanceStats_collection: Array<GovernanceStats>;
   governanceUser?: Maybe<GovernanceUser>;
   governanceUsers: Array<GovernanceUser>;
   interestBatch?: Maybe<InterestBatch>;
   interestBatches: Array<InterestBatch>;
   interestRateBracket?: Maybe<InterestRateBracket>;
   interestRateBrackets: Array<InterestRateBracket>;
-  stabilityPool?: Maybe<StabilityPool>;
-  stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
-  stabilityPoolDepositSnapshot?: Maybe<StabilityPoolDepositSnapshot>;
-  stabilityPoolDepositSnapshots: Array<StabilityPoolDepositSnapshot>;
-  stabilityPoolDeposits: Array<StabilityPoolDeposit>;
-  stabilityPoolEpochScale?: Maybe<StabilityPoolEpochScale>;
-  stabilityPoolEpochScales: Array<StabilityPoolEpochScale>;
-  stabilityPools: Array<StabilityPool>;
   token?: Maybe<Token>;
   tokens: Array<Token>;
   trove?: Maybe<Trove>;
@@ -963,24 +839,6 @@ export type QueryBorrowerInfosArgs = {
   skip?: InputMaybe<Scalars['Int']['input']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<BorrowerInfo_Filter>;
-};
-
-
-export type QueryCollSurplusArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryCollSurplusesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<CollSurplus_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<CollSurplus_Filter>;
 };
 
 
@@ -1056,24 +914,6 @@ export type QueryGovernanceInitiativesArgs = {
 };
 
 
-export type QueryGovernanceStatsArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryGovernanceStats_CollectionArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<GovernanceStats_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<GovernanceStats_Filter>;
-};
-
-
 export type QueryGovernanceUserArgs = {
   block?: InputMaybe<Block_Height>;
   id: Scalars['ID']['input'];
@@ -1128,78 +968,6 @@ export type QueryInterestRateBracketsArgs = {
 };
 
 
-export type QueryStabilityPoolArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryStabilityPoolDepositArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryStabilityPoolDepositSnapshotArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryStabilityPoolDepositSnapshotsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolDepositSnapshot_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPoolDepositSnapshot_Filter>;
-};
-
-
-export type QueryStabilityPoolDepositsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolDeposit_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPoolDeposit_Filter>;
-};
-
-
-export type QueryStabilityPoolEpochScaleArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type QueryStabilityPoolEpochScalesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolEpochScale_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPoolEpochScale_Filter>;
-};
-
-
-export type QueryStabilityPoolsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPool_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPool_Filter>;
-};
-
-
 export type QueryTokenArgs = {
   block?: InputMaybe<Block_Height>;
   id: Scalars['ID']['input'];
@@ -1226,596 +994,6 @@ export type QueryTroveArgs = {
 
 
 export type QueryTrovesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<Trove_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Trove_Filter>;
-};
-
-export type StabilityPool = {
-  __typename?: 'StabilityPool';
-  id: Scalars['ID']['output'];
-  totalDeposited: Scalars['BigInt']['output'];
-};
-
-export type StabilityPoolDeposit = {
-  __typename?: 'StabilityPoolDeposit';
-  collateral: Collateral;
-  deposit: Scalars['BigInt']['output'];
-  depositor: Scalars['Bytes']['output'];
-  id: Scalars['ID']['output'];
-  snapshot: StabilityPoolDepositSnapshot;
-};
-
-export type StabilityPoolDepositSnapshot = {
-  __typename?: 'StabilityPoolDepositSnapshot';
-  B: Scalars['BigInt']['output'];
-  P: Scalars['BigInt']['output'];
-  S: Scalars['BigInt']['output'];
-  deposit: StabilityPoolDeposit;
-  epoch: Scalars['BigInt']['output'];
-  id: Scalars['ID']['output'];
-  scale: Scalars['BigInt']['output'];
-};
-
-export type StabilityPoolDepositSnapshot_Filter = {
-  B?: InputMaybe<Scalars['BigInt']['input']>;
-  B_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  B_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  B_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  B_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  B_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  B_not?: InputMaybe<Scalars['BigInt']['input']>;
-  B_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  P?: InputMaybe<Scalars['BigInt']['input']>;
-  P_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  P_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  P_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  P_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  P_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  P_not?: InputMaybe<Scalars['BigInt']['input']>;
-  P_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  S?: InputMaybe<Scalars['BigInt']['input']>;
-  S_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  S_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  S_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  S_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  S_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  S_not?: InputMaybe<Scalars['BigInt']['input']>;
-  S_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<StabilityPoolDepositSnapshot_Filter>>>;
-  deposit_?: InputMaybe<StabilityPoolDeposit_Filter>;
-  epoch?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  epoch_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_not?: InputMaybe<Scalars['BigInt']['input']>;
-  epoch_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  id_gt?: InputMaybe<Scalars['ID']['input']>;
-  id_gte?: InputMaybe<Scalars['ID']['input']>;
-  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  id_lt?: InputMaybe<Scalars['ID']['input']>;
-  id_lte?: InputMaybe<Scalars['ID']['input']>;
-  id_not?: InputMaybe<Scalars['ID']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  or?: InputMaybe<Array<InputMaybe<StabilityPoolDepositSnapshot_Filter>>>;
-  scale?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  scale_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_not?: InputMaybe<Scalars['BigInt']['input']>;
-  scale_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-};
-
-export enum StabilityPoolDepositSnapshot_OrderBy {
-  B = 'B',
-  P = 'P',
-  S = 'S',
-  Deposit = 'deposit',
-  DepositDeposit = 'deposit__deposit',
-  DepositDepositor = 'deposit__depositor',
-  DepositId = 'deposit__id',
-  Epoch = 'epoch',
-  Id = 'id',
-  Scale = 'scale'
-}
-
-export type StabilityPoolDeposit_Filter = {
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<StabilityPoolDeposit_Filter>>>;
-  collateral?: InputMaybe<Scalars['String']['input']>;
-  collateral_?: InputMaybe<Collateral_Filter>;
-  collateral_contains?: InputMaybe<Scalars['String']['input']>;
-  collateral_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  collateral_ends_with?: InputMaybe<Scalars['String']['input']>;
-  collateral_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  collateral_gt?: InputMaybe<Scalars['String']['input']>;
-  collateral_gte?: InputMaybe<Scalars['String']['input']>;
-  collateral_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  collateral_lt?: InputMaybe<Scalars['String']['input']>;
-  collateral_lte?: InputMaybe<Scalars['String']['input']>;
-  collateral_not?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_contains?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_ends_with?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  collateral_not_starts_with?: InputMaybe<Scalars['String']['input']>;
-  collateral_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  collateral_starts_with?: InputMaybe<Scalars['String']['input']>;
-  collateral_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  deposit?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  deposit_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_not?: InputMaybe<Scalars['BigInt']['input']>;
-  deposit_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  depositor?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_contains?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_gt?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_gte?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
-  depositor_lt?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_lte?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_not?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
-  depositor_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  id_gt?: InputMaybe<Scalars['ID']['input']>;
-  id_gte?: InputMaybe<Scalars['ID']['input']>;
-  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  id_lt?: InputMaybe<Scalars['ID']['input']>;
-  id_lte?: InputMaybe<Scalars['ID']['input']>;
-  id_not?: InputMaybe<Scalars['ID']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  or?: InputMaybe<Array<InputMaybe<StabilityPoolDeposit_Filter>>>;
-  snapshot?: InputMaybe<Scalars['String']['input']>;
-  snapshot_?: InputMaybe<StabilityPoolDepositSnapshot_Filter>;
-  snapshot_contains?: InputMaybe<Scalars['String']['input']>;
-  snapshot_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  snapshot_ends_with?: InputMaybe<Scalars['String']['input']>;
-  snapshot_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  snapshot_gt?: InputMaybe<Scalars['String']['input']>;
-  snapshot_gte?: InputMaybe<Scalars['String']['input']>;
-  snapshot_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  snapshot_lt?: InputMaybe<Scalars['String']['input']>;
-  snapshot_lte?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_contains?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_ends_with?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
-  snapshot_not_starts_with?: InputMaybe<Scalars['String']['input']>;
-  snapshot_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-  snapshot_starts_with?: InputMaybe<Scalars['String']['input']>;
-  snapshot_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
-};
-
-export enum StabilityPoolDeposit_OrderBy {
-  Collateral = 'collateral',
-  CollateralCollIndex = 'collateral__collIndex',
-  CollateralId = 'collateral__id',
-  CollateralMinCollRatio = 'collateral__minCollRatio',
-  Deposit = 'deposit',
-  Depositor = 'depositor',
-  Id = 'id',
-  Snapshot = 'snapshot',
-  SnapshotB = 'snapshot__B',
-  SnapshotP = 'snapshot__P',
-  SnapshotS = 'snapshot__S',
-  SnapshotEpoch = 'snapshot__epoch',
-  SnapshotId = 'snapshot__id',
-  SnapshotScale = 'snapshot__scale'
-}
-
-export type StabilityPoolEpochScale = {
-  __typename?: 'StabilityPoolEpochScale';
-  B: Scalars['BigInt']['output'];
-  S: Scalars['BigInt']['output'];
-  id: Scalars['ID']['output'];
-};
-
-export type StabilityPoolEpochScale_Filter = {
-  B?: InputMaybe<Scalars['BigInt']['input']>;
-  B_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  B_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  B_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  B_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  B_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  B_not?: InputMaybe<Scalars['BigInt']['input']>;
-  B_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  S?: InputMaybe<Scalars['BigInt']['input']>;
-  S_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  S_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  S_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  S_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  S_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  S_not?: InputMaybe<Scalars['BigInt']['input']>;
-  S_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<StabilityPoolEpochScale_Filter>>>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  id_gt?: InputMaybe<Scalars['ID']['input']>;
-  id_gte?: InputMaybe<Scalars['ID']['input']>;
-  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  id_lt?: InputMaybe<Scalars['ID']['input']>;
-  id_lte?: InputMaybe<Scalars['ID']['input']>;
-  id_not?: InputMaybe<Scalars['ID']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  or?: InputMaybe<Array<InputMaybe<StabilityPoolEpochScale_Filter>>>;
-};
-
-export enum StabilityPoolEpochScale_OrderBy {
-  B = 'B',
-  S = 'S',
-  Id = 'id'
-}
-
-export type StabilityPool_Filter = {
-  /** Filter for the block changed event. */
-  _change_block?: InputMaybe<BlockChangedFilter>;
-  and?: InputMaybe<Array<InputMaybe<StabilityPool_Filter>>>;
-  id?: InputMaybe<Scalars['ID']['input']>;
-  id_gt?: InputMaybe<Scalars['ID']['input']>;
-  id_gte?: InputMaybe<Scalars['ID']['input']>;
-  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  id_lt?: InputMaybe<Scalars['ID']['input']>;
-  id_lte?: InputMaybe<Scalars['ID']['input']>;
-  id_not?: InputMaybe<Scalars['ID']['input']>;
-  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
-  or?: InputMaybe<Array<InputMaybe<StabilityPool_Filter>>>;
-  totalDeposited?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_gt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_gte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-  totalDeposited_lt?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_lte?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_not?: InputMaybe<Scalars['BigInt']['input']>;
-  totalDeposited_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
-};
-
-export enum StabilityPool_OrderBy {
-  Id = 'id',
-  TotalDeposited = 'totalDeposited'
-}
-
-export type Subscription = {
-  __typename?: 'Subscription';
-  /** Access to subgraph metadata */
-  _meta?: Maybe<_Meta_>;
-  borrowerInfo?: Maybe<BorrowerInfo>;
-  borrowerInfos: Array<BorrowerInfo>;
-  collSurplus?: Maybe<CollSurplus>;
-  collSurpluses: Array<CollSurplus>;
-  collateral?: Maybe<Collateral>;
-  collateralAddresses?: Maybe<CollateralAddresses>;
-  collateralAddresses_collection: Array<CollateralAddresses>;
-  collaterals: Array<Collateral>;
-  governanceAllocation?: Maybe<GovernanceAllocation>;
-  governanceAllocations: Array<GovernanceAllocation>;
-  governanceInitiative?: Maybe<GovernanceInitiative>;
-  governanceInitiatives: Array<GovernanceInitiative>;
-  governanceStats?: Maybe<GovernanceStats>;
-  governanceStats_collection: Array<GovernanceStats>;
-  governanceUser?: Maybe<GovernanceUser>;
-  governanceUsers: Array<GovernanceUser>;
-  interestBatch?: Maybe<InterestBatch>;
-  interestBatches: Array<InterestBatch>;
-  interestRateBracket?: Maybe<InterestRateBracket>;
-  interestRateBrackets: Array<InterestRateBracket>;
-  stabilityPool?: Maybe<StabilityPool>;
-  stabilityPoolDeposit?: Maybe<StabilityPoolDeposit>;
-  stabilityPoolDepositSnapshot?: Maybe<StabilityPoolDepositSnapshot>;
-  stabilityPoolDepositSnapshots: Array<StabilityPoolDepositSnapshot>;
-  stabilityPoolDeposits: Array<StabilityPoolDeposit>;
-  stabilityPoolEpochScale?: Maybe<StabilityPoolEpochScale>;
-  stabilityPoolEpochScales: Array<StabilityPoolEpochScale>;
-  stabilityPools: Array<StabilityPool>;
-  token?: Maybe<Token>;
-  tokens: Array<Token>;
-  trove?: Maybe<Trove>;
-  troves: Array<Trove>;
-};
-
-
-export type Subscription_MetaArgs = {
-  block?: InputMaybe<Block_Height>;
-};
-
-
-export type SubscriptionBorrowerInfoArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionBorrowerInfosArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<BorrowerInfo_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<BorrowerInfo_Filter>;
-};
-
-
-export type SubscriptionCollSurplusArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionCollSurplusesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<CollSurplus_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<CollSurplus_Filter>;
-};
-
-
-export type SubscriptionCollateralArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionCollateralAddressesArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionCollateralAddresses_CollectionArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<CollateralAddresses_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<CollateralAddresses_Filter>;
-};
-
-
-export type SubscriptionCollateralsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<Collateral_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Collateral_Filter>;
-};
-
-
-export type SubscriptionGovernanceAllocationArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionGovernanceAllocationsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<GovernanceAllocation_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<GovernanceAllocation_Filter>;
-};
-
-
-export type SubscriptionGovernanceInitiativeArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionGovernanceInitiativesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<GovernanceInitiative_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<GovernanceInitiative_Filter>;
-};
-
-
-export type SubscriptionGovernanceStatsArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionGovernanceStats_CollectionArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<GovernanceStats_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<GovernanceStats_Filter>;
-};
-
-
-export type SubscriptionGovernanceUserArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionGovernanceUsersArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<GovernanceUser_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<GovernanceUser_Filter>;
-};
-
-
-export type SubscriptionInterestBatchArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionInterestBatchesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<InterestBatch_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<InterestBatch_Filter>;
-};
-
-
-export type SubscriptionInterestRateBracketArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionInterestRateBracketsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<InterestRateBracket_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<InterestRateBracket_Filter>;
-};
-
-
-export type SubscriptionStabilityPoolArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionStabilityPoolDepositArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionStabilityPoolDepositSnapshotArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionStabilityPoolDepositSnapshotsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolDepositSnapshot_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPoolDepositSnapshot_Filter>;
-};
-
-
-export type SubscriptionStabilityPoolDepositsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolDeposit_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPoolDeposit_Filter>;
-};
-
-
-export type SubscriptionStabilityPoolEpochScaleArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionStabilityPoolEpochScalesArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPoolEpochScale_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPoolEpochScale_Filter>;
-};
-
-
-export type SubscriptionStabilityPoolsArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<StabilityPool_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<StabilityPool_Filter>;
-};
-
-
-export type SubscriptionTokenArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionTokensArgs = {
-  block?: InputMaybe<Block_Height>;
-  first?: InputMaybe<Scalars['Int']['input']>;
-  orderBy?: InputMaybe<Token_OrderBy>;
-  orderDirection?: InputMaybe<OrderDirection>;
-  skip?: InputMaybe<Scalars['Int']['input']>;
-  subgraphError?: _SubgraphErrorPolicy_;
-  where?: InputMaybe<Token_Filter>;
-};
-
-
-export type SubscriptionTroveArgs = {
-  block?: InputMaybe<Block_Height>;
-  id: Scalars['ID']['input'];
-  subgraphError?: _SubgraphErrorPolicy_;
-};
-
-
-export type SubscriptionTrovesArgs = {
   block?: InputMaybe<Block_Height>;
   first?: InputMaybe<Scalars['Int']['input']>;
   orderBy?: InputMaybe<Trove_OrderBy>;
@@ -2167,56 +1345,31 @@ export enum _SubgraphErrorPolicy_ {
   Deny = 'deny'
 }
 
+export type BlockNumberQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type BlockNumberQuery = { __typename?: 'Query', _meta?: { __typename?: '_Meta_', block: { __typename?: '_Block_', number: number } } | null };
+
 export type BorrowerInfoQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type BorrowerInfoQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', nextOwnerIndexes: Array<number>, troves: number, trovesByCollateral: Array<number> } | null };
+export type BorrowerInfoQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', nextOwnerIndexes: Array<number> } | null };
 
-export type FullTroveFragmentFragment = { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null } & { ' $fragmentName'?: 'FullTroveFragmentFragment' };
-
-export type TrovesByAccountQueryVariables = Exact<{
+export type TroveStatusesByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
 }>;
 
 
-export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null }> };
+export type TroveStatusesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: bigint | null, createdAt: bigint, mightBeLeveraged: boolean, status: TroveStatus }> };
 
-export type TroveByIdQueryVariables = Exact<{
+export type TroveStatusByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null } | null };
-
-export type StabilityPoolsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type StabilityPoolsQuery = { __typename?: 'Query', stabilityPools: Array<{ __typename?: 'StabilityPool', id: string, totalDeposited: bigint }> };
-
-export type StabilityPoolDepositFragmentFragment = { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } } & { ' $fragmentName'?: 'StabilityPoolDepositFragmentFragment' };
-
-export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
-  account: Scalars['Bytes']['input'];
-}>;
-
-
-export type StabilityPoolDepositsByAccountQuery = { __typename?: 'Query', stabilityPoolDeposits: Array<{ __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } }> };
-
-export type StabilityPoolDepositQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type StabilityPoolDepositQuery = { __typename?: 'Query', stabilityPoolDeposit?: { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, epoch: bigint, scale: bigint } } | null };
-
-export type StabilityPoolEpochScaleQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type StabilityPoolEpochScaleQuery = { __typename?: 'Query', stabilityPoolEpochScale?: { __typename?: 'StabilityPoolEpochScale', id: string, B: bigint, S: bigint } | null };
+export type TroveStatusByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, closedAt?: bigint | null, createdAt: bigint, mightBeLeveraged: boolean, status: TroveStatus } | null };
 
 export type InterestBatchesQueryVariables = Exact<{
   ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -2235,18 +1388,6 @@ export type GovernanceInitiativesQueryVariables = Exact<{ [key: string]: never; 
 
 export type GovernanceInitiativesQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string }> };
 
-export type GovernanceUserQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GovernanceUserQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', id: string, allocatedLQTY: bigint, stakedLQTY: bigint, stakedOffset: bigint, allocations: Array<{ __typename?: 'GovernanceAllocation', id: string, atEpoch: bigint, vetoLQTY: bigint, voteLQTY: bigint, initiative: { __typename?: 'GovernanceInitiative', id: string } }> } | null };
-
-export type GovernanceStatsQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type GovernanceStatsQuery = { __typename?: 'Query', governanceStats?: { __typename?: 'GovernanceStats', id: string, totalLQTYStaked: bigint, totalOffset: bigint, totalInitiatives: number } | null };
-
 export type GovernanceUserAllocationsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
@@ -2254,207 +1395,67 @@ export type GovernanceUserAllocationsQueryVariables = Exact<{
 
 export type GovernanceUserAllocationsQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', allocated: Array<string> } | null };
 
-export type BlockNumberQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type BlockNumberQuery = { __typename?: 'Query', _meta?: { __typename?: '_Meta_', block: { __typename?: '_Block_', number: number } } | null };
-
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
 {
   __apiType?: DocumentTypeDecoration<TResult, TVariables>['__apiType'];
+  private value: string;
+  public __meta__?: Record<string, any> | undefined;
 
-  constructor(private value: string, public __meta__?: Record<string, any> | undefined) {
+  constructor(value: string, __meta__?: Record<string, any> | undefined) {
     super(value);
+    this.value = value;
+    this.__meta__ = __meta__;
   }
 
   toString(): string & DocumentTypeDecoration<TResult, TVariables> {
     return this.value;
   }
 }
-export const FullTroveFragmentFragmentDoc = new TypedDocumentString(`
-    fragment FullTroveFragment on Trove {
-  id
-  borrower
-  closedAt
-  createdAt
-  debt
-  deposit
-  interestRate
-  mightBeLeveraged
-  stake
-  status
-  troveId
-  updatedAt
-  collateral {
-    id
-    token {
-      symbol
-      name
+
+export const BlockNumberDocument = new TypedDocumentString(`
+    query BlockNumber {
+  _meta {
+    block {
+      number
     }
-    minCollRatio
-    collIndex
-  }
-  interestBatch {
-    id
-    annualInterestRate
-    annualManagementFee
-    batchManager
   }
 }
-    `, {"fragmentName":"FullTroveFragment"}) as unknown as TypedDocumentString<FullTroveFragmentFragment, unknown>;
-export const StabilityPoolDepositFragmentFragmentDoc = new TypedDocumentString(`
-    fragment StabilityPoolDepositFragment on StabilityPoolDeposit {
-  id
-  deposit
-  depositor
-  collateral {
-    collIndex
-  }
-  snapshot {
-    B
-    P
-    S
-    epoch
-    scale
-  }
-}
-    `, {"fragmentName":"StabilityPoolDepositFragment"}) as unknown as TypedDocumentString<StabilityPoolDepositFragmentFragment, unknown>;
+    `) as unknown as TypedDocumentString<BlockNumberQuery, BlockNumberQueryVariables>;
 export const BorrowerInfoDocument = new TypedDocumentString(`
     query BorrowerInfo($id: ID!) {
   borrowerInfo(id: $id) {
     nextOwnerIndexes
-    troves
-    trovesByCollateral
   }
 }
     `) as unknown as TypedDocumentString<BorrowerInfoQuery, BorrowerInfoQueryVariables>;
-export const TrovesByAccountDocument = new TypedDocumentString(`
-    query TrovesByAccount($account: Bytes!) {
+export const TroveStatusesByAccountDocument = new TypedDocumentString(`
+    query TroveStatusesByAccount($account: Bytes!) {
   troves(
     where: {borrower: $account, status_in: [active, redeemed, liquidated]}
     orderBy: updatedAt
     orderDirection: desc
   ) {
     id
-    borrower
     closedAt
     createdAt
-    debt
-    deposit
-    interestRate
     mightBeLeveraged
-    stake
     status
-    troveId
-    updatedAt
-    collateral {
-      id
-      token {
-        symbol
-        name
-      }
-      minCollRatio
-      collIndex
-    }
-    interestBatch {
-      id
-      annualInterestRate
-      annualManagementFee
-      batchManager
-    }
   }
 }
-    `) as unknown as TypedDocumentString<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
-export const TroveByIdDocument = new TypedDocumentString(`
-    query TroveById($id: ID!) {
+    `) as unknown as TypedDocumentString<TroveStatusesByAccountQuery, TroveStatusesByAccountQueryVariables>;
+export const TroveStatusByIdDocument = new TypedDocumentString(`
+    query TroveStatusById($id: ID!) {
   trove(id: $id) {
     id
-    borrower
     closedAt
     createdAt
-    debt
-    deposit
-    interestRate
     mightBeLeveraged
-    stake
     status
-    troveId
-    updatedAt
-    collateral {
-      id
-      token {
-        symbol
-        name
-      }
-      minCollRatio
-      collIndex
-    }
-    interestBatch {
-      id
-      annualInterestRate
-      annualManagementFee
-      batchManager
-    }
   }
 }
-    `) as unknown as TypedDocumentString<TroveByIdQuery, TroveByIdQueryVariables>;
-export const StabilityPoolsDocument = new TypedDocumentString(`
-    query StabilityPools {
-  stabilityPools {
-    id
-    totalDeposited
-  }
-}
-    `) as unknown as TypedDocumentString<StabilityPoolsQuery, StabilityPoolsQueryVariables>;
-export const StabilityPoolDepositsByAccountDocument = new TypedDocumentString(`
-    query StabilityPoolDepositsByAccount($account: Bytes!) {
-  stabilityPoolDeposits(where: {depositor: $account, deposit_gt: 0}) {
-    id
-    deposit
-    depositor
-    collateral {
-      collIndex
-    }
-    snapshot {
-      B
-      P
-      S
-      epoch
-      scale
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
-export const StabilityPoolDepositDocument = new TypedDocumentString(`
-    query StabilityPoolDeposit($id: ID!) {
-  stabilityPoolDeposit(id: $id) {
-    id
-    deposit
-    depositor
-    collateral {
-      collIndex
-    }
-    snapshot {
-      B
-      P
-      S
-      epoch
-      scale
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>;
-export const StabilityPoolEpochScaleDocument = new TypedDocumentString(`
-    query StabilityPoolEpochScale($id: ID!) {
-  stabilityPoolEpochScale(id: $id) {
-    id
-    B
-    S
-  }
-}
-    `) as unknown as TypedDocumentString<StabilityPoolEpochScaleQuery, StabilityPoolEpochScaleQueryVariables>;
+    `) as unknown as TypedDocumentString<TroveStatusByIdQuery, TroveStatusByIdQueryVariables>;
 export const InterestBatchesDocument = new TypedDocumentString(`
     query InterestBatches($ids: [ID!]!) {
   interestBatches(where: {id_in: $ids}) {
@@ -2487,35 +1488,6 @@ export const GovernanceInitiativesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GovernanceInitiativesQuery, GovernanceInitiativesQueryVariables>;
-export const GovernanceUserDocument = new TypedDocumentString(`
-    query GovernanceUser($id: ID!) {
-  governanceUser(id: $id) {
-    id
-    allocatedLQTY
-    stakedLQTY
-    stakedOffset
-    allocations {
-      id
-      atEpoch
-      vetoLQTY
-      voteLQTY
-      initiative {
-        id
-      }
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<GovernanceUserQuery, GovernanceUserQueryVariables>;
-export const GovernanceStatsDocument = new TypedDocumentString(`
-    query GovernanceStats {
-  governanceStats(id: "stats") {
-    id
-    totalLQTYStaked
-    totalOffset
-    totalInitiatives
-  }
-}
-    `) as unknown as TypedDocumentString<GovernanceStatsQuery, GovernanceStatsQueryVariables>;
 export const GovernanceUserAllocationsDocument = new TypedDocumentString(`
     query GovernanceUserAllocations($id: ID!) {
   governanceUser(id: $id) {
@@ -2523,12 +1495,3 @@ export const GovernanceUserAllocationsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GovernanceUserAllocationsQuery, GovernanceUserAllocationsQueryVariables>;
-export const BlockNumberDocument = new TypedDocumentString(`
-    query BlockNumber {
-  _meta {
-    block {
-      number
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<BlockNumberQuery, BlockNumberQueryVariables>;

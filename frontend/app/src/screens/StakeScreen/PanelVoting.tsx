@@ -3,28 +3,25 @@ import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocation, VoteAllo
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
+import { DNUM_0 } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { fmtnum, formatDate } from "@/src/formatting";
-import { useGovernanceState, useInitiatives, useInitiativesStates } from "@/src/liquity-governance";
+import {
+  useGovernanceState,
+  useGovernanceUser,
+  useInitiativesStates,
+  useNamedInitiatives,
+} from "@/src/liquity-governance";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useGovernanceUser } from "@/src/subgraph-hooks";
 import { jsonStringifyWithBigInt } from "@/src/utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import {
-  AnchorTextButton,
-  Button,
-  IconDownvote,
-  IconEdit,
-  IconExternal,
-  IconUpvote,
-  shortenAddress,
-  VFlex,
-} from "@liquity2/uikit";
+import { Button, IconDownvote, IconEdit, IconExternal, IconUpvote, shortenAddress, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -79,7 +76,7 @@ export function PanelVoting() {
   const account = useAccount();
   const governanceState = useGovernanceState();
   const governanceUser = useGovernanceUser(account.address ?? null);
-  const initiatives = useInitiatives();
+  const initiatives = useNamedInitiatives();
   const initiativesStates = useInitiativesStates(initiatives.data?.map((i) => i.address) ?? []);
 
   const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
@@ -131,7 +128,7 @@ export function PanelVoting() {
       ];
 
       allocations[allocation.initiative] = {
-        value: dn.div(qty, stakedLQTY),
+        value: dn.eq(stakedLQTY, 0) ? DNUM_0 : dn.div(qty, stakedLQTY),
         vote,
       };
     }
@@ -301,20 +298,34 @@ export function PanelVoting() {
         className={css({
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: "start",
           gap: 24,
+          width: "100%",
+          userSelect: "none",
         })}
       >
         {governanceState.data && (
           <div
             className={css({
-              display: "flex",
-              justifyContent: "flex-start",
+              flexShrink: 1,
+              minWidth: 0,
+              display: "grid",
+              gridTemplateColumns: "1fr auto",
               alignItems: "center",
               gap: 6,
             })}
           >
-            Current voting round ends in{" "}
+            <div
+              className={css({
+                flexShrink: 1,
+                minWidth: 0,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              })}
+            >
+              Current voting round ends in{" "}
+            </div>
             <Tag
               title={governanceState.data
                 && `Epoch ${governanceState.data.epoch} ends on the ${
@@ -326,16 +337,24 @@ export function PanelVoting() {
           </div>
         )}
 
-        <AnchorTextButton
-          label={
-            <>
-              Discuss
-              <IconExternal size={16} />
-            </>
-          }
-          href="https://voting.liquity.org/"
-          external
-        />
+        <div
+          className={css({
+            flexShrink: 0,
+            display: "grid",
+            justifyContent: "end",
+          })}
+        >
+          <LinkTextButton
+            label={
+              <>
+                Discuss
+                <IconExternal size={16} />
+              </>
+            }
+            href="https://voting.liquity.org/"
+            external
+          />
+        </div>
       </div>
 
       {isCutoff && (
@@ -684,7 +703,7 @@ function InitiativeRow({
             )}
           </div>
           <div>
-            <AnchorTextButton
+            <LinkTextButton
               external
               href={`${CHAIN_BLOCK_EXPLORER?.url}address/${initiative.address}`}
               title={initiative.address}
@@ -733,7 +752,10 @@ function InitiativeRow({
                     }, 0);
                   }}
                   disabled={disabled}
-                  share={dn.div(voteAllocation?.value ?? [0n, 18], totalStaked)}
+                  share={dn.eq(totalStaked, 0) ? DNUM_0 : dn.div(
+                    voteAllocation?.value ?? DNUM_0,
+                    totalStaked,
+                  )}
                   vote={voteAllocation?.vote ?? null}
                 />
               )

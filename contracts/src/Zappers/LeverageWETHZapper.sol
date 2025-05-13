@@ -15,12 +15,15 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
         boldToken.approve(address(_exchange), type(uint256).max);
     }
 
-    function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams calldata _params) external payable {
+    function openLeveragedTroveWithRawETH(OpenLeveragedTroveParams memory _params) external payable {
         require(msg.value == ETH_GAS_COMPENSATION + _params.collAmount, "LZ: Wrong amount of ETH");
         require(
             _params.batchManager == address(0) || _params.annualInterestRate == 0,
             "LZ: Cannot choose interest if joining a batch"
         );
+
+        // Include the original sender in the index, so it is included in the final troveId
+        _params.ownerIndex = _getTroveIndex(msg.sender, _params.ownerIndex);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -103,6 +106,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
     function leverUpTrove(LeverUpTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
+        _requireZapperIsReceiver(_params.troveId);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -148,6 +152,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
     function leverDownTrove(LeverDownTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
+        _requireZapperIsReceiver(_params.troveId);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;

@@ -1,11 +1,13 @@
 "use client";
 
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import content from "@/src/content";
 import { useStakePosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
-import { AnchorTextButton, HFlex, Tabs, TokenIcon, VFlex } from "@liquity2/uikit";
+import { css } from "@/styled-system/css";
+import { Tabs, TokenIcon, VFlex } from "@liquity2/uikit";
 import { useParams, useRouter } from "next/navigation";
 import { PanelRewards } from "./PanelRewards";
 import { PanelStaking } from "./PanelStaking";
@@ -27,14 +29,22 @@ export function StakeScreen() {
     <Screen
       heading={{
         title: (
-          <HFlex>
+          <div
+            className={css({
+              display: "flex",
+              flexFlow: "wrap",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0 8px",
+            })}
+          >
             {content.stakeScreen.headline(<TokenIcon size={24} symbol="LQTY" />)}
-          </HFlex>
+          </div>
         ),
         subtitle: (
           <>
             {content.stakeScreen.subheading}{" "}
-            <AnchorTextButton
+            <LinkTextButton
               label={content.stakeScreen.learnMore[1]}
               href={content.stakeScreen.learnMore[0]}
               external
@@ -42,7 +52,6 @@ export function StakeScreen() {
           </>
         ),
       }}
-      gap={48}
     >
       <StakePositionSummary
         stakePosition={stakePosition.data ?? null}

@@ -1,7 +1,7 @@
 import type { BranchId, Dnum, TroveId } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
-import { CLOSE_FROM_COLLATERAL_SLIPPAGE, DATA_REFRESH_INTERVAL } from "@/src/constants";
+import { CLOSE_FROM_COLLATERAL_SLIPPAGE } from "@/src/constants";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { getBranch } from "@/src/liquity-utils";
@@ -214,12 +214,12 @@ export function useCheckLeverageSlippage({
   return useQuery({
     queryKey: debouncedQueryKey,
     queryFn: async () => {
-      const params = initialDeposit && await getOpenLeveragedTroveParams(
+      const params = initialDeposit && (await getOpenLeveragedTroveParams(
         branchId,
         initialDeposit[0],
         leverageFactor,
         wagmiConfig,
-      );
+      ));
 
       if (params === null) {
         return null;
@@ -243,6 +243,5 @@ export function useCheckLeverageSlippage({
         && dn.gt(initialDeposit, 0)
         && ownerIndex !== null,
     ),
-    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }

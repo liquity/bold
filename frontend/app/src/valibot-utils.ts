@@ -199,7 +199,6 @@ export function vPositionLoanCommited() {
     VPositionLoanBase,
     v.object({
       troveId: vTroveId(),
-      updatedAt: v.number(),
       createdAt: v.number(),
     }),
   ]);
@@ -250,4 +249,12 @@ export function vVoteAllocation() {
 
 export function vVoteAllocations() {
   return v.record(vAddress(), vVoteAllocation());
+}
+
+export function vCollateralSymbol() {
+  return v.union([
+    v.literal("ETH"),
+    v.literal("RETH"),
+    v.literal("WSTETH"),
+  ]);
 }

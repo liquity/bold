@@ -101,18 +101,6 @@ contract CollateralRegistry is ICollateralRegistry {
         uint256[] memory unbackedPortions = new uint256[](totals.numCollaterals);
         uint256[] memory prices = new uint256[](totals.numCollaterals);
 
-        totals.boldSupplyAtStart = boldToken.totalSupply();
-        // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
-        // Use the saved total Bold supply value, from before it was reduced by the redemption.
-        // We only compute it here, and update it at the end,
-        // because the final redeemed amount may be less than the requested amount
-        // Redeemers should take this into account in order to request the optimal amount to not overpay
-        uint256 redemptionRate =
-            _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(_boldAmount, totals.boldSupplyAtStart));
-        require(redemptionRate <= _maxFeePercentage, "CR: Fee exceeded provided maximum");
-        // Implicit by the above and the _requireValidMaxFeePercentage checks
-        //require(newBaseRate < DECIMAL_PRECISION, "CR: Fee would eat up all collateral");
-
         // Gather and accumulate unbacked portions
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
             ITroveManager troveManager = getTroveManager(index);
@@ -126,7 +114,7 @@ contract CollateralRegistry is ICollateralRegistry {
         }
 
         // There’s an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
-        // In that case, we redeem proportinally to branch size
+        // In that case, we redeem proportionally to branch size
         if (totals.unbacked == 0) {
             unbackedPortions = new uint256[](totals.numCollaterals);
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
@@ -138,7 +126,26 @@ contract CollateralRegistry is ICollateralRegistry {
                     unbackedPortions[index] = unbackedPortion;
                 }
             }
+        } else {
+            // Don't allow redeeming more than the total unbacked in one go, as that would result in a disproportionate
+            // redemption (see CS-BOLD-013). Instead, truncate the redemption to total unbacked. If this happens, the
+            // redeemer can call `redeemCollateral()` a second time to redeem the remainder of their BOLD.
+            if (_boldAmount > totals.unbacked) {
+                _boldAmount = totals.unbacked;
+            }
         }
+
+        totals.boldSupplyAtStart = boldToken.totalSupply();
+        // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
+        // Use the saved total Bold supply value, from before it was reduced by the redemption.
+        // We only compute it here, and update it at the end,
+        // because the final redeemed amount may be less than the requested amount
+        // Redeemers should take this into account in order to request the optimal amount to not overpay
+        uint256 redemptionRate =
+            _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(_boldAmount, totals.boldSupplyAtStart));
+        require(redemptionRate <= _maxFeePercentage, "CR: Fee exceeded provided maximum");
+        // Implicit by the above and the _requireValidMaxFeePercentage checks
+        //require(newBaseRate < DECIMAL_PRECISION, "CR: Fee would eat up all collateral");
 
         // Compute redemption amount for each collateral and redeem against the corresponding TroveManager
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
@@ -152,6 +159,10 @@ contract CollateralRegistry is ICollateralRegistry {
                     );
                     totals.redeemedAmount += redeemedAmount;
                 }
+
+                // Ensure that per-branch redeems add up to `_boldAmount` exactly
+                _boldAmount -= redeemAmount;
+                totals.unbacked -= unbackedPortions[index];
             }
         }
 

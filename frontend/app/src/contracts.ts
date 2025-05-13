@@ -47,7 +47,9 @@ const protocolAbis = {
   WETH: erc20Abi,
 } as const;
 
-const BorrowerOperationsErrorsAbi = BorrowerOperations.filter((f) => f.type === "error");
+const BorrowerOperationsErrorsAbi = BorrowerOperations.filter(
+  (f) => f.type === "error",
+);
 
 const collateralAbis = {
   ActivePool,
@@ -63,7 +65,12 @@ const collateralAbis = {
     ...LeverageWETHZapper,
     ...BorrowerOperationsErrorsAbi,
   ],
-  PriceFeed,
+  PriceFeed: PriceFeed.map((f) => (
+    f.name !== "fetchPrice" ? f : {
+      ...f,
+      stateMutability: "view",
+    } as const
+  )),
   SortedTroves,
   StabilityPool,
   TroveManager,
