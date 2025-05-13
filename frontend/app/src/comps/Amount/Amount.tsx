@@ -10,7 +10,7 @@ export function Amount({
   percentage = false,
   prefix = "",
   suffix = "",
-  title: titleProp,
+  title: titleParam,
   value,
 }: {
   fallback?: string;
@@ -18,7 +18,10 @@ export function Amount({
   percentage?: boolean;
   prefix?: string;
   suffix?: string;
-  title?: string | null;
+  title?: string | null | {
+    prefix?: string;
+    suffix?: string;
+  };
   value: Parameters<typeof fmtnum>[0];
 }) {
   const scale = percentage ? 100 : 1;
@@ -46,9 +49,18 @@ export function Amount({
   const content = showFallback ? fallback : fmtnum(value, fmtOptions);
 
   const title = showFallback ? undefined : (
-    titleProp === undefined
+    titleParam === undefined
       ? fmtnum(value, { prefix, preset: "full", scale }) + suffix
-      : titleProp
+      : typeof titleParam === "string"
+      ? titleParam
+      : titleParam === null
+      ? undefined
+      : fmtnum(value, {
+        prefix: titleParam.prefix,
+        preset: "full",
+        scale,
+        suffix: titleParam.suffix,
+      })
   );
 
   const fallbackTransition = useTransition([{ content, title, showFallback }], {

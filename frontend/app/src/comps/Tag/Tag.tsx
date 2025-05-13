@@ -17,12 +17,14 @@ export function Tag({
     <div
       title={title}
       className={css({
+        flexShrink: 0,
         display: "inline-flex",
         alignItems: "center",
         color: "infoSurfaceContent",
         background: "infoSurface",
         border: "1px solid token(colors.infoSurfaceBorder)",
         borderRadius: 8,
+        whiteSpace: "nowrap",
         userSelect: "none",
       }, cssProp)}
       style={getStyles(size)}

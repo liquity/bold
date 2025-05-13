@@ -2,6 +2,7 @@
 
 import type { PositionLoanCommitted } from "@/src/types";
 
+import { useBreakpoint } from "@/src/breakpoints";
 import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
@@ -19,6 +20,7 @@ import { addressesEqual, Button, InfoTooltip, Tabs, TokenIcon } from "@liquity2/
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
+import { useState } from "react";
 import { match, P } from "ts-pattern";
 import { useReadContract } from "wagmi";
 import { LoanScreenCard } from "./LoanScreenCard";
@@ -28,9 +30,21 @@ import { PanelUpdateBorrowPosition } from "./PanelUpdateBorrowPosition";
 import { PanelUpdateLeveragePosition } from "./PanelUpdateLeveragePosition";
 
 const TABS = [
-  { label: "Update Loan", id: "colldebt" },
-  { label: "Interest rate", id: "rate" },
-  { label: "Close loan", id: "close" },
+  {
+    label: "Update Loan",
+    labelCompact: "Update",
+    id: "colldebt",
+  },
+  {
+    label: "Interest rate",
+    labelCompact: "Rate",
+    id: "rate",
+  },
+  {
+    label: "Close loan",
+    labelCompact: "Close",
+    id: "close",
+  },
 ];
 
 export type LoanLoadingState =
@@ -45,6 +59,11 @@ export function LoanScreen() {
   const searchParams = useSearchParams();
   const paramPrefixedId = searchParams.get("id");
   const storedState = useStoredState();
+
+  const [compactMode, setCompactMode] = useState(false);
+  useBreakpoint(({ medium }) => {
+    setCompactMode(!medium);
+  });
 
   if (!isPrefixedtroveId(paramPrefixedId)) {
     notFound();
@@ -175,8 +194,8 @@ export function LoanScreen() {
                         </div>
                       )}
                       <Tabs
-                        items={TABS.map(({ label, id }) => ({
-                          label,
+                        items={TABS.map(({ label, labelCompact, id }) => ({
+                          label: compactMode ? labelCompact : label,
                           panelId: `p-${id}`,
                           tabId: `t-${id}`,
                         }))}
@@ -199,6 +218,7 @@ export function LoanScreen() {
                           );
                         }}
                       />
+
                       {action === "colldebt" && (
                         loanMode === "multiply"
                           ? <PanelUpdateLeveragePosition loan={loan.data} />

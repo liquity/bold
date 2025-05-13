@@ -5,8 +5,7 @@ import { useAppear } from "@/src/anim-utils";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
-import { useVotingPower } from "@/src/liquity-governance";
-import { useGovernanceUser } from "@/src/subgraph-hooks";
+import { useGovernanceUser, useVotingPower } from "@/src/liquity-governance";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, InfoTooltip, TokenIcon } from "@liquity2/uikit";
@@ -25,12 +24,12 @@ export function StakePositionSummary({
   stakePosition: null | PositionStake;
   txPreviewMode?: boolean;
 }) {
-  const govUser = useGovernanceUser(stakePosition?.owner ?? null);
-
   const account = useAccount();
 
+  const govUser = useGovernanceUser(stakePosition?.owner ?? null);
+
   const appear = useAppear(
-    account.isDisconnected || (
+    !account.isConnected || (
       loadingState === "success" && govUser.status === "success"
     ),
   );
@@ -311,7 +310,7 @@ export function StakePositionSummary({
                                 Your relative voting power changes over time, depending on your and others deposits of
                                 LQTY.
                               </p>
-                              {account.address && (govUser.data?.stakedLQTY ?? 0n) > 0n && (
+                              {account.address && (govUser.data?.allocatedLQTY ?? 0n) > 0n && (
                                 <div
                                   className={css({
                                     display: "flex",

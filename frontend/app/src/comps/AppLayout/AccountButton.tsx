@@ -1,4 +1,4 @@
-import type { ComponentPropsWithRef, ReactNode } from "react";
+import type { ComponentPropsWithRef } from "react";
 
 import content from "@/src/content";
 import { useDemoMode } from "@/src/demo-mode";
@@ -7,7 +7,6 @@ import { Button, IconAccount, shortenAddress, ShowAfter } from "@liquity2/uikit"
 import { a, useTransition } from "@react-spring/web";
 import { ConnectKitButton } from "connectkit";
 import { match, P } from "ts-pattern";
-import { MenuItem } from "./MenuItem";
 
 export function AccountButton() {
   const demoMode = useDemoMode();
@@ -60,33 +59,76 @@ function CKButton({
     keys: ({ mode }) => String(mode === "connected"),
     from: { opacity: 0, transform: "scale(0.9)" },
     enter: { opacity: 1, transform: "scale(1)" },
-    leave: { opacity: 0, immediate: true },
+    leave: { opacity: 0, display: "none", immediate: true },
     config: { mass: 1, tension: 2400, friction: 80 },
   });
 
-  return transition((spring, { mode, address }) => (
-    <a.div style={spring}>
-      {mode === "connected"
-        ? (
+  return transition((spring, { mode, address }) => {
+    const containerProps = {
+      className: css({
+        display: "flex",
+        alignItems: "center",
+        height: "100%",
+      }),
+      style: spring,
+    } as const;
+    return mode === "connected"
+      ? (
+        <a.div {...containerProps}>
           <ButtonConnected
             label={ensName ?? shortenAddress(address, 3)}
             onClick={show}
             title={address}
           />
-        )
-        : (
-          <Button
-            mode="primary"
-            label={mode === "connecting"
-              ? "Connecting…"
-              : mode === "unsupported"
-              ? content.accountButton.wrongNetwork
-              : content.accountButton.connectAccount}
-            onClick={show}
+        </a.div>
+      )
+      : (
+        <a.div {...containerProps}>
+          <ButtonNotConnected
+            mode={mode}
+            show={show}
           />
-        )}
-    </a.div>
-  ));
+        </a.div>
+      );
+  });
+}
+
+function ButtonNotConnected({
+  mode,
+  show,
+}: {
+  mode: "connecting" | "disconnected" | "unsupported";
+  show?: () => void;
+}) {
+  const props = {
+    mode: "primary",
+    label: mode === "connecting"
+      ? "Connecting…"
+      : mode === "unsupported"
+      ? content.accountButton.wrongNetwork
+      : content.accountButton.connectAccount,
+    onClick: show,
+  } as const;
+
+  return (
+    <>
+      <Button
+        {...props}
+        size="medium"
+        className={css({
+          hideBelow: "medium",
+        })}
+      />
+      <Button
+        {...props}
+        size="medium"
+        className={css({
+          hideFrom: "medium",
+          height: "32px!",
+        })}
+      />
+    </>
+  );
 }
 
 function DemoModeAccountButton() {
@@ -104,7 +146,7 @@ function ButtonConnected({
   onClick,
   title,
 }: {
-  label: ReactNode;
+  label: string;
   onClick?: () => void;
   title?: string;
 }) {
@@ -113,9 +155,9 @@ function ButtonConnected({
       onClick={onClick}
       title={title}
       className={css({
-        display: "flex",
+        display: "grid",
+        width: "100%",
         height: "100%",
-        maxWidth: 140,
         padding: 0,
         whiteSpace: "nowrap",
         textAlign: "center",
@@ -128,10 +170,51 @@ function ButtonConnected({
         },
       })}
     >
-      <MenuItem
-        icon={<IconAccount />}
-        label={label}
-      />
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          width: "100%",
+          height: "100%",
+          cursor: "pointer",
+          userSelect: "none",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          color: "interactive",
+        })}
+      >
+        <div
+          className={css({
+            display: "grid",
+            placeItems: "center",
+            width: 24,
+            height: 24,
+          })}
+        >
+          <IconAccount />
+        </div>
+        <div
+          className={css({
+            flexShrink: 1,
+            flexGrow: 1,
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            height: "100%",
+          })}
+        >
+          <div
+            className={css({
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            })}
+          >
+            {label}
+          </div>
+        </div>
+      </div>
     </button>
   );
 }

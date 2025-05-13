@@ -16,8 +16,29 @@ import {CurveV2GaugeRewards} from "V2-gov/src/CurveV2GaugeRewards.sol";
 
 import "forge-std/console2.sol";
 
+library AddressArray {
+    using Strings for *;
+    using AddressArray for *;
+
+    function toJSON(address addr) internal pure returns (string memory) {
+        return string.concat('"', addr.toHexString(), '"');
+    }
+
+    function toJSON(address[] memory addresses) internal pure returns (string memory) {
+        if (addresses.length == 0) return "[]";
+
+        string memory commaSeparatedStrings = addresses[0].toJSON();
+        for (uint256 i = 1; i < addresses.length; ++i) {
+            commaSeparatedStrings = string.concat(commaSeparatedStrings, ",", addresses[i].toJSON());
+        }
+
+        return string.concat("[", commaSeparatedStrings, "]");
+    }
+}
+
 contract DeployGovernance is Script {
     using Strings for *;
+    using AddressArray for *;
 
     struct DeployGovernanceParams {
         uint256 epochStart;
@@ -35,7 +56,7 @@ contract DeployGovernance is Script {
     address constant DEFI_COLLECTIVE_GRANTS_ADDRESS = 0xDc6f869d2D34E4aee3E89A51f2Af6D54F0F7f690;
 
     // Governance Constants
-    uint128 private constant REGISTRATION_FEE = 1000e18;
+    uint128 private constant REGISTRATION_FEE = 100e18;
     uint128 private constant REGISTRATION_THRESHOLD_FACTOR = 0.0001e18; // 0.01%
     uint128 private constant UNREGISTRATION_THRESHOLD_FACTOR = 1e18 + 1;
     uint16 private constant UNREGISTRATION_AFTER_EPOCHS = 4;
@@ -59,6 +80,8 @@ contract DeployGovernance is Script {
     ICurveStableSwapNG private curveLusdBoldPool;
     ILiquidityGaugeV6 private curveLusdBoldGauge;
     CurveV2GaugeRewards private curveLusdBoldInitiative;
+
+    address private defiCollectiveInitiative;
 
     function deployGovernance(
         DeployGovernanceParams memory p,
@@ -96,7 +119,11 @@ contract DeployGovernance is Script {
 
             initialInitiatives.push(address(curveUsdcBoldInitiative));
             initialInitiatives.push(address(curveLusdBoldInitiative));
-            initialInitiatives.push(DEFI_COLLECTIVE_GRANTS_ADDRESS);
+            initialInitiatives.push(defiCollectiveInitiative = DEFI_COLLECTIVE_GRANTS_ADDRESS);
+        } else {
+            initialInitiatives.push(makeAddr("initiative1"));
+            initialInitiatives.push(makeAddr("initiative2"));
+            initialInitiatives.push(makeAddr("initiative3"));
         }
 
         governance.registerInitialInitiatives{gas: 600000}(initialInitiatives);
@@ -192,10 +219,11 @@ contract DeployGovernance is Script {
                 string.concat('"curveLusdBoldInitiative":"', address(curveLusdBoldInitiative).toHexString(), '",')
             ),
             string.concat(
-                string.concat('"defiCollectiveInitiative":"', DEFI_COLLECTIVE_GRANTS_ADDRESS.toHexString(), '",'),
+                string.concat('"defiCollectiveInitiative":"', defiCollectiveInitiative.toHexString(), '",'),
                 string.concat('"stakingV1":"', p.stakingV1.toHexString(), '",'),
                 string.concat('"LQTYToken":"', p.lqty.toHexString(), '",'),
-                string.concat('"LUSDToken":"', p.lusd.toHexString(), '"') // no comma
+                string.concat('"LUSDToken":"', p.lusd.toHexString(), '",'),
+                string.concat('"initialInitiatives":', initialInitiatives.toJSON()) // no comma
             ),
             "}"
         );

@@ -1,18 +1,17 @@
 import type { PositionLoanCommitted } from "@/src/types";
 
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { Amount } from "@/src/comps/Amount/Amount";
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import content from "@/src/content";
 import { fmtnum } from "@/src/formatting";
 import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, Button, Dropdown, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
+import { addressesEqual, TokenIcon, TOKENS_BY_SYMBOL, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useState } from "react";
 
 export function PanelClosePosition({
   loan,
@@ -20,7 +19,6 @@ export function PanelClosePosition({
   loan: PositionLoanCommitted;
 }) {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
 
   const branch = getBranch(loan.branchId);
   const collateral = getCollToken(branch.id);
@@ -29,7 +27,9 @@ export function PanelClosePosition({
   const boldPriceUsd = usePrice("BOLD");
   const boldBalance = useBalance(account.address, "BOLD");
 
-  const [repayDropdownIndex, setRepayDropdownIndex] = useState(0);
+  // const [repayDropdownIndex, setRepayDropdownIndex] = useState(0);
+  const repayDropdownIndex = 0;
+
   const repayToken = TOKENS_BY_SYMBOL[repayDropdownIndex === 0 ? "BOLD" : collateral.symbol];
 
   // either in BOLD or in collateral
@@ -104,15 +104,18 @@ export function PanelClosePosition({
               >
                 <div
                   className={css({
-                    display: "flex",
-                    gap: 16,
+                    display: "grid",
                     fontSize: 28,
                     lineHeight: 1,
                   })}
                 >
-                  {fmtnum(amountToRepay)}
+                  <Amount
+                    value={amountToRepay}
+                    title={{ suffix: " BOLD" }}
+                  />
                 </div>
-                <Dropdown
+                {
+                  /*<Dropdown
                   buttonDisplay={() => ({
                     icon: <TokenIcon symbol={repayToken.symbol} />,
                     label: (
@@ -148,7 +151,27 @@ export function PanelClosePosition({
                   menuPlacement="end"
                   onSelect={setRepayDropdownIndex}
                   selected={repayDropdownIndex}
-                />
+                />*/
+                }
+                <div
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    height: 40,
+                    padding: "0 16px 0 8px",
+                    fontSize: 24,
+                    background: "fieldSurface",
+                    borderRadius: 20,
+                    userSelect: "none",
+                  })}
+                >
+                  <TokenIcon
+                    symbol="BOLD"
+                    size={24}
+                  />
+                  <div>BOLD</div>
+                </div>
               </div>
             }
             footer={{
@@ -232,51 +255,32 @@ export function PanelClosePosition({
           ? content.closeLoan.repayWithBoldMessage
           : content.closeLoan.repayWithCollateralMessage}
       </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: 32,
-          width: "100%",
+
+      {error && (
+        <div>
+          <ErrorBox title={error?.name}>
+            {error?.message}
+          </ErrorBox>
+        </div>
+      )}
+
+      <FlowButton
+        disabled={!allowSubmit}
+        label={claimOnly
+          ? content.closeLoan.buttonReclaimAndClose
+          : content.closeLoan.buttonRepayAndClose}
+        request={account.address && {
+          flowId: "closeLoanPosition",
+          backLink: [
+            `/loan/close?id=${loan.branchId}:${loan.troveId}`,
+            "Back to editing",
+          ],
+          successLink: ["/", "Go to the dashboard"],
+          successMessage: "The loan position has been closed successfully.",
+          loan,
+          repayWithCollateral: claimOnly ? false : repayToken.symbol !== "BOLD",
         }}
-      >
-        <ConnectWarningBox />
-
-        {error && (
-          <div>
-            <ErrorBox title={error?.name}>
-              {error?.message}
-            </ErrorBox>
-          </div>
-        )}
-
-        <Button
-          disabled={!allowSubmit}
-          label={claimOnly
-            ? content.closeLoan.buttonReclaimAndClose
-            : content.closeLoan.buttonRepayAndClose}
-          mode="primary"
-          size="large"
-          wide
-          onClick={() => {
-            if (account.address) {
-              txFlow.start({
-                flowId: "closeLoanPosition",
-                backLink: [
-                  `/loan/close?id=${loan.branchId}:${loan.troveId}`,
-                  "Back to editing",
-                ],
-                successLink: ["/", "Go to the dashboard"],
-                successMessage: "The loan position has been closed successfully.",
-
-                loan: { ...loan },
-                repayWithCollateral: claimOnly ? false : repayToken.symbol !== "BOLD",
-              });
-            }
-          }}
-        />
-      </div>
+      />
     </>
   );
 }

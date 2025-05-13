@@ -19,7 +19,6 @@ import { createRequestSchema, verifyTransaction } from "./shared";
 const RequestSchema = createRequestSchema(
   "redeemCollateral",
   {
-    time: v.number(),
     amount: vDnum(),
     maxFee: vDnum(),
   },
@@ -207,17 +206,25 @@ export function useSimulatedBalancesChange({
       const simulation = await client.simulateCalls({
         account,
         calls: [
+          // 1. get balances before
           boldBalanceCall,
           ...branchesBalanceCalls,
+
+          // 2. redeem
           {
             to: CollateralRegistry.address,
             abi: CollateralRegistry.abi,
             functionName: "redeemCollateral",
             args: [request.amount[0], 0n, request.maxFee[0]],
           },
+
+          // 3. get balances after
           boldBalanceCall,
           ...branchesBalanceCalls,
         ],
+
+        // This is needed to avoid a “nonce too low” error with certain RPCs
+        stateOverrides: [{ address: account, nonce: 0 }],
       });
 
       const getBalancesFromSimulated = (position: number) => {

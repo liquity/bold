@@ -81,6 +81,7 @@ contract UseDeployment is CommonBase {
     ILiquidityGaugeV6 curveLusdBoldGauge;
     CurveV2GaugeRewards curveLusdBoldInitiative;
     address defiCollectiveInitiative;
+    address[] initialInitiatives;
     BranchContracts[] branches;
 
     function _loadDeploymentFromManifest(string memory deploymentManifestJson) internal {
@@ -96,6 +97,7 @@ contract UseDeployment is CommonBase {
         curveLusdBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.curveLusdBoldGauge"));
         curveLusdBoldInitiative = CurveV2GaugeRewards(json.readAddress(".governance.curveLusdBoldInitiative"));
         defiCollectiveInitiative = json.readAddress(".governance.defiCollectiveInitiative");
+        initialInitiatives = json.readAddressArray(".governance.initialInitiatives");
 
         vm.label(address(collateralRegistry), "CollateralRegistry");
         vm.label(address(hintHelpers), "HintHelpers");

@@ -1,6 +1,6 @@
 "use client";
 
-import type { MouseEvent, MutableRefObject, ReactNode, TouchEvent } from "react";
+import type { MouseEvent, ReactNode, RefObject, TouchEvent } from "react";
 
 import { a, useSpring } from "@react-spring/web";
 import { useEffect, useRef, useState } from "react";
@@ -245,6 +245,7 @@ function Tab({
       }}
       role="tab"
       tabIndex={selected ? 0 : -1}
+      title={typeof label === "string" ? label : undefined}
       className={css({
         zIndex: 3,
         alignItems: "center",
@@ -270,11 +271,15 @@ function Tab({
       }}
     >
       <div
+        className={css({
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        })}
         style={{
           translate: compact ? "0 -0.5px" : "0 0",
         }}
       >
-        {label}
+        <span>{label}</span>
       </div>
     </button>
   );
@@ -287,7 +292,7 @@ function useKeyboardNavigation({
   onSelect,
   selected,
 }: {
-  isFocused: MutableRefObject<boolean>;
+  isFocused: RefObject<boolean>;
   itemsLength: number;
   onSelect: (
     index: number,
@@ -325,8 +330,8 @@ function useFocusSelected({
   isFocused,
   selected,
 }: {
-  container: MutableRefObject<HTMLDivElement | null>;
-  isFocused: MutableRefObject<boolean>;
+  container: RefObject<HTMLDivElement | null>;
+  isFocused: RefObject<boolean>;
   selected: number;
 }) {
   useEffect(() => {

@@ -1,24 +1,23 @@
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
+import { useGovernanceStats, useGovernanceUser } from "@/src/liquity-governance";
 import { useStakePosition } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
-import { useGovernanceStats, useGovernanceUser } from "@/src/subgraph-hooks";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
+import { HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
 export function PanelStaking() {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
   const lqtyPrice = usePrice("LQTY");
 
   const [mode, setMode] = useState<"deposit" | "withdraw">("deposit");
@@ -43,20 +42,23 @@ export function PanelStaking() {
 
   const updatedShare = (() => {
     const { totalLQTYStaked } = govStats.data ?? {};
-    const { stakedLQTY } = govUser.data ?? {};
+    const { allocatedLQTY } = govUser.data ?? {};
 
-    if (!totalLQTYStaked || !stakedLQTY) {
+    if (
+      allocatedLQTY === undefined
+      || totalLQTYStaked === undefined
+    ) {
       return DNUM_0;
     }
 
-    const updatedUserLqtyStaked = stakedLQTY + depositDifference[0];
+    const updatedUserLqtyAllocated = allocatedLQTY + depositDifference[0];
     const updatedTotalLqtyStaked = totalLQTYStaked + depositDifference[0];
 
     // make sure we don't divide by zero or show negative percentages
-    return (updatedUserLqtyStaked <= 0n || updatedTotalLqtyStaked <= 0n)
+    return (updatedUserLqtyAllocated <= 0n || updatedTotalLqtyStaked <= 0n)
       ? DNUM_0
       : dn.div(
-        [updatedUserLqtyStaked, 18],
+        [updatedUserLqtyAllocated, 18],
         [updatedTotalLqtyStaked, 18],
       );
   })();
@@ -157,9 +159,12 @@ export function PanelStaking() {
                 ? (
                   lqtyBalance.data && dn.gt(lqtyBalance.data, 0) && (
                     <TextButton
+                      className="button-max"
                       label={`Max. ${(fmtnum(lqtyBalance.data, 2))} LQTY`}
                       onClick={() => {
-                        setValue(dn.toString(lqtyBalance.data));
+                        if (lqtyBalance.data) {
+                          setValue(dn.toString(lqtyBalance.data));
+                        }
                       }}
                     />
                   )
@@ -167,6 +172,7 @@ export function PanelStaking() {
                 : (
                   stakePosition.data?.deposit && dn.gt(stakePosition.data?.deposit, 0) && (
                     <TextButton
+                      className="button-max"
                       label={`Max. ${fmtnum(stakePosition.data.deposit, 2)} LQTY`}
                       onClick={() => {
                         if (stakePosition.data) {
@@ -182,14 +188,15 @@ export function PanelStaking() {
         footer={{
           start: (
             <Field.FooterInfo
-              label="New voting power"
+              label="New voting share"
               value={
                 <HFlex>
                   <div>
                     <Amount value={updatedShare} percentage suffix="%" />
                   </div>
                   <InfoTooltip>
-                    Voting power is the percentage of the total staked LQTY that you own.
+                    Your voting share is the amount of LQTY have staked and that is available to vote, divided by the
+                    total amount of LQTY staked via the governance contract.
                   </InfoTooltip>
                 </HFlex>
               }
@@ -262,40 +269,32 @@ export function PanelStaking() {
             </div>
           </HFlex>
         )}
-        <Button
-          disabled={!allowSubmit}
-          label="Next: Summary"
-          mode="primary"
-          size="large"
-          wide
-          onClick={() => {
-            if (account.address) {
-              txFlow.start({
-                flowId: mode === "deposit" ? "stakeDeposit" : "unstakeDeposit",
-                backLink: ["/stake", "Back to stake position"],
-                successLink: ["/stake/voting", "Go to Voting"],
-                successMessage: "The stake position has been updated successfully.",
 
-                lqtyAmount: dn.abs(depositDifference),
-                stakePosition: {
-                  type: "stake",
-                  owner: account.address,
-                  deposit: updatedDeposit,
-                  totalStaked: dn.add(
-                    stakePosition.data?.totalStaked ?? DNUM_0,
-                    depositDifference,
-                  ),
-                  rewards: {
-                    eth: rewardsEth,
-                    lusd: rewardsLusd,
-                  },
-                },
-                prevStakePosition: stakePosition.data
-                    && dn.gt(stakePosition.data.deposit, 0)
-                  ? stakePosition.data
-                  : null,
-              });
-            }
+        <FlowButton
+          disabled={!allowSubmit}
+          request={account.address && {
+            flowId: mode === "deposit" ? "stakeDeposit" : "unstakeDeposit",
+            backLink: ["/stake", "Back to stake position"],
+            successLink: ["/stake/voting", "Go to Voting"],
+            successMessage: "The stake position has been updated successfully.",
+            lqtyAmount: dn.abs(depositDifference),
+            stakePosition: {
+              type: "stake",
+              owner: account.address,
+              deposit: updatedDeposit,
+              totalStaked: dn.add(
+                stakePosition.data?.totalStaked ?? DNUM_0,
+                depositDifference,
+              ),
+              rewards: {
+                eth: rewardsEth,
+                lusd: rewardsLusd,
+              },
+            },
+            prevStakePosition: stakePosition.data
+                && dn.gt(stakePosition.data.deposit, 0)
+              ? stakePosition.data
+              : null,
           }}
         />
       </div>

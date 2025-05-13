@@ -1062,7 +1062,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             // Preconditions
             assertTrue(v.wasOpen, "Should have failed as Trove wasn't open");
-            assertGt(numTroves(i), 1, "Should have failed to close last Trove in the system");
+            if (!isShutdown[i]) assertGt(numTroves(i), 1, "Should have failed to close last Trove in the system");
             if (!isShutdown[i]) assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
@@ -1267,6 +1267,9 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
         amount = _bound(amount, 0, _handlerBold);
         maxIterationsPerCollateral = _bound(maxIterationsPerCollateral, 0, maxNumTroves * 11 / 10);
+
+        uint256 totalUnbacked = _getTotalUnbacked();
+        if (totalUnbacked > 0) amount = Math.min(amount, totalUnbacked);
 
         uint256 oldBaseRate = _getBaseRate();
         uint256 boldSupply = boldToken.totalSupply();
@@ -2415,6 +2418,13 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         return sp < totalDebt ? totalDebt - sp : 0;
     }
 
+    function _getTotalUnbacked() internal view returns (uint256 totalUnbacked) {
+        for (uint256 i = 0; i < branches.length; ++i) {
+            if (isShutdown[i] || _TCR(i) < SCR[i]) continue;
+            totalUnbacked += _getUnbacked(i);
+        }
+    }
+
     function _CR(uint256 i, uint256 coll, uint256 debt) internal view returns (uint256) {
         return debt > 0 ? coll * _price[i] / debt : type(uint256).max;
     }
@@ -2460,7 +2470,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     // We open at most one Trove per actor per branch, for reasons of simplicity,
     // as Troves aren't enumerable per user, only globally.
     function _troveIdOf(uint256 i, address owner) internal view returns (uint256) {
-        return uint256(keccak256(abi.encode(owner, _troveIndexOf[i][owner])));
+        return uint256(keccak256(abi.encode(owner, owner, _troveIndexOf[i][owner])));
     }
 
     function _troveIdsFrom(uint256 i, address[] storage owners) internal view returns (uint256[] memory ret) {
@@ -2649,33 +2659,35 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     function _aggregateLiquidation(uint256 i, LatestTroveData memory trove, LiquidationTotals storage t) internal {
-        // Coll gas comp
-        uint256 collRemaining = trove.entireColl;
-        uint256 collGasComp = Math.min(collRemaining / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
-        t.collGasComp += collGasComp;
-        collRemaining -= collGasComp;
-
         // Offset debt by SP
         uint256 spRemaining = spBoldDeposits[i] - t.spOffset;
         uint256 spOffset = Math.min(trove.entireDebt, spRemaining > MIN_BOLD_IN_SP ? spRemaining - MIN_BOLD_IN_SP : 0);
         t.spOffset += spOffset;
 
-        // Send coll to SP
+        // Share coll proportionally between SP and redistribution based on offset fraction
+        uint256 collRemaining = trove.entireColl;
         uint256 collSPPortion = collRemaining * spOffset / trove.entireDebt;
-        uint256 spCollGain = Math.min(collSPPortion, spOffset * (_100pct + LIQ_PENALTY_SP[i]) / _price[i]);
+
+        // Deduct coll gas comp from SP portion
+        uint256 collGasComp = Math.min(collSPPortion / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
+        t.collGasComp += collGasComp;
+        collRemaining -= collGasComp;
+
+        // Send remainder of SP portion to SP, capped by liq penalty
+        uint256 spCollGain = Math.min(collSPPortion - collGasComp, spOffset * (_100pct + LIQ_PENALTY_SP[i]) / _price[i]);
         t.spCollGain += spCollGain;
         collRemaining -= spCollGain;
 
-        // Redistribute debt
+        // Redistribute remaining debt
         uint256 debtRedist = trove.entireDebt - spOffset;
         t.debtRedist += debtRedist;
 
-        // Redistribute coll
+        // Redistribute remaining coll, capped by redist penalty
         uint256 collRedist = Math.min(collRemaining, debtRedist * (_100pct + LIQ_PENALTY_REDIST[i]) / _price[i]);
         t.collRedist += collRedist;
         collRemaining -= collRedist;
 
-        // Surplus
+        // Send remaining coll to surplus pool
         t.collSurplus += collRemaining;
     }
 
@@ -2756,12 +2768,13 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             }
         }
 
-        if (totalProportions == 0) return (0, r);
-
         for (uint256 i = 0; i < branches.length; ++i) {
             r[i].newDesignatedVictimId = designatedVictimId[i];
+            if (totalProportions == 0) continue;
 
             r[i].attemptedAmount = amount * proportions[i] / totalProportions;
+            amount -= r[i].attemptedAmount;
+            totalProportions -= proportions[i];
             if (r[i].attemptedAmount == 0) continue;
 
             uint256 remainingAmount = r[i].attemptedAmount;

@@ -1,8 +1,11 @@
 "use client";
 
 import type { CollateralSymbol } from "@/src/types";
+import type { ReactNode } from "react";
 
+import { useBreakpoint } from "@/src/breakpoints";
 import { Amount } from "@/src/comps/Amount/Amount";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { DNUM_1 } from "@/src/dnum-utils";
 import {
@@ -15,21 +18,30 @@ import {
 } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { AnchorTextButton, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
+import { IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
-import Link from "next/link";
+import { useState } from "react";
 import { HomeTable } from "./HomeTable";
 
 export function HomeScreen() {
   const account = useAccount();
-  const branches = getBranches();
+
+  const [compact, setCompact] = useState(false);
+  useBreakpoint(({ medium }) => {
+    setCompact(!medium);
+  });
+
   return (
     <div
       className={css({
         flexGrow: 1,
         display: "flex",
         flexDirection: "column",
-        gap: 64,
+        gap: {
+          base: 40,
+          medium: 40,
+          large: 64,
+        },
         width: "100%",
       })}
     >
@@ -38,59 +50,98 @@ export function HomeScreen() {
         className={css({
           display: "grid",
           gap: 24,
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: {
+            base: "1fr",
+            large: "1fr 1fr",
+          },
         })}
       >
-        <HomeTable
-          title="Borrow BOLD against ETH and staked ETH"
-          subtitle="You can adjust your loans, including your interest rate, at any time"
-          icon={<IconBorrow />}
-          columns={[
-            "Collateral",
-            <span title="Average interest rate, per annum">
-              Avg rate, p.a.
-            </span>,
-            <span title="Maximum Loan-to-Value ratio">
-              Max LTV
-            </span>,
-            "Total debt",
-            null,
-          ] as const}
-          rows={branches.map(({ symbol }) => (
-            <BorrowingRow
-              key={symbol}
-              symbol={symbol}
-            />
-          ))}
-        />
-        <HomeTable
-          title="Earn rewards with BOLD"
-          subtitle="Earn BOLD & (staked) ETH rewards by putting your BOLD in a stability pool"
-          icon={<IconEarn />}
-          columns={[
-            "Pool",
-            <abbr title="Annual Percentage Rate over the last 24 hours">APR</abbr>,
-            <abbr title="Annual Percentage Rate over the last 7 days">
-              7d APR
-            </abbr>,
-            "Pool size",
-            null,
-          ] as const}
-          rows={branches.map(({ symbol }) => (
-            <EarnRewardsRow
-              key={symbol}
-              symbol={symbol}
-            />
-          ))}
-        />
+        <BorrowTable compact={compact} />
+        <EarnTable compact={compact} />
       </div>
     </div>
   );
 }
 
+function BorrowTable({
+  compact,
+}: {
+  compact: boolean;
+}) {
+  const columns: ReactNode[] = [
+    "Collateral",
+    <span title="Average interest rate, per annum">
+      {compact ? "Rate" : "Avg rate, p.a."}
+    </span>,
+    <span title="Maximum Loan-to-Value ratio">
+      Max LTV
+    </span>,
+    <span title="Total debt">
+      {compact ? "Debt" : "Total debt"}
+    </span>,
+  ];
+
+  if (!compact) {
+    columns.push(null);
+  }
+
+  return (
+    <HomeTable
+      title="Borrow BOLD against ETH and staked ETH"
+      subtitle="You can adjust your loans, including your interest rate, at any time"
+      icon={<IconBorrow />}
+      columns={columns}
+      rows={getBranches().map(({ symbol }) => (
+        <BorrowingRow
+          key={symbol}
+          compact={compact}
+          symbol={symbol}
+        />
+      ))}
+    />
+  );
+}
+
+function EarnTable({
+  compact,
+}: {
+  compact: boolean;
+}) {
+  const columns: ReactNode[] = [
+    "Pool",
+    <abbr title="Annual Percentage Rate over the last 24 hours">APR</abbr>,
+    <abbr title="Annual Percentage Rate over the last 7 days">
+      7d APR
+    </abbr>,
+    "Pool size",
+  ];
+
+  if (!compact) {
+    columns.push(null);
+  }
+
+  return (
+    <HomeTable
+      title="Earn rewards with BOLD"
+      subtitle="Earn BOLD & (staked) ETH rewards by putting your BOLD in a stability pool"
+      icon={<IconEarn />}
+      columns={columns}
+      rows={getBranches().map(({ symbol }) => (
+        <EarnRewardsRow
+          key={symbol}
+          compact={compact}
+          symbol={symbol}
+        />
+      ))}
+    />
+  );
+}
+
 function BorrowingRow({
+  compact,
   symbol,
 }: {
+  compact: boolean;
   symbol: CollateralSymbol;
 }) {
   const branch = getBranch(symbol);
@@ -133,23 +184,21 @@ function BorrowingRow({
         <Amount
           format="compact"
           prefix="$"
+          fallback="…"
           value={branchDebt.data}
         />
       </td>
-      <td>
-        <div
-          className={css({
-            display: "flex",
-            gap: 16,
-            justifyContent: "flex-end",
-          })}
-        >
-          <Link
-            href={`/borrow/${symbol.toLowerCase()}`}
-            legacyBehavior
-            passHref
+      {!compact && (
+        <td>
+          <div
+            className={css({
+              display: "flex",
+              gap: 16,
+              justifyContent: "flex-end",
+            })}
           >
-            <AnchorTextButton
+            <LinkTextButton
+              href={`/borrow/${symbol.toLowerCase()}`}
               label={
                 <div
                   className={css({
@@ -165,46 +214,23 @@ function BorrowingRow({
               }
               title={`Borrow ${collateral?.name} from ${symbol}`}
             />
-          </Link>
-          {
-            /*<Link
-            href={`/multiply/${symbol.toLowerCase()}`}
-            legacyBehavior
-            passHref
-          >
-            <AnchorTextButton
-              label={
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    fontSize: 14,
-                  })}
-                >
-                  Multiply
-                  <TokenIcon symbol={symbol} size="mini" />
-                </div>
-              }
-              title={`Borrow ${collateral?.name} from ${symbol}`}
-            />
-          </Link>*/
-          }
-        </div>
-      </td>
+          </div>
+        </td>
+      )}
     </tr>
   );
 }
 
 function EarnRewardsRow({
+  compact,
   symbol,
 }: {
+  compact: boolean;
   symbol: CollateralSymbol;
 }) {
   const branch = getBranch(symbol);
   const collateral = getCollToken(branch.id);
   const earnPool = useEarnPool(branch.id);
-
   return (
     <tr>
       <td>
@@ -223,14 +249,14 @@ function EarnRewardsRow({
         <Amount
           fallback="…"
           percentage
-          value={earnPool.data.apr}
+          value={earnPool.data?.apr}
         />
       </td>
       <td>
         <Amount
           fallback="…"
           percentage
-          value={earnPool.data.apr7d}
+          value={earnPool.data?.apr7d}
         />
       </td>
       <td>
@@ -241,13 +267,10 @@ function EarnRewardsRow({
           value={earnPool.data?.totalDeposited}
         />
       </td>
-      <td>
-        <Link
-          href={`/earn/${symbol.toLowerCase()}`}
-          legacyBehavior
-          passHref
-        >
-          <AnchorTextButton
+      {!compact && (
+        <td>
+          <LinkTextButton
+            href={`/earn/${symbol.toLowerCase()}`}
             label={
               <div
                 className={css({
@@ -266,8 +289,8 @@ function EarnRewardsRow({
             }
             title={`Earn BOLD with ${collateral?.name}`}
           />
-        </Link>
-      </td>
+        </td>
+      )}
     </tr>
   );
 }

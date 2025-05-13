@@ -1,11 +1,11 @@
 "use client";
 
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
+import { LinkButton } from "@/src/comps/LinkButton/LinkButton";
 import { sleep } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { AnchorButton, Button } from "@liquity2/uikit";
+import { Button } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
-import Link from "next/link";
 
 export default function Error({
   error,
@@ -50,19 +50,14 @@ export default function Error({
             gap: 16,
           })}
         >
-          <Link
+          <LinkButton
             href="/"
-            passHref
-            legacyBehavior
-          >
-            <AnchorButton
-              mode="secondary"
-              label="Go to dashboard"
-            />
-          </Link>
+            label="Go to dashboard"
+            mode="secondary"
+          />
           <Button
-            mode="primary"
             label="Reset state"
+            mode="primary"
             onClick={reset}
           />
         </div>
