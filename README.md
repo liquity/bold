@@ -95,14 +95,13 @@
   - [13 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards](#13---stability-pool-claiming-and-compounding-yield-can-be-used-to-gain-a-slightly-higher-rate-of-rewards)
   - [14 - Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1](#14---urgent-redemptions-premium-can-worsen-the-icr-when-trove-coll-value--debt-value--1)
   - [15 - Overflow threshold in SP calculations](#15---Overflow-threshold-in-sp-calculations)
-  - [16 - TODOs in code comments](#16---todos-in-code-comments)
-  - [17 - Just in time StabilityPool deposits](#17---just-in-time-stabilitypool-deposits)
-  - [18 - Batch vs sequential redistributions](#18---batch-vs-sequential-redistributions)
-  - [19 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price](#19---lastGoodPrice-used-in-urgent-redemptions-may-not-represent-a-previous-redemption-price)
-  - [20 - Users Can Game Upfront Fees by Chunking Debt](#20---users-can-game-upfront-fees-by-chunking-debt)
-  - [21 - Users can game upfront fees by joining an empty batch](#21---Users-can-game-upfront-fees-by-joining-an-empty-batch)
-  - [22 - Deployment backrunning](#22---deployment-backrunning)
-  - [23 - Repeated redistribution can eventually result in zero stake Troves](#23---repeated-redistribution-can-eventually-result-in-zero-stake-Troves)
+  - [16 - Just in time StabilityPool deposits](#17---just-in-time-stabilitypool-deposits)
+  - [17 - Batch vs sequential redistributions](#18---batch-vs-sequential-redistributions)
+  - [18 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price](#19---lastGoodPrice-used-in-urgent-redemptions-may-not-represent-a-previous-redemption-price)
+  - [19 - Users Can Game Upfront Fees by Chunking Debt](#20---users-can-game-upfront-fees-by-chunking-debt)
+  - [20 - Users can game upfront fees by joining an empty batch](#21---Users-can-game-upfront-fees-by-joining-an-empty-batch)
+  - [21 - Deployment backrunning](#22---deployment-backrunning)
+  - [22 - Repeated redistribution can eventually result in zero stake Troves](#23---repeated-redistribution-can-eventually-result-in-zero-stake-Troves)
   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
 
 ## Significant changes in Liquity v2
@@ -1665,17 +1664,7 @@ The same bound can be found for the sums `G` and `B`, e.g. where `B` is updated 
 
 An upper bound of ~1e23 BOLD before overflow is deemed acceptable - the USD value of total global wealth is many orders of magnitudes lower. However, forks should consider overflow calculations if they further increase precision or expect a much higher supply of their minted asset.
 
-### 16 - TODOs in code comments
-
-A number of TODOs remain in comments in core smart contracts:
-
-- TroveManager L1281 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1281 L1537 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1537 
-L1593 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1593
-L1734 https://github.com/liquity/bold/blob/9b42a46d3f7ee9382be9558acf013ea8d49dbe1b/contracts/src/TroveManager.sol#L1734 These `assert` check that certain debt quantities on a live Trove are not 0, which always holds true. 
-
-- MainnetPriceFeedBase L52: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/PriceFeeds/MainnetPriceFeedBase.sol#L52  This is irrelevant now that contracts have been deployed.
-
-### 17 - Just in time StabilityPool deposits
+### 16 - Just in time StabilityPool deposits
 
 It is possible for a depositor to front-run a liquidation transaction with a large SP deposit and reap most of the liquidation gains.
 
@@ -1697,7 +1686,7 @@ When new debt is drawn on a Trove, an upfront fee is charged.  Part of this fee 
 
 Of course, the reclaimed fee portion depends on the size of their target debt, how finely they chunk their debt, and the prior size of the SP. Existing depositors will still earn a portion of their upfront fees which are split to depositors pro-rata.
 
-### 18 - Batch vs sequential redistributions 
+### 17 - Batch vs sequential redistributions 
 
 Liquidations via redistribution in `batchLiquidateTroves` do not distribute liquidated collateral and debt to the other Troves liquidated inside the liquidation loop. They only distribute collateral and debt to the active Troves which remain in the system _after_ all liquidations in the loop have been resolved.
 
@@ -1725,7 +1714,7 @@ batchLiquidateTroves(C)
 
 In Liquity v2 the resulting collateral and debt of active Troves D and E is exactly the same in both scenarios, since the same total coll and debt is redistributed proportionally. This is not the case in Liquity v1 where redistributions pay gas compensation, and rolling vs not rolling liquidations results in slightly different gas compensation payout and thus slightly end states for active Troves.
 
-### 19 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price
+### 18 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price
 
 `lastGoodPrice` is set by the last price fetch of the system, which may be a redemption or another operation. In case of redemption, the `lastGoodPrice` will be a result of a previous call to `fetchRedemptionPrice`, and otherwise, a call to `fetchPrice`. Thus, it’s possible that the `lastGoodPrice` used in urgent redemptions after shutdown was not actually a _redemption_ price when the branch was previously active.
 
@@ -1738,7 +1727,7 @@ Urgent redemptions could be immediately unprofitable after oracle failure if `la
 
 Overall, the bigger factor in urgent redemption unprofitability is likely to be a market price decrease post oracle-failure, rather than a `lastGoodPrice` that is slightly too high. As mentioned in [Known Issue 4](https://github.com/liquity/bold?tab=readme-ov-file#3---path-dependent-redemptions-lower-fee-when-chunking), `lastGoodPrice` can become out of date simply due to market price movements.
 
-### 20 - Users can game upfront fees by chunking debt
+### 19 - Users can game upfront fees by chunking debt
 
 When a borrower opens a Trove or draws new debt, an [upfront fee](https://github.com/liquity/bold?tab=readme-ov-file#upfront-borrowing-fees) is charged based on the branch’s debt-weighted average interest rate. That is:
 
@@ -1758,7 +1747,7 @@ This is considered a minor issue since a borrower can only significantly raise t
 
 A debt increase large enough to be worth chunking corresponds to a significant expansion of branch debt, which generates significant fees for the branch’s SP.  Even if fees are gamed via chunking and somewhat reduced, they will still result in a significant yield boost and APR spike for the branch’s SP depositors.
 
-### 21 - Users can game upfront fees by joining an empty batch
+### 20 - Users can game upfront fees by joining an empty batch
 
 This issue involves a different action sequence from issue 20 and utilises a pre-made empty batch, however is it insignificant for the same reason as issue 20 is.
 
@@ -1777,7 +1766,7 @@ Unless the Trove debt is very large relative to prior branch debt, the lower res
 
 And like issue 20, a debt increase large enough to be worth gaming the upfront fee via this method is still very beneficial for SP depositors.
 
-### 22 - Deployment backrunning
+### 21 - Deployment backrunning
 
 If a user were to immediately backrun the Liquity v2 deployment before the first legitimate Troves were opened, then it could be possible to game the system for an advantage. There are several avenues by which deployment could be backrun and exploited, e.g:
 
@@ -1792,7 +1781,7 @@ However, such attacks are unrealistic, since:
 - If someone does somehow manage to backrun deployment before launch announcement, the v2 team may simply redeploy via a fresh unknown address before public announcement.
 
 
-### 23 - Repeated redistribution can eventually result in zero stake Troves
+### 22 - Repeated redistribution can eventually result in zero stake Troves
 
 This issue carries over from Liquity v1, and was originally documented in [this issue](https://github.com/liquity/dev/issues/310).
 
