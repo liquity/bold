@@ -288,7 +288,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             singleLiquidation.oldWeightedRecordedDebt = trove.weightedRecordedDebt;
         }
 
-        // Differencen between liquidation penalty and liquidation threshold
+        // Difference between liquidation penalty and liquidation threshold
         if (singleLiquidation.collSurplus > 0) {
             collSurplusPool.accountSurplus(owner, singleLiquidation.collSurplus);
         }
