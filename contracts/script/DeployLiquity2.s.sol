@@ -714,7 +714,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             SALT, keccak256(getBytecode(type(SortedTroves).creationCode, address(contracts.addressesRegistry)))
         );
 
-        contracts.priceFeed = _deployPriceFeed(_branch, addresses.borrowerOperations);
+        contracts.priceFeed = _deployPriceFeed(_branch, address(_collToken), addresses.borrowerOperations);
 
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
             collToken: _collToken,
@@ -771,15 +771,20 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _usdcCurvePool);
     }
 
-    function _deployPriceFeed(uint256 _branch, address _borroweOperationsAddress) internal returns (IPriceFeed) {
+    function _deployPriceFeed(uint256 _branch, address _collTokenAddress, address _borroweOperationsAddress)
+        internal
+        returns (IPriceFeed)
+    {
         assert(_branch < NUM_BRANCHES);
         if (block.chainid == 1 && !useTestnetPriceFeeds) {
             // mainnet
             // ETH
             if (_branch == 0) {
+                assert(_collTokenAddress == address(WETH));
                 return new WETHPriceFeed(ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD, _borroweOperationsAddress);
             } else if (_branch == 1) {
                 // wstETH
+                assert(_collTokenAddress == WSTETH_ADDRESS);
                 return new WSTETHPriceFeed(
                     ETH_ORACLE_ADDRESS,
                     STETH_ORACLE_ADDRESS,
@@ -791,6 +796,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             }
             // _branch = 2
             // RETH
+            assert(_collTokenAddress == RETH_ADDRESS);
             return new RETHPriceFeed(
                 ETH_ORACLE_ADDRESS,
                 RETH_ORACLE_ADDRESS,
