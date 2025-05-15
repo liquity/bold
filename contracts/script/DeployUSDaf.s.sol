@@ -590,8 +590,8 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         returns (ICurveStableswapNGPool)
     {
         address basePool = address(0x4f493B7dE8aAC7d55F71853688b1F7C8F0243C85); // USDC/USDT Reserves Pool
-        string memory name = "Reserve As Fuck";
-        string memory symbol = "crv2af";
+        string memory name = "AF Power Pool (Strategic Reserve)";
+        string memory symbol = "crvUSDaf";
         address coin = address(_boldToken);
         uint256 A = 200;
         uint256 fee = 2000000;
