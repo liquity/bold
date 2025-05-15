@@ -251,7 +251,7 @@ export default {
       label: "Collateral",
     },
     borrowField: {
-      label: "Borrow",
+      label: "Loan",
     },
     liquidationPriceField: {
       label: "ETH liquidation price",
