@@ -76,15 +76,17 @@ export async function main() {
     options.network ??= "mainnet";
     isLocal = true;
   }
-
   if (networkPreset === "sepolia") {
     options.name ??= "liquity2-sepolia-preview";
     options.network ??= "sepolia";
   }
-
-  if (networkPreset === "mainnet") {
-    options.name ??= "liquity2-mainnet";
+  if (networkPreset === "mainnet-relaunch") {
+    options.name ??= "liquity-2-relaunch";
     options.network ??= "mainnet";
+  }
+  if (networkPreset === "mainnet-legacy") {
+    options.name ??= "liquity2-mainnet";
+    options.network ??= "mainnet-legacy";
   }
 
   if (!options.name) {
