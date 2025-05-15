@@ -29,4 +29,19 @@ interface ICurveStableswapNGFactory {
         bytes4[] memory method_ids,
         address[] memory oracles
     ) external returns (ICurveStableswapNGPool);
+
+    function deploy_metapool(
+        address _base_pool,
+        string memory _name,
+        string memory _symbol,
+        address _coin,
+        uint256 _A,
+        uint256 _fee,
+        uint256 _offpeg_fee_multiplier,
+        uint256 _ma_exp_time,
+        uint256 _implementation_id,
+        uint8 _asset_type,
+        bytes4 _method_id,
+        address _oracle
+    ) external returns (ICurveStableswapNGPool);
 }

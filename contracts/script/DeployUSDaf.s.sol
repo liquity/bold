@@ -66,6 +66,9 @@ import {CbbtcFallbackOracle} from "src/PriceFeeds/USDaf/Fallbacks/CbbtcFallbackO
 import {CbbtcOracle} from "src/PriceFeeds/USDaf/CbbtcOracle.sol";
 import {WrappedWbtc} from "src/WrappedWbtc.sol";
 import {WrappedCbbtc} from "src/WrappedCbbtc.sol";
+import {ZapperAsFuck} from "src/Zappers/ZapperAsFuck.sol";
+import {WbtcZapper} from "src/Zappers/WbtcZapper.sol";
+import {CbbtcZapper} from "src/Zappers/CbbtcZapper.sol";
 
 import {DeployGovernance} from "./DeployGovernance.s.sol";
 
@@ -191,7 +194,7 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         GasPool gasPool;
         IInterestRouter interestRouter;
         IERC20Metadata collToken;
-        WETHZapper wethZapper;
+        address zapper;
         GasCompZapper gasCompZapper;
         ILeverageZapper leverageZapper;
     }
@@ -277,14 +280,6 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         WETH = IWETH(WETH_ADDRESS);
         USDC = IERC20Metadata(USDC_ADDRESS);
         curveStableswapFactory = curveStableswapFactoryMainnet;
-        // uniV3Router = uniV3RouterMainnet;
-        // uniV3Quoter = uniV3QuoterMainnet;
-        // uniswapV3Factory = uniswapV3FactoryMainnet;
-        // uniV3PositionManager = uniV3PositionManagerMainnet;
-        // balancerFactory = balancerFactoryMainnet;
-        // lqty = LQTY_ADDRESS;
-        // stakingV1 = LQTY_STAKING_ADDRESS;
-        // lusd = LUSD_ADDRESS;
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](NUM_BRANCHES);
         troveManagerParamsArray[0] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // scrvUSD
@@ -295,16 +290,6 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         troveManagerParamsArray[5] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // tBTC
         troveManagerParamsArray[6] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // WBTC
         troveManagerParamsArray[7] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // cbBTC
-
-        // // WETH
-        // troveManagerParamsArray[0] = TroveManagerParams({
-        //     CCR: CCR_WETH,
-        //     MCR: MCR_WETH,
-        //     SCR: SCR_WETH,
-        //     BCR: BCR_ALL,
-        //     LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_WETH,
-        //     LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_WETH
-        // });
 
         string[] memory collNames = new string[](NUM_BRANCHES);
         string[] memory collSymbols = new string[](NUM_BRANCHES);
@@ -356,7 +341,7 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         r.boldToken = BoldToken(_boldAddress);
 
         // USDC and USDC-BOLD pool
-        // r.usdcCurvePool = _deployCurvePool(r.boldToken, USDC); // @todo
+        r.usdcCurvePool = _deployCurvePool(r.boldToken, USDC);
 
         r.contractsArray = new LiquityContracts[](vars.numCollaterals);
         vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
@@ -405,7 +390,6 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
 
         r.boldToken.setCollateralRegistry(address(r.collateralRegistry));
 
-        // @todo
         // // exchange helpers
         // r.exchangeHelpers = new HybridCurveUniV3ExchangeHelpers(
         //     USDC,
@@ -542,10 +526,8 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
             address(contracts.activePool)
         );
 
-        // @todo
-        // // deploy zappers
-        // (contracts.gasCompZapper, contracts.wethZapper, contracts.leverageZapper) =
-        //     _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _usdcCurvePool);
+        // deploy zappers
+        contracts.zapper = _deployZappersAF(contracts.collToken, contracts.addressesRegistry);
     }
 
     function _deployPriceFeed(address _collTokenAddress, address _borroweOperationsAddress)
@@ -593,83 +575,47 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         return new WETHPriceFeed(_oracle, _stalenessThreshold, _borroweOperationsAddress);
     }
 
-    // function _deployZappers(
-    //     IAddressesRegistry _addressesRegistry,
-    //     IERC20 _collToken,
-    //     IBoldToken _boldToken,
-    //     ICurveStableswapNGPool _usdcCurvePool
-    // ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper) {
-    //     IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
+    function _deployZappersAF(IERC20 _collToken, IAddressesRegistry _addressesRegistry) internal returns (address) {
+        if (address(_collToken) == address(wrappedWbtc)) {
+            return address(new WbtcZapper(_addressesRegistry));
+        } else if (address(_collToken) == address(wrappedCbbtc)) {
+            return address(new CbbtcZapper(_addressesRegistry));
+        } else {
+            return address(new ZapperAsFuck(_addressesRegistry));
+        }
+    }
 
-    //     IExchange hybridExchange = new HybridCurveUniV3Exchange(
-    //         _collToken,
-    //         _boldToken,
-    //         USDC,
-    //         WETH,
-    //         _usdcCurvePool,
-    //         OTHER_TOKEN_INDEX, // USDC Curve pool index
-    //         BOLD_TOKEN_INDEX, // BOLD Curve pool index
-    //         UNIV3_FEE_USDC_WETH,
-    //         UNIV3_FEE_WETH_COLL,
-    //         uniV3Router
-    //     );
-
-    //     bool lst = _collToken != WETH;
-    //     if (lst) {
-    //         gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
-    //     } else {
-    //         wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
-    //     }
-    //     leverageZapper = _deployHybridLeverageZapper(_addressesRegistry, flashLoanProvider, hybridExchange, lst);
-    // }
-
-    // function _deployHybridLeverageZapper(
-    //     IAddressesRegistry _addressesRegistry,
-    //     IFlashLoanProvider _flashLoanProvider,
-    //     IExchange _hybridExchange,
-    //     bool _lst
-    // ) internal returns (ILeverageZapper) {
-    //     ILeverageZapper leverageZapperHybrid;
-    //     if (_lst) {
-    //         leverageZapperHybrid = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
-    //     } else {
-    //         leverageZapperHybrid = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
-    //     }
-
-    //     return leverageZapperHybrid;
-    // }
-
-    // @todo -- deploy metapool
     function _deployCurvePool(IBoldToken _boldToken, IERC20Metadata _otherToken)
         internal
         returns (ICurveStableswapNGPool)
     {
-        if (block.chainid == 31337) {
-            // local
-            return ICurveStableswapNGPool(address(0));
-        }
+        address basePool = address(0x4f493B7dE8aAC7d55F71853688b1F7C8F0243C85); // USDC/USDT Reserves Pool
+        string memory name = "Reserves As Fuck";
+        string memory symbol = "crv2af";
+        address coin = address(_boldToken);
+        uint256 A = 200;
+        uint256 fee = 2000000;
+        uint256 offpeg_fee_multiplier = 50000000000;
+        uint256 ma_exp_time = 866;
+        uint256 implementation_id = 0;
+        uint8 asset_type = 0;
+        bytes4 method_id = 0x00000000;
+        address oracle = address(0);
 
-        // deploy Curve StableswapNG pool
-        address[] memory coins = new address[](2);
-        coins[BOLD_TOKEN_INDEX] = address(_boldToken);
-        coins[OTHER_TOKEN_INDEX] = address(_otherToken);
-        uint8[] memory assetTypes = new uint8[](2); // 0: standard
-        bytes4[] memory methodIds = new bytes4[](2);
-        address[] memory oracles = new address[](2);
-
-        ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool({
-            name: string.concat("BOLD/", _otherToken.symbol(), " Pool"),
-            symbol: string.concat("BOLD", _otherToken.symbol()),
-            coins: coins,
-            A: 100,
-            fee: 4000000,
-            offpeg_fee_multiplier: 20000000000,
-            ma_exp_time: 866,
-            implementation_id: 0,
-            asset_types: assetTypes,
-            method_ids: methodIds,
-            oracles: oracles
-        });
+        ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_metapool(
+            basePool,
+            name,
+            symbol,
+            coin,
+            A,
+            fee,
+            offpeg_fee_multiplier,
+            ma_exp_time,
+            implementation_id,
+            asset_type,
+            method_id,
+            oracle
+        );
 
         return curvePool;
     }
@@ -697,7 +643,7 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
                     string.concat('"priceFeed":"', address(c.priceFeed).toHexString(), '",'),
                     string.concat('"gasPool":"', address(c.gasPool).toHexString(), '",'),
                     string.concat('"interestRouter":"', address(c.interestRouter).toHexString(), '",'),
-                    string.concat('"wethZapper":"', address(c.wethZapper).toHexString(), '",')
+                    string.concat('"zapper":"', address(c.zapper).toHexString(), '",')
                 ),
                 string.concat(
                     string.concat('"gasCompZapper":"', address(c.gasCompZapper).toHexString(), '",'),
