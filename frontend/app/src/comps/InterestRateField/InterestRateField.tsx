@@ -41,6 +41,7 @@ export const InterestRateField = memo(
     inputId: inputIdFromProps,
     interestRate,
     mode,
+    onAverageInterestRateLoad = noop,
     onChange,
     onDelegateChange,
     onModeChange = noop,
@@ -51,6 +52,7 @@ export const InterestRateField = memo(
     inputId?: string;
     interestRate: Dnum | null;
     mode: DelegateMode;
+    onAverageInterestRateLoad?: (averageInterestRate: Dnum) => void;
     onChange: (interestRate: Dnum) => void;
     onDelegateChange: (delegate: Address | null) => void;
     onModeChange?: (mode: DelegateMode) => void;
@@ -79,7 +81,7 @@ export const InterestRateField = memo(
         rateTouchedForBranch.current = branchId;
         setTimeout(() => {
           if (averageInterestRate.data && !cancelled) {
-            onChange(averageInterestRate.data);
+            onAverageInterestRateLoad(averageInterestRate.data);
           }
         }, 0);
         return () => {
@@ -89,7 +91,7 @@ export const InterestRateField = memo(
     }, [
       averageInterestRate.data,
       branchId,
-      onChange,
+      onAverageInterestRateLoad,
     ]);
 
     const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
