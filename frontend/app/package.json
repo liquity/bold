@@ -24,7 +24,7 @@
     "@graphql-typed-document-node/core": "^3.2.0",
     "@liquity2/uikit": "workspace:*",
     "@next/bundle-analyzer": "15.3.1",
-    "@react-spring/web": "^10.0.0-beta.0",
+    "@react-spring/web": "^10.0.0",
     "@tanstack/react-query": "^5.75.4",
     "@vercel/analytics": "^1.5.0",
     "@wagmi/core": "^2.17.1",

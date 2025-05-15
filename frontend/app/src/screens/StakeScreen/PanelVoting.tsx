@@ -2,7 +2,7 @@ import type { InitiativeStatus } from "@/src/liquity-governance";
 import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocation, VoteAllocations } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Tag } from "@/src/comps/Tag/Tag";
@@ -17,11 +17,10 @@ import {
   useInitiativesStates,
   useNamedInitiatives,
 } from "@/src/liquity-governance";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { jsonStringifyWithBigInt } from "@/src/utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, IconDownvote, IconEdit, IconExternal, IconUpvote, shortenAddress, VFlex } from "@liquity2/uikit";
+import { Button, IconDownvote, IconEdit, IconExternal, IconUpvote, shortenAddress } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -71,8 +70,6 @@ function filterVoteAllocationsForSubmission(
 }
 
 export function PanelVoting() {
-  const txFlow = useTransactionFlow();
-
   const account = useAccount();
   const governanceState = useGovernanceState();
   const governanceUser = useGovernanceUser(account.address ?? null);
@@ -208,10 +205,12 @@ export function PanelVoting() {
     }));
   };
 
-  const allowSubmit = dn.lt(remainingVotingPower, 1) && (
-    hasAnyAllocations
-    || dn.gte(remainingVotingPower, 0)
-    || hasAnyAllocationChange
+  const allowSubmit = hasAnyAllocationChange && dn.gt(stakedLQTY, 0) && (
+    (
+      dn.eq(remainingVotingPower, 0) && hasAnyAllocations
+    ) || (
+      dn.eq(remainingVotingPower, 1)
+    )
   );
 
   const cutoffStartDate = governanceState.data && new Date(
@@ -504,27 +503,45 @@ export function PanelVoting() {
         </tbody>
         <tfoot>
           <tr>
-            <td>
-              <div>
-                Voting power left
-              </div>
-            </td>
-            <td>
+            <td colSpan={2}>
               <div
                 className={css({
-                  "--color-negative": "token(colors.negative)",
+                  display: "grid",
+                  gridTemplateColumns: "1fr auto",
                 })}
-                style={{
-                  color: dn.lt(remainingVotingPower, 0)
-                    ? "var(--color-negative)"
-                    : "inherit",
-                }}
               >
-                <Amount
-                  format={2}
-                  value={remainingVotingPower}
-                  percentage
-                />
+                <div
+                  className={css({
+                    overflow: "hidden",
+                    display: "flex",
+                  })}
+                >
+                  <div
+                    className={css({
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    })}
+                  >
+                    Voting power left
+                  </div>
+                </div>
+                <div
+                  className={css({
+                    "--color-negative": "token(colors.negative)",
+                  })}
+                  style={{
+                    color: dn.lt(remainingVotingPower, 0)
+                      ? "var(--color-negative)"
+                      : "inherit",
+                  }}
+                >
+                  <Amount
+                    format={2}
+                    value={remainingVotingPower}
+                    percentage
+                  />
+                </div>
               </div>
             </td>
           </tr>
@@ -595,28 +612,47 @@ export function PanelVoting() {
         </div>
       )}
 
-      <VFlex gap={48}>
-        <ConnectWarningBox />
-        <Button
-          disabled={!allowSubmit}
-          label="Cast votes"
-          mode="primary"
-          size="large"
-          wide
-          onClick={() => {
-            txFlow.start({
-              flowId: "allocateVotingPower",
-              backLink: ["/stake/voting", "Back"],
-              successLink: ["/stake/voting", "Back to overview"],
-              successMessage: "Your voting power has been allocated.",
-              voteAllocations: filterVoteAllocationsForSubmission(
-                inputVoteAllocations,
-                initiativesStates.data ?? {},
-              ),
-            });
-          }}
-        />
-      </VFlex>
+      <FlowButton
+        disabled={!allowSubmit}
+        label="Cast votes"
+        request={{
+          flowId: "allocateVotingPower",
+          backLink: ["/stake/voting", "Back"],
+          successLink: ["/stake/voting", "Back to overview"],
+          successMessage: "Your voting power has been allocated.",
+          voteAllocations: filterVoteAllocationsForSubmission(
+            inputVoteAllocations,
+            initiativesStates.data ?? {},
+          ),
+        }}
+      />
+      {!allowSubmit && hasAnyAllocationChange && (
+        <div
+          className={css({
+            fontSize: 14,
+            textAlign: "center",
+          })}
+        >
+          {dn.eq(stakedLQTY, 0)
+            ? (
+              <>
+                You have no voting power to allocate. Please stake LQTY before voting.
+              </>
+            )
+            : hasAnyAllocations
+            ? (
+              <>
+                You must either allocate 100% of your voting power to upvote or downvote initiatives, or 0% to
+                deallocate your votes.
+              </>
+            )
+            : (
+              <>
+                You must allocate 100% of your voting power to upvote or downvote initiatives.
+              </>
+            )}
+        </div>
+      )}
     </section>
   );
 }

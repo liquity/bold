@@ -296,6 +296,7 @@ export function LeverageScreen() {
               inputId="input-interest-rate"
               interestRate={interestRate}
               mode={interestRateMode}
+              onAverageInterestRateLoad={setInterestRate}
               onChange={setInterestRate}
               onDelegateChange={setInterestRateDelegate}
               onModeChange={setInterestRateMode}

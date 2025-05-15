@@ -125,7 +125,13 @@ export function PanelInterestRate({
                     fontSize: 14,
                   })}
                 >
-                  <IconSuggestion size={16} />
+                  <div
+                    className={css({
+                      flexShrink: 0,
+                    })}
+                  >
+                    <IconSuggestion size={16} />
+                  </div>
                   <div
                     className={css({
                       flexShrink: 1,
@@ -138,8 +144,8 @@ export function PanelInterestRate({
                     {updateRateCooldown.active
                       ? (
                         <>
-                          Adjust without fee
-                          <div ref={updateRateCooldown.remainingRef} />
+                          {"Adjust without fee "}
+                          <span ref={updateRateCooldown.remainingRef} />
                         </>
                       )
                       : <>No fee for rate adjustment</>}
