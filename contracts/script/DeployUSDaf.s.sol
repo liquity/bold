@@ -445,7 +445,7 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         addresses.metadataNFT = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)))
         );
-        assert(address(contracts.metadataNFT) == addresses.metadataNFT);
+        require(address(contracts.metadataNFT) == addresses.metadataNFT, "shi");
 
         contracts.interestRouter = IInterestRouter(_governance);
         addresses.borrowerOperations = vm.computeCreate2Address(
@@ -590,7 +590,7 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         returns (ICurveStableswapNGPool)
     {
         address basePool = address(0x4f493B7dE8aAC7d55F71853688b1F7C8F0243C85); // USDC/USDT Reserves Pool
-        string memory name = "Reserves As Fuck";
+        string memory name = "Reserve As Fuck";
         string memory symbol = "crv2af";
         address coin = address(_boldToken);
         uint256 A = 200;
