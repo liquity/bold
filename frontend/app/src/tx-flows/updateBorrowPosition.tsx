@@ -103,7 +103,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         )}
         {debtChangeWithFee && !dn.eq(debtChangeWithFee, 0n) && (
           <TransactionDetailsRow
-            label={isBorrowing ? "You borrow" : "You repay"}
+            label={isBorrowing ? "Loan increase" : "Loan decrease"}
             value={[
               <Amount
                 key="start"
