@@ -712,7 +712,7 @@ export function PanelVoting() {
             )}
         </div>
       )}
-      {allowSubmit && Object.keys(inputVoteAllocations).length > 0 && (
+      {allowSubmit && dn.eq(remainingVotingPower, 1) && (
         <div
           className={css({
             padding: "0 16px",
