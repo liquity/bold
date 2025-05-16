@@ -398,8 +398,8 @@ contract TestDeployer is MetadataDeployment {
             address(this),
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
-            _troveManagerParams.SCR,
             _troveManagerParams.BCR,
+            _troveManagerParams.SCR,
             _troveManagerParams.debtLimit,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION

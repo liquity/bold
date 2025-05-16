@@ -492,7 +492,9 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         assertEq(boldToken.balanceOf(A), AInitialBoldBalance - 10e18, "Wrong owner balance 1");
 
         // Manager can repay bold
-        deal(address(boldToken), B, 100e18);
+        vm.prank(address(borrowerOperations));
+        boldToken.mint(B, 10e18);
+
         vm.startPrank(B);
         uint256 BInitialBoldBalance = boldToken.balanceOf(B);
 
@@ -503,7 +505,8 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         assertEq(boldToken.balanceOf(B), BInitialBoldBalance - 10e18, "Wrong manager balance 2");
 
         // Others can’t repay bold
-        deal(address(boldToken), C, 100e18);
+        vm.prank(address(borrowerOperations));
+        boldToken.mint(C, 10e18);
         vm.startPrank(C);
         uint256 CInitialBoldBalance = boldToken.balanceOf(C);
 
@@ -540,8 +543,10 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         assertEq(borrowerOperations.addManagerOf(ATroveId), address(0));
 
+        vm.prank(address(borrowerOperations));
+        boldToken.mint(B, 10e18);
+
         // Others can repay bold
-        deal(address(boldToken), B, 100e18);
         uint256 BInitialBoldBalance = boldToken.balanceOf(B);
 
         vm.startPrank(B);
@@ -641,8 +646,12 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         uint256 AInitialCollBalance = collToken.balanceOf(A);
         uint256 BInitialCollBalance = collToken.balanceOf(B);
 
+        uint256 troveAEntireDebt = troveManager.getTroveEntireDebt(ATroveId);
+        
+        vm.prank(address(borrowerOperations));
+        boldToken.mint(B, troveAEntireDebt);
+
         // Manager can close trove
-        deal(address(boldToken), B, troveManager.getTroveEntireDebt(ATroveId));
         vm.startPrank(B);
         borrowerOperations.closeTrove(ATroveId);
         vm.stopPrank();
@@ -662,8 +671,9 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         borrowerOperations.setRemoveManager(ATroveId, B);
         vm.stopPrank();
 
+        uint256 troveAEntireDebt = troveManager.getTroveEntireDebt(ATroveId);
+        
         // Other cannot close trove
-        deal(address(boldToken), C, troveManager.getTroveEntireDebt(ATroveId));
         vm.startPrank(C);
         vm.expectRevert(AddRemoveManagers.NotOwnerNorRemoveManager.selector);
         borrowerOperations.closeTrove(ATroveId);
@@ -671,14 +681,18 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
     }
 
     function testCloseTroveWithoutRemoveManager() public {
+        // open trove A
         uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 10000e18, 1e17);
+
         // open a second trove so that we don’t try to close the last one
         openTroveNoHints100pct(D, 100 ether, 10000e18, 1e17);
 
         uint256 BInitialCollBalance = collToken.balanceOf(B);
+        uint256 troveAEntireDebt = troveManager.getTroveEntireDebt(ATroveId);
 
-        // Other can’t close trove
-        deal(address(boldToken), B, troveManager.getTroveEntireDebt(ATroveId));
+        // donate from E
+        vm.prank(address(borrowerOperations));
+        boldToken.mint(B, troveAEntireDebt);
         vm.startPrank(B);
         vm.expectRevert(AddRemoveManagers.NotOwnerNorRemoveManager.selector);
         borrowerOperations.closeTrove(ATroveId);
@@ -689,7 +703,6 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         borrowerOperations.setAddManager(ATroveId, B);
         vm.stopPrank();
 
-        deal(address(boldToken), B, troveManager.getTroveEntireDebt(ATroveId));
         vm.startPrank(B);
         vm.expectRevert(AddRemoveManagers.NotOwnerNorRemoveManager.selector);
         borrowerOperations.closeTrove(ATroveId);
@@ -698,7 +711,9 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         // Owner can close trove
         uint256 AInitialCollBalance = collToken.balanceOf(A);
 
-        deal(address(boldToken), A, troveManager.getTroveEntireDebt(ATroveId));
+        // transfer funds to A to pay off trove A
+        vm.prank(address(borrowerOperations));
+        boldToken.mint(A, troveAEntireDebt);
         vm.startPrank(A);
         borrowerOperations.closeTrove(ATroveId);
         vm.stopPrank();
