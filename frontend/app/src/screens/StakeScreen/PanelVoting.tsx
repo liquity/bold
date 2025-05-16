@@ -558,7 +558,7 @@ export function PanelVoting() {
                       whiteSpace: "nowrap",
                     })}
                   >
-                    100% of your voting power need to be allocated.
+                    100% of your voting power needs to be allocated.
                   </div>
                 </div>
                 <div
