@@ -103,7 +103,6 @@ export function TopBar() {
                 <div
                   className={css({
                     display: "grid",
-                    transform: "translateY(-1px)",
                   })}
                 >
                   <Tag
