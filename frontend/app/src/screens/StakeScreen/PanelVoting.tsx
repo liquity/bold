@@ -144,7 +144,7 @@ export function PanelVoting() {
       )
     );
 
-    // filter the current vote allocations − taking care of removing
+    // filter the current vote allocations, taking care of removing
     // disabled + allocated initiatives as removing them doesn’t count as a change
     const voteAllocationsFiltered = filterVoteAllocationsForSubmission(
       voteAllocations,
@@ -163,22 +163,55 @@ export function PanelVoting() {
 
   const hasAnyAllocations = (governanceUser.data?.allocations ?? []).length > 0;
 
-  const remainingVotingPower = Object.entries(inputVoteAllocations).reduce(
-    (remaining, [initiative, voteData]) => {
-      if (voteData.vote === null) {
-        return remaining;
+  const remainingVotingPower = useMemo(() => {
+    let remaining = dn.from(1, 18);
+
+    const combinedAllocations: Record<Address, Dnum> = {};
+    const stakedLQTY = governanceUser.data?.stakedLQTY ?? 0n;
+    const allocations = governanceUser.data?.allocations ?? [];
+
+    // current allocations
+    if (stakedLQTY > 0n) {
+      for (const allocation of allocations) {
+        const currentVoteAmount = allocation.voteLQTY > 0n
+          ? allocation.voteLQTY
+          : allocation.vetoLQTY;
+
+        if (currentVoteAmount > 0n) {
+          const proportion = dn.div([currentVoteAmount, 18], [stakedLQTY, 18]);
+          combinedAllocations[allocation.initiative] = proportion;
+        }
       }
-      const initiativeState = initiativesStates.data?.[initiative as Address];
+    }
+
+    // input allocations (takes precedence)
+    for (const [address, voteData] of Object.entries(inputVoteAllocations) as Entries<VoteAllocations>) {
+      if (voteData.vote !== null) {
+        combinedAllocations[address] = voteData.value;
+      } else {
+        delete combinedAllocations[address];
+      }
+    }
+
+    for (const [address, value] of Object.entries(combinedAllocations)) {
+      // check if the initiative is still active
+      const initiativeState = initiativesStates.data?.[address as Address];
       if (!isInitiativeStatusActive(initiativeState?.status ?? "nonexistent")) {
-        return remaining;
+        continue;
       }
-      return dn.sub(remaining, voteData.value);
-    },
-    dn.from(1, 18),
-  );
+      remaining = dn.sub(remaining, value);
+    }
+
+    return remaining;
+  }, [
+    governanceUser.data,
+    inputVoteAllocations,
+    initiativesStates.data,
+  ]);
 
   const daysLeft = governanceState.data?.daysLeft ?? 0;
   const rtf = new Intl.RelativeTimeFormat("en", { style: "long" });
+
   const remaining = daysLeft > 1
     ? rtf.format(Math.ceil(daysLeft), "day")
     : daysLeft > (1 / 24)
@@ -508,6 +541,7 @@ export function PanelVoting() {
                 className={css({
                   display: "grid",
                   gridTemplateColumns: "1fr auto",
+                  gap: 8,
                 })}
               >
                 <div
@@ -517,13 +551,14 @@ export function PanelVoting() {
                   })}
                 >
                   <div
+                    title="100% of your voting power needs to be allocated."
                     className={css({
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     })}
                   >
-                    Voting power left
+                    100% of your voting power need to be allocated.
                   </div>
                 </div>
                 <div
@@ -536,6 +571,7 @@ export function PanelVoting() {
                       : "inherit",
                   }}
                 >
+                  {"Remaining: "}
                   <Amount
                     format={2}
                     value={remainingVotingPower}
@@ -553,8 +589,11 @@ export function PanelVoting() {
           className={css({
             display: "flex",
             alignItems: "flex-start",
-            gap: 16,
+            gap: 8,
             marginBottom: 32,
+            medium: {
+              gap: 16,
+            },
           })}
         >
           <div
@@ -564,15 +603,27 @@ export function PanelVoting() {
           >
             <div
               className={css({
+                position: "relative",
                 display: "flex",
-                width: 20,
-                height: 20,
+                width: 16,
+                height: 16,
                 color: "strongSurfaceContent",
                 background: "strongSurface",
                 borderRadius: "50%",
+                medium: {
+                  width: 20,
+                  height: 20,
+                },
               })}
             >
-              <svg width="20" height="20" fill="none">
+              <svg
+                fill="none"
+                viewBox="0 0 20 20"
+                className={css({
+                  position: "absolute",
+                  inset: 0,
+                })}
+              >
                 <path
                   clipRule="evenodd"
                   fill="currentColor"
@@ -582,7 +633,14 @@ export function PanelVoting() {
               </svg>
             </div>
           </div>
-          <div>
+          <div
+            className={css({
+              fontSize: 14,
+              medium: {
+                fontSize: 16,
+              },
+            })}
+          >
             {cutoffStartDate && epochEndDate && (
               <div>
                 {isCutoff ? "Upvotes ended on " : "Upvotes accepted until "}
@@ -626,6 +684,7 @@ export function PanelVoting() {
           ),
         }}
       />
+
       {!allowSubmit && hasAnyAllocationChange && (
         <div
           className={css({
@@ -651,6 +710,17 @@ export function PanelVoting() {
                 You must allocate 100% of your voting power to upvote or downvote initiatives.
               </>
             )}
+        </div>
+      )}
+      {allowSubmit && dn.eq(remainingVotingPower, 1) && (
+        <div
+          className={css({
+            padding: "0 16px",
+            fontSize: 14,
+            textAlign: "center",
+          })}
+        >
+          Your votes will be reset to 0% for all initiatives.
         </div>
       )}
     </section>

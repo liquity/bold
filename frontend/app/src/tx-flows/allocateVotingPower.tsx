@@ -153,21 +153,28 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
     const initiatives = useNamedInitiatives();
     const governanceUser = useGovernanceUser(account);
     const stakedLQTY = governanceUser.data?.stakedLQTY ?? 0n;
-    return (
-      <>
-        {Object.entries(request.voteAllocations).map(([address, vote]) => {
-          const initiative = initiatives.data?.find((i) => i.address === address);
-          return !initiative || !vote ? null : (
-            <VoteAllocation
-              key={address}
-              initiative={initiative}
-              vote={vote}
-              stakedLQTY={stakedLQTY}
-            />
-          );
-        })}
-      </>
-    );
+    const allocations = Object.entries(request.voteAllocations);
+    if (allocations.length === 0) {
+      return (
+        <TransactionDetailsRow
+          label="Allocation reset"
+          value={[
+            "All your votes will be dealocated.",
+          ]}
+        />
+      );
+    }
+    return allocations.map(([address, vote]) => {
+      const initiative = initiatives.data?.find((i) => i.address === address);
+      return !initiative || !vote ? null : (
+        <VoteAllocation
+          key={address}
+          initiative={initiative}
+          vote={vote}
+          stakedLQTY={stakedLQTY}
+        />
+      );
+    });
   },
 
   steps: {
@@ -193,7 +200,7 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
         let [remainingVotes] = Object.values(voteAllocations)
           .map((x) => x?.value)
           .filter((x) => x !== undefined)
-          .reduce((a, b) => dn.add(a, b));
+          .reduce((a, b) => dn.add(a, b), [0n, 18]);
 
         for (const [index, address] of initiativeAddresses.entries()) {
           const vote = voteAllocations[address];
