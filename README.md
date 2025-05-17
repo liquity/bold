@@ -726,6 +726,14 @@ At deployment, the `baseRate` is set to `INITIAL_REDEMPTION_RATE`, which is some
 
 The intention is to discourage early redemptions in the early days when the total system debt is small, and give it time to grow.
 
+## Redemption warning
+
+As explained above, redemptions are an economic mechanism intended to keep BOLD peg floor. It is expected that professional bots perform them (usually through private mempools). A redemption is a complex operation and is not meant for regular end users. That’s why the protection against attacks like frontrunning, implemented in the smart contracts redemption function, is relatively simple. We expect that bots integrate those functions into their smart contracts that perform the whole arbitrage loop, and make sure the operation is profitable (and, of course, revert otherwise). If users want to redeem BOLD they should be aware of these dangers. Some examples of the attacks they may suffer:
+- An attacker frontrunning with another redemption, which makes user’s one unpfrofitable
+- An attacker frontrunning to mess the total supply (repaying to reduce it in order to increase the fee) or the unbacked portions of each branch (to change the proportions of collaterals, or even to make a branch fully backed and reduce the redeemable amount).
+- An attacker sandwiching the collateral / BOLD swap if the user tries to complete the arbitrage.
+
+It is also recommended to simulate the transaction. The final redeemed amount may be less than the requested amount, and redeemers could pay a higher than needed redemption rate. The election of proper `_maxIterationsPerCollateral` param is important and hard: it’s intended to avoid out of gas errors, but it may cap the redemption if set too low.
 
 ## Zombie Troves
 
