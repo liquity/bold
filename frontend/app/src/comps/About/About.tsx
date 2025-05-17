@@ -74,14 +74,32 @@ function getEnvGroups() {
           return [key, `${name}|${url}`];
         }
         if (key === "CHAIN_CURRENCY") {
-          const { name, symbol, decimals } = value as { name: string; symbol: string; decimals: number };
+          const { name, symbol, decimals } = value as {
+            name: string;
+            symbol: string;
+            decimals: number;
+          };
           return [key, `${name}|${symbol}|${decimals}`];
         }
-        return [key, value === null || value === undefined ? null : String(value)];
+        if (key === "LEGACY_CHECK") {
+          return [key, value ? JSON.stringify(value) : false];
+        }
+        return [
+          key,
+          value === null || value === undefined
+            ? null
+            : typeof value === "boolean"
+            ? value
+            : String(value),
+        ];
       }),
   );
 
-  return { config: envConfigFinal, contracts, branches };
+  return {
+    config: envConfigFinal,
+    contracts,
+    branches,
+  };
 }
 
 const AboutContext = createContext<{
@@ -448,6 +466,34 @@ function AboutTable({
                         not set
                       </span>
                     )
+                    : typeof value === "string"
+                    ? (
+                      <input
+                        type="text"
+                        readOnly
+                        value={value}
+                        onFocus={(e) => e.target.select()}
+                        className={css({
+                          color: "contentAlt",
+                          fontFamily: "monospace",
+                          fontSize: 14,
+                          padding: "8px 4px",
+                          width: "100%",
+                          textOverflow: "ellipsis",
+                          textAlign: "right",
+                          background: "fieldSurface",
+                          border: "1px solid",
+                          borderColor: "fieldBorder",
+                          borderRadius: 4,
+                          _focusVisible: {
+                            outlineOffset: -1,
+                            outline: "2px solid token(colors.fieldBorderFocused)",
+                          },
+                        })}
+                      />
+                    )
+                    : typeof value === "boolean"
+                    ? value ? "enabled" : "disabled"
                     : value}
                 </div>
               </td>
