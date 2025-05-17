@@ -522,19 +522,21 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
     startStep(stepDef, stepIndex, verifyingStep.artifact);
   }, [flow, account, startStep]);
 
+  const discardFlow = useCallback(() => {
+    setFlow(null);
+    FlowContextStorage.clear();
+    runningStepRef.current = null;
+  }, [setFlow]);
+
   const startFlow = useCallback((
     request: FlowRequestMap[keyof FlowRequestMap],
     account: Address,
   ) => {
+    discardFlow(); // discard any current flow before starting a new one
     const newFlow = { account, request, steps: null };
     setFlow(newFlow);
     FlowContextStorage.set(newFlow);
-  }, []);
-
-  const discardFlow = useCallback(() => {
-    setFlow(null);
-    FlowContextStorage.clear();
-  }, []);
+  }, [discardFlow, setFlow]);
 
   const setFlowSteps = useCallback((steps: FlowStep[] | null) => {
     if (!flow) return;
