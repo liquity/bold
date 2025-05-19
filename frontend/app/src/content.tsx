@@ -384,7 +384,7 @@ export default {
       ],
       alsoClaimRewardsDeposit: [
         <>
-          If checked, rewards are paid out as part of the update transaction.
+          If checked, rewards are paid out as part of the update transaction. Otherwise rewards will be compounded into your deposit.
         </>,
       ],
       alsoClaimRewardsWithdraw: [
