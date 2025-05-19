@@ -86,7 +86,7 @@ export async function main() {
   }
   if (networkPreset === "mainnet-legacy") {
     options.name ??= "liquity2-mainnet";
-    options.network ??= "mainnet-legacy";
+    options.network ??= "mainnet";
   }
 
   if (!options.name) {
