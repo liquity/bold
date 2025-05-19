@@ -4,10 +4,10 @@
     {
       "src": "frontend/app/package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "frontend/app/out" }
+      "config": {
+        "distDir": "out",
+        "buildCommand": "pnpm build-deps && pnpm build"
+      }
     }
-  ],
-  "scripts": {
-    "build": "cd frontend/app && pnpm build-deps && pnpm build"
-  }
+  ]
 }
