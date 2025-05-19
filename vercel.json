@@ -1,8 +1,13 @@
 {
-  "framework": null,
-  "buildCommand": "",
-  "public": false,
-  "github": {
-    "enabled": false
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/app/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "frontend/app/out" }
+    }
+  ],
+  "scripts": {
+    "build": "cd frontend/app && pnpm build-deps && pnpm build"
   }
 }
