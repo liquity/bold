@@ -1,18 +1,10 @@
-export function Logo({
-  size = 32,
-}: {
-  size?: number;
-}) {
+export function Logo({ size = 32 }: { size?: number }) {
   return (
-    <div>
-    return (
-  <img
-    src="/logo.png"   // usa el nombre que subiste
-    alt="AustralFi"
-    width={size}
-    height={size}
-  />
-);
-    </div>
+    <img
+      src="/logo.png"        // put logo.png in /frontend/app/public
+      alt="AustralFi"
+      width={size}
+      height={size}
+    />
   );
 }
