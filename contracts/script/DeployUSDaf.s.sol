@@ -287,7 +287,7 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         troveManagerParamsArray[2] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // sUSDS
         troveManagerParamsArray[3] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // sfrxUSD
         troveManagerParamsArray[4] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // sUSDe
-        troveManagerParamsArray[5] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // tBTC
+        troveManagerParamsArray[5] = TroveManagerParams(150e16, 125e16, 115e16, BCR_ALL, 5e16, 10e16); // tBTC
         troveManagerParamsArray[6] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // WBTC
         troveManagerParamsArray[7] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // cbBTC
 
