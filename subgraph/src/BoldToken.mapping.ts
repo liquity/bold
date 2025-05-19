@@ -1,4 +1,4 @@
-import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
+import { Address, BigInt, DataSourceContext, log } from "@graphprotocol/graph-ts";
 import {
   CollateralRegistryAddressChanged as CollateralRegistryAddressChangedEvent,
 } from "../generated/BoldToken/BoldToken";
@@ -36,16 +36,14 @@ function addCollateral(
 
   let addresses = new CollateralAddresses(collId);
   addresses.collateral = collId;
-  addresses.borrowerOperations = troveManagerContract.borrowerOperations();
-  addresses.sortedTroves = troveManagerContract.sortedTroves();
-  addresses.stabilityPool = troveManagerContract.stabilityPool();
+  addresses.borrowerOperations = Address.fromString(collIndex === 0 ? "0x267f27704cb5c4fd85cab6b62acffbc3a0dd5097" : "0xe04dcc3422b75036c6b5e20e784043031e9bef9e");
+  addresses.sortedTroves = Address.fromString(collIndex === 0 ? "0x8ecfd497d61c0798319134da322eb77447e37466" : "0xa3c7062d84de691aeee99cefaf04c78655829c7c");
+  addresses.stabilityPool = Address.fromString(collIndex === 0 ? "0xc800a61ef17228b5f941b240620a48ff74db8019" : "0x4169ce06f30b39771d887b1e5e990c66011f1689");
   addresses.token = tokenAddress;
   addresses.troveManager = troveManagerAddress;
-  addresses.troveNft = troveManagerContract.troveNFT();
+  addresses.troveNft = Address.fromString(collIndex === 0 ? "0x87e14803d0d705ac60ebb1c655634a5f84a6ee3b" : "0x256bc91a0159ecf159dab2d4289272249b266ad4");
 
-  collateral.minCollRatio = BorrowerOperationsContract.bind(
-    Address.fromBytes(addresses.borrowerOperations),
-  ).MCR();
+  collateral.minCollRatio = BigInt.fromI64(1200000000000000000)
 
   // initial collId + epoch + scale => S
   let spEpochScale = new StabilityPoolEpochScale(collId + ":0:0");
@@ -80,7 +78,6 @@ export function handleCollateralRegistryAddressChanged(event: CollateralRegistry
   for (let index = 0; index < totalCollaterals; index++) {
     let tokenAddress = Address.fromBytes(registry.getToken(BigInt.fromI32(index)));
     let troveManagerAddress = Address.fromBytes(registry.getTroveManager(BigInt.fromI32(index)));
-
     if (tokenAddress.toHex() === Address.zero().toHex() || troveManagerAddress.toHex() === Address.zero().toHex()) {
       break;
     }

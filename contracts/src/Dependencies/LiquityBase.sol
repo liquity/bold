@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 
 import "./Constants.sol";
 import "./LiquityMath.sol";
+import "./HasWhitelist.sol";
 import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/IActivePool.sol";
 import "../Interfaces/IDefaultPool.sol";
@@ -14,19 +15,17 @@ import "../Interfaces/ILiquityBase.sol";
  * Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and
  * common functions.
  */
-contract LiquityBase is ILiquityBase {
+contract LiquityBase is HasWhitelist, ILiquityBase {
     IAddressesRegistry public addressesRegistry;
     IActivePool public activePool;
     IDefaultPool internal defaultPool;
     IPriceFeed internal priceFeed;
-    IWhitelist public whitelist;
 
     event ActivePoolAddressChanged(address _newActivePoolAddress);
     event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
 
     error CallerNotAddressesRegistry();
-    error NotWhitelisted(address _user);
 
     constructor(IAddressesRegistry _addressesRegistry) {
         addressesRegistry = _addressesRegistry;
@@ -75,16 +74,9 @@ contract LiquityBase is ILiquityBase {
     }
 
     // --- Whitelist functions ---
-
-    function _requireWhitelisted(IWhitelist _whitelist, address _user) internal view {
-        if (!_whitelist.isWhitelisted(address(this), _user)) {
-            revert NotWhitelisted(_user);
-        }
-    }
-
-    function setWhitelist(IWhitelist _whitelist) external override {
+    function setWhitelist(IWhitelist _whitelist) external override(ILiquityBase) {
         _requireCallerIsAddressesRegistry();
-        whitelist = _whitelist;
+        super._setWhitelist(_whitelist);
     }
 
     // --- AddressesRegistry functions ---

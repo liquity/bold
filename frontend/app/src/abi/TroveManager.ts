@@ -15,6 +15,34 @@ export const TroveManager = [
   },
   {
     "type": "function",
+    "name": "LIQUIDATION_PENALTY_REDISTRIBUTION",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "LIQUIDATION_PENALTY_SP",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "MCR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "SCR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
     "name": "Troves",
     "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "outputs": [
@@ -36,6 +64,13 @@ export const TroveManager = [
     "name": "activePool",
     "inputs": [],
     "outputs": [{ "name": "", "type": "address", "internalType": "contract IActivePool" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "addressesRegistry",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "contract IAddressesRegistry" }],
     "stateMutability": "view",
   },
   {
@@ -169,6 +204,13 @@ export const TroveManager = [
       "internalType": "uint256",
     }, { "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
+    "name": "isWhitelisted",
+    "inputs": [{ "name": "user", "type": "address", "internalType": "address" }],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view",
   },
   {
     "type": "function",
@@ -535,6 +577,13 @@ export const TroveManager = [
     "outputs": [],
     "stateMutability": "nonpayable",
   },
+  {
+    "type": "function",
+    "name": "setWhitelist",
+    "inputs": [{ "name": "_whitelist", "type": "address", "internalType": "contract IWhitelist" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
   { "type": "function", "name": "shutdown", "inputs": [], "outputs": [], "stateMutability": "nonpayable" },
   {
     "type": "function",
@@ -566,6 +615,28 @@ export const TroveManager = [
   },
   {
     "type": "function",
+    "name": "updateCRs",
+    "inputs": [{ "name": "newCCR", "type": "uint256", "internalType": "uint256" }, {
+      "name": "newSCR",
+      "type": "uint256",
+      "internalType": "uint256",
+    }, { "name": "newMCR", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
+    "name": "updateLiquidationValues",
+    "inputs": [{ "name": "newLiquidationPenaltySP", "type": "uint256", "internalType": "uint256" }, {
+      "name": "newliquidationPenaltyRedistribution",
+      "type": "uint256",
+      "internalType": "uint256",
+    }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
     "name": "urgentRedemption",
     "inputs": [{ "name": "_boldAmount", "type": "uint256", "internalType": "uint256" }, {
       "name": "_troveIds",
@@ -574,6 +645,13 @@ export const TroveManager = [
     }, { "name": "_minCollateral", "type": "uint256", "internalType": "uint256" }],
     "outputs": [],
     "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
+    "name": "whitelist",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "contract IWhitelist" }],
+    "stateMutability": "view",
   },
   {
     "type": "event",
@@ -629,6 +707,17 @@ export const TroveManager = [
   },
   {
     "type": "event",
+    "name": "CRsChanged",
+    "inputs": [{ "name": "newCCR", "type": "uint256", "indexed": false, "internalType": "uint256" }, {
+      "name": "newSCR",
+      "type": "uint256",
+      "indexed": false,
+      "internalType": "uint256",
+    }, { "name": "newMCR", "type": "uint256", "indexed": false, "internalType": "uint256" }],
+    "anonymous": false,
+  },
+  {
+    "type": "event",
     "name": "CollSurplusPoolAddressChanged",
     "inputs": [{ "name": "_collSurplusPoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
     "anonymous": false,
@@ -671,6 +760,17 @@ export const TroveManager = [
       { "name": "_L_boldDebt", "type": "uint256", "indexed": false, "internalType": "uint256" },
       { "name": "_price", "type": "uint256", "indexed": false, "internalType": "uint256" },
     ],
+    "anonymous": false,
+  },
+  {
+    "type": "event",
+    "name": "LiquidationValuesChanged",
+    "inputs": [{ "name": "newLiquidationPenaltySP", "type": "uint256", "indexed": false, "internalType": "uint256" }, {
+      "name": "newliquidationPenaltyRedistribution",
+      "type": "uint256",
+      "indexed": false,
+      "internalType": "uint256",
+    }],
     "anonymous": false,
   },
   {
@@ -750,6 +850,7 @@ export const TroveManager = [
     "anonymous": false,
   },
   { "type": "error", "name": "BatchSharesRatioTooHigh", "inputs": [] },
+  { "type": "error", "name": "CallerNotAddressesRegistry", "inputs": [] },
   { "type": "error", "name": "CallerNotBorrowerOperations", "inputs": [] },
   { "type": "error", "name": "CallerNotCollateralRegistry", "inputs": [] },
   { "type": "error", "name": "EmptyData", "inputs": [] },
@@ -760,6 +861,11 @@ export const TroveManager = [
   },
   { "type": "error", "name": "NotEnoughBoldBalance", "inputs": [] },
   { "type": "error", "name": "NotShutDown", "inputs": [] },
+  {
+    "type": "error",
+    "name": "NotWhitelisted",
+    "inputs": [{ "name": "_user", "type": "address", "internalType": "address" }],
+  },
   { "type": "error", "name": "NothingToLiquidate", "inputs": [] },
   { "type": "error", "name": "OnlyOneTroveLeft", "inputs": [] },
   { "type": "error", "name": "ZeroAmount", "inputs": [] },

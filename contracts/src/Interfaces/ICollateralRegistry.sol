@@ -15,7 +15,6 @@ interface ICollateralRegistry {
     }
 
     function addNewCollaterals(
-        uint256[] memory _indexes,
         IERC20Metadata[] memory _tokens,
         ITroveManager[] memory _troveManagers
     ) external;

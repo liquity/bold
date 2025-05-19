@@ -253,53 +253,6 @@ export const AllInterestRateBracketsQuery = graphql(`
   }
 `);
 
-export const GovernanceInitiatives = graphql(`
-  query GovernanceInitiatives {
-    governanceInitiatives {
-      id
-    }
-  }
-`);
-
-export const GovernanceUser = graphql(`
-  query GovernanceUser($id: ID!) {
-    governanceUser(id: $id) {
-      id
-      allocatedLQTY
-      stakedLQTY
-      stakedOffset
-      allocations {
-        id
-        atEpoch
-        vetoLQTY
-        voteLQTY
-        initiative {
-          id
-        }
-      }
-    }
-  }
-`);
-
-export const GovernanceStats = graphql(`
-  query GovernanceStats {
-    governanceStats(id: "stats") {
-      id
-      totalLQTYStaked
-      totalOffset
-      totalInitiatives
-    }
-  }
-`);
-
-export const GovernanceUserAllocated = graphql(`
-  query GovernanceUserAllocations($id: ID!) {
-    governanceUser(id: $id) {
-      allocated
-    }
-  }
-`);
-
 export const BlockNumberQuery = graphql(`
   query BlockNumber {
     _meta {

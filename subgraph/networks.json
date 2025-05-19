@@ -26,5 +26,11 @@
       "address": "0xe3f9ca5398cc3d0099c3ad37d3252e37431555b8",
       "startBlock": 7533021
     }
+  },
+  "bsc":{
+    "BoldToken": {
+      "address": "0x242a2f669224b225d38514c1785411a6036981f1",
+      "startBlock": 48152382
+    }
   }
 }
