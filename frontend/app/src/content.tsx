@@ -7,10 +7,10 @@ import { css } from "@/styled-system/css";
 
 export default {
   // Used in the top bar and other places
-  appName: "Liquity V2",
+  appName: "AustralFi",
   appDescription: `
-    Liquity V2 is a new borrowing protocol that lets users
-    deposit ETH or LSTs as collateral and mint the stablecoin BOLD.
+    Community-maintained fork that keeps the Liquity V2 frontend lean and fast.
+    Got feedback? Contact me on X: @estebansuarez
   `,
   appUrl: typeof window === "undefined"
     ? "https://www.liquity.org/"
