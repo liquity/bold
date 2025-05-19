@@ -10,7 +10,6 @@ import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Blocking } from "@/src/comps/Blocking/Blocking";
 import content from "@/src/content";
 import { DemoMode } from "@/src/demo-mode";
-import { VERCEL_ANALYTICS } from "@/src/env";
 import { Ethereum } from "@/src/services/Ethereum";
 import { ReactQuery } from "@/src/services/ReactQuery";
 import { StoredState } from "@/src/services/StoredState";
@@ -60,7 +59,7 @@ export default function Layout({
             </StoredState>
           </UiKit>
         </ReactQuery>
-        {VERCEL_ANALYTICS && <Analytics />}
+        <Analytics />
       </body>
     </html>
   );
