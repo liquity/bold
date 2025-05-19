@@ -40,12 +40,6 @@ export const PriceFeed = [{
   "stateMutability": "view",
 }, {
   "type": "function",
-  "name": "setAddresses",
-  "inputs": [{ "name": "_borrowerOperationsAddress", "type": "address", "internalType": "address" }],
-  "outputs": [],
-  "stateMutability": "nonpayable",
-}, {
-  "type": "function",
   "name": "setPrice",
   "inputs": [{ "name": "_price", "type": "uint256", "internalType": "uint256" }],
   "outputs": [],
