@@ -116,7 +116,7 @@ export function TokenCard({
   subValues
 }: {
   token: string,
-  link: { label: string, href: string },
+  link?: { label: string, href: string },
   subValues: { label: string, value: string }[]
 }) {
   return (
@@ -168,7 +168,7 @@ export function TokenCard({
   )
 }
 
-function SubValue({ label, value, index }: { label: string, value: string, index: number }) {
+export function SubValue({ label, value, index }: { label: string, value: string, index: number }) {
   return (
     <div
       className={css({

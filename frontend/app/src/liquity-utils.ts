@@ -43,6 +43,8 @@ import { encodeAbiParameters, erc4626Abi, keccak256, parseAbiParameters } from "
 import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 import { graphQuery, InterestBatchesQuery } from "./subgraph-queries";
+import { WhitelistAbi } from "./abi/Whitelist";
+import { AddressesRegistry } from "./abi/AddressesRegistry";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -138,8 +140,10 @@ export function useEarnPool(branchId: null | BranchId) {
   return {
     ...pool,
     data: {
-      apr: dnumOrNull(branchStats?.spApyAvg1d, 18),
-      apr7d: dnumOrNull(branchStats?.spApyAvg7d, 18),
+      // apr: dnumOrNull(branchStats?.spApyAvg1d, 18), // TODO
+      // apr7d: dnumOrNull(branchStats?.spApyAvg7d, 18),
+      apr: 0,
+      apr7d: 0,
       collateral,
       totalDeposited: pool.data?.totalDeposited ?? null,
     },
@@ -179,6 +183,36 @@ export function useVault() {
       price: vaultReads.data?.totalSupply ? dn.div(vaultReads.data?.totalAssets, vaultReads.data?.totalSupply) : dnum18(1),
     },
   };
+}
+
+export function useIsWhitelistedUser(whitelist: Address, callingContract: Address, user: Address) {
+    const isWhitelistedUser = useReadContracts({
+      // @ts-ignore
+      contracts: [{
+        address: whitelist,
+        abi: WhitelistAbi,
+        functionName: "isWhitelisted",
+        args: [callingContract, user],
+      }],
+      allowFailure: false,
+    });
+    
+    return isWhitelistedUser.data !== undefined ? isWhitelistedUser.data[0] : undefined;
+}
+
+export function useProtocolOwner(addressesRegistry: Address) {
+  const admin = useReadContracts({
+    // @ts-ignore
+    contracts: [{
+      address: addressesRegistry,
+      abi: AddressesRegistry,
+      functionName: "owner",
+      args: []
+    }],
+    allowFailure: false,
+  });
+  
+  return admin.data !== undefined ? admin.data[0] : undefined;
 }
 
 export function isEarnPositionActive(position: PositionEarn | null) {
@@ -561,6 +595,15 @@ const StatsSchema = v.pipe(
     total_sp_deposits: v.string(),
     total_value_locked: v.string(),
     max_sp_apy: v.string(),
+    day_supply: v.array(v.object({
+      day: v.string(),
+      holders: v.string(),
+      supply: v.string(),
+    })),
+    collateral_ratio: v.array(v.object({
+      avg_cr: v.string(),
+      time: v.string(),
+    })),
     branch: v.record(
       v.string(),
       v.object({
@@ -570,40 +613,63 @@ const StatsSchema = v.pipe(
         sp_deposits: v.string(),
         interest_accrual_1y: v.string(),
         interest_pending: v.string(),
+        total_debt: v.string(),
         batch_management_fees_pending: v.string(),
         debt_pending: v.string(),
         coll_value: v.string(),
-        sp_apy: v.string(),
-        sp_apy_avg_1d: v.optional(v.string()),
-        sp_apy_avg_7d: v.optional(v.string()),
         value_locked: v.string(),
+        sp_apy: v.string(),
+        apy_avg: v.string(),
+        historical_cr: v.array(v.object({
+          time: v.string(),
+          collateral_ratio: v.string(),
+        })),
       }),
     ),
   }),
   v.transform((value) => ({
-    totalBoldSupply: dnumOrNull(value.total_bold_supply, 18),
-    totalDebtPending: dnumOrNull(value.total_debt_pending, 18),
-    totalCollValue: dnumOrNull(value.total_coll_value, 18),
-    totalSpDeposits: dnumOrNull(value.total_sp_deposits, 18),
-    totalValueLocked: dnumOrNull(value.total_value_locked, 18),
-    maxSpApy: dnumOrNull(value.max_sp_apy, 18),
+    totalBoldSupply: value.total_bold_supply,
+    totalDebtPending: value.total_debt_pending,
+    totalCollValue: value.total_coll_value,
+    totalSpDeposits: value.total_sp_deposits,
+    totalValueLocked: value.total_value_locked,
+    maxSpApy: value.max_sp_apy,
+    historicalSupply: value.day_supply.map((dailyObj) => {
+      return {
+        day: dailyObj.day,
+        holders: dailyObj.holders,
+        supply: dailyObj.supply,
+      }
+    }),
+    historicalGlobalCR: value.collateral_ratio.map((dailyObj) => {
+      return {
+        day: dailyObj.time,
+        collateral_ratio: dailyObj.avg_cr
+      }
+    }),
     branch: Object.fromEntries(
       Object.entries(value.branch).map(([symbol, branch]) => {
         symbol = symbol.toUpperCase();
         return [symbol, {
-          collActive: dnumOrNull(branch.coll_active, 18),
-          collDefault: dnumOrNull(branch.coll_default, 18),
-          collPrice: dnumOrNull(branch.coll_price, 18),
-          spDeposits: dnumOrNull(branch.sp_deposits, 18),
-          interestAccrual1y: dnumOrNull(branch.interest_accrual_1y, 18),
-          interestPending: dnumOrNull(branch.interest_pending, 18),
-          batchManagementFeesPending: dnumOrNull(branch.batch_management_fees_pending, 18),
-          debtPending: dnumOrNull(branch.debt_pending, 18),
-          collValue: dnumOrNull(branch.coll_value, 18),
-          spApy: dnumOrNull(branch.sp_apy, 18),
-          spApyAvg1d: dnumOrNull(branch.sp_apy_avg_1d, 18),
-          spApyAvg7d: dnumOrNull(branch.sp_apy_avg_7d, 18),
-          valueLocked: dnumOrNull(branch.value_locked, 18),
+          collActive: branch.coll_active,
+          collDefault: branch.coll_default,
+          collPrice: branch.coll_price,
+          spDeposits: branch.sp_deposits,
+          interestAccrual1y: branch.interest_accrual_1y,
+          interestPending: branch.interest_pending,
+          totalDebt: branch.total_debt,
+          batchManagementFeesPending: branch.batch_management_fees_pending,
+          debtPending: branch.debt_pending,
+          collValue: branch.coll_value,
+          valueLocked: branch.value_locked,
+          spApy: branch.sp_apy,
+          apyAvg: branch.apy_avg,
+          historicalCR: branch.historical_cr.map((dailyObj) => {
+            return {
+              day: dailyObj.time,
+              collateral_ratio: dailyObj.collateral_ratio
+            }
+          }),
         }];
       }),
     ),
@@ -630,7 +696,8 @@ export function useLiquityStats() {
         throw new Error("LIQUITY_STATS_URL is not defined");
       }
       const response = await fetch(LIQUITY_STATS_URL);
-      return v.parse(StatsSchema, await response.json());
+      const json = await response.json();
+      return v.parse(StatsSchema, json);
     },
     enabled: Boolean(LIQUITY_STATS_URL),
   });
