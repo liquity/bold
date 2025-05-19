@@ -21,7 +21,7 @@ import { GeistSans } from "geist/font/sans";
 
 export const metadata: Metadata = {
   title: content.appName,
-  icons: "/favicon.svg",
+  icons: "/favicon.png",
 };
 
 export const viewport: Viewport = {
