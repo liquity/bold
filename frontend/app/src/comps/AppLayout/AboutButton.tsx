@@ -22,7 +22,7 @@ export function AboutButton({
 
   const creditStyle = css({
     color: "dimmed",
-    fontSize: 10,        // tamaño más pequeño
+    fontSize: 13,
     lineHeight: "1",
     whiteSpace: "nowrap",
     _hover: { color: "content" },
@@ -30,11 +30,10 @@ export function AboutButton({
 
   return (
     <HFlex alignItems="center" gap={8}>
-      {/* tu crédito, más pequeño */}
       <LinkTextButton
         external
         href="https://twitter.com/estebansuarez"
-        label="Frontend operated by @estebansuarez"
+        label="Frontend operated by @estebansuarez -"
         className={creditStyle}
       />
 
