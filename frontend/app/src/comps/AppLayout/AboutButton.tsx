@@ -14,7 +14,7 @@ export function AboutButton({
 
   const versionStyle = css({
     color: "dimmed",
-    fontSize: 12,
+    fontSize: 10,
     lineHeight: "1",
     whiteSpace: "nowrap",
     _hover: { color: "content" },
@@ -22,7 +22,7 @@ export function AboutButton({
 
   const creditStyle = css({
     color: "dimmed",
-    fontSize: 13,
+    fontSize: 10,
     lineHeight: "1",
     whiteSpace: "nowrap",
     _hover: { color: "content" },
