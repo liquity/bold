@@ -14,7 +14,6 @@ export function AboutButton({
 
   const versionStyle = css({
     color: "dimmed",
-    fontSize: 9,
     lineHeight: "1",
     whiteSpace: "nowrap",
     _hover: { color: "content" },
