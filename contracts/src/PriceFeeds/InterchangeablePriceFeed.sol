@@ -13,8 +13,11 @@ contract InterchangeablePriceFeed is Ownable, IPriceFeed {
     IBorrowerOperations public borrowerOperations;
     IPriceFeed public priceFeed;
 
-    constructor(address _owner, address _priceFeed) Ownable(_owner) {
-        priceFeed = IPriceFeed(_priceFeed);
+    event PriceFeedChanged(address indexed oldPriceFeed, address indexed newPriceFeed);
+    event PriceUpdate(uint256 price, bool isNewOracleFailure);
+
+    constructor(address _owner, IPriceFeed _priceFeed) Ownable(_owner) {
+        priceFeed = _priceFeed;
     }
 
     function fetchPrice() external returns (uint256, bool) {
@@ -28,6 +31,9 @@ contract InterchangeablePriceFeed is Ownable, IPriceFeed {
 
     function _fetchPrice() internal returns (uint256, bool) {
         (uint256 price, bool isNewOracleFailure) = priceFeed.fetchPrice();
+
+        emit PriceUpdate(price, isNewOracleFailure);
+
 
         if (isNewOracleFailure) {
             return (lastGoodPrice, isNewOracleFailure);
@@ -43,7 +49,8 @@ contract InterchangeablePriceFeed is Ownable, IPriceFeed {
         _renounceOwnership();
     }
 
-    function setPriceFeed(address _priceFeed) external onlyOwner {
-        priceFeed = IPriceFeed(_priceFeed);
+    function setPriceFeed(IPriceFeed _priceFeed) external onlyOwner {
+        emit PriceFeedChanged(address(priceFeed), address(_priceFeed));
+        priceFeed = _priceFeed;
     }
 }

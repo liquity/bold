@@ -11,7 +11,7 @@ contract PushPriceFeed is Ownable {
     constructor(address _owner) Ownable(_owner) {}
 
     function fetchPrice() external returns (uint256, bool) {
-        return (lastGoodPrice, true);
+        return (lastGoodPrice, false);
     }
 
     function setPrice(uint256 _price) external onlyOwner {
