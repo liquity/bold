@@ -90,15 +90,6 @@ export function BottomBar() {
               )}
             </span>
           </div>
-          <LinkTextButton
-              external
-               href="https://twitter.com/estebansuarez"
-               label="Frontend run by @estebansuarez"
-               className={css({
-                 fontSize: 12,
-                 whiteSpace: "nowrap",
-               })}
-             />
           <HFlex gap={16}>
             {DISPLAYED_PRICES.map((symbol) => (
               <Price
