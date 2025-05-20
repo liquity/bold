@@ -274,7 +274,6 @@ export const EnvSchema = v.pipe(
         `Invalid CONTRACTS_COMMIT_URL (must contain "{commit}")`,
       ),
     ),
-    DEMO_MODE: v.optional(vEnvFlag(), "false"),
     DEPLOYMENT_FLAVOR: v.pipe(
       v.optional(v.string(), ""),
       v.transform((value) => value.trim() || null),
@@ -404,7 +403,6 @@ const parsedEnv = v.safeParse(EnvSchema, {
       ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD
   ),
   CONTRACTS_COMMIT_URL: process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_URL,
-  DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
   DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
   KNOWN_INITIATIVES_URL: process.env.NEXT_PUBLIC_KNOWN_INITIATIVES_URL,
   LEGACY_CHECK: process.env.NEXT_PUBLIC_LEGACY_CHECK,
@@ -514,7 +512,6 @@ export const {
   CONTRACT_LUSD_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
-  DEMO_MODE,
   DEPLOYMENT_FLAVOR,
   KNOWN_INITIATIVES_URL,
   LEGACY_CHECK,

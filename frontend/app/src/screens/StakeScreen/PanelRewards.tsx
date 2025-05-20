@@ -5,8 +5,6 @@ import type { ReactNode } from "react";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { getProtocolContract } from "@/src/contracts";
-import { useDemoMode } from "@/src/demo-mode";
-import { ACCOUNT_STAKED_LQTY } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { useStakePosition } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
@@ -19,7 +17,6 @@ import { useEstimateGas, useGasPrice } from "wagmi";
 
 export function PanelRewards() {
   const account = useAccount();
-  const demoMode = useDemoMode();
 
   const ethPrice = usePrice("ETH");
 
@@ -48,17 +45,8 @@ export function PanelRewards() {
 
   const txGasPriceUsd = txGasPriceEth && dn.mul(txGasPriceEth, ethPrice.data);
 
-  const rewardsLusd = (
-    demoMode.enabled
-      ? ACCOUNT_STAKED_LQTY.rewardLusd
-      : stakePosition.data?.rewards.lusd
-  ) ?? dn.from(0, 18);
-
-  const rewardsEth = (
-    demoMode.enabled
-      ? ACCOUNT_STAKED_LQTY.rewardEth
-      : stakePosition.data?.rewards.eth
-  ) ?? dn.from(0, 18);
+  const rewardsEth = stakePosition.data?.rewards.eth ?? dn.from(0, 18);
+  const rewardsLusd = stakePosition.data?.rewards.lusd ?? dn.from(0, 18);
 
   const totalRewardsUsd = dn.add(
     rewardsLusd,
