@@ -1,5 +1,4 @@
-/* eslint-disable react/jsx-key */
-/* eslint-disable import/no-anonymous-default-export */
+/* oxlint-disable react/jsx-key */
 
 import type { ReactNode as N } from "react";
 
@@ -384,7 +383,8 @@ export default {
       ],
       alsoClaimRewardsDeposit: [
         <>
-          If checked, rewards are paid out as part of the update transaction. Otherwise rewards will be compounded into your deposit.
+          If checked, rewards are paid out as part of the update transaction. Otherwise rewards will be compounded into
+          your deposit.
         </>,
       ],
       alsoClaimRewardsWithdraw: [
