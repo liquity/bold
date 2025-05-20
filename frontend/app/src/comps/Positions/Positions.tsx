@@ -4,8 +4,6 @@ import type { ReactNode } from "react";
 import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
-import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
-import { DEMO_MODE } from "@/src/env";
 import { useEarnPositionsByAccount, useLoansByAccount, useStakePosition } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { a, useSpring, useTransition } from "@react-spring/web";
@@ -56,13 +54,11 @@ export function Positions({
     ),
   );
 
-  const positions = isPositionsPending ? [] : (
-    DEMO_MODE ? ACCOUNT_POSITIONS : [
-      ...(loans.data ?? []),
-      ...(earnPositions.data ?? []),
-      ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : []),
-    ]
-  );
+  const positions = isPositionsPending ? [] : [
+    ...(loans.data ?? []),
+    ...(earnPositions.data ?? []),
+    ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : []),
+  ];
 
   let mode: Mode = address && positions && positions.length > 0
     ? "positions"

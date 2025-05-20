@@ -24,7 +24,6 @@ const ENV_EXCLUDE: Set<keyof typeof env> = new Set([
   "CONTRACTS_COMMIT_HASH",
   "CONTRACTS_COMMIT_URL",
   "CollateralSymbolSchema",
-  "DEMO_MODE",
   "EnvSchema",
   "VERCEL_ANALYTICS",
   "WALLET_CONNECT_PROJECT_ID",

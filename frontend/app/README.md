@@ -230,15 +230,6 @@ NEXT_PUBLIC_BLOCKING_VPNAPI=key|countryCodes
 NEXT_PUBLIC_BLOCKING_VPNAPI=1234|US,CA
 ```
 
-### `NEXT_PUBLIC_DEMO_MODE`
-
-Enable or disable demo mode for testing purposes.
-
-```dosini
-# Example
-NEXT_PUBLIC_DEMO_MODE=false
-```
-
 ### `NEXT_PUBLIC_DELEGATE_AUTO`
 
 The default delegate address to use for the interest rate automated strategy.
@@ -314,7 +305,6 @@ src/
   abi/         # ABIs of the Liquity contracts
   app/         # The Next.js app (mostly routing only)
   comps/       # UI Components
-  demo-mode/   # Files related to the app running in demo mode
   screens/     # App Screens (used by /app routing components)
   services/    # Service Components
   tx-flows/    # Transaction Flows
