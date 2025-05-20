@@ -70,13 +70,22 @@ function BorrowTable({
 }) {
   const columns: ReactNode[] = [
     "Collateral",
-    <span title="Average interest rate, per annum">
+    <span
+      key="avg-interest-rate"
+      title="Average interest rate, per annum"
+    >
       {compact ? "Rate" : "Avg rate, p.a."}
     </span>,
-    <span title="Maximum Loan-to-Value ratio">
+    <span
+      key="max-ltv"
+      title="Maximum Loan-to-Value ratio"
+    >
       Max LTV
     </span>,
-    <span title="Total debt">
+    <span
+      key="total-debt"
+      title="Total debt"
+    >
       {compact ? "Debt" : "Total debt"}
     </span>,
   ];
@@ -109,8 +118,16 @@ function EarnTable({
 }) {
   const columns: ReactNode[] = [
     "Pool",
-    <abbr title="Annual Percentage Rate over the last 24 hours">APR</abbr>,
-    <abbr title="Annual Percentage Rate over the last 7 days">
+    <abbr
+      key="apr1d"
+      title="Annual Percentage Rate over the last 24 hours"
+    >
+      APR
+    </abbr>,
+    <abbr
+      key="apr7d"
+      title="Annual Percentage Rate over the last 7 days"
+    >
       7d APR
     </abbr>,
     "Pool size",

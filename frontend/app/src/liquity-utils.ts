@@ -38,8 +38,8 @@ import {
   getInterestRateBrackets,
   getNextOwnerIndex,
 } from "@/src/subgraph";
-import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
-import { bigIntAbs, jsonStringifyWithBigInt, sleep } from "@/src/utils";
+import { isBranchId, isPrefixedtroveId, isTroveId } from "@/src/types";
+import { bigIntAbs, jsonStringifyWithBigInt } from "@/src/utils";
 import { vAddress, vPrefixedTroveId } from "@/src/valibot-utils";
 import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";

@@ -1,0 +1,4 @@
+{
+  "extends": ["../uikit/.oxlintrc.json"],
+  "plugins": ["nextjs"]
+}

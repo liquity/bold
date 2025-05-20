@@ -237,7 +237,7 @@ function EarnPositionsTable() {
             </tr>
           );
         }),
-        <tr>
+        <tr key="withdraw-all">
           <td
             colSpan={3}
             className={css({
@@ -411,7 +411,7 @@ function StakingPositionsTable() {
       columns={["Staked LQTY", null] as const}
       placeholder="No active staking position."
       rows={stakeDeposit && dn.eq(stakeDeposit, 0) ? [] : [
-        <tr>
+        <tr key="stake-deposit">
           <td>
             <TokenAmount
               symbol="LQTY"
@@ -500,6 +500,7 @@ function RedeemSection() {
       columns={[]}
       rows={[
         <tr
+          key="redeem-legacy-bold"
           className={css({
             "& th, & td": {
               fontWeight: "initial",
