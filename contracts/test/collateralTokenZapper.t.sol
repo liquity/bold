@@ -93,7 +93,7 @@ contract WrappedTokenZapperTest is DevTestSetup {
         troveManagers[0] = troveManager;
 
         vm.prank(boldToken.owner());
-        collateralRegistry.addNewCollaterals(indexes, tokens, troveManagers);
+        collateralRegistry.addNewCollaterals(tokens, troveManagers);
 
         // A to F
         for (uint256 i = 0; i < 6; i++) {
