@@ -137,6 +137,18 @@ export function About({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+        <div className="mt-8 border-t pt-4 text-center text-sm text-gray-500">
+        Frontend operated by{" "}
+        <Link
+          href="https://twitter.com/estebansuarez"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:text-gray-700"
+        >
+          @estebansuarez
+        </Link>
+      </div>
+      
       <Modal
         onClose={() => setVisible(false)}
         visible={visible}
