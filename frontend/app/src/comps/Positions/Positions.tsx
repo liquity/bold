@@ -100,14 +100,12 @@ export function Positions({
 function PositionsGroup({
   columns,
   mode,
-  onTitleClick,
   positions,
   title,
   showNewPositionCard,
 }: {
   columns?: number;
   mode: Mode;
-  onTitleClick?: () => void;
   positions: Exclude<Position, PositionLoanUncommitted>[];
   title: (mode: Mode) => ReactNode;
   showNewPositionCard: boolean;
@@ -226,7 +224,6 @@ function PositionsGroup({
             color: "content",
             userSelect: "none",
           })}
-          onClick={onTitleClick}
         >
           {title_}
         </h1>

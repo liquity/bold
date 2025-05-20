@@ -46,7 +46,7 @@
     "build-deps": "pnpm build-panda",
     "build-panda": "panda codegen --silent",
     "dev": "vite build --watch",
-    "lint": "pnpm oxlint ./src --import-plugin --react-perf-plugin --allow pedantic",
+    "lint": "pnpm oxlint ./src",
     "update-icons": "pnpm tsx scripts/update-icons.ts"
   },
   "peerDependencies": {

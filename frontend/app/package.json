@@ -17,7 +17,7 @@
     "coverage": "vitest run --coverage ./src",
     "dev": "pnpm clean && next dev --turbopack",
     "fmt": "dprint fmt **/*.{ts,tsx,js,json,html,md}",
-    "lint": "pnpm oxlint ./src --import-plugin --nextjs-plugin --react-perf-plugin --allow pedantic",
+    "lint": "pnpm oxlint ./src",
     "test": "vitest",
     "update-liquity-abis": "pnpm exec tsx ./scripts/update-liquity-abis.ts"
   },

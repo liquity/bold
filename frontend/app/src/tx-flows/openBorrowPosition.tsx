@@ -125,6 +125,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
               suffix=" BOLD"
             />,
             <div
+              key="end"
               className={css({
                 display: "flex",
                 alignItems: "center",
@@ -132,7 +133,6 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
               })}
             >
               <Amount
-                key="end"
                 fallback="…"
                 prefix="Incl. "
                 value={upfrontFee.data}

@@ -10,6 +10,7 @@ import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionS
 import { vDnum } from "@/src/valibot-utils";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
+import { Fragment } from "react";
 import * as v from "valibot";
 import { createPublicClient, erc20Abi } from "viem";
 import { http, useConfig as useWagmiConfig } from "wagmi";
@@ -54,7 +55,9 @@ export const legacyRedeemCollateral: FlowDeclaration<LegacyRedeemCollateralReque
               fallback={estimatedGains.isError ? "loading error." : "fetching…"}
               suffix=" BOLD"
             />,
-            <>Estimated BOLD that will be redeemed.</>,
+            <Fragment key="end">
+              Estimated BOLD that will be redeemed.
+            </Fragment>,
           ]}
         />
         {LEGACY_CHECK?.BRANCHES.map(({ symbol }) => {
@@ -71,7 +74,9 @@ export const legacyRedeemCollateral: FlowDeclaration<LegacyRedeemCollateralReque
                   fallback={estimatedGains.isError ? "loading error." : "fetching…"}
                   suffix={` ${symbol_}`}
                 />,
-                <>Estimated {symbol_} you will receive.</>,
+                <Fragment key="end">
+                  Estimated {symbol_} you will receive.
+                </Fragment>,
               ]}
             />
           );
