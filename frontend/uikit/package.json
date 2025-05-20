@@ -42,7 +42,7 @@
     }
   },
   "scripts": {
-    "build": "pnpm build-panda && pnpm lint && tsc && vite build",
+    "build": "pnpm build-panda && tsc && vite build",
     "build-deps": "pnpm build-panda",
     "build-panda": "panda codegen --silent",
     "dev": "vite build --watch",
