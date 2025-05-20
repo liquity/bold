@@ -7,6 +7,7 @@
     "unicorn"
   ],
   "categories": {
+    "correctness": "error",
     "suspicious": "warn"
   },
   "rules": {
