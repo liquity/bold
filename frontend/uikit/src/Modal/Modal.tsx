@@ -70,7 +70,7 @@ export function Modal({
         transform,
       }, item) => (
         item && (
-          <div
+          <a.section
             onMouseDown={({ target, currentTarget }) => {
               if (target === currentTarget) {
                 onClose();
@@ -80,119 +80,111 @@ export function Modal({
               position: "fixed",
               inset: 0,
               zIndex: 2,
+              display: "grid",
+              placeItems: "start center",
+              overflowX: "auto",
+              background: "transparent",
+              medium: {
+                placeItems: "center",
+                background: "rgba(18, 27, 68, 0.7)",
+              },
             })}
+            style={{
+              overflowY: visible ? "scroll" : "hidden",
+              opacity: overlayOpacity,
+              pointerEvents: visible ? "auto" : "none",
+            }}
           >
-            <a.section
+            <div
               className={css({
-                position: "fixed",
-                inset: 0,
-                zIndex: 2,
-                display: "grid",
-                placeItems: "start center",
-                overflowX: "auto",
-                background: "transparent",
-                medium: {
-                  placeItems: "center",
-                  background: "rgba(18, 27, 68, 0.7)",
-                },
+                display: "flex",
+                justifyContent: "center",
+                // this is to let the overlay handle the onMouseDown event
+                pointerEvents: "none",
               })}
-              style={{
-                overflowY: visible ? "scroll" : "hidden",
-                opacity: overlayOpacity,
-                pointerEvents: visible ? "auto" : "none",
-              }}
             >
-              <div
-                className={css({
-                  display: "flex",
-                  justifyContent: "center",
-                  // this is to let the overlay handle the onMouseDown event
-                  pointerEvents: "none",
-                })}
+              <FocusTrap
+                active={visible}
+                focusTrapOptions={{
+                  onDeactivate: onClose,
+                  allowOutsideClick: true,
+                }}
               >
-                <FocusTrap
-                  active={visible}
-                  focusTrapOptions={{
-                    onDeactivate: onClose,
-                    allowOutsideClick: true,
+                <div
+                  onMouseDown={({ target, currentTarget }) => {
+                    if (target === currentTarget) {
+                      onClose();
+                    }
                   }}
+                  className={css({
+                    height: {
+                      base: "100%",
+                      medium: "auto",
+                    },
+                    padding: {
+                      base: 0,
+                      medium: 64,
+                    },
+                    // and this is to re-enable the onMouseDown event
+                    pointerEvents: "auto",
+                  })}
                 >
-                  <div
-                    onMouseDown={({ target, currentTarget }) => {
-                      if (target === currentTarget) {
-                        onClose();
-                      }
-                    }}
+                  <a.div
                     className={css({
+                      position: "relative",
+                      width: "100%",
                       height: {
                         base: "100%",
                         medium: "auto",
                       },
-                      padding: {
+                      padding: 24,
+                      outline: "2px solid accent",
+                      background: "background",
+                      borderRadius: {
                         base: 0,
-                        medium: 64,
+                        medium: 8,
                       },
-                      // and this is to re-enable the onMouseDown event
-                      pointerEvents: "auto",
                     })}
+                    style={{
+                      maxWidth,
+                      opacity,
+                      transform,
+                    }}
                   >
-                    <a.div
-                      className={css({
-                        position: "relative",
-                        width: "100%",
-                        height: {
-                          base: "100%",
-                          medium: "auto",
-                        },
-                        padding: 24,
-                        outline: "2px solid accent",
-                        background: "background",
-                        borderRadius: {
-                          base: 0,
-                          medium: 8,
-                        },
-                      })}
-                      style={{
-                        maxWidth,
-                        opacity,
-                        transform,
-                      }}
-                    >
-                      <div>
-                        {title && (
-                          <h1
-                            className={css({
-                              paddingBottom: 8,
-                              fontSize: 24,
-                            })}
-                          >
-                            {title}
-                          </h1>
-                        )}
-                        {children}
-                      </div>
-                      <div
-                        className={css({
-                          position: "absolute",
-                          top: 24,
-                          right: 24,
-                          display: "flex",
-                        })}
-                      >
-                        <TextButton
-                          label={<IconCross size={32} />}
-                          onClick={onClose}
+                    <div>
+                      {title && (
+                        <h1
                           className={css({
-                            color: "content!",
+                            paddingBottom: 8,
+                            fontSize: 24,
                           })}
-                        />
-                      </div>
-                    </a.div>
-                  </div>
-                </FocusTrap>
-              </div>
-            </a.section>
-          </div>
+                        >
+                          {title}
+                        </h1>
+                      )}
+                      {children}
+                    </div>
+                    <div
+                      className={css({
+                        position: "absolute",
+                        top: 24,
+                        right: 24,
+                        display: "flex",
+                      })}
+                    >
+                      <TextButton
+                        label={<IconCross size={32} />}
+                        onClick={onClose}
+                        className={css({
+                          color: "content!",
+                        })}
+                      />
+                    </div>
+                  </a.div>
+                </div>
+              </FocusTrap>
+            </div>
+          </a.section>
         )
       ))}
     </Root>

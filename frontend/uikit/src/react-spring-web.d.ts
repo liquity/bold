@@ -1,22 +1,27 @@
 import "@react-spring/web";
+import { SpringValue } from "@react-spring/core";
+import { CSSProperties, ForwardRefExoticComponent, HTMLAttributes, Ref, RefObject, SVGAttributes } from "react";
 
 declare module "@react-spring/web" {
-  import { ComponentPropsWithRef, ElementType, ForwardRefExoticComponent } from "react";
+  type CreateAnimatedProps<Props, Element> =
+    & Omit<Props, "style">
+    & {
+      ref?: Ref<Element> | RefObject<Element>;
+      style?: { [K in keyof CSSProperties]?: CSSProperties[K] | SpringValue<CSSProperties[K]> };
+    };
 
-  interface AnimatedComponent<T extends ElementType> {
-    <P extends ComponentPropsWithRef<T>>(props: P): JSX.Element;
-  }
+  type AnimatedHTMLProps<E extends HTMLElement = HTMLElement> = CreateAnimatedProps<HTMLAttributes<E>, E>;
+  type AnimatedSVGProps<E extends SVGElement = SVGElement> = CreateAnimatedProps<SVGAttributes<E>, E>;
 
-  type AnimatedTag<T extends ElementType> = AnimatedComponent<T>;
+  export const a: {
+    // HTML
+    button: ForwardRefExoticComponent<AnimatedHTMLProps<HTMLButtonElement>>;
+    div: ForwardRefExoticComponent<AnimatedHTMLProps<HTMLDivElement>>;
+    section: ForwardRefExoticComponent<AnimatedHTMLProps<HTMLElement>>;
 
-  interface AnimatedAPI {
-    button: AnimatedTag<"button"> & HTMLButtonElement;
-    div: AnimatedTag<"div"> & HTMLDivElement;
-    rect: AnimatedTag<"rect"> & SVGRectElement;
-    section: AnimatedTag<"section"> & HTMLElement;
-    <T extends ElementType>(component: T): AnimatedTag<T>;
-  }
+    // SVG
+    rect: ForwardRefExoticComponent<AnimatedSVGProps<SVGRectElement>>;
+  };
 
-  export const a: AnimatedAPI;
-  export const animated: AnimatedAPI;
+  export const animated: typeof a;
 }
