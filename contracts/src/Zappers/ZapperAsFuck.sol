@@ -101,6 +101,7 @@ contract ZapperAsFuck is BaseZapper {
     function withdrawColl(uint256 _troveId, uint256 _amount) external {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
+        _requireZapperIsReceiver(_troveId);
 
         borrowerOperations.withdrawColl(_troveId, _amount);
 
