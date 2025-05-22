@@ -119,60 +119,12 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
     address constant SFRXUSD = 0xcf62F905562626CfcDD2261162a51fd02Fc9c5b6;
     address constant SUSDE = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
 
-    // V1
-    address LQTY_ADDRESS = 0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D;
-    address LQTY_STAKING_ADDRESS = 0x4f9Fbb3f1E99B56e0Fe2892e623Ed36A76Fc605d;
-    address LUSD_ADDRESS = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0;
-
-    address internal lqty;
-    address internal stakingV1;
-    address internal lusd;
-
     // Curve
     ICurveStableswapNGFactory curveStableswapFactory;
     // https://docs.curve.fi/deployments/amm/#stableswap-ng
-    // Sepolia
-    ICurveStableswapNGFactory constant curveStableswapFactorySepolia =
-        ICurveStableswapNGFactory(0xfb37b8D939FFa77114005e61CFc2e543d6F49A81);
     // Mainnet
     ICurveStableswapNGFactory constant curveStableswapFactoryMainnet =
         ICurveStableswapNGFactory(0x6A8cbed756804B16E05E741eDaBd5cB544AE21bf);
-    uint128 constant BOLD_TOKEN_INDEX = 0;
-    uint128 constant OTHER_TOKEN_INDEX = 1;
-
-    // Uni V3
-    uint24 constant UNIV3_FEE = 0.3e4;
-    uint24 constant UNIV3_FEE_USDC_WETH = 500; // 0.05%
-    uint24 constant UNIV3_FEE_WETH_COLL = 100; // 0.01%
-    ISwapRouter uniV3Router;
-    IQuoterV2 uniV3Quoter;
-    IUniswapV3Factory uniswapV3Factory;
-    INonfungiblePositionManager uniV3PositionManager;
-    // https://docs.uniswap.org/contracts/v3/reference/deployments/ethereum-deployments
-    // Sepolia
-    ISwapRouter constant uniV3RouterSepolia = ISwapRouter(0x65669fE35312947050C450Bd5d36e6361F85eC12);
-    IQuoterV2 constant uniV3QuoterSepolia = IQuoterV2(0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3);
-    IUniswapV3Factory constant uniswapV3FactorySepolia = IUniswapV3Factory(0x0227628f3F023bb0B980b67D528571c95c6DaC1c);
-    INonfungiblePositionManager constant uniV3PositionManagerSepolia =
-        INonfungiblePositionManager(0x1238536071E1c677A632429e3655c799b22cDA52);
-    // Mainnet
-    ISwapRouter constant uniV3RouterMainnet = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
-    IQuoterV2 constant uniV3QuoterMainnet = IQuoterV2(0x61fFE014bA17989E743c5F6cB21bF9697530B21e);
-    IUniswapV3Factory constant uniswapV3FactoryMainnet = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
-    INonfungiblePositionManager constant uniV3PositionManagerMainnet =
-        INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
-
-    // Balancer
-    IVault constant balancerVault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
-    IWeightedPoolFactory balancerFactory;
-    // Sepolia
-    // https://docs.balancer.fi/reference/contracts/deployment-addresses/sepolia.html
-    IWeightedPoolFactory constant balancerFactorySepolia =
-        IWeightedPoolFactory(0x7920BFa1b2041911b354747CA7A6cDD2dfC50Cfd);
-    // Mainnet
-    // https://docs.balancer.fi/reference/contracts/deployment-addresses/mainnet.html
-    IWeightedPoolFactory constant balancerFactoryMainnet =
-        IWeightedPoolFactory(0x897888115Ada5773E02aA29F775430BFB5F34c51);
 
     bytes32 SALT;
     address deployer;
@@ -390,18 +342,6 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         }
 
         r.boldToken.setCollateralRegistry(address(r.collateralRegistry));
-
-        // // exchange helpers
-        // r.exchangeHelpers = new HybridCurveUniV3ExchangeHelpers(
-        //     USDC,
-        //     WETH,
-        //     r.usdcCurvePool,
-        //     OTHER_TOKEN_INDEX, // USDC Curve pool index
-        //     BOLD_TOKEN_INDEX, // BOLD Curve pool index
-        //     UNIV3_FEE_USDC_WETH,
-        //     UNIV3_FEE_WETH_COLL,
-        //     uniV3Quoter
-        // );
     }
 
     function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)
