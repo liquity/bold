@@ -2,6 +2,9 @@ import type { Dnum, Numberish } from "dnum";
 
 import * as dn from "dnum";
 
+export const DNUM_0 = dn.from(0, 18);
+export const DNUM_1 = dn.from(1, 18);
+
 export function dnum18(value: null | undefined): null;
 export function dnum18(value: string | bigint | number): Dnum;
 export function dnum18(value: string | bigint | number | null | undefined): Dnum | null;
@@ -27,9 +30,6 @@ export function dnumMax(a: Dnum, ...rest: Dnum[]) {
 export function dnumMin(a: Dnum, ...rest: Dnum[]) {
   return rest.reduce((min, value) => dn.lt(value, min) ? value : min, a);
 }
-
-export const DNUM_0 = dn.from(0, 18);
-export const DNUM_1 = dn.from(1, 18);
 
 export const jsonStringifyWithDnum: typeof JSON.stringify = (data, replacer, space) => {
   return JSON.stringify(
