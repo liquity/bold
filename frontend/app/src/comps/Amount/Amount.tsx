@@ -6,6 +6,7 @@ import { a, useTransition } from "@react-spring/web";
 
 export function Amount({
   fallback = "",
+  fixed = false, // fixed numbers width
   format,
   percentage = false,
   prefix = "",
@@ -14,6 +15,7 @@ export function Amount({
   value,
 }: {
   fallback?: string;
+  fixed?: boolean;
   format?: FmtnumPresetName | number;
   percentage?: boolean;
   prefix?: string;
@@ -97,7 +99,10 @@ export function Amount({
         transformOrigin: "50% 50%",
         textDecoration: "inherit",
       })}
-      style={style}
+      style={{
+        transform: style.transform,
+        fontVariantNumeric: fixed ? "tabular-nums" : undefined,
+      }}
     >
       {content}
     </a.div>
