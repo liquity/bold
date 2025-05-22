@@ -69,6 +69,7 @@ import {WrappedCbbtc} from "src/WrappedCbbtc.sol";
 import {ZapperAsFuck} from "src/Zappers/ZapperAsFuck.sol";
 import {WbtcZapper} from "src/Zappers/WbtcZapper.sol";
 import {CbbtcZapper} from "src/Zappers/CbbtcZapper.sol";
+import {BTCPriceFeed} from "src/PriceFeeds/USDaf/BTCPriceFeed.sol";
 
 import {DeployGovernance} from "./DeployGovernance.s.sol";
 
@@ -558,16 +559,19 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
             TbtcFallbackOracle fallbackOracle = new TbtcFallbackOracle();
             _oracle = address(new TbtcOracle(address(fallbackOracle)));
             tbtcFallbackOracle = fallbackOracle;
+            return new BTCPriceFeed(_oracle, _stalenessThreshold, _borroweOperationsAddress);
         } else if (_collTokenAddress == address(wrappedWbtc)) {
             _stalenessThreshold = _24_HOURS; // CL WBTC/BTC heartbeat. Fallback is block.timestamp
             WbtcFallbackOracle fallbackOracle = new WbtcFallbackOracle();
             _oracle = address(new WbtcOracle(address(fallbackOracle)));
             wbtcFallbackOracle = fallbackOracle;
+            return new BTCPriceFeed(_oracle, _stalenessThreshold, _borroweOperationsAddress);
         } else if (_collTokenAddress == address(wrappedCbbtc)) {
             _stalenessThreshold = _24_HOURS; // CL cbBTC/BTC heartbeat. Fallback is block.timestamp
             CbbtcFallbackOracle fallbackOracle = new CbbtcFallbackOracle();
             _oracle = address(new CbbtcOracle(address(fallbackOracle)));
             cbbtcFallbackOracle = fallbackOracle;
+            return new BTCPriceFeed(_oracle, _stalenessThreshold, _borroweOperationsAddress);
         } else {
             revert("Collateral not supported");
         }

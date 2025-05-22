@@ -2,6 +2,8 @@
 
 pragma solidity ^0.8.18;
 
+import {AggregatorV3Interface} from "../../src/Dependencies/AggregatorV3Interface.sol";
+
 import "./Base.sol";
 
 contract OraclesTest is Base {
@@ -14,18 +16,6 @@ contract OraclesTest is Base {
     function setUp() override public {
         super.setUp();
     }
-
-    // function testMetaDataNftUpgrade() public {
-    //     DeploymentResult memory _deployment = deploy();
-    //     LiquityContractsTestnet memory _contracts = _deployment.contractsArray[0];
-    //     assertEq(metadataNFT.owner(), OWNER, "testMetaDataNftUpgrade: E0");
-    //     assertEq(address(_contracts.metadataNFT), address(metadataNFT), "testMetaDataNftUpgrade: E1");
-    //     assertEq(address(metadataNFT.assetReader()), address(initializedFixedAssetReader), "testMetaDataNftUpgrade: E2");
-
-    //     address _newImpl = address(new MetadataNFT());
-    //     vm.prank(OWNER);
-    //     metadataNFT.upgradeToAndCall(_newImpl, "");
-    // }
 
     function testScrvUsdOracle() public {
         DeploymentResult memory _deployment = deploy();
