@@ -1,5 +1,6 @@
 {
-    "numBranches": "1",
+    "numBranches": "2",
+    "interestRouter": "0x0000000000000000000000000000000000000000",
     "branches": [
         {
             "collateralName": "btc",
@@ -7,13 +8,30 @@
             "config": {
                 "bcr": 10e16,
                 "ccr": 150e16,
-                "collateralAddress": "0xf8Fb3713D459D7C1018BD0A49D19b4C44290EBE5",
+                "collateralAddress": "0x0000000000000000000000000000000000000000",
                 "createWrapper": true,
                 "createWhitelist": true,
                 "liqPenaltyDistr": 10e16,
                 "liqPenaltySP": 5e16,
                 "mcr": 120e16,         
-                "oracleAddress": "0x1b44F3514812d835EB1BDB0acB33d3fA3351Ee43",
+                "oracleAddress": "0x0000000000000000000000000000000000000000",
+                "oracleStalenessThreshold": 86400000,
+                "scr": 110e16
+            }
+        },
+        {
+            "collateralName": "eth",
+            "collateralSymbol": "eth",
+            "config": {
+                "bcr": 10e16,
+                "ccr": 150e16,
+                "collateralAddress": "0x0000000000000000000000000000000000000000",
+                "createWrapper": false,
+                "createWhitelist": true,
+                "liqPenaltyDistr": 10e16,
+                "liqPenaltySP": 5e16,
+                "mcr": 120e16,         
+                "oracleAddress": "0x0000000000000000000000000000000000000000",
                 "oracleStalenessThreshold": 86400000,
                 "scr": 110e16
             }
@@ -22,7 +40,7 @@
     "globalContracts": {
         "bvUSD": "0x0000000000000000000000000000000000000000",
         "collateralRegistry": "0x0000000000000000000000000000000000000000",
-        "gasToken": "0x7b79995e5f793a07bc00c21412e50ecae098e7f9",
+        "gasToken": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
         "hintHelpers": "0x0000000000000000000000000000000000000000",
         "multiTroveGetter": "0x0000000000000000000000000000000000000000"
     }

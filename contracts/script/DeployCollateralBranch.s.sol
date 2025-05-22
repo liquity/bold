@@ -16,6 +16,7 @@ import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
 import "src/Dependencies/Whitelist.sol";
 import "src/PriceFeeds/CollateralPriceFeed.sol";
+import "src/PriceFeeds/InterchangeablePriceFeed.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "src/Zappers/WrappedTokenZapper.sol";
 import "src/Dependencies/TokenWrapper.sol";
@@ -288,10 +289,14 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
 
-            vars.priceFeeds[vars.i] = new CollateralPriceFeed(
+            // vars.priceFeeds[vars.i] = new CollateralPriceFeed(
+            //     deployer, 
+            //     branchConfigs[vars.i].oracleAddress, 
+            //     branchConfigs[vars.i].oracleStalenessThreshold
+            // );
+            vars.priceFeeds[vars.i] = new InterchangeablePriceFeed(
                 deployer, 
-                branchConfigs[vars.i].oracleAddress, 
-                branchConfigs[vars.i].oracleStalenessThreshold
+                IPriceFeed(branchConfigs[vars.i].oracleAddress)
             );
         }
 
@@ -386,10 +391,8 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
         );
         
         if(deployWhitelist) {
-            addresses.whitelist =  vm.computeCreate2Address(
-                SALT, keccak256(getBytecode(type(Whitelist).creationCode, deployer))
-            );
-            branchContracts.whitelist = new Whitelist{salt: SALT}(deployer);
+            branchContracts.whitelist = new Whitelist(deployer);
+            addresses.whitelist = address(branchContracts.whitelist);
         }
 
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
