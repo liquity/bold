@@ -7,6 +7,7 @@ import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import content from "@/src/content";
 import { getBranch, getCollToken, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
+import { useWait } from "@/src/react-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, isCollateralSymbol, Tabs } from "@liquity2/uikit";
@@ -42,8 +43,9 @@ export function EarnPoolScreen() {
   const collToken = getCollToken(branch.id);
   const earnPosition = useEarnPosition(branch.id, account.address ?? null);
   const earnPool = useEarnPool(branch.id);
+  const ready = useWait(500);
 
-  const loadingState = earnPool.isLoading || earnPosition.isLoading ? "loading" : "success";
+  const loadingState = !ready || earnPool.isLoading || earnPosition.isLoading ? "loading" : "success";
 
   const tabsTransition = useTransition(loadingState, {
     from: { opacity: 0 },

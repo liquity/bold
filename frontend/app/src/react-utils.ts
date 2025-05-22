@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { debounce } from "./utils";
 
 export function useDebouncedQueryKey<T extends unknown[]>(
@@ -15,4 +15,19 @@ export function useDebouncedQueryKey<T extends unknown[]>(
   debouncedSet(values);
 
   return debouncedValue;
+}
+
+export function useWait(delay: number) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setReady(true);
+    }, delay);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [delay]);
+
+  return ready;
 }
