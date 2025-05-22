@@ -1,5 +1,6 @@
 import type { InitiativeStatus } from "@/src/liquity-governance";
 import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocation, VoteAllocations } from "@/src/types";
+import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
@@ -684,45 +685,25 @@ export function PanelVoting() {
           ),
         }}
       />
-
-      {!allowSubmit && hasAnyAllocationChange && (
-        <div
-          className={css({
-            fontSize: 14,
-            textAlign: "center",
-          })}
-        >
-          {dn.eq(stakedLQTY, 0)
-            ? (
-              <>
-                You have no voting power to allocate. Please stake LQTY before voting.
-              </>
-            )
-            : hasAnyAllocations
-            ? (
-              <>
-                You must either allocate 100% of your voting power to upvote or downvote initiatives, or 0% to
-                deallocate your votes.
-              </>
-            )
-            : (
-              <>
-                You must allocate 100% of your voting power to upvote or downvote initiatives.
-              </>
-            )}
-        </div>
-      )}
-      {allowSubmit && dn.eq(remainingVotingPower, 1) && (
-        <div
-          className={css({
-            padding: "0 16px",
-            fontSize: 14,
-            textAlign: "center",
-          })}
-        >
-          Your votes will be reset to 0% for all initiatives.
-        </div>
-      )}
+      {!allowSubmit && dn.eq(stakedLQTY, 0)
+        ? (
+          <FlowButtonNote>
+            You have no voting power to allocate. Please stake LQTY before voting.
+          </FlowButtonNote>
+        )
+        : !allowSubmit && hasAnyAllocations
+        ? (
+          <FlowButtonNote>
+            You can reset your votes by allocating 0% to all initiatives.
+          </FlowButtonNote>
+        )
+        : allowSubmit && dn.eq(remainingVotingPower, 1)
+        ? (
+          <FlowButtonNote>
+            Your votes will be reset to 0% for all initiatives.
+          </FlowButtonNote>
+        )
+        : null}
     </section>
   );
 }
@@ -777,7 +758,22 @@ function InitiativeRow({
                 maxWidth: 200,
               })}
             >
-              {initiative.name ?? "Initiative"}
+              {initiative.url
+                ? (
+                  <LinkTextButton
+                    external
+                    href={initiative.url}
+                    label={
+                      <>
+                        {initiative.name ?? "Initiative"}
+                        <IconExternal size={16} />
+                      </>
+                    }
+                  />
+                )
+                : (
+                  initiative.name ?? "Initiative"
+                )}
             </div>
             {initiativesStatus && (
               <div
@@ -794,8 +790,9 @@ function InitiativeRow({
                   borderRadius: 8,
                   userSelect: "none",
                   textTransform: "lowercase",
+                  transform: "translateY(1px)",
 
-                  "--color-warning": "#121B44",
+                  "--color-warning": "token(colors.warningAltContent)",
                   "--background-warning": "token(colors.warningAlt)",
                 })}
                 style={{
@@ -907,18 +904,36 @@ function Vote({
             display: "flex",
             alignItems: "center",
             gap: 4,
+            "--color-disabled": "token(colors.disabledContent)",
           })}
         >
           {vote === "for" && <IconUpvote size={24} />}
-          {vote === "against" && <IconDownvote size={24} />}
-          <div>
-            {fmtnum(share, "pct2")}%
+          {vote === "against" && (
+            <div
+              className={css({
+                transform: "translateY(2px)",
+                color: disabled ? "var(--color-disabled)" : undefined,
+              })}
+            >
+              <IconDownvote size={24} />
+            </div>
+          )}
+          <div
+            className={css({
+              width: 30,
+            })}
+            style={{
+              textDecoration: disabled ? "line-through" : undefined,
+              color: disabled ? "var(--color-disabled)" : undefined,
+            }}
+          >
+            {fmtnum(share, { preset: "pct2", suffix: "%" })}
           </div>
         </div>
         <Button
           disabled={disabled}
           size="mini"
-          title="Change"
+          title={disabled ? "Initiative disabled" : "Change allocation"}
           label={<IconEdit size={20} />}
           onClick={onEdit}
           className={css({
@@ -926,6 +941,23 @@ function Vote({
           })}
         />
       </div>
+    </div>
+  );
+}
+
+function FlowButtonNote({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <div
+      className={css({
+        fontSize: 14,
+        textAlign: "center",
+      })}
+    >
+      {children}
     </div>
   );
 }
