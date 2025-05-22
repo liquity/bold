@@ -60,7 +60,7 @@ contract ZapperAsFuck is BaseZapper {
                 openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
                     .OpenTroveAndJoinInterestBatchManagerParams({
                     owner: _params.owner,
-                    ownerIndex: _params.ownerIndex,
+                    ownerIndex: index,
                     collAmount: _params.collAmount,
                     boldAmount: _params.boldAmount,
                     upperHint: _params.upperHint,
