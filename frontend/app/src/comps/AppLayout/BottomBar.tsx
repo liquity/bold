@@ -4,6 +4,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Logo } from "@/src/comps/Logo/Logo";
 import { ACCOUNT_SCREEN } from "@/src/env";
+import { fmtnum } from "@/src/formatting";
 import { useLiquityStats } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useAccount } from "@/src/wagmi-utils";
@@ -20,6 +21,7 @@ export function BottomBar() {
   const stats = useLiquityStats();
 
   const tvl = stats.data?.totalValueLocked;
+  const boldSupply = stats.data?.totalBoldSupply;
 
   return (
     <div
@@ -70,26 +72,65 @@ export function BottomBar() {
             userSelect: "none",
           })}
         >
-          <div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-            })}
-          >
-            <Logo size={16} />
-            <span>TVL</span>{" "}
-            <span>
-              {tvl && (
-                <Amount
-                  fallback="…"
-                  format="compact"
-                  prefix="$"
-                  value={tvl}
+          <HFlex gap={16}>
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              })}
+            >
+              <Logo size={16} />
+              <span>TVL</span>{" "}
+              <span>
+                {tvl && (
+                  <Amount
+                    fallback="…"
+                    format="compact"
+                    prefix="$"
+                    value={tvl}
+                  />
+                )}
+              </span>
+            </div>
+            <div
+              title={`Total supply: ${
+                fmtnum(boldSupply, {
+                  suffix: " BOLD",
+                  preset: "2z",
+                })
+              }`}
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                whiteSpace: "nowrap",
+              })}
+            >
+              <div
+                className={css({
+                  flexShrink: 0,
+                })}
+              >
+                <TokenIcon
+                  title={null}
+                  symbol="BOLD"
+                  size={16}
                 />
-              )}
-            </span>
-          </div>
+              </div>
+              <span>
+                {boldSupply && (
+                  <Amount
+                    title={null}
+                    fallback="…"
+                    format="compact"
+                    value={boldSupply}
+                    suffix=" BOLD"
+                  />
+                )}
+              </span>
+            </div>
+          </HFlex>
           <HFlex gap={16}>
             {DISPLAYED_PRICES.map((symbol) => (
               <Price
