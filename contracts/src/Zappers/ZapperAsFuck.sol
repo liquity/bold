@@ -38,10 +38,11 @@ contract ZapperAsFuck is BaseZapper {
         _pullColl(_params.collAmount);
 
         uint256 troveId;
+        uint256 index = _getTroveIndex(_params.ownerIndex);
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
-                _params.ownerIndex,
+                index,
                 _params.collAmount,
                 _params.boldAmount,
                 _params.upperHint,
@@ -110,6 +111,7 @@ contract ZapperAsFuck is BaseZapper {
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
+        _requireZapperIsReceiver(_troveId);
 
         borrowerOperations.withdrawBold(_troveId, _boldAmount, _maxUpfrontFee);
 
@@ -222,6 +224,7 @@ contract ZapperAsFuck is BaseZapper {
     function closeTroveToRawETH(uint256 _troveId) external {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        _requireZapperIsReceiver(_troveId);
 
         // pull Bold for repayment
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
