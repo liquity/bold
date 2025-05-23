@@ -3,7 +3,7 @@ import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import content from "@/src/content";
-import { DNUM_0, dnumMax } from "@/src/dnum-utils";
+import { dnum18, DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { useGovernanceStats, useGovernanceUser } from "@/src/liquity-governance";
@@ -27,6 +27,9 @@ export function PanelStaking() {
   const govStats = useGovernanceStats();
   const govUser = useGovernanceUser(account.address ?? null);
 
+  const stakedLqty = dnum18(govUser.data?.stakedLQTY);
+  const totalStakedLqty = dnum18(govStats.data?.totalLQTYStaked);
+
   const stakePosition = useStakePosition(account.address ?? null);
 
   const parsedValue = parseInputFloat(value);
@@ -41,48 +44,37 @@ export function PanelStaking() {
   );
 
   const updatedShare = (() => {
-    const { totalLQTYStaked } = govStats.data ?? {};
-    const { allocatedLQTY } = govUser.data ?? {};
-
-    if (
-      allocatedLQTY === undefined
-      || totalLQTYStaked === undefined
-    ) {
+    if (!stakedLqty || !totalStakedLqty) {
       return DNUM_0;
     }
 
-    const updatedUserLqtyAllocated = allocatedLQTY + depositDifference[0];
-    const updatedTotalLqtyStaked = totalLQTYStaked + depositDifference[0];
+    const updatedUserLqtyAllocated = dn.add(stakedLqty, depositDifference);
+    const updatedTotalLqtyStaked = dn.add(totalStakedLqty, depositDifference);
 
     // make sure we don't divide by zero or show negative percentages
-    return (updatedUserLqtyAllocated <= 0n || updatedTotalLqtyStaked <= 0n)
-      ? DNUM_0
-      : dn.div(
-        [updatedUserLqtyAllocated, 18],
-        [updatedTotalLqtyStaked, 18],
-      );
+    if (dn.lte(updatedUserLqtyAllocated, 0) || dn.lte(updatedTotalLqtyStaked, 0)) {
+      return DNUM_0;
+    }
+
+    return dn.div(updatedUserLqtyAllocated, updatedTotalLqtyStaked);
   })();
 
-  const updatedDeposit = stakePosition.data?.deposit
-    ? dnumMax(
-      dn.add(stakePosition.data?.deposit, depositDifference),
-      DNUM_0,
-    )
+  const updatedDeposit = stakedLqty
+    ? dnumMax(dn.add(stakedLqty, depositDifference), DNUM_0)
     : DNUM_0;
 
   const lqtyBalance = useBalance(account.address, "LQTY");
   const isDepositFilled = parsedValue && dn.gt(parsedValue, 0);
-  const hasDeposit = stakePosition.data?.deposit && dn.gt(
-    stakePosition.data?.deposit,
-    0,
-  );
+  const hasDeposit = stakedLqty && dn.gt(stakedLqty, 0);
 
   const insufficientBalance = mode === "deposit" && isDepositFilled && (
     !lqtyBalance.data || dn.lt(lqtyBalance.data, parsedValue)
   );
 
-  const withdrawOutOfRange = mode === "withdraw" && isDepositFilled && (
-    !stakePosition.data || dn.lt(stakePosition.data.deposit, parsedValue)
+  const withdrawOutOfRange = Boolean(
+    mode === "withdraw" && isDepositFilled && (
+      !stakedLqty || dn.lt(stakedLqty, parsedValue)
+    ),
   );
 
   const allowSubmit = Boolean(
@@ -108,7 +100,7 @@ export function PanelStaking() {
               : withdrawOutOfRange
               ? {
                 mode: "error",
-                message: `You can’t withdraw more than you have staked.`,
+                message: "You can’t withdraw more than you have staked.",
               }
               : null}
             contextual={
@@ -195,8 +187,7 @@ export function PanelStaking() {
                     <Amount value={updatedShare} percentage suffix="%" />
                   </div>
                   <InfoTooltip>
-                    Your voting share is the amount of LQTY have staked and that is available to vote, divided by the
-                    total amount of LQTY staked via the governance contract.
+                    {content.stakeScreen.infoTooltips.votingShare}
                   </InfoTooltip>
                 </HFlex>
               }
@@ -282,10 +273,6 @@ export function PanelStaking() {
               type: "stake",
               owner: account.address,
               deposit: updatedDeposit,
-              totalStaked: dn.add(
-                stakePosition.data?.totalStaked ?? DNUM_0,
-                depositDifference,
-              ),
               rewards: {
                 eth: rewardsEth,
                 lusd: rewardsLusd,

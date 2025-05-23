@@ -117,18 +117,21 @@ export function VoteInput({
         }}
         onBlur={() => {
           setIsFocused(false);
+
+          // invalid input => reset to current value
           const parsed = parseInputFloat(inputValue.replace("%", ""));
-          if (parsed) {
-            onChange(
-              dnumMax(dnumMin(dn.from(100, 18), parsed), dn.from(0, 18)),
-            );
-          } else {
-            // invalid input => reset to current value
+          if (!parsed) {
             setInputValue(value ? dn.toString(dn.mul(value, 100)) : "0");
           }
         }}
         onChange={(event) => {
           setInputValue(event.target.value);
+          const parsed = parseInputFloat(event.target.value);
+          if (parsed) {
+            onChange(
+              dnumMax(dnumMin(dn.from(100, 18), parsed), dn.from(0, 18)),
+            );
+          }
         }}
         value={displayValue}
         placeholder="0%"

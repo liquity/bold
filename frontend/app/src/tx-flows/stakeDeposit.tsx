@@ -7,7 +7,6 @@ import { signPermit } from "@/src/permit";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { getIndexedUserAllocated } from "@/src/subgraph";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import * as dn from "dnum";
@@ -132,24 +131,12 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
     },
 
     // reset allocations + deposit LQTY in a single transaction
-    resetVotesAndDeposit: {
+    deposit: {
       name: () => "Stake",
       Status: TransactionStatus,
       async commit(ctx) {
         const { Governance } = ctx.contracts;
-
         const inputs: `0x${string}`[] = [];
-
-        const allocatedInitiatives = await getIndexedUserAllocated(ctx.account);
-
-        // reset allocations if the user has any
-        if (allocatedInitiatives.length > 0) {
-          inputs.push(encodeFunctionData({
-            abi: Governance.abi,
-            functionName: "resetAllocations",
-            args: [allocatedInitiatives, true],
-          }));
-        }
 
         const approveStep = ctx.steps?.find((step) => step.id === "approve");
         const isPermit = approveStep?.artifact?.startsWith("permit:") === true;
@@ -174,7 +161,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
           }));
         } else {
           const userProxyAddress = await ctx.readContract({
-            ...ctx.contracts.Governance,
+            ...Governance,
             functionName: "deriveUserProxyAddress",
             args: [ctx.account],
           });
@@ -198,7 +185,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         }
 
         return ctx.writeContract({
-          ...ctx.contracts.Governance,
+          ...Governance,
           functionName: "multiDelegateCall",
           args: [inputs],
         });
@@ -243,7 +230,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
     }
 
     // stake
-    steps.push("resetVotesAndDeposit");
+    steps.push("deposit");
 
     return steps;
   },

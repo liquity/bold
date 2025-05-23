@@ -3,9 +3,12 @@ import type { ReactNode } from "react";
 
 import { useAppear } from "@/src/anim-utils";
 import { Amount } from "@/src/comps/Amount/Amount";
+import { Tag } from "@/src/comps/Tag/Tag";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
+import content from "@/src/content";
+import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { useGovernanceUser, useVotingPower } from "@/src/liquity-governance";
+import { useGovernanceStats, useGovernanceUser, useVotingPower } from "@/src/liquity-governance";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, InfoTooltip, TokenIcon } from "@liquity2/uikit";
@@ -26,7 +29,16 @@ export function StakePositionSummary({
 }) {
   const account = useAccount();
 
+  const govStats = useGovernanceStats();
   const govUser = useGovernanceUser(stakePosition?.owner ?? null);
+
+  const stakedLqty = dnum18(govUser.data?.stakedLQTY);
+  const allocatedLqty = dnum18(govUser.data?.allocatedLQTY);
+  const totalStakedLqty = dnum18(govStats.data?.totalLQTYStaked);
+
+  const stakedShare = stakedLqty && totalStakedLqty
+    ? dn.div(stakedLqty, totalStakedLqty)
+    : null;
 
   const appear = useAppear(
     !account.isConnected || (
@@ -212,9 +224,14 @@ export function StakePositionSummary({
       >
         <div
           className={css({
-            display: "flex",
-            gap: 32,
+            display: "grid",
+            gridTemplateColumns: "repeat(2, auto)",
+            gap: 16,
             fontSize: 14,
+            medium: {
+              gridTemplateColumns: "repeat(4, auto)",
+              gap: 32,
+            },
           })}
         >
           <div
@@ -273,6 +290,104 @@ export function StakePositionSummary({
               <div
                 className={css({
                   color: "token(colors.strongSurfaceContentAlt)",
+                  whiteSpace: "nowrap",
+                })}
+              >
+                Voting share
+              </div>
+              {appear((style, show) => (
+                show && (
+                  <a.div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    })}
+                    style={style}
+                  >
+                    <Amount
+                      percentage
+                      value={stakedShare}
+                      fallback="−"
+                      suffix="%"
+                    />
+                    {!txPreviewMode && (
+                      <InfoTooltip
+                        content={{
+                          heading: null,
+                          body: (
+                            <div
+                              className={css({
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 16,
+                              })}
+                            >
+                              <p>
+                                {content.stakeScreen.infoTooltips.votingShare}
+                              </p>
+                              {account.address && stakedLqty && dn.gt(stakedLqty, 0) && (
+                                <div
+                                  className={css({
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 8,
+                                  })}
+                                >
+                                  <TooltipRow
+                                    label="Your stake"
+                                    value={
+                                      <Amount
+                                        format="2z"
+                                        fixed
+                                        value={stakedLqty}
+                                        fallback="−"
+                                        suffix=" LQTY"
+                                        title={fmtnum(stakedLqty, {
+                                          preset: "full",
+                                          suffix: " LQTY",
+                                        })}
+                                      />
+                                    }
+                                  />
+                                  <TooltipRow
+                                    label="Total staked"
+                                    value={
+                                      <Amount
+                                        fallback="−"
+                                        fixed
+                                        format="2z"
+                                        suffix=" LQTY"
+                                        title={fmtnum(totalStakedLqty, {
+                                          preset: "full",
+                                          suffix: " LQTY",
+                                        })}
+                                        value={totalStakedLqty}
+                                      />
+                                    }
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          ),
+                          footerLink: {
+                            href: content.stakeScreen.learnMore[0],
+                            label: content.stakeScreen.learnMore[1],
+                          },
+                        }}
+                      />
+                    )}
+                  </a.div>
+                )
+              ))}
+            </div>
+          )}
+          {!txPreviewMode && (
+            <div>
+              <div
+                className={css({
+                  color: "token(colors.strongSurfaceContentAlt)",
+                  whiteSpace: "nowrap",
                 })}
               >
                 Voting power
@@ -307,8 +422,7 @@ export function StakePositionSummary({
                               })}
                             >
                               <p>
-                                Your relative voting power changes over time, depending on your and others deposits of
-                                LQTY.
+                                {content.stakeScreen.infoTooltips.votingPower}
                               </p>
                               {account.address && (govUser.data?.allocatedLQTY ?? 0n) > 0n && (
                                 <div
@@ -327,8 +441,8 @@ export function StakePositionSummary({
                             </div>
                           ),
                           footerLink: {
-                            href: "https://docs.liquity.org/v2-faq/lqty-staking",
-                            label: "Learn more",
+                            href: content.stakeScreen.learnMore[0],
+                            label: content.stakeScreen.learnMore[1],
                           },
                         }}
                       />
@@ -354,7 +468,7 @@ export function StakePositionSummary({
                 Allocated
               </div>
               <div
-                title={`${fmtnum([govUser.data?.allocatedLQTY ?? 0n, 18], "full")} LQTY`}
+                title={`${fmtnum(allocatedLqty ?? 0, "full")} LQTY allocated`}
                 className={css({
                   display: "flex",
                   alignItems: "center",
@@ -364,13 +478,31 @@ export function StakePositionSummary({
                 <Amount
                   title={null}
                   format="compact"
-                  value={[govUser.data?.allocatedLQTY ?? 0n, 18]}
+                  value={allocatedLqty ?? 0}
                 />
                 <TokenIcon
                   title={null}
                   symbol="LQTY"
                   size="mini"
                 />
+                {stakedLqty
+                  && allocatedLqty
+                  && dn.gt(allocatedLqty, 0)
+                  && dn.lt(allocatedLqty, stakedLqty)
+                  && (
+                    <Tag
+                      title="Partial allocation: some of your staked LQTY is not allocated"
+                      size="mini"
+                      css={{
+                        color: "warningAltContent",
+                        background: "warningAlt",
+                        border: 0,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      partial
+                    </Tag>
+                  )}
               </div>
             </div>
           )}

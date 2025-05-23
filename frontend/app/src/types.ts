@@ -111,7 +111,6 @@ export type PositionStake = {
   type: "stake";
   owner: Address;
   deposit: Dnum;
-  totalStaked: Dnum;
   rewards: {
     lusd: Dnum;
     eth: Dnum;
@@ -168,6 +167,7 @@ export type Initiative =
     address: Address;
     name: string | null;
     protocol: string | null;
+    url: string | null;
   }
   & (
     | { tvl: Dnum; pairVolume: Dnum; votesDistribution: Dnum }

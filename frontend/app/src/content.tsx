@@ -421,7 +421,10 @@ export default {
         By staking LQTY you can vote on incentives for Liquity V2, while still earning Liquity V1 fees.
       </>
     ),
-    learnMore: ["https://docs.liquity.org/faq/staking", "Learn more"],
+    learnMore: [
+      "https://docs.liquity.org/v2-faq/lqty-staking",
+      "Learn more",
+    ],
     accountDetails: {
       myDeposit: "My deposit",
       votingPower: "Voting power",
@@ -467,6 +470,17 @@ export default {
           Rewards will be paid out as part of the update transaction.
         </>,
       ],
+      votingShare: (
+        <>
+          Your voting share is the amount of LQTY you have staked and that is available to vote, divided by the total
+          amount of LQTY staked via the governance contract.
+        </>
+      ),
+      votingPower: (
+        <>
+          Your relative voting power changes over time, depending on your and others allocations of LQTY.
+        </>
+      ),
     },
   },
 } as const;
