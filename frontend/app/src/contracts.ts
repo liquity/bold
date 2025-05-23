@@ -24,7 +24,6 @@ import { WhitelistAbi } from "@/src/abi/Whitelist";
 import {
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
-  CONTRACT_ADDRESSES_REGISTRY,
   CONTRACT_EXCHANGE_HELPERS,
   CONTRACT_GOVERNANCE,
   CONTRACT_HINT_HELPERS,
@@ -39,7 +38,6 @@ import { erc20Abi, zeroAddress } from "viem";
 
 const protocolAbis = {
   BoldToken: erc20Abi,
-  AddressesRegistry,
   CollateralRegistry,
   ExchangeHelpers,
   Governance,
@@ -54,6 +52,7 @@ const protocolAbis = {
 const BorrowerOperationsErrorsAbi = BorrowerOperations.filter((f) => f.type === "error");
 
 const collateralAbis = {
+  AddressesRegistry,
   ActivePool,
   BorrowerOperations,
   CollSurplusPool,
@@ -116,10 +115,6 @@ export const CONTRACTS: Contracts = {
     abi: abis.CollateralRegistry,
     address: CONTRACT_COLLATERAL_REGISTRY,
   },
-  AddressesRegistry: {
-    abi: abis.AddressesRegistry,
-    address: CONTRACT_ADDRESSES_REGISTRY,
-  },
   Governance: { abi: abis.Governance, address: CONTRACT_GOVERNANCE },
   ExchangeHelpers: {
     abi: abis.ExchangeHelpers,
@@ -139,6 +134,10 @@ export const CONTRACTS: Contracts = {
     branchId,
     symbol,
     contracts: {
+      AddressesRegistry: {
+        address: contracts.ADDRESSES_REGISTRY,
+        abi: abis.AddressesRegistry,
+      },
       ActivePool: { address: contracts.ACTIVE_POOL, abi: abis.ActivePool },
       BorrowerOperations: {
         address: contracts.BORROWER_OPERATIONS,

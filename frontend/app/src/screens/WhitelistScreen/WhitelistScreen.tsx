@@ -21,7 +21,7 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { useState } from "react";
 import { useAccount } from "wagmi";
-import { getBranchContract, getProtocolContract } from "@/src/contracts";
+import { getBranchContract } from "@/src/contracts";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { zeroAddress } from "viem";
@@ -31,16 +31,19 @@ export function WhitelistScreen() {
   const account = useAccount();
   const router = useRouter();
 
-  const addressesRegistry = getProtocolContract("AddressesRegistry");
-  const owner = useProtocolOwner(addressesRegistry.address);
-
   const branches = getBranches();
+
   const [collSymbol, setCollSymbol] = useState<string>(branches[0]?.symbol);
   const [contractIndex, setContractIndex] = useState<number>(0);
 
   if (!isCollateralSymbol(collSymbol)) {
     throw new Error(`Invalid collateral symbol: ${collSymbol}`);
   }
+  
+  const addressesRegistry = getBranchContract(collSymbol, "AddressesRegistry");
+  const owner = useProtocolOwner(addressesRegistry.address);
+
+  console.log("OWNER", owner);
 
   const collaterals = branches.map((b) => getCollToken(b.branchId));
 
