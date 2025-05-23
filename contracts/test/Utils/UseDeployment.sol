@@ -8,6 +8,7 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IUserProxy} from "V2-gov/src/interfaces/IUserProxy.sol";
 import {CurveV2GaugeRewards} from "V2-gov/src/CurveV2GaugeRewards.sol";
 import {Governance} from "V2-gov/src/Governance.sol";
+import {IExchangeHelpers} from "src/Zappers/Interfaces/IExchangeHelpers.sol";
 import {ILeverageZapper} from "src/Zappers/Interfaces/ILeverageZapper.sol";
 import {IZapper} from "src/Zappers/Interfaces/IZapper.sol";
 import {IActivePool} from "src/Interfaces/IActivePool.sol";
@@ -73,6 +74,7 @@ contract UseDeployment is CommonBase {
     ICollateralRegistry collateralRegistry;
     IBoldToken boldToken;
     IHintHelpers hintHelpers;
+    IExchangeHelpers exchangeHelpers;
     Governance governance;
     ICurveStableSwapNG curveUsdcBold;
     ILiquidityGaugeV6 curveUsdcBoldGauge;
@@ -89,6 +91,7 @@ contract UseDeployment is CommonBase {
         collateralRegistry = ICollateralRegistry(json.readAddress(".collateralRegistry"));
         boldToken = IBoldToken(BOLD = json.readAddress(".boldToken"));
         hintHelpers = IHintHelpers(json.readAddress(".hintHelpers"));
+        exchangeHelpers = IExchangeHelpers(json.readAddress(".exchangeHelpers"));
         governance = Governance(json.readAddress(".governance.governance"));
         curveUsdcBold = ICurveStableSwapNG(json.readAddress(".governance.curveUsdcBoldPool"));
         curveUsdcBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.curveUsdcBoldGauge"));
@@ -101,10 +104,14 @@ contract UseDeployment is CommonBase {
 
         vm.label(address(collateralRegistry), "CollateralRegistry");
         vm.label(address(hintHelpers), "HintHelpers");
+        vm.label(address(exchangeHelpers), "ExchangeHelpers");
         vm.label(address(governance), "Governance");
         vm.label(address(curveUsdcBold), "CurveStableSwapNG");
         vm.label(address(curveUsdcBoldGauge), "LiquidityGaugeV6");
         vm.label(address(curveUsdcBoldInitiative), "CurveV2GaugeRewards");
+        vm.label(address(curveLusdBold), "CurveStableSwapNG");
+        vm.label(address(curveLusdBoldGauge), "LiquidityGaugeV6");
+        vm.label(address(curveLusdBoldInitiative), "CurveV2GaugeRewards");
 
         ETH_GAS_COMPENSATION = json.readUint(".constants.ETH_GAS_COMPENSATION");
         MIN_DEBT = json.readUint(".constants.MIN_DEBT");
