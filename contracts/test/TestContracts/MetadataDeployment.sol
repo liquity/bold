@@ -88,19 +88,22 @@ contract MetadataDeployment is Script /* , StdAssertions */ {
         offset = _addAsset("USDaf", "USDaf.txt", root, offset);
 
         // BTC-related collaterals
-        offset = _addAsset("wBTC", "wBTC.txt", root, offset);
+        offset = _addAsset("WBTC18", "wBTC.txt", root, offset);
         offset = _addAsset("tBTC", "tBTC.txt", root, offset);
-        offset = _addAsset("cbBTC", "cbBTC.txt", root, offset);
+        offset = _addAsset("cbBTC18", "cbBTC.txt", root, offset);
 
         // USD-related collaterals
-        offset = _addAsset("sUSDE", "sUSDE.txt", root, offset);
+        offset = _addAsset("sUSDe", "sUSDE.txt", root, offset);
         offset = _addAsset("sUSDS", "sUSDS.txt", root, offset);
         offset = _addAsset("scrvUSD", "scrvUSD.txt", root, offset);
         offset = _addAsset("sfrxUSD", "sfrxUSD.txt", root, offset);
         offset = _addAsset("sDAI", "sDAI.txt", root, offset);
 
         // Font
-        _addAsset("geist", "DM_Sans.txt", root, offset);
+        offset = _addAsset("geist", "DM_Sans.txt", root, offset);
+
+        // ASF
+        offset = _addAsset("ASF", "ASF-logo.txt", root, offset);
     }
     function _addAsset(
         string memory _sig,
@@ -131,10 +134,10 @@ contract MetadataDeployment is Script /* , StdAssertions */ {
     function _storeFile() internal {
         bytes memory part1 = bytes.concat(
             files[bytes4(keccak256("USDaf"))].data,
-            files[bytes4(keccak256("wBTC"))].data,
+            files[bytes4(keccak256("WBTC18"))].data,
             files[bytes4(keccak256("tBTC"))].data,
-            files[bytes4(keccak256("cbBTC"))].data,
-            files[bytes4(keccak256("sUSDE"))].data
+            files[bytes4(keccak256("cbBTC18"))].data,
+            files[bytes4(keccak256("sUSDe"))].data
         );
 
         bytes memory part2 = bytes.concat(
@@ -142,7 +145,8 @@ contract MetadataDeployment is Script /* , StdAssertions */ {
             files[bytes4(keccak256("scrvUSD"))].data,
             files[bytes4(keccak256("sfrxUSD"))].data,
             files[bytes4(keccak256("sDAI"))].data,
-            files[bytes4(keccak256("geist"))].data
+            files[bytes4(keccak256("geist"))].data,
+            files[bytes4(keccak256("ASF"))].data
         );
 
         bytes memory data = bytes.concat(part1, part2);
@@ -182,17 +186,18 @@ contract MetadataDeployment is Script /* , StdAssertions */ {
     // @AF
     function _deployFixedAssetReader(bytes32 _salt) internal {
         // Prepare the same signature order used in _storeFile()
-        bytes4[10] memory sigOrder = [
+        bytes4[11] memory sigOrder = [
             bytes4(keccak256("USDaf")),
-            bytes4(keccak256("wBTC")),
+            bytes4(keccak256("WBTC18")),
             bytes4(keccak256("tBTC")),
-            bytes4(keccak256("cbBTC")),
-            bytes4(keccak256("sUSDE")),
+            bytes4(keccak256("cbBTC18")),
+            bytes4(keccak256("sUSDe")),
             bytes4(keccak256("sUSDS")),
             bytes4(keccak256("scrvUSD")),
             bytes4(keccak256("sfrxUSD")),
             bytes4(keccak256("sDAI")),
-            bytes4(keccak256("geist"))
+            bytes4(keccak256("geist")),
+            bytes4(keccak256("ASF"))
         ];
 
         bytes4[] memory sigs = new bytes4[](sigOrder.length);
