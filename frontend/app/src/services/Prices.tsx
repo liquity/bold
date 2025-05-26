@@ -134,7 +134,7 @@ function useDefiLlamaPrice(
         throw new Error("Unsupported symbol");
       }
 
-      const url = new URL(`https://pro-api.llama.fi/${DEFILLAMA_API_KEY}/coins/prices/current/ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,ethereum:0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599,ethereum:0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599`);
+      const url = new URL(`https://pro-api.llama.fi/${DEFILLAMA_API_KEY}/coins/prices/current/ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,ethereum:0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599,ethereum:0xB8c77482e45F1F44dE1745F52C74426C631bDD52`);
 
       const headers: HeadersInit = { accept: "application/json" };
 
