@@ -14,7 +14,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol | "sbvUSD" | "VCRAFT" | "WBTC" | "USDT";
+type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol | "sbvUSD" | "VCRAFT" | "WBTC" | "USDT" | "WBNB";
 
 function useCollateralPrice(
   symbol: null | CollateralSymbol
@@ -43,12 +43,13 @@ function useCollateralPrice(
   });
 }
 
-type CoinGeckoSymbol = TokenSymbol & ("WETH" | "BVBTC");
+type CoinGeckoSymbol = TokenSymbol & ("WETH" | "BVBTC" | "WBNB");
 const coinGeckoTokenIds: {
   [key in CoinGeckoSymbol]: string;
 } = {
   WETH: "ethereum",
   BVBTC: "bitcoin",
+  WBNB: "binance coin"
 };
 
 function useCoinGeckoPrice(
@@ -120,6 +121,7 @@ const defiLlamaTokenIds: {
 } = {
   WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
   BVBTC: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+  WBNB: "0xB8c77482e45F1F44dE1745F52C74426C631bDD52"
 };
 
 function useDefiLlamaPrice(
@@ -132,7 +134,7 @@ function useDefiLlamaPrice(
         throw new Error("Unsupported symbol");
       }
 
-      const url = new URL(`https://pro-api.llama.fi/${DEFILLAMA_API_KEY}/coins/prices/current/ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,ethereum:0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599`);
+      const url = new URL(`https://pro-api.llama.fi/${DEFILLAMA_API_KEY}/coins/prices/current/ethereum:0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2,ethereum:0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599,ethereum:0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599`);
 
       const headers: HeadersInit = { accept: "application/json" };
 
@@ -173,7 +175,7 @@ function useDefiLlamaPrice(
 export function usePrice<PT extends PriceToken>(
   symbol: PT | null
 ): UseQueryResult<Dnum> {
-  const fromCoinGecko = symbol === "WETH" || symbol === "BVBTC";
+  const fromCoinGecko = symbol === "WETH" || symbol === "BVBTC" || symbol === "WBNB";
   const fromPriceFeed =
     !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
 

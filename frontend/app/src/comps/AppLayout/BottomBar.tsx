@@ -15,7 +15,7 @@ import { blo } from "blo";
 import Image from "next/image";
 import Link from "next/link";
 
-const DISPLAYED_PRICES = ["bvUSD", "WETH", "BVBTC"] as const;
+const DISPLAYED_PRICES = ["bvUSD", "WETH", "BVBTC", "WBNB"] as const;
 
 export function BottomBar() {
   const account = useAccount();

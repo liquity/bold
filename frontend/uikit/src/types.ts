@@ -9,7 +9,8 @@ export type TokenSymbol =
   | "VCRAFT"
   | "sbvUSD"
   | "WBTC"
-  | "USDT";
+  | "USDT"
+  | "WBNB";
 
 export type Token = {
   icon: string;
