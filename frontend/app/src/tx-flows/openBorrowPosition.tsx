@@ -74,7 +74,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
           deposit: request.collAmount,
           interestRate: request.annualInterestRate,
         }}
-        onRetry={() => {}}
+        onRetry={() => { }}
         txPreviewMode
       />
     );
@@ -123,7 +123,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
               key="start"
               fallback="…"
               value={boldAmountWithFee}
-              suffix=" BOLD"
+              suffix=" bvUSD"
             />,
             <div
               className={css({
@@ -137,9 +137,9 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                 fallback="…"
                 prefix="Incl. "
                 value={upfrontFee.data}
-                suffix=" BOLD creation fee"
+                suffix=" bvUSD creation fee"
               />
-              <InfoTooltip heading="BOLD Creation Fee">
+              <InfoTooltip heading="bvUSD Creation Fee">
                 This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of average
                 interest for the respective collateral asset.
               </InfoTooltip>
@@ -177,7 +177,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                         <Amount
                           format="2z"
                           prefix="~"
-                          suffix=" BOLD per year"
+                          suffix=" bvUSD per year"
                           value={yearlyBoldInterest}
                         />
                       </>
@@ -202,7 +202,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                     boldAmountWithFee,
                     request.annualInterestRate,
                   )}
-                  suffix=" BOLD per year"
+                  suffix=" bvUSD per year"
                 />,
               ]}
             />
@@ -212,9 +212,9 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
           value={[
             <div
               key="start"
-              title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}
+              title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} BNB`}
             >
-              {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
+              {fmtnum(ETH_GAS_COMPENSATION, 4)} BNB
             </div>,
             "Only used in case of liquidation",
           ]}
@@ -378,9 +378,9 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
     const branch = getBranch(ctx.request.branchId);
 
     // ETH doesn't need approval
-    if (branch.symbol === "ETH") {
-      return ["openTroveEth"];
-    }
+    // if (branch.symbol === "WETH") {
+    //   return ["openTroveEth"];
+    // }
 
     // Check if approval is needed
     const allowance = await readContract(ctx.wagmiConfig, {

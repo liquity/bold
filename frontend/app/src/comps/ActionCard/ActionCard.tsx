@@ -89,7 +89,7 @@ export function ActionCard({
         "group",
         css({
           display: "flex",
-          color: "gray:50",
+          color: "gray100",
           outline: 0,
           userSelect: "none",
         }),

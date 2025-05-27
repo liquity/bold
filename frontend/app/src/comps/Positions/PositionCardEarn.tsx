@@ -57,7 +57,7 @@ export function PositionCardEarn({
                 fallback="−"
                 format={2}
               />
-              <TokenIcon size="medium" symbol="BOLD" />
+              <TokenIcon size="medium" symbol="bvUSD" />
             </HFlex>
           ),
           label: token && (
@@ -160,7 +160,7 @@ export function PositionCardEarn({
                       value={earnPosition.data?.rewards.bold}
                       format={2}
                     />
-                    <TokenIcon size="mini" symbol="BOLD" />
+                    <TokenIcon size="mini" symbol="bvUSD" />
                   </div>
                   <div
                     className={css({

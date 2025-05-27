@@ -1,5 +1,5 @@
-export function Banner() {
-  return null;
+export function Banner(): JSX.Element {
+  return <></>
 }
 
 // Example banner:

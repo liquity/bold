@@ -19,6 +19,8 @@ import { SortedTroves } from "@/src/abi/SortedTroves";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import { TroveNFT } from "@/src/abi/TroveNFT";
+import { AddressesRegistry } from "@/src/abi/AddressesRegistry";
+import { WhitelistAbi } from "@/src/abi/Whitelist";
 import {
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
@@ -50,10 +52,12 @@ const protocolAbis = {
 const BorrowerOperationsErrorsAbi = BorrowerOperations.filter((f) => f.type === "error");
 
 const collateralAbis = {
+  AddressesRegistry,
   ActivePool,
   BorrowerOperations,
   CollSurplusPool,
   CollToken: erc20Abi,
+  UnderlyingToken: erc20Abi,
   DefaultPool,
   LeverageLSTZapper: [
     ...LeverageLSTZapper,
@@ -68,6 +72,7 @@ const collateralAbis = {
   StabilityPool,
   TroveManager,
   TroveNFT,
+  Whitelist: WhitelistAbi,
 } as const;
 
 const abis = {
@@ -129,6 +134,10 @@ export const CONTRACTS: Contracts = {
     branchId,
     symbol,
     contracts: {
+      AddressesRegistry: {
+        address: contracts.ADDRESSES_REGISTRY,
+        abi: abis.AddressesRegistry,
+      },
       ActivePool: { address: contracts.ACTIVE_POOL, abi: abis.ActivePool },
       BorrowerOperations: {
         address: contracts.BORROWER_OPERATIONS,
@@ -139,13 +148,16 @@ export const CONTRACTS: Contracts = {
         abi: abis.CollSurplusPool,
       },
       CollToken: { address: contracts.COLL_TOKEN, abi: abis.CollToken },
+      // @dev underlying token for wrapped collateral token
+      UnderlyingToken: { address: contracts.UNDERLYING_TOKEN, abi: abis.CollToken },
       DefaultPool: { address: contracts.DEFAULT_POOL, abi: abis.DefaultPool },
       LeverageLSTZapper: {
-        address: symbol === "ETH" ? zeroAddress : contracts.LEVERAGE_ZAPPER,
+        address: contracts.LEVERAGE_ZAPPER,
         abi: abis.LeverageLSTZapper,
       },
+      // @dev only for native token
       LeverageWETHZapper: {
-        address: symbol === "ETH" ? contracts.LEVERAGE_ZAPPER : zeroAddress,
+        address: zeroAddress,
         abi: abis.LeverageWETHZapper,
       },
       PriceFeed: { address: contracts.PRICE_FEED, abi: abis.PriceFeed },
@@ -156,6 +168,7 @@ export const CONTRACTS: Contracts = {
       },
       TroveManager: { address: contracts.TROVE_MANAGER, abi: abis.TroveManager },
       TroveNFT: { address: contracts.TROVE_NFT, abi: abis.TroveNFT },
+      Whitelist: {address: contracts.WHITELIST, abi: abis.Whitelist}
     },
   })),
 };

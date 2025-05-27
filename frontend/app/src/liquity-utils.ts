@@ -6,7 +6,6 @@ import type {
   Dnum,
   PositionEarn,
   PositionLoanCommitted,
-  PositionStake,
   PrefixedTroveId,
   TroveId,
 } from "@/src/types";
@@ -29,23 +28,23 @@ import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
   useAllInterestRateBrackets,
-  useGovernanceStats,
-  useGovernanceUser,
   useInterestRateBrackets,
   useLoanById,
   useStabilityPool,
 } from "@/src/subgraph-hooks";
 import { isBranchId, isTroveId } from "@/src/types";
 import { bigIntAbs } from "@/src/utils";
-import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
+import { addressesEqual, COLLATERALS, isAddress, shortenAddress, USDT } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
-import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
-import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
+import { encodeAbiParameters, erc4626Abi, keccak256, parseAbiParameters } from "viem";
+import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 import { graphQuery, InterestBatchesQuery } from "./subgraph-queries";
+import { WhitelistAbi } from "./abi/Whitelist";
+import { AddressesRegistry } from "./abi/AddressesRegistry";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -141,12 +140,79 @@ export function useEarnPool(branchId: null | BranchId) {
   return {
     ...pool,
     data: {
-      apr: dnumOrNull(branchStats?.spApyAvg1d, 18),
-      apr7d: dnumOrNull(branchStats?.spApyAvg7d, 18),
+      // apr: dnumOrNull(branchStats?.spApyAvg1d, 18), // TODO
+      // apr7d: dnumOrNull(branchStats?.spApyAvg7d, 18),
+      apr: 0,
+      apr7d: 0,
       collateral,
       totalDeposited: pool.data?.totalDeposited ?? null,
     },
   };
+}
+
+export function useVault() {
+  const collateral = USDT
+
+  const vaultReads = useReadContracts({
+    // @ts-ignore
+    contracts: [{
+      address: "0x0471D185cc7Be61E154277cAB2396cD397663da6",
+      abi: erc4626Abi,
+      functionName: "totalAssets",
+    }, {
+      address: "0x0471D185cc7Be61E154277cAB2396cD397663da6",
+      abi: erc4626Abi,
+      functionName: "totalSupply",
+    }],
+    allowFailure: false,
+    query: {
+      select: ([totalAssets, totalSupply]) => ({
+        totalAssets: dnum18(totalAssets),
+        totalSupply: dnum18(totalSupply),
+      }),
+    },
+  });
+  
+  return {
+    ...vaultReads,
+    data: {
+      apr: dnumOrNull(0.099, 18),
+      apr7d: dnumOrNull(0.1, 18),
+      collateral,
+      totalDeposited: vaultReads.data?.totalAssets ?? null,
+      price: vaultReads.data?.totalSupply ? dn.div(vaultReads.data?.totalAssets, vaultReads.data?.totalSupply) : dnum18(1),
+    },
+  };
+}
+
+export function useIsWhitelistedUser(whitelist: Address, callingContract: Address, user: Address) {
+    const isWhitelistedUser = useReadContracts({
+      // @ts-ignore
+      contracts: [{
+        address: whitelist,
+        abi: WhitelistAbi,
+        functionName: "isWhitelisted",
+        args: [callingContract, user],
+      }],
+      allowFailure: false,
+    });
+    
+    return isWhitelistedUser.data !== undefined ? isWhitelistedUser.data[0] : undefined;
+}
+
+export function useProtocolOwner(addressesRegistry: Address) {
+  const admin = useReadContracts({
+    // @ts-ignore
+    contracts: [{
+      address: addressesRegistry,
+      abi: AddressesRegistry,
+      functionName: "owner",
+      args: []
+    }],
+    allowFailure: false,
+  });
+  
+  return admin.data !== undefined ? admin.data[0] : undefined;
 }
 
 export function isEarnPositionActive(position: PositionEarn | null) {
@@ -221,119 +287,46 @@ export function useEarnPosition(
     },
     enabled: Boolean(
       account
-        && branchId !== null
-        && yieldGainsInBold.status === "success"
-        && getBoldGains.status === "success"
-        && spReads.status === "success",
+      && branchId !== null
+      && yieldGainsInBold.status === "success"
+      && getBoldGains.status === "success"
+      && spReads.status === "success",
     ),
   });
 }
 
-export function useAccountVotingPower(account: Address | null, lqtyDiff: bigint = 0n) {
-  const govUser = useGovernanceUser(account);
-  const govStats = useGovernanceStats();
-
-  return useMemo(() => {
-    if (!govStats.data || !govUser.data) {
-      return null;
-    }
-
-    const t = BigInt(Math.floor(Date.now() / 1000));
-
-    const { totalLQTYStaked, totalOffset } = govStats.data;
-    const totalVp = (BigInt(totalLQTYStaked) + lqtyDiff) * t - BigInt(totalOffset);
-
-    const { stakedLQTY, stakedOffset } = govUser.data;
-    const userVp = (BigInt(stakedLQTY) + lqtyDiff) * t - BigInt(stakedOffset);
-
-    // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
-    return dn.div([userVp, 18], [totalVp, 18]);
-  }, [govUser.data, govStats.data, lqtyDiff]);
-}
-
-export function useStakePosition(address: null | Address) {
-  const votingPower = useAccountVotingPower(address);
-
-  const LqtyStaking = getProtocolContract("LqtyStaking");
-  const LusdToken = getProtocolContract("LusdToken");
-  const Governance = getProtocolContract("Governance");
-
-  const userProxyAddress = useReadContract({
-    ...Governance,
-    functionName: "deriveUserProxyAddress",
-    args: [address ?? "0x"],
-    query: { enabled: Boolean(address) },
-  });
-
-  const userProxyBalance = useBalance({
-    address: userProxyAddress.data ?? "0x",
-    query: { enabled: Boolean(address) && userProxyAddress.isSuccess },
-  });
-
-  const stakePosition = useReadContracts({
-    contracts: [
-      {
-        ...LqtyStaking,
-        functionName: "stakes",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LqtyStaking,
-        functionName: "totalLQTYStaked",
-      },
-      {
-        ...LqtyStaking,
-        functionName: "getPendingETHGain",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LqtyStaking,
-        functionName: "getPendingLUSDGain",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LusdToken,
-        functionName: "balanceOf",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-    ],
+export function useVaultPosition(
+  account: null | Address,
+): UseQueryResult<PositionEarn | null> {
+  const balance = useReadContract({
+    address: "0x0471D185cc7Be61E154277cAB2396cD397663da6",
+    abi: erc4626Abi,
+    functionName: "balanceOf",
+    args: [account ?? "0x"],
     query: {
-      enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
-      refetchInterval: DATA_REFRESH_INTERVAL,
-      select: ([
-        depositResult,
-        totalStakedResult,
-        pendingEthGainResult,
-        pendingLusdGainResult,
-        lusdBalanceResult,
-      ]): PositionStake | null => {
-        if (
-          depositResult.status === "failure" || totalStakedResult.status === "failure"
-          || pendingEthGainResult.status === "failure" || pendingLusdGainResult.status === "failure"
-          || lusdBalanceResult.status === "failure"
-        ) {
-          return null;
-        }
-        const deposit = dnum18(depositResult.result);
-        const totalStaked = dnum18(totalStakedResult.result);
-        return {
-          type: "stake",
-          deposit,
-          owner: address ?? "0x",
-          totalStaked,
-          rewards: {
-            eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
-            lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
-          },
-          share: DNUM_0,
-        };
-      },
+      select: dnum18,
     },
   });
 
-  return stakePosition.data && votingPower
-    ? { ...stakePosition, data: { ...stakePosition.data, share: votingPower } }
-    : stakePosition;
+  return useQuery({
+    queryKey: ["useVaultPosition", account],
+    queryFn: () => {
+      return {
+        type: "earn" as const,
+        owner: account,
+        deposit: balance.data ?? DNUM_0,
+        branchId: 0,
+        rewards: {
+          bold: DNUM_0,
+          coll: DNUM_0
+        },
+      };
+    },
+    enabled: Boolean(
+      account
+      && balance.status === "success"
+    ),
+  });
 }
 
 export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveId) {
@@ -527,8 +520,8 @@ export function usePredictAdjustInterestRateUpfrontFee(
   const functionName = isAddress(newInterestRateOrBatch)
     ? "predictJoinBatchInterestRateUpfrontFee"
     : fromBatch
-    ? "predictRemoveFromBatchUpfrontFee"
-    : "predictAdjustInterestRateUpfrontFee";
+      ? "predictRemoveFromBatchUpfrontFee"
+      : "predictAdjustInterestRateUpfrontFee";
 
   return useReadContract({
     ...getProtocolContract("HintHelpers"),
@@ -602,6 +595,15 @@ const StatsSchema = v.pipe(
     total_sp_deposits: v.string(),
     total_value_locked: v.string(),
     max_sp_apy: v.string(),
+    day_supply: v.array(v.object({
+      day: v.string(),
+      holders: v.string(),
+      supply: v.string(),
+    })),
+    collateral_ratio: v.array(v.object({
+      avg_cr: v.string(),
+      time: v.string(),
+    })),
     branch: v.record(
       v.string(),
       v.object({
@@ -611,41 +613,63 @@ const StatsSchema = v.pipe(
         sp_deposits: v.string(),
         interest_accrual_1y: v.string(),
         interest_pending: v.string(),
+        total_debt: v.string(),
         batch_management_fees_pending: v.string(),
         debt_pending: v.string(),
         coll_value: v.string(),
-        sp_apy: v.string(),
-        sp_apy_avg_1d: v.optional(v.string()),
-        sp_apy_avg_7d: v.optional(v.string()),
         value_locked: v.string(),
+        sp_apy: v.string(),
+        apy_avg: v.string(),
+        historical_cr: v.array(v.object({
+          time: v.string(),
+          collateral_ratio: v.string(),
+        })),
       }),
     ),
   }),
   v.transform((value) => ({
-    totalBoldSupply: dnumOrNull(value.total_bold_supply, 18),
-    totalDebtPending: dnumOrNull(value.total_debt_pending, 18),
-    totalCollValue: dnumOrNull(value.total_coll_value, 18),
-    totalSpDeposits: dnumOrNull(value.total_sp_deposits, 18),
-    totalValueLocked: dnumOrNull(value.total_value_locked, 18),
-    maxSpApy: dnumOrNull(value.max_sp_apy, 18),
+    totalBoldSupply: value.total_bold_supply,
+    totalDebtPending: value.total_debt_pending,
+    totalCollValue: value.total_coll_value,
+    totalSpDeposits: value.total_sp_deposits,
+    totalValueLocked: value.total_value_locked,
+    maxSpApy: value.max_sp_apy,
+    historicalSupply: value.day_supply.map((dailyObj) => {
+      return {
+        day: dailyObj.day,
+        holders: dailyObj.holders,
+        supply: dailyObj.supply,
+      }
+    }),
+    historicalGlobalCR: value.collateral_ratio.map((dailyObj) => {
+      return {
+        day: dailyObj.time,
+        collateral_ratio: dailyObj.avg_cr
+      }
+    }),
     branch: Object.fromEntries(
       Object.entries(value.branch).map(([symbol, branch]) => {
         symbol = symbol.toUpperCase();
-        if (symbol === "WETH") symbol = "ETH";
         return [symbol, {
-          collActive: dnumOrNull(branch.coll_active, 18),
-          collDefault: dnumOrNull(branch.coll_default, 18),
-          collPrice: dnumOrNull(branch.coll_price, 18),
-          spDeposits: dnumOrNull(branch.sp_deposits, 18),
-          interestAccrual1y: dnumOrNull(branch.interest_accrual_1y, 18),
-          interestPending: dnumOrNull(branch.interest_pending, 18),
-          batchManagementFeesPending: dnumOrNull(branch.batch_management_fees_pending, 18),
-          debtPending: dnumOrNull(branch.debt_pending, 18),
-          collValue: dnumOrNull(branch.coll_value, 18),
-          spApy: dnumOrNull(branch.sp_apy, 18),
-          spApyAvg1d: dnumOrNull(branch.sp_apy_avg_1d, 18),
-          spApyAvg7d: dnumOrNull(branch.sp_apy_avg_7d, 18),
-          valueLocked: dnumOrNull(branch.value_locked, 18),
+          collActive: branch.coll_active,
+          collDefault: branch.coll_default,
+          collPrice: branch.coll_price,
+          spDeposits: branch.sp_deposits,
+          interestAccrual1y: branch.interest_accrual_1y,
+          interestPending: branch.interest_pending,
+          totalDebt: branch.total_debt,
+          batchManagementFeesPending: branch.batch_management_fees_pending,
+          debtPending: branch.debt_pending,
+          collValue: branch.coll_value,
+          valueLocked: branch.value_locked,
+          spApy: branch.sp_apy,
+          apyAvg: branch.apy_avg,
+          historicalCR: branch.historical_cr.map((dailyObj) => {
+            return {
+              day: dailyObj.time,
+              collateral_ratio: dailyObj.collateral_ratio
+            }
+          }),
         }];
       }),
     ),
@@ -672,7 +696,8 @@ export function useLiquityStats() {
         throw new Error("LIQUITY_STATS_URL is not defined");
       }
       const response = await fetch(LIQUITY_STATS_URL);
-      return v.parse(StatsSchema, await response.json());
+      const json = await response.json();
+      return v.parse(StatsSchema, json);
     },
     enabled: Boolean(LIQUITY_STATS_URL),
   });
@@ -726,6 +751,7 @@ export function useLoan(branchId: BranchId, troveId: TroveId): UseQueryResult<Po
     return loan;
   }
 
+  // @ts-ignore
   return {
     ...loan,
     data: {

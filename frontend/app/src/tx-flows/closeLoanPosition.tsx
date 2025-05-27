@@ -70,7 +70,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
               <Amount
                 key="start"
                 value={amountToRepay}
-                suffix={` ${repayWithCollateral ? collateral.symbol : "BOLD"}`}
+                suffix={` ${repayWithCollateral ? collateral.symbol : "bvUSD"}`}
               />,
             ]}
           />
@@ -102,7 +102,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
 
   steps: {
     approveBold: {
-      name: () => "Approve BOLD",
+      name: () => "Approve bvUSD",
       Status: (props) => (
         <TransactionStatus
           {...props}
@@ -118,7 +118,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           args: [BigInt(loan.troveId)],
         });
 
-        const Zapper = branch.symbol === "ETH"
+        const Zapper = branch.symbol === "WETH"
           ? branch.contracts.LeverageWETHZapper
           : branch.contracts.LeverageLSTZapper;
 
@@ -138,7 +138,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       },
     },
 
-    // Close a loan position, repaying with BOLD or with the collateral
+    // Close a loan position, repaying with bvUSD or with the collateral
     closeLoanPosition: {
       name: () => "Close loan",
       Status: TransactionStatus,
@@ -147,8 +147,8 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         const { loan } = ctx.request;
         const branch = getBranch(loan.branchId);
 
-        // repay with BOLD => get ETH
-        if (!ctx.request.repayWithCollateral && branch.symbol === "ETH") {
+        // repay with bvUSD => get ETH
+        if (!ctx.request.repayWithCollateral && branch.symbol === "WETH") {
           return ctx.writeContract({
             ...branch.contracts.LeverageWETHZapper,
             functionName: "closeTroveToRawETH",
@@ -156,7 +156,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           });
         }
 
-        // repay with BOLD => get LST
+        // repay with bvUSD => get LST
         if (!ctx.request.repayWithCollateral) {
           return ctx.writeContract({
             ...branch.contracts.LeverageLSTZapper,
@@ -178,7 +178,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         }
 
         // repay with collateral => get ETH
-        if (branch.symbol === "ETH") {
+        if (branch.symbol === "WETH") {
           return ctx.writeContract({
             ...branch.contracts.LeverageWETHZapper,
             functionName: "closeTroveFromCollateral",
@@ -218,7 +218,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
     const { loan } = ctx.request;
     const branch = getBranch(loan.branchId);
 
-    const Zapper = branch.symbol === "ETH"
+    const Zapper = branch.symbol === "WETH"
       ? branch.contracts.LeverageWETHZapper
       : branch.contracts.LeverageLSTZapper;
 

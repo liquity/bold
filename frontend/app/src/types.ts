@@ -106,19 +106,7 @@ export type PositionEarn = {
   };
 };
 
-export type PositionStake = {
-  type: "stake";
-  owner: Address;
-  deposit: Dnum;
-  share: Dnum;
-  totalStaked: Dnum;
-  rewards: {
-    lusd: Dnum;
-    eth: Dnum;
-  };
-};
-
-export type Position = PositionLoan | PositionEarn | PositionStake;
+export type Position = PositionLoan | PositionEarn;
 
 export type Delegate = {
   address: Address;

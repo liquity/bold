@@ -14,7 +14,7 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, Checkbox, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
+import { Button, Checkbox, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
@@ -32,7 +32,7 @@ export function PanelUpdateDeposit({
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const [mode, _setMode] = useState<ValueUpdateMode>("remove");
+  const [mode, setMode] = useState<ValueUpdateMode>("add");
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
   const [claimRewards, setClaimRewards] = useState(true);
@@ -51,7 +51,7 @@ export function PanelUpdateDeposit({
     DNUM_0,
   );
 
-  const boldBalance = useBalance(account.address, "BOLD");
+  const boldBalance = useBalance(account.address, "bvUSD");
 
   const updatedBoldQty = dn.add(deposited, depositDifference);
 
@@ -92,21 +92,21 @@ export function PanelUpdateDeposit({
             drawer={insufficientBalance
               ? {
                 mode: "error",
-                message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0)} BOLD.`,
+                message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0)} bvUSD.`,
               }
               : withdrawAboveDeposit
-              ? {
-                mode: "error",
-                message: hasDeposit
-                  ? `You can’t withdraw more than you have deposited.`
-                  : `No BOLD deposited.`,
-              }
-              : null}
+                ? {
+                  mode: "error",
+                  message: hasDeposit
+                    ? `You can’t withdraw more than you have deposited.`
+                    : `No bvUSD deposited.`,
+                }
+                : null}
             contextual={
               <InputTokenBadge
                 background={false}
-                icon={<TokenIcon symbol="BOLD" />}
-                label="BOLD"
+                icon={<TokenIcon symbol="bvUSD" />}
+                label="bvUSD"
               />
             }
             id="input-deposit-change"
@@ -114,11 +114,11 @@ export function PanelUpdateDeposit({
               start: mode === "remove"
                 ? content.earnScreen.withdrawPanel.label
                 : content.earnScreen.depositPanel.label,
-              end: null, /*(
+              end: (
                 <Tabs
                   compact
                   items={[
-                    { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit", disabled: true },
+                    { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
                     { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
                   ]}
                   onSelect={(index, { origin, event }) => {
@@ -131,7 +131,7 @@ export function PanelUpdateDeposit({
                   }}
                   selected={mode === "remove" ? 1 : 0}
                 />
-              )*/
+              )
             }}
             labelHeight={32}
             onFocus={() => setFocused(true)}
@@ -156,13 +156,13 @@ export function PanelUpdateDeposit({
               end: mode === "add"
                 ? boldBalance.data && (
                   <TextButton
-                    label={dn.gt(boldBalance.data, 0) ? `Max ${fmtnum(boldBalance.data, 2)} BOLD` : null}
+                    label={dn.gt(boldBalance.data, 0) ? `Max ${fmtnum(boldBalance.data, 2)} bvUSD` : null}
                     onClick={() => setValue(dn.toString(boldBalance.data))}
                   />
                 )
                 : position?.deposit && dn.gt(position.deposit, 0) && (
                   <TextButton
-                    label={`Max ${fmtnum(position.deposit, 2)} BOLD`}
+                    label={`Max ${fmtnum(position.deposit, 2)} bvUSD`}
                     onClick={() => {
                       setValue(dn.toString(position.deposit));
                       setClaimRewards(true);
@@ -230,7 +230,7 @@ export function PanelUpdateDeposit({
                       color: "contentAlt",
                     })}
                   >
-                    BOLD
+                    bvUSD
                   </span>
                 </div>
                 {collateral && (
@@ -254,7 +254,8 @@ export function PanelUpdateDeposit({
           disabled={!allowSubmit}
           label={content.earnScreen.depositPanel.action}
           mode="primary"
-          size="large"
+          size="medium"
+          shape="rectangular"
           wide
           onClick={() => {
             if (!account.address || !collateral || (mode === "remove" && !position)) {

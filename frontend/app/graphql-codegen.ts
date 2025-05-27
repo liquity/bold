@@ -1,19 +1,29 @@
 import type { CodegenConfig } from "@graphql-codegen/cli";
 
 function findSubgraphUrl(envFile: string) {
+  console.log("envFile: ", envFile);
   const fs = require("fs");
   const path = require("path");
   const envPath = path.resolve(process.cwd(), envFile);
-  const envContent = fs.readFileSync(envPath, "utf-8");
-  for (const line of envContent.split("\n")) {
-    if (line.trim().startsWith("NEXT_PUBLIC_SUBGRAPH_URL=")) {
-      return line.slice("NEXT_PUBLIC_SUBGRAPH_URL=".length);
+  console.log("envPath: ", envPath);
+  try {
+    const envContent = fs.readFileSync(envPath, "utf-8");
+    console.log("envContent: ", envContent);
+
+    for (const line of envContent.split("\n")) {
+      if (line.trim().startsWith("NEXT_PUBLIC_SUBGRAPH_URL=")) {
+        console.log("line: ", line.slice("NEXT_PUBLIC_SUBGRAPH_URL=".length));
+        return line.slice("NEXT_PUBLIC_SUBGRAPH_URL=".length);
+      }
     }
+    return null;
+  } catch (error) {
+    console.error("Error reading env file: ", error);
+    return null;
   }
-  return null;
 }
 
-const subgraphUrl = findSubgraphUrl(".env.local") ?? findSubgraphUrl(".env");
+const subgraphUrl = "https://api.studio.thegraph.com/query/18615/bnb-test/version/latest" // findSubgraphUrl(".env.local") ?? findSubgraphUrl(".env");
 
 if (!subgraphUrl) {
   throw new Error(

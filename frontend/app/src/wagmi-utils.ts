@@ -1,61 +1,67 @@
 import type { Token } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
-import { ACCOUNT_BALANCES, useDemoMode } from "@/src/demo-mode";
-import { dnum18 } from "@/src/dnum-utils";
-import { CONTRACT_BOLD_TOKEN, CONTRACT_LQTY_TOKEN, CONTRACT_LUSD_TOKEN } from "@/src/env";
+import { dnum18, dnum8 } from "@/src/dnum-utils";
 import { getBranch } from "@/src/liquity-utils";
 import { getSafeStatus } from "@/src/safe-utils";
-import { isCollateralSymbol } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import { useModal as useConnectKitModal } from "connectkit";
 import { match } from "ts-pattern";
 import { erc20Abi } from "viem";
-import { useAccount as useWagmiAccount, useBalance as useWagmiBalance, useEnsName, useReadContract } from "wagmi";
+import { useAccount as useWagmiAccount, useEnsName, useReadContract } from "wagmi";
 
 export function useBalance(
   address: Address | undefined,
   token: Token["symbol"] | undefined,
 ) {
-  const demoMode = useDemoMode();
-
   const tokenAddress = match(token)
     .when(
-      (symbol) => Boolean(symbol && isCollateralSymbol(symbol) && symbol !== "ETH"),
+      (symbol) => Boolean(symbol),
       (symbol) => {
-        if (!symbol || !isCollateralSymbol(symbol) || symbol === "ETH") {
+        if (!symbol) {
           return null;
         }
-        return getBranch(symbol).contracts.CollToken.address;
+        if(symbol === "bvUSD") {
+          return "0x242a2f669224b225d38514c1785411a6036981f1";
+        }
+        if(symbol === "sbvUSD") {
+          return "0x0471D185cc7Be61E154277cAB2396cD397663da6";
+        }
+        if(symbol === "VCRAFT") {
+          return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";
+        }
+        if(symbol === "WBTC") {
+          return "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c";
+        }
+        if(symbol === "USDT") {
+          return "0x55d398326f99059fF775485246999027B3197955";
+        }
+        return getBranch(symbol)?.contracts.CollToken.address ?? null;
       },
     )
-    .with("LUSD", () => CONTRACT_LUSD_TOKEN)
-    .with("BOLD", () => CONTRACT_BOLD_TOKEN)
-    .with("LQTY", () => CONTRACT_LQTY_TOKEN)
     .otherwise(() => null);
-
+  
+  // TODO -- find a better solution to parse the balance based on the token decimals
   const tokenBalance = useReadContract({
     address: tokenAddress ?? undefined,
     abi: erc20Abi,
     functionName: "balanceOf",
     args: address && [address],
     query: {
-      select: (value) => dnum18(value ?? 0n),
-      enabled: Boolean(!demoMode.enabled && address && token !== "ETH"),
+      select: (value) => tokenAddress === "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c" ? dnum8(value ?? 0n) : dnum18(value ?? 0n),
+      enabled: Boolean(address),
     },
   });
 
-  const ethBalance = useWagmiBalance({
-    address,
-    query: {
-      select: ({ value }) => dnum18(value ?? 0n),
-      enabled: Boolean(!demoMode.enabled && address && token === "ETH"),
-    },
-  });
+  // const ethBalance = useWagmiBalance({
+  //   address,
+  //   query: {
+  //     select: ({ value }) => dnum18(value ?? 0n),
+  //     enabled: Boolean(address && token === "ETH"),
+  //   },
+  // });
 
-  return demoMode.enabled && token
-    ? { data: ACCOUNT_BALANCES[token], isLoading: false }
-    : (token === "ETH" ? ethBalance : tokenBalance);
+  return tokenBalance;
 }
 
 export function useAccount():
@@ -64,9 +70,7 @@ export function useAccount():
     connect: () => void;
     ensName: string | undefined;
     safeStatus: Awaited<ReturnType<typeof getSafeStatus>> | null;
-  }
-{
-  const demoMode = useDemoMode();
+  } {
   const account = useWagmiAccount();
   const connectKitModal = useConnectKitModal();
   const ensName = useEnsName({ address: account?.address });
@@ -84,10 +88,6 @@ export function useAccount():
     refetchInterval: false, // only needed once
     enabled: Boolean(account.address),
   });
-
-  if (demoMode.enabled) {
-    return demoMode.account;
-  }
 
   return {
     ...account,

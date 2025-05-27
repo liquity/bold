@@ -43,12 +43,12 @@ export const PRICE_REFRESH_INTERVAL = 60_000;
 export const LEVERAGE_MAX_SLIPPAGE = 0.05; // 5%
 export const CLOSE_FROM_COLLATERAL_SLIPPAGE = 0.05; // 5%
 export const MAX_UPFRONT_FEE = 1000n * 10n ** 18n;
-export const MIN_DEBT = dn.from(2000, 18);
+export const MIN_DEBT = dn.from(20, 18);
 
 export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = {
-  ETH: dn.from(100_000_000n, 18),
-  WSTETH: dn.from(100_000_000n, 18),
-  RETH: dn.from(100_000_000n, 18),
+  BVBTC: dn.from(100_000_000n, 18),
+  WETH: dn.from(100_000_000n, 18),
+  WBNB: dn.from(100_000_000n, 18),
 };
 
 // LTV factor suggestions, as ratios of the multiply factor range

@@ -24,27 +24,27 @@ export default function ColorsFixture() {
       >
         <ColorGroup
           name="Brand"
-          colors={filterColors(colors, "brand:")}
+          colors={filterColors(colors, "brand")}
         />
         <ColorGroup
           name="Blue"
-          colors={filterColors(colors, "blue:")}
+          colors={filterColors(colors, "blue")}
         />
         <ColorGroup
           name="Gray"
-          colors={filterColors(colors, "gray:")}
+          colors={filterColors(colors, "gray")}
         />
         <ColorGroup
           name="Yellow"
-          colors={filterColors(colors, "yellow:")}
+          colors={filterColors(colors, "yellow")}
         />
         <ColorGroup
           name="Green"
-          colors={filterColors(colors, "green:")}
+          colors={filterColors(colors, "green")}
         />
         <ColorGroup
           name="Red"
-          colors={filterColors(colors, "red:")}
+          colors={filterColors(colors, "red")}
         />
         <ColorGroup
           name="Miscellaneous"

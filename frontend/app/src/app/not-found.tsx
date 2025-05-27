@@ -51,6 +51,8 @@ export default function NotFoundPage() {
         >
           <AnchorButton
             mode="primary"
+            size="medium"
+            shape="rectangular"
             label="Go to dashboard"
           />
         </Link>
@@ -118,7 +120,7 @@ function Illustration() {
           cy={ILLUSTRATION_PADDING + ILLUSTRATION_SIZE / 2}
           r={ILLUSTRATION_SIZE / 2}
           className={css({
-            fill: "token(colors.brandDarkBlue)",
+            fill: "#E49D2F",
             transformOrigin: "50% 50%",
           })}
           style={{
@@ -134,7 +136,7 @@ function Illustration() {
             Z
           `}
           className={css({
-            fill: "token(colors.brandGreen)",
+            fill: "#E49D2F",
             transformOrigin: "50% 50%",
           })}
           style={{
@@ -149,7 +151,7 @@ function Illustration() {
             Z
           `}
           className={css({
-            fill: "token(colors.brandCoral)",
+            fill: "#E49D2F",
             transformOrigin: "50% 50%",
           })}
           style={{

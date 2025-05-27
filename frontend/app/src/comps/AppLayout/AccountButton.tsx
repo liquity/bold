@@ -1,23 +1,18 @@
 import type { ComponentPropsWithRef, ReactNode } from "react";
 
 import content from "@/src/content";
-import { useDemoMode } from "@/src/demo-mode";
 import { css } from "@/styled-system/css";
-import { Button, IconAccount, shortenAddress, ShowAfter } from "@liquity2/uikit";
+import { Button, shortenAddress, ShowAfter } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { ConnectKitButton } from "connectkit";
 import { match, P } from "ts-pattern";
 import { MenuItem } from "./MenuItem";
 
-export function AccountButton() {
-  const demoMode = useDemoMode();
-  if (demoMode.enabled) {
-    return <DemoModeAccountButton />;
-  }
+export function AccountButton({ size = "small" }: { size?: "small" | "mini" }) {
   return (
     <ShowAfter delay={500}>
       <ConnectKitButton.Custom>
-        {(props) => <CKButton {...props} />}
+        {(props) => <CKButton {...props} size={size} />}
       </ConnectKitButton.Custom>
     </ShowAfter>
   );
@@ -30,13 +25,14 @@ function CKButton({
   address,
   ensName,
   show,
+  size = "small",
 }: Parameters<
   NonNullable<
     ComponentPropsWithRef<
       typeof ConnectKitButton.Custom
     >["children"]
   >
->[0]) {
+>[0] & { size?: "small" | "mini" }) {
   const status = match({ chain, isConnected, isConnecting, address })
     .returnType<
       | { mode: "connected"; address: `0x${string}` }
@@ -65,23 +61,29 @@ function CKButton({
   });
 
   return transition((spring, { mode, address }) => (
-    <a.div style={spring}>
+    <a.div
+      style={spring}
+    >
       {mode === "connected"
         ? (
           <ButtonConnected
             label={ensName ?? shortenAddress(address, 3)}
             onClick={show}
             title={address}
+            size={size}
           />
         )
         : (
           <Button
             mode="primary"
+            size={size}
+            shape="rounded"
+            wide
             label={mode === "connecting"
               ? "Connecting…"
               : mode === "unsupported"
-              ? content.accountButton.wrongNetwork
-              : content.accountButton.connectAccount}
+                ? content.accountButton.wrongNetwork
+                : content.accountButton.connectAccount}
             onClick={show}
           />
         )}
@@ -89,24 +91,16 @@ function CKButton({
   ));
 }
 
-function DemoModeAccountButton() {
-  const { account, updateAccountConnected } = useDemoMode();
-  const onClick = () => {
-    updateAccountConnected(!account.isConnected);
-  };
-  return account.isConnected
-    ? <ButtonConnected label="demo.eth" onClick={onClick} />
-    : <Button mode="primary" label="Connect" onClick={onClick} />;
-}
-
 function ButtonConnected({
   label,
   onClick,
   title,
+  size = "small",
 }: {
   label: ReactNode;
   onClick?: () => void;
   title?: string;
+  size?: "small" | "mini";
 }) {
   return (
     <button
@@ -116,20 +110,19 @@ function ButtonConnected({
         display: "flex",
         height: "100%",
         maxWidth: 140,
-        padding: 0,
+        padding: size === "small" ? "8px 16px" : "4px 12px",
         whiteSpace: "nowrap",
         textAlign: "center",
         _active: {
           translate: "0 1px",
         },
-        _focusVisible: {
-          borderRadius: 4,
-          outline: "2px solid token(colors.focused)",
-        },
+        border: size === "small" ? "2px solid token(colors.fieldBorder)" : "1px solid token(colors.fieldBorder)",
+        borderRadius: 20,
+        background: "neutralDimmed300",
       })}
     >
       <MenuItem
-        icon={<IconAccount />}
+        icon={undefined}
         label={label}
       />
     </button>

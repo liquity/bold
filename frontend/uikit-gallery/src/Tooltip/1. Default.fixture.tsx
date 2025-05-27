@@ -20,7 +20,7 @@ export default function TooltipFixture() {
           gap: 8,
         }}
       >
-        <h1>55M BOLD to redeem before you</h1>
+        <h1>55M bvUSD to redeem before you</h1>
         <p
           style={{
             fontSize: 14,

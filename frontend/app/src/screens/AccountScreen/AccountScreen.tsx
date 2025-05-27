@@ -40,6 +40,7 @@ export function AccountScreen({
           className={css({
             fontSize: 32,
             userSelect: "none",
+            color: "content",
           })}
         >
           Account
@@ -47,8 +48,8 @@ export function AccountScreen({
         <section
           className={css({
             padding: "16px 16px 24px",
-            color: "strongSurfaceContent",
-            background: "strongSurface",
+            color: "controlSurface",
+            background: "infoSurface",
             borderRadius: 8,
             userSelect: "none",
           })}
@@ -61,12 +62,13 @@ export function AccountScreen({
               paddingBottom: 12,
               textTransform: "uppercase",
               fontSize: 12,
+              color: "contentAlt"
             })}
           >
             <div
               className={css({
                 display: "flex",
-                color: "strongSurfaceContentAlt2",
+                color: "contentAlt",
               })}
             >
               <IconAccount size={16} />
@@ -81,6 +83,7 @@ export function AccountScreen({
               gap: 12,
               height: 40,
               fontSize: 40,
+              color: "content",
             })}
           >
             {shortenAddress(address, 3)}
@@ -106,25 +109,19 @@ export function AccountScreen({
               gridTemplateColumns: `repeat(3, 1fr)`,
             }}
           >
-            <GridItem label="BOLD balance">
+            <GridItem label="bvUSD balance">
               <Balance
                 address={address}
-                tokenSymbol="BOLD"
+                tokenSymbol="bvUSD"
               />
             </GridItem>
-            <GridItem label="LQTY balance">
+            <GridItem label="VCRAFT balance">
               <Balance
                 address={address}
-                tokenSymbol="LQTY"
+                tokenSymbol="bvUSD"
                 tapButton={tapEnabled
                   && account.address
                   && addressesEqual(address, account.address)}
-              />
-            </GridItem>
-            <GridItem label="LUSD balance">
-              <Balance
-                address={address}
-                tokenSymbol="LUSD"
               />
             </GridItem>
             {branches.map(({ symbol }) => (
@@ -136,7 +133,7 @@ export function AccountScreen({
                   address={address}
                   tokenSymbol={symbol}
                   tapButton={tapEnabled
-                    && symbol !== "ETH" && account.address
+                    && symbol !== "WETH" && account.address
                     && addressesEqual(address, account.address)}
                 />
               </GridItem>
@@ -192,47 +189,6 @@ function Balance({
         {fmtnum(balance.data, 2) || "−"}
         <TokenIcon symbol={tokenSymbol} size="mini" />
       </div>
-      {tapButton && (
-        <Button
-          mode="primary"
-          size="mini"
-          label="tap"
-          onClick={() => {
-            if ((tokenSymbol === "WSTETH" || tokenSymbol === "RETH") && CollToken) {
-              writeContract({
-                abi: ERC20Faucet,
-                address: CollToken.address,
-                functionName: "tap",
-                args: [],
-              }, {
-                onError: (error) => {
-                  alert(error.message);
-                },
-              });
-              return;
-            }
-
-            if (tokenSymbol === "LQTY") {
-              writeContract({
-                abi: LqtyToken.abi,
-                address: LqtyToken.address,
-                functionName: "tap",
-              }, {
-                onError: (error) => {
-                  alert(error.message);
-                },
-              });
-              return;
-            }
-          }}
-          style={{
-            padding: "0 6px",
-            height: 20,
-            fontSize: 11,
-            textTransform: "uppercase",
-          }}
-        />
-      )}
     </div>
   );
 }

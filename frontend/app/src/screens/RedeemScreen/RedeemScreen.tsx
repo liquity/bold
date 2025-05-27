@@ -1,7 +1,7 @@
 "use client";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
+import { AccountButton } from "@/src/comps/AppLayout/AccountButton";
 import { Field } from "@/src/comps/Field/Field";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
@@ -23,7 +23,7 @@ export function RedeemScreen() {
   const account = useAccount();
   const txFlow = useTransactionFlow();
 
-  const boldBalance = useBalance(account.address, "BOLD");
+  const boldBalance = useBalance(account.address, "bvUSD");
 
   const CollateralRegistry = getProtocolContract("CollateralRegistry");
   const redemptionRate = useReadContract({
@@ -62,7 +62,7 @@ export function RedeemScreen() {
       heading={{
         title: (
           <HFlex>
-            Redeem <TokenIcon symbol="BOLD" /> BOLD for
+            Redeem <TokenIcon symbol="bvUSD" /> bvUSD for
             <TokenIcon.Group>
               {branches.map((b) => getCollToken(b.branchId)).map(({ symbol }) => (
                 <TokenIcon
@@ -71,7 +71,7 @@ export function RedeemScreen() {
                 />
               ))}
             </TokenIcon.Group>{" "}
-            ETH
+            BTC
           </HFlex>
         ),
       }}
@@ -90,32 +90,31 @@ export function RedeemScreen() {
               id="input-redeem-amount"
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol="BOLD" />}
-                  label="BOLD"
+                  icon={<TokenIcon symbol="bvUSD" />}
+                  label="bvUSD"
                 />
               }
               drawer={amount.isFocused
                 ? null
                 : boldBalance.data
-                    && amount.parsed
-                    && dn.gt(amount.parsed, boldBalance.data)
-                ? {
-                  mode: "error",
-                  message: `Insufficient BOLD balance. You have ${fmtnum(boldBalance.data)} BOLD.`,
-                }
-                : null}
+                  && amount.parsed
+                  && dn.gt(amount.parsed, boldBalance.data)
+                  ? {
+                    mode: "error",
+                    message: `Insufficient bvUSD balance. You have ${fmtnum(boldBalance.data)} bvUSD.`,
+                  }
+                  : null}
               label="Redeeming"
               placeholder="0.00"
               secondary={{
-                start: `$${
-                  amount.parsed
-                    ? fmtnum(amount.parsed)
-                    : "0.00"
-                }`,
+                start: `$${amount.parsed
+                  ? fmtnum(amount.parsed)
+                  : "0.00"
+                  }`,
                 end: (
                   boldBalance.data && dn.gt(boldBalance.data, 0) && (
                     <TextButton
-                      label={`Max ${fmtnum(boldBalance.data)} BOLD`}
+                      label={`Max ${fmtnum(boldBalance.data)} bvUSD`}
                       onClick={() => {
                         amount.setValue(dn.toString(boldBalance.data));
                       }}
@@ -135,11 +134,11 @@ export function RedeemScreen() {
               drawer={maxFee.isFocused
                 ? null
                 : maxFee.parsed && dn.gt(maxFee.parsed, 0.01)
-                ? {
-                  mode: "warning",
-                  message: `A high percentage will result in a higher fee.`,
-                }
-                : null}
+                  ? {
+                    mode: "warning",
+                    message: `A high percentage will result in a higher fee.`,
+                  }
+                  : null}
               label="Max redemption fee"
               placeholder="0.00"
               {...maxFee.inputFieldProps}
@@ -193,9 +192,9 @@ export function RedeemScreen() {
             flexDirection: "column",
             gap: 8,
             padding: 16,
-            color: "infoSurfaceContent",
-            background: "infoSurface",
-            border: "1px solid token(colors.infoSurfaceBorder)",
+            color: "content",
+            background: "fieldSurface",
+            border: "1px solid token(colors.border)",
             borderRadius: 8,
           })}
         >
@@ -203,7 +202,7 @@ export function RedeemScreen() {
             className={css({
               display: "flex",
               flexDirection: "column",
-              fontSize: 16,
+              fontSize: 16
             })}
           >
             <h1
@@ -223,7 +222,7 @@ export function RedeemScreen() {
               },
             })}
           >
-            You will be charged a dynamic redemption fee (the more redemptions, the higher the fee). Trading BOLD on an
+            You will be charged a dynamic redemption fee (the more redemptions, the higher the fee). Trading bvUSD on an
             exchange could be more favorable.{" "}
             <Link
               href="https://docs.liquity.org/v2-faq/redemptions-and-delegation"
@@ -244,31 +243,34 @@ export function RedeemScreen() {
             width: "100%",
           }}
         >
-          <ConnectWarningBox />
-          <Button
-            disabled={!allowSubmit}
-            label={content.borrowScreen.action}
-            mode="primary"
-            size="large"
-            wide
-            onClick={() => {
-              if (
-                amount.parsed
-                && maxFee.parsed
-              ) {
-                txFlow.start({
-                  flowId: "redeemCollateral",
-                  backLink: ["/redeem", "Back"],
-                  successLink: ["/", "Go to the Dashboard"],
-                  successMessage: "The redemption was successful.",
+          {account.isConnected ?
+            <Button
+              disabled={!allowSubmit}
+              label={content.borrowScreen.action}
+              mode="primary"
+              size="medium"
+              shape="rectangular"
+              wide
+              onClick={() => {
+                if (
+                  amount.parsed
+                  && maxFee.parsed
+                ) {
+                  txFlow.start({
+                    flowId: "redeemCollateral",
+                    backLink: ["/redeem", "Back"],
+                    successLink: ["/", "Go to the Dashboard"],
+                    successMessage: "The redemption was successful.",
 
-                  time: Date.now(),
-                  amount: amount.parsed,
-                  maxFee: maxFee.parsed,
-                });
-              }
-            }}
-          />
+                    time: Date.now(),
+                    amount: amount.parsed,
+                    maxFee: maxFee.parsed,
+                  });
+                }
+              }}
+            />
+            : <AccountButton />
+          }
         </div>
       </div>
     </Screen>

@@ -34,7 +34,7 @@ export function ErrorBox({
       className={css({
         width: "100%",
         background: "negativeSurface",
-        color: "negative",
+        color: "content",
         fontSize: 14,
         border: "1px solid token(colors.negativeSurfaceBorder)",
         borderRadius: 8,
@@ -51,9 +51,6 @@ export function ErrorBox({
           padding: "0 0 0 24px",
           cursor: "pointer",
           borderRadius: 8,
-          _focusVisible: {
-            outline: "2px solid token(colors.focused)",
-          },
         })}
       >
         <h1

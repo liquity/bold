@@ -28,9 +28,9 @@ const InputField = forwardRef<HTMLInputElement, {
   id?: string;
   onDrawerClose?: () => void;
   label?:
-    | ReactNode
-    | { end: ReactNode; start?: ReactNode }
-    | { end?: ReactNode; start: ReactNode };
+  | ReactNode
+  | { end: ReactNode; start?: ReactNode }
+  | { end?: ReactNode; start: ReactNode };
   labelHeight?: number;
   labelSpacing?: number;
   onBlur?: () => void;
@@ -39,9 +39,9 @@ const InputField = forwardRef<HTMLInputElement, {
   onFocus?: () => void;
   placeholder?: string;
   secondary?:
-    | ReactNode
-    | { end: ReactNode; start?: ReactNode }
-    | { end?: ReactNode; start: ReactNode };
+  | ReactNode
+  | { end: ReactNode; start?: ReactNode }
+  | { end?: ReactNode; start: ReactNode };
   secondaryHeight?: number;
   secondarySpacing?: number;
   value?: string;
@@ -70,14 +70,14 @@ const InputField = forwardRef<HTMLInputElement, {
   const [focused, setFocused] = useState(false);
 
   const label_ = label
-      && typeof label === "object"
-      && ("start" in label || "end" in label)
+    && typeof label === "object"
+    && ("start" in label || "end" in label)
     ? label
     : { start: label };
 
   const secondary_ = secondary
-      && typeof secondary === "object"
-      && ("start" in secondary || "end" in secondary)
+    && typeof secondary === "object"
+    && ("start" in secondary || "end" in secondary)
     ? secondary
     : { start: secondary };
 
@@ -162,7 +162,7 @@ const InputField = forwardRef<HTMLInputElement, {
           display: "flex",
           flexDirection: "column",
           width: "100%",
-          background: "fieldSurface",
+          background: `fieldSurface`,
           border: "1px solid token(colors.fieldBorder)",
           borderRadius: 8,
           padding: 16,
@@ -467,28 +467,31 @@ function Drawer({
 export function InputFieldBadge({
   label,
   icon,
+  size = "medium",
 }: {
   label: ReactNode;
   icon?: ReactNode;
+  size?: "medium" | "small";
 }) {
   return (
     <div
-      style={{
+      className={css({
         display: "flex",
         alignItems: "center",
         gap: 8,
-        height: 40,
+        height: size === "small" ? 32 : 40,
         padding: "0 16px",
         paddingLeft: icon ? 8 : 16,
-        background: "#FFF",
-        borderRadius: 20,
+        background: "controlSurfaceAlt",
+        borderRadius: 10,
+        border: "1px solid token(colors.neutral100)",
         userSelect: "none",
-      }}
+      })}
     >
       {icon}
       <div
         style={{
-          fontSize: 24,
+          fontSize: size === "small" ? 16 : 24,
           fontWeight: 500,
         }}
       >

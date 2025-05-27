@@ -240,7 +240,7 @@ export const InterestRateField = memo(
             ),
             end: (
               <div>
-                <Dropdown
+                {/* <Dropdown
                   items={activeDelegateModes.map((
                     mode,
                   ) => (
@@ -256,8 +256,8 @@ export const InterestRateField = memo(
                     onDelegateChange(null);
                   }}
                   selected={activeDelegateModes.findIndex((mode_) => mode_ === mode)}
-                  size="small"
-                />
+                  size="mini"
+                /> */}
               </div>
             ),
           }}
@@ -275,7 +275,7 @@ export const InterestRateField = memo(
                 <div>
                   {boldInterestPerYear && (mode === "manual" || delegate !== null)
                     ? fmtnum(boldInterestPerYear)
-                    : "−"} BOLD / year
+                    : "−"} bvUSD / year
                 </div>
                 <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
               </div>
@@ -301,7 +301,7 @@ export const InterestRateField = memo(
                         ? fmtnum(bracket?.debtInFront, "compact")
                         : "−"}
                     </span>
-                    <span>{" BOLD"}</span>
+                    <span>{" bvUSD"}</span>
                   </span>
                 </a.div>
               )
@@ -340,7 +340,7 @@ export const InterestRateField = memo(
                   </span>
                   <span
                     style={{
-                      color: "#878AA4",
+                      color: "gray300",
                       fontSize: 24,
                     }}
                   >

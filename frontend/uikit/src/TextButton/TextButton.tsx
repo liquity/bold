@@ -48,11 +48,11 @@ export function useTextButtonStyles(size: TextButtonProps["size"] = "medium") {
     color: "accent",
     borderRadius: 4,
     cursor: "pointer",
-    _focusVisible: {
-      outline: "2px solid token(colors.focused)",
-    },
     _active: {
       translate: "0 1px",
+    },
+    _hover: {
+      color: "goldLight",
     },
   });
 

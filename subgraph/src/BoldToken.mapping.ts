@@ -72,11 +72,14 @@ function addCollateral(
 }
 
 export function handleCollateralRegistryAddressChanged(event: CollateralRegistryAddressChangedEvent): void {
+  log.warning("CollateralRegistryAddressChanged: {}", [event.params._newCollateralRegistryAddress.toHex()])
   let registry = CollateralRegistryContract.bind(event.params._newCollateralRegistryAddress);
   let totalCollaterals = registry.totalCollaterals().toI32();
+  log.warning("totalCollaterals: {}", [totalCollaterals.toString()])
 
   for (let index = 0; index < totalCollaterals; index++) {
     let tokenAddress = Address.fromBytes(registry.getToken(BigInt.fromI32(index)));
+    log.warning("tokenAddress: {}", [tokenAddress.toHex()])
     let troveManagerAddress = Address.fromBytes(registry.getTroveManager(BigInt.fromI32(index)));
     if (tokenAddress.toHex() === Address.zero().toHex() || troveManagerAddress.toHex() === Address.zero().toHex()) {
       break;

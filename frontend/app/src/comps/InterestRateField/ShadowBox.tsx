@@ -14,7 +14,7 @@ export function ShadowBox({
         background: "background",
         borderWidth: "1px 1px 0",
         borderStyle: "solid",
-        borderColor: "gray:50",
+        borderColor: "gray100",
         boxShadow: `
           0 2px 2px rgba(0, 0, 0, 0.1),
           0 4px 10px rgba(18, 27, 68, 0.05),

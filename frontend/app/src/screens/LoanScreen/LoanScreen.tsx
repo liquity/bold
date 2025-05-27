@@ -316,7 +316,7 @@ function ClaimCollateralSurplus({
                   height: 40,
                   padding: "0 16px 0 8px",
                   fontSize: 24,
-                  background: "fieldSurface",
+                  background: "background",
                   borderRadius: 20,
                   userSelect: "none",
                 })}
