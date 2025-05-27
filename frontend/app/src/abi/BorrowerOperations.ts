@@ -8,6 +8,13 @@ export const BorrowerOperations = [
   },
   {
     "type": "function",
+    "name": "BCR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
     "name": "CCR",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
@@ -50,6 +57,13 @@ export const BorrowerOperations = [
     "name": "addManagerOf",
     "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "addressesRegistry",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "contract IAddressesRegistry" }],
     "stateMutability": "view",
   },
   {
@@ -369,6 +383,13 @@ export const BorrowerOperations = [
     "outputs": [],
     "stateMutability": "nonpayable",
   },
+  {
+    "type": "function",
+    "name": "setWhitelist",
+    "inputs": [{ "name": "_whitelist", "type": "address", "internalType": "contract IWhitelist" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
   { "type": "function", "name": "shutdown", "inputs": [], "outputs": [], "stateMutability": "nonpayable" },
   {
     "type": "function",
@@ -391,6 +412,25 @@ export const BorrowerOperations = [
     ],
     "outputs": [],
     "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
+    "name": "updateCRs",
+    "inputs": [
+      { "name": "newCCR", "type": "uint256", "internalType": "uint256" },
+      { "name": "newSCR", "type": "uint256", "internalType": "uint256" },
+      { "name": "newMCR", "type": "uint256", "internalType": "uint256" },
+      { "name": "newBCR", "type": "uint256", "internalType": "uint256" },
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
+    "name": "whitelist",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "contract IWhitelist" }],
+    "stateMutability": "view",
   },
   {
     "type": "function",
@@ -435,6 +475,17 @@ export const BorrowerOperations = [
     "type": "event",
     "name": "BoldTokenAddressChanged",
     "inputs": [{ "name": "_boldTokenAddress", "type": "address", "indexed": false, "internalType": "address" }],
+    "anonymous": false,
+  },
+  {
+    "type": "event",
+    "name": "CRsChanged",
+    "inputs": [
+      { "name": "newCCR", "type": "uint256", "indexed": false, "internalType": "uint256" },
+      { "name": "newSCR", "type": "uint256", "indexed": false, "internalType": "uint256" },
+      { "name": "newMCR", "type": "uint256", "indexed": false, "internalType": "uint256" },
+      { "name": "newBCR", "type": "uint256", "indexed": false, "internalType": "uint256" },
+    ],
     "anonymous": false,
   },
   {
@@ -500,6 +551,7 @@ export const BorrowerOperations = [
   { "type": "error", "name": "BatchInterestRateChangePeriodNotPassed", "inputs": [] },
   { "type": "error", "name": "BatchManagerExists", "inputs": [] },
   { "type": "error", "name": "BatchManagerNotNew", "inputs": [] },
+  { "type": "error", "name": "CallerNotAddressesRegistry", "inputs": [] },
   { "type": "error", "name": "CallerNotPriceFeed", "inputs": [] },
   { "type": "error", "name": "CallerNotTroveManager", "inputs": [] },
   { "type": "error", "name": "CollWithdrawalTooHigh", "inputs": [] },
@@ -507,6 +559,7 @@ export const BorrowerOperations = [
   { "type": "error", "name": "DelegateInterestRateChangePeriodNotPassed", "inputs": [] },
   { "type": "error", "name": "EmptyManager", "inputs": [] },
   { "type": "error", "name": "ICRBelowMCR", "inputs": [] },
+  { "type": "error", "name": "ICRBelowMCRPlusBCR", "inputs": [] },
   { "type": "error", "name": "InterestNotInRange", "inputs": [] },
   { "type": "error", "name": "InterestRateNotNew", "inputs": [] },
   { "type": "error", "name": "InterestRateTooHigh", "inputs": [] },
@@ -522,6 +575,11 @@ export const BorrowerOperations = [
   { "type": "error", "name": "NotOwnerNorAddManager", "inputs": [] },
   { "type": "error", "name": "NotOwnerNorInterestManager", "inputs": [] },
   { "type": "error", "name": "NotOwnerNorRemoveManager", "inputs": [] },
+  {
+    "type": "error",
+    "name": "NotWhitelisted",
+    "inputs": [{ "name": "_user", "type": "address", "internalType": "address" }],
+  },
   { "type": "error", "name": "RepaymentNotMatchingCollWithdrawal", "inputs": [] },
   { "type": "error", "name": "TCRBelowCCR", "inputs": [] },
   { "type": "error", "name": "TCRNotBelowSCR", "inputs": [] },

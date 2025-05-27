@@ -222,14 +222,14 @@ contract("DefaultPool", async (accounts) => {
 
     assert.equal(defaultPool_BalanceBeforeTx, dec(2, "ether"));
 
-    console.log(' -- ')
-    console.log('')
+    console.log(" -- ");
+    console.log("");
     // send ether from default pool to active
     // await defaultPool.sendCollToActivePool(dec(1, 'ether'), { from: mockTroveManagerAddress })
     const sendCollData = th.getTransactionData("sendCollToActivePool(uint256)", [web3.utils.toHex(dec(1, "ether"))]);
     const tx2 = await mockTroveManager.forward(defaultPool.address, sendCollData, { from: owner });
     assert.isTrue(tx2.receipt.status);
-    console.log(' -- ')
+    console.log(" -- ");
 
     const defaultPool_BalanceAfterTx = web3.utils.toBN(await WETH.balanceOf(defaultPool.address));
     const activePool_Balance_AfterTx = web3.utils.toBN(await WETH.balanceOf(mockActivePool.address));

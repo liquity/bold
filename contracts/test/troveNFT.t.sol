@@ -1,13 +1,14 @@
 pragma solidity 0.8.24;
 
-import "./TestContracts/DevTestSetup.sol";
+import "./TestContracts/WhitelistTestSetup.sol";
 
 import "src/NFTMetadata/MetadataNFT.sol";
 import "src/TroveNFT.sol";
+import "src/Dependencies/HasWhitelist.sol";
 
 import "lib/Solady/src/utils/Base64.sol";
 
-contract troveNFTTest is DevTestSetup {
+contract troveNFTTest is WhitelistTestSetup {
     uint256 NUM_COLLATERALS = 3;
     uint256 NUM_VARIANTS = 4;
     TestDeployer.LiquityContractsDev[] public contractsArray;
@@ -15,6 +16,9 @@ contract troveNFTTest is DevTestSetup {
     TroveNFT troveNFTWstETH;
     TroveNFT troveNFTRETH;
     uint256[] troveIds;
+
+    address[5] whitelistedUsers;
+    address nonWhitelistedUser;
 
     function openMulticollateralTroveNoHints100pctWithIndex(
         uint256 _collIndex,
@@ -132,7 +136,50 @@ contract troveNFTTest is DevTestSetup {
         troveNFTWETH = TroveNFT(address(contractsArray[0].troveManager.troveNFT()));
         troveNFTWstETH = TroveNFT(address(contractsArray[1].troveManager.troveNFT()));
         troveNFTRETH = TroveNFT(address(contractsArray[2].troveManager.troveNFT()));
+
+        // set internal owner
+        _setOwner(address(deployer));
+
+        // add whitelist to the branch
+        _deployAndSetWhitelist(contractsArray[0].addressesRegistry);
+
+        // whitelist users
+        whitelistedUsers = [A, B, C, D, E];
+        for (uint8 i = 0; i < 5; i++) {
+            _addToWhitelist(address(borrowerOperations), whitelistedUsers[i]);
+            _addToWhitelist(address(stabilityPool), whitelistedUsers[i]);
+            _addToWhitelist(address(troveManager), whitelistedUsers[i]);
+            _addToWhitelist(address(troveNFTWETH), whitelistedUsers[i]);
+        }
+
+        // set a non whitelisted address
+        nonWhitelistedUser = address(123);
     }
+
+    function test_transferOnlyToWhitelistReceiver() public {
+        vm.expectRevert(abi.encodeWithSelector(HasWhitelist.NotWhitelisted.selector, nonWhitelistedUser));
+        troveNFTWETH.transferFrom(A, nonWhitelistedUser, troveIds[0]);
+
+        // can transfer to whitelisted users
+        assertEq(troveNFTWETH.ownerOf(troveIds[0]), A);
+
+        vm.prank(A);
+        troveNFTWETH.transferFrom(A, B, troveIds[0]);
+        assertEq(troveNFTWETH.ownerOf(troveIds[0]), B);
+    }
+
+    function test_setWhitelist_onlyAddressRegistry() public {
+        IWhitelist newWhitelist = IWhitelist(address(new Whitelist(A)));
+
+        vm.expectRevert(TroveNFT.CallerNotAddressesRegistry.selector);
+        troveNFTWETH.setWhitelist(newWhitelist);
+
+        vm.prank(address(contractsArray[0].addressesRegistry));
+        troveNFTWETH.setWhitelist(newWhitelist);
+
+        assertEq(address(troveNFTWETH.whitelist()), address(newWhitelist));
+    }
+
 
     function testTroveNFTMetadata() public view {
         assertEq(troveNFTWETH.name(), "Liquity V2 - Wrapped Ether Tester", "Invalid Trove Name");

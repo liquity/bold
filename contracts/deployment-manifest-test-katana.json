@@ -1,0 +1,71 @@
+{
+  "constants": {
+    "ETH_GAS_COMPENSATION": "37500000000000000",
+    "INTEREST_RATE_ADJ_COOLDOWN": "604800",
+    "MAX_ANNUAL_INTEREST_RATE": "2500000000000000000",
+    "MIN_ANNUAL_INTEREST_RATE": "5000000000000000",
+    "MIN_DEBT": "2000000000000000000",
+    "UPFRONT_INTEREST_PERIOD": "604800"
+  },
+  "collateralRegistry": "0x9431a1cd7f53fdf299f89eac7450682ff3551313",
+  "bvUSD Token": "0x96c6995a7737959708c2ed9129d07c94f012d2ce",
+  "hintHelpers": "0x91c4a353da77ace990859fa827644c4e8fbe8e0e",
+  "multiTroveGetter": "0x2254894bae5926d4fd062f94777b94ba70cca65e",
+  "Gas token": "0x4200000000000000000000000000000000000006",
+  "branches": [
+    {
+      "collSymbol": "wPOP",
+      "collToken": "0x7b42e0d1b7f2111b04c6547fca8ca2b0f271498c",
+      "addressesRegistry": "0x2529a6ac43acad57fe82f850d7dc824a44d2e6e8",
+      "activePool": "0x78d6b4827fd86d3d8e549ed785d56ac0c6f3aa47",
+      "borrowerOperations": "0xc7e8dbdd69fd6d1565a96aee00286d4c359c7241",
+      "collSurplusPool": "0xe6abaf65f29e156d226ceae24594b41b737627fd",
+      "defaultPool": "0xa26ab321aee7a57fcf622310970d48badbdeb99c",
+      "sortedTroves": "0xc0b3cb26a3c64865a90a9e7a32300a56dc0b1daa",
+      "stabilityPool": "0xa33375289c39305dc98013d467bf6de16de5d581",
+      "troveManager": "0xa4867b8f66e724072802a7c8cfd59a26e40ac721",
+      "troveNFT": "0x3f984c8ecbd25e0f3580853c4e081d376def8fdd",
+      "metadataNFT": "0x4b8c32cf904d8975007e96b62dee1016f0353630",
+      "priceFeed": "0xbcb87088c14d59cb754bf238fe741300aaf349b1",
+      "gasPool": "0x835e1a7f245aa39fd648aa9dd2ef4c1071deea0d",
+      "collateral zapper": "0x788dbb1888a50e97837b9d06fd70db107b082a12",
+      "whitelist": "0xe6270367a25f1f56d3df788feb4cda89372040e2"
+    },
+    {
+      "collSymbol": "bvBTC",
+      "collToken": "0x1f45f163c6fea687c66365f3d75f18c71706c069",
+      "addressesRegistry": "0x4de8986a94c4d261a85b19d64c4e7a99bf857c17",
+      "activePool": "0x938b5fd1de395561e641c3008bd96c8d4a9a3201",
+      "borrowerOperations": "0x8efefcf74abf3685be54a8ec92e4ce4b1996025b",
+      "collSurplusPool": "0x8cbc49770e4a90763b65943ac01fca171f39fb6e",
+      "defaultPool": "0x8ad9f1d9be47c7e6b19e2b927ec85a22e6f22b14",
+      "sortedTroves": "0x01fe02feca72f10ce943aa38eb643d24d873832d",
+      "stabilityPool": "0x2731a265f55d78229b1066dbfa279bcf6e701a06",
+      "troveManager": "0x3fa5b92c2b53348d383fd265e6ec13473537fb21",
+      "troveNFT": "0x415717fe63dce2e921a550325950fc5e31e8cae9",
+      "metadataNFT": "0x3610bcb5c531d1fc79712bb9c9f3de111466388d",
+      "priceFeed": "0x119682fcbccbcd1c7e09835bfc856d7da88d593e",
+      "gasPool": "0xf4f6fc85db03f9e22e707e0a2b3b15bb8583bb6f",
+      "collateral zapper": "0xbfa49b22579b2de954a74121bb40cf0ecb3c1dc3",
+      "whitelist": "0x07ff84712c9d3f8465349e685a15ca8d91bc85df"
+    },
+    {
+      "collSymbol": "POP",
+      "collToken": "0x985a39b8dfaa7689b05e6e7bd1b2a66b8b5b1e4e",
+      "addressesRegistry": "0xe5226e8b644ad0a95557c37213e51a3d43e8ee9d",
+      "activePool": "0xfaae4ab1da12d8ab3fbcdf19b62ab27e6351e154",
+      "borrowerOperations": "0x7d07d81c00d41add8c25b898f9aaee8faafb4e82",
+      "collSurplusPool": "0xa8ecf32933e47855d078b5480796fafda7832430",
+      "defaultPool": "0x308a9ede4a8ff5dfaf5b9af30884262f7381fa7c",
+      "sortedTroves": "0x37503a4e1b6f3b7c2e07c1b173536ec8d8507e29",
+      "stabilityPool": "0x019c2d19699b22e12119a6e6925972e354829542",
+      "troveManager": "0x0079eb9ebd9820c5961b406c1400e1e5dd177592",
+      "troveNFT": "0x1cf3d4b97c3fe8f66b9bb9127d2d5d0d6312a864",
+      "metadataNFT": "0x84f540c448569bb02f3ff21ae02dd47b3c7d4ff4",
+      "priceFeed": "0xe14be52b1f7d142790d9ddf720b1acccd3cbc927",
+      "gasPool": "0x606a2b67f8c151a1ef01b879ea7e550558a125e5",
+      "collateral zapper": "0x0000000000000000000000000000000000000000",
+      "whitelist": "0x0000000000000000000000000000000000000000"
+    }
+  ]
+}

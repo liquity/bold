@@ -354,8 +354,8 @@ contract("Gas compensation tests", async (accounts) => {
 
     // Check liquidator's balance increases by 0.5% of A's coll (1 ETH)
     const compensationReceived_A = liquidatorBalance_after_A
-          .sub(liquidatorBalance_before_A).sub(ETH_GAS_COMPENSATION)
-          .toString();
+      .sub(liquidatorBalance_before_A).sub(ETH_GAS_COMPENSATION)
+      .toString();
     const _0pt5percent_aliceColl = aliceColl.div(web3.utils.toBN("200"));
     assert.equal(compensationReceived_A, _0pt5percent_aliceColl.toString());
 
@@ -433,8 +433,8 @@ contract("Gas compensation tests", async (accounts) => {
 
     // Check liquidator's balance increases by C's 0.5% of coll, 3 ETH
     const compensationReceived_C = liquidatorBalance_after_C
-          .sub(liquidatorBalance_before_C).sub(ETH_GAS_COMPENSATION)
-          .toString();
+      .sub(liquidatorBalance_before_C).sub(ETH_GAS_COMPENSATION)
+      .toString();
     const _0pt5percent_carolColl = carolColl.div(web3.utils.toBN("200"));
     assert.equal(compensationReceived_C, _0pt5percent_carolColl.toString());
 
@@ -530,8 +530,8 @@ contract("Gas compensation tests", async (accounts) => {
 
     // Check liquidator's balance increases by 0.5% of coll
     const compensationReceived_A = liquidatorBalance_after_A
-          .sub(liquidatorBalance_before_A).sub(ETH_GAS_COMPENSATION)
-          .toString();
+      .sub(liquidatorBalance_before_A).sub(ETH_GAS_COMPENSATION)
+      .toString();
     const _0pt5percent_aliceColl = aliceColl.div(web3.utils.toBN("200"));
     assert.equal(compensationReceived_A, _0pt5percent_aliceColl.toString());
 
@@ -672,8 +672,8 @@ contract("Gas compensation tests", async (accounts) => {
 
     // Check liquidator's balance increases by 0.5% of coll
     const compensationReceived_A = liquidatorBalance_after_A
-          .sub(liquidatorBalance_before_A).sub(ETH_GAS_COMPENSATION)
-          .toString();
+      .sub(liquidatorBalance_before_A).sub(ETH_GAS_COMPENSATION)
+      .toString();
     assert.equal(compensationReceived_A, _0pt5percent_aliceColl.toString());
 
     // Check SP Bold has decreased due to the liquidation of A
@@ -716,8 +716,8 @@ contract("Gas compensation tests", async (accounts) => {
 
     // Check liquidator's balance increases by 0.5% of coll
     const compensationReceived_B = liquidatorBalance_after_B
-          .sub(liquidatorBalance_before_B).sub(ETH_GAS_COMPENSATION)
-          .toString();
+      .sub(liquidatorBalance_before_B).sub(ETH_GAS_COMPENSATION)
+      .toString();
     assert.equal(compensationReceived_B, _0pt5percent_bobColl.toString());
 
     // Check SP Bold has decreased due to the liquidation of B

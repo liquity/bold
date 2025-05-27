@@ -137,7 +137,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Set remove manager
         vm.startPrank(A);
-        borrowerOperations.setRemoveManager(ATroveId, B);
+        borrowerOperations.setRemoveManagerWithReceiver(ATroveId, B, A);
         vm.stopPrank();
 
         // Check it’s properly set
@@ -312,7 +312,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
         // Try to set add manager
         vm.startPrank(B);
         vm.expectRevert(AddRemoveManagers.NotBorrower.selector);
-        borrowerOperations.setRemoveManager(ATroveId, B);
+        borrowerOperations.setRemoveManagerWithReceiver(ATroveId, B, A);
         vm.stopPrank();
 
         // Check it’s still unset
@@ -322,7 +322,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         vm.startPrank(C);
         vm.expectRevert(AddRemoveManagers.NotBorrower.selector);
-        borrowerOperations.setRemoveManager(ATroveId, B);
+        borrowerOperations.setRemoveManagerWithReceiver(ATroveId, B, A);
         vm.stopPrank();
 
         // Check it’s still unset
@@ -367,7 +367,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Set remove manager - still won’t work
         vm.startPrank(A);
-        borrowerOperations.setRemoveManager(ATroveId, C);
+        borrowerOperations.setRemoveManagerWithReceiver(ATroveId, C, A);
         vm.stopPrank();
 
         vm.startPrank(C);
@@ -406,7 +406,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Set remove manager
         vm.startPrank(A);
-        borrowerOperations.setRemoveManager(ATroveId, B);
+        borrowerOperations.setRemoveManagerWithReceiver(ATroveId, B, A);
         vm.stopPrank();
 
         // Owner can withdraw coll
@@ -510,7 +510,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Set remove manager - still won’t work
         vm.startPrank(A);
-        borrowerOperations.setRemoveManager(ATroveId, C);
+        borrowerOperations.setRemoveManagerWithReceiver(ATroveId, C, A);
         vm.stopPrank();
 
         vm.startPrank(C);
@@ -555,7 +555,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Set remove manager
         vm.startPrank(A);
-        borrowerOperations.setRemoveManager(ATroveId, B);
+        borrowerOperations.setRemoveManagerWithReceiver(ATroveId, B, A);
         vm.stopPrank();
 
         // Owner can withdraw bold
@@ -611,7 +611,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Set remove manager
         vm.startPrank(A);
-        borrowerOperations.setRemoveManager(ATroveId, B);
+        borrowerOperations.setRemoveManagerWithReceiver(ATroveId, B, A);
         vm.stopPrank();
 
         uint256 AInitialCollBalance = collToken.balanceOf(A);
@@ -633,7 +633,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Set remove manager
         vm.startPrank(A);
-        borrowerOperations.setRemoveManager(ATroveId, B);
+        borrowerOperations.setRemoveManagerWithReceiver(ATroveId, B, A);
         vm.stopPrank();
 
         uint256 AInitialCollBalance = collToken.balanceOf(A);
@@ -657,7 +657,7 @@ contract BorrowerOperationsOnBehalfTroveManagamentTest is DevTestSetup {
 
         // Set remove manager
         vm.startPrank(A);
-        borrowerOperations.setRemoveManager(ATroveId, B);
+        borrowerOperations.setRemoveManagerWithReceiver(ATroveId, B, A);
         vm.stopPrank();
 
         // Other cannot close trove

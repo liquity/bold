@@ -33,7 +33,6 @@ export function handleDepositUpdated(event: DepositUpdatedEvent): void {
   spDepositSnapshot.S = event.params._snapshotS;
   spDepositSnapshot.B = event.params._snapshotB;
   spDepositSnapshot.scale = event.params._snapshotScale;
-  spDepositSnapshot.epoch = event.params._snapshotEpoch;
 
   spDepositSnapshot.save();
   spDeposit.save();
@@ -41,7 +40,7 @@ export function handleDepositUpdated(event: DepositUpdatedEvent): void {
 
 export function handleSUpdated(event: S_UpdatedEvent): void {
   let spEpochScale = loadOrCreateStabilitiPoolEpochScale(
-    event.params._epoch,
+    event.block.timestamp,
     event.params._scale,
   );
   spEpochScale.S = event.params._S;
@@ -50,7 +49,7 @@ export function handleSUpdated(event: S_UpdatedEvent): void {
 
 export function handleBUpdated(event: B_UpdatedEvent): void {
   let spEpochScale = loadOrCreateStabilitiPoolEpochScale(
-    event.params._epoch,
+    event.block.timestamp,
     event.params._scale,
   );
   spEpochScale.B = event.params._B;

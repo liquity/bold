@@ -2,11 +2,13 @@
 
 pragma solidity 0.8.24;
 
+import "./HasWhitelist.sol";
 import "../Interfaces/IAddRemoveManagers.sol";
 import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/ITroveNFT.sol";
+import "../Interfaces/IWhitelist.sol";
 
-contract AddRemoveManagers is IAddRemoveManagers {
+contract AddRemoveManagers is HasWhitelist, IAddRemoveManagers {
     ITroveNFT internal immutable troveNFT;
 
     struct RemoveManagerReceiver {
@@ -57,34 +59,39 @@ contract AddRemoveManagers is IAddRemoveManagers {
         emit AddManagerUpdated(_troveId, _manager);
     }
 
-    function setRemoveManager(uint256 _troveId, address _manager) external {
-        setRemoveManagerWithReceiver(_troveId, _manager, troveNFT.ownerOf(_troveId));
-    }
-
     function setRemoveManagerWithReceiver(uint256 _troveId, address _manager, address _receiver) public {
         _requireCallerIsBorrower(_troveId);
+        
+        IWhitelist _whitelist = whitelist;
+        if (address(_whitelist) != address(0)) {
+            _requireWhitelisted(_whitelist, _receiver);
+        }
+
         _setRemoveManagerAndReceiver(_troveId, _manager, _receiver);
     }
 
     function _setRemoveManagerAndReceiver(uint256 _troveId, address _manager, address _receiver) internal {
-        _requireNonZeroManagerUnlessWiping(_manager, _receiver);
+        // _requireNonZeroManagerUnlessWiping(_manager, _receiver);
+        if (_manager == address(0) && _receiver != address(0)) {
+            revert EmptyManager();
+        }
         removeManagerReceiverOf[_troveId].manager = _manager;
         removeManagerReceiverOf[_troveId].receiver = _receiver;
         emit RemoveManagerAndReceiverUpdated(_troveId, _manager, _receiver);
     }
 
-    function _wipeAddRemoveManagers(uint256 _troveId) internal {
-        delete addManagerOf[_troveId];
-        delete removeManagerReceiverOf[_troveId];
-        emit AddManagerUpdated(_troveId, address(0));
-        emit RemoveManagerAndReceiverUpdated(_troveId, address(0), address(0));
-    }
+    // function _wipeAddRemoveManagers(uint256 _troveId) internal {
+    //     delete addManagerOf[_troveId];
+    //     delete removeManagerReceiverOf[_troveId];
+    //     emit AddManagerUpdated(_troveId, address(0));
+    //     emit RemoveManagerAndReceiverUpdated(_troveId, address(0), address(0));
+    // }
 
-    function _requireNonZeroManagerUnlessWiping(address _manager, address _receiver) internal pure {
-        if (_manager == address(0) && _receiver != address(0)) {
-            revert EmptyManager();
-        }
-    }
+    // function _requireNonZeroManagerUnlessWiping(address _manager, address _receiver) internal pure {
+    //     if (_manager == address(0) && _receiver != address(0)) {
+    //         revert EmptyManager();
+    //     }
+    // }
 
     function _requireCallerIsBorrower(uint256 _troveId) internal view {
         if (msg.sender != troveNFT.ownerOf(_troveId)) {

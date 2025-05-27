@@ -4,40 +4,21 @@ pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import "./Interfaces/ITroveManager.sol";
-import "./Interfaces/IBoldToken.sol";
 import "./Dependencies/Constants.sol";
 import "./Dependencies/LiquityMath.sol";
+import "./Dependencies/Owned.sol";
 
+import "./Interfaces/ITroveManager.sol";
+import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ICollateralRegistry.sol";
+import "./Interfaces/IWhitelist.sol";
 
-contract CollateralRegistry is ICollateralRegistry {
-    // See: https://github.com/ethereum/solidity/issues/12587
-    uint256 public immutable totalCollaterals;
-
-    IERC20Metadata internal immutable token0;
-    IERC20Metadata internal immutable token1;
-    IERC20Metadata internal immutable token2;
-    IERC20Metadata internal immutable token3;
-    IERC20Metadata internal immutable token4;
-    IERC20Metadata internal immutable token5;
-    IERC20Metadata internal immutable token6;
-    IERC20Metadata internal immutable token7;
-    IERC20Metadata internal immutable token8;
-    IERC20Metadata internal immutable token9;
-
-    ITroveManager internal immutable troveManager0;
-    ITroveManager internal immutable troveManager1;
-    ITroveManager internal immutable troveManager2;
-    ITroveManager internal immutable troveManager3;
-    ITroveManager internal immutable troveManager4;
-    ITroveManager internal immutable troveManager5;
-    ITroveManager internal immutable troveManager6;
-    ITroveManager internal immutable troveManager7;
-    ITroveManager internal immutable troveManager8;
-    ITroveManager internal immutable troveManager9;
-
+contract CollateralRegistry is Owned, ICollateralRegistry {
     IBoldToken public immutable boldToken;
+
+    uint256 public totalCollaterals;
+    IERC20Metadata[10] internal collateralTokens;
+    ITroveManager[10] internal troveManagers;
 
     uint256 public baseRate;
 
@@ -46,59 +27,124 @@ contract CollateralRegistry is ICollateralRegistry {
 
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
+    event NewCollateralAdded(address collateral, address troveManager);
+    event CollateralRemoved(address collateral, address troveManager);
+    event WhitelistSet(address whitelist);
 
-    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers) {
+    error ZeroAddress();
+
+    // --- Constructor ---
+
+    constructor(
+        IBoldToken _boldToken,
+        IERC20Metadata[] memory _tokens,
+        ITroveManager[] memory _troveManagers,
+        address _owner
+    ) Owned(_owner) {
         uint256 numTokens = _tokens.length;
-        require(numTokens > 0, "Collateral list cannot be empty");
-        require(numTokens <= 10, "Collateral list too long");
-        totalCollaterals = numTokens;
+        require(numTokens > 0 && numTokens <= 10, "Collateral list invalid");
 
+        totalCollaterals = numTokens;
         boldToken = _boldToken;
 
-        token0 = _tokens[0];
-        token1 = numTokens > 1 ? _tokens[1] : IERC20Metadata(address(0));
-        token2 = numTokens > 2 ? _tokens[2] : IERC20Metadata(address(0));
-        token3 = numTokens > 3 ? _tokens[3] : IERC20Metadata(address(0));
-        token4 = numTokens > 4 ? _tokens[4] : IERC20Metadata(address(0));
-        token5 = numTokens > 5 ? _tokens[5] : IERC20Metadata(address(0));
-        token6 = numTokens > 6 ? _tokens[6] : IERC20Metadata(address(0));
-        token7 = numTokens > 7 ? _tokens[7] : IERC20Metadata(address(0));
-        token8 = numTokens > 8 ? _tokens[8] : IERC20Metadata(address(0));
-        token9 = numTokens > 9 ? _tokens[9] : IERC20Metadata(address(0));
+        for (uint8 i; i < numTokens; i++) {
+            requireNotZeroAddress(address(_tokens[i]));
+            requireNotZeroAddress(address(_troveManagers[i]));
 
-        troveManager0 = _troveManagers[0];
-        troveManager1 = numTokens > 1 ? _troveManagers[1] : ITroveManager(address(0));
-        troveManager2 = numTokens > 2 ? _troveManagers[2] : ITroveManager(address(0));
-        troveManager3 = numTokens > 3 ? _troveManagers[3] : ITroveManager(address(0));
-        troveManager4 = numTokens > 4 ? _troveManagers[4] : ITroveManager(address(0));
-        troveManager5 = numTokens > 5 ? _troveManagers[5] : ITroveManager(address(0));
-        troveManager6 = numTokens > 6 ? _troveManagers[6] : ITroveManager(address(0));
-        troveManager7 = numTokens > 7 ? _troveManagers[7] : ITroveManager(address(0));
-        troveManager8 = numTokens > 8 ? _troveManagers[8] : ITroveManager(address(0));
-        troveManager9 = numTokens > 9 ? _troveManagers[9] : ITroveManager(address(0));
+            collateralTokens[i] = _tokens[i];
+            troveManagers[i] = _troveManagers[i];
+        }
 
         // Initialize the baseRate state variable
         baseRate = INITIAL_BASE_RATE;
+
         emit BaseRateUpdated(INITIAL_BASE_RATE);
     }
 
-    struct RedemptionTotals {
-        uint256 numCollaterals;
-        uint256 boldSupplyAtStart;
-        uint256 unbacked;
-        uint256 redeemedAmount;
+    function addNewCollaterals(
+        IERC20Metadata[] memory _tokens,
+        ITroveManager[] memory _troveManagers
+    ) external override onlyOwner {
+        uint256 numTokens = _tokens.length;
+        uint256 numCollaterals = totalCollaterals;
+        require(
+            numTokens > 0 && numTokens == _troveManagers.length,
+            "Invalid input"
+        );
+
+        require(numCollaterals + numTokens <= 10, "Max collaterals");
+
+        // add new collaterals and trove managers
+        for (uint8 i; i < numTokens; i++) {
+            requireNotZeroAddress(address(_tokens[i]));
+            requireNotZeroAddress(address(_troveManagers[i]));
+
+            collateralTokens[numCollaterals+i] = _tokens[i];
+            troveManagers[numCollaterals+i] = _troveManagers[i];
+
+            emit NewCollateralAdded(address(_tokens[i]), address(_troveManagers[i]));
+        }
+
+        // update total Collaterals
+        totalCollaterals += numTokens;
     }
 
-    function redeemCollateral(uint256 _boldAmount, uint256 _maxIterationsPerCollateral, uint256 _maxFeePercentage)
-        external
-    {
+    // this function removes a branch from the collateralRegistry list
+    // and swaps the elements in order to push zero values at the end of the array
+    // it's meant to "clean up" space in the collaterals/troveManagers array
+    // can be executed only if the branch is in shutdown state
+    function removeCollateral(uint256 index) external override onlyOwner {
+        // remove collaterals and trove managers
+        require(index <= 9, "Invalid index");
+        require(
+            address(collateralTokens[index]) != address(0),
+            "Branch not initialised"
+        );
+
+        ITroveManager troveManager = ITroveManager(troveManagers[index]);
+
+        // revert if branch is not shutdown
+        require(troveManager.shutdownTime() != 0, "Branch is not shutdown");
+
+        emit CollateralRemoved(
+            address(collateralTokens[index]),
+            address(troveManagers[index])
+        );
+
+        // push the zero element at the end
+        uint256 swapIndex = totalCollaterals - 1;
+        if (swapIndex > index) {
+            // swap
+            collateralTokens[index] = collateralTokens[swapIndex];
+            troveManagers[index] = ITroveManager(troveManagers[swapIndex]);
+
+            collateralTokens[swapIndex] = IERC20Metadata(address(0));
+            troveManagers[swapIndex] = ITroveManager(address(0));
+        } else {
+            // no swap. deleted index is the last in the array
+            collateralTokens[index] = IERC20Metadata(address(0));
+            troveManagers[index] = ITroveManager(address(0));
+        }
+
+        totalCollaterals--;
+    }
+
+    // --- Redemption functions ---
+
+    function redeemCollateral(
+        uint256 _boldAmount,
+        uint256 _maxIterationsPerCollateral,
+        uint256 _maxFeePercentage
+    ) external {
         _requireValidMaxFeePercentage(_maxFeePercentage);
         _requireAmountGreaterThanZero(_boldAmount);
 
         RedemptionTotals memory totals;
 
         totals.numCollaterals = totalCollaterals;
-        uint256[] memory unbackedPortions = new uint256[](totals.numCollaterals);
+        uint256[] memory unbackedPortions = new uint256[](
+            totals.numCollaterals
+        );
         uint256[] memory prices = new uint256[](totals.numCollaterals);
 
         totals.boldSupplyAtStart = boldToken.totalSupply();
@@ -107,19 +153,29 @@ contract CollateralRegistry is ICollateralRegistry {
         // We only compute it here, and update it at the end,
         // because the final redeemed amount may be less than the requested amount
         // Redeemers should take this into account in order to request the optimal amount to not overpay
-        uint256 redemptionRate =
-            _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(_boldAmount, totals.boldSupplyAtStart));
-        require(redemptionRate <= _maxFeePercentage, "CR: Fee exceeded provided maximum");
+        uint256 redemptionRate = _calcRedemptionRate(
+            _getUpdatedBaseRateFromRedemption(
+                _boldAmount,
+                totals.boldSupplyAtStart
+            )
+        );
+        require(
+            redemptionRate <= _maxFeePercentage,
+            "CR: Fee exceeded provided maximum"
+        );
         // Implicit by the above and the _requireValidMaxFeePercentage checks
         //require(newBaseRate < DECIMAL_PRECISION, "CR: Fee would eat up all collateral");
 
         // Gather and accumulate unbacked portions
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
             ITroveManager troveManager = getTroveManager(index);
-            (uint256 unbackedPortion, uint256 price, bool redeemable) =
-                troveManager.getUnbackedPortionPriceAndRedeemability();
+            (
+                uint256 unbackedPortion,
+                uint256 price,
+                bool redeemable
+            ) = troveManager.getUnbackedPortionPriceAndRedeemability();
             prices[index] = price;
-            if (redeemable) {
+            if (redeemable && troveManager.isWhitelisted(msg.sender)) {
                 totals.unbacked += unbackedPortion;
                 unbackedPortions[index] = unbackedPortion;
             }
@@ -131,9 +187,11 @@ contract CollateralRegistry is ICollateralRegistry {
             unbackedPortions = new uint256[](totals.numCollaterals);
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
                 ITroveManager troveManager = getTroveManager(index);
-                (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
-                if (redeemable) {
-                    uint256 unbackedPortion = troveManager.getEntireBranchDebt();
+                (, , bool redeemable) = troveManager
+                    .getUnbackedPortionPriceAndRedeemability();
+                if (redeemable && troveManager.isWhitelisted(msg.sender)) {
+                    uint256 unbackedPortion = troveManager
+                        .getEntireBranchDebt();
                     totals.unbacked += unbackedPortion;
                     unbackedPortions[index] = unbackedPortion;
                 }
@@ -144,18 +202,26 @@ contract CollateralRegistry is ICollateralRegistry {
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
             //uint256 unbackedPortion = unbackedPortions[index];
             if (unbackedPortions[index] > 0) {
-                uint256 redeemAmount = _boldAmount * unbackedPortions[index] / totals.unbacked;
+                uint256 redeemAmount = (_boldAmount * unbackedPortions[index]) /
+                    totals.unbacked;
                 if (redeemAmount > 0) {
                     ITroveManager troveManager = getTroveManager(index);
                     uint256 redeemedAmount = troveManager.redeemCollateral(
-                        msg.sender, redeemAmount, prices[index], redemptionRate, _maxIterationsPerCollateral
+                        msg.sender,
+                        redeemAmount,
+                        prices[index],
+                        redemptionRate,
+                        _maxIterationsPerCollateral
                     );
                     totals.redeemedAmount += redeemedAmount;
                 }
             }
         }
 
-        _updateBaseRateAndGetRedemptionRate(totals.redeemedAmount, totals.boldSupplyAtStart);
+        _updateBaseRateAndGetRedemptionRate(
+            totals.redeemedAmount,
+            totals.boldSupplyAtStart
+        );
 
         // Burn the total Bold that is cancelled with debt
         if (totals.redeemedAmount > 0) {
@@ -180,8 +246,14 @@ contract CollateralRegistry is ICollateralRegistry {
     }
 
     // Updates the `baseRate` state with math from `_getUpdatedBaseRateFromRedemption`
-    function _updateBaseRateAndGetRedemptionRate(uint256 _boldAmount, uint256 _totalBoldSupplyAtStart) internal {
-        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_boldAmount, _totalBoldSupplyAtStart);
+    function _updateBaseRateAndGetRedemptionRate(
+        uint256 _boldAmount,
+        uint256 _totalBoldSupplyAtStart
+    ) internal {
+        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(
+            _boldAmount,
+            _totalBoldSupplyAtStart
+        );
 
         //assert(newBaseRate <= DECIMAL_PRECISION); // This is already enforced in `_getUpdatedBaseRateFromRedemption`
 
@@ -198,18 +270,20 @@ contract CollateralRegistry is ICollateralRegistry {
      * then,
      * 2) increases the baseRate based on the amount redeemed, as a proportion of total supply
      */
-    function _getUpdatedBaseRateFromRedemption(uint256 _redeemAmount, uint256 _totalBoldSupply)
-        internal
-        view
-        returns (uint256)
-    {
+    function _getUpdatedBaseRateFromRedemption(
+        uint256 _redeemAmount,
+        uint256 _totalBoldSupply
+    ) internal view returns (uint256) {
         // decay the base rate
         uint256 decayedBaseRate = _calcDecayedBaseRate();
 
         // get the fraction of total supply that was redeemed
-        uint256 redeemedBoldFraction = _redeemAmount * DECIMAL_PRECISION / _totalBoldSupply;
+        uint256 redeemedBoldFraction = (_redeemAmount * DECIMAL_PRECISION) /
+            _totalBoldSupply;
 
-        uint256 newBaseRate = decayedBaseRate + redeemedBoldFraction / REDEMPTION_BETA;
+        uint256 newBaseRate = decayedBaseRate +
+            redeemedBoldFraction /
+            REDEMPTION_BETA;
         newBaseRate = LiquityMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
 
         return newBaseRate;
@@ -217,20 +291,29 @@ contract CollateralRegistry is ICollateralRegistry {
 
     function _calcDecayedBaseRate() internal view returns (uint256) {
         uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
-        uint256 decayFactor = LiquityMath._decPow(REDEMPTION_MINUTE_DECAY_FACTOR, minutesPassed);
-
-        return baseRate * decayFactor / DECIMAL_PRECISION;
-    }
-
-    function _calcRedemptionRate(uint256 _baseRate) internal pure returns (uint256) {
-        return LiquityMath._min(
-            REDEMPTION_FEE_FLOOR + _baseRate,
-            DECIMAL_PRECISION // cap at a maximum of 100%
+        uint256 decayFactor = LiquityMath._decPow(
+            REDEMPTION_MINUTE_DECAY_FACTOR,
+            minutesPassed
         );
+
+        return (baseRate * decayFactor) / DECIMAL_PRECISION;
     }
 
-    function _calcRedemptionFee(uint256 _redemptionRate, uint256 _amount) internal pure returns (uint256) {
-        uint256 redemptionFee = _redemptionRate * _amount / DECIMAL_PRECISION;
+    function _calcRedemptionRate(
+        uint256 _baseRate
+    ) internal pure returns (uint256) {
+        return
+            LiquityMath._min(
+                REDEMPTION_FEE_FLOOR + _baseRate,
+                DECIMAL_PRECISION // cap at a maximum of 100%
+            );
+    }
+
+    function _calcRedemptionFee(
+        uint256 _redemptionRate,
+        uint256 _amount
+    ) internal pure returns (uint256) {
+        uint256 redemptionFee = (_redemptionRate * _amount) / DECIMAL_PRECISION;
         return redemptionFee;
     }
 
@@ -240,66 +323,79 @@ contract CollateralRegistry is ICollateralRegistry {
         return _calcRedemptionRate(baseRate);
     }
 
-    function getRedemptionRateWithDecay() public view override returns (uint256) {
+    function getRedemptionRateWithDecay()
+        public
+        view
+        override
+        returns (uint256)
+    {
         return _calcRedemptionRate(_calcDecayedBaseRate());
     }
 
-    function getRedemptionRateForRedeemedAmount(uint256 _redeemAmount) external view returns (uint256) {
+    function getRedemptionRateForRedeemedAmount(
+        uint256 _redeemAmount
+    ) external view returns (uint256) {
         uint256 totalBoldSupply = boldToken.totalSupply();
-        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_redeemAmount, totalBoldSupply);
+        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(
+            _redeemAmount,
+            totalBoldSupply
+        );
         return _calcRedemptionRate(newBaseRate);
     }
 
-    function getRedemptionFeeWithDecay(uint256 _ETHDrawn) external view override returns (uint256) {
+    function getRedemptionFeeWithDecay(
+        uint256 _ETHDrawn
+    ) external view override returns (uint256) {
         return _calcRedemptionFee(getRedemptionRateWithDecay(), _ETHDrawn);
     }
 
-    function getEffectiveRedemptionFeeInBold(uint256 _redeemAmount) external view override returns (uint256) {
+    function getEffectiveRedemptionFeeInBold(
+        uint256 _redeemAmount
+    ) external view override returns (uint256) {
         uint256 totalBoldSupply = boldToken.totalSupply();
-        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(_redeemAmount, totalBoldSupply);
-        return _calcRedemptionFee(_calcRedemptionRate(newBaseRate), _redeemAmount);
+        uint256 newBaseRate = _getUpdatedBaseRateFromRedemption(
+            _redeemAmount,
+            totalBoldSupply
+        );
+        return
+            _calcRedemptionFee(_calcRedemptionRate(newBaseRate), _redeemAmount);
     }
 
     // getters
 
     function getToken(uint256 _index) external view returns (IERC20Metadata) {
-        if (_index == 0) return token0;
-        else if (_index == 1) return token1;
-        else if (_index == 2) return token2;
-        else if (_index == 3) return token3;
-        else if (_index == 4) return token4;
-        else if (_index == 5) return token5;
-        else if (_index == 6) return token6;
-        else if (_index == 7) return token7;
-        else if (_index == 8) return token8;
-        else if (_index == 9) return token9;
-        else revert("Invalid index");
+        require(_index < 10, "Invalid index");
+
+        return collateralTokens[_index];
     }
 
-    function getTroveManager(uint256 _index) public view returns (ITroveManager) {
-        if (_index == 0) return troveManager0;
-        else if (_index == 1) return troveManager1;
-        else if (_index == 2) return troveManager2;
-        else if (_index == 3) return troveManager3;
-        else if (_index == 4) return troveManager4;
-        else if (_index == 5) return troveManager5;
-        else if (_index == 6) return troveManager6;
-        else if (_index == 7) return troveManager7;
-        else if (_index == 8) return troveManager8;
-        else if (_index == 9) return troveManager9;
-        else revert("Invalid index");
+    function getTroveManager(
+        uint256 _index
+    ) public view returns (ITroveManager) {
+        require(_index < 10, "Invalid index");
+
+        return troveManagers[_index];
     }
 
     // require functions
-
-    function _requireValidMaxFeePercentage(uint256 _maxFeePercentage) internal pure {
+    function _requireValidMaxFeePercentage(
+        uint256 _maxFeePercentage
+    ) internal pure {
         require(
-            _maxFeePercentage >= REDEMPTION_FEE_FLOOR && _maxFeePercentage <= DECIMAL_PRECISION,
+            _maxFeePercentage >= REDEMPTION_FEE_FLOOR &&
+                _maxFeePercentage <= DECIMAL_PRECISION,
             "Max fee percentage must be between 0.5% and 100%"
         );
     }
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
-        require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
+        require(
+            _amount > 0,
+            "CollateralRegistry: Amount must be greater than zero"
+        );
+    }
+
+    function requireNotZeroAddress(address _address) internal pure {
+        if (_address == address(0)) revert ZeroAddress();
     }
 }

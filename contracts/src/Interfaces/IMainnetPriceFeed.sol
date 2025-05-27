@@ -14,3 +14,13 @@ interface IMainnetPriceFeed is IPriceFeed {
     function ethUsdOracle() external view returns (AggregatorV3Interface, uint256, uint8);
     function priceSource() external view returns (PriceSource);
 }
+
+interface ITokenPriceFeed is IPriceFeed {
+    enum PriceSource {
+        primary,
+        lastGoodPrice
+    }
+
+    function tokenUsdOracle() external view returns (AggregatorV3Interface, uint256, uint8);
+    function priceSource() external view returns (PriceSource);
+}

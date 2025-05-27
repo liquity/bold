@@ -3,7 +3,7 @@
 pragma solidity 0.8.24;
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "./Dependencies/Ownable.sol";
+import "./Dependencies/Owned.sol";
 import "./Interfaces/IBoldToken.sol";
 
 /*
@@ -15,63 +15,63 @@ import "./Interfaces/IBoldToken.sol";
  *
  * 2) sendToPool() and returnFromPool(): functions callable only Liquity core contracts, which move BOLD tokens between Liquity <-> user.
  */
-
-contract BoldToken is Ownable, IBoldToken, ERC20Permit {
+contract BoldToken is Owned, IBoldToken, ERC20Permit {
     string internal constant _NAME = "BOLD Stablecoin";
     string internal constant _SYMBOL = "BOLD";
 
     // --- Addresses ---
 
     address public collateralRegistryAddress;
-    mapping(address => bool) troveManagerAddresses;
-    mapping(address => bool) stabilityPoolAddresses;
-    mapping(address => bool) borrowerOperationsAddresses;
-    mapping(address => bool) activePoolAddresses;
+    mapping(address => bool) public isMinter;
+    mapping(address => bool) public isBurner;
+    mapping(address => bool) public isStabilityPool;
 
     // --- Events ---
+    event MinterSet(address _newMinter, bool _isMinter);
+    event BurnerSet(address _newBurner, bool _isBurner);
+    event StabilityPoolSet(address _newStabilityPool, bool _isStabilityPool);
     event CollateralRegistryAddressChanged(address _newCollateralRegistryAddress);
-    event TroveManagerAddressAdded(address _newTroveManagerAddress);
-    event StabilityPoolAddressAdded(address _newStabilityPoolAddress);
-    event BorrowerOperationsAddressAdded(address _newBorrowerOperationsAddress);
-    event ActivePoolAddressAdded(address _newActivePoolAddress);
 
-    constructor(address _owner) Ownable(_owner) ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {}
+    // --- Errors ---
+    error AlreadyInitialised();
 
-    function setBranchAddresses(
-        address _troveManagerAddress,
-        address _stabilityPoolAddress,
-        address _borrowerOperationsAddress,
-        address _activePoolAddress
-    ) external override onlyOwner {
-        troveManagerAddresses[_troveManagerAddress] = true;
-        emit TroveManagerAddressAdded(_troveManagerAddress);
+    // --- Constructor ---
+    constructor(address _owner) Owned(_owner) ERC20(_NAME, _SYMBOL) ERC20Permit(_NAME) {}
 
-        stabilityPoolAddresses[_stabilityPoolAddress] = true;
-        emit StabilityPoolAddressAdded(_stabilityPoolAddress);
-
-        borrowerOperationsAddresses[_borrowerOperationsAddress] = true;
-        emit BorrowerOperationsAddressAdded(_borrowerOperationsAddress);
-
-        activePoolAddresses[_activePoolAddress] = true;
-        emit ActivePoolAddressAdded(_activePoolAddress);
+    // --- Setters ---
+    function setMinter(address _minter, bool _isMinter) external onlyOwner {
+        isMinter[_minter] = _isMinter;
+        emit MinterSet(_minter, _isMinter);
     }
 
-    function setCollateralRegistry(address _collateralRegistryAddress) external override onlyOwner {
+    function setBurner(address _burner, bool _isBurner) external onlyOwner {
+        isBurner[_burner] = _isBurner;
+        emit BurnerSet(_burner, _isBurner);
+    }
+
+    function setStabilityPool(address _stabilityPool, bool _isStabilityPool) external onlyOwner {
+        isStabilityPool[_stabilityPool] = _isStabilityPool;
+        emit StabilityPoolSet(_stabilityPool, _isStabilityPool);
+    }
+
+    function setCollateralRegistry(address _collateralRegistryAddress) external onlyOwner {
+        if (collateralRegistryAddress != address(0)) {
+            revert AlreadyInitialised();
+        }
+
         collateralRegistryAddress = _collateralRegistryAddress;
         emit CollateralRegistryAddressChanged(_collateralRegistryAddress);
-
-        _renounceOwnership();
     }
 
     // --- Functions for intra-Liquity calls ---
 
     function mint(address _account, uint256 _amount) external override {
-        _requireCallerIsBOorAP();
+        _requireCallerIsMinter();
         _mint(_account, _amount);
     }
 
     function burn(address _account, uint256 _amount) external override {
-        _requireCallerIsCRorBOorTMorSP();
+        _requireCallerIsBurner();
         _burn(_account, _amount);
     }
 
@@ -110,22 +110,15 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
         );
     }
 
-    function _requireCallerIsBOorAP() internal view {
-        require(
-            borrowerOperationsAddresses[msg.sender] || activePoolAddresses[msg.sender],
-            "BoldToken: Caller is not BO or AP"
-        );
+    function _requireCallerIsMinter() internal view {
+        require(isMinter[msg.sender], "BoldToken: Caller is not a minter");
     }
 
-    function _requireCallerIsCRorBOorTMorSP() internal view {
-        require(
-            msg.sender == collateralRegistryAddress || borrowerOperationsAddresses[msg.sender]
-                || troveManagerAddresses[msg.sender] || stabilityPoolAddresses[msg.sender],
-            "BoldToken: Caller is neither CR nor BorrowerOperations nor TroveManager nor StabilityPool"
-        );
+    function _requireCallerIsBurner() internal view {
+        require(msg.sender == collateralRegistryAddress || isBurner[msg.sender], "BoldToken: Caller is not a burner");
     }
 
     function _requireCallerIsStabilityPool() internal view {
-        require(stabilityPoolAddresses[msg.sender], "BoldToken: Caller is not the StabilityPool");
+        require(isStabilityPool[msg.sender], "BoldToken: Caller is not the StabilityPool");
     }
 }

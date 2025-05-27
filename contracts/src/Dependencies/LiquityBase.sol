@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 
 import "./Constants.sol";
 import "./LiquityMath.sol";
+import "./HasWhitelist.sol";
 import "../Interfaces/IAddressesRegistry.sol";
 import "../Interfaces/IActivePool.sol";
 import "../Interfaces/IDefaultPool.sol";
@@ -11,10 +12,11 @@ import "../Interfaces/IPriceFeed.sol";
 import "../Interfaces/ILiquityBase.sol";
 
 /*
-* Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and
-* common functions.
-*/
-contract LiquityBase is ILiquityBase {
+ * Base contract for TroveManager, BorrowerOperations and StabilityPool. Contains global system constants and
+ * common functions.
+ */
+contract LiquityBase is HasWhitelist, ILiquityBase {
+    IAddressesRegistry public addressesRegistry;
     IActivePool public activePool;
     IDefaultPool internal defaultPool;
     IPriceFeed internal priceFeed;
@@ -23,10 +25,14 @@ contract LiquityBase is ILiquityBase {
     event DefaultPoolAddressChanged(address _newDefaultPoolAddress);
     event PriceFeedAddressChanged(address _newPriceFeedAddress);
 
+    error CallerNotAddressesRegistry();
+
     constructor(IAddressesRegistry _addressesRegistry) {
+        addressesRegistry = _addressesRegistry;
         activePool = _addressesRegistry.activePool();
         defaultPool = _addressesRegistry.defaultPool();
         priceFeed = _addressesRegistry.priceFeed();
+        whitelist = _addressesRegistry.whitelist();
 
         emit ActivePoolAddressChanged(address(activePool));
         emit DefaultPoolAddressChanged(address(defaultPool));
@@ -64,6 +70,20 @@ contract LiquityBase is ILiquityBase {
     }
 
     function _calcInterest(uint256 _weightedDebt, uint256 _period) internal pure returns (uint256) {
-        return _weightedDebt * _period / ONE_YEAR / DECIMAL_PRECISION;
+        return (_weightedDebt * _period) / ONE_YEAR / DECIMAL_PRECISION;
+    }
+
+    // --- Whitelist functions ---
+    function setWhitelist(IWhitelist _whitelist) external override(ILiquityBase) {
+        _requireCallerIsAddressesRegistry();
+        super._setWhitelist(_whitelist);
+    }
+
+    // --- AddressesRegistry functions ---
+
+    function _requireCallerIsAddressesRegistry() internal view {
+        if (msg.sender != address(addressesRegistry)) {
+            revert CallerNotAddressesRegistry();
+        }
     }
 }

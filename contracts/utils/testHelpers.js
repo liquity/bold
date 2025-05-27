@@ -190,7 +190,7 @@ class TestHelper {
   }
 
   static applyLiquidationFee(ethAmount) {
-    if (ethAmount.mul(this.toBN(this.dec(5, 15))).div(MoneyValues._1e18BN).gt(this.toBN(this.dec(2,  18)))) {
+    if (ethAmount.mul(this.toBN(this.dec(5, 15))).div(MoneyValues._1e18BN).gt(this.toBN(this.dec(2, 18)))) {
       return ethAmount.sub(this.toBN(this.dec(2, 18)));
     }
     return ethAmount.mul(this.toBN(this.dec(995, 15))).div(MoneyValues._1e18BN);
@@ -823,7 +823,9 @@ class TestHelper {
     }
     if (!extraParams.annualInterestRate) {
       if (extraParams.batchManager) {
-        extraParams.annualInterestRate = await contracts.troveManager.getBatchAnnualInterestRate(extraParams.batchManager);
+        extraParams.annualInterestRate = await contracts.troveManager.getBatchAnnualInterestRate(
+          extraParams.batchManager,
+        );
       } else {
         extraParams.annualInterestRate = 0;
       }
@@ -839,7 +841,10 @@ class TestHelper {
     // Only needed for non-zero borrow fee: .add(this.toBN(1)); // add 1 to avoid rounding issues
 
     const boldAmount = MIN_DEBT.add(extraBoldAmount);
-    const predictedUpfrontFee = await contracts.troveManager.predictOpenTroveUpfrontFee(boldAmount, extraParams.annualInterestRate);
+    const predictedUpfrontFee = await contracts.troveManager.predictOpenTroveUpfrontFee(
+      boldAmount,
+      extraParams.annualInterestRate,
+    );
     const predictedBoldAmount = boldAmount.add(predictedUpfrontFee);
 
     if (!ICR && !extraParams.value) ICR = this.toBN(this.dec(15, 17)); // 150%
@@ -854,7 +859,11 @@ class TestHelper {
 
     // approve ERC20 ETH
     const ETH_GAS_COMPENSATION = await contracts.constants._ETH_GAS_COMPENSATION();
-    await contracts.WETH.approve(contracts.borrowerOperations.address, this.toBN(extraParams.value).add(ETH_GAS_COMPENSATION), { from: extraParams.from });
+    await contracts.WETH.approve(
+      contracts.borrowerOperations.address,
+      this.toBN(extraParams.value).add(ETH_GAS_COMPENSATION),
+      { from: extraParams.from },
+    );
 
     let tx;
     if (extraParams.batchManager) {
@@ -909,7 +918,11 @@ class TestHelper {
   ) {
     // approve ERC20 ETH
     const ETH_GAS_COMPENSATION = await contracts.constants._ETH_GAS_COMPENSATION();
-    await contracts.WETH.approve(contracts.borrowerOperations.address, this.toBN(extraParams.value).add(ETH_GAS_COMPENSATION), { from: extraParams.from });
+    await contracts.WETH.approve(
+      contracts.borrowerOperations.address,
+      this.toBN(extraParams.value).add(ETH_GAS_COMPENSATION),
+      { from: extraParams.from },
+    );
 
     let tx;
     if (extraParams.batchManager) {
@@ -987,7 +1000,10 @@ class TestHelper {
       );
       increasedTotalDebt = targetDebt.sub(entireDebt);
       const annualInterestRate = await contracts.troveManager.getTroveAnnualInterestRate(troveId);
-      const predictedUpfrontFee = await contracts.troveManager.predictOpenTroveUpfrontFee(increasedTotalDebt, annualInterestRate);
+      const predictedUpfrontFee = await contracts.troveManager.predictOpenTroveUpfrontFee(
+        increasedTotalDebt,
+        annualInterestRate,
+      );
       increasedTotalDebt = increasedTotalDebt.sub(predictedUpfrontFee);
       boldAmount = await this.getNetBorrowingAmount(
         contracts,

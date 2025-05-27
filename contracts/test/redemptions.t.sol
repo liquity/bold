@@ -1062,14 +1062,17 @@ contract Redemptions is DevTestSetup {
         });
 
         uint256 initialBaseRate = collateralRegistry.baseRate();
+        console.log("initialBaseRate", initialBaseRate);
 
         for (uint256 i = 0; i < 60; ++i) {
             skip(2 minutes - 1 seconds);
             redeem(A, 1 wei);
+            console.log("baseRate", collateralRegistry.baseRate());
         }
 
         uint256 finalBaseRate = collateralRegistry.baseRate();
-
+        console.log("finalBaseRate", finalBaseRate);
+        
         // In total, 119 minutes have passed, so we expect base rate to have
         // decayed to REDEMPTION_MINUTE_DECAY_FACTOR^119 of its original value
         assertApproxEqAbsDecimal(

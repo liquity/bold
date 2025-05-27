@@ -1,0 +1,47 @@
+{
+    "numBranches": "2",
+    "interestRouter": "0x0000000000000000000000000000000000000000",
+    "branches": [
+        {
+            "collateralName": "btc",
+            "collateralSymbol": "btc",
+            "config": {
+                "bcr": 10e16,
+                "ccr": 150e16,
+                "collateralAddress": "0x0000000000000000000000000000000000000000",
+                "createWrapper": true,
+                "createWhitelist": true,
+                "liqPenaltyDistr": 10e16,
+                "liqPenaltySP": 5e16,
+                "mcr": 120e16,         
+                "oracleAddress": "0x0000000000000000000000000000000000000000",
+                "oracleStalenessThreshold": 86400000,
+                "scr": 110e16
+            }
+        },
+        {
+            "collateralName": "eth",
+            "collateralSymbol": "eth",
+            "config": {
+                "bcr": 10e16,
+                "ccr": 150e16,
+                "collateralAddress": "0x0000000000000000000000000000000000000000",
+                "createWrapper": false,
+                "createWhitelist": true,
+                "liqPenaltyDistr": 10e16,
+                "liqPenaltySP": 5e16,
+                "mcr": 120e16,         
+                "oracleAddress": "0x0000000000000000000000000000000000000000",
+                "oracleStalenessThreshold": 86400000,
+                "scr": 110e16
+            }
+        }
+    ],
+    "globalContracts": {
+        "bvUSD": "0x0000000000000000000000000000000000000000",
+        "collateralRegistry": "0x0000000000000000000000000000000000000000",
+        "gasToken": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "hintHelpers": "0x0000000000000000000000000000000000000000",
+        "multiTroveGetter": "0x0000000000000000000000000000000000000000"
+    }
+}

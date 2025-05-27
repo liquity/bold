@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
-import "./Dependencies/Ownable.sol";
+import "./Dependencies/Owned.sol";
 import {MIN_LIQUIDATION_PENALTY_SP, MAX_LIQUIDATION_PENALTY_REDISTRIBUTION} from "./Dependencies/Constants.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 
-contract AddressesRegistry is Ownable, IAddressesRegistry {
+contract AddressesRegistry is Owned, IAddressesRegistry {
     IERC20Metadata public collToken;
     IBorrowerOperations public borrowerOperations;
     ITroveManager public troveManager;
@@ -25,21 +25,25 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     ICollateralRegistry public collateralRegistry;
     IBoldToken public boldToken;
     IWETH public WETH;
+    IWhitelist public whitelist;
+
+    bool systemContractsInitialized;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    uint256 public immutable CCR;
+    uint256 public CCR;
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    uint256 public immutable SCR;
+    uint256 public SCR;
 
     // Minimum collateral ratio for individual troves
-    uint256 public immutable MCR;
+    uint256 public MCR;
+
     // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
-    uint256 public immutable BCR;
+    uint256 public BCR;
     // Liquidation penalty for troves offset to the SP
-    uint256 public immutable LIQUIDATION_PENALTY_SP;
+    uint256 public LIQUIDATION_PENALTY_SP;
     // Liquidation penalty for troves redistributed
-    uint256 public immutable LIQUIDATION_PENALTY_REDISTRIBUTION;
+    uint256 public LIQUIDATION_PENALTY_REDISTRIBUTION;
 
     error InvalidCCR();
     error InvalidMCR();
@@ -48,6 +52,8 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     error SPPenaltyTooLow();
     error SPPenaltyGtRedist();
     error RedistPenaltyTooHigh();
+    error AlreadyInitialized();
+    error Cooldown();
 
     event CollTokenAddressChanged(address _collTokenAddress);
     event BorrowerOperationsAddressChanged(address _borrowerOperationsAddress);
@@ -67,6 +73,16 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
     event WETHAddressChanged(address _wethAddress);
+    event WhitelistChanged(address _whitelistAddress);
+    event LiquidationValuesChanged(uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution);
+    event LiquidationValuesProposed(
+        uint256 liquidationPenaltySP, uint256 liquidationPenaltyRedistribution, uint256 timestamp
+    );
+
+    event CRsChanged(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR);
+    event CRsProposal(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR, uint256 timestamp);
+
+    // --- Constructor ---
 
     constructor(
         address _owner,
@@ -76,13 +92,17 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         uint256 _scr,
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution
-    ) Ownable(_owner) {
+    ) Owned(_owner) {
         if (_ccr <= 1e18 || _ccr >= 2e18) revert InvalidCCR();
         if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR();
         if (_bcr < 5e16 || _bcr >= 50e16) revert InvalidBCR();
         if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();
-        if (_liquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) revert SPPenaltyTooLow();
-        if (_liquidationPenaltySP > _liquidationPenaltyRedistribution) revert SPPenaltyGtRedist();
+        if (_liquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) {
+            revert SPPenaltyTooLow();
+        }
+        if (_liquidationPenaltySP > _liquidationPenaltyRedistribution) {
+            revert SPPenaltyGtRedist();
+        }
         if (_liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) revert RedistPenaltyTooHigh();
 
         CCR = _ccr;
@@ -93,7 +113,10 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         LIQUIDATION_PENALTY_REDISTRIBUTION = _liquidationPenaltyRedistribution;
     }
 
+    // initialization
     function setAddresses(AddressVars memory _vars) external onlyOwner {
+        if (systemContractsInitialized) revert AlreadyInitialized();
+
         collToken = _vars.collToken;
         borrowerOperations = _vars.borrowerOperations;
         troveManager = _vars.troveManager;
@@ -112,6 +135,8 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         collateralRegistry = _vars.collateralRegistry;
         boldToken = _vars.boldToken;
         WETH = _vars.WETH;
+        whitelist = _vars.whitelist;
+        systemContractsInitialized = true;
 
         emit CollTokenAddressChanged(address(_vars.collToken));
         emit BorrowerOperationsAddressChanged(address(_vars.borrowerOperations));
@@ -131,7 +156,103 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         emit CollateralRegistryAddressChanged(address(_vars.collateralRegistry));
         emit BoldTokenAddressChanged(address(_vars.boldToken));
         emit WETHAddressChanged(address(_vars.WETH));
+        emit WhitelistChanged(address(_vars.whitelist));
+    }
 
-        _renounceOwnership();
+    // --- WHITELIST UPDATE LOGIC ---- //
+
+    // @dev set to address 0 to remove the whitelist
+    function setWhitelist(IWhitelist _newWhitelist) external override onlyOwner {
+        whitelist = _newWhitelist;
+
+        troveManager.setWhitelist(_newWhitelist);
+        borrowerOperations.setWhitelist(_newWhitelist);
+        stabilityPool.setWhitelist(_newWhitelist);
+        troveNFT.setWhitelist(_newWhitelist);
+
+        emit WhitelistChanged(address(_newWhitelist));
+    }
+
+    // --- CRs UPDATE LOGIC ---- //
+
+    CRProposal public proposedCR;
+
+    function proposeNewCollateralValues(uint256 newCCR, uint256 newSCR, uint256 newMCR, uint256 newBCR)
+        external
+        override
+        onlyOwner
+    {
+        if (newCCR <= 1e18 || newCCR >= 2e18) revert InvalidCCR();
+        if (newMCR <= 1e18 || newMCR >= 2e18) revert InvalidMCR();
+        if (newSCR <= 1e18 || newSCR >= 2e18) revert InvalidSCR();
+        if (newBCR < 5e16 || newBCR >= 50e16) revert InvalidBCR();
+
+        proposedCR.CCR = newCCR;
+        proposedCR.MCR = newMCR;
+        proposedCR.SCR = newSCR;
+        proposedCR.BCR = newBCR;
+        proposedCR.timestamp = block.timestamp;
+
+        emit CRsProposal(newCCR, newSCR, newMCR, newBCR, block.timestamp);
+    }
+
+    function acceptNewCollateralValues() external override onlyOwner {
+        require(proposedCR.timestamp + 3 days <= block.timestamp && proposedCR.timestamp != 0, "Invalid");
+
+        CCR = proposedCR.CCR;
+        SCR = proposedCR.SCR;
+        MCR = proposedCR.MCR;
+        BCR = proposedCR.BCR;
+
+        // trigger update in trove manager
+        troveManager.updateCRs(CCR, SCR, MCR);
+        borrowerOperations.updateCRs(CCR, SCR, MCR, BCR);
+
+        // reset proposal
+        delete proposedCR;
+
+        emit CRsChanged(CCR, SCR, MCR, BCR);
+    }
+
+    // --- LIQUIDATION VALUES UPDATE LOGIC ---- //
+
+    LiquidationValuesProposal public proposedLiquidationValues;
+
+    function proposeNewLiquidationValues(uint256 newLiquidationPenaltySP, uint256 newLiquidationPenaltyRedistribution)
+        external
+        override
+        onlyOwner
+    {
+        if (newLiquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) {
+            revert SPPenaltyTooLow();
+        }
+        if (newLiquidationPenaltySP > newLiquidationPenaltyRedistribution) {
+            revert SPPenaltyGtRedist();
+        }
+        if (newLiquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) revert RedistPenaltyTooHigh();
+
+        proposedLiquidationValues.liquidationPenaltySP = newLiquidationPenaltySP;
+        proposedLiquidationValues.liquidationPenaltyRedistribution = newLiquidationPenaltyRedistribution;
+        proposedLiquidationValues.timestamp = block.timestamp;
+
+        emit LiquidationValuesProposed(newLiquidationPenaltySP, newLiquidationPenaltyRedistribution, block.timestamp);
+    }
+
+    function acceptNewLiquidationValues() external override onlyOwner {
+        require(
+            proposedLiquidationValues.timestamp + 3 days <= block.timestamp && proposedLiquidationValues.timestamp != 0,
+            "Invalid"
+        );
+
+        LIQUIDATION_PENALTY_SP = proposedLiquidationValues.liquidationPenaltySP;
+        LIQUIDATION_PENALTY_REDISTRIBUTION = proposedLiquidationValues.liquidationPenaltyRedistribution;
+
+        // trigger update in trove manager
+        troveManager.updateLiquidationValues(LIQUIDATION_PENALTY_SP, LIQUIDATION_PENALTY_REDISTRIBUTION);
+
+        // reset proposal
+        delete proposedLiquidationValues;
+
+        emit LiquidationValuesChanged(LIQUIDATION_PENALTY_SP, LIQUIDATION_PENALTY_REDISTRIBUTION);
     }
 }

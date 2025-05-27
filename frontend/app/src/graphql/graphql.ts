@@ -1472,6 +1472,11 @@ export type AllInterestRateBracketsQueryVariables = Exact<{ [key: string]: never
 
 export type AllInterestRateBracketsQuery = { __typename?: 'Query', interestRateBrackets: Array<{ __typename?: 'InterestRateBracket', rate: bigint, totalDebt: bigint, collateral: { __typename?: 'Collateral', collIndex: number } }> };
 
+export type BlockNumberQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type BlockNumberQuery = { __typename?: 'Query', _meta?: { __typename?: '_Meta_', block: { __typename?: '_Block_', number: number } } | null };
+
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
@@ -1697,3 +1702,12 @@ export const AllInterestRateBracketsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AllInterestRateBracketsQuery, AllInterestRateBracketsQueryVariables>;
+export const BlockNumberDocument = new TypedDocumentString(`
+    query BlockNumber {
+  _meta {
+    block {
+      number
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<BlockNumberQuery, BlockNumberQueryVariables>;

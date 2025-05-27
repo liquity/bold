@@ -46,7 +46,6 @@ import {
     REDEMPTION_BETA,
     REDEMPTION_FEE_FLOOR,
     REDEMPTION_MINUTE_DECAY_FACTOR,
-    SP_YIELD_SPLIT,
     UPFRONT_INTEREST_PERIOD,
     URGENT_REDEMPTION_BONUS
 } from "src/Dependencies/Constants.sol";
@@ -673,7 +672,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             }
 
             // Effects (system)
-            _mintYield(v.i, v.pendingInterest, v.upfrontFee);
+            _mintYield(v.i, v.c, v.pendingInterest, v.upfrontFee);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, v.errorString) = _decodeCustomError(revertData);
@@ -855,7 +854,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             if (v.batchManager != address(0)) _touchBatch(i, v.batchManager);
 
             // Effects (system)
-            _mintYield(i, v.pendingInterest, v.upfrontFee);
+            _mintYield(i, v.c, v.pendingInterest, v.upfrontFee);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, v.errorString) = _decodeCustomError(revertData);
@@ -988,7 +987,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             _timeSinceLastTroveInterestRateAdjustment[i][v.troveId] = 0;
 
             // Effects (system)
-            _mintYield(i, v.pendingInterest, v.upfrontFee);
+            _mintYield(i, v.c, v.pendingInterest, v.upfrontFee);
         } catch Error(string memory reason) {
             v.errorString = reason;
 
@@ -1081,7 +1080,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             }
 
             // Effects (system)
-            _mintYield(i, v.pendingInterest, 0);
+            _mintYield(i, v.c, v.pendingInterest, 0);
         } catch Error(string memory reason) {
             v.errorString = reason;
 
@@ -1205,7 +1204,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             }
 
             // Effects (system)
-            _mintYield(i, pendingInterest, 0);
+            _mintYield(i, c, pendingInterest, 0);
             spColl[i] += l.t.spCollGain;
             spBoldDeposits[i] -= l.t.spOffset;
             collSurplus[i] += l.t.collSurplus;
@@ -1351,7 +1350,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
                 }
 
                 // Effects (system)
-                _mintYield(j, pendingInterest[j], 0);
+                _mintYield(j, branches[j], pendingInterest[j], 0);
             }
         } catch Error(string memory reason) {
             errorString = reason;
@@ -1412,7 +1411,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             // Effects
             isShutdown[i] = true;
-            _mintYield(i, pendingInterest, 0);
+            _mintYield(i, c, pendingInterest, 0);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, errorString) = _decodeCustomError(revertData);
@@ -1500,7 +1499,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             }
 
             // Effects (system)
-            _mintYield(i, pendingInterest, 0);
+            _mintYield(i, c, pendingInterest, 0);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, errorString) = _decodeCustomError(revertData);
@@ -1588,7 +1587,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             if (v.batchManager != address(0)) _touchBatch(i, v.batchManager);
 
             // Effects (system)
-            _mintYield(i, v.pendingInterest, 0);
+            _mintYield(i, v.c, v.pendingInterest, 0);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, v.errorString) = _decodeCustomError(revertData);
@@ -1676,7 +1675,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
 
             // Effects (system)
-            _mintYield(i, v.pendingInterest, 0);
+            _mintYield(i, v.c, v.pendingInterest, 0);
 
             spColl[i] -= v.ethClaimed;
             spBoldDeposits[i] += amount;
@@ -1766,7 +1765,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
 
             // Effects (system)
-            _mintYield(i, v.pendingInterest, 0);
+            _mintYield(i, v.c, v.pendingInterest, 0);
 
             spColl[i] -= v.ethClaimed;
             spBoldDeposits[i] += v.boldYield;
@@ -1828,7 +1827,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             assertEqDecimal(c.stabilityPool.stashedColl(msg.sender), 0, 18, "Wrong stashed coll");
 
             // Effects (system)
-            _mintYield(i, pendingInterest, 0);
+            _mintYield(i, c, pendingInterest, 0);
             spColl[i] -= ethStash;
         } catch Error(string memory reason) {
             errorString = reason;
@@ -1997,7 +1996,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             batch.managementRate = newManagementFee;
 
             // Effects (system)
-            _mintYield(i, pendingInterest, 0);
+            _mintYield(i, c, pendingInterest, 0);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, errorString) = _decodeCustomError(revertData);
@@ -2093,7 +2092,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             batch.troves.add(v.troveId);
 
             // Effects (system)
-            _mintYield(i, v.pendingInterest, v.upfrontFee);
+            _mintYield(i, v.c, v.pendingInterest, v.upfrontFee);
         } catch Error(string memory reason) {
             v.errorString = reason;
 
@@ -2216,7 +2215,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             batch.troves.remove(v.troveId);
 
             // Effects (system)
-            _mintYield(i, v.pendingInterest, v.upfrontFee);
+            _mintYield(i, v.c, v.pendingInterest, v.upfrontFee);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, v.errorString) = _decodeCustomError(revertData);
@@ -2344,7 +2343,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             }
 
             // Effects (system)
-            _mintYield(i, v.pendingInterest, v.upfrontFee);
+            _mintYield(i, v.c, v.pendingInterest, v.upfrontFee);
         } catch (bytes memory revertData) {
             bytes4 selector;
             (selector, v.errorString) = _decodeCustomError(revertData);
@@ -2559,9 +2558,14 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     //     info("]");
     // }
 
-    function _mintYield(uint256 i, uint256 pendingInterest, uint256 upfrontFee) internal {
+    function _mintYield(
+        uint256 i,
+        TestDeployer.LiquityContractsDev memory c,
+        uint256 pendingInterest,
+        uint256 upfrontFee
+    ) internal {
         uint256 mintedYield = pendingInterest + upfrontFee;
-        uint256 mintedSPBoldYield = mintedYield * SP_YIELD_SPLIT / DECIMAL_PRECISION;
+        uint256 mintedSPBoldYield = mintedYield * c.activePool.SP_YIELD_SPLIT() / DECIMAL_PRECISION;
 
         spBoldYield[i] += mintedSPBoldYield;
         _pendingInterest[i] = 0;

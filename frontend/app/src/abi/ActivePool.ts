@@ -15,6 +15,13 @@ export const ActivePool = [
   },
   {
     "type": "function",
+    "name": "SP_YIELD_SPLIT",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
     "name": "accountForReceivedColl",
     "inputs": [{ "name": "_amount", "type": "uint256", "internalType": "uint256" }],
     "outputs": [],
@@ -263,6 +270,13 @@ export const ActivePool = [
     "stateMutability": "view",
   },
   {
+    "type": "function",
+    "name": "updateYieldSplit",
+    "inputs": [{ "name": "newYieldSplitPct", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
+  {
     "type": "event",
     "name": "ActivePoolBoldDebtUpdated",
     "inputs": [{ "name": "_recordedDebtSum", "type": "uint256", "indexed": false, "internalType": "uint256" }],
@@ -295,6 +309,12 @@ export const ActivePool = [
     "type": "event",
     "name": "DefaultPoolAddressChanged",
     "inputs": [{ "name": "_newDefaultPoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
+    "anonymous": false,
+  },
+  {
+    "type": "event",
+    "name": "SPYieldSplitChanged",
+    "inputs": [{ "name": "_newYieldSplitPct", "type": "uint256", "indexed": false, "internalType": "uint256" }],
     "anonymous": false,
   },
   {

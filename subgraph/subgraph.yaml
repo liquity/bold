@@ -6,8 +6,8 @@ dataSources:
     name: BoldToken
     source:
       abi: BoldToken
-      address: "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262"
-      startBlock: 48060064
+      address: "0x242a2f669224b225d38514c1785411a6036981f1"
+      startBlock: 48152382
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -101,9 +101,9 @@ templates:
           file: ../contracts/out/StabilityPool.sol/StabilityPool.json
       eventHandlers:
         - event: DepositUpdated(indexed
-            address,uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+            address,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleDepositUpdated
-        - event: S_Updated(uint256,uint128,uint128)
+        - event: S_Updated(uint256,uint256)
           handler: handleSUpdated
-        - event: B_Updated(uint256,uint128,uint128)
+        - event: B_Updated(uint256,uint256)
           handler: handleBUpdated

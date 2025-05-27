@@ -67,7 +67,7 @@ class DeploymentHelper {
       web3.utils.toBN("1100000000000000000"), // SCR
       WETH.address,
       troveNFT.address,
-      WETH.address
+      WETH.address,
     );
     const collSurplusPool = await Contracts.CollSurplusPool.new(WETH.address);
     const defaultPool = await Contracts.DefaultPool.new(WETH.address);
@@ -95,7 +95,7 @@ class DeploymentHelper {
       boldToken: boldToken.address,
       sortedTroves: sortedTroves.address,
       weth: WETH.address,
-      collateralRegistry: collateralRegistry.address
+      collateralRegistry: collateralRegistry.address,
     };
     const troveManager = await Contracts.TroveManager.new(troveManagerParams);
 
@@ -212,7 +212,7 @@ class DeploymentHelper {
     await contracts.gasPool.setAllowance(
       contracts.WETH.address,
       contracts.borrowerOperations.address,
-      contracts.troveManager.address
+      contracts.troveManager.address,
     );
 
     await contracts.boldToken.setCollateralRegistry(
