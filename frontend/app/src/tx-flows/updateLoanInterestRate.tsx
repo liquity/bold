@@ -120,7 +120,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                     <Amount
                       format="2z"
                       prefix="~"
-                      suffix=" BOLD per year"
+                      suffix=" bvUSD per year"
                       value={yearlyBoldInterest}
                     />
                   </>
@@ -139,13 +139,13 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
               </div>,
               <div
                 key="end"
-                title={`${fmtnum(yearlyBoldInterest, "full")} BOLD per year`}
+                title={`${fmtnum(yearlyBoldInterest, "full")} bvUSD per year`}
               >
                 {fmtnum(yearlyBoldInterest, {
                   digits: 4,
                   dust: false,
                   prefix: "~",
-                })} BOLD per year
+                })} bvUSD per year
               </div>,
             ]}
           />
@@ -184,7 +184,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                   <Amount
                     format="2z"
                     prefix="~"
-                    suffix=" BOLD per year"
+                    suffix=" bvUSD per year"
                     value={prevYearlyBoldInterest}
                   />
                 </div>,
@@ -223,7 +223,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                   key="start"
                   fallback="…"
                   value={upfrontFee.data}
-                  suffix=" BOLD"
+                  suffix=" bvUSD"
                 />,
               ]}
             />

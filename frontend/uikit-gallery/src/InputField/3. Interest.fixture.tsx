@@ -139,7 +139,7 @@ export default function InputFieldFixture() {
               >
                 {boldInterestPerYear}
               </span>{"   "}
-              BOLD / year
+              bvUSD / year
             </span>
           ),
           end: (
@@ -161,7 +161,7 @@ export default function InputFieldFixture() {
                 >
                   {boldRedeemableInFront}
                 </span>
-                <span>{" BOLD to redeem"}</span>
+                <span>{" bvUSD to redeem"}</span>
               </span>
             </span>
           ),

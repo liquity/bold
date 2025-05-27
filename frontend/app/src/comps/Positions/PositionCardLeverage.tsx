@@ -145,7 +145,7 @@ export function PositionCardLeverage({
                     </div>
                   )}
                   <StatusDot
-                    mode={riskLevelToStatusMode(liquidationRisk)}
+                    mode={liquidationRisk ? riskLevelToStatusMode(liquidationRisk) : "neutral"}
                     size={8}
                   />
                 </div>

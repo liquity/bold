@@ -209,10 +209,6 @@ export function NewPositionCard() {
             overflow: "hidden",
             display: "flex",
             flexDirection: "column",
-            _focusVisible: {
-              outline: "2px solid token(colors.focused)",
-              outlineOffset: 2,
-            },
           });
 
           const style = {

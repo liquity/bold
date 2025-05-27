@@ -119,25 +119,6 @@ export function EarnPoolScreen() {
                 </>
               )}
           </ScreenCard>
-          {active && (
-            <div
-              className={css({
-                display: "flex",
-                flexDirection: "column",
-                gap: 32,
-                marginBottom: -24,
-                padding: 16,
-                textAlign: "center",
-                textWrap: "balance",
-                color: "content",
-                background: "infoSurface",
-                border: "1px solid token(colors.infoSurfaceBorder)",
-                borderRadius: 8,
-              })}
-            >
-              Please withdraw your Earn position. See the top banner for more information.
-            </div>
-          )}
         </div>
       }
       className={css({
@@ -157,37 +138,24 @@ export function EarnPoolScreen() {
               opacity: style.opacity,
             }}
           >
-            {active
-              ? (
-                <Tabs
-                  selected={TABS.indexOf(tab)}
-                  onSelect={(index) => {
-                    const tab = TABS[index];
-                    if (!tab) {
-                      throw new Error("Invalid tab index");
-                    }
-                    router.push(`/earn/${collateralSymbol.toLowerCase()}/${tab.action}`, {
-                      scroll: false,
-                    });
-                  }}
-                  items={TABS.map((tab) => ({
-                    label: tab.label,
-                    panelId: `panel-${tab.action}`,
-                    tabId: `tab-${tab.action}`,
-                  }))}
-                />
-              )
-              : (
-                <p
-                  className={css({
-                    fontSize: 18,
-                    textAlign: "center",
-                  })}
-                >
-                  Stability Pool (“Earn”) deposits are disabled, see top banner.
-                </p>
-              )}
-            {tab.action === "deposit" && active && (
+            <Tabs
+              selected={TABS.indexOf(tab)}
+              onSelect={(index) => {
+                const tab = TABS[index];
+                if (!tab) {
+                  throw new Error("Invalid tab index");
+                }
+                router.push(`/earn/${collateralSymbol.toLowerCase()}/${tab.action}`, {
+                  scroll: false,
+                });
+              }}
+              items={TABS.map((tab) => ({
+                label: tab.label,
+                panelId: `panel-${tab.action}`,
+                tabId: `tab-${tab.action}`,
+              }))}
+            />
+            {tab.action === "deposit" && (
               <PanelUpdateDeposit
                 branchId={branch.id}
                 deposited={earnPool.data.totalDeposited ?? dn.from(0, 18)}

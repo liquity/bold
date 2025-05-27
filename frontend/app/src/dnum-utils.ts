@@ -2,6 +2,10 @@ import type { Dnum, Numberish } from "dnum";
 
 import * as dn from "dnum";
 
+export function dnum8(value: string | bigint | number): Dnum {
+  return [BigInt(value), 8];
+}
+
 export function dnum18(value: string | bigint | number): Dnum {
   return [BigInt(value), 18];
 }

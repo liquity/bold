@@ -15,13 +15,13 @@ import { blo } from "blo";
 import Image from "next/image";
 import Link from "next/link";
 
-const DISPLAYED_PRICES = ["LQTY", "BOLD", "ETH"] as const;
+const DISPLAYED_PRICES = ["bvUSD", "WETH", "BVBTC", "WBNB"] as const;
 
 export function BottomBar() {
   const account = useAccount();
   const stats = useLiquityStats();
 
-  const tvl = stats.data?.totalValueLocked;
+  const tvl = 200_000_000 //stats.data?.totalValueLocked;
 
   return (
     <div
@@ -118,9 +118,9 @@ export function BottomBar() {
                   <HFlex gap={4} alignItems="center">
                     <TokenIcon
                       size={16}
-                      symbol="BOLD"
+                      symbol="bvUSD"
                     />
-                    Redeem BOLD
+                    Redeem bvUSD
                   </HFlex>
                 }
                 className={css({

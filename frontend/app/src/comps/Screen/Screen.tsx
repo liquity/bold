@@ -129,6 +129,7 @@ export function Screen({
     )
     : (
       <div style={{ width }}>
+        {/* @ts-ignore */}
         {heading}
       </div>
     );
@@ -236,18 +237,15 @@ export function BackButton({
           alignItems: "center",
           padding: "0 16px",
           gap: 8,
-          color: "secondaryContent",
-          background: "secondary",
+          color: "positionContent",
+          background: "fieldSurface",
           height: 40,
           width: "fit-content",
           whiteSpace: "nowrap",
           borderRadius: 20,
           _active: {
             translate: "0 1px",
-          },
-          _focusVisible: {
-            outline: "2px solid token(colors.focused)",
-          },
+          }
         })}
       >
         <IconArrowBack size={20} />

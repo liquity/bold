@@ -84,7 +84,7 @@ export function LoanScreenCard({
   );
 
   const nftUrl = useTroveNftUrl(loan?.branchId ?? null, troveId);
-  const title = mode === "multiply" ? "Multiply" : "BOLD loan";
+  const title = mode === "multiply" ? "Multiply" : "bvUSD loan";
 
   const fullyRedeemed = loan && loan.status === "redeemed" && dn.eq(loan.borrowed, 0);
 
@@ -168,7 +168,7 @@ export function LoanScreenCard({
               <Button
                 mode="negative"
                 label="Try again"
-                size="small"
+                size="mini"
                 onClick={onRetry}
               />
             </VFlex>
@@ -183,7 +183,7 @@ export function LoanScreenCard({
             <Button
               mode="primary"
               label="Try again"
-              size="small"
+              size="mini"
               onClick={onRetry}
             />
           </HFlex>
@@ -397,7 +397,7 @@ function LoanCard({
         troveId,
         nftUrl,
       }) => {
-        const title = mode === "multiply" ? "Multiply" : "BOLD loan";
+        const title = mode === "multiply" ? "Multiply" : "bvUSD loan";
         return (
           <a.div
             className={css({
@@ -441,8 +441,8 @@ function LoanCard({
                     statusTag={loan.status === "liquidated"
                       ? <LoanStatusTag status="liquidated" />
                       : loan.status === "redeemed"
-                      ? <LoanStatusTag status="redeemed" />
-                      : null}
+                        ? <LoanStatusTag status="redeemed" />
+                        : null}
                   />
                   <div
                     className={css({
@@ -611,11 +611,10 @@ function LoanCard({
                             <div>
                               <Value
                                 negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
-                                title={`Multiply factor: ${
-                                  loanDetails.status === "underwater" || leverageFactor === null
-                                    ? INFINITY
-                                    : `${roundToDecimal(leverageFactor, 3)}x`
-                                }`}
+                                title={`Multiply factor: ${loanDetails.status === "underwater" || leverageFactor === null
+                                  ? INFINITY
+                                  : `${roundToDecimal(leverageFactor, 3)}x`
+                                  }`}
                                 className={css({
                                   fontSize: 16,
                                 })}
@@ -630,7 +629,7 @@ function LoanCard({
                       )
                       : (
                         <div
-                          title={`${fmtnum(loan.borrowed)} BOLD`}
+                          title={`${fmtnum(loan.borrowed)} bvUSD`}
                           className={css({
                             display: "flex",
                             alignItems: "center",
@@ -638,7 +637,7 @@ function LoanCard({
                           })}
                         >
                           {fmtnum(loan.borrowed)}
-                          <TokenIcon symbol="BOLD" size={24} />
+                          <TokenIcon symbol="bvUSD" size={24} />
                         </div>
                       )}
                   </div>
@@ -677,129 +676,144 @@ function LoanCard({
                   </div>
                 )
                 : closedOrLiquidated
-                ? (
-                  <div
-                    className={css({
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: 12,
-                    })}
-                  >
-                    <GridItem label={mode === "multiply" ? "Net value" : "Collateral"}>N/A</GridItem>
-                    <GridItem label="Liq. price" title="Liquidation price">N/A</GridItem>
-                    <GridItem label="Interest rate">N/A</GridItem>
-                    <GridItem label="LTV" title="Loan-to-value ratio">N/A</GridItem>
-                    <GridItem label="Liquidation risk">
-                      <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-                        <StatusDot mode="neutral" size={8} />
-                        N/A
-                      </HFlex>
-                    </GridItem>
-                    <GridItem label="Redemption risk">
-                      <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-                        <StatusDot mode="neutral" size={8} />
-                        N/A
-                      </HFlex>
-                    </GridItem>
-                  </div>
-                )
-                : (
-                  <div
-                    className={css({
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, 1fr)",
-                      gap: 12,
-                    })}
-                  >
-                    {mode === "multiply"
-                      ? (
-                        <GridItem label="Net value">
-                          <Value
-                            negative={loanDetails.status === "underwater"}
-                            title={`${fmtnum(depositPreLeverage)} ${collateral.name}`}
-                          >
-                            {fmtnum(depositPreLeverage)} {collateral.name}
-                          </Value>
-                        </GridItem>
-                      )
-                      : (
-                        <GridItem label="Collateral">
-                          <div title={`${fmtnum(loan.deposit, "full")} ${collateral.name}`}>
-                            {fmtnum(loan.deposit)} {collateral.name}
-                          </div>
-                        </GridItem>
-                      )}
-                    <GridItem label="Liq. price" title="Liquidation price">
-                      <Value negative={ltv && dn.gt(ltv, maxLtv)}>
-                        {fmtnum(loanDetails.liquidationPrice, { preset: "2z", prefix: "$" })}
-                      </Value>
-                    </GridItem>
-                    <GridItem label="Interest rate">
-                      {fmtnum(loan.interestRate, "pct2")}%
-                      {loan.batchManager && (
-                        <div
-                          title={`Interest rate delegate: ${loan.batchManager}`}
-                          className={css({
-                            display: "flex",
-                            alignItems: "center",
-                            height: 16,
-                            padding: "0 6px",
-                            fontSize: 10,
-                            fontWeight: 600,
-                            textTransform: "uppercase",
-                            color: "content",
-                            background: "brandCyan",
-                            borderRadius: 20,
-                          })}
-                        >
-                          delegated
-                        </div>
-                      )}
-                    </GridItem>
-                    <GridItem label="LTV" title="Loan-to-value ratio">
-                      <div
-                        className={css({
-                          "--status-positive": "token(colors.positiveAlt)",
-                          "--status-warning": "token(colors.warning)",
-                          "--status-negative": "token(colors.negative)",
-                        })}
-                        style={{
-                          color: liquidationRisk === "low"
-                            ? "var(--status-positive)"
-                            : liquidationRisk === "medium"
-                            ? "var(--status-warning)"
-                            : "var(--status-negative)",
-                        }}
-                      >
-                        {fmtnum(ltv, "pct2z")}%
-                      </div>
-                    </GridItem>
-                    <GridItem label="Liquidation risk">
-                      <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-                        <StatusDot
-                          mode={riskLevelToStatusMode(liquidationRisk)}
-                          size={8}
-                        />
-                        {formatRisk(liquidationRisk)}
-                      </HFlex>
-                    </GridItem>
-                    {redemptionRisk && (
-                      <GridItem label="Redemption risk">
+                  ? (
+                    <div
+                      className={css({
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, 1fr)",
+                        gap: 12,
+                      })}
+                    >
+                      <GridItem label={mode === "multiply" ? "Net value" : "Collateral"}>N/A</GridItem>
+                      <GridItem label="Liq. price" title="Liquidation price">N/A</GridItem>
+                      <GridItem label="Interest rate">N/A</GridItem>
+                      <GridItem label="LTV" title="Loan-to-value ratio">N/A</GridItem>
+                      <GridItem label="Liquidation risk">
                         <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-                          <StatusDot
-                            mode={riskLevelToStatusMode(redemptionRisk)}
-                            size={8}
-                          />
-                          {formatRisk(redemptionRisk)}
+                          <StatusDot mode="neutral" size={8} />
+                          N/A
                         </HFlex>
                       </GridItem>
-                    )}
-                  </div>
-                )}
+                      <GridItem label="Redemption risk">
+                        <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+                          <StatusDot mode="neutral" size={8} />
+                          N/A
+                        </HFlex>
+                      </GridItem>
+                    </div>
+                  )
+                  : (
+                    <div
+                      className={css({
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, 1fr)",
+                        gap: 12,
+                      })}
+                    >
+                      {mode === "multiply"
+                        ? (
+                          <GridItem label="Net value">
+                            <Value
+                              negative={loanDetails.status === "underwater"}
+                              title={`${fmtnum(depositPreLeverage)} ${collateral.name}`}
+                            >
+                              {fmtnum(depositPreLeverage)} {collateral.name}
+                            </Value>
+                          </GridItem>
+                        )
+                        : (
+                          <GridItem label="Collateral">
+                            <div title={`${fmtnum(loan.deposit, "full")} ${collateral.name}`}>
+                              {fmtnum(loan.deposit)} {collateral.name}
+                            </div>
+                          </GridItem>
+                        )}
+                      <GridItem label="Liq. price" title="Liquidation price">
+                        <Value negative={ltv && dn.gt(ltv, maxLtv)}>
+                          {fmtnum(loanDetails.liquidationPrice, { preset: "2z", prefix: "$" })}
+                        </Value>
+                      </GridItem>
+                      <GridItem label="Interest rate">
+                        {fmtnum(loan.interestRate, "pct2")}%
+                        {loan.batchManager && (
+                          <div
+                            title={`Interest rate delegate: ${loan.batchManager}`}
+                            className={css({
+                              display: "flex",
+                              alignItems: "center",
+                              height: 16,
+                              padding: "0 6px",
+                              fontSize: 10,
+                              fontWeight: 600,
+                              textTransform: "uppercase",
+                              color: "content",
+                              background: "brandCyan",
+                              borderRadius: 20,
+                            })}
+                          >
+                            delegated
+                          </div>
+                        )}
+                      </GridItem>
+                      <GridItem label="LTV" title="Loan-to-value ratio">
+                        <div
+                          className={css({
+                            "--status-positive": "token(colors.positiveAlt)",
+                            "--status-warning": "token(colors.warning)",
+                            "--status-negative": "token(colors.negative)",
+                          })}
+                          style={{
+                            color: liquidationRisk === "low"
+                              ? "var(--status-positive)"
+                              : liquidationRisk === "medium"
+                                ? "var(--status-warning)"
+                                : "var(--status-negative)",
+                          }}
+                        >
+                          {fmtnum(ltv, "pct2z")}%
+                        </div>
+                      </GridItem>
+                      <GridItem label="Liquidation risk">
+                        <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+                          <StatusDot
+                            mode={riskLevelToStatusMode(liquidationRisk)}
+                            size={8}
+                          />
+                          <div
+                            className={css({
+                              "--status-positive": "token(colors.positiveAlt)",
+                              "--status-warning": "token(colors.warning)",
+                              "--status-negative": "token(colors.negative)",
+                            })}
+                            style={{
+                              color: liquidationRisk === "low"
+                                ? "var(--status-positive)"
+                                : liquidationRisk === "medium"
+                                  ? "var(--status-warning)"
+                                  : "var(--status-negative)",
+                            }}
+                          >
+                            {formatRisk(liquidationRisk)}
+                          </div>
+                        </HFlex>
+                      </GridItem>
+                      {redemptionRisk && (
+                        <GridItem label="Redemption risk">
+                          <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+                            <StatusDot
+                              mode={riskLevelToStatusMode(redemptionRisk)}
+                              size={8}
+                            />
+                            {formatRisk(redemptionRisk)}
+                          </HFlex>
+                        </GridItem>
+                      )}
+                    </div>
+                  )}
             </section>
           </a.div>
         );
       })}
-    </div>
+    </div >
   );
 }

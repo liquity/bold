@@ -34,7 +34,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
         earnPosition={{
           ...request.earnPosition,
 
-          // compound BOLD rewards if not claiming
+          // compound bvUSD rewards if not claiming
           deposit: dn.add(
             request.earnPosition.deposit,
             request.claimRewards
@@ -42,7 +42,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
               : request.earnPosition.rewards.bold,
           ),
           rewards: {
-            // BOLD rewards are claimed or compounded
+            // bvUSD rewards are claimed or compounded
             bold: DNUM_0,
             coll: request.claimRewards
               ? DNUM_0
@@ -63,7 +63,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
 
     const collateral = getCollToken(earnPosition.branchId);
 
-    const boldPrice = usePrice("BOLD");
+    const boldPrice = usePrice("bvUSD");
     const collPrice = usePrice(collateral.symbol);
 
     const depositChange = dn.sub(earnPosition.deposit, prevEarnPosition.deposit);
@@ -78,7 +78,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
           value={[
             <Amount
               key="start"
-              suffix=" BOLD"
+              suffix=" bvUSD"
               value={dn.abs(depositChange)}
             />,
             <Amount
@@ -90,12 +90,12 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
         />
         {dn.gt(rewards.bold, 0) && (
           <TransactionDetailsRow
-            label={claimRewards ? "Claim BOLD rewards" : "Compound BOLD rewards"}
+            label={claimRewards ? "Claim bvUSD rewards" : "Compound bvUSD rewards"}
             value={[
               <Amount
                 key="start"
                 value={rewards.bold}
-                suffix=" BOLD"
+                suffix=" bvUSD"
               />,
               <Amount
                 key="end"

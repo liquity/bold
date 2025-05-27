@@ -1,6 +1,6 @@
 "use client";
 
-import { colors, lightTheme } from "@liquity2/uikit";
+import { colors, darkTheme } from "@liquity2/uikit";
 import { ColorGroup } from "./shared";
 
 export default function ThemeFixture() {
@@ -33,20 +33,20 @@ export default function ThemeFixture() {
             mode="vertical"
             colors={Object.fromEntries(
               Object
-                .entries(lightTheme.colors)
+                .entries(darkTheme.colors)
                 .map(([key, value]) => [
                   key,
                   colors[value as keyof typeof colors],
                 ]),
             )}
-            secondary={(name) => lightTheme.colors[name as keyof typeof lightTheme.colors]}
+            secondary={(name) => darkTheme.colors[name as keyof typeof darkTheme.colors]}
           />
           <ColorGroup
             name="Dark Theme"
             mode="vertical"
             colors={Object.fromEntries(
               Object
-                .entries(lightTheme.colors)
+                .entries(darkTheme.colors)
                 .map(([key]) => [key, "white"]),
             )}
             secondary={() => "tbd"}

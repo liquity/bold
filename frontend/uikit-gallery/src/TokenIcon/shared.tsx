@@ -4,10 +4,10 @@ import { TokenIcon } from "@liquity2/uikit";
 import { useFixtureSelect } from "react-cosmos/client";
 
 const options = [
-  "BOLD" as const,
+  "bvUSD" as const,
+  "WETH" as const,
+  "BVBTC" as const,
   "ETH" as const,
-  "RETH" as const,
-  "WSTETH" as const,
 ];
 
 const emptyOption = "−";

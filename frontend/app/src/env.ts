@@ -8,16 +8,18 @@ const DEFAULT_COMMIT_URL = "https://github.com/liquity/bold/tree/{commit}";
 const DEFAULT_VERSION_URL = "https://github.com/liquity/bold/releases/tag/%40liquity2%2Fapp-v{version}";
 
 export const CollateralSymbolSchema = v.union([
-  v.literal("ETH"),
-  v.literal("RETH"),
-  v.literal("WSTETH"),
+  v.literal("WETH"),
+  v.literal("BVBTC"),
+  v.literal("WBNB")
 ]);
 
 const contractsEnvNames = [
   "ACTIVE_POOL",
+  "ADDRESSES_REGISTRY",
   "BORROWER_OPERATIONS",
   "COLL_SURPLUS_POOL",
   "COLL_TOKEN",
+  "UNDERLYING_TOKEN",
   "DEFAULT_POOL",
   "LEVERAGE_ZAPPER",
   "PRICE_FEED",
@@ -25,6 +27,7 @@ const contractsEnvNames = [
   "STABILITY_POOL",
   "TROVE_MANAGER",
   "TROVE_NFT",
+  "WHITELIST",
 ] as const;
 
 type ContractEnvName = typeof contractsEnvNames[number];
@@ -36,9 +39,11 @@ function vBranchEnvVars(branchId: BranchId) {
   const prefix = `COLL_${branchId}`;
   return v.object({
     [`${prefix}_CONTRACT_ACTIVE_POOL`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_ADDRESSES_REGISTRY`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_BORROWER_OPERATIONS`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_COLL_SURPLUS_POOL`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_COLL_TOKEN`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_UNDERLYING_TOKEN`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_DEFAULT_POOL`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_LEVERAGE_ZAPPER`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_PRICE_FEED`]: v.optional(vAddress()),
@@ -46,6 +51,7 @@ function vBranchEnvVars(branchId: BranchId) {
     [`${prefix}_CONTRACT_STABILITY_POOL`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_TROVE_MANAGER`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_TROVE_NFT`]: v.optional(vAddress()),
+    [`${prefix}_CONTRACT_WHITELIST`]: v.optional(vAddress()),
     [`${prefix}_IC_STRATEGIES`]: v.optional(
       v.pipe(
         v.string(),
@@ -109,8 +115,8 @@ export const EnvSchema = v.pipe(
         if (!apiKey) {
           throw new Error(
             `Invalid BLOCKING_VPNAPI value: ${value}. `
-              + `Expected format: API_KEY or API_KEY|COUNTRY,COUNTRY,… `
-              + `(e.g. 123456|US,CA)`,
+            + `Expected format: API_KEY or API_KEY|COUNTRY,COUNTRY,… `
+            + `(e.g. 123456|US,CA)`,
           );
         }
         return {
@@ -163,6 +169,8 @@ export const EnvSchema = v.pipe(
         };
       }),
     ),
+    ENSO_API_KEY: v.string(),
+    DEFILLAMA_API_KEY: v.string(),
     CONTRACTS_COMMIT_HASH: v.string(),
     CONTRACTS_COMMIT_URL: v.pipe(
       vEnvUrlOrDefault(DEFAULT_COMMIT_URL),
@@ -203,7 +211,7 @@ export const EnvSchema = v.pipe(
 
     ...vBranchEnvVars(0).entries,
     ...vBranchEnvVars(1).entries,
-    ...vBranchEnvVars(2).entries,
+    ...vBranchEnvVars(2).entries
   }),
   v.transform((data) => {
     const env = { ...data };
@@ -259,18 +267,18 @@ const parsedEnv = v.safeParse(EnvSchema, {
     // APP_VERSION_FROM_BUILD is set at build time (see next.config.js)
     // and gets overridden by NEXT_PUBLIC_APP_VERSION if set.
     process.env.NEXT_PUBLIC_APP_VERSION
-      ?? process.env.APP_VERSION_FROM_BUILD
+    ?? process.env.APP_VERSION_FROM_BUILD
   ),
   // APP_COMMIT_HASH_FROM_BUILD is set at build time (see next.config.js)
   // and gets overridden by NEXT_PUBLIC_APP_COMMIT_HASH if set.
   APP_COMMIT_HASH: (
     process.env.NEXT_PUBLIC_APP_COMMIT_HASH
-      ?? process.env.APP_COMMIT_HASH_FROM_BUILD
+    ?? process.env.APP_COMMIT_HASH_FROM_BUILD
   ),
   APP_COMMIT_URL: process.env.NEXT_PUBLIC_APP_COMMIT_URL,
   APP_VERSION_URL: (
     process.env.NEXT_PUBLIC_APP_VERSION_URL
-      ?? DEFAULT_VERSION_URL
+    ?? DEFAULT_VERSION_URL
   ),
   BLOCKING_LIST: process.env.NEXT_PUBLIC_BLOCKING_LIST,
   BLOCKING_VPNAPI: process.env.NEXT_PUBLIC_BLOCKING_VPNAPI,
@@ -283,11 +291,13 @@ const parsedEnv = v.safeParse(EnvSchema, {
   CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
   CHAIN_RPC_URL: process.env.NEXT_PUBLIC_CHAIN_RPC_URL,
   COINGECKO_API_KEY: process.env.NEXT_PUBLIC_COINGECKO_API_KEY,
+  DEFILLAMA_API_KEY: process.env.NEXT_PUBLIC_DEFILLAMA_API_KEY,
+  ENSO_API_KEY: process.env.NEXT_PUBLIC_ENSO_API_KEY,
   CONTRACTS_COMMIT_HASH: (
     // CONTRACTS_COMMIT_HASH_FROM_BUILD is set at build time (see next.config.js)
     // and gets overridden by NEXT_PUBLIC_CONTRACTS_COMMIT_HASH if set.
     process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_HASH
-      ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD
+    ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD
   ),
   CONTRACTS_COMMIT_URL: process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_URL,
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
@@ -316,12 +326,14 @@ const parsedEnv = v.safeParse(EnvSchema, {
 
   COLL_0_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_0_IC_STRATEGIES,
   COLL_1_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_1_IC_STRATEGIES,
-  COLL_2_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_2_IC_STRATEGIES,
+  // COLL_2_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_2_IC_STRATEGIES,
 
   COLL_0_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_ACTIVE_POOL,
+  COLL_0_CONTRACT_ADDRESSES_REGISTRY: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_ADDRESSES_REGISTRY,
   COLL_0_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_BORROWER_OPERATIONS,
   COLL_0_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_COLL_SURPLUS_POOL,
   COLL_0_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_COLL_TOKEN,
+  COLL_0_CONTRACT_UNDERLYING_TOKEN: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_UNDERLYING_TOKEN,
   COLL_0_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_DEFAULT_POOL,
   COLL_0_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_LEVERAGE_ZAPPER,
   COLL_0_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_PRICE_FEED,
@@ -329,11 +341,14 @@ const parsedEnv = v.safeParse(EnvSchema, {
   COLL_0_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_STABILITY_POOL,
   COLL_0_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_TROVE_MANAGER,
   COLL_0_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_TROVE_NFT,
+  COLL_0_CONTRACT_WHITELIST: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_WHITELIST,
 
   COLL_1_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_ACTIVE_POOL,
+  COLL_1_CONTRACT_ADDRESSES_REGISTRY: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_ADDRESSES_REGISTRY,
   COLL_1_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_BORROWER_OPERATIONS,
   COLL_1_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_COLL_SURPLUS_POOL,
   COLL_1_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_COLL_TOKEN,
+  COLL_1_CONTRACT_UNDERLYING_TOKEN: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_UNDERLYING_TOKEN,
   COLL_1_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_DEFAULT_POOL,
   COLL_1_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_LEVERAGE_ZAPPER,
   COLL_1_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_PRICE_FEED,
@@ -341,11 +356,14 @@ const parsedEnv = v.safeParse(EnvSchema, {
   COLL_1_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_STABILITY_POOL,
   COLL_1_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_TROVE_MANAGER,
   COLL_1_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_TROVE_NFT,
+  COLL_1_CONTRACT_WHITELIST: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_WHITELIST,
 
   COLL_2_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_ACTIVE_POOL,
+  COLL_2_CONTRACT_ADDRESSES_REGISTRY: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_ADDRESSES_REGISTRY,
   COLL_2_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_BORROWER_OPERATIONS,
   COLL_2_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_COLL_SURPLUS_POOL,
   COLL_2_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_COLL_TOKEN,
+  COLL_2_CONTRACT_UNDERLYING_TOKEN: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_UNDERLYING_TOKEN,
   COLL_2_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_DEFAULT_POOL,
   COLL_2_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_LEVERAGE_ZAPPER,
   COLL_2_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_PRICE_FEED,
@@ -353,6 +371,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   COLL_2_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_STABILITY_POOL,
   COLL_2_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_MANAGER,
   COLL_2_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_NFT,
+  COLL_2_CONTRACT_WHITELIST: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_WHITELIST,
 });
 
 if (!parsedEnv.success) {
@@ -361,10 +380,9 @@ if (!parsedEnv.success) {
     v.flatten<typeof EnvSchema>(parsedEnv.issues).nested,
   );
   throw new Error(
-    `Invalid environment variable(s): ${
-      JSON.stringify(
-        v.flatten<typeof EnvSchema>(parsedEnv.issues).nested,
-      )
+    `Invalid environment variable(s): ${JSON.stringify(
+      v.flatten<typeof EnvSchema>(parsedEnv.issues).nested,
+    )
     }`,
   );
 }
@@ -386,6 +404,8 @@ export const {
   CHAIN_NAME,
   CHAIN_RPC_URL,
   COINGECKO_API_KEY,
+  DEFILLAMA_API_KEY,
+  ENSO_API_KEY,
   ENV_BRANCHES,
   CONTRACTS_COMMIT_HASH,
   CONTRACTS_COMMIT_URL,

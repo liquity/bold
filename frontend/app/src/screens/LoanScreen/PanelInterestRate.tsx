@@ -36,7 +36,7 @@ export function PanelInterestRate({
   const deposit = useInputFieldValue((value) => `${fmtnum(value, "full")} ${collToken.symbol}`, {
     defaultValue: dn.toString(loan.deposit),
   });
-  const debt = useInputFieldValue((value) => `${fmtnum(value, "full")} BOLD`, {
+  const debt = useInputFieldValue((value) => `${fmtnum(value, "full")} bvUSD`, {
     defaultValue: dn.toString(loan.borrowed),
   });
 
@@ -204,12 +204,12 @@ export function PanelInterestRate({
             {
               label: (
                 <>
-                  <div>BOLD interest per year</div>
+                  <div>bvUSD interest per year</div>
                   <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
                 </>
               ),
-              before: <Amount value={boldInterestPerYearPrev} suffix=" BOLD" />,
-              after: <Amount value={boldInterestPerYear} suffix=" BOLD" />,
+              before: <Amount value={boldInterestPerYearPrev} suffix=" bvUSD" />,
+              after: <Amount value={boldInterestPerYear} suffix=" bvUSD" />,
             },
           ]}
         />
@@ -229,7 +229,8 @@ export function PanelInterestRate({
           disabled={!allowSubmit}
           label="Update position"
           mode="primary"
-          size="large"
+          size="medium"
+          shape="rectangular"
           wide
           onClick={() => {
             if (account.address) {

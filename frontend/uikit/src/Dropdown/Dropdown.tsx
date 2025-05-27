@@ -43,13 +43,13 @@ export function Dropdown({
   size = "medium",
 }: {
   buttonDisplay?:
-    | "normal"
-    | "label-only"
-    | ReactElement
-    | ((item: DropdownItem, index: number) => {
-      icon?: ReactNode;
-      label: ReactNode;
-    });
+  | "normal"
+  | "label-only"
+  | ReactElement
+  | ((item: DropdownItem, index: number) => {
+    icon?: ReactNode;
+    label: ReactNode;
+  });
   customButton?: (ctx: {
     item: DropdownItem | null;
     index: number;
@@ -200,8 +200,8 @@ export function Dropdown({
     index: selected,
     menuVisible: showMenu,
   }) ?? (
-    isValidElement(buttonDisplay) ? buttonDisplay : null
-  );
+      isValidElement(buttonDisplay) ? buttonDisplay : null
+    );
 
   return (
     <>
@@ -224,7 +224,7 @@ export function Dropdown({
             display: "flex",
             outline: 0,
             cursor: "pointer",
-          }),
+          })
         )}
         style={customButton_ ? {} : {
           height: size === "small" ? 32 : 40,
@@ -240,29 +240,18 @@ export function Dropdown({
                 padding: "0 10px 0 16px",
                 height: "100%",
                 whiteSpace: "nowrap",
-                borderWidth: "1px 1px 0 1px",
-                borderStyle: "solid",
-                borderColor: "#F5F6F8",
+                border: "1px solid token(colors.neutral100)",
                 boxShadow: `
                 0 2px 2px rgba(0, 0, 0, 0.1),
                 0 4px 10px rgba(18, 27, 68, 0.05),
                 inset 0 -1px 4px rgba(0, 0, 0, 0.05)
               `,
-                borderRadius: 90,
+                borderRadius: 10,
                 cursor: "pointer",
-
                 "--color-normal": "token(colors.content)",
                 "--color-placeholder": "token(colors.accentContent)",
-                "--background-normal": "token(colors.controlSurface)",
+                "--background-normal": "token(colors.controlSurfaceAlt)",
                 "--background-placeholder": "token(colors.accent)",
-
-                _groupActive: {
-                  translate: "0 1px",
-                  boxShadow: `0 1px 1px rgba(0, 0, 0, 0.1)`,
-                },
-                _groupFocusVisible: {
-                  outline: "2px solid token(colors.focused)",
-                },
               })}
               style={{
                 gap: size === "small" ? 6 : 8,
@@ -316,7 +305,7 @@ export function Dropdown({
                   flexDirection: "column",
                   gap: 12,
                   background: "controlSurface",
-                  borderRadius: 20,
+                  borderRadius: 10,
                   border: "1px solid token(colors.border)",
                   boxShadow: `
                     0 24px 10px rgba(18, 27, 68, 0.01),
@@ -395,7 +384,7 @@ export function Dropdown({
                               height: "100%",
                               padding: 12,
                               textAlign: "left",
-                              borderRadius: 16,
+                              borderRadius: 10,
                               transition: "background 80ms",
                               _groupFocus: {
                                 background: "focusedSurface",

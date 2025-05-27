@@ -62,8 +62,8 @@ export function EarnPositionSummary({
         "--fg-secondary-active": "token(colors.positionContentAlt)",
         "--fg-secondary-inactive": "token(colors.contentAlt)",
 
-        "--border-active": "color-mix(in srgb, token(colors.secondary) 15%, transparent)",
-        "--border-inactive": "token(colors.infoSurfaceBorder)",
+        "--border-active": "color-mix(in srgb, token(colors.white) 15%, transparent)",
+        "--border-inactive": "token(colors.neutral100)",
 
         "--bg-active": "token(colors.position)",
         "--bg-inactive": "token(colors.infoSurface)",
@@ -133,7 +133,7 @@ export function EarnPositionSummary({
                 />
               </div>
               <InfoTooltip heading="Total Value Locked (TVL)">
-                Total amount of BOLD deposited in this stability pool.
+                Total amount of bvUSD deposited in this stability pool.
               </InfoTooltip>
             </div>
           </div>
@@ -251,7 +251,7 @@ export function EarnPositionSummary({
             >
               <div
                 title={active
-                  ? `${fmtnum(earnPosition?.deposit, "full")} BOLD`
+                  ? `${fmtnum(earnPosition?.deposit, "full")} bvUSD`
                   : undefined}
                 className={css({
                   display: "flex",
@@ -261,12 +261,12 @@ export function EarnPositionSummary({
                   height: 24,
                 })}
               >
-                {active && fmtnum(earnPosition?.deposit)}
-                <TokenIcon symbol="BOLD" size="mini" title={null} />
+                {active ? fmtnum(earnPosition?.deposit) : "0.00"}
+                <TokenIcon symbol="bvUSD" size="mini" title={null} />
               </div>
               {prevEarnPosition && (
                 <div
-                  title={`${fmtnum(prevEarnPosition.deposit, "full")} BOLD`}
+                  title={`${fmtnum(prevEarnPosition.deposit, "full")} bvUSD`}
                   className={css({
                     display: "flex",
                     justifyContent: "flex-start",
@@ -278,7 +278,7 @@ export function EarnPositionSummary({
                   })}
                 >
                   {fmtnum(prevEarnPosition.deposit)}
-                  <TokenIcon symbol="BOLD" size="mini" title={null} />
+                  <TokenIcon symbol="bvUSD" size="mini" title={null} />
                 </div>
               )}
             </div>
@@ -312,13 +312,13 @@ export function EarnPositionSummary({
                     <>
                       <HFlex
                         gap={4}
-                        title={`${fmtnum(earnPosition?.rewards.bold, "full")} BOLD`}
+                        title={`${fmtnum(earnPosition?.rewards.bold, "full")} bvUSD`}
                         className={css({
                           fontVariantNumeric: "tabular-nums",
                         })}
                       >
                         {fmtnum(earnPosition?.rewards.bold)}
-                        <TokenIcon symbol="BOLD" size="mini" title={null} />
+                        <TokenIcon symbol="bvUSD" size="mini" title={null} />
                       </HFlex>
                       <HFlex gap={4}>
                         <Amount value={earnPosition?.rewards.coll} />
@@ -328,7 +328,7 @@ export function EarnPositionSummary({
                   )
                   : (
                     <TokenIcon.Group size="mini">
-                      <TokenIcon symbol="BOLD" />
+                      <TokenIcon symbol="bvUSD" />
                       <TokenIcon symbol={collToken.symbol} />
                     </TokenIcon.Group>
                   )}
@@ -381,7 +381,7 @@ export function EarnPositionSummary({
   );
 }
 
-function OpenLink({
+export function OpenLink({
   active,
   path,
   title,
@@ -401,17 +401,6 @@ function OpenLink({
         placeItems: "center",
         padding: "0 12px 0 24px",
         borderRadius: 10,
-        transition: "scale 80ms",
-        _focusVisible: {
-          outline: "2px solid token(colors.focused)",
-          outlineOffset: -2,
-        },
-        _active: {
-          translate: "0 1px",
-        },
-        _hover: {
-          scale: 1.05,
-        },
       })}
     >
       <div
@@ -420,9 +409,17 @@ function OpenLink({
           placeItems: "center",
           width: 34,
           height: 34,
-          color: "accentContent",
+          color: "neutral100",
           background: "accent",
           borderRadius: "50%",
+          transition: "scale 80ms",
+          _hover: {
+            background: "goldLight",
+            scale: 1.05,
+          },
+          _active: {
+            translate: "0 1px",
+          },
         })}
       >
         {active

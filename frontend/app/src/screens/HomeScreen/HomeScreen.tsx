@@ -1,28 +1,25 @@
 "use client";
 
-import type { CollateralSymbol } from "@/src/types";
-
-import { Amount } from "@/src/comps/Amount/Amount";
-import { Positions } from "@/src/comps/Positions/Positions";
-import { DNUM_1 } from "@/src/dnum-utils";
-import {
-  getBranch,
-  getBranches,
-  getCollToken,
-  useAverageInterestRate,
-  useBranchDebt,
-  useEarnPool,
-} from "@/src/liquity-utils";
-import { useAccount } from "@/src/wagmi-utils";
-import { css } from "@/styled-system/css";
-import { AnchorTextButton, IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
+import { Positions } from "@/src/comps/Positions/Positions";
+import { fmtnum } from "@/src/formatting";
+import { usePrice } from "@/src/services/Prices";
+import { useAccount, useBalance } from "@/src/wagmi-utils";
+import { css } from "@/styled-system/css";
 import Link from "next/link";
-import { HomeTable } from "./HomeTable";
+
 
 export function HomeScreen() {
   const account = useAccount();
-  const branches = getBranches();
+
+  const bvusdBalance = useBalance(account.address, "bvUSD");
+  const sbvusdBalance = useBalance(account.address, "sbvUSD");
+  const vcraftBalance = useBalance(account.address, "VCRAFT");
+
+  const bvusdPrice = usePrice("bvUSD");
+  const sbvusdPrice = usePrice("sbvUSD");
+  const vcraftPrice = usePrice("VCRAFT");
+
   return (
     <div
       className={css({
@@ -33,241 +30,168 @@ export function HomeScreen() {
         width: "100%",
       })}
     >
-      <Positions address={account.address ?? null} />
-      <div
-        className={css({
-          display: "grid",
-          gap: 24,
-          gridTemplateColumns: "1fr 1fr",
-        })}
-      >
-        <HomeTable
-          title="Borrow BOLD against ETH and staked ETH"
-          subtitle="You can adjust your loans, including your interest rate, at any time"
-          icon={<IconBorrow />}
-          columns={[
-            "Collateral",
-            <span title="Average interest rate, per annum">
-              Avg rate, p.a.
-            </span>,
-            <span title="Maximum Loan-to-Value ratio">
-              Max LTV
-            </span>,
-            "Total debt",
-            null,
-          ] as const}
-          rows={branches.map(({ symbol }) => (
-            <BorrowingRow
-              key={symbol}
-              symbol={symbol}
-            />
-          ))}
-        />
-        <HomeTable
-          title="Earn rewards with BOLD"
-          subtitle="Earn BOLD & (staked) ETH rewards by putting your BOLD in a stability pool"
-          icon={<IconEarn />}
-          columns={[
-            "Pool",
-            <abbr title="Annual Percentage Rate over the last 24 hours">APR</abbr>,
-            <abbr title="Annual Percentage Rate over the last 7 days">
-              7d APR
-            </abbr>,
-            "Pool size",
-            null,
-          ] as const}
-          rows={branches.map(({ symbol }) => (
-            <EarnRewardsRow
-              key={symbol}
-              symbol={symbol}
-            />
-          ))}
-        />
+      <Positions address={account.address ?? null} showNewPositionCard={false} />
+      <div>
+        <h1
+          className={css({
+            fontSize: 32,
+            color: "content",
+            userSelect: "none",
+          })}
+          style={{
+            paddingBottom: 32,
+          }}
+        >
+          My Tokens
+        </h1>
+        <div
+          className={css({
+            display: "grid",
+            gap: 24,
+          })}
+          style={{
+            gridTemplateColumns: `repeat(3, 1fr)`,
+            gridAutoRows: 180,
+          }}
+        >
+          <TokenCard
+            token="bvUSD"
+            link={{ label: "Buy", href: "/buy" }}
+            subValues={[
+              {
+                label: "Value",
+                value: `$${bvusdBalance.data && bvusdPrice.data
+                  ? fmtnum(dn.mul(bvusdBalance.data, bvusdPrice.data), "2z")
+                  : "0.00"
+                  }`
+              },
+              {
+                label: "Locked",
+                value: `$${sbvusdBalance.data && sbvusdPrice.data
+                  ? fmtnum(dn.mul(sbvusdBalance.data, sbvusdPrice.data), "2z")
+                  : "0.00"
+                  }`
+              },
+            ]}
+          />
+          <TokenCard
+            token="sbvUSD"
+            link={{ label: "Earn", href: "/vault" }}
+            subValues={[
+              {
+                label: "Value",
+                value: `$${sbvusdBalance.data && sbvusdPrice.data
+                  ? fmtnum(dn.mul(sbvusdBalance.data, sbvusdPrice.data), "2z")
+                  : "0.00"
+                  }`
+              },
+              {
+                label: "Apy",
+                value: "10%"
+              },
+            ]}
+          />
+          <TokenCard
+            token="VCRAFT"
+            link={{ label: "Buy", href: "#" }}
+            subValues={[
+              {
+                label: "Value",
+                value: `$${vcraftBalance.data && vcraftPrice.data
+                  ? fmtnum(dn.mul(vcraftBalance.data, vcraftBalance.data), "2z")
+                  : "0.00"
+                  }`
+              },
+            ]}
+          />
+        </div>
       </div>
     </div>
   );
 }
 
-function BorrowingRow({
-  symbol,
+export function TokenCard({
+  token,
+  link,
+  subValues
 }: {
-  symbol: CollateralSymbol;
+  token: string,
+  link?: { label: string, href: string },
+  subValues: { label: string, value: string }[]
 }) {
-  const branch = getBranch(symbol);
-  const collateral = getCollToken(branch.id);
-  const avgInterestRate = useAverageInterestRate(branch.id);
-  const branchDebt = useBranchDebt(branch.id);
-
-  const maxLtv = collateral?.collateralRatio && dn.gt(collateral.collateralRatio, 0)
-    ? dn.div(DNUM_1, collateral.collateralRatio)
-    : null;
-
   return (
-    <tr>
-      <td>
-        <div
+    <div className={css({
+      background: "token(colors.controlSurfaceAlt)",
+      border: "1px solid token(colors.neutral100)",
+      borderRadius: 8,
+      padding: 16,
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+    })}>
+      <div className={css({
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "baseline",
+        paddingBottom: 12,
+      })}>
+        <h1
           className={css({
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          })}
-        >
-          <TokenIcon symbol={symbol} size="mini" />
-          <span>{collateral?.name}</span>
-        </div>
-      </td>
-      <td>
-        <Amount
-          fallback="…"
-          percentage
-          value={avgInterestRate.data}
-        />
-      </td>
-      <td>
-        <Amount
-          value={maxLtv}
-          percentage
-        />
-      </td>
-      <td>
-        <Amount
-          format="compact"
-          prefix="$"
-          value={branchDebt.data}
-        />
-      </td>
-      <td>
-        <div
+            fontSize: 24,
+            color: "content",
+          })}>
+          {token}
+        </h1>
+        <Link
+          href={link.href}
           className={css({
-            display: "flex",
-            gap: 16,
-            justifyContent: "flex-end",
-          })}
-        >
-          <Link
-            href={`/borrow/${symbol.toLowerCase()}`}
-            legacyBehavior
-            passHref
-          >
-            <AnchorTextButton
-              label={
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    fontSize: 14,
-                  })}
-                >
-                  Borrow
-                  <TokenIcon symbol="BOLD" size="mini" />
-                </div>
-              }
-              title={`Borrow ${collateral?.name} from ${symbol}`}
-            />
-          </Link>
-          {
-            /*<Link
-            href={`/multiply/${symbol.toLowerCase()}`}
-            legacyBehavior
-            passHref
-          >
-            <AnchorTextButton
-              label={
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    fontSize: 14,
-                  })}
-                >
-                  Multiply
-                  <TokenIcon symbol={symbol} size="mini" />
-                </div>
-              }
-              title={`Borrow ${collateral?.name} from ${symbol}`}
-            />
-          </Link>*/
-          }
-        </div>
-      </td>
-    </tr>
-  );
+            color: "accent",
+            textDecoration: "none",
+            _hover: {
+              color: "goldLight",
+            },
+          })}>
+          {link.label}
+        </Link>
+      </div>
+      <div className={css({
+        display: "flex",
+        flexDirection: "row",
+        justifyContent: "space-between"
+      })}>
+        {subValues.map((subValue, i) => (
+          <SubValue key={subValue.label} label={subValue.label} value={subValue.value} index={i} />
+        ))}
+      </div>
+    </div>
+  )
 }
 
-function EarnRewardsRow({
-  symbol,
-}: {
-  symbol: CollateralSymbol;
-}) {
-  const branch = getBranch(symbol);
-  const collateral = getCollToken(branch.id);
-  const earnPool = useEarnPool(branch.id);
-
+export function SubValue({ label, value, index }: { label: string, value: string, index: number }) {
   return (
-    <tr>
-      <td>
-        <div
-          className={css({
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          })}
-        >
-          <TokenIcon symbol={symbol} size="mini" />
-          <span>{collateral?.name}</span>
-        </div>
-      </td>
-      <td>
-        <Amount
-          fallback="…"
-          percentage
-          value={earnPool.data.apr}
-        />
-      </td>
-      <td>
-        <Amount
-          fallback="…"
-          percentage
-          value={earnPool.data.apr7d}
-        />
-      </td>
-      <td>
-        <Amount
-          fallback="…"
-          format="compact"
-          prefix="$"
-          value={earnPool.data?.totalDeposited}
-        />
-      </td>
-      <td>
-        <Link
-          href={`/earn/${symbol.toLowerCase()}`}
-          legacyBehavior
-          passHref
-        >
-          <AnchorTextButton
-            label={
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  fontSize: 14,
-                })}
-              >
-                Earn
-                <TokenIcon.Group size="mini">
-                  <TokenIcon symbol="BOLD" />
-                  <TokenIcon symbol={symbol} />
-                </TokenIcon.Group>
-              </div>
-            }
-            title={`Earn BOLD with ${collateral?.name}`}
-          />
-        </Link>
-      </td>
-    </tr>
-  );
+    <div
+      className={css({
+        lineHeight: 1.2,
+      })}
+    >
+      <p
+        className={css({
+          fontSize: 16,
+          color: "contentAlt",
+          justifySelf: index === 0 ? "start" : "end",
+        })}
+      >
+        {label}
+      </p>
+      <p
+        className={css({
+          fontSize: 28,
+          justifySelf: index === 0 ? "start" : "end",
+        })}
+      >
+        {value}
+      </p>
+    </div>
+  )
 }

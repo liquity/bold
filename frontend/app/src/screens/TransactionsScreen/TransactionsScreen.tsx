@@ -217,7 +217,8 @@ export function TransactionsScreen() {
                 <AnchorButton
                   label={flow.request.successLink[1]}
                   mode="positive"
-                  size="large"
+                  size="medium"
+                  shape="rectangular"
                   wide
                 />
               </Link>
@@ -228,13 +229,14 @@ export function TransactionsScreen() {
                 label={(
                   step.status === "error" ? "Retry: " : ""
                 ) + (
-                  flowParams
-                    ? stepDeclaration.name(flowParams)
-                    : ""
-                )}
+                    flowParams
+                      ? stepDeclaration.name(flowParams)
+                      : ""
+                  )}
                 mode="primary"
                 onClick={commit}
-                size="large"
+                size="medium"
+                shape="rectangular"
                 wide
               />
             )}
@@ -478,17 +480,17 @@ function StepDisc({
         fontSize: 16,
         userSelect: "none",
 
-        "--base-color": "token(colors.content)",
-        "--base-background": "token(colors.surface)",
-        "--base-border-color": "token(colors.border)",
+        "--base-color": "token(colors.accent)",
+        "--base-background": "token(colors.infoSurface)",
+        "--base-border-color": "token(colors.accent)",
 
-        "--active-color": "token(colors.strongSurfaceContent)",
-        "--active-background": "token(colors.strongSurface)",
-        "--active-border-color": "var(--active-color)",
+        "--active-color": "token(colors.fieldBorderFocused)",
+        "--active-background": "token(colors.accent)",
+        "--active-border-color": "var(--active-background)",
 
-        "--error-color": "token(colors.negativeContent)",
+        "--error-color": "token(colors.fieldBorderFocused)",
         "--error-background": "token(colors.negative)",
-        "--error-border-color": "var(--error-color)",
+        "--error-border-color": "var(--error-background)",
 
         "--success-color": "token(colors.positive)",
         "--success-background": "var(--base-background)",
@@ -567,7 +569,7 @@ function StepDisc({
                 padding: "12px 0",
                 whiteSpace: "nowrap",
                 color: "content",
-                background: "surface",
+                background: "background",
                 border: "1px solid token(colors.border)",
                 borderRadius: 4,
                 boxShadow: "0 15px 35px rgba(60, 66, 87, 0.12), 0 5px 15px rgba(0, 0, 0, 0.08)",

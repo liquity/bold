@@ -252,7 +252,7 @@ export function About({ children }: { children: ReactNode }) {
                   )
                 ))}
                 <Button
-                  mode="secondary"
+                  mode="primary"
                   size="mini"
                   label="Copy to clipboard"
                   onClick={() => {
@@ -370,7 +370,7 @@ function AboutTable({
     <div
       className={css({
         padding: "0 16px",
-        background: "surface",
+        background: "fieldSurface",
         border: "1px solid token(colors.tableBorder)",
         borderRadius: 8,
         "& h3": {
@@ -399,7 +399,7 @@ function AboutTable({
           className={css({
             fontSize: 14,
             padding: "8px 0",
-            color: "contentAlt2",
+            color: "contentAlt",
           })}
         >
           {title}
@@ -420,7 +420,7 @@ function AboutTable({
                     ? (
                       <span
                         className={css({
-                          color: "contentAlt2",
+                          color: "contentAlt",
                           userSelect: "none",
                         })}
                       >

@@ -7,7 +7,7 @@ import { Tag } from "@/src/comps/Tag/Tag";
 import content from "@/src/content";
 import { DEPLOYMENT_FLAVOR } from "@/src/env";
 import { css } from "@/styled-system/css";
-import { IconBorrow, IconDashboard, IconEarn, IconLeverage, IconStake } from "@liquity2/uikit";
+import { IconBorrow, IconDashboard, IconEarn } from "@liquity2/uikit";
 import Link from "next/link";
 import { AccountButton } from "./AccountButton";
 import { Menu } from "./Menu";
@@ -15,9 +15,10 @@ import { Menu } from "./Menu";
 const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
   [content.menu.dashboard, "/", IconDashboard],
   [content.menu.borrow, "/borrow", IconBorrow],
-  [content.menu.multiply, "/multiply", IconLeverage],
+  [content.menu.wrap, "/wrap", IconEarn],
   [content.menu.earn, "/earn", IconEarn],
-  [content.menu.stake, "/stake", IconStake],
+  [content.menu.buy, "/buy", IconEarn],
+  [content.menu.stats, "/stats", IconEarn],
 ];
 
 export function TopBar() {
@@ -42,7 +43,9 @@ export function TopBar() {
           padding: "16px 24px",
           fontSize: 16,
           fontWeight: 500,
-          background: "background",
+          background: "fieldSurface",
+          border: "1px solid token(colors.fieldBorder)",
+          borderRadius: 16,
         })}
       >
         <Link
@@ -51,16 +54,13 @@ export function TopBar() {
             position: "relative",
             display: "flex",
             alignItems: "center",
-            gap: 16,
+            gap: 4,
             height: "100%",
             paddingRight: 8,
-            _focusVisible: {
-              borderRadius: 4,
-              outline: "2px solid token(colors.focused)",
-            },
             _active: {
               translate: "0 1px",
             },
+            fontSize: 24,
           })}
         >
           <div

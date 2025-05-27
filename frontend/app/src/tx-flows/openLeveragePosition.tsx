@@ -87,7 +87,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
         <TransactionDetailsRow
           label="Borrowed"
           value={[
-            `${fmtnum(borrowedWithFee)} BOLD`,
+            `${fmtnum(borrowedWithFee)} bvUSD`,
             <div
               className={css({
                 display: "flex",
@@ -100,9 +100,9 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
                 fallback="…"
                 prefix="Incl. "
                 value={upfrontFee.data}
-                suffix=" BOLD creation fee"
+                suffix=" bvUSD creation fee"
               />
-              <InfoTooltip heading="BOLD Creation Fee">
+              <InfoTooltip heading="bvUSD Creation Fee">
                 This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of average
                 interest for the respective collateral asset.
               </InfoTooltip>
@@ -120,7 +120,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
                     digits: 4,
                     dust: false,
                     prefix: "~",
-                  })} BOLD per year)
+                  })} bvUSD per year)
                 </div>,
               ]}
             />
@@ -130,7 +130,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
               label="Interest rate"
               value={[
                 `${fmtnum(loan.interestRate, "pct2")}%`,
-                `${fmtnum(dn.mul(loan.borrowed, loan.interestRate))} BOLD per year`,
+                `${fmtnum(dn.mul(loan.borrowed, loan.interestRate))} bvUSD per year`,
               ]}
             />
           )}
@@ -224,7 +224,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
         };
 
         // ETH collateral case
-        if (branch.symbol === "ETH") {
+        if (branch.symbol === "WETH") {
           return ctx.writeContract({
             ...LeverageWETHZapper,
             functionName: "openLeveragedTroveWithRawETH",
@@ -285,7 +285,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
     }
 
     // ETH doesn't need approval
-    if (collToken.symbol === "ETH") {
+    if (collToken.symbol === "WETH") {
       return ["openLeveragedTrove"];
     }
 

@@ -91,7 +91,7 @@ export function LeverageField({
                 >
                   {fmtnum(debt)}
                 </span>
-                {" BOLD"}
+                {" bvUSD"}
               </>
             )}
           </div>

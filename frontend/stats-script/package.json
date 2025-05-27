@@ -1,0 +1,26 @@
+{
+  "name": "@liquity/lqty-circulating-supply",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "update-stats": "tsx src/index.ts",
+    "build": "tsc --project tsconfig.json"
+  },
+  "dependencies": {
+    "@liquity/lib-base": "3.0.0",
+    "@liquity/lib-ethers": "3.4.0",
+    "@liquity/providers": "1.0.1",
+    "dotenv": "^16.4.7",
+    "ethers": "5.7.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.7",
+    "@typescript-eslint/eslint-plugin": "5.62.0",
+    "@typescript-eslint/parser": "5.62.0",
+    "eslint": "8.57.1",
+    "tsx": "^4.19.2",
+    "typescript": "5.7.3"
+  },
+  "packageManager": "yarn@1.22.21+sha1.1959a18351b811cdeedbd484a8f86c3cc3bbaf72"
+}
