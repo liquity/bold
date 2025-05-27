@@ -17,9 +17,12 @@ import "src/StabilityPool.sol";
 import "src/Dependencies/Whitelist.sol";
 import "src/PriceFeeds/CollateralPriceFeed.sol";
 import "src/PriceFeeds/InterchangeablePriceFeed.sol";
+import "src/PriceFeeds/PushPriceFeed.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "src/Zappers/WrappedTokenZapper.sol";
+import "src/Zappers/CollateralZapper.sol";
 import "src/Dependencies/TokenWrapper.sol";
+import "src/Dependencies/MultiTokenWrapper.sol";
 import "./DeployBvUSD.s.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 
@@ -57,12 +60,11 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
 
     struct BranchDeployment {
         address collateralAddress;
-        bool createWrapper;
         bool createWhitelist;
+        bool createWrapper;
         address oracleAddress;
         uint256 oracleStalenessThreshold;
     }
-
 
     struct TroveManagerParams {
         uint256 CCR;
@@ -217,7 +219,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
                 LIQUIDATION_PENALTY_REDISTRIBUTION: branchConfig.liqPenaltyDistr
             });
 
-            branchDeploymentConfigs[i].collateralAddress = branchConfig.createWrapper ? deployCollateralWrapper(branchConfig.collateralAddress) : branchConfig.collateralAddress;
+            branchDeploymentConfigs[i].collateralAddress = branchConfig.createWrapper ? deployCollateralWrapper(branchConfig.collateralAddress, i) : branchConfig.collateralAddress;
             branchDeploymentConfigs[i].createWrapper = branchConfig.createWrapper;
             branchDeploymentConfigs[i].createWhitelist = branchConfig.createWhitelist;
             branchDeploymentConfigs[i].oracleAddress = branchConfig.oracleAddress;
@@ -226,6 +228,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             _log("Branch number:               ", (i + 1).toString());
             _log("Collateral Address:               ", branchConfig.collateralAddress.toHexString());
             _log("Deploy Wrapper and Zapper:               ", branchConfig.createWrapper.toString());
+            _log("Deploy Whitelist:               ", branchConfig.createWhitelist.toString());
             _log("Collateral Name:               ", collName);
             _log("Collateral Symbol:               ", collSymbol);
             _log("Oracle address:               ", branchConfig.oracleAddress.toHexString());
@@ -294,9 +297,13 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
             //     branchConfigs[vars.i].oracleAddress, 
             //     branchConfigs[vars.i].oracleStalenessThreshold
             // );
+            
+            // deploy Push 
+            PushPriceFeed priceFeed = new PushPriceFeed(deployer);
+
             vars.priceFeeds[vars.i] = new InterchangeablePriceFeed(
                 deployer, 
-                IPriceFeed(branchConfigs[vars.i].oracleAddress)
+                IPriceFeed(address(priceFeed))
             );
         }
 
@@ -441,7 +448,7 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
 
         // deploy zapper
         if(deployZapper)
-            branchContracts.collZapper = deployCollateralZapper(ITokenWrapper(address(branchContracts.collToken)), branchContracts.addressesRegistry);
+            branchContracts.collZapper = deployCollateralZapper(IERC20(address(branchContracts.collToken)), branchContracts.addressesRegistry);
 
         // Connect contracts
         _bvUSD.setStabilityPool(address(branchContracts.stabilityPool), true);
@@ -458,18 +465,21 @@ contract DeployCollateralBranchScript is DeployBaseProtocol {
     }
 
     // deploy token wrapper and zapper
-    function deployCollateralWrapper(address underlyingToken) 
+    function deployCollateralWrapper(address underlyingToken, uint256 branchNumber) 
         public returns (address collateralWrapper) 
     {
-        collateralWrapper = address(new TokenWrapper(IERC20Metadata(underlyingToken)));
+        if(branchNumber == 0)
+            collateralWrapper = address(new TokenWrapper(IERC20Metadata(underlyingToken)));
+        else 
+            collateralWrapper = address(new MultiTokenWrapper());
     }
 
     function deployCollateralZapper(
-        ITokenWrapper collateralWrapper, 
+        IERC20 collateralWrapper, 
         IAddressesRegistry addressRegistry
     ) public returns (ITokenZapper collateralZapper) 
     {
-        collateralZapper = new WrappedTokenZapper(addressRegistry, collateralWrapper);
+        collateralZapper = new CollateralZapper(addressRegistry, collateralWrapper);
     }
 
     function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)
