@@ -146,11 +146,21 @@ export async function getOpenLeveragedTroveParams(
 
   const { PriceFeed } = collContracts;
 
-  const [price] = await readContract(wagmiConfig, {
+  // TODO: Fix and/or test this
+  // Changed from "fetchPrice" to "getPrice"
+  // "fetchPrice" changed from view to nonpayable function
+  const price = await readContract(wagmiConfig, {
     abi: PriceFeed.abi,
     address: PriceFeed.address,
-    functionName: "fetchPrice",
+    functionName: "getPrice", // Previously "fetchPrice"
   });
+
+  // Previously:
+  // const [price] = await readContract(wagmiConfig, {
+  //   abi: PriceFeed.abi,
+  //   address: PriceFeed.address,
+  //   functionName: "fetchPrice",
+  // });
 
   const leverageRatio = BigInt(leverageFactor * 1000) * DECIMAL_PRECISION / 1000n;
   const flashLoanAmount = collAmount * (leverageRatio - DECIMAL_PRECISION) / DECIMAL_PRECISION;
