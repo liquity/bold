@@ -12,10 +12,12 @@ import {
   getBranch,
   getBranches,
   getCollToken,
+  getToken,
   useAverageInterestRate,
   useBranchDebt,
   useEarnPool,
 } from "@/src/liquity-utils";
+import { useSboldStats } from "@/src/sbold";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
@@ -56,7 +58,9 @@ export function HomeScreen() {
           },
         })}
       >
-        <BorrowTable compact={compact} />
+        <div>
+          <BorrowTable compact={compact} />
+        </div>
         <EarnTable compact={compact} />
       </div>
     </div>
@@ -143,7 +147,10 @@ function EarnTable({
       subtitle="Earn BOLD & (staked) ETH rewards by putting your BOLD in a stability pool"
       icon={<IconEarn />}
       columns={columns}
-      rows={getBranches().map(({ symbol }) => (
+      rows={[
+        ...getBranches(),
+        { symbol: "SBOLD" as const },
+      ].map(({ symbol }) => (
         <EarnRewardsRow
           key={symbol}
           compact={compact}
@@ -243,11 +250,12 @@ function EarnRewardsRow({
   symbol,
 }: {
   compact: boolean;
-  symbol: CollateralSymbol;
+  symbol: CollateralSymbol | "SBOLD";
 }) {
-  const branch = getBranch(symbol);
-  const collateral = getCollToken(branch.id);
-  const earnPool = useEarnPool(branch.id);
+  const branch = symbol === "SBOLD" ? null : getBranch(symbol);
+  const token = getToken(symbol);
+  const earnPool = useEarnPool(branch?.id ?? null);
+  const sboldStats = useSboldStats();
   return (
     <tr>
       <td>
@@ -259,7 +267,7 @@ function EarnRewardsRow({
           })}
         >
           <TokenIcon symbol={symbol} size="mini" />
-          <span>{collateral?.name}</span>
+          <span>{token?.name}</span>
         </div>
       </td>
       <td>
@@ -281,7 +289,9 @@ function EarnRewardsRow({
           fallback="…"
           format="compact"
           prefix="$"
-          value={earnPool.data?.totalDeposited}
+          value={symbol === "SBOLD"
+            ? sboldStats.data?.totalBold
+            : earnPool.data?.totalDeposited}
         />
       </td>
       {!compact && (
@@ -304,7 +314,7 @@ function EarnRewardsRow({
                 </TokenIcon.Group>
               </div>
             }
-            title={`Earn BOLD with ${collateral?.name}`}
+            title={`Earn BOLD with ${token?.name}`}
           />
         </td>
       )}

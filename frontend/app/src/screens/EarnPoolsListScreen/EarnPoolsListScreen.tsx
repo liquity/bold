@@ -3,20 +3,30 @@
 import type { BranchId } from "@/src/types";
 
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
+import { SboldPositionSummary } from "@/src/comps/EarnPositionSummary/SboldPositionSummary";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { getBranches, useEarnPosition } from "@/src/liquity-utils";
+import { isSboldEnabled, useSboldPosition } from "@/src/sbold";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 
+type PoolId = BranchId | "sbold";
+
 export function EarnPoolsListScreen() {
   const branches = getBranches();
   const collSymbols = branches.map((b) => b.symbol);
 
-  const poolsTransition = useTransition(branches.map((c) => c.branchId), {
+  const pools: PoolId[] = branches.map((b) => b.branchId);
+
+  if (isSboldEnabled()) {
+    pools.push("sbold");
+  }
+
+  const poolsTransition = useTransition(pools, {
     from: { opacity: 0, transform: "scale(1.1) translateY(64px)" },
     enter: { opacity: 1, transform: "scale(1) translateY(0px)" },
     leave: { opacity: 0, transform: "scale(1) translateY(0px)" },
@@ -72,9 +82,11 @@ export function EarnPoolsListScreen() {
           gap: 16,
         })}
       >
-        {poolsTransition((style, branchId) => (
+        {poolsTransition((style, poolId) => (
           <a.div style={style}>
-            <EarnPool branchId={branchId} />
+            {poolId === "sbold"
+              ? <SboldPool />
+              : <EarnPool branchId={poolId} />}
           </a.div>
         ))}
       </div>
@@ -94,6 +106,17 @@ function EarnPool({
       branchId={branchId}
       earnPosition={earnPosition.data ?? null}
       linkToScreen
+    />
+  );
+}
+
+function SboldPool() {
+  const account = useAccount();
+  const sboldPosition = useSboldPosition(account.address ?? null);
+  return (
+    <SboldPositionSummary
+      linkToScreen
+      sboldPosition={sboldPosition.data ?? null}
     />
   );
 }

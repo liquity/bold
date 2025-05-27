@@ -1,69 +1,42 @@
-import type { BranchId, Dnum, PositionEarn } from "@/src/types";
-import type { ReactNode } from "react";
+import type { Dnum, PositionSbold } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken, isEarnPositionActive, useEarnPool } from "@/src/liquity-utils";
+import { useSboldStats } from "@/src/sbold";
 import { css } from "@/styled-system/css";
-import { HFlex, InfoTooltip, TokenIcon } from "@liquity2/uikit";
+import { InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { EarnPositionSummaryBase } from "./EarnPositionSummaryBase";
 
-export function EarnPositionSummary({
-  branchId,
-  earnPosition,
+export function SboldPositionSummary({
   linkToScreen,
-  poolDeposit,
-  prevEarnPosition = null,
-  prevPoolDeposit,
-  title,
+  prevSboldPosition,
+  sboldPosition,
+  tvl,
   txPreviewMode,
-}:
-  & {
-    branchId: BranchId;
-    earnPosition: PositionEarn | null;
-    linkToScreen?: boolean;
-    prevEarnPosition?: PositionEarn | null;
-    title?: ReactNode;
-    txPreviewMode?: boolean;
-  }
-  & (
-    | { poolDeposit: Dnum; prevPoolDeposit: Dnum }
-    | { poolDeposit?: undefined; prevPoolDeposit?: undefined }
-  ))
-{
-  const collToken = getCollToken(branchId);
-  const earnPool = useEarnPool(branchId);
+}: {
+  linkToScreen?: boolean;
+  prevSboldPosition?: PositionSbold | null;
+  sboldPosition: PositionSbold | null;
+  tvl?: Dnum | null;
+  txPreviewMode?: boolean;
+}) {
+  const stats = useSboldStats();
+  const tvl_ = tvl ?? stats.data?.totalBold ?? null;
 
-  // The earnUpdate tx flow provides static values
-  // for poolDeposit and prevPoolDeposit. If these are
-  // not provided, we use the values from the earnPool data.
-  if (!poolDeposit) {
-    poolDeposit = earnPool.data?.totalDeposited ?? undefined;
-  }
-
-  let share = dn.from(0, 18);
-  if (earnPosition && poolDeposit && dn.gt(poolDeposit, 0)) {
-    share = dn.div(earnPosition.deposit, poolDeposit);
-  }
-
-  let prevShare = dn.from(0, 18);
-  if (prevEarnPosition && prevPoolDeposit && dn.gt(prevPoolDeposit, 0)) {
-    prevShare = dn.div(prevEarnPosition.deposit, prevPoolDeposit);
-  }
-
-  const active = txPreviewMode || isEarnPositionActive(earnPosition);
-
+  const active = Boolean(
+    txPreviewMode || (sboldPosition && dn.gt(sboldPosition.sbold, 0)),
+  );
   return (
     <EarnPositionSummaryBase
       action={!linkToScreen ? null : {
-        label: `${active ? "Manage" : "Deposit to"} ${collToken.name} pool`,
-        path: `/earn/${collToken.symbol.toLowerCase()}`,
+        label: `${active ? "Manage" : "Deposit to"} the sBOLD pool`,
+        path: `/earn/sbold`,
       }}
       active={active}
-      poolToken={collToken.symbol}
-      title={title ?? `${collToken.name} Stability Pool`}
+      poolToken="SBOLD"
+      title="sBOLD stability pool by K3 Capital"
       poolInfo={txPreviewMode ? <TagPreview /> : (
         <>
           <div
@@ -84,7 +57,7 @@ export function EarnPositionSummary({
                 fallback="-%"
                 format="1z"
                 percentage
-                value={earnPool.data?.apr}
+                value={null}
               />
             </div>
             <InfoTooltip
@@ -118,7 +91,7 @@ export function EarnPositionSummary({
               fallback="-%"
               format="1z"
               percentage
-              value={earnPool.data?.apr7d}
+              value={null}
             />
             <InfoTooltip
               content={{
@@ -141,8 +114,8 @@ export function EarnPositionSummary({
             <Amount
               fallback="-"
               format="compact"
-              prefix="$"
-              value={poolDeposit}
+              suffix=" BOLD"
+              value={tvl_}
             />
           </div>
           <InfoTooltip heading="Total Value Locked (TVL)">
@@ -151,13 +124,13 @@ export function EarnPositionSummary({
         </>
       }
       infoItems={[
-        {
-          label: "Deposit",
+        !active ? null : {
+          label: "sBOLD Balance",
           content: (
             <>
               <div
                 title={active
-                  ? `${fmtnum(earnPosition?.deposit, "full")} BOLD`
+                  ? `${fmtnum(sboldPosition?.sbold, "full")} sBOLD`
                   : undefined}
                 className={css({
                   display: "flex",
@@ -167,12 +140,12 @@ export function EarnPositionSummary({
                   height: 24,
                 })}
               >
-                {active && fmtnum(earnPosition?.deposit)}
-                <TokenIcon symbol="BOLD" size="mini" title={null} />
+                {active && fmtnum(sboldPosition?.sbold)}
+                <TokenIcon symbol="SBOLD" size="mini" title={null} />
               </div>
-              {prevEarnPosition && (
+              {prevSboldPosition && (
                 <div
-                  title={`${fmtnum(prevEarnPosition.deposit, "full")} BOLD`}
+                  title={`${fmtnum(prevSboldPosition.sbold, "full")} sBOLD`}
                   className={css({
                     display: "flex",
                     justifyContent: "flex-start",
@@ -183,60 +156,47 @@ export function EarnPositionSummary({
                     textDecoration: "line-through",
                   })}
                 >
-                  {fmtnum(prevEarnPosition.deposit)}
-                  <TokenIcon symbol="BOLD" size="mini" title={null} />
+                  {fmtnum(prevSboldPosition.sbold)}
+                  <TokenIcon symbol="SBOLD" size="mini" title={null} />
                 </div>
               )}
             </>
           ),
         },
-        txPreviewMode ? null : {
-          label: "Rewards",
-          content: (
-            active
-              ? (
-                <>
-                  <HFlex
-                    gap={4}
-                    title={`${fmtnum(earnPosition?.rewards.bold, "full")} BOLD`}
-                    className={css({
-                      fontVariantNumeric: "tabular-nums",
-                    })}
-                  >
-                    {fmtnum(earnPosition?.rewards.bold)}
-                    <TokenIcon symbol="BOLD" size="mini" title={null} />
-                  </HFlex>
-                  <HFlex gap={4}>
-                    <Amount value={earnPosition?.rewards.coll} />
-                    <TokenIcon symbol={collToken.symbol} size="mini" />
-                  </HFlex>
-                </>
-              )
-              : (
-                <TokenIcon.Group size="mini">
-                  <TokenIcon symbol="BOLD" />
-                  <TokenIcon symbol={collToken.symbol} />
-                </TokenIcon.Group>
-              )
-          ),
-        },
-        !active ? null : {
-          label: "Pool share",
+        {
+          label: "BOLD Deposit",
           content: (
             <>
-              <Amount percentage value={share} />
-              {prevEarnPosition && (
+              <div
+                title={active
+                  ? `${fmtnum(sboldPosition?.bold, "full")} BOLD`
+                  : undefined}
+                className={css({
+                  display: "flex",
+                  justifyContent: "flex-start",
+                  alignItems: "center",
+                  gap: 4,
+                  height: 24,
+                })}
+              >
+                {active && fmtnum(sboldPosition?.bold)}
+                <TokenIcon symbol="BOLD" size="mini" title={null} />
+              </div>
+              {prevSboldPosition && (
                 <div
+                  title={`${fmtnum(prevSboldPosition.bold, "full")} BOLD`}
                   className={css({
-                    display: "inline",
+                    display: "flex",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    gap: 4,
+                    height: 24,
                     color: "contentAlt",
                     textDecoration: "line-through",
                   })}
                 >
-                  <Amount
-                    percentage
-                    value={prevShare}
-                  />
+                  {fmtnum(prevSboldPosition.bold)}
+                  <TokenIcon symbol="BOLD" size="mini" title={null} />
                 </div>
               )}
             </>

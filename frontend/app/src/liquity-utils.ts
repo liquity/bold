@@ -8,6 +8,7 @@ import type {
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
+  Token,
   TokenSymbol,
   TroveId,
   TroveStatus,
@@ -41,7 +42,7 @@ import {
 import { isBranchId, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { bigIntAbs, jsonStringifyWithBigInt } from "@/src/utils";
 import { vAddress, vPrefixedTroveId } from "@/src/valibot-utils";
-import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
+import { addressesEqual, COLLATERALS, isAddress, shortenAddress, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
@@ -98,6 +99,16 @@ export function getCollToken(branchId: BranchId | null): CollateralToken | null 
   return token;
 }
 
+export function getToken(symbol: CollateralSymbol): CollateralToken;
+export function getToken(symbol: TokenSymbol): Token;
+export function getToken(symbol: TokenSymbol): Token {
+  const token = TOKENS_BY_SYMBOL[symbol];
+  if (!token) {
+    throw new Error(`Unknown token symbol: ${symbol}`);
+  }
+  return token;
+}
+
 export function getBranches(): Branch[] {
   return ENV_BRANCHES.map((branch) => {
     const contracts = CONTRACTS.branches.find((b) => b.id === branch.id);
@@ -144,7 +155,16 @@ function statusFromEnum(status: number): TroveStatus {
   throw new Error(`Invalid status: ${status}`);
 }
 
-export function useEarnPool(branchId: BranchId) {
+type EarnPool = {
+  apr: Dnum | null;
+  apr7d: Dnum | null;
+  collateral: CollateralToken;
+  totalDeposited: Dnum;
+};
+export function useEarnPool(branchId: null): UseQueryResult<null>;
+export function useEarnPool(branchId: BranchId): UseQueryResult<EarnPool>;
+export function useEarnPool(branchId: BranchId | null): UseQueryResult<EarnPool | null>;
+export function useEarnPool(branchId: BranchId | null) {
   const wagmiConfig = useWagmiConfig();
   const stats = useLiquityStats();
   const collateral = getCollToken(branchId);
@@ -160,6 +180,9 @@ export function useEarnPool(branchId: BranchId) {
       jsonStringifyWithDnum(spApyAvg7d),
     ],
     queryFn: async () => {
+      if (!branchId) {
+        return null;
+      }
       const totalBoldDeposits = await readContract(wagmiConfig, {
         ...getBranchContract(branchId, "StabilityPool"),
         functionName: "getTotalBoldDeposits",

@@ -177,7 +177,7 @@ export function BottomBar() {
   );
 }
 
-function Price({ symbol }: { symbol: TokenSymbol }) {
+function Price({ symbol }: { symbol: Exclude<TokenSymbol, "SBOLD"> }) {
   const price = usePrice(symbol);
   return (
     <HFlex

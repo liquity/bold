@@ -5,6 +5,7 @@ import { css } from "@/styled-system/css";
 import { a, useTransition } from "@react-spring/web";
 
 export function Amount({
+  animate = true,
   fallback = "",
   format,
   percentage = false,
@@ -13,6 +14,7 @@ export function Amount({
   title: titleParam,
   value,
 }: {
+  animate?: boolean;
   fallback?: string;
   format?: FmtnumPresetName | number;
   percentage?: boolean;
@@ -63,30 +65,19 @@ export function Amount({
       })
   );
 
-  const fallbackTransition = useTransition([{ content, title, showFallback }], {
-    keys: (item) => String(item.showFallback),
-    initial: {
-      transform: "scale(1)",
-    },
-    from: {
-      transform: "scale(0.9)",
-    },
-    enter: {
-      transform: "scale(1)",
-    },
-    leave: {
-      display: "none",
-      immediate: true,
-    },
-    config: {
-      mass: 1,
-      tension: 2000,
-      friction: 80,
-    },
+  const appear = useTransition({
+    showFallback,
+    content,
+  }, {
+    keys: (val) => String(val.showFallback),
+    from: { opacity: 0, transform: "scale(0.9)" },
+    enter: { opacity: 1, transform: "scale(1)" },
+    config: { mass: 1, tension: 2000, friction: 80 },
+    immediate: !animate,
   });
 
-  return fallbackTransition((style, { content, title }) => (
-    <a.div
+  return (
+    <div
       title={title ?? undefined}
       className={css({
         display: "inline-flex",
@@ -97,9 +88,14 @@ export function Amount({
         transformOrigin: "50% 50%",
         textDecoration: "inherit",
       })}
-      style={style}
     >
-      {content}
-    </a.div>
-  ));
+      {appear((style, { showFallback, content }) => (
+        showFallback ? content : (
+          <a.div style={{ transform: style.transform }}>
+            {content}
+          </a.div>
+        )
+      ))}
+    </div>
+  );
 }
