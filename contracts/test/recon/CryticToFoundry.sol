@@ -33,11 +33,18 @@ function test_property_active_troves_are_above_MIN_DEBT_1() public {
     borrowerOperations_openTrove_clamped(0x0000000000000000000000000000000000000000,0,13339564538247939756636,1996998175339557135783,0x0000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000,0x0000000000000000000000000000000000000000);
 
     priceFeed_setPrice(63326149451276);
-
-    borrowerOperations_shutdown();
+        vm.startPrank(_getActor());
+        borrowerOperations.shutdown();
     
     // Doesn't matter once you're shutdown
-    troveManager_urgentRedemption_clamped(828122044839760619);
+    uint256[] memory ids = new uint256[](1);
+    ids[0] = clampedTroveId;
+
+    uint256 _boldAmount = 828122044839760619 % troveManager.getTroveDebt(clampedTroveId) + 1;
+
+    troveManager.urgentRedemption(_boldAmount, ids, 0);
+    vm.stopPrank();
+
     property_active_troves_are_above_MIN_DEBT();
 
  }

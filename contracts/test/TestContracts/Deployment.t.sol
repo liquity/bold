@@ -147,6 +147,7 @@ contract TestDeployer is MetadataDeployment {
         uint256 CCR;
         uint256 MCR;
         uint256 SCR;
+        uint256 BCR;
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
         uint256 debtLimit;
@@ -216,6 +217,10 @@ contract TestDeployer is MetadataDeployment {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
 
+    function getBytecodeWithGovernor(bytes memory _creationCode, address _addressesRegistry, address _governor) public pure returns (bytes memory) {
+        return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _governor));
+    }
+
     function getAddress(address _deployer, bytes memory _bytecode, bytes32 _salt) public pure returns (address) {
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), _deployer, _salt, keccak256(_bytecode)));
 
@@ -237,7 +242,7 @@ contract TestDeployer is MetadataDeployment {
             Zappers memory zappers
         )
     {
-        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2));
+        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, MAX_INT/2));
     }
 
     function deployAndConnectContracts(TroveManagerParams memory troveManagerParams)
@@ -281,6 +286,8 @@ contract TestDeployer is MetadataDeployment {
             100 ether, //     _tapAmount
             1 days //         _tapPeriod
         );
+
+        // The Superfluid framework will be initialized in deployAndConnectContracts
         (contractsArray, collateralRegistry, boldToken, hintHelpers, multiTroveGetter, zappersArray) =
             deployAndConnectContracts(troveManagerParamsArray, WETH);
     }
@@ -319,11 +326,11 @@ contract TestDeployer is MetadataDeployment {
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this), _sf.superTokenFactory));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this))));
+        boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), _sf.superTokenFactory)));
         assert(address(boldToken) == vars.boldTokenAddress);
 
         // Initialize the BoldToken
-        BoldToken(payable(address(boldToken))).initialize(_sf.superTokenFactory);
+        BoldToken(payable(address(boldToken))).initialize();
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
         zappersArray = new Zappers[](vars.numCollaterals);
@@ -392,6 +399,7 @@ contract TestDeployer is MetadataDeployment {
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
             _troveManagerParams.SCR,
+            _troveManagerParams.BCR,
             _troveManagerParams.debtLimit,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
@@ -436,7 +444,7 @@ contract TestDeployer is MetadataDeployment {
         );
         addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = getAddress(
-            address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
+            address(this), getBytecodeWithGovernor(type(TroveNFT).creationCode, address(contracts.addressesRegistry), address(0)), SALT
         );
         addresses.stabilityPool = getAddress(
             address(this), getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)), SALT
@@ -482,7 +490,7 @@ contract TestDeployer is MetadataDeployment {
 
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry, address(0));
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
         contracts.pools.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
@@ -584,7 +592,7 @@ contract TestDeployer is MetadataDeployment {
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this), superTokenFactory));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        result.boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this))));
+        result.boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), superTokenFactory)));
         assert(address(result.boldToken) == vars.boldTokenAddress);
 
         // WETH
@@ -643,6 +651,7 @@ contract TestDeployer is MetadataDeployment {
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
             _troveManagerParams.SCR,
+            _troveManagerParams.BCR,
             _troveManagerParams.debtLimit,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
@@ -679,7 +688,7 @@ contract TestDeployer is MetadataDeployment {
         );
         addresses.troveManager = _params.troveManagerAddress;
         addresses.troveNFT = getAddress(
-            address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
+            address(this), getBytecodeWithGovernor(type(TroveNFT).creationCode, address(contracts.addressesRegistry), address(0)), SALT
         );
         addresses.stabilityPool = getAddress(
             address(this), getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)), SALT
@@ -725,7 +734,7 @@ contract TestDeployer is MetadataDeployment {
 
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry, address(0));
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);

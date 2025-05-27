@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import {BaseSetup} from "@chimera/BaseSetup.sol";
 import {vm} from "chimera/Hevm.sol";
 import "forge-std/console2.sol";
+import "forge-std/console.sol";
 
 import {MockERC20} from "./mocks/MockERC20.sol";
 
@@ -55,7 +56,7 @@ import { SuperTokenV1Library } from "@superfluid-finance/ethereum-contracts/cont
 
 
 interface IInitializableBold {
-    function initialize(ISuperTokenFactory factory) external;
+    function initialize() external;
 }
 
 contract InterestRouter {
@@ -164,7 +165,6 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
     bool hasDoneRedemption;
 
     // Fake addresses
-    address factory = address(this);
     address governor = address(this);
 
     function setNewClampedTroveId(uint256 entropy) public returns (uint256) {
@@ -196,20 +196,21 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         address coll,
         TroveManagerParams memory params
     ) internal returns (address, address) {
-        IAddressesRegistry addressesRegistry = new AddressesRegistry(
+        AddressesRegistry newAddressesRegistry = new AddressesRegistry(
             address(this),
             params.CCR,
             params.MCR,
+            params.BCR,
             params.SCR,
-            type(uint256).max, // TODO: DEBT LIMIT?
-            // TODO: Debt Limit
+            params.debtLimit,
             params.LIQUIDATION_PENALTY_SP,
             params.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
+
         address troveManagerAddress =
-            getAddress(address(this), getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry)), SALT);
+            getAddress(address(this), abi.encodePacked(type(TroveManagerTester).creationCode, abi.encode(address(newAddressesRegistry))), SALT);
         
-        return (address(addressesRegistry), troveManagerAddress);
+        return (address(newAddressesRegistry), troveManagerAddress);
     }
 
     function setup() internal virtual override {
@@ -221,15 +222,16 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         SuperfluidFrameworkDeployer sfDeployer = new SuperfluidFrameworkDeployer();
         sfDeployer.deployTestFramework();
         _sf = sfDeployer.getFramework();
-        factory = address(_sf.superTokenFactory);
+        address factory = address(_sf.superTokenFactory);
 
         // === Before === ///
         // Bold and interst router
         interestRouter = new InterestRouter();
-        boldToken = boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this))));
+        boldToken = boldToken = IBoldToken(address(new BoldToken{salt: SALT}(address(this), _sf.superTokenFactory)));
         
         // NOTE: Unclear interface?
-        IInitializableBold(address(boldToken)).initialize(ISuperTokenFactory(factory));
+        console.log("Initializing bold token in Setup. Please work :pray:");
+        IInitializableBold(address(boldToken)).initialize();
 
         weth = MockERC20(_newAsset(18));
 
@@ -237,11 +239,13 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             CCR: 150e16,                          // 150%
             MCR: 110e16,                          // 110%
             SCR: 130e16,                          // 130%
+            BCR: 49e16,                           // max bcr is 50e16 prev setting was 120e16 which was too high
+            debtLimit: type(uint256).max, 
             LIQUIDATION_PENALTY_SP: 1e17,         // 10%
             LIQUIDATION_PENALTY_REDISTRIBUTION: 1e17  // 10%
         });
 
-        (address addressesRegistry, address troveManagerAddress) = _setupAddressRegistryAndTroveManager(
+        (address newAddressesRegistryAddr, address troveManagerAddress) = _setupAddressRegistryAndTroveManager(
             address(weth),
             _troveManagerParams
         );
@@ -271,10 +275,11 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
             IBoldToken(address(boldToken)),
             IWETH(address(weth)),
             troveManagerAddress,
-            IAddressesRegistry(addressesRegistry),
+            AddressesRegistry(newAddressesRegistryAddr),
             ICollateralRegistry(address(collateralRegistry)),
             IHintHelpers(address(hintHelpers)),
-            IMultiTroveGetter(address(multiTroveGetter))
+            IMultiTroveGetter(address(multiTroveGetter)),
+            _troveManagerParams
         ));
 
         _switchToActiveBranch(0);
@@ -325,6 +330,8 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         uint256 CCR;
         uint256 MCR;
         uint256 SCR;
+        uint256 BCR;
+        uint256 debtLimit;      
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
     }
@@ -334,15 +341,14 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         IBoldToken _boldToken,
         IWETH _weth,
         address _troveManagerAddress,
-        IAddressesRegistry _addressesRegistry,
+        AddressesRegistry _addressesRegistry,
         ICollateralRegistry _collateralRegistry,
         IHintHelpers _hintHelpers,
-        IMultiTroveGetter _multiTroveGetter
+        IMultiTroveGetter _multiTroveGetter,
+        TroveManagerParams memory _troveManagerParams
     ) internal returns (LiquityContractsDev memory contracts) {
         LiquityContractAddresses memory addresses;
-
-        // Deploy all contracts, using testers for TM and PriceFeed
-        contracts.addressesRegistry = AddressesRegistry(address(_addressesRegistry));
+        contracts.addressesRegistry = _addressesRegistry;
         contracts.priceFeed = new MultiTokenPriceFeedTestnet();
         contracts.interestRouter = new InterestRouter();
         contracts.collToken = MockERC20(address(_collToken));
@@ -359,7 +365,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
         );
         addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = getAddress(
-            address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
+            address(this), abi.encodePacked(type(TroveNFT).creationCode, abi.encode(address(contracts.addressesRegistry), address(0))), SALT
         );
         addresses.stabilityPool = getAddress(
             address(this), getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)), SALT
@@ -405,7 +411,7 @@ abstract contract Setup is BaseSetup, ActorManager, AssetManager {
 
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry, address(0));
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);

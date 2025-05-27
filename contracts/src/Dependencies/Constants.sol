@@ -16,6 +16,57 @@ uint256 constant ETH_GAS_COMPENSATION = 0.0375 ether;
 uint256 constant MIN_LIQUIDATION_PENALTY_SP = 5e16; // 5%
 uint256 constant MAX_LIQUIDATION_PENALTY_REDISTRIBUTION = 20e16; // 20%
 
+// Collateral branch parameters (SETH = staked ETH, i.e. wstETH / rETH)
+//CCR: Critical Collateral Ratio
+//MCR: Minimum Collateral Ratio
+//SCR: Shutdown Collateral Ratio
+
+
+//WETH
+uint256 constant CCR_WETH = 150 * _1pct;
+uint256 constant MCR_WETH = 110 * _1pct;
+uint256 constant SCR_WETH = 110 * _1pct;
+
+//LSTs of staked eth: wstETH and rETH
+uint256 constant CCR_SETH = 160 * _1pct;
+uint256 constant MCR_SETH = 110 * _1pct;
+uint256 constant SCR_SETH = 110 * _1pct;
+
+//TREE. tETH LRT from treehouse
+uint256 constant CCR_TREE = 160 * _1pct;
+uint256 constant MCR_TREE = 140 * _1pct;
+uint256 constant SCR_TREE = 140 * _1pct;
+
+//LRT: weETH, pufETH, rsETH. Liquidation restaking tokens
+uint256 constant CCR_LRT = 160 * _1pct;
+uint256 constant MCR_LRT = 130 * _1pct;
+uint256 constant SCR_LRT = 130 * _1pct;
+
+//ARB. Arbitrum
+uint256 constant CCR_ARB = 160 * _1pct;
+uint256 constant MCR_ARB = 140 * _1pct;
+uint256 constant SCR_ARB = 140 * _1pct;
+
+// COMP, compound
+uint256 constant CCR_COMP = 160 * _1pct;
+uint256 constant MCR_COMP = 140 * _1pct;
+uint256 constant SCR_COMP = 140 * _1pct;
+
+//tBTC from threshold
+uint256 constant CCR_BTC = 160 * _1pct;
+uint256 constant MCR_BTC = 115 * _1pct;
+uint256 constant SCR_BTC = 115 * _1pct;
+
+// Batch CR buffer (same for all branches for now)
+// On top of MCR to join a batch, or adjust inside a batch
+uint256 constant BCR_ALL = 10 * _1pct;
+
+uint256 constant LIQUIDATION_PENALTY_SP_WETH = 5 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_SP_SETH = 5 * _1pct;
+
+uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_WETH = 10 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SETH = 20 * _1pct;
+
 // Fraction of collateral awarded to liquidator
 uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%
 uint256 constant COLL_GAS_COMPENSATION_CAP = 2 ether; // Max coll gas compensation capped at 2 ETH
@@ -30,7 +81,7 @@ uint256 constant MAX_ANNUAL_INTEREST_RATE = 250 * _1pct;
 uint128 constant MAX_ANNUAL_BATCH_MANAGEMENT_FEE = uint128(_100pct / 10); // 10%
 uint128 constant MIN_INTEREST_RATE_CHANGE_PERIOD = 1 hours; // only applies to batch managers / batched Troves
 
-uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%
+uint256 constant REDEMPTION_FEE_FLOOR = 55 * _1pct / 100; // 0.55%
 
 // For the debt / shares ratio to increase by a factor 1e9
 // at a average annual debt increase (compounded interest + fees) of 10%, it would take more than 217 years (log(1e9)/log(1.1))
@@ -59,6 +110,8 @@ uint256 constant UPFRONT_INTEREST_PERIOD = 7 days;
 uint256 constant INTEREST_RATE_ADJ_COOLDOWN = 7 days;
 
 uint256 constant SP_YIELD_SPLIT = 75 * _1pct; // 75%
+
+uint256 constant MIN_BOLD_IN_SP = 1e18;
 
 // Dummy contract that lets legacy Hardhat tests query some of the constants
 contract Constants {

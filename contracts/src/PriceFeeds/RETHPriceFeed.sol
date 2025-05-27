@@ -36,7 +36,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         assert(priceSource == PriceSource.primary);
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
         (uint256 rEthEthPrice, bool rEthEthOracleDown) = _getOracleAnswer(rEthEthOracle);
-        (uint256 rEthPerEth, bool exchangeRateIsDown) = _getCanonicalRate();
+        (uint256 ethPerReth, bool exchangeRateIsDown) = _getCanonicalRate();
 
         // If either the ETH-USD feed or exchange rate is down, shut down and switch to the last good price
         // seen by the system since we need both for primary and fallback price calcs
@@ -57,7 +57,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         uint256 rEthUsdMarketPrice = ethUsdPrice * rEthEthPrice / 1e18;
 
         // Calculate the canonical LST-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 rEthUsdCanonicalPrice = ethUsdPrice * rEthPerEth / 1e18;
+        uint256 rEthUsdCanonicalPrice = ethUsdPrice * ethPerReth / 1e18;
 
         uint256 rEthUsdPrice;
 
@@ -90,7 +90,8 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
             // Require that enough gas was provided to prevent an OOG revert in the external call
             // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
             // in the check itself.
-            if (gasleft() + 5000 <= gasBefore / 64) revert InsufficientGasForExternalCall();
+            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
+
 
             // If call to exchange rate reverts, return true
             return (0, true);

@@ -15,6 +15,7 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
     function CCR() external view returns (uint256);
     function MCR() external view returns (uint256);
     function SCR() external view returns (uint256);
+    
 
     function openTrove(
         address _owner,
@@ -154,6 +155,9 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
     ) external;
+
+    function kickFromBatch(uint256 _troveId, uint256 _upperHint, uint256 _lowerHint) external;
+    
     function removeFromBatch(
         uint256 _troveId,
         uint256 _newAnnualInterestRate,

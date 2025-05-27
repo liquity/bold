@@ -57,7 +57,7 @@ abstract contract BeforeAfter is Setup {
             );
             _before.dataForTroves[troveId] = troveManager.getLatestTroveData(troveId);
             _before.ghostDebtAccumulator += _before.dataForTroves[troveId].entireDebt;
-            _before.entireSystemDebt = borrowerOperations.getEntireSystemDebt();
+            _before.entireSystemDebt = borrowerOperations.getEntireBranchDebt();
             _before.ghostWeightedRecordedDebtAccumulator += (_before.dataForTroves[troveId].entireDebt * troveManager.getTroveInterestRate(troveId));
             _before.weightedRecordedDebtAccumulator += _before.dataForTroves[troveId].weightedRecordedDebt;
         } 
@@ -91,7 +91,7 @@ abstract contract BeforeAfter is Setup {
             );
             _after.dataForTroves[troveId] = troveManager.getLatestTroveData(troveId);
             _after.ghostDebtAccumulator += _after.dataForTroves[troveId].entireDebt;
-            _after.entireSystemDebt = borrowerOperations.getEntireSystemDebt();
+            _after.entireSystemDebt = borrowerOperations.getEntireBranchDebt();
             _after.ghostWeightedRecordedDebtAccumulator += (_after.dataForTroves[troveId].entireDebt * troveManager.getTroveInterestRate(troveId));
             _after.weightedRecordedDebtAccumulator += _after.dataForTroves[troveId].weightedRecordedDebt;
 

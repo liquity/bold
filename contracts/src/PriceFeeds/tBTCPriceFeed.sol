@@ -2,72 +2,70 @@
 
 pragma solidity 0.8.24;
  
-import "./TokenPriceFeedBase.sol";
-
-contract tBTCPriceFeed is TokenPriceFeedBase {
-
-    //BTC feed on arbitrum.
-    address public BTCOracleAddress = 0x6ce185860a4963106506C203335A2910413708e9;
+import "./CompositePriceFeed.sol";
 
 
-    constructor(address _owner, address _tBTCUsdOracleAddress, uint256 _tBTCUsdStalenessThreshold)
-        TokenPriceFeedBase(_owner, _tBTCUsdOracleAddress, _tBTCUsdStalenessThreshold)
+contract tBTCPriceFeed is CompositePriceFeed {
+    Oracle public btcUsdOracle;
+    Oracle public tBTCUsdOracle;
+
+    uint256 public constant BTC_TBTC_DEVIATION_THRESHOLD = 2e16; // 2%
+
+    constructor(
+        address _owner, 
+        address _tBTCUsdOracleAddress, 
+        address _btcUsdOracleAddress,
+        uint256 _tBTCUsdStalenessThreshold,
+        uint256 _btcUsdStalenessThreshold
+    ) CompositePriceFeed(_owner, _tBTCUsdOracleAddress, _btcUsdOracleAddress, _tBTCUsdStalenessThreshold)
     {
-        _fetchPricePrimary();
+        // Store BTC-USD oracle
+        btcUsdOracle.aggregator = AggregatorV3Interface(_btcUsdOracleAddress);
+        btcUsdOracle.stalenessThreshold = _btcUsdStalenessThreshold;
+        btcUsdOracle.decimals = btcUsdOracle.aggregator.decimals();
+
+        // Store tBTC-USD oracle
+        tBTCUsdOracle.aggregator = AggregatorV3Interface(_tBTCUsdOracleAddress);
+        tBTCUsdOracle.stalenessThreshold = _tBTCUsdStalenessThreshold;
+        tBTCUsdOracle.decimals = tBTCUsdOracle.aggregator.decimals();
+
+        _fetchPricePrimary(false);
 
         // Check the oracle didn't already fail
         assert(priceSource == PriceSource.primary);
     }
 
-    function fetchPrice() public returns (uint256, bool) {
-        // If branch is live and the primary oracle setup has been working, try to use it
-        if (priceSource == PriceSource.primary) return _fetchPricePrimary();
-
-        // Otherwise if branch is shut down and already using the lastGoodPrice, continue with it
-        assert(priceSource == PriceSource.lastGoodPrice);
-        return (lastGoodPrice, false);
-    }
-
-    function fetchRedemptionPrice() external returns (uint256, bool) {
-        // Use same price for redemption as all other ops in tBTC branch
-
-        //get the price of normal BTC. 
-        int256 btcPriceInt;
-        (,btcPriceInt,,,) = AggregatorV3Interface(BTCOracleAddress).latestRoundData();
-        uint256 btcPrice = uint256(btcPriceInt); // Convert from int256 to uint256
-        //compare tbtc price. 
-        (uint256 tbtcPrice, bool resultDown) = fetchPrice();
-        //if they are within 2% then there is no depeg. Use the higher one of the two to prevent value leak.
-        // Instead of comparing tbtcPrice/btcPrice with fractions, cross-multiply.
-        if (tbtcPrice * 100 <= btcPrice * 102 && tbtcPrice * 100 >= btcPrice * 98) {
-            //no depeg. return the higher one.
-            if( tbtcPrice > btcPrice) {
-                return (tbtcPrice, resultDown); 
-            } else {
-                return (btcPrice, resultDown);
-            }
-        } else {
-            //depeg is significant. 
-            return (tbtcPrice, resultDown);
-        }
-    }
-
-    //  _fetchPricePrimary returns:
-    // - The price
-    // - A bool indicating whether a new oracle failure was detected in the call
-    function _fetchPricePrimary(bool /* _isRedemption */ ) internal virtual returns (uint256, bool) {
-        return _fetchPricePrimary();
-    }
-
-    function _fetchPricePrimary() internal returns (uint256, bool) {
+    function _fetchPricePrimary(bool _isRedemption) internal override returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);
-        (uint256 tokenUsdPrice, bool tokenUsdOracleDown) = _getOracleAnswer(tokenUsdOracle);
+        (uint256 tbtcUsdPrice, bool tbtcUsdOracleDown) = _getOracleAnswer(tBTCUsdOracle);
+        (uint256 btcUsdPrice, bool btcOracleDown) = _getOracleAnswer(btcUsdOracle);
+        
+        // tBTC oracle is down or invalid answer
+        if (tbtcUsdOracleDown) {
+            return (_shutDownAndSwitchToLastGoodPrice(address(tBTCUsdOracle.aggregator)), true);
+        }
 
-        // If the tBTC-USD Chainlink response was invalid in this transaction, return the last good tBTC-USD price calculated
-        if (tokenUsdOracleDown) return (_shutDownAndSwitchToLastGoodPrice(address(tokenUsdOracle.aggregator)), true);
+        // BTC oracle is down or invalid answer
+        if (btcOracleDown) {
+            return (_shutDownAndSwitchToLastGoodPrice(address(btcUsdOracle.aggregator)), true);
+        }
 
-        lastGoodPrice = tokenUsdPrice;
-        return (tokenUsdPrice, false);
+        // Otherwise, use the primary price calculation:
+        if (_isRedemption && _withinDeviationThreshold(tbtcUsdPrice, btcUsdPrice, BTC_TBTC_DEVIATION_THRESHOLD)) {
+            // If it's a redemption and within 2%, take the max of (tBTC-USD, BTC-USD) to prevent value leakage and convert to tBTC-USD
+            tbtcUsdPrice = LiquityMath._max(tbtcUsdPrice, btcUsdPrice);
+        }else{
+            // Take the minimum of (market, canonical) in order to mitigate against upward market price manipulation.
+            tbtcUsdPrice = LiquityMath._min(tbtcUsdPrice, btcUsdPrice);
+        }
+
+        // Otherwise, just use tBTC-USD price: USD_per_tBTC.
+        lastGoodPrice = tbtcUsdPrice;
+        return (tbtcUsdPrice, false);
+    }
+
+    function _getCanonicalRate() internal view override returns (uint256, bool) {
+        return (1 * 10 ** 18, false); // always return 1 BTC per tBTC by default.
     }
 }   
 

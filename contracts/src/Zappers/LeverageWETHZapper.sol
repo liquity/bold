@@ -6,8 +6,6 @@ import "./WETHZapper.sol";
 import "../Dependencies/Constants.sol";
 import "./Interfaces/ILeverageZapper.sol";
 
-// TODO: unwrap WETH in _returnLeftovers
-
 contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
     constructor(IAddressesRegistry _addressesRegistry, IFlashLoanProvider _flashLoanProvider, IExchange _exchange)
         WETHZapper(_addressesRegistry, _flashLoanProvider, _exchange)
@@ -33,7 +31,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
 
         // Flash loan coll
         flashLoanProvider.makeFlashLoan(
-            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(_params)
+            WETH, _params.flashLoanAmount, IFlashLoanProvider.Operation.OpenTrove, abi.encode(msg.sender, _params)
         );
 
         // return leftovers to user
@@ -42,6 +40,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
 
     // Callback from the flash loan provider
     function receiveFlashLoanOnOpenLeveragedTrove(
+        address _originalSender,
         OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external override {
@@ -51,11 +50,12 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
         // We compute boldAmount off-chain for efficiency
 
         uint256 troveId;
+        uint256 index = _getTroveIndex(_originalSender, _params.ownerIndex);
         // Open trove
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
-                _params.ownerIndex,
+                index,
                 totalCollAmount,
                 _params.boldAmount,
                 _params.upperHint,
@@ -73,7 +73,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
                 openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
                     .OpenTroveAndJoinInterestBatchManagerParams({
                     owner: _params.owner,
-                    ownerIndex: _params.ownerIndex,
+                    ownerIndex: index,
                     collAmount: totalCollAmount,
                     boldAmount: _params.boldAmount,
                     upperHint: _params.upperHint,
@@ -105,6 +105,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
     function leverUpTrove(LeverUpTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
+        _requireZapperIsReceiver(_params.troveId);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -150,6 +151,7 @@ contract LeverageWETHZapper is WETHZapper, ILeverageZapper {
     function leverDownTrove(LeverDownTroveParams calldata _params) external {
         address owner = troveNFT.ownerOf(_params.troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_params.troveId, owner);
+        _requireZapperIsReceiver(_params.troveId);
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;

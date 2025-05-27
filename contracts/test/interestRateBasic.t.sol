@@ -3,6 +3,7 @@
 pragma solidity 0.8.24;
 
 import "./TestContracts/DevTestSetup.sol";
+import "./Utils/Trove.sol";
 
 contract InterestRateBasic is DevTestSetup {
     function testOpenTroveSetsInterestRate() public {
@@ -745,16 +746,30 @@ contract InterestRateBasic is DevTestSetup {
         priceFeed.setPrice(2000e18);
         uint256 troveDebtRequest = 2000e18;
         uint256 interestRate = 25e16;
+        uint256 collateralAmount = 3 ether;
 
-        uint256 ATroveId = openTroveNoHints100pct(A, 3 ether, troveDebtRequest, interestRate);
+       // get bold on account E to repay fees first because liquity will repay the most recently opened trove first
+        uint256 BTroveId = openTroveNoHints100pct(E, collateralAmount, troveDebtRequest, interestRate);
+        LatestTroveData memory troveDataB = troveManager.getLatestTroveData(BTroveId);
+
+
+        uint256 ATroveId = openTroveNoHints100pct(A, collateralAmount, troveDebtRequest, interestRate);
         LatestTroveData memory troveData = troveManager.getLatestTroveData(ATroveId);
         uint256 redeemAmount = troveData.entireDebt;
+   
+        uint256 boldBalanceE = boldToken.balanceOf(E);
+        // transfer bold difference from E to A
+        uint256 amountToTransfer = redeemAmount - boldToken.balanceOf(A);
+
+        vm.prank(E);
+        boldToken.transfer(A, amountToTransfer);
 
         // Fully redeem A
-        deal(address(boldToken), E, redeemAmount);
-        redeem(E, redeemAmount);
-        troveData = troveManager.getLatestTroveData(ATroveId);
-        assertEq(troveData.entireDebt, 0, "Trove A should be fully redeemed");
+        uint256 newDebtAmountBeforeRedeem = troveManager.getLatestTroveData(ATroveId).entireDebt;
+        assertEq(newDebtAmountBeforeRedeem, redeemAmount);
+        redeem(A, redeemAmount);
+        uint256 newDebtAmountAfter = troveManager.getLatestTroveData(ATroveId).entireDebt;
+        assertEq(newDebtAmountAfter, 0, "Trove A should be fully redeemed");
 
         // Fast-forward time such that trove is Stale
         vm.warp(block.timestamp + STALE_TROVE_DURATION + 1);
