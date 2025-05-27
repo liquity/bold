@@ -315,6 +315,7 @@ export default {
         Put your bvUSD to work for the most competitive yield in DeFi.
       </>
     ),
+    learnMore: ["https://docs.liquity.org/v2-faq/bold-and-earn", "Learn more"],
     poolsColumns: {
       pool: "Pool",
       apr: "APR",

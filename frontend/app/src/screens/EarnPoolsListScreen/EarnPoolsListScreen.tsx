@@ -57,7 +57,16 @@ export function EarnPoolsListScreen() {
             )}
           </div>
         ),
-        subtitle: content.earnHome.subheading,
+        subtitle: (
+          <>
+            {content.earnHome.subheading}{" "}
+            <AnchorTextButton
+              label={content.earnHome.learnMore[1]}
+              href={content.earnHome.learnMore[0]}
+              external
+            />
+          </>
+        ),
       }}
       width={67 * 8}
       gap={16}

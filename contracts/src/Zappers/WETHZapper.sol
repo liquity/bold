@@ -211,6 +211,7 @@ contract WETHZapper is BaseZapper {
             boldToken.transfer(_initialBalances.receiver, currentBoldBalance - _initialBalances.balances[1]);
         }
         // There shouldn’t be Collateral leftovers, everything sent should end up in the trove
+        // But ETH and WETH balance can be non-zero if someone accidentally send it to this contract
 
         // WETH -> ETH
         if (!_isCollIncrease && _collChange > 0) {
@@ -218,9 +219,6 @@ contract WETHZapper is BaseZapper {
             (bool success,) = _receiver.call{value: _collChange}("");
             require(success, "WZ: Sending ETH failed");
         }
-        // TODO: remove before deployment!!
-        assert(address(this).balance == 0);
-        assert(WETH.balanceOf(address(this)) == 0);
     }
 
     function closeTroveToRawETH(uint256 _troveId) external {

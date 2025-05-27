@@ -79,7 +79,7 @@ contract OraclesMainnet is TestAccounts {
 
         vars.numCollaterals = 3;
         TestDeployer.TroveManagerParams memory tmParams =
-            TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
+            TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](vars.numCollaterals);
         for (uint256 i = 0; i < troveManagerParamsArray.length; i++) {
@@ -204,7 +204,6 @@ contract OraclesMainnet is TestAccounts {
         mock.setPrice(2000e8);
         mock.setUpdatedAt(block.timestamp);
     }
-
 
     function etchGasGuzzlerToRethOracle(bytes memory _mockOracleCode) internal {
         // Etch the mock code to the RETH-ETH oracle address
@@ -2102,7 +2101,7 @@ contract OraclesMainnet is TestAccounts {
         assertTrue(revertAsExpected);
     }
 
-     function testRevertLowGasETHOracle() public {
+    function testRevertLowGasETHOracle() public {
         // Confirm call to the real external contracts succeeds with sufficient gas i.e. 500k
         (bool success,) = address(wethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
         assertTrue(success);

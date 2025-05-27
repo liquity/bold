@@ -119,7 +119,12 @@ export function PanelUpdateBorrowPosition({
     collPrice.data,
   );
 
-  const isBelowMinDebt = debtChange.parsed && !debtChange.isEmpty && newDebt && dn.lt(newDebt, MIN_DEBT);
+  const maxLtv = dn.div(dn.from(1, 18), collToken.collateralRatio);
+
+  const isBelowMinDebt = debtChange.parsed && !debtChange.isEmpty && newDebt
+    && dn.lt(newDebt, MIN_DEBT);
+
+  const isAboveMaxLtv = newLoanDetails.ltv && dn.gt(newLoanDetails.ltv, maxLtv);
 
   const insufficientBold = debtMode === "remove"
     && debtChange.parsed
@@ -138,7 +143,9 @@ export function PanelUpdateBorrowPosition({
     && (
       !dn.eq(loanDetails.deposit ?? dnum18(0), newLoanDetails.deposit ?? dnum18(0))
       || !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0))
-    );
+    )
+    // the LTV is not above the maximum
+    && !isAboveMaxLtv;
 
   return (
     <>
@@ -390,7 +397,26 @@ export function PanelUpdateBorrowPosition({
                 label: <abbr title="Loan-to-value ratio">LTV</abbr>,
                 before: <Amount value={loanDetails.ltv} percentage />,
                 after: newLoanDetails.ltv && dn.gt(newLoanDetails.ltv, 0)
-                  ? <Amount value={newLoanDetails.ltv} percentage />
+                  ? isAboveMaxLtv
+                    ? (
+                      <div
+                        className={css({
+                          color: "negativeStrong",
+                        })}
+                      >
+                        <Amount
+                          value={maxLtv}
+                          prefix=">"
+                          percentage
+                        />
+                      </div>
+                    )
+                    : (
+                      <Amount
+                        value={newLoanDetails.ltv}
+                        percentage
+                      />
+                    )
                   : "N/A",
               },
               {
