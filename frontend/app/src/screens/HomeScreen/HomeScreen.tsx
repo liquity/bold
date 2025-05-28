@@ -394,7 +394,7 @@ function EarnRewardsRow({
           })}
         >
           <TokenIcon symbol={symbol} size="mini" />
-          <span>{symbol === "SBOLD" ? "sBOLD by K3" : token?.name}</span>
+          <span>{symbol === "SBOLD" ? "sBOLD by K3 Capital" : token?.name}</span>
         </div>
       </td>
       <td>
