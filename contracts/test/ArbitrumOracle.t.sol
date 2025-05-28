@@ -32,15 +32,18 @@ contract ArbitrumOracles is Test {
     WSTETHPriceFeed public wstethPriceFeed;
     RETHPriceFeed public rEthPriceFeed;
 
-    // chainlink addresses
+    
     address public WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public RETH_ADDRESS = 0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8;
-    address public ETH_ORACLE_ADDRESS = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+    // api3 oracle addresses
+    address public ETH_ORACLE_ADDRESS = 0x4DF393Fa84e4a0CFdF14ce52f2a4E0c3d1AB0668;
     address public RSETH_ORACLE_ADDRESS = 0x8fE61e9D74ab69cE9185F365dfc21FC168c4B56c;
-    address public RETH_ORACLE_ADDRESS = 0xD6aB2298946840262FcC278fF31516D39fF611eF;
-    address public STETH_ORACLE_ADDRESS = 0x07C5b924399cc23c24a95c8743DE4006a32b7f2a;
-    address public WSTETH_STETH_ORACLE_ADDRESS = 0xB1552C5e96B312d0Bf8b554186F846C40614a540;
+    address public RETH_ORACLE_ADDRESS = 0xA99a7c32c68Ec86127C0Cff875eE10B9C87fA12d;
+    address public WSTETH_STETH_ORACLE_ADDRESS = 0xAC7d5c56eBADdcBd97F9Efe586875F61410a54B4;
+
+    // chainlink oracle addresses
     address public WSTETH_ETH_ORACLE_ADDRESS = 0xb523AE262D20A936BC152e6023996e46FDC2A95D;
+    address public STETH_ORACLE_ADDRESS = 0x07C5b924399cc23c24a95c8743DE4006a32b7f2a;
 
     function setUp() public {
         string memory arbitrumRpcUrl = vm.envString("ARBITRUM_RPC_URL");
