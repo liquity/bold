@@ -67,7 +67,20 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     string constant DEPLOYMENT_MODE_BOLD_ONLY = "bold-only";
     string constant DEPLOYMENT_MODE_USE_EXISTING_BOLD = "use-existing-bold";
 
-    address WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+
+    //collateral token addresses. ETH, wstETH, rETH, rsETH, weETH, tETH, ARB, COMP, or tBTC.
+    address WETH_ADDRESS = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address WSTETH_ADDRESS = 0x5979D7b546E38E414F7E9822514be443A4800529;
+    address RETH_ADDRESS = 0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8;
+
+    address RSETH_ADDRESS = 0x4186BFC76E2E237523CBC30FD220FE055156b41F;
+    address WEETH_ADDRESS = 0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe;
+    address TETH_ADDRESS = 0xd09ACb80C1E8f2291862c4978A008791c9167003;
+    address ARB_ADDRESS = 0x912CE59144191C1204E64559FE8253a0e49E6548;
+    address COMP_ADDRESS = 0x354A6dA3fcde098F8389cad84b0182725c6C91dE;
+    address TBTC_ADDRESS = 0x6c84a8f1c29108F47a79964b5Fe888D4f4D0dE40;
+    
+    //usdc address for curve stuff.
     address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
 
@@ -79,13 +92,28 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // tapping disallowed
     IWETH WETH;
     IERC20Metadata USDC;
-    address WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-    address RETH_ADDRESS = 0xae78736Cd615f374D3085123A210448E74Fc6393;
-    address ETH_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-    address RETH_ORACLE_ADDRESS = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
-    address STETH_ORACLE_ADDRESS = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
-    address WSTETH_STETH_ORACLE_ADDRESS = 0xB1552C5e96B312d0Bf8b554186F846C40614a540;
+
+    //oracle addresses
+    address ETH_ORACLE_ADDRESS = 0x4DF393Fa84e4a0CFdF14ce52f2a4E0c3d1AB0668;
+    address STETH_ORACLE_ADDRESS = 0xAC7d5c56eBADdcBd97F9Efe586875F61410a54B4; // steth / ETH
+    address RETH_ORACLE_ADDRESS = 0xA99a7c32c68Ec86127C0Cff875eE10B9C87fA12d; // rETH / ETH
+
+    address WSTETH_STETH_ORACLE_ADDRESS = 0xB1552C5e96B312d0Bf8b554186F846C40614a540; 
     address WSTETH_ETH_ORACLE_ADDRESS = 0xb523AE262D20A936BC152e6023996e46FDC2A95D;
+
+    //usd price oracle addresses TODO
+    address RSETH_ETH_ORACLE_ADDRESS = 0x8fE61e9D74ab69cE9185F365dfc21FC168c4B56c;
+    address WEETH_ETH_ORACLE_ADDRESS = 0xabB160Db40515B77998289afCD16DC06Ae71d12E;
+    address TETH_WSTETH_ORACLE_ADDRESS = 0x98a977Ba31C72aeF2e15B950Eb5Ae3158863D856;
+    
+    //basic oracles for USD
+    address ARB_USD_ORACLE_ADDRESS = 0x016aAE62d4c3a9b1101a8F9597227c045a41656F;
+    address COMP_USD_ORACLE_ADDRESS = 0x9Bd88Dc926DDC36EbBf533Eee0f323C4A194753B;
+
+    //btc composite oracle addresses TODO
+    address TBTC_BTC_ORACLE_ADDRESS = 0x1aF6168B78aDeE8F3CF3E99156FC066CfCB03F9e;
+    address BTC_USD_ORACLE_ADDRESS = 0xF4A606Ab69FCac4cc429bf4B032BB2Ff74fe31f1;
+
     uint256 ETH_USD_STALENESS_THRESHOLD = 24 hours;
     uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
     uint256 RETH_ETH_STALENESS_THRESHOLD = 48 hours;
@@ -339,18 +367,136 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             ERC20Faucet(lqty).mock_setWildcardSpender(address(stakingV1), true);
         }
 
-        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](3);
-        // TODO: move params out of here
-        troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, MAX_INT/2); // WETH
-        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2); // wstETH
-        troveManagerParamsArray[2] = TroveManagerParams(150e16, 120e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2); // rETH
+        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](9);
+        //Interface TroveManagerParams:
+        //(CCR, MCR, SCR, BCR, liquidation penalty, Liquidation penalty during redistribution, debt limit)
+        //Use same liwuidation penalty for all troves.
+        //WETH
+        troveManagerParamsArray[0] = TroveManagerParams(
+            CCR_WETH, 
+            MCR_WETH, 
+            SCR_WETH, 
+            BCR_ALL, 
+            LIQUIDATION_PENALTY_SP_WETH, 
+            LIQUIDATION_PENALTY_REDISTRIBUTION_WETH, 
+            100000000e18
+        ); // WETH
+        
+        //wstETH
+        troveManagerParamsArray[1] = TroveManagerParams(
+            CCR_SETH, 
+            MCR_SETH, 
+            SCR_SETH, 
+            BCR_ALL, 
+            LIQUIDATION_PENALTY_SP_SETH, 
+            LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
+            25000000e18
+        ); 
+
+        //rETH
+        troveManagerParamsArray[2] = TroveManagerParams(
+            CCR_SETH, 
+            MCR_SETH, 
+            SCR_SETH, 
+            BCR_ALL, 
+            LIQUIDATION_PENALTY_SP_SETH, 
+            LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
+            25000000e18); // rETH
+        
+        //rsETH
+        troveManagerParamsArray[3] = TroveManagerParams(
+            CCR_LRT, 
+            MCR_LRT, 
+            SCR_LRT, 
+            BCR_ALL, 
+            LIQUIDATION_PENALTY_SP_SETH, 
+            LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
+            5000000e18
+        ); // rsETH
+        
+        //weETH
+        troveManagerParamsArray[4] = TroveManagerParams(
+            CCR_LRT, 
+            MCR_LRT, 
+            SCR_LRT, 
+            BCR_ALL, 
+            LIQUIDATION_PENALTY_SP_SETH, 
+            LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
+            2000000e18);
+        
+        //treeETH
+        troveManagerParamsArray[5] = TroveManagerParams(
+            CCR_TREE, 
+            MCR_TREE, 
+            SCR_TREE, 
+            BCR_ALL, 
+            LIQUIDATION_PENALTY_SP_SETH, 
+            LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
+            2000000e18
+        ); 
+        
+        // ARB
+        troveManagerParamsArray[6] = TroveManagerParams(
+            CCR_ARB, 
+            MCR_ARB, 
+            SCR_ARB, 
+            BCR_ALL, 
+            LIQUIDATION_PENALTY_SP_SETH, 
+            LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
+            5000000e18
+        ); 
+        
+        //COMP
+        troveManagerParamsArray[7] = TroveManagerParams(
+            CCR_ARB, 
+            MCR_ARB, 
+            SCR_ARB, 
+            BCR_ALL, 
+            LIQUIDATION_PENALTY_SP_SETH, 
+            LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
+            2000000e18
+        );
+        
+        // tbtc
+        troveManagerParamsArray[8] = TroveManagerParams(
+            CCR_BTC, 
+            MCR_BTC, 
+            SCR_BTC, 
+            BCR_ALL, 
+            LIQUIDATION_PENALTY_SP_SETH, 
+            LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
+            5000000e18
+        );
+
 
         string[] memory collNames = new string[](2);
         string[] memory collSymbols = new string[](2);
         collNames[0] = "Wrapped liquid staked Ether 2.0";
         collSymbols[0] = "wstETH";
+
         collNames[1] = "Rocket Pool ETH";
         collSymbols[1] = "rETH";
+
+        collNames[2] = "Kelp DAO Restaked ETH";
+        collSymbols[2] = "rsETH";
+
+        collNames[3] = "Wrapped Etherfi Staked ETH";
+        collSymbols[3] = "weETH";
+
+        collNames[4] = "";
+        collSymbols[4] = "";
+
+        collNames[5] = "";
+        collSymbols[5] = "";
+
+        collNames[6] = "";
+        collSymbols[6] = "";
+
+        collNames[7] = "";
+        collSymbols[7] = "";
+
+        collNames[8] = "";
+        collSymbols[8] = "";
 
         DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
             epochStart: epochStart,
@@ -554,9 +700,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
-        if (block.chainid == 1 && !useTestnetPriceFeeds) {
-            // mainnet
-            // ETH
+        if (block.chainid == 42161 && !useTestnetPriceFeeds) {
+            // arbitrum
+            // WETH
             vars.collaterals[0] = IERC20Metadata(WETH);
             vars.priceFeeds[0] = new WETHPriceFeed(deployer, ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD);
 
@@ -581,7 +727,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 ETH_USD_STALENESS_THRESHOLD,
                 RETH_ETH_STALENESS_THRESHOLD
             );
-        } else {
+        } 
+        
+        else {
             // Sepolia
             // Use WETH as collateral for the first branch
             vars.collaterals[0] = WETH;
@@ -601,11 +749,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         // Deploy AddressesRegistries and get TroveManager addresses
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
+            //todo: update troveManagerParamsArray for proper ccr for each collateral
             (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
                 _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
             //updateDebtLimit
+            //todo: set initial debt limit first.
             r.collateralRegistry.updateDebtLimit(vars.i, troveManagerParamsArray[vars.i].debtLimit);
         }
 
@@ -633,6 +783,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         r.boldToken.setCollateralRegistry(address(r.collateralRegistry));
 
         // exchange helpers
+        //todo remove
         r.exchangeHelpers = new HybridCurveUniV3ExchangeHelpers(
             USDC,
             WETH,
