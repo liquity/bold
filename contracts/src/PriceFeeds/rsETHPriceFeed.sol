@@ -3,7 +3,6 @@
 pragma solidity 0.8.24;
 
 import "./MainnetPriceFeedBase.sol";
-import "forge-std/console2.sol";
 
 contract RSETHPriceFeed is MainnetPriceFeedBase {
     //RSETH feed on arbitrum.
