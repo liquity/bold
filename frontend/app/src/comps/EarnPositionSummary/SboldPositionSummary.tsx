@@ -36,7 +36,7 @@ export function SboldPositionSummary({
       }}
       active={active}
       poolToken="SBOLD"
-      title="sBOLD stability pool by K3 Capital"
+      title="sBOLD by K3 Capital"
       poolInfo={txPreviewMode ? <TagPreview /> : (
         <>
           <div
@@ -63,8 +63,7 @@ export function SboldPositionSummary({
             <InfoTooltip
               content={{
                 heading: "Current APR",
-                body: "The annualized rate this stability pool’s "
-                  + "deposits earned over the last 24 hours.",
+                body: "The annualized rate sBOLD deposits earned over the last 24 hours.",
                 footerLink: {
                   label: "Check Dune for more details",
                   href: "https://dune.com/liquity/liquity-v2",
@@ -96,8 +95,7 @@ export function SboldPositionSummary({
             <InfoTooltip
               content={{
                 heading: "APR (last 7 days)",
-                body: "The annualized percentage rate this stability pool’s "
-                  + "deposits earned over the past 7 days.",
+                body: "The annualized rate sBOLD deposits earned over the last 7 days.",
                 footerLink: {
                   label: "Check Dune for more details",
                   href: "https://dune.com/liquity/liquity-v2",
@@ -119,7 +117,7 @@ export function SboldPositionSummary({
             />
           </div>
           <InfoTooltip heading="Total Value Locked (TVL)">
-            Total amount of BOLD deposited in this stability pool.
+            Total amount of BOLD deposited in the sBOLD pool.
           </InfoTooltip>
         </>
       }

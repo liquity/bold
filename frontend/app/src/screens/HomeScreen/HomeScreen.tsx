@@ -7,6 +7,7 @@ import { useBreakpoint } from "@/src/breakpoints";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Positions } from "@/src/comps/Positions/Positions";
+import content from "@/src/content";
 import { DNUM_1 } from "@/src/dnum-utils";
 import {
   getBranch,
@@ -143,8 +144,8 @@ function EarnTable({
 
   return (
     <HomeTable
-      title="Earn rewards with BOLD"
-      subtitle="Earn BOLD & (staked) ETH rewards by putting your BOLD in a stability pool"
+      title={content.home.earnTable.title}
+      subtitle={content.home.earnTable.subtitle}
       icon={<IconEarn />}
       columns={columns}
       rows={[
@@ -267,7 +268,7 @@ function EarnRewardsRow({
           })}
         >
           <TokenIcon symbol={symbol} size="mini" />
-          <span>{token?.name}</span>
+          <span>{symbol === "SBOLD" ? "sBOLD by K3" : token?.name}</span>
         </div>
       </td>
       <td>
@@ -310,7 +311,15 @@ function EarnRewardsRow({
                 Earn
                 <TokenIcon.Group size="mini">
                   <TokenIcon symbol="BOLD" />
-                  <TokenIcon symbol={symbol} />
+                  {symbol === "SBOLD"
+                    ? (
+                      <div
+                        className={css({
+                          width: 16,
+                        })}
+                      />
+                    )
+                    : <TokenIcon symbol={symbol} />}
                 </TokenIcon.Group>
               </div>
             }

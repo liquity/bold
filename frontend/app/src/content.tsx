@@ -217,6 +217,10 @@ export default {
         description: "Direct protocol incentives with LQTY while earning from Liquity V1",
       },
     },
+    earnTable: {
+      title: "Earn rewards with BOLD",
+      subtitle: "Earn BOLD & (staked) ETH rewards by depositing your BOLD in a stability pool",
+    },
     statsBar: {
       label: "Protocol stats",
     },
