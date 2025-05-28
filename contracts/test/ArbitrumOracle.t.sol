@@ -19,7 +19,8 @@ import "src/Dependencies/AggregatorV3Interface.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/Interfaces/IWSTETHPriceFeed.sol";
 import "src/PriceFeeds/WSTETHPriceFeed.sol";
-import "src/PriceFeeds/RSETHPriceFeed.sol";
+import "src/PriceFeeds/rsETHPriceFeed.sol";
+import "src/PriceFeeds/treeETHPriceFeed.sol";
 
 import "src/Interfaces/IRETHToken.sol";
 import "src/Interfaces/IWSTETH.sol";
@@ -31,42 +32,57 @@ contract ArbitrumOracles is Test {
     RSETHPriceFeed public rsETHPriceFeed;
     WSTETHPriceFeed public wstethPriceFeed;
     RETHPriceFeed public rEthPriceFeed;
-
-    // chainlink addresses
+    TreeETHPriceFeed public treeETHPriceFeed;
+    
     address public WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public RETH_ADDRESS = 0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8;
-    address public ETH_ORACLE_ADDRESS = 0x639Fe6ab55C921f74e7fac1ee960C0B6293ba612;
+    address public TETH_ADDRESS = 0xd09ACb80C1E8f2291862c4978A008791c9167003;
+
+    // chainlink rate provider address
+    address public WSTETH_RATE_PROVIDER_ADDRESS = 0xf7c5c26B574063e7b098ed74fAd6779e65E3F836;
+
+    // api3 oracle addresses
+    address public ETH_ORACLE_ADDRESS = 0x4DF393Fa84e4a0CFdF14ce52f2a4E0c3d1AB0668;
     address public RSETH_ORACLE_ADDRESS = 0x8fE61e9D74ab69cE9185F365dfc21FC168c4B56c;
-    address public RETH_ORACLE_ADDRESS = 0xD6aB2298946840262FcC278fF31516D39fF611eF;
+    address public RETH_ORACLE_ADDRESS = 0xA99a7c32c68Ec86127C0Cff875eE10B9C87fA12d;
+    address public WSTETH_STETH_ORACLE_ADDRESS = 0xAC7d5c56eBADdcBd97F9Efe586875F61410a54B4;
+    
+
+    // chainlink oracle addresses
+    address public TETH_WSTETH_ORACLE_ADDRESS = 0x98a977Ba31C72aeF2e15B950Eb5Ae3158863D856;
     address public STETH_ORACLE_ADDRESS = 0x07C5b924399cc23c24a95c8743DE4006a32b7f2a;
-    address public WSTETH_STETH_ORACLE_ADDRESS = 0xB1552C5e96B312d0Bf8b554186F846C40614a540;
-    address public WSTETH_ETH_ORACLE_ADDRESS = 0xb523AE262D20A936BC152e6023996e46FDC2A95D;
+    
 
     function setUp() public {
         string memory arbitrumRpcUrl = vm.envString("ARBITRUM_RPC_URL");
         vm.createSelectFork(arbitrumRpcUrl);
-        rEthPriceFeed = _deployRETH();
-        wstethPriceFeed = _deployWSTETH();
-        rsETHPriceFeed = _deployRsETH();
+        rEthPriceFeed = _deployRETHPriceFeed();
+        wstethPriceFeed = _deployWSTETHPriceFeed();
+        rsETHPriceFeed = _deployRsETHPriceFeed();
+        treeETHPriceFeed = _deployTreeETHPriceFeed();
     }
 
-    function _deployRsETH() internal returns (RSETHPriceFeed _rsETHPriceFeed) {
+    function _deployRsETHPriceFeed() internal returns (RSETHPriceFeed _rsETHPriceFeed) {
         _rsETHPriceFeed =
             new RSETHPriceFeed(address(this), ETH_ORACLE_ADDRESS, RSETH_ORACLE_ADDRESS, 24 hours, 24 hours);
         vm.label(address(_rsETHPriceFeed), "RSETHPriceFeed");
     }
 
-    function _deployWSTETH() internal returns (WSTETHPriceFeed _wstethPriceFeed) {
+    function _deployWSTETHPriceFeed() internal returns (WSTETHPriceFeed _wstethPriceFeed) {
         _wstethPriceFeed = new WSTETHPriceFeed(
-            address(this), WSTETH_STETH_ORACLE_ADDRESS, WSTETH_ETH_ORACLE_ADDRESS, 0x5979D7b546E38E414F7E9822514be443A4800529, 24 hours, 24 hours
+            address(this), ETH_ORACLE_ADDRESS, STETH_ORACLE_ADDRESS, WSTETH_RATE_PROVIDER_ADDRESS, 24 hours, 24 hours
         );
         vm.label(address(_wstethPriceFeed), "WSTETHPriceFeed");
     }
 
-    function _deployRETH() internal returns (RETHPriceFeed _rEthPriceFeed) {
+    function _deployRETHPriceFeed() internal returns (RETHPriceFeed _rEthPriceFeed) {
         _rEthPriceFeed = new RETHPriceFeed(address(this), ETH_ORACLE_ADDRESS, RETH_ORACLE_ADDRESS, RETH_ADDRESS, 24 hours, 24 hours);
-        //address _owner, address _ethUsdOracleAddress, address _rEthEthOracleAddress, address _rEthTokenAddress, uint256 _ethUsdStalenessThreshold, uint256 _rEthEthStalenessThreshold
         vm.label(address(_rEthPriceFeed), "RETHPriceFeed");
+    }
+
+    function _deployTreeETHPriceFeed() internal returns (TreeETHPriceFeed _treeETHPriceFeed) {
+        _treeETHPriceFeed = new TreeETHPriceFeed(address(this), ETH_ORACLE_ADDRESS, TETH_WSTETH_ORACLE_ADDRESS, TETH_ADDRESS, 24 hours, 24 hours);
+        vm.label(address(_treeETHPriceFeed), "TreeETHPriceFeed");
     }
 
     function test_rsETHPriceFeed() public {
@@ -88,5 +104,12 @@ contract ArbitrumOracles is Test {
 
         assertGt(price, 0, "rEth Price must not be zero");
         assertFalse(oracleDown, "rEth oracle must not be down");
+    }
+
+    function test_treeETHPriceFeed() public {
+        (uint256 price, bool oracleDown) = treeETHPriceFeed.fetchPrice();
+
+        assertGt(price, 0, "treeEth Price must not be zero");
+        assertFalse(oracleDown, "treeEth oracle must not be down");
     }
 }
