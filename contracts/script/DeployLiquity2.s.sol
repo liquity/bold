@@ -100,7 +100,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     IERC20Metadata USDC;
 
     //oracle addresses
-    address ETH_ORACLE_ADDRESS = 0x4DF393Fa84e4a0CFdF14ce52f2a4E0c3d1AB0668;
+    address ETH_ORACLE_ADDRESS = 0x4DF393Fa84e4a0CFdF14ce52f2a4E0c3d1AB0668; // api3 eth/usd
     address STETH_ORACLE_ADDRESS = 0xAC7d5c56eBADdcBd97F9Efe586875F61410a54B4; // steth / ETH
     address RETH_ORACLE_ADDRESS = 0xA99a7c32c68Ec86127C0Cff875eE10B9C87fA12d; // rETH / ETH
 
@@ -168,12 +168,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     IUniswapV3Factory uniswapV3Factory;
     INonfungiblePositionManager uniV3PositionManager;
     // https://docs.uniswap.org/contracts/v3/reference/deployments/ethereum-deployments
-    // Sepolia
-    ISwapRouter constant uniV3RouterSepolia = ISwapRouter(0x65669fE35312947050C450Bd5d36e6361F85eC12);
-    IQuoterV2 constant uniV3QuoterSepolia = IQuoterV2(0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3);
-    IUniswapV3Factory constant uniswapV3FactorySepolia = IUniswapV3Factory(0x0227628f3F023bb0B980b67D528571c95c6DaC1c);
+    // Arbitrum Sepolia
+    ISwapRouter constant uniV3RouterSepolia = ISwapRouter(0x101F443B4d1b059569D643917553c771E1b9663E);  // address is for deployed SwapRouter02 which shares this interface through ISwapRouterV3 so it should work
+    IQuoterV2 constant uniV3QuoterSepolia = IQuoterV2(0x2779a0CC1c3e0E44D2542EC3e79e3864Ae93Ef0B);
+    IUniswapV3Factory constant uniswapV3FactorySepolia = IUniswapV3Factory(0x248AB79Bbb9bC29bB72f7Cd42F17e054Fc40188e);
     INonfungiblePositionManager constant uniV3PositionManagerSepolia =
-        INonfungiblePositionManager(0x1238536071E1c677A632429e3655c799b22cDA52);
+        INonfungiblePositionManager(0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65);
     
     
     // arbitrum mainnet
