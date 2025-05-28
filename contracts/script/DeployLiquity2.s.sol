@@ -27,6 +27,12 @@ import "src/StabilityPool.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
 import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
+import "src/PriceFeeds/rsETHPriceFeed.sol";
+import "src/PriceFeeds/tBTCPriceFeed.sol";
+import "src/PriceFeeds/ARBPriceFeed.sol";
+import "src/PriceFeeds/COMPPriceFeed.sol";
+import "src/PriceFeeds/WeETHPriceFeed.sol";
+import "src/PriceFeeds/treeETHPriceFeed.sol";
 import "src/CollateralRegistry.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "test/TestContracts/MetadataDeployment.sol";
@@ -114,9 +120,20 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address TBTC_BTC_ORACLE_ADDRESS = 0x1aF6168B78aDeE8F3CF3E99156FC066CfCB03F9e;
     address BTC_USD_ORACLE_ADDRESS = 0xF4A606Ab69FCac4cc429bf4B032BB2Ff74fe31f1;
 
-    uint256 ETH_USD_STALENESS_THRESHOLD = 24 hours;
-    uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
-    uint256 RETH_ETH_STALENESS_THRESHOLD = 48 hours;
+    uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
+    uint256 STETH_USD_STALENESS_THRESHOLD = 25 hours;
+    uint256 RETH_ETH_STALENESS_THRESHOLD = 58 hours;
+    uint256 RSETH_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 WEETH_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 TETH_WSTETH_STALENESS_THRESHOLD = 24 hours;
+    uint256 ARB_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 COMP_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 TBTC_ETH_STALENESS_THRESHOLD = 25 hours;
+
+
+    // rate provider addresses
+    address TREEETH_PROVIDER_ADDRESS = 0x353230eF3b5916B280dBAbb720d7b8dB61485615;
+    address WSTETH_PROVIDER_ADDRESS = 0xf7c5c26B574063e7b098ed74fAd6779e65E3F836;
 
     // V1
     address LQTY_ADDRESS = 0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D; //actually its NERI
@@ -292,7 +309,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         uint256 epochStart = vm.envOr(
             "EPOCH_START",
-            (block.chainid == 1 ? _latestUTCMidnightBetweenWednesdayAndThursday() : block.timestamp) - EPOCH_DURATION
+            (block.chainid == 42161 ? _latestUTCMidnightBetweenWednesdayAndThursday() : block.timestamp) - EPOCH_DURATION
         );
 
         useTestnetPriceFeeds = vm.envOr("USE_TESTNET_PRICEFEEDS", false);
@@ -328,8 +345,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             return;
         }
 
-        if (block.chainid == 1) {
-            // mainnet
+        if (block.chainid == 42161) {
+            // arbitrum mainnet
             WETH = IWETH(WETH_ADDRESS);
             USDC = IERC20Metadata(USDC_ADDRESS);
             curveStableswapFactory = curveStableswapFactoryMainnet;
@@ -342,8 +359,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             stakingV1 = LQTY_STAKING_ADDRESS;
             lusd = LUSD_ADDRESS;
         } else {
-            // sepolia, local
-            if (block.chainid == 31337) {
+            // arbitrum sepolia, local
+            if (block.chainid == 421614) {
                 // local
                 WETH = new WETHTester({_tapAmount: 100 ether, _tapPeriod: 1 days});
             } else {
@@ -469,10 +486,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
 
 
-        string[] memory collNames = new string[](2);
-        string[] memory collSymbols = new string[](2);
-        collNames[0] = "Wrapped liquid staked Ether 2.0";
-        collSymbols[0] = "wstETH";
+        string[] memory collNames = new string[](troveManagerParamsArray.length);
+        string[] memory collSymbols = new string[](troveManagerParamsArray.length);
+        collNames[0] = "Wrapped Ether";
+        collSymbols[0] = "WETH";
+
+        collNames[1] = "Wrapped liquid staked Ether 2.0";
+        collSymbols[1] = "wstETH";
 
         collNames[1] = "Rocket Pool ETH";
         collSymbols[1] = "rETH";
@@ -483,20 +503,17 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collNames[3] = "Wrapped Etherfi Staked ETH";
         collSymbols[3] = "weETH";
 
-        collNames[4] = "";
-        collSymbols[4] = "";
+        collNames[4] = "Treehouse ETH ";
+        collSymbols[4] = "tETH";
 
-        collNames[5] = "";
-        collSymbols[5] = "";
+        collNames[5] = "Arbitrum";
+        collSymbols[5] = "ARB";
 
-        collNames[6] = "";
-        collSymbols[6] = "";
+        collNames[6] = "Compound";
+        collSymbols[6] = "COMP";
 
-        collNames[7] = "";
-        collSymbols[7] = "";
-
-        collNames[8] = "";
-        collSymbols[8] = "";
+        collNames[7] = "Bitcoin";
+        collSymbols[7] = "tBTC";
 
         DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
             epochStart: epochStart,
@@ -511,7 +528,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         DeploymentResult memory deployed =
             _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols, deployGovernanceParams);
 
-        if (block.chainid == 11155111) {
+        if (block.chainid == 421614) {
             // Provide liquidity for zaps if we're on Sepolia
             ERC20Faucet monkeyBalls = new ERC20Faucet("MonkeyBalls", "MB", 0, type(uint256).max);
             for (uint256 i = 0; i < deployed.contractsArray.length; ++i) {
@@ -561,7 +578,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
 
         ICurveStableswapNGPool lusdCurvePool;
-        if (block.chainid == 1) {
+        if (block.chainid == 42161) {
             lusdCurvePool = _deployCurvePool(deployed.boldToken, IERC20Metadata(LUSD_ADDRESS));
         }
 
@@ -704,20 +721,20 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // arbitrum
             // WETH
             vars.collaterals[0] = IERC20Metadata(WETH);
-            vars.priceFeeds[0] = new WETHPriceFeed(deployer, ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD);
+            vars.priceFeeds[0] = IPriceFeed(address(new WETHPriceFeed(deployer, ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD)));
 
             // wstETH
-            vars.collaterals[1] = IERC20Metadata(WSTETH_ADDRESS);
-            vars.priceFeeds[1] = new WSTETHPriceFeed(
+            vars.collaterals[0] = IERC20Metadata(WSTETH_ADDRESS);
+            vars.priceFeeds[0] = new WSTETHPriceFeed(
                 deployer,
                 ETH_ORACLE_ADDRESS,
                 STETH_ORACLE_ADDRESS,
-                WSTETH_ADDRESS,
+                WSTETH_PROVIDER_ADDRESS,
                 ETH_USD_STALENESS_THRESHOLD,
                 STETH_USD_STALENESS_THRESHOLD
             );
 
-            // RETH
+            // RETH  todo: update with provider fixes
             vars.collaterals[2] = IERC20Metadata(RETH_ADDRESS);
             vars.priceFeeds[2] = new RETHPriceFeed(
                 deployer,
@@ -727,8 +744,65 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 ETH_USD_STALENESS_THRESHOLD,
                 RETH_ETH_STALENESS_THRESHOLD
             );
-        } 
-        
+
+            // RSETH
+            vars.collaterals[3] = IERC20Metadata(RSETH_ADDRESS);
+            vars.priceFeeds[3] = new RSETHPriceFeed(
+                deployer,
+                ETH_ORACLE_ADDRESS,
+                RSETH_ETH_ORACLE_ADDRESS,
+                ETH_USD_STALENESS_THRESHOLD,
+                RSETH_ETH_STALENESS_THRESHOLD
+            );
+
+            // WeEth
+            vars.collaterals[4] = IERC20Metadata(WEETH_ADDRESS);
+            vars.priceFeeds[4] = new WeETHPriceFeed(
+                deployer,
+                ETH_ORACLE_ADDRESS,
+                WEETH_ETH_ORACLE_ADDRESS,
+                WEETH_ADDRESS,
+                ETH_USD_STALENESS_THRESHOLD,
+                WEETH_ETH_STALENESS_THRESHOLD
+            );
+
+            // TreeETH
+            vars.collaterals[5] = IERC20Metadata(TETH_ADDRESS);
+            vars.priceFeeds[5] = new TreeETHPriceFeed(
+                deployer,
+                ETH_ORACLE_ADDRESS,
+                TETH_WSTETH_ORACLE_ADDRESS,
+                TREEETH_PROVIDER_ADDRESS,
+                ETH_USD_STALENESS_THRESHOLD,
+                TETH_WSTETH_STALENESS_THRESHOLD
+            );
+
+            // Arbitrum
+            vars.collaterals[6] = IERC20Metadata(ARB_ADDRESS);
+            vars.priceFeeds[6] = IPriceFeed(address(new ARBPriceFeed(
+                deployer,
+                ARB_USD_ORACLE_ADDRESS,
+                ARB_ETH_STALENESS_THRESHOLD
+            )));
+
+            // Compound
+            vars.collaterals[7] = IERC20Metadata(COMP_ADDRESS);
+            vars.priceFeeds[7] = IPriceFeed(address(new COMPPriceFeed(
+                deployer,
+                COMP_USD_ORACLE_ADDRESS,
+                COMP_ETH_STALENESS_THRESHOLD
+            )));
+
+            // tBTC
+            vars.collaterals[8] = IERC20Metadata(TBTC_ADDRESS);
+            vars.priceFeeds[8] = new tBTCPriceFeed(
+                deployer,
+                ETH_ORACLE_ADDRESS,
+                TBTC_BTC_ORACLE_ADDRESS,
+                ETH_USD_STALENESS_THRESHOLD,
+                TBTC_ETH_STALENESS_THRESHOLD
+            );
+        }
         else {
             // Sepolia
             // Use WETH as collateral for the first branch
