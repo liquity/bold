@@ -23,8 +23,12 @@ import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
+import Image from "next/image";
 import { useState } from "react";
 import { HomeTable } from "./HomeTable";
+
+import fork1Icon from "./liquity2-fork-1.png";
+import fork2Icon from "./liquity2-fork-2.png";
 
 export function HomeScreen() {
   const account = useAccount();
@@ -143,22 +147,144 @@ function EarnTable({
   }
 
   return (
-    <HomeTable
-      title={content.home.earnTable.title}
-      subtitle={content.home.earnTable.subtitle}
-      icon={<IconEarn />}
-      columns={columns}
-      rows={[
-        ...getBranches(),
-        { symbol: "SBOLD" as const },
-      ].map(({ symbol }) => (
-        <EarnRewardsRow
-          key={symbol}
-          compact={compact}
-          symbol={symbol}
+    <div
+      className={css({
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+      })}
+    >
+      <div
+        className={css({
+          position: "relative",
+          zIndex: 2,
+        })}
+      >
+        <HomeTable
+          title={content.home.earnTable.title}
+          subtitle={content.home.earnTable.subtitle}
+          icon={<IconEarn />}
+          columns={columns}
+          rows={[
+            ...getBranches(),
+            { symbol: "SBOLD" as const },
+          ].map(({ symbol }) => (
+            <EarnRewardsRow
+              key={symbol}
+              compact={compact}
+              symbol={symbol}
+            />
+          ))}
         />
-      ))}
-    />
+      </div>
+      <div
+        className={css({
+          position: "relative",
+          zIndex: 1,
+        })}
+      >
+        <ForksInfoDrawer />
+      </div>
+    </div>
+  );
+}
+
+function ForksInfoDrawer() {
+  return (
+    <div
+      className={css({
+        width: "100%",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 16,
+        marginTop: -20,
+        height: 44 + 20,
+        padding: "20px 16px 0",
+        whiteSpace: "nowrap",
+        background: "#F7F7FF",
+        borderRadius: 8,
+        userSelect: "none",
+      })}
+    >
+      <div
+        className={css({
+          display: "flex",
+          gap: 12,
+        })}
+      >
+        <div
+          className={css({
+            flexShrink: 0,
+            display: "flex",
+            justifyContent: "center",
+            gap: 0,
+          })}
+        >
+          <div
+            className={css({
+              display: "grid",
+              placeItems: "center",
+            })}
+          >
+            <Image
+              alt="Liquity V2 fork 1"
+              height={18}
+              src={fork1Icon}
+              width={18}
+            />
+          </div>
+          <div
+            className={css({
+              display: "grid",
+              placeItems: "center",
+              marginLeft: -4,
+            })}
+          >
+            <Image
+              alt="Liquity V2 fork 2"
+              height={18}
+              src={fork2Icon}
+              width={18}
+            />
+          </div>
+        </div>
+        <div
+          className={css({
+            display: "grid",
+            fontSize: 14,
+          })}
+        >
+          <span
+            title={content.home.earnTable.forksInfo.text}
+            className={css({
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            })}
+          >
+            {content.home.earnTable.forksInfo.text}
+          </span>
+        </div>
+      </div>
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+        })}
+      >
+        <LinkTextButton
+          external
+          href={content.home.earnTable.forksInfo.learnMore.url}
+          label={content.home.earnTable.forksInfo.learnMore.label}
+          title={content.home.earnTable.forksInfo.learnMore.title}
+          className={css({
+            fontSize: 14,
+          })}
+        >
+          Learn more
+        </LinkTextButton>
+      </div>
+    </div>
   );
 }
 
