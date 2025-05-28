@@ -15,7 +15,7 @@ contract CollateralRegistry is ICollateralRegistry {
     // See: https://github.com/ethereum/solidity/issues/12587
     uint256 public immutable totalCollaterals;
 
-    IERC20Metadata internal immutable token0;
+    IERC20Metadata internal immutable token0; 
     IERC20Metadata internal immutable token1;
     IERC20Metadata internal immutable token2;
     IERC20Metadata internal immutable token3;
@@ -57,16 +57,16 @@ contract CollateralRegistry is ICollateralRegistry {
 
         boldToken = _boldToken;
 
-        token0 = _tokens[0];
-        token1 = numTokens > 1 ? _tokens[1] : IERC20Metadata(address(0));
-        token2 = numTokens > 2 ? _tokens[2] : IERC20Metadata(address(0));
-        token3 = numTokens > 3 ? _tokens[3] : IERC20Metadata(address(0));
-        token4 = numTokens > 4 ? _tokens[4] : IERC20Metadata(address(0));
-        token5 = numTokens > 5 ? _tokens[5] : IERC20Metadata(address(0));
-        token6 = numTokens > 6 ? _tokens[6] : IERC20Metadata(address(0));
+        token0 = _tokens[0];  // weth
+        token1 = numTokens > 1 ? _tokens[1] : IERC20Metadata(address(0));// wsteth
+        token2 = numTokens > 2 ? _tokens[2] : IERC20Metadata(address(0)); 
+        token3 = numTokens > 3 ? _tokens[3] : IERC20Metadata(address(0)); 
+        token4 = numTokens > 4 ? _tokens[4] : IERC20Metadata(address(0)); 
+        token5 = numTokens > 5 ? _tokens[5] : IERC20Metadata(address(0)); 
+        token6 = numTokens > 6 ? _tokens[6] : IERC20Metadata(address(0)); 
         token7 = numTokens > 7 ? _tokens[7] : IERC20Metadata(address(0));
-        token8 = numTokens > 8 ? _tokens[8] : IERC20Metadata(address(0));
-        token9 = numTokens > 9 ? _tokens[9] : IERC20Metadata(address(0));
+        token8 = numTokens > 8 ? _tokens[8] : IERC20Metadata(address(0)); 
+        token9 = numTokens > 9 ? _tokens[9] : IERC20Metadata(address(0)); 
 
         troveManager0 = _troveManagers[0];
         troveManager1 = numTokens > 1 ? _troveManagers[1] : ITroveManager(address(0));
@@ -240,7 +240,7 @@ contract CollateralRegistry is ICollateralRegistry {
     function _calcRedemptionRate(uint256 _baseRate) internal pure returns (uint256) {
         return LiquityMath._min(
             REDEMPTION_FEE_FLOOR + _baseRate,
-            DECIMAL_PRECISION // cap at a maximum of 100%
+            DECIMAL_PRECISION // (always 100%) cap at a maximum of 100%
         );
     }
 

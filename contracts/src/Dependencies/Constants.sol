@@ -10,52 +10,51 @@ uint256 constant _100pct = DECIMAL_PRECISION;
 uint256 constant _1pct = DECIMAL_PRECISION / 100;
 
 // Amount of ETH to be locked in gas pool on opening troves
-uint256 constant ETH_GAS_COMPENSATION = 0.0375 ether;
+uint256 constant ETH_GAS_COMPENSATION = 0.001 ether;
 
 // Liquidation
 uint256 constant MIN_LIQUIDATION_PENALTY_SP = 5e16; // 5%
 uint256 constant MAX_LIQUIDATION_PENALTY_REDISTRIBUTION = 20e16; // 20%
 
 // Collateral branch parameters (SETH = staked ETH, i.e. wstETH / rETH)
-//CCR: Critical Collateral Ratio
-//MCR: Minimum Collateral Ratio
-//SCR: Shutdown Collateral Ratio
-
+//CCR: Critical Collateral Ratio. minimum for each collateral branch
+//MCR: Minimum Collateral Ratio. minimum for each trove
+//SCR: Shutdown Collateral Ratio. minimum for each collateral branch
 
 //WETH
-uint256 constant CCR_WETH = 150 * _1pct;
-uint256 constant MCR_WETH = 110 * _1pct;
-uint256 constant SCR_WETH = 110 * _1pct;
+uint256 constant CCR_WETH = 150 * _1pct; // Branch minimum for adjustments
+uint256 constant MCR_WETH = 110 * _1pct; // Trove minimum for liquidation
+uint256 constant SCR_WETH = 110 * _1pct; //shutdown threshold (should be same as MCR)
 
 //LSTs of staked eth: wstETH and rETH
-uint256 constant CCR_SETH = 160 * _1pct;
-uint256 constant MCR_SETH = 110 * _1pct;
-uint256 constant SCR_SETH = 110 * _1pct;
+uint256 constant CCR_SETH = 160 * _1pct; // Branch minimum for adjustments
+uint256 constant MCR_SETH = 110 * _1pct; // Trove minimum for liquidation
+uint256 constant SCR_SETH = 110 * _1pct; //shutdown threshold (should be same as MCR)
 
 //TREE. tETH LRT from treehouse
-uint256 constant CCR_TREE = 160 * _1pct;
-uint256 constant MCR_TREE = 140 * _1pct;
-uint256 constant SCR_TREE = 140 * _1pct;
+uint256 constant CCR_TREE = 165 * _1pct; // Branch minimum for adjustments
+uint256 constant MCR_TREE = 120 * _1pct; // Trove minimum for liquidation
+uint256 constant SCR_TREE = 120 * _1pct; //shutdown threshold (should be same as MCR)
 
-//LRT: weETH, pufETH, rsETH. Liquidation restaking tokens
-uint256 constant CCR_LRT = 160 * _1pct;
-uint256 constant MCR_LRT = 130 * _1pct;
-uint256 constant SCR_LRT = 130 * _1pct;
+//LRT: weETH, rsETH. Liquidation restaking tokens
+uint256 constant CCR_LRT = 160 * _1pct; // Branch minimum for adjustments
+uint256 constant MCR_LRT = 130 * _1pct; // Trove minimum for liquidation
+uint256 constant SCR_LRT = 110 * _1pct; //shutdown threshold (should be same as MCR)
 
 //ARB. Arbitrum
-uint256 constant CCR_ARB = 160 * _1pct;
-uint256 constant MCR_ARB = 140 * _1pct;
-uint256 constant SCR_ARB = 140 * _1pct;
+uint256 constant CCR_ARB = 165 * _1pct; // Branch minimum for adjustments
+uint256 constant MCR_ARB = 140 * _1pct; // Trove minimum for liquidation
+uint256 constant SCR_ARB = 110 * _1pct; //shutdown threshold (should be same as MCR)
 
 // COMP, compound
-uint256 constant CCR_COMP = 160 * _1pct;
-uint256 constant MCR_COMP = 140 * _1pct;
-uint256 constant SCR_COMP = 140 * _1pct;
+uint256 constant CCR_COMP = 165 * _1pct; // Branch minimum for adjustments
+uint256 constant MCR_COMP = 140 * _1pct; // Trove minimum for liquidation
+uint256 constant SCR_COMP = 115 * _1pct; //shutdown threshold (should be same as MCR)
 
 //tBTC from threshold
-uint256 constant CCR_BTC = 160 * _1pct;
-uint256 constant MCR_BTC = 115 * _1pct;
-uint256 constant SCR_BTC = 115 * _1pct;
+uint256 constant CCR_BTC = 160 * _1pct; // Branch minimum for adjustments
+uint256 constant MCR_BTC = 115 * _1pct; // Trove minimum for liquidation
+uint256 constant SCR_BTC = 110 * _1pct; //shutdown threshold (should be same as MCR)
 
 // Batch CR buffer (same for all branches for now)
 // On top of MCR to join a batch, or adjust inside a batch
@@ -64,15 +63,17 @@ uint256 constant BCR_ALL = 10 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_SP_WETH = 5 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_SP_SETH = 5 * _1pct;
 
+//used when stability pool is empty. 
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_WETH = 10 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SETH = 20 * _1pct;
 
 // Fraction of collateral awarded to liquidator
-uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%
-uint256 constant COLL_GAS_COMPENSATION_CAP = 2 ether; // Max coll gas compensation capped at 2 ETH
+uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 800; // dividing by 800 yields 0.125%
+//todo: 
+uint256 constant COLL_GAS_COMPENSATION_CAP = 10000000000000000 wei; // Max coll gas compensation capped at 2 ETH
 
-// Minimum amount of net Bold debt a trove must have
-uint256 constant MIN_DEBT = 2000e18;
+// Minimum amount of net Bold debt a trove must have. 500 USND
+uint256 constant MIN_DEBT = 500e18;
 
 uint256 constant MIN_ANNUAL_INTEREST_RATE = _1pct / 2; // 0.5%
 uint256 constant MAX_ANNUAL_INTEREST_RATE = 250 * _1pct;
