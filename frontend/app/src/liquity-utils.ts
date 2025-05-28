@@ -172,7 +172,7 @@ export function useVault() {
       }),
     },
   });
-  
+
   return {
     ...vaultReads,
     data: {
@@ -186,18 +186,18 @@ export function useVault() {
 }
 
 export function useIsWhitelistedUser(whitelist: Address, callingContract: Address, user: Address) {
-    const isWhitelistedUser = useReadContracts({
-      // @ts-ignore
-      contracts: [{
-        address: whitelist,
-        abi: WhitelistAbi,
-        functionName: "isWhitelisted",
-        args: [callingContract, user],
-      }],
-      allowFailure: false,
-    });
-    
-    return isWhitelistedUser.data !== undefined ? isWhitelistedUser.data[0] : undefined;
+  const isWhitelistedUser = useReadContracts({
+    // @ts-ignore
+    contracts: [{
+      address: whitelist,
+      abi: WhitelistAbi,
+      functionName: "isWhitelisted",
+      args: [callingContract, user],
+    }],
+    allowFailure: false,
+  });
+
+  return isWhitelistedUser.data !== undefined ? isWhitelistedUser.data[0] : undefined;
 }
 
 export function useProtocolOwner(addressesRegistry: Address) {
@@ -211,7 +211,7 @@ export function useProtocolOwner(addressesRegistry: Address) {
     }],
     allowFailure: false,
   });
-  
+
   return admin.data !== undefined ? admin.data[0] : undefined;
 }
 
@@ -358,6 +358,8 @@ export function useAverageInterestRate(branchId: null | BranchId) {
       ? DNUM_0
       : dn.div(totalWeightedRate, totalDebt);
   }, [brackets.isSuccess, brackets.data]);
+
+  console.log("useAverageInterestRate", { brackets, data })
 
   return {
     ...brackets,

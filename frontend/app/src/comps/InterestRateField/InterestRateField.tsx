@@ -120,6 +120,8 @@ export const InterestRateField = memo(
 
     const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
 
+    console.log("interestRateField", { averageInterestRate, interestRate, debt, boldInterestPerYear });
+
     return (
       <>
         <InputField
