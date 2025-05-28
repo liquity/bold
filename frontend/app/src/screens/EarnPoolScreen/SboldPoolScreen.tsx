@@ -8,6 +8,7 @@ import { SboldPositionSummary } from "@/src/comps/EarnPositionSummary/SboldPosit
 import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
+import { SboldInfo } from "@/src/comps/SboldInfo/SboldInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
@@ -235,96 +236,114 @@ export function PanelUpdate({
         gap: 48,
       }}
     >
-      <Field
-        field={
-          <InputField
-            drawer={insufficientBalance
-              ? {
-                mode: "error",
-                message: `Insufficient balance. You have ${fmtnum(boldBalance)} BOLD.`,
-              }
-              : withdrawAboveDeposit
-              ? {
-                mode: "error",
-                message: hasAnyBoldDeposited
-                  ? `You can’t withdraw more than you have deposited.`
-                  : `No BOLD deposited.`,
-              }
-              : null}
-            contextual={
-              <InputTokenBadge
-                background={false}
-                icon={<TokenIcon symbol="BOLD" />}
-                label="BOLD"
-              />
-            }
-            id="input-deposit-change"
-            label={{
-              start: mode === "remove"
-                ? content.earnScreen.withdrawPanel.label
-                : content.earnScreen.depositPanel.label,
-              end: (
-                <Tabs
-                  compact
-                  items={[
-                    { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
-                    { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
-                  ]}
-                  onSelect={(index, { origin, event }) => {
-                    setMode(index === 1 ? "remove" : "add");
-                    setValue("");
-                    if (origin !== "keyboard") {
-                      event.preventDefault();
-                      (event.target as HTMLElement).focus();
-                    }
-                  }}
-                  selected={mode === "remove" ? 1 : 0}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          width: "100%",
+          gap: 24,
+        }}
+      >
+        <Field
+          field={
+            <InputField
+              drawer={insufficientBalance
+                ? {
+                  mode: "error",
+                  message: `Insufficient balance. You have ${fmtnum(boldBalance)} BOLD.`,
+                }
+                : withdrawAboveDeposit
+                ? {
+                  mode: "error",
+                  message: hasAnyBoldDeposited
+                    ? `You can’t withdraw more than you have deposited.`
+                    : `No BOLD deposited.`,
+                }
+                : null}
+              contextual={
+                <InputTokenBadge
+                  background={false}
+                  icon={<TokenIcon symbol="BOLD" />}
+                  label="BOLD"
                 />
-              ),
-            }}
-            labelHeight={32}
-            onFocus={() => setFocused(true)}
-            onChange={setValue}
-            onBlur={() => setFocused(false)}
-            value={value_}
-            placeholder="0.00"
-            secondary={{
-              start: (
-                <HFlex gap={4}>
-                  <div>{content.earnScreen.depositPanel.shareLabel}</div>
-                  <div>
-                    <Amount
-                      format={2}
-                      percentage
-                      value={updatedPoolShare}
-                    />
-                  </div>
-                  <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.depositPoolShare)} />
-                </HFlex>
-              ),
-              end: mode === "add"
-                ? (
-                  dn.gt(boldBalance, 0) && (
-                    <TextButton
-                      label={`Max ${fmtnum(boldBalance, 2)} BOLD`}
-                      onClick={() => {
-                        setValue(dn.toString(boldBalance));
-                      }}
-                    />
-                  )
-                )
-                : sboldPosition?.bold && dn.gt(sboldPosition?.bold, 0) && (
-                  <TextButton
-                    label={`Max ${fmtnum(sboldPosition?.bold, 2)} BOLD`}
-                    onClick={() => {
-                      setValue(dn.toString(sboldPosition?.bold));
+              }
+              id="input-deposit-change"
+              label={{
+                start: mode === "remove"
+                  ? content.earnScreen.withdrawPanel.label
+                  : content.earnScreen.depositPanel.label,
+                end: (
+                  <Tabs
+                    compact
+                    items={[
+                      { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
+                      { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
+                    ]}
+                    onSelect={(index, { origin, event }) => {
+                      setMode(index === 1 ? "remove" : "add");
+                      setValue("");
+                      if (origin !== "keyboard") {
+                        event.preventDefault();
+                        (event.target as HTMLElement).focus();
+                      }
                     }}
+                    selected={mode === "remove" ? 1 : 0}
                   />
                 ),
-            }}
-          />
-        }
-      />
+              }}
+              labelHeight={32}
+              onFocus={() => setFocused(true)}
+              onChange={setValue}
+              onBlur={() => setFocused(false)}
+              value={value_}
+              placeholder="0.00"
+              secondary={{
+                start: (
+                  <HFlex gap={4}>
+                    <div>{content.earnScreen.depositPanel.shareLabel}</div>
+                    <div>
+                      <Amount
+                        format={2}
+                        percentage
+                        value={updatedPoolShare}
+                      />
+                    </div>
+                    <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.depositPoolShare)} />
+                  </HFlex>
+                ),
+                end: mode === "add"
+                  ? (
+                    dn.gt(boldBalance, 0) && (
+                      <TextButton
+                        label={`Max ${fmtnum(boldBalance, 2)} BOLD`}
+                        onClick={() => {
+                          setValue(dn.toString(boldBalance));
+                        }}
+                      />
+                    )
+                  )
+                  : sboldPosition?.bold && dn.gt(sboldPosition?.bold, 0) && (
+                    <TextButton
+                      label={`Max ${fmtnum(sboldPosition?.bold, 2)} BOLD`}
+                      onClick={() => {
+                        setValue(dn.toString(sboldPosition?.bold));
+                      }}
+                    />
+                  ),
+              }}
+            />
+          }
+        />
+        <SboldInfo
+          conversion={mode === "add" && parsedValue
+            ? {
+              boldAmount: parsedValue ?? DNUM_0,
+              sboldAmount: depositPreview.data?.sbold ?? null,
+            }
+            : null}
+        />
+      </div>
 
       <div
         style={{
