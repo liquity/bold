@@ -58,6 +58,7 @@ export const InterestRateField = memo(
     const inputId = inputIdFromProps ?? autoInputId;
 
     const averageInterestRate = useAverageInterestRate(branchId);
+    console.log({ averageInterestRate });
 
     const rateTouchedForBranch = useRef<
       | null // rate not touched for this branch, average rate should be applied
