@@ -18,6 +18,7 @@ export async function graphQuery<TResult, TVariables>(
       (_, value) => typeof value === "bigint" ? String(value) : value,
     ),
   });
+  console.log({ graphResponse: response });
 
   if (!response.ok) {
     throw new Error("Error while fetching data from the subgraph");
