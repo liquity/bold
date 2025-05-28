@@ -51,7 +51,6 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
       .with({ status: "error" }, () => "error")
       .with({ status: "pending" }, () => "loading")
       .with({ data: P.nonNullable }, () => "success")
-      .with({ data: null }, () => "loading")
       .exhaustive();
 
     return (

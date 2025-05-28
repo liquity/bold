@@ -357,15 +357,6 @@ export function PanelUpdate({
         <FlowButton
           disabled={!allowSubmit}
           request={() => {
-            console.log(
-              mode,
-              depositPreview.status,
-              depositPreview.error,
-              depositPreview.data,
-              withdrawalPreview.status,
-              withdrawalPreview.error,
-              withdrawalPreview.data,
-            );
             if (withdrawalPreview.isError) {
               throw withdrawalPreview.error;
             }
@@ -427,8 +418,6 @@ export function PanelUpdate({
             const depositFee = mode === "add"
               ? depositPreview.data?.boldFee ?? DNUM_0
               : DNUM_0;
-
-            console.log("WITHDRAW ALL", withdrawAll);
 
             return {
               flowId: "sboldUpdate",

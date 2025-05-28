@@ -1,9 +1,7 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
-import type { Dnum } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { SboldPositionSummary } from "@/src/comps/EarnPositionSummary/SboldPositionSummary";
-import { DNUM_0 } from "@/src/dnum-utils";
 import { getSboldContract } from "@/src/sbold";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -92,6 +90,7 @@ export const sboldUpdate: FlowDeclaration<SboldUpdateRequest> = {
           label={mode === "deposit" ? "You receive" : "You send"}
           value={[
             <Amount
+              key="start"
               prefix="~"
               suffix=" sBOLD"
               value={dn.abs(dn.sub(sboldPosition.sbold, prevSboldPosition.sbold))}
