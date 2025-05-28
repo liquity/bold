@@ -15,7 +15,7 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
     // - ETHUSDxCanonical: Uses Chainlink's ETH-USD multiplied by the LST' canonical rate
     // - lastGoodPrice: the last good price recorded by this PriceFeed.
     PriceSource public priceSource;
-
+    bool public isChainlink;
     // Last good price tracker for the derived USD price
     uint256 public lastGoodPrice;
 
@@ -46,7 +46,9 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
         ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
         ethUsdOracle.decimals = ethUsdOracle.aggregator.decimals();
 
-        assert(ethUsdOracle.decimals == 8);
+        if (ethUsdOracle.decimals == 8) isChainlink = true;
+        if (ethUsdOracle.decimals == 18) isChainlink = false;
+        assert(ethUsdOracle.decimals == 8 || ethUsdOracle.decimals == 18);
     }
 
     // TODO: remove this and set address in constructor, since we'll use CREATE2
@@ -65,7 +67,11 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
         if (!_isValidChainlinkPrice(chainlinkResponse, _oracle.stalenessThreshold)) {
             oracleIsDown = true;
         } else {
-            scaledPrice = _scaleChainlinkPriceTo18decimals(chainlinkResponse.answer, _oracle.decimals);
+            if (isChainlink) {
+                scaledPrice = _scaleChainlinkPriceTo18decimals(chainlinkResponse.answer, _oracle.decimals);
+            } else {
+                scaledPrice = uint256(chainlinkResponse.answer);
+            }
         }
 
         return (scaledPrice, oracleIsDown);
