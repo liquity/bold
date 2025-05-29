@@ -1,15 +1,15 @@
-import type { TokenSymbol } from "@/src/types";
+import type { Address, TokenSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Logo } from "@/src/comps/Logo/Logo";
-import { ACCOUNT_SCREEN } from "@/src/env";
+import { ACCOUNT_SCREEN, CHAIN_BLOCK_EXPLORER, CONTRACT_BOLD_TOKEN, CONTRACT_LQTY_TOKEN } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
 import { useLiquityStats } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, shortenAddress, TokenIcon } from "@liquity2/uikit";
+import { shortenAddress, TokenIcon } from "@liquity2/uikit";
 import { blo } from "blo";
 import Image from "next/image";
 import { AboutButton } from "./AboutButton";
@@ -72,7 +72,13 @@ export function BottomBar() {
             userSelect: "none",
           })}
         >
-          <HFlex gap={16}>
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+            })}
+          >
             <div
               className={css({
                 display: "flex",
@@ -130,8 +136,14 @@ export function BottomBar() {
                 )}
               </span>
             </div>
-          </HFlex>
-          <HFlex gap={16}>
+          </div>
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+            })}
+          >
             {DISPLAYED_PRICES.map((symbol) => (
               <Price
                 key={symbol}
@@ -143,7 +155,13 @@ export function BottomBar() {
                 id="footer-account-button"
                 href={`/account?address=${account.address}`}
                 label={
-                  <HFlex gap={4} alignItems="center">
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    })}
+                  >
                     <Image
                       alt=""
                       width={16}
@@ -155,48 +173,95 @@ export function BottomBar() {
                     />
 
                     {shortenAddress(account.address, 3)}
-                  </HFlex>
+                  </div>
                 }
                 className={css({
                   color: "content",
-                  borderRadius: 4,
                   whiteSpace: "nowrap",
-                  _focusVisible: {
-                    outline: "2px solid token(colors.focused)",
-                  },
-                  _active: {
-                    translate: "0 1px",
-                  },
                 })}
               />
             )}
-          </HFlex>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
+function getTokenAddress(symbol: TokenSymbol) {
+  if (symbol === "LQTY") {
+    return CONTRACT_LQTY_TOKEN;
+  }
+  if (symbol === "BOLD") {
+    return CONTRACT_BOLD_TOKEN;
+  }
+  return null;
+}
+
+function getTokenLink(address: Address) {
+  if (!CHAIN_BLOCK_EXPLORER) {
+    return null;
+  }
+  return address && `${CHAIN_BLOCK_EXPLORER.url}token/${address}`;
+}
+
+// function Price({ symbol }: { symbol: Exclude<TokenSymbol, "SBOLD"> }) {
 function Price({ symbol }: { symbol: TokenSymbol }) {
   const price = usePrice(symbol);
-  return (
-    <HFlex
-      key={symbol}
-      gap={4}
+  const tokenAddress = getTokenAddress(symbol);
+  const tokenUrl = tokenAddress && getTokenLink(tokenAddress);
+  const token = (
+    <div
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+      })}
     >
       <TokenIcon
         size={16}
         symbol={symbol}
+        title={null}
       />
-      <HFlex gap={8}>
-        <span>{symbol}</span>
-        <Amount
-          prefix="$"
-          fallback="…"
-          value={price.data}
-          format="2z"
-        />
-      </HFlex>
-    </HFlex>
+      <span>{symbol}</span>
+    </div>
+  );
+  return (
+    <div
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+      })}
+    >
+      {tokenUrl
+        ? (
+          <LinkTextButton
+            title={`${symbol}: ${tokenAddress}`}
+            external
+            href={tokenUrl}
+            label={token}
+            className={css({
+              color: "content!",
+              _hover: {
+                textDecoration: "underline",
+              },
+              _focusVisible: {
+                outline: "2px solid token(colors.focused)",
+              },
+              _active: {
+                translate: "0 1px",
+              },
+            })}
+          />
+        )
+        : token}
+      <Amount
+        prefix="$"
+        fallback="…"
+        value={price.data}
+        format="2z"
+      />
+    </div>
   );
 }
