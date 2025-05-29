@@ -292,7 +292,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         if (vm.envBytes("DEPLOYER").length == 20) {
             // address
             deployer = vm.envAddress("DEPLOYER");
+            console.log("deployer", deployer);
+            console.log("msg.sender", address(msg.sender));
+            assert(deployer == address(msg.sender));
             vm.startBroadcast(deployer);
+
         } else {
             // private key
             uint256 privateKey = vm.envUint("DEPLOYER");
@@ -345,6 +349,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // boldToken.initialize(superTokenFactory);
 
             assert(address(boldToken) == boldAddress);
+            
         }
 
         if (deploymentMode.eq(DEPLOYMENT_MODE_BOLD_ONLY)) {
@@ -492,13 +497,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
 
 
-        string[] memory collNames = new string[](troveManagerParamsArray.length);
-        string[] memory collSymbols = new string[](troveManagerParamsArray.length);
-        collNames[0] = "Wrapped Ether";
-        collSymbols[0] = "WETH";
-
-        collNames[1] = "Wrapped liquid staked Ether 2.0";
-        collSymbols[1] = "wstETH";
+        string[] memory collNames = new string[](troveManagerParamsArray.length - 1);
+        string[] memory collSymbols = new string[](troveManagerParamsArray.length - 1);
+        collNames[0] = "Wrapped liquid staked Ether 2.0";
+        collSymbols[0] = "wstETH";
 
         collNames[1] = "Rocket Pool ETH";
         collSymbols[1] = "rETH";
@@ -826,25 +828,32 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 vars.priceFeeds[vars.i] = new PriceFeedTestnet();
             }
         }
-
+        console2.log("deploying addresses registries", vars.numCollaterals);
+        console2.log("collateral Registry", address(r.collateralRegistry));
         // Deploy AddressesRegistries and get TroveManager addresses
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
+            console2.log("deploying addresses registry", vars.i);
             //todo: update troveManagerParamsArray for proper ccr for each collateral
             (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
                 _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
             //updateDebtLimit
+            // todo: collateral registry doesn't exist yet
             //todo: set initial debt limit first.
-            r.collateralRegistry.updateDebtLimit(vars.i, troveManagerParamsArray[vars.i].debtLimit);
+            // r.collateralRegistry.updateDebtLimit(vars.i, troveManagerParamsArray[vars.i].debtLimit);
         }
-
+        console2.log("deploying collateral registry");
         r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, msg.sender);
+        // todo: update debt limits after collateral registry is deployed
+        console2.log("deploying hint helpers");
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
+        console2.log("deploying multi trove getter");
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
-
+        console2.log("deploying per-branch contracts");
         // Deploy per-branch contracts for each branch
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
+            console2.log("deploying per-branch contracts", vars.i);
             vars.contracts = _deployAndConnectCollateralContracts(
                 vars.collaterals[vars.i],
                 vars.priceFeeds[vars.i],
@@ -880,12 +889,21 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         internal
         returns (IAddressesRegistry, address)
     {
+        /* address _owner,
+        uint256 _ccr,
+        uint256 _mcr,
+        uint256 _bcr,
+        uint256 _scr,
+        uint256 _debtLimit,
+        uint256 _liquidationPenaltySP,
+        uint256 _liquidationPenaltyRedistribution**/
+        
         IAddressesRegistry addressesRegistry = new AddressesRegistry(
             deployer,
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
-            _troveManagerParams.SCR,
             _troveManagerParams.BCR,
+            _troveManagerParams.SCR,  // todo:  figure out why bcr and scr are swapped in the AddressesRegistry constructor
             _troveManagerParams.debtLimit,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
@@ -929,7 +947,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
         addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)))
+            SALT, keccak256(abi.encodePacked(type(TroveNFT).creationCode, abi.encode(address(contracts.addressesRegistry), address(mainnetDAO))))
         );
         addresses.stabilityPool = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)))
@@ -1013,7 +1031,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ICurveStableswapNGPool _usdcCurvePool
     ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper) {
         IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
-
+        console2.log("deploying hybrid exchange");
+        console2.log("coll token", address(_collToken));
+        console2.log("bold token", address(_boldToken));
+        console2.log("usdc curve pool", address(_usdcCurvePool));
         IExchange hybridExchange = new HybridCurveUniV3Exchange(
             _collToken,
             _boldToken,
@@ -1042,6 +1063,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IExchange _hybridExchange,
         bool _lst
     ) internal returns (ILeverageZapper) {
+        console2.log("deploying leverage zapper");
+        console2.log("addresses registry", address(_addressesRegistry));    
+        console2.log("flash loan provider", address(_flashLoanProvider));
+        console2.log("hybrid exchange", address(_hybridExchange));
+        console2.log("lst", _lst);
         ILeverageZapper leverageZapperHybrid;
         if (_lst) {
             leverageZapperHybrid = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
