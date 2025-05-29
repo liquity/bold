@@ -1088,7 +1088,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // local
             return ICurveStableswapNGPool(address(0));
         }
-
+        console2.log("deploying curve pool");
+        console2.log("curve factory", address(curveStableswapFactory));
         // deploy Curve StableswapNG pool
         address[] memory coins = new address[](2);
         coins[BOLD_TOKEN_INDEX] = address(_boldToken);
@@ -1096,7 +1097,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         uint8[] memory assetTypes = new uint8[](2); // 0: standard
         bytes4[] memory methodIds = new bytes4[](2);
         address[] memory oracles = new address[](2);
-
+        // note: this call is failing in simulations
         ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool({
             name: string.concat("BOLD/", _otherToken.symbol(), " Pool"),
             symbol: string.concat("BOLD", _otherToken.symbol()),
@@ -1110,6 +1111,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             method_ids: methodIds,
             oracles: oracles
         });
+
+        console2.log("curve pool", address(curvePool));
 
         return curvePool;
     }
