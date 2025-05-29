@@ -465,9 +465,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         
         //COMP
         troveManagerParamsArray[7] = TroveManagerParams(
-            CCR_ARB, 
-            MCR_ARB, 
-            SCR_ARB, 
+            CCR_COMP, 
+            MCR_COMP, 
+            SCR_COMP, 
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
