@@ -194,13 +194,13 @@ export function BorrowScreen() {
       return `You must borrow at least ${fmtnum(
         MIN_DEBT,
         2
-      )} USDN.`;
+      )} USND.`;
     }
     if (isAboveMaxDebtLimit) {
       return `You cannot borrow more than ${fmtnum(
         maxDebtLimit,
         2
-      )} USDN against ${collateral?.name}.`;
+      )} USND against ${collateral?.name}.`;
     }
     return '';
   }
@@ -227,7 +227,7 @@ export function BorrowScreen() {
                   <TokenIcon key={symbol} symbol={symbol} />
                 ))}
               </TokenIcon.Group>,
-              <TokenIcon symbol='USDN' />
+              <TokenIcon symbol='USND' />
             )}
           </HFlex>
         ),
@@ -309,8 +309,8 @@ export function BorrowScreen() {
               id='input-debt'
               contextual={
                 <InputField.Badge
-                  icon={<TokenIcon symbol='USDN' />}
-                  label='USDN'
+                  icon={<TokenIcon symbol='USND' />}
+                  label='USND'
                 />
               }
               drawer={

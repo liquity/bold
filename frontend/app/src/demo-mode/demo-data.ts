@@ -14,7 +14,7 @@ export const ACCOUNT_STAKED_LQTY = {
 } as const;
 
 export const ACCOUNT_BALANCES = {
-  USDN: dn.from(3_987, 18),
+  USND: dn.from(3_987, 18),
   ETH: dn.from(2.429387, 18),
   LQTY: dn.from(2008.217, 18),
   NERI: dn.from(2008.217, 18),
@@ -69,7 +69,7 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     collIndex: 0,
     deposit: dn.from(5_000, 18),
     rewards: {
-      usdn: dn.from(789.438, 18),
+      usnd: dn.from(789.438, 18),
       coll: dn.from(0.943, 18),
     },
   },

@@ -50,7 +50,7 @@ export function HomeScreen() {
         })}
       >
         <HomeTable
-          title='Borrow USDN against ETH and assets'
+          title='Borrow USND against ETH and assets'
           subtitle='You can adjust your loans, including your interest rate, at any time'
           // icon={<IconBorrow />}
           icon={<Image src='/cute-snails/battle.png' alt='Borrow' width={24} height={24} />}
@@ -69,8 +69,8 @@ export function HomeScreen() {
           ))}
         />
         <HomeTable
-          title='Earn rewards with USDN'
-          subtitle='Earn USDN & (staked) ETH rewards by putting your USDN in a stability pool'
+          title='Earn rewards with USND'
+          subtitle='Earn USND & (staked) ETH rewards by putting your USND in a stability pool'
           // icon={<IconEarn />}
           icon={<Image src='/cute-snails/blue.png' alt='Borrow' width={24} height={24} />}
           columns={
@@ -149,7 +149,7 @@ function BorrowingRow({ symbol }: { symbol: CollateralSymbol }) {
                   })}
                 >
                   Borrow
-                  <TokenIcon symbol='USDN' size='mini' />
+                  <TokenIcon symbol='USND' size='mini' />
                 </div>
               }
               title={`Borrow ${collateral?.name} from ${symbol}`}
@@ -230,12 +230,12 @@ function EarnRewardsRow({ symbol }: { symbol: CollateralSymbol }) {
               >
                 Earn
                 <TokenIcon.Group size='mini'>
-                  <TokenIcon symbol='USDN' />
+                  <TokenIcon symbol='USND' />
                   <TokenIcon symbol={symbol} />
                 </TokenIcon.Group>
               </div>
             }
-            title={`Earn USDN with ${collateral?.name}`}
+            title={`Earn USND with ${collateral?.name}`}
           />
         </Link>
       </td>

@@ -123,8 +123,8 @@ const liquidityPools = [
   {
     id: 1,
     asset1: {
-      icon: <TokenIcon symbol="USDN" />,
-      symbol: 'USDN',
+      icon: <TokenIcon symbol="USND" />,
+      symbol: 'USND',
       pricePer: '2100',
     },
     asset2: {
@@ -137,12 +137,12 @@ const liquidityPools = [
   {
     id: 2,
     asset1: {
-      icon: <TokenIcon symbol="USDN" />,
-      symbol: 'USDN',
+      icon: <TokenIcon symbol="USND" />,
+      symbol: 'USND',
       pricePer: '0.99',
     },
     asset2: {
-      icon: <TokenIcon symbol="USDN" />, // TODO: Change to USDC
+      icon: <TokenIcon symbol="USND" />, // TODO: Change to USDC
       symbol: 'USDC',
       pricePer: '1',
     },
@@ -151,8 +151,8 @@ const liquidityPools = [
   {
     id: 3,
     asset1: {
-      icon: <TokenIcon symbol="USDN" />,
-      symbol: 'USDN',
+      icon: <TokenIcon symbol="USND" />,
+      symbol: 'USND',
       pricePer: '1',
     },
     asset2: {

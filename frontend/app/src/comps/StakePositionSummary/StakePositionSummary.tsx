@@ -301,7 +301,7 @@ export function StakePositionSummary({
                   format='2diff'
                   value={stakePosition?.rewards.lusd ?? 0}
                 />
-                <TokenIcon symbol='USDN' size='mini' />
+                <TokenIcon symbol='USND' size='mini' />
               </HFlex>
               <HFlex
                 gap={4}

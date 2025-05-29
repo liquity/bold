@@ -14,7 +14,7 @@ export default {
     multiply: "Multiply",
     earn: "Earn",
     stake: "Stake",
-    buy: "Buy USDN",
+    buy: "Buy USND",
   },
 
   accountButton: {
@@ -37,21 +37,21 @@ export default {
       "Redemption risk",
       <>
         Users paying the lowest interest rate can get redeemed, if the price of
-        USDN falls below $1. By raising your interest rate, you reduce this
+        USND falls below $1. By raising your interest rate, you reduce this
         risk.
       </>,
     ],
     loanLtv: [
       "Loan-to-value ratio",
       <>
-        The ratio between the amount of USDN borrowed and the deposited
+        The ratio between the amount of USND borrowed and the deposited
         collateral (in USD).
       </>,
     ],
     loanMaxLtv: [
       "Maximum Loan-To-Value (LTV) Ratio",
       <>
-        The maximum ratio between the USD value of a loan (in USDN) and the
+        The maximum ratio between the USD value of a loan (in USND) and the
         collateral backing it. The LTV will fluctuate as the price of the
         collateral changes. To decrease the LTV add more colateral or reduce
         debt.
@@ -71,7 +71,7 @@ export default {
     interestRateBoldPerYear: [
       "Interest rate",
       <>
-        The annualized interest amount in USDN for the selected interest rate.
+        The annualized interest amount in USND for the selected interest rate.
         The accumulated interest is added to the loan.
       </>,
     ],
@@ -86,7 +86,7 @@ export default {
       heading: "Your collateral and debt are reduced by the same value.",
       body: (
         <>
-          When USDN trades for under $1, anyone can redeem positions to get USDN
+          When USND trades for under $1, anyone can redeem positions to get USND
           back at $1. Positions with the lowest interest rate get redeemed
           first.
         </>
@@ -110,8 +110,8 @@ export default {
     ),
     infoItems: [
       {
-        icon: "usdn",
-        text: "Redemptions occur when USDN drops below $1.",
+        icon: "usnd",
+        text: "Redemptions occur when USND drops below $1.",
       },
       {
         icon: "redemption",
@@ -213,7 +213,7 @@ export default {
       borrow: {
         title: "Borrow",
         description:
-          "Mint USDN against your collateral at whatever interest rate you want",
+          "Mint USND against your collateral at whatever interest rate you want",
       },
       multiply: {
         title: "Multiply",
@@ -221,13 +221,13 @@ export default {
           "Increase your exposure to ETH and its staking yield with a single click",
       },
       earn: {
-        title: "Earn with USDN",
+        title: "Earn with USND",
         description:
-          "Deposit USDN to earn protocol revenues and liquidation proceeds",
+          "Deposit USND to earn protocol revenues and liquidation proceeds",
       },
       buy: {
-        title: "USDN",
-        description: "Buy USDN",
+        title: "USND",
+        description: "Buy USND",
       },
     },
     statsBar: {
@@ -243,7 +243,7 @@ export default {
       ],
       spTvl: [
         "Total Value Locked",
-        "The total amount of USDN deposited in each stability pool.",
+        "The total amount of USND deposited in each stability pool.",
       ],
       borrowTvl: [
         "Total Value Locked",
@@ -256,7 +256,7 @@ export default {
   borrowScreen: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Borrow {boldIcon} USDN with {tokensIcons}
+        Borrow {boldIcon} USND with {tokensIcons}
       </>
     ),
     depositField: {
@@ -274,7 +274,7 @@ export default {
     action: "Next: Summary",
     infoTooltips: {
       interestRateSuggestions: [
-        "Positions with lower interest rates are the first to be redeemed by USDN holders.",
+        "Positions with lower interest rates are the first to be redeemed by USND holders.",
       ],
     },
   },
@@ -304,7 +304,7 @@ export default {
       interestRateSuggestions: [
         <>
           Positions with lower interest rates are the first to be redeemed by
-          USDN holders.
+          USND holders.
         </>,
       ],
       exposure: [
@@ -318,14 +318,14 @@ export default {
   earnHome: {
     headline: (tokensIcons: N, boldIcon: N) => (
       <>
-        Deposit {boldIcon} USDN to earn rewards {tokensIcons}
+        Deposit {boldIcon} USND to earn rewards {tokensIcons}
       </>
     ),
     subheading: (
       <>
-        A USDN deposit in a stability pool earns rewards from the fees that
+        A USND deposit in a stability pool earns rewards from the fees that
         users pay on their loans. Also, in case the system needs to liquidate
-        positions, the USDN may be swapped to collateral.
+        positions, the USND may be swapped to collateral.
       </>
     ),
     poolsColumns: {
@@ -335,7 +335,7 @@ export default {
     },
     infoTooltips: {
       tvl: (collateral: N) => [
-        <>Total USDN covering {collateral}-backed position liquidations</>,
+        <>Total USND covering {collateral}-backed position liquidations</>,
       ],
     },
   },
@@ -385,10 +385,10 @@ export default {
     },
     infoTooltips: {
       tvl: (collateral: N) => [
-        <>Total USDN covering {collateral}-backed position liquidations.</>,
+        <>Total USND covering {collateral}-backed position liquidations.</>,
       ],
       depositPoolShare: [
-        "Percentage of your USDN deposit compared to the total deposited in this stability pool.",
+        "Percentage of your USND deposit compared to the total deposited in this stability pool.",
       ],
       alsoClaimRewardsDeposit: [
         <>
@@ -404,14 +404,14 @@ export default {
         </>,
       ],
       currentApr: [
-        "Average annualized return for USDN deposits over the past 7 days.",
+        "Average annualized return for USND deposits over the past 7 days.",
       ],
       rewardsEth: [
         "ETH rewards",
         "Your proceeds from liquidations conducted by this stability pool.",
       ],
       rewardsBold: [
-        "USDN rewards",
+        "USND rewards",
         "Your earnings from protocol revenue distributions to this stability pool.",
       ],
     },
@@ -421,10 +421,10 @@ export default {
   buyScreen: {
     headline: () => (
       <>
-        <span>Buy USDN </span>
+        <span>Buy USND </span>
       </>
     ),
-    subheading: <>Buy USDN</>,
+    subheading: <>Buy USND</>,
     learnMore: ["https://docs.nerite.org/docs/user-docs/NERI-staking-and-voting", "Learn more"],
   },
 
@@ -476,7 +476,7 @@ export default {
       title: "Allocate your voting power",
       intro: (
         <>
-          Direct incentives from Nerite protocol revenues towards liquidity providers for USDN. Upvote from Thursday
+          Direct incentives from Nerite protocol revenues towards liquidity providers for USND. Upvote from Thursday
           to Tuesday. Downvote all week. <Link href="https://docs.nerite.org/docs/user-docs/NERI-staking-and-voting">Learn more</Link>
         </>
       ),

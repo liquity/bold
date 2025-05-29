@@ -122,7 +122,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
                   key='start'
                   fallback='…'
                   value={debtChangeWithFee && dn.abs(debtChangeWithFee)}
-                  suffix=' USDN'
+                  suffix=' USND'
                 />,
                 upfrontFeeData.data?.upfrontFee &&
                   dn.gt(upfrontFeeData.data.upfrontFee, 0n) && (
@@ -131,7 +131,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
                       fallback='…'
                       prefix='Incl. '
                       value={upfrontFeeData.data.upfrontFee}
-                      suffix=' USDN interest rate adjustment fee'
+                      suffix=' USND interest rate adjustment fee'
                     />
                   ),
               ]}
@@ -143,7 +143,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
     steps: {
       approveBold: {
-        name: () => "Approve USDN",
+        name: () => "Approve USND",
         Status: (props) => (
           <TransactionStatus {...props} approval='approve-only' />
         ),
@@ -262,7 +262,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       },
 
       depositBold: {
-        name: () => "Repay USDN",
+        name: () => "Repay USND",
         Status: TransactionStatus,
 
         async commit(ctx) {
@@ -327,7 +327,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       },
 
       withdrawBold: {
-        name: () => "Borrow USDN",
+        name: () => "Borrow USND",
         Status: TransactionStatus,
 
         async commit(ctx) {
@@ -501,10 +501,10 @@ function getFinalSteps(
   // coll decreases => withdraw
   if (dn.lt(collChange, 0)) return ["withdrawColl"];
 
-  // debt increases => withdraw USDN (borrow)
+  // debt increases => withdraw USND (borrow)
   if (dn.gt(debtChange, 0)) return ["withdrawBold"];
 
-  // debt decreases => deposit USDN (repay)
+  // debt decreases => deposit USND (repay)
   if (dn.lt(debtChange, 0)) return ["depositBold"];
 
   throw new Error("Invalid request");

@@ -241,7 +241,7 @@ export const InterestRateField = memo(
                   (mode === "manual" || delegate !== null)
                     ? fmtnum(boldInterestPerYear)
                     : "−"}{" "}
-                  USDN / year
+                  USND / year
                 </div>
                 <InfoTooltip
                   {...infoTooltipProps(
@@ -262,7 +262,7 @@ export const InterestRateField = memo(
                     ? fmtnum(boldRedeemableInFront, "compact")
                     : "−"}
                 </span>
-                <span>{" USDN"}</span>
+                <span>{" USND"}</span>
               </span>
             ),
           }}
@@ -668,7 +668,7 @@ function DelegateBox({
               <Amount
                 value={delegate.boldAmount}
                 format='compact'
-                suffix=' USDN'
+                suffix=' USND'
               />
             </div>
             <div

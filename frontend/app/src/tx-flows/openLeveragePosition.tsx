@@ -86,7 +86,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
           <TransactionDetailsRow
             label='Borrowed'
             value={[
-              `${fmtnum(borrowedWithFee)} USDN`,
+              `${fmtnum(borrowedWithFee)} USND`,
               <div
                 className={css({
                   display: "flex",
@@ -99,9 +99,9 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
                   fallback='…'
                   prefix='Incl. '
                   value={upfrontFee.data}
-                  suffix=' USDN creation fee'
+                  suffix=' USND creation fee'
                 />
-                <InfoTooltip heading='USDN Creation Fee'>
+                <InfoTooltip heading='USND Creation Fee'>
                   This fee is charged when you open a new loan or increase your
                   debt. It corresponds to 7 days of average interest for the
                   respective collateral asset.
@@ -121,7 +121,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
                     dust: false,
                     prefix: "~",
                   })}{" "}
-                  USDN per year)
+                  USND per year)
                 </div>,
               ]}
             />
@@ -132,7 +132,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
                 `${fmtnum(loan.interestRate, "pct2")}%`,
                 `${fmtnum(
                   dn.mul(loan.borrowed, loan.interestRate)
-                )} USDN per year`,
+                )} USND per year`,
               ]}
             />
           )}

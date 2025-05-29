@@ -159,7 +159,7 @@ export function useEarnPosition(
       )
       ? null
       : earnPositionFromGraph(spDeposit.data, {
-        usdn: boldGains.data,
+        usnd: boldGains.data,
         coll: dnum18(
           getCollGainFromSnapshots(
             spDeposit.data.deposit,
@@ -175,7 +175,7 @@ export function useEarnPosition(
 
 function earnPositionFromGraph(
   spDeposit: NonNullable<StabilityPoolDepositQuery["stabilityPoolDeposit"]>,
-  rewards: { usdn: Dnum; coll: Dnum },
+  rewards: { usnd: Dnum; coll: Dnum },
 ): PositionEarn {
   const collIndex = spDeposit.collateral.collIndex;
   if (!isCollIndex(collIndex)) {

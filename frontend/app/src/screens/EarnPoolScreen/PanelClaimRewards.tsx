@@ -29,14 +29,14 @@ export function PanelClaimRewards({
     throw new Error(`Invalid collateral index: ${collIndex}`);
   }
 
-  const boldPriceUsd = usePrice("USDN");
+  const boldPriceUsd = usePrice("USND");
   const collPriceUsd = usePrice(collateral.symbol);
 
   const totalRewards =
     collPriceUsd.data &&
     boldPriceUsd.data &&
     dn.add(
-      dn.mul(position?.rewards?.usdn ?? DNUM_0, boldPriceUsd.data),
+      dn.mul(position?.rewards?.usnd ?? DNUM_0, boldPriceUsd.data),
       dn.mul(position?.rewards?.coll ?? DNUM_0, collPriceUsd.data)
     );
 
@@ -50,9 +50,9 @@ export function PanelClaimRewards({
     <VFlex gap={48}>
       <VFlex gap={0}>
         <Rewards
-          amount={position?.rewards?.usdn ?? DNUM_0}
+          amount={position?.rewards?.usnd ?? DNUM_0}
           label={content.earnScreen.rewardsPanel.boldRewardsLabel}
-          symbol='USDN'
+          symbol='USND'
         />
         <Rewards
           amount={position?.rewards?.coll ?? DNUM_0}
