@@ -22,7 +22,6 @@ export const ACCOUNT_BALANCES = {
   WSTETH: dn.from(17.912, 18),
   LUSD: dn.from(1_200, 18),
   COMP: dn.from(1_200, 18),
-  PUFETH: dn.from(1_200, 18),
   SFRXETH: dn.from(1_200, 18),
   TBTC: dn.from(1_200, 18),
   TETH: dn.from(1_200, 18),
@@ -119,10 +118,6 @@ export const EARN_POOLS: Record<
     boldQty: [25_700_000n, 0],
   },
   COMP: {
-    apr: dn.from(0.054, 18),
-    boldQty: [25_700_000n, 0],
-  },
-  PUFETH: {
     apr: dn.from(0.054, 18),
     boldQty: [25_700_000n, 0],
   },
