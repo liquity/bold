@@ -9,14 +9,18 @@ import "../Interfaces/IRETHPriceFeed.sol";
 // import "forge-std/console2.sol";
 
 contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
+
+    address public rEthRateProviderAddress;
+
     constructor(
         address _owner,
         address _ethUsdOracleAddress,
         address _rEthEthOracleAddress,
-        address _rEthTokenAddress,
+        address _rEthRateProviderAddress,
         uint256 _ethUsdStalenessThreshold,
         uint256 _rEthEthStalenessThreshold
-    ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _rEthTokenAddress, _ethUsdStalenessThreshold) {
+    ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _rEthRateProviderAddress, _ethUsdStalenessThreshold) {
+        rEthRateProviderAddress = _rEthRateProviderAddress;
         // Store RETH-ETH oracle
         rEthEthOracle.aggregator = AggregatorV3Interface(_rEthEthOracleAddress);
         rEthEthOracle.stalenessThreshold = _rEthEthStalenessThreshold;
@@ -81,7 +85,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
     function _getCanonicalRate() internal view override returns (uint256, bool) {
         uint256 gasBefore = gasleft();
 
-        try IRETHToken(rateProviderAddress).getExchangeRate() returns (uint256 ethPerReth) {
+        try IRETHToken(rateProviderAddress).rate() returns (uint256 ethPerReth) {
             // If rate is 0, return true
             if (ethPerReth == 0) return (0, true);
 
