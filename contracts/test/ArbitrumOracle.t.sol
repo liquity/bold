@@ -21,6 +21,7 @@ import "src/Interfaces/IWSTETHPriceFeed.sol";
 import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/rsETHPriceFeed.sol";
 import "src/PriceFeeds/treeETHPriceFeed.sol";
+import "src/PriceFeeds/WeETHPriceFeed.sol";
 
 import "src/Interfaces/IRETHToken.sol";
 import "src/Interfaces/IWSTETH.sol";
@@ -33,6 +34,7 @@ contract ArbitrumOracles is Test {
     WSTETHPriceFeed public wstethPriceFeed;
     RETHPriceFeed public rEthPriceFeed;
     TreeETHPriceFeed public treeETHPriceFeed;
+    WeETHPriceFeed public weETHPriceFeed;
     
     address public WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address public RETH_ADDRESS = 0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8;
