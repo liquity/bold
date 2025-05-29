@@ -120,10 +120,10 @@ function useSpYieldGainParameters(symbol: CollateralSymbol | null) {
     contracts: [
       { ...SP, functionName: "P" },
       { ...AP, functionName: "aggWeightedDebtSum" },
-      { ...SP, functionName: "currentEpoch" },
+      // { ...SP, functionName: "currentEpoch" },
       { ...SP, functionName: "currentScale" },
       { ...AP, functionName: "lastAggUpdateTime" },
-      { ...SP, functionName: "lastYieldError" },
+      // { ...SP, functionName: "lastYieldError" },
       { ...SP, functionName: "getTotalBoldDeposits" },
       { ...SP, functionName: "getYieldGainsPending" },
     ],
@@ -133,20 +133,20 @@ function useSpYieldGainParameters(symbol: CollateralSymbol | null) {
       select: ([
         { result: P },
         { result: aggWeightedDebtSum },
-        { result: currentEpoch },
+        // { result: currentEpoch },
         { result: currentScale },
         { result: lastAggUpdateTime },
-        { result: lastYieldError },
+        // { result: lastYieldError },
         { result: totalBoldDeposits },
         { result: yieldGainsPending },
       ]): SPYieldGainParameters | null => {
         const params = {
           P,
           aggWeightedDebtSum,
-          currentEpoch,
+          // currentEpoch,
           currentScale,
           lastAggUpdateTime,
-          lastYieldError,
+          // lastYieldError,
           totalBoldDeposits,
           yieldGainsPending,
         };
@@ -169,7 +169,7 @@ function getDepositorYieldGainWithPending(
 ): bigint {
   const {
     initialDeposit,
-    snapshotsEpoch,
+    // snapshotsEpoch,
     snapshotsScale,
     snapshotsB,
     snapshotsP,
@@ -180,10 +180,10 @@ function getDepositorYieldGainWithPending(
   const {
     P,
     aggWeightedDebtSum,
-    currentEpoch,
+    // currentEpoch,
     currentScale,
     lastAggUpdateTime,
-    lastYieldError,
+    // lastYieldError,
     totalBoldDeposits,
     yieldGainsPending,
   } = spYieldGainParams;
@@ -201,8 +201,12 @@ function getDepositorYieldGainWithPending(
   let firstPortionPending = 0n;
   let secondPortionPending = 0n;
 
-  if (pendingSPYield > 0n && snapshotsEpoch === currentEpoch && totalBoldDeposits >= DECIMAL_PRECISION) {
-    const yieldNumerator = pendingSPYield * DECIMAL_PRECISION + lastYieldError;
+  if (
+    pendingSPYield > 0n 
+    // && snapshotsEpoch === currentEpoch 
+    && totalBoldDeposits >= DECIMAL_PRECISION
+  ) {
+    const yieldNumerator = pendingSPYield * DECIMAL_PRECISION; // + lastYieldError;
     const yieldPerUnitStaked = yieldNumerator / totalBoldDeposits;
     const marginalYieldGain = yieldPerUnitStaked * P;
 

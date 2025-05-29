@@ -29,11 +29,13 @@ function useCollateralPrice(
 
   return useReadContract({
     ...PriceFeed,
-    functionName: "fetchPrice",
+    // functionName: "fetchPrice",
+    functionName: "getPrice",
     query: {
       enabled: symbol !== null,
       refetchInterval: PRICE_REFRESH_INTERVAL,
-      select: ([price]) => dnum18(price),
+      // select: ([price]) => dnum18(price),
+      select: (price) => dnum18(price),
     },
   });
 }
