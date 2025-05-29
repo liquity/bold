@@ -69,14 +69,20 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
             n = 4;
         }
 
-        uint256 MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
         // TODO: randomize params? How to do it with Foundry invariant testing?
         TestDeployer.TroveManagerParams[] memory p = new TestDeployer.TroveManagerParams[](n);
-        if (n > 0) p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 1.1 ether, 0.05 ether, 0.1 ether, MAX_INT/2);
-        if (n > 1) p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.2 ether, 0.05 ether, 0.2 ether, MAX_INT/2);
-        if (n > 2) p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 1.2 ether, 0.05 ether, 0.2 ether, MAX_INT/2);
-        if (n > 3) p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 1.01 ether, 0.05 ether, 0.1 ether, MAX_INT/2);
+        if (n > 0) {
+            p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 0.1 ether, 1.1 ether, 0.05 ether, 0.1 ether, type(uint256).max / 2);
+        }
+        if (n > 1) {
+            p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.2 ether, 0.05 ether, 0.2 ether, type(uint256).max / 2);
+        }
+        if (n > 2) {
+            p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.2 ether, 0.05 ether, 0.2 ether, type(uint256).max / 2);
+        }
+        if (n > 3) {
+            p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 0.1 ether, 1.01 ether, 0.05 ether, 0.1 ether, type(uint256).max / 2);
+        }
 
         TestDeployer deployer = new TestDeployer();
         Contracts memory contracts;
@@ -267,7 +273,7 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
         for (uint256 j = 0; j < branches.length; ++j) {
             ITroveManagerTester troveManager = branches[j].troveManager;
             uint256 numTroves = troveManager.getTroveIdsCount();
-            uint256 systemColl = troveManager.getEntireSystemColl();
+            uint256 systemColl = troveManager.getEntireBranchColl();
             uint256 trovesColl = 0;
 
             for (uint256 i = 0; i < numTroves; ++i) {
@@ -284,30 +290,23 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
 
             uint256 sumBoldDeposit = 0;
             uint256 sumYieldGain = 0;
+            uint256 yieldGainsPending = stabilityPool.getYieldGainsPending();
 
             for (uint256 i = 0; i < actors.length; ++i) {
                 sumBoldDeposit += stabilityPool.getCompoundedBoldDeposit(actors[i].account);
                 sumYieldGain += stabilityPool.getDepositorYieldGain(actors[i].account);
             }
 
-            assertApproxEqAbsDecimal(
-                stabilityPool.getTotalBoldDeposits(),
-                sumBoldDeposit,
-                1e-3 ether,
-                18,
-                "totalBoldDeposits !~= sum(boldDeposit)"
+            assertLt(
+                stabilityPool.getTotalBoldDeposits() - sumBoldDeposit, 1000, "totalBoldDeposits !~= sum(boldDeposit)"
             );
 
-            assertApproxEqAbsDecimal(
-                stabilityPool.getYieldGainsOwed(), sumYieldGain, 1e-3 ether, 18, "yieldGainsOwed !~= sum(yieldGain)"
-            );
+            assertLt(stabilityPool.getYieldGainsOwed() - sumYieldGain, 1000, "yieldGainsOwed !~= sum(yieldGain)");
 
             // This only holds as long as no one sends BOLD directly to the SP's address other than ActivePool
-            assertApproxEqAbsDecimal(
-                boldToken.balanceOf(address(stabilityPool)),
-                sumBoldDeposit + sumYieldGain + stabilityPool.getYieldGainsPending(),
-                1e-3 ether,
-                18,
+            assertLt(
+                boldToken.balanceOf(address(stabilityPool)) - sumBoldDeposit - sumYieldGain - yieldGainsPending,
+                1000,
                 "SP BOLD balance !~= claimable + pending"
             );
         }
@@ -324,7 +323,7 @@ contract InvariantsTest is Assertions, Logging, BaseInvariantTest, BaseMultiColl
                 claimableEth += stabilityPool.stashedColl(actors[i].account);
             }
 
-            assertApproxEqAbsDecimal(stabilityPoolEth, claimableEth, 1e-5 ether, 18, "SP Coll !~= claimable Coll");
+            assertLt(stabilityPoolEth - claimableEth, 1000, "SP Coll !~= claimable Coll");
         }
     }
 

@@ -15,7 +15,7 @@ contract CollateralRegistry is ICollateralRegistry {
     // See: https://github.com/ethereum/solidity/issues/12587
     uint256 public immutable totalCollaterals;
 
-    IERC20Metadata internal immutable token0;
+    IERC20Metadata internal immutable token0; 
     IERC20Metadata internal immutable token1;
     IERC20Metadata internal immutable token2;
     IERC20Metadata internal immutable token3;
@@ -57,16 +57,16 @@ contract CollateralRegistry is ICollateralRegistry {
 
         boldToken = _boldToken;
 
-        token0 = _tokens[0];
-        token1 = numTokens > 1 ? _tokens[1] : IERC20Metadata(address(0));
-        token2 = numTokens > 2 ? _tokens[2] : IERC20Metadata(address(0));
-        token3 = numTokens > 3 ? _tokens[3] : IERC20Metadata(address(0));
-        token4 = numTokens > 4 ? _tokens[4] : IERC20Metadata(address(0));
-        token5 = numTokens > 5 ? _tokens[5] : IERC20Metadata(address(0));
-        token6 = numTokens > 6 ? _tokens[6] : IERC20Metadata(address(0));
+        token0 = _tokens[0];  // weth
+        token1 = numTokens > 1 ? _tokens[1] : IERC20Metadata(address(0));// wsteth
+        token2 = numTokens > 2 ? _tokens[2] : IERC20Metadata(address(0)); 
+        token3 = numTokens > 3 ? _tokens[3] : IERC20Metadata(address(0)); 
+        token4 = numTokens > 4 ? _tokens[4] : IERC20Metadata(address(0)); 
+        token5 = numTokens > 5 ? _tokens[5] : IERC20Metadata(address(0)); 
+        token6 = numTokens > 6 ? _tokens[6] : IERC20Metadata(address(0)); 
         token7 = numTokens > 7 ? _tokens[7] : IERC20Metadata(address(0));
-        token8 = numTokens > 8 ? _tokens[8] : IERC20Metadata(address(0));
-        token9 = numTokens > 9 ? _tokens[9] : IERC20Metadata(address(0));
+        token8 = numTokens > 8 ? _tokens[8] : IERC20Metadata(address(0)); 
+        token9 = numTokens > 9 ? _tokens[9] : IERC20Metadata(address(0)); 
 
         troveManager0 = _troveManagers[0];
         troveManager1 = numTokens > 1 ? _troveManagers[1] : ITroveManager(address(0));
@@ -105,18 +105,6 @@ contract CollateralRegistry is ICollateralRegistry {
         uint256[] memory unbackedPortions = new uint256[](totals.numCollaterals);
         uint256[] memory prices = new uint256[](totals.numCollaterals);
 
-        totals.boldSupplyAtStart = boldToken.totalSupply();
-        // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
-        // Use the saved total Bold supply value, from before it was reduced by the redemption.
-        // We only compute it here, and update it at the end,
-        // because the final redeemed amount may be less than the requested amount
-        // Redeemers should take this into account in order to request the optimal amount to not overpay
-        uint256 redemptionRate =
-            _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(_boldAmount, totals.boldSupplyAtStart));
-        require(redemptionRate <= _maxFeePercentage, "CR: Fee exceeded provided maximum");
-        // Implicit by the above and the _requireValidMaxFeePercentage checks
-        //require(newBaseRate < DECIMAL_PRECISION, "CR: Fee would eat up all collateral");
-
         // Gather and accumulate unbacked portions
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
             ITroveManager troveManager = getTroveManager(index);
@@ -129,20 +117,40 @@ contract CollateralRegistry is ICollateralRegistry {
             }
         }
 
-        // There’s an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
-        // In that case, we redeem proportinally to branch size
+        // There's an unlikely scenario where all the normally redeemable branches (i.e. having TCR > SCR) have 0 unbacked
+        // In that case, we redeem proportionally to branch size
         if (totals.unbacked == 0) {
             unbackedPortions = new uint256[](totals.numCollaterals);
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
                 ITroveManager troveManager = getTroveManager(index);
                 (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
                 if (redeemable) {
-                    uint256 unbackedPortion = troveManager.getEntireSystemDebt();
+                    uint256 unbackedPortion = troveManager.getEntireBranchDebt();
                     totals.unbacked += unbackedPortion;
                     unbackedPortions[index] = unbackedPortion;
                 }
             }
+        } else {
+            // Don't allow redeeming more than the total unbacked in one go, as that would result in a disproportionate
+            // redemption (see CS-BOLD-013). Instead, truncate the redemption to total unbacked. If this happens, the
+            // redeemer can call `redeemCollateral()` a second time to redeem the remainder of their BOLD.
+            if (_boldAmount > totals.unbacked) {
+                _boldAmount = totals.unbacked;
+            }
         }
+
+        totals.boldSupplyAtStart = boldToken.totalSupply();
+        // Decay the baseRate due to time passed, and then increase it according to the size of this redemption.
+        // Use the saved total Bold supply value, from before it was reduced by the redemption.
+        // We only compute it here, and update it at the end,
+        // because the final redeemed amount may be less than the requested amount
+        // Redeemers should take this into account in order to request the optimal amount to not overpay
+        uint256 redemptionRate =
+            _calcRedemptionRate(_getUpdatedBaseRateFromRedemption(_boldAmount, totals.boldSupplyAtStart));
+        require(redemptionRate <= _maxFeePercentage, "CR: Fee exceeded provided maximum");
+        // Implicit by the above and the _requireValidMaxFeePercentage checks
+        //require(newBaseRate < DECIMAL_PRECISION, "CR: Fee would eat up all collateral");
+
 
         // Compute redemption amount for each collateral and redeem against the corresponding TroveManager
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
@@ -156,6 +164,9 @@ contract CollateralRegistry is ICollateralRegistry {
                     );
                     totals.redeemedAmount += redeemedAmount;
                 }
+                // Ensure that per-branch redeems add up to `_boldAmount` exactly
+                _boldAmount -= redeemAmount;
+                totals.unbacked -= unbackedPortions[index];
             }
         }
 
@@ -171,11 +182,11 @@ contract CollateralRegistry is ICollateralRegistry {
 
     // Update the last fee operation time only if time passed >= decay interval. This prevents base rate griefing.
     function _updateLastFeeOpTime() internal {
-        uint256 timePassed = block.timestamp - lastFeeOperationTime;
+        uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
 
-        if (timePassed >= ONE_MINUTE) {
-            lastFeeOperationTime += _minutesPassedSinceLastFeeOp()*60; // 60 seconds in 1 minute.
-            emit LastFeeOpTimeUpdated(block.timestamp);
+        if (minutesPassed > 0) {
+            lastFeeOperationTime += ONE_MINUTE * minutesPassed;
+            emit LastFeeOpTimeUpdated(lastFeeOperationTime);
         }
     }
 
@@ -229,7 +240,7 @@ contract CollateralRegistry is ICollateralRegistry {
     function _calcRedemptionRate(uint256 _baseRate) internal pure returns (uint256) {
         return LiquityMath._min(
             REDEMPTION_FEE_FLOOR + _baseRate,
-            DECIMAL_PRECISION // cap at a maximum of 100%
+            DECIMAL_PRECISION // (always 100%) cap at a maximum of 100%
         );
     }
 

@@ -4,7 +4,7 @@ pragma solidity 0.8.24;
 
 
 import "./CompositePriceFeed.sol";
-import "../Interfaces/ITreeETHToken.sol";
+import "../Interfaces/ITreeETHProvider.sol";
 import "../Interfaces/ITreeETHPriceFeed.sol";
 
 
@@ -13,10 +13,10 @@ contract TreeETHPriceFeed is CompositePriceFeed, ITreeETHPriceFeed {
         address _owner,
         address _ethUsdOracleAddress,
         address _treeEthEthOracleAddress,
-        address _treeEthTokenAddress,
+        address _treeEthRateProvider,
         uint256 _ethUsdStalenessThreshold,
         uint256 _treeEthEthStalenessThreshold
-    ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _treeEthTokenAddress, _ethUsdStalenessThreshold) {
+    ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _treeEthRateProvider, _ethUsdStalenessThreshold) {
         // Store TreeETH-ETH oracle
         treeEthEthOracle.aggregator = AggregatorV3Interface(_treeEthEthOracleAddress);
         treeEthEthOracle.stalenessThreshold = _treeEthEthStalenessThreshold;
@@ -81,7 +81,7 @@ contract TreeETHPriceFeed is CompositePriceFeed, ITreeETHPriceFeed {
     function _getCanonicalRate() internal view override returns (uint256, bool) {
         uint256 gasBefore = gasleft();
 
-        try ITreeETHToken(rateProviderAddress).getExchangeRate() returns (uint256 ethPerTreeEth) {
+        try ITreeETHProvider(rateProviderAddress).getRate() returns (uint256 ethPerTreeEth) {
             // If rate is 0, return true
             if (ethPerTreeEth == 0) return (0, true);
 
@@ -90,7 +90,7 @@ contract TreeETHPriceFeed is CompositePriceFeed, ITreeETHPriceFeed {
             // Require that enough gas was provided to prevent an OOG revert in the external call
             // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
             // in the check itself.
-            if (gasleft() + 5000 <= gasBefore / 64) revert InsufficientGasForExternalCall();
+            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
 
             // If call to exchange rate reverts, return true
             return (0, true);

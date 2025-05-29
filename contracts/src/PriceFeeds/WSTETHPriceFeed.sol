@@ -14,7 +14,7 @@ interface IWSTETH_Provider{
 
 contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
     Oracle public stEthUsdOracle;
-    IWSTETH_Provider public provider = IWSTETH_Provider(0xB1552C5e96B312d0Bf8b554186F846C40614a540);
+    IWSTETH_Provider public provider = IWSTETH_Provider(0xf7c5c26B574063e7b098ed74fAd6779e65E3F836); //arbitrum rate provider via chainlink which calls mainnet rate provider directly.
 
 
     uint256 public constant STETH_USD_DEVIATION_THRESHOLD = 1e16; // 1%
@@ -23,10 +23,10 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
         address _owner,
         address _ethUsdOracleAddress,
         address _stEthUsdOracleAddress,
-        address _wstEthTokenAddress,
+        address _wstethRateProviderAddress,
         uint256 _ethUsdStalenessThreshold,
         uint256 _stEthUsdStalenessThreshold
-    ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _wstEthTokenAddress, _ethUsdStalenessThreshold) {
+    ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _wstethRateProviderAddress, _ethUsdStalenessThreshold) {
         stEthUsdOracle.aggregator = AggregatorV3Interface(_stEthUsdOracleAddress);
         stEthUsdOracle.stalenessThreshold = _stEthUsdStalenessThreshold;
         stEthUsdOracle.decimals = stEthUsdOracle.aggregator.decimals();
@@ -86,7 +86,8 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
             // Require that enough gas was provided to prevent an OOG revert in the external call
             // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
             // in the check itself.
-            if (gasleft() + 5000 <= gasBefore / 64) revert InsufficientGasForExternalCall();
+            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
+
 
             // If call to exchange rate reverted for another reason, return true
             return (0, true);

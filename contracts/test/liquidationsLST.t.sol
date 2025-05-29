@@ -4,9 +4,9 @@ pragma solidity ^0.8.18;
 
 import "./TestContracts/DevTestSetup.sol";
 
-contract LiquidationsLSTTest is DevTestSetup {
-    uint256 public MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
+contract LiquidationsLSTTest is DevTestSetup {
     function setUp() public override {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -26,8 +26,9 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev memory contracts;
-        (contracts, collateralRegistry, boldToken,,,,) =
-            deployer.deployAndConnectContracts(TestDeployer.TroveManagerParams(160e16, 120e16, 1.2 ether, 5e16, 10e16, MAX_INT/2));
+        (contracts, collateralRegistry, boldToken,,,,) = deployer.deployAndConnectContracts(
+            TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16, MAX_INT/2)
+        );
         collToken = contracts.collToken;
         activePool = contracts.activePool;
         borrowerOperations = contracts.borrowerOperations;
@@ -134,18 +135,17 @@ contract LiquidationsLSTTest is DevTestSetup {
         assertApproxEqAbs(
             troveManager.getTroveEntireColl(BTroveId) - initialValues.BColl,
             LiquityMath._min(
-                collAmount * 995 / 1000, // Collateral - coll gas comp
+                collAmount, //no gas comp
                 (liquidationAmount + initialValues.AInterest) * DECIMAL_PRECISION / price * 110 / 100 // debt with penalty
             ),
             10,
             "B trove coll mismatch"
         );
 
-        // Check A retains ~9.5% of the collateral (after claiming from CollSurplus)
-        // collAmount - 0.5% - (liquidationAmount to Coll + 10%)
-        uint256 collSurplusAmount = collAmount * 995 / 1000
-            - (liquidationAmount + initialValues.AInterest) * DECIMAL_PRECISION / price * 110 / 100;
-        assertApproxEqAbs(
+        // Check A retains ~10% of the collateral (after claiming from CollSurplus)
+        // collAmount - (liquidationAmount to Coll + 10%)
+        uint256 collSurplusAmount =
+            collAmount - (liquidationAmount + initialValues.AInterest) * DECIMAL_PRECISION / price * 110 / 100;        assertApproxEqAbs(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusAmount,
             10,
@@ -200,6 +200,8 @@ contract LiquidationsLSTTest is DevTestSetup {
             address(0)
         );
         vm.stopPrank();
+        // A makes a deposit to ensure there's MIN_BOLD_IN_SP left after liquidation
+        makeSPDepositAndClaim(A, MIN_BOLD_IN_SP);
 
         vm.startPrank(B);
         uint256 BTroveId = borrowerOperations.openTrove(
@@ -223,7 +225,7 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         // Price drops
         priceFeed.setPrice(_finalPrice);
-        console2.log(_finalPrice, "_finalPrice");
+        //console2.log(_finalPrice, "_finalPrice");
 
         InitialValues memory initialValues;
         initialValues.spBoldBalance = stabilityPool.getTotalBoldDeposits();
@@ -243,7 +245,7 @@ contract LiquidationsLSTTest is DevTestSetup {
         assertEq(trovesCount, 2);
 
         uint256 AInterest = troveManager.getTroveEntireDebt(ATroveId) - liquidationAmount;
-        console2.log(AInterest, "AInterest");
+        //console2.log(AInterest, "AInterest");
         troveManager.liquidate(ATroveId);
 
         // Check Troves count reduced by 1
@@ -252,15 +254,16 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         // Offset part
         FinalValues memory finalValues;
-        finalValues.collToLiquidate = collAmount * 995 / 1000;
+        // Offset part
+        uint256 collToOffset = collAmount * _spAmount / (liquidationAmount + AInterest);
+        finalValues.collSPPortion = collToOffset * 995 / 1000;
+        finalValues.collPenaltySP = _spAmount * DECIMAL_PRECISION / _finalPrice * 105 / 100;
+        finalValues.collToSendToSP = LiquityMath._min(finalValues.collPenaltySP, finalValues.collSPPortion);
         // Check SP Bold has decreased
         finalValues.spBoldBalance = stabilityPool.getTotalBoldDeposits();
         assertEq(initialValues.spBoldBalance - finalValues.spBoldBalance, _spAmount, "SP Bold balance mismatch");
         // Check SP Coll has  increased
         finalValues.spCollBalance = stabilityPool.getCollBalance();
-        finalValues.collSPPortion = finalValues.collToLiquidate * _spAmount / (liquidationAmount + AInterest);
-        finalValues.collPenaltySP = _spAmount * DECIMAL_PRECISION / _finalPrice * 105 / 100;
-        finalValues.collToSendToSP = LiquityMath._min(finalValues.collPenaltySP, finalValues.collSPPortion);
         // liquidationAmount to Coll + 5%
         assertApproxEqAbs(
             finalValues.spCollBalance - initialValues.spCollBalance,
@@ -270,9 +273,12 @@ contract LiquidationsLSTTest is DevTestSetup {
         );
 
         // Redistribution part
-        finalValues.collRedistributionPortion = finalValues.collToLiquidate - finalValues.collSPPortion;
+        finalValues.collRedistributionPortion = collAmount - collToOffset;
         finalValues.collPenaltyRedistribution =
             (liquidationAmount - _spAmount + AInterest) * DECIMAL_PRECISION / _finalPrice * 110 / 100;
+       
+        finalValues.collToLiquidate = finalValues.collSPPortion + finalValues.collRedistributionPortion;
+       
         // Check B has received debt
         assertApproxEqAbs(
             troveManager.getTroveEntireDebt(BTroveId) - initialValues.BDebt,
@@ -293,11 +299,11 @@ contract LiquidationsLSTTest is DevTestSetup {
 
         // Surplus
         // Check A retains part of the collateral (after claiming from CollSurplus)
-        // collAmount - 0.5% - (liquidationAmount to Coll + penalty)
-        uint256 collPenalty = finalValues.collPenaltySP + finalValues.collPenaltyRedistribution;
-        console2.log(finalValues.collPenaltySP, "finalValues.collPenaltySP");
-        console2.log(finalValues.collPenaltyRedistribution, "finalValues.collPenaltyRedistribution");
-        console2.log(collPenalty, "collPenalty");
+        // collAmount - 0.5% of offset coll - (liquidationAmount to Coll + penalty)
+        uint256 collPenalty = finalValues.collToSendToSP + finalValues.collPenaltyRedistribution;
+        //console2.log(finalValues.collPenaltySP, "finalValues.collPenaltySP");
+        //console2.log(finalValues.collPenaltyRedistribution, "finalValues.collPenaltyRedistribution");
+        //console2.log(collPenalty, "collPenalty");
         uint256 collSurplusAmount;
         if (collPenalty < finalValues.collToLiquidate) {
             collSurplusAmount = finalValues.collToLiquidate - collPenalty;

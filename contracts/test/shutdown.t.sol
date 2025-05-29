@@ -8,8 +8,6 @@ contract ShutdownTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 4;
     TestDeployer.LiquityContractsDev[] public contractsArray;
 
-    uint256 public MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
     function setUp() public override {
         // Start tests at a non-zero timestamp
         vm.warp(block.timestamp + 600);
@@ -29,10 +27,10 @@ contract ShutdownTest is DevTestSetup {
 
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 125e16, 5e16, 10e16, MAX_INT/2);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, type(uint256).max);
+        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16, type(uint256).max);
+        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16, type(uint256).max);
+        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 10e16, 125e16, 5e16, 10e16, type(uint256).max);
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _contractsArray;
@@ -225,7 +223,7 @@ contract ShutdownTest is DevTestSetup {
         uint256 troveId = openMulticollateralTroveNoHints100pctWithIndex(0, A, 0, 11e18, 10000e18, 5e16);
         openMulticollateralTroveNoHints100pctWithIndex(0, B, 0, 22e18, 20000e18, 6e16);
 
-        // B redeems from A’s trove, to make it zombie
+        // B redeems from A's trove, to make it zombie
         //deal(address(boldToken), B, 20000e18);
         vm.startPrank(B);
         collateralRegistry.redeemCollateral(10000e18, 0, 1e18);
@@ -236,7 +234,7 @@ contract ShutdownTest is DevTestSetup {
         contractsArray[0].priceFeed.setPrice(500e18);
         contractsArray[0].borrowerOperations.shutdown();
 
-        // Check A’s trove is zombie
+        // Check A's trove is zombie
         assertEq(troveManager.checkTroveIsZombie(troveId), true, "A trove should be zombie");
 
         vm.startPrank(A);
@@ -267,6 +265,30 @@ contract ShutdownTest is DevTestSetup {
         vm.expectRevert(BorrowerOperations.IsShutDown.selector);
         borrowerOperations.adjustTroveInterestRate(troveId, 4e16, 0, 0, 10000e18);
         vm.stopPrank();
+    }
+
+    function testCanCloseLastTroveAfterShutdown() public {
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        deal(address(boldToken), A, 20000e18);
+        vm.startPrank(A);
+        borrowerOperations.closeTrove(troveId);
+        vm.stopPrank();
+
+        // Check trove is closed
+        assertEq(uint8(troveManager.getTroveStatus(troveId)), uint8(ITroveManager.Status.closedByOwner));
+    }
+
+    function testCannotLiquidateLastTroveAfterShutdown() public {
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        vm.startPrank(B);
+        vm.expectRevert(TroveManager.OnlyOneTroveLeft.selector);
+        troveManager.liquidate(troveId);
+        vm.stopPrank();
+
+        // Check trove is not closed
+        assertEq(uint8(troveManager.getTroveStatus(troveId)), uint8(ITroveManager.Status.active));
     }
 
     function testCannotApplyTroveInterestPermissionlesslyAfterShutdown() public {

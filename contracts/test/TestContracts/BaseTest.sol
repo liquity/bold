@@ -22,15 +22,17 @@ import "src/Zappers/LeverageLSTZapper.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 import {Logging} from "../Utils/Logging.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
+import {TroveId} from "../Utils/TroveId.sol";
 
 import "forge-std/console2.sol";
 
-contract BaseTest is TestAccounts, Logging {
+contract BaseTest is TestAccounts, Logging, TroveId {
     uint256 constant STALE_TROVE_DURATION = 90 days;
 
     uint256 CCR;
     uint256 MCR;
     uint256 SCR;
+    uint256 BCR;
     uint256 LIQUIDATION_PENALTY_SP;
     uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
 
@@ -184,14 +186,6 @@ contract BaseTest is TestAccounts, Logging {
 
     function getRedeemableDebt(uint256 troveId) internal view returns (uint256) {
         return troveManager.getTroveEntireDebt(troveId);
-    }
-
-    function addressToTroveId(address _owner, uint256 _ownerIndex) public pure returns (uint256) {
-        return uint256(keccak256(abi.encode(_owner, _ownerIndex)));
-    }
-
-    function addressToTroveId(address _owner) public pure returns (uint256) {
-        return addressToTroveId(_owner, 0);
     }
 
     function openTroveNoHints100pct(address _account, uint256 _coll, uint256 _boldAmount, uint256 _annualInterestRate)

@@ -10,6 +10,7 @@ interface ITroveManagerTester is ITroveManager {
     function get_CCR() external view returns (uint256);
     function get_MCR() external view returns (uint256);
     function get_SCR() external view returns (uint256);
+    function get_BCR() external view returns (uint256);
     function get_LIQUIDATION_PENALTY_SP() external view returns (uint256);
     function get_LIQUIDATION_PENALTY_REDISTRIBUTION() external view returns (uint256);
 
@@ -31,6 +32,10 @@ interface ITroveManagerTester is ITroveManager {
 
     function computeICR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256);
     function getCollGasCompensation(uint256 _coll) external pure returns (uint256);
+    function getCollGasCompensation(uint256 _coll, uint256 _debt, uint256 _boldInSPForOffsets)
+        external
+        pure
+        returns (uint256);
 
     function getEffectiveRedemptionFeeInColl(uint256 _redeemAmount, uint256 _price) external view returns (uint256);
 

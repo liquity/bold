@@ -200,12 +200,12 @@ contract BasicOps is DevTestSetup {
         assertEq(boldToken.balanceOf(A), 1900e18);
         assertApproximatelyEqual(stabilityPool.getCompoundedBoldDeposit(A), 100e18, 1e2);
 
-        // A withdraws their full SP deposit
-        makeSPWithdrawalAndClaim(A, 100e18);
+        // A withdraws their full SP deposit less 1e18
+        makeSPWithdrawalAndClaim(A, 99e18);
 
         // Check A's balance increased and SP deposit decreased to 0 (A gained some interest)
-        assertGt(boldToken.balanceOf(A), 2000e18, "Wrong bold balance");
-        assertLt(boldToken.balanceOf(A), 2001e18, "Wrong bold balance");
-        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 0, "Wrong SP deposit");
+        assertGt(boldToken.balanceOf(A), 1999e18, "Wrong bold balance");
+        assertLt(boldToken.balanceOf(A), 2000e18, "Wrong bold balance");
+        assertEq(stabilityPool.getCompoundedBoldDeposit(A), 1e18, "Wrong SP deposit");
     }
 }

@@ -29,16 +29,22 @@ interface IMetadataNFT {
 contract MetadataNFT is IMetadataNFT {
     FixedAssetReader public immutable assetReader;
 
-    string public constant name = "Liquity V2 Trove";
-    string public constant description = "Liquity V2 Trove position";
-
     constructor(FixedAssetReader _assetReader) {
         assetReader = _assetReader;
     }
 
     function uri(TroveData memory _troveData) public view returns (string memory) {
         string memory attr = attributes(_troveData);
-        return json.formattedMetadata(name, description, renderSVGImage(_troveData), attr);
+        return json.formattedMetadata(
+            string.concat("Liquity V2 - ", IERC20Metadata(_troveData._collToken).name()),
+            string.concat(
+                "Liquity V2 is a collateralized debt platform. Users can lock up ",
+                IERC20Metadata(_troveData._collToken).symbol(),
+                " to issue stablecoin tokens (BOLD) to their own Ethereum address. The individual collateralized debt positions are called Troves, and are represented as NFTs."
+            ),
+            renderSVGImage(_troveData),
+            attr
+        );
     }
 
     function renderSVGImage(TroveData memory _troveData) internal view returns (string memory) {

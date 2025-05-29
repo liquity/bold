@@ -30,6 +30,7 @@ contract AddRemoveManagers is IAddRemoveManagers {
      * Only the address in this mapping, if any, and the trove owner, will be allowed.
      * Therefore, by default this permission is restricted to no one.
      * If the receiver is zero, the owner is assumed as the receiver.
+     * The Remove Manager also gets Add Manager permission.
      */
     mapping(uint256 => RemoveManagerReceiver) public removeManagerReceiverOf;
 
@@ -95,7 +96,11 @@ contract AddRemoveManagers is IAddRemoveManagers {
     function _requireSenderIsOwnerOrAddManager(uint256 _troveId, address _owner) internal view {
         address addManager = addManagerOf[_troveId];
         if (msg.sender != _owner && addManager != address(0) && msg.sender != addManager) {
-            revert NotOwnerNorAddManager();
+             // RemoveManager assumes AddManager permission too
+            address removeManager = removeManagerReceiverOf[_troveId].manager;
+            if (msg.sender != removeManager) {
+                revert NotOwnerNorAddManager();
+            }
         }
     }
 

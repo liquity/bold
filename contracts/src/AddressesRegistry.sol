@@ -35,6 +35,9 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     // Minimum collateral ratio for individual troves
     uint256 public immutable MCR;
 
+    // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
+     uint256 public immutable BCR;
+
     // Debt limit for the system
     uint256 public debtLimit;
 
@@ -46,6 +49,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     error InvalidCCR();
     error InvalidMCR();
     error InvalidSCR();
+    error InvalidBCR();
     error InvalidDebtLimit();
     error SPPenaltyTooLow();
     error SPPenaltyGtRedist();
@@ -74,6 +78,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         address _owner,
         uint256 _ccr,
         uint256 _mcr,
+        uint256 _bcr,
         uint256 _scr,
         uint256 _debtLimit,
         uint256 _liquidationPenaltySP,
@@ -81,6 +86,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     ) Ownable(_owner) {
         if (_ccr <= 1e18 || _ccr >= 2e18) revert InvalidCCR();
         if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR();
+        if (_bcr < 5e16 || _bcr >= 50e16) revert InvalidBCR();
         if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();
         if (_debtLimit <= 0) revert InvalidDebtLimit();
         if (_liquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) revert SPPenaltyTooLow();
@@ -90,6 +96,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         CCR = _ccr;
         SCR = _scr;
         MCR = _mcr;
+        BCR = _bcr;
         debtLimit = _debtLimit;
         LIQUIDATION_PENALTY_SP = _liquidationPenaltySP;
         LIQUIDATION_PENALTY_REDISTRIBUTION = _liquidationPenaltyRedistribution;
