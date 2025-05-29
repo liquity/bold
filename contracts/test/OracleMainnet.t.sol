@@ -333,7 +333,7 @@ contract OraclesMainnet is TestAccounts {
 
         uint256 expectedMarketPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
 
-        uint256 rate = rethToken.getExchangeRate();
+        uint256 rate = rethToken.rate();
         assertGt(rate, 1e18);
 
         uint256 expectedCanonicalPrice = rate * latestAnswerEthUsd / 1e18;
@@ -375,7 +375,7 @@ contract OraclesMainnet is TestAccounts {
 
         uint256 expectedMarketPrice = latestAnswerREthEth * latestAnswerEthUsd / 1e18;
 
-        uint256 rate = rethToken.getExchangeRate();
+        uint256 rate = rethToken.rate();
         assertGt(rate, 1e18);
 
         uint256 expectedCanonicalPrice = rate * latestAnswerEthUsd / 1e18;
@@ -422,7 +422,7 @@ contract OraclesMainnet is TestAccounts {
     // --- LST exchange rates and market price oracle sanity checks ---
 
     function testRETHExchangeRateBetween1And2() public {
-        uint256 rate = rethToken.getExchangeRate();
+        uint256 rate = rethToken.rate();
         assertGt(rate, 1e18);
         assertLt(rate, 2e18);
     }
@@ -818,7 +818,7 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the exchange rate 0
         etchMockToRethToken();
-        uint256 rate = rethToken.getExchangeRate();
+        uint256 rate = rethToken.rate();
         assertEq(rate, 0, "rate not 0");
 
         // Fetch price again
@@ -864,7 +864,7 @@ contract OraclesMainnet is TestAccounts {
 
         // Make the exchange rate 0
         etchMockToRethToken();
-        uint256 rate = rethToken.getExchangeRate();
+        uint256 rate = rethToken.rate();
         assertEq(rate, 0, "rate not 0");
 
         // Fetch price again
@@ -942,7 +942,7 @@ contract OraclesMainnet is TestAccounts {
 
         // Calc expected price i.e. ETH-USD x canonical
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
-        uint256 exchangeRate = rethToken.getExchangeRate();
+        uint256 exchangeRate = rethToken.rate();
         assertGt(ethUsdPrice, 0);
         assertGt(exchangeRate, 0);
 
@@ -1003,7 +1003,7 @@ contract OraclesMainnet is TestAccounts {
 
         // Calc expected price if didnt fail,  i.e. ETH-USD x canonical
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
-        uint256 exchangeRate = rethToken.getExchangeRate();
+        uint256 exchangeRate = rethToken.rate();
         assertGt(ethUsdPrice, 0);
         assertGt(exchangeRate, 0);
         uint256 priceIfDidntFail = ethUsdPrice * exchangeRate / 1e18;
@@ -1047,13 +1047,13 @@ contract OraclesMainnet is TestAccounts {
 
         // Calc expected price if didnt fail,  i.e. ETH-USD x canonical
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
-        uint256 exchangeRate = rethToken.getExchangeRate();
+        uint256 exchangeRate = rethToken.rate();
         assertGt(ethUsdPrice, 0);
         assertGt(exchangeRate, 0);
 
         // Make the exchange rate return 0
         etchMockToRethToken();
-        uint256 rate = rethToken.getExchangeRate();
+        uint256 rate = rethToken.rate();
         assertEq(rate, 0, "mock rate non-zero");
 
         // Now fetch the price
@@ -1118,7 +1118,7 @@ contract OraclesMainnet is TestAccounts {
         // Check price is expected ETH-USDxCanonical
         // Calc expected price if didnt fail,  i.e.
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
-        uint256 exchangeRate = rethToken.getExchangeRate();
+        uint256 exchangeRate = rethToken.rate();
         assertGt(ethUsdPrice, 0);
         assertGt(exchangeRate, 0);
         uint256 priceIfDidntFail = ethUsdPrice * exchangeRate / 1e18;
@@ -2024,7 +2024,7 @@ contract OraclesMainnet is TestAccounts {
         );
 
         // Expected price used for primary calc: ETH-USD market price
-        uint256 canonicalRethRate = rethToken.getExchangeRate();
+        uint256 canonicalRethRate = rethToken.rate();
         uint256 marketRethPrice = _getLatestAnswerFromOracle(rethOracle);
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
         assertNotEq(canonicalRethRate, marketRethPrice, "raw price and rate equal");
@@ -2101,7 +2101,7 @@ contract OraclesMainnet is TestAccounts {
         assertEq(price, 95e16, "reth-eth price not 0.95");
 
         // // Expected price used for primary calc: ETH-USD market price
-        uint256 canonicalRethRate = rethToken.getExchangeRate();
+        uint256 canonicalRethRate = rethToken.rate();
         uint256 marketRethPrice = _getLatestAnswerFromOracle(rethOracle);
         uint256 ethUsdPrice = _getLatestAnswerFromOracle(ethOracle);
         assertNotEq(canonicalRethRate, marketRethPrice, "raw price and rate equal");
@@ -2240,7 +2240,7 @@ contract OraclesMainnet is TestAccounts {
         // Set 1 ETH = 2000 USD on market oracle
         mockETHOracle.setPrice(vars.usdPerEthMarket);
 
-        vars.ethPerRethLST = rethToken.getExchangeRate();
+        vars.ethPerRethLST = rethToken.rate();
 
         // Make market RETH price 1% lower than LST exchange rate
         vars.ethPerRethMarket = int256(vars.ethPerRethLST) * 99 / 100; 

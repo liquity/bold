@@ -78,6 +78,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address WETH_ADDRESS = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
     address WSTETH_ADDRESS = 0x5979D7b546E38E414F7E9822514be443A4800529;
     address RETH_ADDRESS = 0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8;
+    address RETH_RATE_PROVIDER_ADDRESS = 0x7EcCBbd05830EdF593d30005B8F69E965AF4D59f;
 
     address RSETH_ADDRESS = 0x4186BFC76E2E237523CBC30FD220FE055156b41F;
     address WEETH_ADDRESS = 0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe;
@@ -750,7 +751,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 deployer,
                 ETH_ORACLE_ADDRESS,
                 RETH_ORACLE_ADDRESS,
-                RETH_ADDRESS,
+                RETH_RATE_PROVIDER_ADDRESS,
                 ETH_USD_STALENESS_THRESHOLD,
                 RETH_ETH_STALENESS_THRESHOLD
             );
@@ -1074,7 +1075,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         if (_lst) {
             leverageZapperHybrid = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
         } else {
+            console2.log("deploying leverage weth zapper");
             leverageZapperHybrid = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
+            console2.log("leverage zapper hybrid", address(leverageZapperHybrid));
         }
 
         return leverageZapperHybrid;
