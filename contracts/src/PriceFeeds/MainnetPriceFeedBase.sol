@@ -46,7 +46,7 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
         ethUsdOracle.stalenessThreshold = _ethUsdStalenessThreshold;
         ethUsdOracle.decimals = ethUsdOracle.aggregator.decimals();
 
-        assert(ethUsdOracle.decimals == 8);
+        assert(ethUsdOracle.decimals == 8 || ethUsdOracle.decimals == 18);
     }
 
     // TODO: remove this and set address in constructor, since we'll use CREATE2
