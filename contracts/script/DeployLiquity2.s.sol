@@ -1097,7 +1097,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         uint8[] memory assetTypes = new uint8[](2); // 0: standard
         bytes4[] memory methodIds = new bytes4[](2);
         address[] memory oracles = new address[](2);
-        // note: this call is failing in simulations
+
+        // note: @cupOJoseph this call is failing in simulations
         ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool({
             name: string.concat("BOLD/", _otherToken.symbol(), " Pool"),
             symbol: string.concat("BOLD", _otherToken.symbol()),
