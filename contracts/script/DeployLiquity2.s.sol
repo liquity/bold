@@ -87,8 +87,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address TBTC_ADDRESS = 0x6c84a8f1c29108F47a79964b5Fe888D4f4D0dE40;
     
     //usdc address for curve stuff.
-    address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-
+    address USDC_ADDRESS = 	0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
     // nerite specific addresses
     address constant NERITE_DAO_TREASURY_ADDRESS = 0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d;
@@ -134,6 +133,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // rate provider addresses
     address TREEETH_PROVIDER_ADDRESS = 0x353230eF3b5916B280dBAbb720d7b8dB61485615;
     address WSTETH_PROVIDER_ADDRESS = 0xf7c5c26B574063e7b098ed74fAd6779e65E3F836;
+    address RETH_PROVIDER_ADDRESS = 0x7EcCBbd05830EdF593d30005B8F69E965AF4D59f;
 
     // V1
     address LQTY_ADDRESS = 0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D; //actually its NERI
@@ -287,7 +287,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         SALT = keccak256(bytes(saltStr));
 
         //setup SF factories
-        ISuperTokenFactory superTokenFactory = ISuperTokenFactory(0x0000000000000000000000000000000000000000);
+        ISuperTokenFactory superTokenFactory = ISuperTokenFactory(0x1C21Ead77fd45C84a4c916Db7A6635D0C6FF09D6);
 
         if (vm.envBytes("DEPLOYER").length == 20) {
             // address
@@ -346,7 +346,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // string calldata n,
             // string calldata s
 
-            // boldToken.initialize(superTokenFactory);
+            BoldToken(payable(address(boldToken))).initialize();
 
             assert(address(boldToken) == boldAddress);
             
@@ -717,7 +717,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         DeploymentVars memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         r.boldToken = IBoldToken(payable(_deployGovernanceParams.bold));
-
+        console2.log("bold token in deployAndConnectContracts: ", address(r.boldToken));
         // USDC and USDC-BOLD pool
         r.usdcCurvePool = _deployCurvePool(r.boldToken, USDC);
 
@@ -1090,15 +1090,31 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
         console2.log("deploying curve pool");
         console2.log("curve factory", address(curveStableswapFactory));
+
         // deploy Curve StableswapNG pool
         address[] memory coins = new address[](2);
         coins[BOLD_TOKEN_INDEX] = address(_boldToken);
         coins[OTHER_TOKEN_INDEX] = address(_otherToken);
         uint8[] memory assetTypes = new uint8[](2); // 0: standard
-        bytes4[] memory methodIds = new bytes4[](2);
-        address[] memory oracles = new address[](2);
+        bytes4[] memory methodIds = new bytes4[](2); // func sig of oracle function to call
+        address[] memory oracles = new address[](2); // oracle address
 
         // note: @cupOJoseph this call is failing in simulations
+        console2.log("deploying curve pool");
+
+        for (uint256 i = 0; i < coins.length; i++) {
+            console2.log("coin", coins[i]);
+        }
+        for (uint256 i = 0; i < assetTypes.length; i++) {
+            console2.log("assetType", assetTypes[i]);
+        }
+        for (uint256 i = 0; i < methodIds.length; i++) {
+            console2.log("methodId: ", i + 1);
+            console2.logBytes4(methodIds[i]);
+        }
+        for (uint256 i = 0; i < oracles.length; i++) {
+            console2.log("oracle", oracles[i]);
+        }
         ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool({
             name: string.concat("BOLD/", _otherToken.symbol(), " Pool"),
             symbol: string.concat("BOLD", _otherToken.symbol()),
