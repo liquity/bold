@@ -27,6 +27,12 @@ import "src/StabilityPool.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
 import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
+import "src/PriceFeeds/rsETHPriceFeed.sol";
+import "src/PriceFeeds/tBTCPriceFeed.sol";
+import "src/PriceFeeds/ARBPriceFeed.sol";
+import "src/PriceFeeds/COMPPriceFeed.sol";
+import "src/PriceFeeds/WeETHPriceFeed.sol";
+import "src/PriceFeeds/treeETHPriceFeed.sol";
 import "src/CollateralRegistry.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "test/TestContracts/MetadataDeployment.sol";
@@ -94,7 +100,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     IERC20Metadata USDC;
 
     //oracle addresses
-    address ETH_ORACLE_ADDRESS = 0x4DF393Fa84e4a0CFdF14ce52f2a4E0c3d1AB0668;
+    address ETH_ORACLE_ADDRESS = 0x4DF393Fa84e4a0CFdF14ce52f2a4E0c3d1AB0668; // api3 eth/usd
     address STETH_ORACLE_ADDRESS = 0xAC7d5c56eBADdcBd97F9Efe586875F61410a54B4; // steth / ETH
     address RETH_ORACLE_ADDRESS = 0xA99a7c32c68Ec86127C0Cff875eE10B9C87fA12d; // rETH / ETH
 
@@ -114,9 +120,20 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address TBTC_BTC_ORACLE_ADDRESS = 0x1aF6168B78aDeE8F3CF3E99156FC066CfCB03F9e;
     address BTC_USD_ORACLE_ADDRESS = 0xF4A606Ab69FCac4cc429bf4B032BB2Ff74fe31f1;
 
-    uint256 ETH_USD_STALENESS_THRESHOLD = 24 hours;
-    uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
-    uint256 RETH_ETH_STALENESS_THRESHOLD = 48 hours;
+    uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
+    uint256 STETH_USD_STALENESS_THRESHOLD = 25 hours;
+    uint256 RETH_ETH_STALENESS_THRESHOLD = 58 hours;
+    uint256 RSETH_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 WEETH_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 TETH_WSTETH_STALENESS_THRESHOLD = 24 hours;
+    uint256 ARB_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 COMP_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 TBTC_ETH_STALENESS_THRESHOLD = 25 hours;
+
+
+    // rate provider addresses
+    address TREEETH_PROVIDER_ADDRESS = 0x353230eF3b5916B280dBAbb720d7b8dB61485615;
+    address WSTETH_PROVIDER_ADDRESS = 0xf7c5c26B574063e7b098ed74fAd6779e65E3F836;
 
     // V1
     address LQTY_ADDRESS = 0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D; //actually its NERI
@@ -134,16 +151,16 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // https://docs.curve.fi/deployments/amm/#stableswap-ng
     // Sepolia
     ICurveStableswapNGFactory constant curveStableswapFactorySepolia =
-        ICurveStableswapNGFactory(0xfb37b8D939FFa77114005e61CFc2e543d6F49A81);
+        ICurveStableswapNGFactory(0xfb37b8D939FFa77114005e61CFc2e543d6F49A81); // no arbitrum sepolia deployment
     // Mainnet
     ICurveStableswapNGFactory constant curveStableswapFactoryMainnet =
-        ICurveStableswapNGFactory(0x6A8cbed756804B16E05E741eDaBd5cB544AE21bf);
+        ICurveStableswapNGFactory(0x9AF14D26075f142eb3F292D5065EB3faa646167b);
     uint128 constant BOLD_TOKEN_INDEX = 0;
     uint128 constant OTHER_TOKEN_INDEX = 1;
     address constant mainnetDAO = 0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d; //arbitrum mainnet DAO address. Used for voting on updates to non-logic changes.
 
     // Uni V3
-    uint24 constant UNIV3_FEE = 0.3e4;
+    uint24 constant UNIV3_FEE = 0.3e4; // .3%
     uint24 constant UNIV3_FEE_USDC_WETH = 500; // 0.05%
     uint24 constant UNIV3_FEE_WETH_COLL = 100; // 0.01%
     ISwapRouter uniV3Router;
@@ -151,12 +168,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     IUniswapV3Factory uniswapV3Factory;
     INonfungiblePositionManager uniV3PositionManager;
     // https://docs.uniswap.org/contracts/v3/reference/deployments/ethereum-deployments
-    // Sepolia
-    ISwapRouter constant uniV3RouterSepolia = ISwapRouter(0x65669fE35312947050C450Bd5d36e6361F85eC12);
-    IQuoterV2 constant uniV3QuoterSepolia = IQuoterV2(0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3);
-    IUniswapV3Factory constant uniswapV3FactorySepolia = IUniswapV3Factory(0x0227628f3F023bb0B980b67D528571c95c6DaC1c);
+    // Arbitrum Sepolia
+    ISwapRouter constant uniV3RouterSepolia = ISwapRouter(0x101F443B4d1b059569D643917553c771E1b9663E);  // address is for deployed SwapRouter02 which shares this interface through ISwapRouterV3 so it should work
+    IQuoterV2 constant uniV3QuoterSepolia = IQuoterV2(0x2779a0CC1c3e0E44D2542EC3e79e3864Ae93Ef0B);
+    IUniswapV3Factory constant uniswapV3FactorySepolia = IUniswapV3Factory(0x248AB79Bbb9bC29bB72f7Cd42F17e054Fc40188e);
     INonfungiblePositionManager constant uniV3PositionManagerSepolia =
-        INonfungiblePositionManager(0x1238536071E1c677A632429e3655c799b22cDA52);
+        INonfungiblePositionManager(0x6b2937Bde17889EDCf8fbD8dE31C3C2a70Bc4d65);
     
     
     // arbitrum mainnet
@@ -275,7 +292,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         if (vm.envBytes("DEPLOYER").length == 20) {
             // address
             deployer = vm.envAddress("DEPLOYER");
+            console.log("deployer", deployer);
+            console.log("msg.sender", address(msg.sender));
+            assert(deployer == address(msg.sender));
             vm.startBroadcast(deployer);
+
         } else {
             // private key
             uint256 privateKey = vm.envUint("DEPLOYER");
@@ -289,10 +310,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 || deploymentMode.eq(DEPLOYMENT_MODE_USE_EXISTING_BOLD),
             string.concat("Bad deployment mode: ", deploymentMode)
         );
-
+        
         uint256 epochStart = vm.envOr(
             "EPOCH_START",
-            (block.chainid == 1 ? _latestUTCMidnightBetweenWednesdayAndThursday() : block.timestamp) - EPOCH_DURATION
+            (block.chainid == 42161 ? _latestUTCMidnightBetweenWednesdayAndThursday() : block.timestamp) - EPOCH_DURATION
         );
 
         useTestnetPriceFeeds = vm.envOr("USE_TESTNET_PRICEFEEDS", false);
@@ -305,7 +326,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         _log("Use testnet PriceFeeds: ", useTestnetPriceFeeds ? "yes" : "no");
 
         // Deploy Bold or pick up existing deployment
-        bytes memory boldBytecode = bytes.concat(type(BoldToken).creationCode, abi.encode(deployer));
+        bytes memory boldBytecode = bytes.concat(type(BoldToken).creationCode, abi.encode(deployer, superTokenFactory));
         address boldAddress = vm.computeCreate2Address(SALT, keccak256(boldBytecode));
         IBoldToken boldToken;
 
@@ -319,8 +340,16 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             require(BoldToken(payable(address(boldToken))).owner() == deployer, "Not BOLD owner");
         } else {
             boldToken = IBoldToken(address(new BoldToken{salt: SALT}(deployer, superTokenFactory)));
-            //boldToken.initialize(superTokenFactory);
+            // todo: uncomment initialize and add correct params:
+            //  IERC20 underlyingToken,
+            // uint8 underlyingDecimals,
+            // string calldata n,
+            // string calldata s
+
+            // boldToken.initialize(superTokenFactory);
+
             assert(address(boldToken) == boldAddress);
+            
         }
 
         if (deploymentMode.eq(DEPLOYMENT_MODE_BOLD_ONLY)) {
@@ -328,8 +357,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             return;
         }
 
-        if (block.chainid == 1) {
-            // mainnet
+        if (block.chainid == 42161) {
+            console2.log("deploying on arbitrum mainnet");
+            // arbitrum mainnet
             WETH = IWETH(WETH_ADDRESS);
             USDC = IERC20Metadata(USDC_ADDRESS);
             curveStableswapFactory = curveStableswapFactoryMainnet;
@@ -342,7 +372,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             stakingV1 = LQTY_STAKING_ADDRESS;
             lusd = LUSD_ADDRESS;
         } else {
-            // sepolia, local
+            // arbitrum sepolia, local
             if (block.chainid == 31337) {
                 // local
                 WETH = new WETHTester({_tapAmount: 100 ether, _tapPeriod: 1 days});
@@ -358,8 +388,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             uniV3PositionManager = uniV3PositionManagerSepolia;
             balancerFactory = balancerFactorySepolia;
             // Needed for Governance (they will be constants for mainnet)
-            // @note commented because lqty is going the be the NERI token
-            // lqty = address(new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days));
+            lqty = address(new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days));
             lusd = address(new ERC20Faucet("Liquity USD", "LUSD", 100 ether, 1 days));
             stakingV1 = address(new MockStakingV1(IERC20_GOV(lqty), IERC20_GOV(lusd)));
 
@@ -379,7 +408,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_WETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_WETH, 
-            100000000e18
+            100_000_000e18
         ); // WETH
         
         //wstETH
@@ -390,7 +419,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            25000000e18
+            25_000_000e18
         ); 
 
         //rETH
@@ -401,7 +430,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            25000000e18); // rETH
+            25_000_000e18); // rETH
         
         //rsETH
         troveManagerParamsArray[3] = TroveManagerParams(
@@ -411,7 +440,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            5000000e18
+            5_000_000e18
         ); // rsETH
         
         //weETH
@@ -422,7 +451,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            2000000e18);
+            2_000_000e18);
         
         //treeETH
         troveManagerParamsArray[5] = TroveManagerParams(
@@ -443,18 +472,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            5000000e18
+            5_000_000e18
         ); 
         
         //COMP
         troveManagerParamsArray[7] = TroveManagerParams(
-            CCR_ARB, 
-            MCR_ARB, 
-            SCR_ARB, 
+            CCR_COMP, 
+            MCR_COMP, 
+            SCR_COMP, 
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            2000000e18
+            2_000_000e18
         );
         
         // tbtc
@@ -465,12 +494,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            5000000e18
+            5_000_000e18
         );
 
 
-        string[] memory collNames = new string[](2);
-        string[] memory collSymbols = new string[](2);
+        string[] memory collNames = new string[](troveManagerParamsArray.length - 1);
+        string[] memory collSymbols = new string[](troveManagerParamsArray.length - 1);
         collNames[0] = "Wrapped liquid staked Ether 2.0";
         collSymbols[0] = "wstETH";
 
@@ -483,20 +512,17 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collNames[3] = "Wrapped Etherfi Staked ETH";
         collSymbols[3] = "weETH";
 
-        collNames[4] = "";
-        collSymbols[4] = "";
+        collNames[4] = "Treehouse ETH ";
+        collSymbols[4] = "tETH";
 
-        collNames[5] = "";
-        collSymbols[5] = "";
+        collNames[5] = "Arbitrum";
+        collSymbols[5] = "ARB";
 
-        collNames[6] = "";
-        collSymbols[6] = "";
+        collNames[6] = "Compound";
+        collSymbols[6] = "COMP";
 
-        collNames[7] = "";
-        collSymbols[7] = "";
-
-        collNames[8] = "";
-        collSymbols[8] = "";
+        collNames[7] = "Bitcoin";
+        collSymbols[7] = "tBTC";
 
         DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
             epochStart: epochStart,
@@ -511,7 +537,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         DeploymentResult memory deployed =
             _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols, deployGovernanceParams);
 
-        if (block.chainid == 11155111) {
+        if (block.chainid == 421614) {
             // Provide liquidity for zaps if we're on Sepolia
             ERC20Faucet monkeyBalls = new ERC20Faucet("MonkeyBalls", "MB", 0, type(uint256).max);
             for (uint256 i = 0; i < deployed.contractsArray.length; ++i) {
@@ -561,7 +587,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
 
         ICurveStableswapNGPool lusdCurvePool;
-        if (block.chainid == 1) {
+        if (block.chainid == 42161) {
             lusdCurvePool = _deployCurvePool(deployed.boldToken, IERC20Metadata(LUSD_ADDRESS));
         }
 
@@ -684,6 +710,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         string[] memory _collSymbols,
         DeployGovernanceParams memory _deployGovernanceParams
     ) internal returns (DeploymentResult memory r) {
+        console2.log("deploying and connecting contracts");
         assert(_collNames.length == troveManagerParamsArray.length - 1);
         assert(_collSymbols.length == troveManagerParamsArray.length - 1);
 
@@ -704,20 +731,20 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // arbitrum
             // WETH
             vars.collaterals[0] = IERC20Metadata(WETH);
-            vars.priceFeeds[0] = new WETHPriceFeed(deployer, ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD);
+            vars.priceFeeds[0] = IPriceFeed(address(new WETHPriceFeed(deployer, ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD)));
 
             // wstETH
-            vars.collaterals[1] = IERC20Metadata(WSTETH_ADDRESS);
-            vars.priceFeeds[1] = new WSTETHPriceFeed(
+            vars.collaterals[0] = IERC20Metadata(WSTETH_ADDRESS);
+            vars.priceFeeds[0] = new WSTETHPriceFeed(
                 deployer,
                 ETH_ORACLE_ADDRESS,
                 STETH_ORACLE_ADDRESS,
-                WSTETH_ADDRESS,
+                WSTETH_PROVIDER_ADDRESS,
                 ETH_USD_STALENESS_THRESHOLD,
                 STETH_USD_STALENESS_THRESHOLD
             );
 
-            // RETH
+            // RETH  todo: update with provider fixes
             vars.collaterals[2] = IERC20Metadata(RETH_ADDRESS);
             vars.priceFeeds[2] = new RETHPriceFeed(
                 deployer,
@@ -727,8 +754,65 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 ETH_USD_STALENESS_THRESHOLD,
                 RETH_ETH_STALENESS_THRESHOLD
             );
-        } 
-        
+
+            // RSETH
+            vars.collaterals[3] = IERC20Metadata(RSETH_ADDRESS);
+            vars.priceFeeds[3] = new RSETHPriceFeed(
+                deployer,
+                ETH_ORACLE_ADDRESS,
+                RSETH_ETH_ORACLE_ADDRESS,
+                ETH_USD_STALENESS_THRESHOLD,
+                RSETH_ETH_STALENESS_THRESHOLD
+            );
+
+            // WeEth
+            vars.collaterals[4] = IERC20Metadata(WEETH_ADDRESS);
+            vars.priceFeeds[4] = new WeETHPriceFeed(
+                deployer,
+                ETH_ORACLE_ADDRESS,
+                WEETH_ETH_ORACLE_ADDRESS,
+                WEETH_ADDRESS,
+                ETH_USD_STALENESS_THRESHOLD,
+                WEETH_ETH_STALENESS_THRESHOLD
+            );
+
+            // TreeETH
+            vars.collaterals[5] = IERC20Metadata(TETH_ADDRESS);
+            vars.priceFeeds[5] = new TreeETHPriceFeed(
+                deployer,
+                ETH_ORACLE_ADDRESS,
+                TETH_WSTETH_ORACLE_ADDRESS,
+                TREEETH_PROVIDER_ADDRESS,
+                ETH_USD_STALENESS_THRESHOLD,
+                TETH_WSTETH_STALENESS_THRESHOLD
+            );
+
+            // Arbitrum
+            vars.collaterals[6] = IERC20Metadata(ARB_ADDRESS);
+            vars.priceFeeds[6] = IPriceFeed(address(new ARBPriceFeed(
+                deployer,
+                ARB_USD_ORACLE_ADDRESS,
+                ARB_ETH_STALENESS_THRESHOLD
+            )));
+
+            // Compound
+            vars.collaterals[7] = IERC20Metadata(COMP_ADDRESS);
+            vars.priceFeeds[7] = IPriceFeed(address(new COMPPriceFeed(
+                deployer,
+                COMP_USD_ORACLE_ADDRESS,
+                COMP_ETH_STALENESS_THRESHOLD
+            )));
+
+            // tBTC
+            vars.collaterals[8] = IERC20Metadata(TBTC_ADDRESS);
+            vars.priceFeeds[8] = new tBTCPriceFeed(
+                deployer,
+                ETH_ORACLE_ADDRESS,
+                TBTC_BTC_ORACLE_ADDRESS,
+                ETH_USD_STALENESS_THRESHOLD,
+                TBTC_ETH_STALENESS_THRESHOLD
+            );
+        }
         else {
             // Sepolia
             // Use WETH as collateral for the first branch
@@ -746,25 +830,32 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 vars.priceFeeds[vars.i] = new PriceFeedTestnet();
             }
         }
-
+        console2.log("deploying addresses registries", vars.numCollaterals);
+        console2.log("collateral Registry", address(r.collateralRegistry));
         // Deploy AddressesRegistries and get TroveManager addresses
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
+            console2.log("deploying addresses registry", vars.i);
             //todo: update troveManagerParamsArray for proper ccr for each collateral
             (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
                 _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
             //updateDebtLimit
+            // todo: collateral registry doesn't exist yet
             //todo: set initial debt limit first.
-            r.collateralRegistry.updateDebtLimit(vars.i, troveManagerParamsArray[vars.i].debtLimit);
+            // r.collateralRegistry.updateDebtLimit(vars.i, troveManagerParamsArray[vars.i].debtLimit);
         }
-
+        console2.log("deploying collateral registry");
         r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, msg.sender);
+        // todo: update debt limits after collateral registry is deployed
+        console2.log("deploying hint helpers");
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
+        console2.log("deploying multi trove getter");
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
-
+        console2.log("deploying per-branch contracts");
         // Deploy per-branch contracts for each branch
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
+            console2.log("deploying per-branch contracts", vars.i);
             vars.contracts = _deployAndConnectCollateralContracts(
                 vars.collaterals[vars.i],
                 vars.priceFeeds[vars.i],
@@ -800,12 +891,21 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         internal
         returns (IAddressesRegistry, address)
     {
+        /* address _owner,
+        uint256 _ccr,
+        uint256 _mcr,
+        uint256 _bcr,
+        uint256 _scr,
+        uint256 _debtLimit,
+        uint256 _liquidationPenaltySP,
+        uint256 _liquidationPenaltyRedistribution**/
+        
         IAddressesRegistry addressesRegistry = new AddressesRegistry(
             deployer,
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
-            _troveManagerParams.SCR,
             _troveManagerParams.BCR,
+            _troveManagerParams.SCR,  // todo:  figure out why bcr and scr are swapped in the AddressesRegistry constructor
             _troveManagerParams.debtLimit,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
@@ -849,7 +949,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
         addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)))
+            SALT, keccak256(abi.encodePacked(type(TroveNFT).creationCode, abi.encode(address(contracts.addressesRegistry), address(mainnetDAO))))
         );
         addresses.stabilityPool = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)))
@@ -933,7 +1033,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ICurveStableswapNGPool _usdcCurvePool
     ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper) {
         IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
-
+        console2.log("deploying hybrid exchange");
+        console2.log("coll token", address(_collToken));
+        console2.log("bold token", address(_boldToken));
+        console2.log("usdc curve pool", address(_usdcCurvePool));
         IExchange hybridExchange = new HybridCurveUniV3Exchange(
             _collToken,
             _boldToken,
@@ -962,6 +1065,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IExchange _hybridExchange,
         bool _lst
     ) internal returns (ILeverageZapper) {
+        console2.log("deploying leverage zapper");
+        console2.log("addresses registry", address(_addressesRegistry));    
+        console2.log("flash loan provider", address(_flashLoanProvider));
+        console2.log("hybrid exchange", address(_hybridExchange));
+        console2.log("lst", _lst);
         ILeverageZapper leverageZapperHybrid;
         if (_lst) {
             leverageZapperHybrid = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
@@ -980,7 +1088,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // local
             return ICurveStableswapNGPool(address(0));
         }
-
+        console2.log("deploying curve pool");
+        console2.log("curve factory", address(curveStableswapFactory));
         // deploy Curve StableswapNG pool
         address[] memory coins = new address[](2);
         coins[BOLD_TOKEN_INDEX] = address(_boldToken);
@@ -989,6 +1098,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         bytes4[] memory methodIds = new bytes4[](2);
         address[] memory oracles = new address[](2);
 
+        // note: @cupOJoseph this call is failing in simulations
         ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool({
             name: string.concat("BOLD/", _otherToken.symbol(), " Pool"),
             symbol: string.concat("BOLD", _otherToken.symbol()),
@@ -1002,6 +1112,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             method_ids: methodIds,
             oracles: oracles
         });
+
+        console2.log("curve pool", address(curvePool));
 
         return curvePool;
     }
