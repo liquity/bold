@@ -306,7 +306,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 || deploymentMode.eq(DEPLOYMENT_MODE_USE_EXISTING_BOLD),
             string.concat("Bad deployment mode: ", deploymentMode)
         );
-
+        
         uint256 epochStart = vm.envOr(
             "EPOCH_START",
             (block.chainid == 42161 ? _latestUTCMidnightBetweenWednesdayAndThursday() : block.timestamp) - EPOCH_DURATION
@@ -322,7 +322,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         _log("Use testnet PriceFeeds: ", useTestnetPriceFeeds ? "yes" : "no");
 
         // Deploy Bold or pick up existing deployment
-        bytes memory boldBytecode = bytes.concat(type(BoldToken).creationCode, abi.encode(deployer));
+        bytes memory boldBytecode = bytes.concat(type(BoldToken).creationCode, abi.encode(deployer, superTokenFactory));
         address boldAddress = vm.computeCreate2Address(SALT, keccak256(boldBytecode));
         IBoldToken boldToken;
 
@@ -336,7 +336,14 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             require(BoldToken(payable(address(boldToken))).owner() == deployer, "Not BOLD owner");
         } else {
             boldToken = IBoldToken(address(new BoldToken{salt: SALT}(deployer, superTokenFactory)));
-            //boldToken.initialize(superTokenFactory);
+            // todo: uncomment initialize and add correct params:
+            //  IERC20 underlyingToken,
+            // uint8 underlyingDecimals,
+            // string calldata n,
+            // string calldata s
+
+            // boldToken.initialize(superTokenFactory);
+
             assert(address(boldToken) == boldAddress);
         }
 
@@ -375,8 +382,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             uniV3PositionManager = uniV3PositionManagerSepolia;
             balancerFactory = balancerFactorySepolia;
             // Needed for Governance (they will be constants for mainnet)
-            // @note commented because lqty is going the be the NERI token
-            // lqty = address(new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days));
+            lqty = address(new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days));
             lusd = address(new ERC20Faucet("Liquity USD", "LUSD", 100 ether, 1 days));
             stakingV1 = address(new MockStakingV1(IERC20_GOV(lqty), IERC20_GOV(lusd)));
 
@@ -396,7 +402,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_WETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_WETH, 
-            100000000e18
+            100_000_000e18
         ); // WETH
         
         //wstETH
@@ -407,7 +413,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            25000000e18
+            25_000_000e18
         ); 
 
         //rETH
@@ -418,7 +424,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            25000000e18); // rETH
+            25_000_000e18); // rETH
         
         //rsETH
         troveManagerParamsArray[3] = TroveManagerParams(
@@ -428,7 +434,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            5000000e18
+            5_000_000e18
         ); // rsETH
         
         //weETH
@@ -439,7 +445,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            2000000e18);
+            2_000_000e18);
         
         //treeETH
         troveManagerParamsArray[5] = TroveManagerParams(
@@ -460,7 +466,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            5000000e18
+            5_000_000e18
         ); 
         
         //COMP
@@ -471,7 +477,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            2000000e18
+            2_000_000e18
         );
         
         // tbtc
@@ -482,7 +488,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             BCR_ALL, 
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            5000000e18
+            5_000_000e18
         );
 
 
