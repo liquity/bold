@@ -372,7 +372,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             lusd = LUSD_ADDRESS;
         } else {
             // arbitrum sepolia, local
-            if (block.chainid == 421614) {
+            if (block.chainid == 31337) {
                 // local
                 WETH = new WETHTester({_tapAmount: 100 ether, _tapPeriod: 1 days});
             } else {
