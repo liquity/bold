@@ -151,10 +151,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // https://docs.curve.fi/deployments/amm/#stableswap-ng
     // Sepolia
     ICurveStableswapNGFactory constant curveStableswapFactorySepolia =
-        ICurveStableswapNGFactory(0xfb37b8D939FFa77114005e61CFc2e543d6F49A81);
+        ICurveStableswapNGFactory(0xfb37b8D939FFa77114005e61CFc2e543d6F49A81); // no arbitrum sepolia deployment
     // Mainnet
     ICurveStableswapNGFactory constant curveStableswapFactoryMainnet =
-        ICurveStableswapNGFactory(0x6A8cbed756804B16E05E741eDaBd5cB544AE21bf);
+        ICurveStableswapNGFactory(0x9AF14D26075f142eb3F292D5065EB3faa646167b);
     uint128 constant BOLD_TOKEN_INDEX = 0;
     uint128 constant OTHER_TOKEN_INDEX = 1;
     address constant mainnetDAO = 0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d; //arbitrum mainnet DAO address. Used for voting on updates to non-logic changes.
@@ -358,6 +358,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
 
         if (block.chainid == 42161) {
+            console2.log("deploying on arbitrum mainnet");
             // arbitrum mainnet
             WETH = IWETH(WETH_ADDRESS);
             USDC = IERC20Metadata(USDC_ADDRESS);
@@ -709,6 +710,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         string[] memory _collSymbols,
         DeployGovernanceParams memory _deployGovernanceParams
     ) internal returns (DeploymentResult memory r) {
+        console2.log("deploying and connecting contracts");
         assert(_collNames.length == troveManagerParamsArray.length - 1);
         assert(_collSymbols.length == troveManagerParamsArray.length - 1);
 
