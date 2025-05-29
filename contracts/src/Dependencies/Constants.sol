@@ -44,7 +44,7 @@ uint256 constant SCR_LRT = 110 * _1pct; //shutdown threshold (should be same as 
 //ARB. Arbitrum
 uint256 constant CCR_ARB = 165 * _1pct; // Branch minimum for adjustments
 uint256 constant MCR_ARB = 140 * _1pct; // Trove minimum for liquidation
-uint256 constant SCR_ARB = 110 * _1pct; //shutdown threshold (should be same as MCR)
+uint256 constant SCR_ARB = 115 * _1pct; //shutdown threshold (should be same as MCR)
 
 // COMP, compound
 uint256 constant CCR_COMP = 165 * _1pct; // Branch minimum for adjustments

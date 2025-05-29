@@ -160,7 +160,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address constant mainnetDAO = 0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d; //arbitrum mainnet DAO address. Used for voting on updates to non-logic changes.
 
     // Uni V3
-    uint24 constant UNIV3_FEE = 0.3e4;
+    uint24 constant UNIV3_FEE = 0.3e4; // .3%
     uint24 constant UNIV3_FEE_USDC_WETH = 500; // 0.05%
     uint24 constant UNIV3_FEE_WETH_COLL = 100; // 0.01%
     ISwapRouter uniV3Router;
