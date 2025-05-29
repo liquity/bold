@@ -28,8 +28,8 @@ import "./Interfaces/IBoldToken.sol";
 
 contract BoldToken is CustomSuperTokenBase, Ownable, IBoldTokenCustom, UUPSProxy {
 
-    string internal constant _NAME = "USD Nerite";
-    string internal constant _SYMBOL = "USDNer";
+    string internal constant _NAME = "US Nerite Dollar";
+    string internal constant _SYMBOL = "USND";
 
 
     // --- Addresses ---

@@ -12,7 +12,6 @@ export const CollateralSymbolSchema = v.union([
   v.literal("RETH"),
   v.literal("WSTETH"),
   v.literal("COMP"),
-  v.literal("PUFETH"),
   v.literal("SFRXETH"),
   v.literal("TBTC"),
   v.literal("TETH"),
@@ -263,19 +262,6 @@ export const EnvSchema = v.pipe(
     COLL_8_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
     COLL_8_CONTRACT_TROVE_NFT: v.optional(vAddress()),
     COLL_8_TOKEN_ID: v.optional(CollateralSymbolSchema),
-
-    COLL_9_CONTRACT_ACTIVE_POOL: v.optional(vAddress()),
-    COLL_9_CONTRACT_BORROWER_OPERATIONS: v.optional(vAddress()),
-    COLL_9_CONTRACT_COLL_SURPLUS_POOL: v.optional(vAddress()),
-    COLL_9_CONTRACT_COLL_TOKEN: v.optional(vAddress()),
-    COLL_9_CONTRACT_DEFAULT_POOL: v.optional(vAddress()),
-    COLL_9_CONTRACT_LEVERAGE_ZAPPER: v.optional(vAddress()),
-    COLL_9_CONTRACT_PRICE_FEED: v.optional(vAddress()),
-    COLL_9_CONTRACT_SORTED_TROVES: v.optional(vAddress()),
-    COLL_9_CONTRACT_STABILITY_POOL: v.optional(vAddress()),
-    COLL_9_CONTRACT_TROVE_MANAGER: v.optional(vAddress()),
-    COLL_9_CONTRACT_TROVE_NFT: v.optional(vAddress()),
-    COLL_9_TOKEN_ID: v.optional(CollateralSymbolSchema),
   }),
   v.transform((data) => {
     const env = { ...data };

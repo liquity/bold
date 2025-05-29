@@ -11,7 +11,6 @@ export type TokenSymbol =
   | "LUSD"
   | "WSTETH"
   | "COMP"
-  | "PUFETH"
   | "SFRXETH"
   | "TBTC"
   | "TETH"
