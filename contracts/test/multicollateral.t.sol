@@ -2,7 +2,12 @@
 
 pragma solidity ^0.8.18;
 
+import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 import "./TestContracts/DevTestSetup.sol";
+import {console} from "forge-std/console.sol";
+
+
+uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
 contract MulticollateralTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 4;
@@ -65,14 +70,12 @@ contract MulticollateralTest is DevTestSetup {
             accountsList[6]
         );
 
-        uint256 MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16, MAX_INT/2);
-        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 125e16, 5e16, 10e16, MAX_INT/2);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, MAX_INT/2);
+        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16, MAX_INT/2);
+        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16, MAX_INT/2);
+        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 10e16, 125e16, 5e16, 10e16, MAX_INT/2);
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _contractsArray;
@@ -171,7 +174,7 @@ contract MulticollateralTest is DevTestSetup {
         // let time go by to reduce redemption rate (/16)
         vm.warp(block.timestamp + 1 days);
 
-        // Check A’s final bal
+        // Check A's final bal
         assertEq(boldToken.balanceOf(A), 16000e18, "Wrong Bold balance before redemption");
 
         // initial balances
@@ -331,7 +334,7 @@ contract MulticollateralTest is DevTestSetup {
         if (_spBoldAmount4 > 0) makeMulticollateralSPDepositAndClaim(3, A, _spBoldAmount4);
 
         uint256 boldBalance = boldToken.balanceOf(A);
-        // Check A’s final bal
+        // Check A's final bal
         // TODO: change when we switch to new gas compensation
         //assertEq(boldToken.balanceOf(A), _boldAmount * 4 - _spBoldAmount1 - _spBoldAmount2 - _spBoldAmount3 - _spBoldAmount4, "Wrong Bold balance before redemption");
         // Stack too deep
@@ -345,10 +348,10 @@ contract MulticollateralTest is DevTestSetup {
         testValues3.collInitialBalance = contractsArray[2].collToken.balanceOf(A);
         testValues4.collInitialBalance = contractsArray[3].collToken.balanceOf(A);
 
-        testValues1.unbackedPortion = contractsArray[0].troveManager.getEntireSystemDebt() - _spBoldAmount1;
-        testValues2.unbackedPortion = contractsArray[1].troveManager.getEntireSystemDebt() - _spBoldAmount2;
-        testValues3.unbackedPortion = contractsArray[2].troveManager.getEntireSystemDebt() - _spBoldAmount3;
-        testValues4.unbackedPortion = contractsArray[3].troveManager.getEntireSystemDebt() - _spBoldAmount4;
+        testValues1.unbackedPortion = contractsArray[0].troveManager.getEntireBranchDebt() - _spBoldAmount1;
+        testValues2.unbackedPortion = contractsArray[1].troveManager.getEntireBranchDebt() - _spBoldAmount2;
+        testValues3.unbackedPortion = contractsArray[2].troveManager.getEntireBranchDebt() - _spBoldAmount3;
+        testValues4.unbackedPortion = contractsArray[3].troveManager.getEntireBranchDebt() - _spBoldAmount4;
         uint256 totalUnbacked = testValues1.unbackedPortion + testValues2.unbackedPortion + testValues3.unbackedPortion
             + testValues4.unbackedPortion;
 
@@ -457,10 +460,10 @@ contract MulticollateralTest is DevTestSetup {
         assertGt(expectedFeePct, 0);
 
         // Get BOLD debts from each branch
-        testValues0.branchDebt = contractsArray[0].troveManager.getEntireSystemDebt();
-        testValues1.branchDebt = contractsArray[1].troveManager.getEntireSystemDebt();
-        testValues2.branchDebt = contractsArray[2].troveManager.getEntireSystemDebt();
-        testValues3.branchDebt = contractsArray[3].troveManager.getEntireSystemDebt();
+        testValues0.branchDebt = contractsArray[0].troveManager.getEntireBranchDebt();
+        testValues1.branchDebt = contractsArray[1].troveManager.getEntireBranchDebt();
+        testValues2.branchDebt = contractsArray[2].troveManager.getEntireBranchDebt();
+        testValues3.branchDebt = contractsArray[3].troveManager.getEntireBranchDebt();
 
         testValues0.collTokenBalBefore_A = contractsArray[0].collToken.balanceOf(A);
         testValues1.collTokenBalBefore_A = contractsArray[1].collToken.balanceOf(A);
@@ -471,10 +474,10 @@ contract MulticollateralTest is DevTestSetup {
         redeem(A, redeemAmount);
 
         // Check how much BOLD was redeemed from each branch
-        testValues0.redeemed = testValues0.branchDebt - contractsArray[0].troveManager.getEntireSystemDebt();
-        testValues1.redeemed = testValues1.branchDebt - contractsArray[1].troveManager.getEntireSystemDebt();
-        testValues2.redeemed = testValues2.branchDebt - contractsArray[2].troveManager.getEntireSystemDebt();
-        testValues3.redeemed = testValues3.branchDebt - contractsArray[3].troveManager.getEntireSystemDebt();
+        testValues0.redeemed = testValues0.branchDebt - contractsArray[0].troveManager.getEntireBranchDebt();
+        testValues1.redeemed = testValues1.branchDebt - contractsArray[1].troveManager.getEntireBranchDebt();
+        testValues2.redeemed = testValues2.branchDebt - contractsArray[2].troveManager.getEntireBranchDebt();
+        testValues3.redeemed = testValues3.branchDebt - contractsArray[3].troveManager.getEntireBranchDebt();
 
         assertGt(testValues0.redeemed, 0);
         assertGt(testValues1.redeemed, 0);
@@ -541,7 +544,7 @@ contract MulticollateralTest is DevTestSetup {
         testValues4.troveId = openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 10e18, 2000e18, 5e16);
         makeMulticollateralSPDepositAndClaim(3, A, 2100e18); // we put some more for interest
 
-        // Check A’s final bal
+        // Check A's final bal
         // 10k of first branch - 3 * 100 in the other SPs
         assertEq(boldToken.balanceOf(A), 9700e18, "Wrong Bold balance before redemption");
 
@@ -650,7 +653,7 @@ contract MulticollateralTest is DevTestSetup {
         testValues4.troveId = openMulticollateralTroveNoHints100pctWithIndex(3, A, 0, 10e18, 2000e18, 5e16);
         makeMulticollateralSPDepositAndClaim(3, A, 2100e18); // we put some more for interest
 
-        // Check A’s final bal
+        // Check A's final bal
         // 10k of first branch - 3 * 100 in the other SPs
         assertEq(boldToken.balanceOf(A), 9700e18, "Wrong Bold balance before redemption");
 
@@ -739,5 +742,223 @@ contract MulticollateralTest is DevTestSetup {
             1e11,
             "Wrong Collateral 4 balance"
         );
+    }
+}
+
+contract CsBold013 is TestAccounts {
+    uint256 constant INITIAL_PRICE = 2_000 ether;
+
+    IBoldToken boldToken;
+    ICollateralRegistry collateralRegistry;
+    IHintHelpers hintHelpers;
+    IWETH weth;
+    TestDeployer.LiquityContractsDev[] branches;
+
+    function setUp() external {
+        console.log("gm");
+        // Start tests at a non-zero timestamp
+        vm.warp(1744780557);
+
+        accounts = new Accounts();
+        createAccounts();
+
+        (A, B, C, D, E, F, G) = (
+            accountsList[0],
+            accountsList[1],
+            accountsList[2],
+            accountsList[3],
+            accountsList[4],
+            accountsList[5],
+            accountsList[6]
+        );
+
+        TestDeployer.TroveManagerParams[] memory params = new TestDeployer.TroveManagerParams[](3);
+
+        console.log("MAX_INT: ", MAX_INT);
+
+        // WETH
+        params[0] = TestDeployer.TroveManagerParams({
+            CCR: CCR_WETH,
+            MCR: MCR_WETH,
+            SCR: SCR_WETH,
+            BCR: BCR_ALL,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_WETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_WETH,
+            debtLimit: MAX_INT
+        });
+
+        console.log("test deployer made.");
+
+        // wstETH
+        params[1] = TestDeployer.TroveManagerParams({
+            CCR: CCR_SETH,
+            MCR: MCR_SETH,
+            SCR: SCR_SETH,
+            BCR: BCR_ALL,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH,
+            debtLimit: MAX_INT/2
+        });
+
+        // rETH (same as wstETH)
+        params[2] = params[1];
+
+        TestDeployer deployer = new TestDeployer();
+        TestDeployer.LiquityContractsDev[] memory _branches;
+        (_branches, collateralRegistry, boldToken, hintHelpers,, weth,) =
+            deployer.deployAndConnectContractsMultiColl(params);
+
+        for (uint256 i = 0; i < _branches.length; ++i) {
+            branches.push(_branches[i]);
+            _branches[i].priceFeed.setPrice(INITIAL_PRICE);
+
+            for (uint256 j = 0; j < accountsList.length; j++) {
+
+                console.log("dealing to ", address(_branches[i].collToken), accountsList[j]);
+
+                deal(address(_branches[i].collToken), accountsList[j], 10_000 ether);
+
+                console.log("delt.");
+
+                vm.prank(accountsList[j]);
+                _branches[i].collToken.approve(address(_branches[i].borrowerOperations), type(uint256).max);
+
+                if (_branches[i].collToken != weth) {
+                    vm.prank(accountsList[j]);
+                    weth.approve(address(_branches[i].borrowerOperations), type(uint256).max);
+                }
+            }
+        }
+    }
+
+    function predictOpenTroveUpfrontFee(uint256 collIndex, uint256 borrowedAmount, uint256 interestRate)
+        internal
+        view
+        returns (uint256)
+    {
+        return hintHelpers.predictOpenTroveUpfrontFee(collIndex, borrowedAmount, interestRate);
+    }
+
+    // Quick and dirty binary search instead of Newton's, because it's easier
+    function findAmountToBorrowWithOpenTrove(uint256 collIndex, uint256 targetDebt, uint256 interestRate)
+        internal
+        view
+        returns (uint256 borrow, uint256 upfrontFee)
+    {
+        uint256 borrowRight = targetDebt;
+        upfrontFee = predictOpenTroveUpfrontFee(collIndex, borrowRight, interestRate);
+        uint256 borrowLeft = borrowRight - upfrontFee;
+
+        for (uint256 i = 0; i < 256; ++i) {
+            borrow = (borrowLeft + borrowRight) / 2;
+            upfrontFee = predictOpenTroveUpfrontFee(collIndex, borrow, interestRate);
+            uint256 actualDebt = borrow + upfrontFee;
+
+            if (actualDebt == targetDebt) {
+                break;
+            } else if (actualDebt < targetDebt) {
+                borrowLeft = borrow;
+            } else {
+                borrowRight = borrow;
+            }
+        }
+    }
+
+    function openTroveWithExactICRAndDebt(
+        uint256 collIndex,
+        address account,
+        uint256 index,
+        uint256 icr,
+        uint256 debt,
+        uint256 interestRate
+    ) public returns (uint256 troveId, uint256 coll) {
+        (uint256 borrow, uint256 upfrontFee) = findAmountToBorrowWithOpenTrove(collIndex, debt, interestRate);
+        uint256 price = branches[collIndex].priceFeed.getPrice();
+        coll = Math.ceilDiv(debt * icr, price);
+
+        vm.prank(account);
+        troveId = branches[collIndex].borrowerOperations.openTrove(
+            account, index, coll, borrow, 0, 0, interestRate, upfrontFee, address(0), address(0), address(0)
+        );
+    }
+
+    function test_WontRedeemMoreThanTotalUnbacked_UnlessTotalUnbackedIsZero() external {
+        // ETH branch setup
+        {
+            openTroveWithExactICRAndDebt(0, A, 0, CCR_WETH, 200_000 ether, MIN_ANNUAL_INTEREST_RATE);
+
+            vm.prank(A);
+            branches[0].stabilityPool.provideToSP(100_000 ether, false);
+
+            branches[0].priceFeed.setPrice(INITIAL_PRICE * (SCR_WETH - _1pct) / CCR_WETH);
+            branches[0].borrowerOperations.shutdown();
+        }
+
+        // wstETH branch setup
+        {
+            openTroveWithExactICRAndDebt(1, A, 0, 2 * CCR_WETH, 100_000 ether, MIN_ANNUAL_INTEREST_RATE);
+
+            vm.prank(A);
+            branches[1].stabilityPool.provideToSP(99_000 ether, false);
+        }
+
+        // rETH branch setup
+        {
+            openTroveWithExactICRAndDebt(2, A, 0, 2 * CCR_WETH, 10_000 ether, MIN_ANNUAL_INTEREST_RATE);
+
+            vm.prank(A);
+            branches[2].stabilityPool.provideToSP(9_000 ether, false);
+        }
+
+        // Example scenario:
+        // - ETH branch
+        {
+            (uint256 unbackedDebt,, bool redeemable) =
+                branches[0].troveManager.getUnbackedPortionPriceAndRedeemability();
+            // is shutdown
+            assertFalse(redeemable);
+            // and has 100K unbacked debt
+            assertEqDecimal(unbackedDebt, 100_000 ether, 18);
+        }
+        // - WSTETH branch
+        {
+            (uint256 unbackedDebt,, bool redeemable) =
+                branches[1].troveManager.getUnbackedPortionPriceAndRedeemability();
+            // is redeemable
+            assertTrue(redeemable);
+            // with 1K unbacked debt
+            assertEqDecimal(unbackedDebt, 1_000 ether, 18);
+            // and 100K total debt
+            assertEqDecimal(branches[1].troveManager.getEntireBranchDebt(), 100_000 ether, 18);
+        }
+        // - rETH branch
+        {
+            (uint256 unbackedDebt,, bool redeemable) =
+                branches[2].troveManager.getUnbackedPortionPriceAndRedeemability();
+            // is redeemable
+            assertTrue(redeemable);
+            // with 1K unbacked debt
+            assertEqDecimal(unbackedDebt, 1_000 ether, 18);
+            // and 10K total debt
+            assertEqDecimal(branches[2].troveManager.getEntireBranchDebt(), 10_000 ether, 18);
+        }
+
+        vm.startPrank(A);
+        {
+            // A redemption of more than 2K should be truncated
+            uint256 boldBefore = boldToken.balanceOf(A);
+            collateralRegistry.redeemCollateral(10_000 ether, 0, 1 ether);
+            uint256 actuallyRedeemed = boldBefore - boldToken.balanceOf(A);
+            assertEqDecimal(actuallyRedeemed, 2_000 ether, 18, "wrong amount redeemed");
+
+            // The rest should be redeemed in proportion to remaining branch debt (99K vs. 9K)
+            // Let's redeem 10% of remaining debt (9.9K + 900)
+            collateralRegistry.redeemCollateral(10_800 ether, 0, 1 ether);
+        }
+        vm.stopPrank();
+
+        assertEqDecimal(branches[0].troveManager.getEntireBranchDebt(), 200_000 ether, 18, "wrong branch #0 debt");
+        assertEqDecimal(branches[1].troveManager.getEntireBranchDebt(), 89_100 ether, 18, "wrong branch #1 debt");
+        assertEqDecimal(branches[2].troveManager.getEntireBranchDebt(), 8_100 ether, 18, "wrong branch #2 debt");
     }
 }

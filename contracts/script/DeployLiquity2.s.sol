@@ -70,6 +70,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
+
+    // nerite specific addresses
+    address constant NERITE_DAO_TREASURY_ADDRESS = 0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d;
+    address constant NERI_ERC20_ADDRESS = 0xcEC3ba7029d54d005275d3510960Cfe433811C59;
+
     // used for gas compensation and as collateral of the first branch
     // tapping disallowed
     IWETH WETH;
@@ -105,6 +110,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ICurveStableswapNGFactory(0x6A8cbed756804B16E05E741eDaBd5cB544AE21bf);
     uint128 constant BOLD_TOKEN_INDEX = 0;
     uint128 constant OTHER_TOKEN_INDEX = 1;
+    address constant mainnetDAO = 0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d; //arbitrum mainnet DAO address. Used for voting on updates to non-logic changes.
 
     // Uni V3
     uint24 constant UNIV3_FEE = 0.3e4;
@@ -190,6 +196,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         uint256 CCR;
         uint256 MCR;
         uint256 SCR;
+        uint256 BCR;
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
         uint256 debtLimit;
@@ -279,7 +286,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             require(boldToken.collateralRegistryAddress() == address(0), "Collateral registry already set");
             require(BoldToken(payable(address(boldToken))).owner() == deployer, "Not BOLD owner");
         } else {
-            boldToken = IBoldToken(address(new BoldToken{salt: SALT}(deployer)));
+            boldToken = IBoldToken(address(new BoldToken{salt: SALT}(deployer, superTokenFactory)));
             //boldToken.initialize(superTokenFactory);
             assert(address(boldToken) == boldAddress);
         }
@@ -319,7 +326,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             uniV3PositionManager = uniV3PositionManagerSepolia;
             balancerFactory = balancerFactorySepolia;
             // Needed for Governance (they will be constants for mainnet)
-            lqty = address(new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days));
+            // @note commented because lqty is going the be the NERI token
+            // lqty = address(new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days));
             lusd = address(new ERC20Faucet("Liquity USD", "LUSD", 100 ether, 1 days));
             stakingV1 = address(new MockStakingV1(IERC20_GOV(lqty), IERC20_GOV(lusd)));
 
@@ -329,9 +337,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](3);
         // TODO: move params out of here
-        troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2); // WETH
-        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16, MAX_INT/2); // wstETH
-        troveManagerParamsArray[2] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16, MAX_INT/2); // rETH
+        troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16, MAX_INT/2); // WETH
+        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2); // wstETH
+        troveManagerParamsArray[2] = TroveManagerParams(150e16, 120e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2); // rETH
 
         string[] memory collNames = new string[](2);
         string[] memory collSymbols = new string[](2);
@@ -345,7 +353,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             deployer: deployer,
             salt: SALT,
             stakingV1: stakingV1,
-            lqty: lqty,
+            lqty: NERI_ERC20_ADDRESS,
             lusd: lusd,
             bold: boldAddress
         });
@@ -410,9 +418,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         // Governance
         (address governanceAddress, string memory governanceManifest) = deployGovernance(
             deployGovernanceParams,
-            address(curveStableswapFactory),
-            address(deployed.usdcCurvePool),
-            address(lusdCurvePool)
+            NERITE_DAO_TREASURY_ADDRESS
         );
         address computedGovernanceAddress = computeGovernanceAddress(deployGovernanceParams);
         assert(governanceAddress == computedGovernanceAddress);
@@ -644,6 +650,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
             _troveManagerParams.SCR,
+            _troveManagerParams.BCR,
             _troveManagerParams.debtLimit,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
@@ -733,7 +740,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         contracts.borrowerOperations = new BorrowerOperations{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry, mainnetDAO);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);

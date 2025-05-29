@@ -24,6 +24,7 @@ interface IZapper {
     struct CloseTroveParams {
         uint256 troveId;
         uint256 flashLoanAmount;
+        uint256 minExpectedCollateral;
         address receiver;
     }
 
@@ -33,5 +34,6 @@ interface IZapper {
 
     function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256);
 
-    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external;
+    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount, uint256 _minExpectedCollateral)
+        external;
 }

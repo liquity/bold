@@ -30,7 +30,7 @@ abstract contract Properties is BeforeAfter, Asserts {
     function property_TR06(uint256 troveDebtBeforeLiquidation, uint256 beforeGhostDebtAccumulator, uint256 afterGhostDebtAccumulator) internal {
         // checking debt redistribution 
         // current setup only uses one _getActor() so can just sum over all troves in system for the _getActor()'s debt
-        uint256 debtPercentageOfTotal = (beforeGhostDebtAccumulator / borrowerOperations.getEntireSystemDebt()) * 10_000;
+        uint256 debtPercentageOfTotal = (beforeGhostDebtAccumulator / borrowerOperations.getEntireBranchDebt()) * 10_000;
 
         // check that increase in debt was proportional to their percentage of total
         // total system debt should increase by debtPercentageOfTotal * liqAmount
@@ -237,7 +237,8 @@ abstract contract Properties is BeforeAfter, Asserts {
             
             if(borrowerOperations.interestBatchManagerOf(trove) == clampedBatchManager) {
                 sumBatchDebt += troveManager.getTroveEntireDebt(trove);
-                sumbBatchShares += troveManager.getTroveBatchDebtShares(trove); 
+                (, , , , , , , , , uint256 batchShares) = troveManager.Troves(trove);
+                sumbBatchShares += batchShares;
             }
 
             trove = sortedTroves.getNext(trove);
@@ -247,7 +248,8 @@ abstract contract Properties is BeforeAfter, Asserts {
         uint256 lastZombieTroveId = troveManager.lastZombieTroveId();
         if(borrowerOperations.interestBatchManagerOf(lastZombieTroveId) == clampedBatchManager) {
             sumBatchDebt += troveManager.getTroveEntireDebt(lastZombieTroveId);
-            sumbBatchShares += troveManager.getTroveBatchDebtShares(lastZombieTroveId);
+            (, , , , , , , , , uint256 batchShares) = troveManager.Troves(lastZombieTroveId);
+            sumbBatchShares += batchShares;
         }
     }
 

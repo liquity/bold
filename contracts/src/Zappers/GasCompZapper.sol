@@ -40,10 +40,12 @@ contract GasCompZapper is BaseZapper {
         collToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
 
         uint256 troveId;
+        // Include sender in index
+        uint256 index = _getTroveIndex(_params.ownerIndex);
         if (_params.batchManager == address(0)) {
             troveId = borrowerOperations.openTrove(
                 _params.owner,
-                _params.ownerIndex,
+                index,
                 _params.collAmount,
                 _params.boldAmount,
                 _params.upperHint,
@@ -61,7 +63,7 @@ contract GasCompZapper is BaseZapper {
                 openTroveAndJoinInterestBatchManagerParams = IBorrowerOperations
                     .OpenTroveAndJoinInterestBatchManagerParams({
                     owner: _params.owner,
-                    ownerIndex: _params.ownerIndex,
+                    ownerIndex: index,
                     collAmount: _params.collAmount,
                     boldAmount: _params.boldAmount,
                     upperHint: _params.upperHint,
@@ -102,6 +104,7 @@ contract GasCompZapper is BaseZapper {
     function withdrawColl(uint256 _troveId, uint256 _amount) external {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
+        _requireZapperIsReceiver(_troveId);
 
         borrowerOperations.withdrawColl(_troveId, _amount);
 
@@ -112,6 +115,7 @@ contract GasCompZapper is BaseZapper {
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
+        _requireZapperIsReceiver(_troveId);
 
         borrowerOperations.withdrawBold(_troveId, _boldAmount, _maxUpfrontFee);
 
@@ -180,8 +184,7 @@ contract GasCompZapper is BaseZapper {
         bool _isDebtIncrease,
         InitialBalances memory _initialBalances
     ) internal returns (address) {
-        address receiver =
-            _checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
+        address receiver = _checkAdjustTroveManagers(_troveId, _collChange, _isCollIncrease, _isDebtIncrease);
 
         // Set initial balances to make sure there are not lefovers
         _setInitialTokensAndBalances(collToken, boldToken, _initialBalances);
@@ -224,6 +227,7 @@ contract GasCompZapper is BaseZapper {
     function closeTroveToRawETH(uint256 _troveId) external {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        _requireZapperIsReceiver(_troveId);
 
         // pull Bold for repayment
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
@@ -240,11 +244,20 @@ contract GasCompZapper is BaseZapper {
         require(success, "GCZ: Sending ETH failed");
     }
 
-    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount) external override {
+    function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount, uint256 _minExpectedCollateral)
+        external
+        override
+    {
         address owner = troveNFT.ownerOf(_troveId);
         address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
-        CloseTroveParams memory params =
-            CloseTroveParams({troveId: _troveId, flashLoanAmount: _flashLoanAmount, receiver: receiver});
+        _requireZapperIsReceiver(_troveId);
+
+        CloseTroveParams memory params = CloseTroveParams({
+            troveId: _troveId,
+            flashLoanAmount: _flashLoanAmount,
+            minExpectedCollateral: _minExpectedCollateral,
+            receiver: receiver
+        });
 
         // Set initial balances to make sure there are not lefovers
         InitialBalances memory initialBalances;
@@ -268,6 +281,8 @@ contract GasCompZapper is BaseZapper {
         require(msg.sender == address(flashLoanProvider), "GCZ: Caller not FlashLoan provider");
 
         LatestTroveData memory trove = troveManager.getLatestTroveData(_params.troveId);
+        uint256 collLeft = trove.entireColl - _params.flashLoanAmount;
+        require(collLeft >= _params.minExpectedCollateral, "GCZ: Not enough collateral received");
 
         // Swap Coll from flash loan to Bold, so we can repay and close trove
         // We swap the flash loan minus the flash loan fee
@@ -283,7 +298,7 @@ contract GasCompZapper is BaseZapper {
         collToken.safeTransfer(address(flashLoanProvider), _params.flashLoanAmount);
 
         // Send coll left
-        collToken.safeTransfer(_params.receiver, trove.entireColl - _params.flashLoanAmount);
+        collToken.safeTransfer(_params.receiver, collLeft);
 
         // Send gas compensation
         WETH.withdraw(ETH_GAS_COMPENSATION);
@@ -295,6 +310,7 @@ contract GasCompZapper is BaseZapper {
 
     // Unimplemented flash loan receive functions for leverage
     function receiveFlashLoanOnOpenLeveragedTrove(
+        address _originalSender,
         ILeverageZapper.OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external virtual override {}

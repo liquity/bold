@@ -7,6 +7,7 @@ import "./ILeverageZapper.sol";
 
 interface IFlashLoanReceiver {
     function receiveFlashLoanOnOpenLeveragedTrove(
+        address _originalSender,
         ILeverageZapper.OpenLeveragedTroveParams calldata _params,
         uint256 _effectiveFlashLoanAmount
     ) external;

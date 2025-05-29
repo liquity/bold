@@ -625,7 +625,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       .entireColl;
 
     // entireSystemColl, excluding A
-    const denominatorColl_1 = (await troveManager.getEntireSystemColl()).sub(
+    const denominatorColl_1 = (await troveManager.getEntireBranchColl()).sub(
       A_entireColl_0,
     );
 
@@ -672,7 +672,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       .entireColl;
 
     // entireSystemColl, excluding C
-    const denominatorColl_2 = (await troveManager.getEntireSystemColl()).sub(
+    const denominatorColl_2 = (await troveManager.getEntireBranchColl()).sub(
       C_entireColl_1,
     );
 
@@ -719,7 +719,7 @@ contract("TroveManager - Redistribution reward calculations", async (accounts) =
       .entireColl;
 
     // entireSystemColl, excluding E
-    const denominatorColl_3 = (await troveManager.getEntireSystemColl()).sub(
+    const denominatorColl_3 = (await troveManager.getEntireBranchColl()).sub(
       E_entireColl_2,
     );
 

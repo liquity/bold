@@ -7,6 +7,7 @@ import "src/AddressesRegistry.sol";
 import "src/Types/TroveId.sol";
 
 uint256 constant FUZZ_INPUT_LENGTH = 9;
+uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
 struct Hints {
     TroveId prev;
@@ -469,8 +470,8 @@ contract SortedTrovesTest is Test {
 
     function setUp() public {
         bytes32 SALT = keccak256("LiquityV2");
-        uint256 MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-        AddressesRegistry addressesRegistry = new AddressesRegistry(address(this), 150e16, 110e16, 110e16, 5e16, 10e16, MAX_INT/2);
+        AddressesRegistry addressesRegistry =
+            new AddressesRegistry(address(this), 150e16, 110e16, 10e16, 110e16, 5e16, 10e16, 20e16); // 20e16 is the max redistribution penalty
         bytes32 hash = keccak256(
             abi.encodePacked(
                 bytes1(0xff),

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 import { BoldToken, IBoldToken } from "../src/BoldToken.sol";
+import {console} from "forge-std/console.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {ISuperTokenFactory} from "@superfluid-finance/ethereum-contracts/contracts/interfaces/superfluid/ISuperfluid.sol";
@@ -28,8 +29,9 @@ contract SFBold is Test {
         sfDeployer.deployTestFramework();
         _sf = sfDeployer.getFramework();
 
-        BoldToken superTokenPermitProxy = new BoldToken(_OWNER);
-        superTokenPermitProxy.initialize(_sf.superTokenFactory);
+        BoldToken superTokenPermitProxy = new BoldToken(_OWNER, _sf.superTokenFactory);
+        console.log("Deploying super token permit proxy in Setup for SF Bold. superTokenPermitProxy", address(superTokenPermitProxy));
+        superTokenPermitProxy.initialize();
         _boldToken = IBoldToken(address(superTokenPermitProxy));
 
         // Generate signer address from private key
@@ -118,7 +120,7 @@ contract SFBold is Test {
     }
 
     function testStorageLayout() public {
-        SFBoldStorageLayoutTest testContract = new SFBoldStorageLayoutTest(_OWNER);
+        SFBoldStorageLayoutTest testContract = new SFBoldStorageLayoutTest(_OWNER, _sf.superTokenFactory);
         testContract.validateStorageLayout();
     }
 
@@ -143,7 +145,7 @@ contract SFBold is Test {
 /// Validation of the storage layout
 contract SFBoldStorageLayoutTest is BoldToken {
 
-    constructor(address _owner) BoldToken(_owner) {}
+    constructor(address _owner, ISuperTokenFactory _sf) BoldToken(_owner, _sf) {}
     error STORAGE_LOCATION_CHANGED(string _name);
 
     function validateStorageLayout() public pure {

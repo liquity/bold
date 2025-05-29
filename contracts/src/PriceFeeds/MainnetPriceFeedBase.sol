@@ -103,7 +103,8 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed, Ownable {
             // Require that enough gas was provided to prevent an OOG revert in the call to Chainlink
             // causing a shutdown. Instead, just revert. Slightly conservative, as it includes gas used
             // in the check itself.
-            if (gasleft() + 5000 <= gasBefore / 64) revert InsufficientGasForExternalCall();
+            if (gasleft() <= gasBefore / 64) revert InsufficientGasForExternalCall();
+
 
             // If call to Chainlink aggregator reverts, return a zero response with success = false
             return chainlinkResponse;

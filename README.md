@@ -357,9 +357,9 @@ The function takes the following param struct as input:
 
 -  `setAddManager(uint256 _troveId, address _manager)`: sets an “Add” manager for the caller’s chosen Trove, who has permission to add collateral and repay debt to their Trove.
 
--  `setRemoveManager(uint256 _troveId, address _manager)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove.
+-  `setRemoveManager(uint256 _troveId, address _manager)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove, and assumes "Add" manager permission.
 
-- `setRemoveManagerWithReceiver(uint256 _troveId, address _manager, address _receiver)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove to the provided `_receiver` address.
+- `setRemoveManagerWithReceiver(uint256 _troveId, address _manager, address _receiver)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove to the provided `_receiver` address, and assumes "Add" manager permission.
 
 - `setInterestIndividualDelegate(
         uint256 _troveId,
@@ -401,6 +401,11 @@ The function takes the following param struct as input:
         uint256 _maxUpfrontFee
     )`: Trove owner sets a new `_newBatchManager` to control their Trove’s interest rate and inserts it to the chosen batch. The `_newBatchManager` must already be registered. Since this action very likely changes the Trove’s interest rate, it’s subject to a premature adjustment fee as per regular adjustments.
 
+- `kickFromBatch(
+        uint256 _troveId,
+        uint256 _upperHint,
+        uint256 _lowerHint
+    )`: removes a Trove from its batch, if the batch's debt:shares ratio has exceeded the limit of `1e9`. As a batch having such inflated shares isn't allowed to mint new shares any more, it could happen that an unredeemable (zombie) Trove receives a significant amount of redistributed debt, which can't be made redeemable, because that would involve minting new shares within its batch. In this case, the `kickFromBatch` function can be used to permissionlessly remove such a Trove from its batch.
 
 - `removeFromBatch(
         uint256 _troveId,
@@ -989,17 +994,18 @@ Add managers and Remove managers may be set by the Trove owner when the Trove is
 
 - An Add Manager may add collateral or repay debt to a Trove
 - When set to `address(0)`, any address is allowed to perform these operations on the Trove
-- Otherwise, only the designated `AddManager` in this mapping Trove is allowed to add collateral / repay debt
+- Otherwise, only the designated `AddManager` in this mapping Trove is allowed to add collateral / repay debt. Plus the owner and the Remove Manager.
 - A Trove owner may set the AddManager equal to their own address in order to disallow anyone from adding collateral / repaying debt.
 
 #### Remove Managers
 
 Remove Managers may withdraw collateral or draw new BOLD debt.
 
-- Only the designated Remove manager, if any, and the Trove owner, are allowed 
+- Only the designated Remove manager, if any, and the Trove owner, are allowed. 
 - A receiver address may be chosen which can be different from the Remove Manager and Trove owner. The receiver receives the collateral and BOLD drawn by the Remove Manager.
 - By default, a Trove has no Remove Manager - it must be explicitly set by the Trove owner upon opening or at a later point.
  - The receiver address can never be zero.
+ - The Remove Manager is also an Add Manager.
 
 ### Individual interest delegates
 
