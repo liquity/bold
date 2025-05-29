@@ -6,7 +6,6 @@ import "./MainnetPriceFeedBase.sol";
 
 contract RSETHPriceFeed is MainnetPriceFeedBase {
     //RSETH feed on arbitrum.
-    address public rsEthOracleAddress = 0x8fE61e9D74ab69cE9185F365dfc21FC168c4B56c; //RSETH/ETH
     Oracle public rsEthOracle;
 
     constructor(
