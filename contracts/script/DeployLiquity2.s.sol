@@ -127,8 +127,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     uint256 RSETH_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 WEETH_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 TETH_WSTETH_STALENESS_THRESHOLD = 24 hours;
-    uint256 ARB_ETH_STALENESS_THRESHOLD = 25 hours;
-    uint256 COMP_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 ARB_USD_STALENESS_THRESHOLD = 25 hours;
+    uint256 COMP_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 TBTC_USD_STALENESS_THRESHOLD = 25 hours;
 
 
@@ -793,7 +793,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vars.priceFeeds[6] = IPriceFeed(address(new ARBPriceFeed(
                 deployer,
                 ARB_USD_ORACLE_ADDRESS,
-                ARB_ETH_STALENESS_THRESHOLD
+                ARB_USD_STALENESS_THRESHOLD
             )));
 
             // Compound
@@ -801,7 +801,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vars.priceFeeds[7] = IPriceFeed(address(new COMPPriceFeed(
                 deployer,
                 COMP_USD_ORACLE_ADDRESS,
-                COMP_ETH_STALENESS_THRESHOLD
+                COMP_USD_STALENESS_THRESHOLD
             )));
 
             // tBTC
