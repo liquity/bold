@@ -772,7 +772,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 deployer,
                 ETH_ORACLE_ADDRESS,
                 WEETH_ETH_ORACLE_ADDRESS,
-                WEETH_ADDRESS,
                 ETH_USD_STALENESS_THRESHOLD,
                 WEETH_ETH_STALENESS_THRESHOLD
             );
