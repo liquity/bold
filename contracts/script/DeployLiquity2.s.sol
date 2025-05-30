@@ -83,6 +83,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address RSETH_ADDRESS = 0x4186BFC76E2E237523CBC30FD220FE055156b41F;
     address WEETH_ADDRESS = 0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe;
     address TETH_ADDRESS = 0xd09ACb80C1E8f2291862c4978A008791c9167003;
+
     address ARB_ADDRESS = 0x912CE59144191C1204E64559FE8253a0e49E6548;
     address COMP_ADDRESS = 0x354A6dA3fcde098F8389cad84b0182725c6C91dE;
     address TBTC_ADDRESS = 0x6c84a8f1c29108F47a79964b5Fe888D4f4D0dE40;
@@ -107,7 +108,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address WSTETH_STETH_ORACLE_ADDRESS = 0xB1552C5e96B312d0Bf8b554186F846C40614a540; 
     address WSTETH_ETH_ORACLE_ADDRESS = 0xb523AE262D20A936BC152e6023996e46FDC2A95D;
 
-    //usd price oracle addresses TODO
+    //usd price oracle addresses
     address RSETH_ETH_ORACLE_ADDRESS = 0x8fE61e9D74ab69cE9185F365dfc21FC168c4B56c;
     address WEETH_ETH_ORACLE_ADDRESS = 0xabB160Db40515B77998289afCD16DC06Ae71d12E;
     address TETH_WSTETH_ORACLE_ADDRESS = 0x98a977Ba31C72aeF2e15B950Eb5Ae3158863D856;
@@ -116,8 +117,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address ARB_USD_ORACLE_ADDRESS = 0x016aAE62d4c3a9b1101a8F9597227c045a41656F;
     address COMP_USD_ORACLE_ADDRESS = 0x9Bd88Dc926DDC36EbBf533Eee0f323C4A194753B;
 
-    //btc composite oracle addresses TODO
-    address TBTC_BTC_ORACLE_ADDRESS = 0x1aF6168B78aDeE8F3CF3E99156FC066CfCB03F9e;
+    //btc composite oracle addresses
+    address TBTC_USD_ORACLE_ADDRESS = 0x1aF6168B78aDeE8F3CF3E99156FC066CfCB03F9e;
     address BTC_USD_ORACLE_ADDRESS = 0xF4A606Ab69FCac4cc429bf4B032BB2Ff74fe31f1;
 
     uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
@@ -128,7 +129,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     uint256 TETH_WSTETH_STALENESS_THRESHOLD = 24 hours;
     uint256 ARB_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 COMP_ETH_STALENESS_THRESHOLD = 25 hours;
-    uint256 TBTC_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 TBTC_USD_STALENESS_THRESHOLD = 25 hours;
 
 
     // rate provider addresses
@@ -807,10 +808,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vars.collaterals[8] = IERC20Metadata(TBTC_ADDRESS);
             vars.priceFeeds[8] = new tBTCPriceFeed(
                 deployer,
-                ETH_ORACLE_ADDRESS,
-                TBTC_BTC_ORACLE_ADDRESS,
-                ETH_USD_STALENESS_THRESHOLD,
-                TBTC_ETH_STALENESS_THRESHOLD
+                TBTC_USD_ORACLE_ADDRESS,
+                BTC_USD_ORACLE_ADDRESS,
+                TBTC_USD_STALENESS_THRESHOLD, //use the same time for btc and tbtc.
+                TBTC_USD_STALENESS_THRESHOLD
             );
         }
         else {
