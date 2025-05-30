@@ -22,10 +22,10 @@ export function useBalance(
           return null;
         }
         if(symbol === "bvUSD") {
-          return "0x242a2f669224b225d38514c1785411a6036981f1";
+          return "0x96c6995a7737959708c2ed9129d07c94f012d2ce";
         }
         if(symbol === "sbvUSD") {
-          return "0x0471D185cc7Be61E154277cAB2396cD397663da6";
+          return "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225";
         }
         if(symbol === "VCRAFT") {
           return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";

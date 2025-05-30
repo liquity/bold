@@ -8,7 +8,7 @@ import content from "@/src/content";
 import { getBranches, useEarnPosition, useVault, useVaultPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { InfoTooltip, TokenIcon } from "@liquity2/uikit";
+import { AnchorTextButton, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { AccountButton } from "@/src/comps/AppLayout/AccountButton";

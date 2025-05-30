@@ -156,11 +156,11 @@ export function useVault() {
   const vaultReads = useReadContracts({
     // @ts-ignore
     contracts: [{
-      address: "0x0471D185cc7Be61E154277cAB2396cD397663da6",
+      address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
       abi: erc4626Abi,
       functionName: "totalAssets",
     }, {
-      address: "0x0471D185cc7Be61E154277cAB2396cD397663da6",
+      address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
       abi: erc4626Abi,
       functionName: "totalSupply",
     }],
@@ -180,7 +180,7 @@ export function useVault() {
       apr7d: dnumOrNull(0.1, 18),
       collateral,
       totalDeposited: vaultReads.data?.totalAssets ?? null,
-      price: vaultReads.data?.totalSupply ? dn.div(vaultReads.data?.totalAssets, vaultReads.data?.totalSupply) : dnum18(1),
+      price: vaultReads.data?.totalSupply && vaultReads.data?.totalSupply > DNUM_0 ?dn.div(vaultReads.data?.totalAssets, vaultReads.data?.totalSupply) : dnum18(1),
     },
   };
 }
@@ -299,7 +299,7 @@ export function useVaultPosition(
   account: null | Address,
 ): UseQueryResult<PositionEarn | null> {
   const balance = useReadContract({
-    address: "0x0471D185cc7Be61E154277cAB2396cD397663da6",
+    address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
     abi: erc4626Abi,
     functionName: "balanceOf",
     args: [account ?? "0x"],

@@ -13,7 +13,7 @@ import { getCollToken, isEarnPositionActive } from "@/src/liquity-utils";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
-import { Button, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon, USDT } from "@liquity2/uikit";
+import { Button, bvUSD, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon, USDT } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
@@ -49,7 +49,7 @@ export function PanelUpdateVaultDeposit({
     DNUM_0,
   );
 
-  const boldBalance = useBalance(account.address, "USDT");
+  const boldBalance = useBalance(account.address, "bvUSD");
 
   const updatedBoldQty = dn.add(deposited, depositDifference);
 
@@ -57,7 +57,7 @@ export function PanelUpdateVaultDeposit({
     ? dn.div(updatedDeposit, updatedBoldQty)
     : DNUM_0;
 
-  const collateral = USDT
+  const collateral = bvUSD
 
   const insufficientBalance = mode === "add"
     && parsedValue
@@ -211,7 +211,7 @@ export function PanelUpdateVaultDeposit({
               successMessage: mode === "remove"
                 ? "The withdrawal has been processed successfully."
                 : "The deposit has been processed successfully.",
-              token: mode === "remove" ? "0x0471D185cc7Be61E154277cAB2396cD397663da6" : "0x55d398326f99059fF775485246999027B3197955",
+              token: mode === "remove" ? "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225" : "0x96c6995a7737959708c2ed9129d07c94f012d2ce",
               mode: mode,
               prevEarnPosition,
               earnPosition: {

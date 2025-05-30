@@ -112,7 +112,7 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
           abi: erc20Abi,
           functionName: "approve",
           args: [
-            "0xF75584eF6673aD213a685a1B58Cc0330B8eA22Cf",
+            "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
             ctx.preferredApproveMethod === "approve-infinite"
               ? maxUint256 // infinite approval
               : change, // exact amount
@@ -183,7 +183,7 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
         address: token,
         abi: erc20Abi,
         functionName: "allowance",
-        args: [ctx.account, "0xF75584eF6673aD213a685a1B58Cc0330B8eA22Cf"],
+        args: [ctx.account, "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225"],
       });
 
       var amount = dn.sub(earnPosition.deposit, prevEarnPosition.deposit)
@@ -197,7 +197,7 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
         address: token,
         abi: erc20Abi,
         functionName: "allowance",
-        args: [ctx.account, "0xF75584eF6673aD213a685a1B58Cc0330B8eA22Cf"],
+        args: [ctx.account, "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225"],
       });
 
       var amount = dn.sub(prevEarnPosition.deposit, earnPosition.deposit)
