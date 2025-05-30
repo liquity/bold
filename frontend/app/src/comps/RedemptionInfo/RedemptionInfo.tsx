@@ -7,7 +7,7 @@ import { memo } from "react";
 const { title, subtitle, infoItems, learnMore } = content.redemptionInfo;
 
 const iconComponents = {
-  usdn: BoldIcon,
+  usnd: BoldIcon,
   redemption: RedemptionIcon,
   interest: InterestIcon,
 } as const;

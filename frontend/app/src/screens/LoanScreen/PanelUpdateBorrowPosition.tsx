@@ -53,11 +53,11 @@ export function PanelUpdateBorrowPosition({
 
   // balances
   const collBalance = useBalance(account.address, collToken.symbol);
-  const boldBalance = useBalance(account.address, "USDN");
+  const boldBalance = useBalance(account.address, "USND");
 
   // prices
   const collPrice = usePrice(collToken.symbol ?? null);
-  const boldPriceUsd = usePrice("USDN") ?? dnum18(0);
+  const boldPriceUsd = usePrice("USND") ?? dnum18(0);
 
   // deposit change
   const [depositMode, setDepositMode] = useState<ValueUpdateMode>("add");
@@ -139,7 +139,7 @@ export function PanelUpdateBorrowPosition({
     !isBelowMinDebt &&
     // the new deposit must be positive
     dn.gt(newLoanDetails.deposit ?? dnum18(0), 0) &&
-    // the account must have enough USDN
+    // the account must have enough USND
     !insufficientBold &&
     // there should be a change in the deposit or debt
     (!dn.eq(
@@ -295,8 +295,8 @@ export function PanelUpdateBorrowPosition({
               contextual={
                 <InputTokenBadge
                   background={false}
-                  icon={<TokenIcon symbol='USDN' />}
-                  label='USDN'
+                  icon={<TokenIcon symbol='USND' />}
+                  label='USND'
                 />
               }
               drawer={
@@ -306,10 +306,10 @@ export function PanelUpdateBorrowPosition({
                       message: `You must borrow at least ${fmtnum(
                         MIN_DEBT,
                         2
-                      )} USDN.`,
+                      )} USND.`,
                     }
                   : insufficientBold
-                  ? { mode: "error", message: "Insufficient USDN balance." }
+                  ? { mode: "error", message: "Insufficient USND balance." }
                   : null
               }
               label={{
@@ -348,7 +348,7 @@ export function PanelUpdateBorrowPosition({
                 start: <Amount value={debtChangeUsd ?? 0} suffix='$' />,
                 end: boldMax && (
                   <TextButton
-                    label={`Max ${fmtnum(boldMax)} USDN`}
+                    label={`Max ${fmtnum(boldMax)} USND`}
                     onClick={() => {
                       debtChange.setValue(dn.toString(boldMax));
                     }}
@@ -378,16 +378,16 @@ export function PanelUpdateBorrowPosition({
                           : "inherit",
                       }}
                     >
-                      <Amount value={newLoanDetails.debt} suffix=' USDN' />
+                      <Amount value={newLoanDetails.debt} suffix=' USND' />
                     </div>
                     <InfoTooltip heading='Debt update'>
                       <div>
                         Before:{" "}
-                        <Amount value={loanDetails.debt} suffix=' USDN' />
+                        <Amount value={loanDetails.debt} suffix=' USND' />
                       </div>
                       <div>
                         After:{" "}
-                        <Amount value={newLoanDetails.debt} suffix=' USDN' />
+                        <Amount value={newLoanDetails.debt} suffix=' USND' />
                       </div>
                     </InfoTooltip>
                   </HFlex>

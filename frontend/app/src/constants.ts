@@ -49,7 +49,7 @@ export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = {
   WEETH: dn.from(100_000_000n, 18),
 };
 
-// Debt limits, as max amounts of USDN that can be borrowed against a collateral
+// Debt limits, as max amounts of USND that can be borrowed against a collateral
 // These will be queried from the subgraph, but for now we're using these values
 export const MAX_DEBT_LIMITS: Record<CollateralSymbol, dn.Dnum> = {
   ETH: dn.from(100_000_000n, 18),

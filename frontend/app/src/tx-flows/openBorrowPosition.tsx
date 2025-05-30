@@ -115,7 +115,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                 key='start'
                 fallback='…'
                 value={boldAmountWithFee}
-                suffix=' USDN'
+                suffix=' USND'
               />,
               <div
                 className={css({
@@ -129,9 +129,9 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                   fallback='…'
                   prefix='Incl. '
                   value={upfrontFee.data}
-                  suffix=' USDN creation fee'
+                  suffix=' USND creation fee'
                 />
-                <InfoTooltip heading='USDN Creation Fee'>
+                <InfoTooltip heading='USND Creation Fee'>
                   This fee is charged when you open a new loan or increase your
                   debt. It corresponds to 7 days of average interest for the
                   respective collateral asset.
@@ -154,7 +154,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                   boldAmountWithFee &&
                   dn.mul(boldAmountWithFee, request.annualInterestRate)
                 }
-                suffix=' USDN per year'
+                suffix=' USND per year'
               />,
             ]}
           />

@@ -14,7 +14,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "LQTY" | "NERI" | "USDN" | "LUSD" | CollateralSymbol;
+type PriceToken = "LQTY" | "NERI" | "USND" | "LUSD" | CollateralSymbol;
 
 function useCollateralPrice(
   symbol: null | CollateralSymbol
@@ -122,7 +122,7 @@ export function usePrice<PT extends PriceToken>(
   const boldPrice = useQuery({
     queryKey: ["boldPrice"],
     queryFn: () => dn.from(1, 18),
-    enabled: symbol === "USDN",
+    enabled: symbol === "USND",
   });
 
   // could be any of the three, we just need
@@ -139,7 +139,7 @@ export function usePrice<PT extends PriceToken>(
     return collPrice;
   }
 
-  if (symbol === "USDN") {
+  if (symbol === "USND") {
     return boldPrice;
   }
 

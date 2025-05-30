@@ -540,7 +540,7 @@ function subgraphStabilityPoolDepositToEarnPosition(
     collIndex,
     deposit: dnum18(spDeposit.deposit),
     rewards: {
-      usdn: dnum18(0),
+      usnd: dnum18(0),
       coll: dnum18(0),
     },
   };

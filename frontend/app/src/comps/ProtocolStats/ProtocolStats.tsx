@@ -20,7 +20,7 @@ import { blo } from "blo";
 import Image from "next/image";
 import Link from "next/link";
 
-const DISPLAYED_PRICES = ["USDN", "ETH"] as const;
+const DISPLAYED_PRICES = ["USND", "ETH"] as const;
 
 export function ProtocolStats() {
   const account = useAccount();

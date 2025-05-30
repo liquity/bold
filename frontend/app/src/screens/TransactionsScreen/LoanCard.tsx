@@ -462,7 +462,7 @@ function TotalDebt({
         })}
       >
         <div
-          title={`${fmtnum(loan.borrowed, "full")} USDN`}
+          title={`${fmtnum(loan.borrowed, "full")} USND`}
           className={css({
             display: "flex",
             alignItems: "center",
@@ -476,10 +476,10 @@ function TotalDebt({
           >
             {fmtnum(loan.borrowed)}
           </div>
-          <TokenIcon symbol='USDN' size={32} />
+          <TokenIcon symbol='USND' size={32} />
           {prevLoan && !dn.eq(prevLoan.borrowed, loan.borrowed) && (
             <div
-              title={`${fmtnum(prevLoan.borrowed, "full")} USDN`}
+              title={`${fmtnum(prevLoan.borrowed, "full")} USND`}
               className={css({
                 color: "contentAlt",
                 textDecoration: "line-through",
@@ -597,7 +597,7 @@ function LoadingCard({
   onRetry: () => void;
   txPreviewMode?: boolean;
 }) {
-  const title = leverage ? "Multiply" : "USDN loan";
+  const title = leverage ? "Multiply" : "USND loan";
 
   const spring = useSpring({
     to: match(loadingState)

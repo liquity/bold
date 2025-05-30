@@ -65,7 +65,7 @@ export function PanelUpdateDeposit({
     DNUM_0
   );
 
-  const boldBalance = useBalance(account.address, "USDN");
+  const boldBalance = useBalance(account.address, "USND");
 
   const updatedBoldQty = dn.add(deposited, depositDifference);
 
@@ -113,22 +113,22 @@ export function PanelUpdateDeposit({
                     mode: "error",
                     message: `Insufficient balance. You have ${fmtnum(
                       boldBalance.data ?? 0
-                    )} USDN.`,
+                    )} USND.`,
                   }
                 : withdrawAboveDeposit
                 ? {
                     mode: "error",
                     message: hasDeposit
                       ? `You can’t withdraw more than you have deposited.`
-                      : `No USDN deposited.`,
+                      : `No USND deposited.`,
                   }
                 : null
             }
             contextual={
               <InputTokenBadge
                 background={false}
-                icon={<TokenIcon symbol='USDN' />}
-                label='USDN'
+                icon={<TokenIcon symbol='USND' />}
+                label='USND'
               />
             }
             id='input-deposit-change'
@@ -188,14 +188,14 @@ export function PanelUpdateDeposit({
                 mode === "add"
                   ? boldBalance.data && (
                       <TextButton
-                        label={`Max ${fmtnum(boldBalance.data, 2)} USDN`}
+                        label={`Max ${fmtnum(boldBalance.data, 2)} USND`}
                         onClick={() => setValue(dn.toString(boldBalance.data))}
                       />
                     )
                   : position?.deposit &&
                     dn.gt(position.deposit, 0) && (
                       <TextButton
-                        label={`Max ${fmtnum(position.deposit, 2)} USDN`}
+                        label={`Max ${fmtnum(position.deposit, 2)} USND`}
                         onClick={() => {
                           setValue(dn.toString(position.deposit));
                           setClaimRewards(true);
@@ -257,13 +257,13 @@ export function PanelUpdateDeposit({
                 })}
               >
                 <div>
-                  <Amount value={position.rewards.usdn} />{" "}
+                  <Amount value={position.rewards.usnd} />{" "}
                   <span
                     className={css({
                       color: "contentAlt",
                     })}
                   >
-                    USDN
+                    USND
                   </span>
                 </div>
                 {collateral && (
@@ -305,7 +305,7 @@ export function PanelUpdateDeposit({
                   owner: account.address,
                   collIndex: collIndex,
                   deposit: updatedDeposit,
-                  rewards: { usdn: DNUM_0, coll: DNUM_0 },
+                  rewards: { usnd: DNUM_0, coll: DNUM_0 },
                 };
 
             if (mode === "remove" && position) {

@@ -85,7 +85,7 @@ export function LoanScreenCard({
     collateral && dn.div(dn.from(1, 18), collateral.collateralRatio);
 
   const nftUrl = useTroveNftUrl(loan?.collIndex ?? null, troveId);
-  const title = mode === "multiply" ? "Multiply" : "USDN loan";
+  const title = mode === "multiply" ? "Multiply" : "USND loan";
 
   const fullyRedeemed =
     loan && loan.status === "redeemed" && dn.eq(loan.borrowed, 0);
@@ -401,7 +401,7 @@ function LoanCard({
             nftUrl,
           }
         ) => {
-          const title = mode === "multiply" ? "Multiply" : "USDN loan";
+          const title = mode === "multiply" ? "Multiply" : "USND loan";
           return (
             <a.div
               className={css({
@@ -645,7 +645,7 @@ function LoanCard({
                         </div>
                       ) : (
                         <div
-                          title={`${fmtnum(loan.borrowed)} USDN`}
+                          title={`${fmtnum(loan.borrowed)} USND`}
                           className={css({
                             display: "flex",
                             alignItems: "center",
@@ -653,7 +653,7 @@ function LoanCard({
                           })}
                         >
                           {fmtnum(loan.borrowed)}
-                          <TokenIcon symbol='USDN' size={24} />
+                          <TokenIcon symbol='USND' size={24} />
                         </div>
                       )}
                     </div>

@@ -33,28 +33,28 @@ export function PanelClosePosition({ loan }: { loan: PositionLoanCommitted }) {
   const collToken = TOKENS_BY_SYMBOL[collateral.symbol];
 
   const collPriceUsd = usePrice(collToken.symbol);
-  const boldPriceUsd = usePrice("USDN");
-  const boldBalance = useBalance(account.address, "USDN");
+  const boldPriceUsd = usePrice("USND");
+  const boldBalance = useBalance(account.address, "USND");
 
   const [repayDropdownIndex, setRepayDropdownIndex] = useState(0);
   const repayToken =
-    TOKENS_BY_SYMBOL[repayDropdownIndex === 0 ? "USDN" : collToken.symbol];
+    TOKENS_BY_SYMBOL[repayDropdownIndex === 0 ? "USND" : collToken.symbol];
 
-  // either in USDN or in collateral
+  // either in USND or in collateral
   const amountToRepay =
-    repayToken.symbol === "USDN"
+    repayToken.symbol === "USND"
       ? loan.borrowed
       : collPriceUsd.data && dn.div(loan.borrowed, collPriceUsd.data);
 
   const amountToRepayUsd =
     amountToRepay &&
-    (repayToken.symbol === "USDN"
+    (repayToken.symbol === "USND"
       ? boldPriceUsd.data && dn.mul(amountToRepay, boldPriceUsd.data)
       : collPriceUsd.data && dn.mul(amountToRepay, collPriceUsd.data));
 
   // when repaying with collateral, subtract the amount used to repay
   const collToReclaim =
-    repayToken.symbol === "USDN"
+    repayToken.symbol === "USND"
       ? loan.deposit
       : amountToRepay && dn.sub(loan.deposit, amountToRepay);
 
@@ -76,15 +76,15 @@ export function PanelClosePosition({ loan }: { loan: PositionLoanCommitted }) {
     }
     if (
       isOwner &&
-      repayToken.symbol === "USDN" &&
+      repayToken.symbol === "USND" &&
       amountToRepay &&
       (!boldBalance.data || dn.lt(boldBalance.data, amountToRepay))
     ) {
       return {
-        name: "Insufficient USDN balance",
+        name: "Insufficient USND balance",
         message: `The balance held by the account (${fmtnum(
           boldBalance.data
-        )} USDN) is insufficient to repay the loan.`,
+        )} USND) is insufficient to repay the loan.`,
       };
     }
     return null;
@@ -141,12 +141,12 @@ export function PanelClosePosition({ loan }: { loan: PositionLoanCommitted }) {
                             fontWeight: 400,
                           })}
                         >
-                          {repayToken.symbol === "USDN" ? " account" : " loan"}
+                          {repayToken.symbol === "USND" ? " account" : " loan"}
                         </span>
                       </>
                     ),
                   })}
-                  items={(["USDN", collToken.symbol] as const).map(
+                  items={(["USND", collToken.symbol] as const).map(
                     (symbol) => ({
                       icon: <TokenIcon symbol={symbol} />,
                       label: (
@@ -156,14 +156,14 @@ export function PanelClosePosition({ loan }: { loan: PositionLoanCommitted }) {
                           })}
                         >
                           {TOKENS_BY_SYMBOL[symbol].name}{" "}
-                          {symbol === "USDN" ? "(account)" : "(collateral)"}
+                          {symbol === "USND" ? "(account)" : "(collateral)"}
                         </div>
                       ),
-                      disabled: symbol !== "USDN",
+                      disabled: symbol !== "USND",
                       disabledReason:
-                        symbol !== "USDN" ? "Coming soon" : undefined,
+                        symbol !== "USND" ? "Coming soon" : undefined,
                       value:
-                        symbol === "USDN" ? fmtnum(boldBalance.data) : null,
+                        symbol === "USND" ? fmtnum(boldBalance.data) : null,
                     })
                   )}
                   menuWidth={300}
@@ -253,7 +253,7 @@ export function PanelClosePosition({ loan }: { loan: PositionLoanCommitted }) {
       >
         {claimOnly
           ? content.closeLoan.claimOnly
-          : repayToken.symbol === "USDN"
+          : repayToken.symbol === "USND"
           ? content.closeLoan.repayWithBoldMessage
           : content.closeLoan.repayWithCollateralMessage}
       </div>
@@ -299,7 +299,7 @@ export function PanelClosePosition({ loan }: { loan: PositionLoanCommitted }) {
                 loan: { ...loan },
                 repayWithCollateral: claimOnly
                   ? false
-                  : repayToken.symbol !== "USDN",
+                  : repayToken.symbol !== "USND",
               });
             }
           }}

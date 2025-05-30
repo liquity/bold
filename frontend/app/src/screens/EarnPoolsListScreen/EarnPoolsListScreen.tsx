@@ -45,13 +45,13 @@ export function EarnPoolsListScreen() {
             {content.earnHome.headline(
               <TokenIcon.Group>
                 {[
-                  "USDN" as const,
+                  "USND" as const,
                   ...collaterals.map((coll) => coll.symbol),
                 ].map((symbol) => (
                   <TokenIcon key={symbol} symbol={symbol} />
                 ))}
               </TokenIcon.Group>,
-              <TokenIcon symbol='USDN' />
+              <TokenIcon symbol='USND' />
             )}
           </div>
         ),

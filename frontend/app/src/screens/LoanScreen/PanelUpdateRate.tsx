@@ -41,7 +41,7 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoanCommitted }) {
       defaultValue: dn.toString(loan.deposit),
     }
   );
-  const debt = useInputFieldValue((value) => `${fmtnum(value, "full")} USDN`, {
+  const debt = useInputFieldValue((value) => `${fmtnum(value, "full")} USND`, {
     defaultValue: dn.toString(loan.borrowed),
   });
 
@@ -153,7 +153,7 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoanCommitted }) {
             {
               label: (
                 <>
-                  <div>USDN interest per year</div>
+                  <div>USND interest per year</div>
                   <InfoTooltip
                     {...infoTooltipProps(
                       content.generalInfotooltips.interestRateBoldPerYear
@@ -161,8 +161,8 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoanCommitted }) {
                   />
                 </>
               ),
-              before: <Amount value={boldInterestPerYearPrev} suffix=' USDN' />,
-              after: <Amount value={boldInterestPerYear} suffix=' USDN' />,
+              before: <Amount value={boldInterestPerYearPrev} suffix=' USND' />,
+              after: <Amount value={boldInterestPerYear} suffix=' USND' />,
             },
           ]}
         />

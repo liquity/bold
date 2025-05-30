@@ -182,7 +182,7 @@ export function LeverageScreen() {
     hasDeposit && newLoan.borrowed && dn.lt(newLoan.borrowed, MIN_DEBT)
       ? {
           mode: "error" as const,
-          message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} USDN.`,
+          message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} USND.`,
         }
       : leverageSlippageElements.drawer;
 

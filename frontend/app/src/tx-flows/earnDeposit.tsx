@@ -34,7 +34,7 @@ export const earnDeposit: FlowDeclaration<EarnDepositRequest> = {
   },
 
   Details({ request }) {
-    const boldPrice = usePrice("USDN");
+    const boldPrice = usePrice("USND");
     const boldAmount = dn.sub(
       request.earnPosition.deposit,
       request.prevEarnPosition?.deposit ?? dn.from(0, 18)
@@ -44,7 +44,7 @@ export const earnDeposit: FlowDeclaration<EarnDepositRequest> = {
         <TransactionDetailsRow
           label='You deposit'
           value={[
-            <Amount key='start' suffix=' USDN' value={boldAmount} />,
+            <Amount key='start' suffix=' USND' value={boldAmount} />,
             <Amount
               key='end'
               prefix='$'

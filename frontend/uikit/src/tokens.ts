@@ -1,7 +1,7 @@
 import type { Token } from "./types";
 
 import tokenNeri from "./token-icons/neri.svg"; // Clone of USDN SVG (MUST REPLACE)
-import tokenUSDN from "./token-icons/usdn.svg";
+import tokenUsnd from "./token-icons/usnd.svg";
 import tokenComp from "./token-icons/comp.svg";
 import tokenEth from "./token-icons/eth.svg";
 import tokenLqty from "./token-icons/lqty.svg";
@@ -42,10 +42,10 @@ export const NERI: Token = {
   symbol: "NERI" as const,
 } as const;
 
-export const USDN: Token = {
-  icon: tokenUSDN,
-  name: "USDN",
-  symbol: "USDN" as const,
+export const USND: Token = {
+  icon: tokenUsnd,
+  name: "USND",
+  symbol: "USND" as const,
 } as const;
 
 export const LQTY: Token = {
@@ -139,7 +139,7 @@ export const COLLATERALS: CollateralToken[] = [
 
 export const TOKENS_BY_SYMBOL = {
   NERI,
-  USDN,
+  USND,
   ETH,
   LQTY,
   RETH,

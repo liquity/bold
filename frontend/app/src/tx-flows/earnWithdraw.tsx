@@ -34,7 +34,7 @@ export const earnWithdraw: FlowDeclaration<EarnWithdrawRequest> = {
   },
 
   Details({ request }) {
-    const boldPrice = usePrice("USDN");
+    const boldPrice = usePrice("USND");
     const boldAmount = dn.abs(
       dn.sub(request.earnPosition.deposit, request.prevEarnPosition.deposit)
     );
@@ -43,7 +43,7 @@ export const earnWithdraw: FlowDeclaration<EarnWithdrawRequest> = {
         <TransactionDetailsRow
           label='You withdraw'
           value={[
-            <Amount key='start' suffix=' USDN' value={boldAmount} />,
+            <Amount key='start' suffix=' USND' value={boldAmount} />,
             <Amount
               key='end'
               prefix='$'

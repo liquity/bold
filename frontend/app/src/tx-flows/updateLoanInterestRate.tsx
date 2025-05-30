@@ -92,7 +92,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                 dust: false,
                 prefix: "~",
               })}{" "}
-              USDN per year)
+              USND per year)
             </div>,
           ]}
         />
@@ -104,14 +104,14 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
               <div key='start'>{fmtnum(loan.interestRate, "pctfull")}%</div>,
               <div
                 key='end'
-                title={`${fmtnum(yearlyBoldInterest, "full")} USDN per year`}
+                title={`${fmtnum(yearlyBoldInterest, "full")} USND per year`}
               >
                 {fmtnum(yearlyBoldInterest, {
                   digits: 4,
                   dust: false,
                   prefix: "~",
                 })}{" "}
-                USDN per year
+                USND per year
               </div>,
             ]}
           />
@@ -139,7 +139,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                     dust: false,
                     prefix: "~",
                   })}{" "}
-                  USDN per year)
+                  USND per year)
                 </div>,
               ]}
             />
@@ -178,7 +178,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                   key='start'
                   fallback='…'
                   value={upfrontFee.data}
-                  suffix=' USDN'
+                  suffix=' USND'
                 />,
               ]}
             />

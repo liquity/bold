@@ -144,7 +144,7 @@ export function EarnPositionSummary({
                   />
                 </div>
                 <InfoTooltip heading='Total Value Locked (TVL)'>
-                  Total amount of USDN deposited in this stability pool.
+                  Total amount of USND deposited in this stability pool.
                 </InfoTooltip>
               </div>
             </div>
@@ -184,7 +184,7 @@ export function EarnPositionSummary({
                       content={{
                         heading: "Current APR",
                         body:
-                          "The annualized rate this stability pool’s " +
+                          "The annualized rate this stability pool's " +
                           "deposits earned over the last 24 hours.",
                         footerLink: {
                           label: "Check Dune for more details",
@@ -217,7 +217,7 @@ export function EarnPositionSummary({
                       content={{
                         heading: "APR (last 7 days)",
                         body:
-                          "The annualized percentage rate this stability pool’s " +
+                          "The annualized percentage rate this stability pool's " +
                           "deposits earned over the past 7 days.",
                         footerLink: {
                           label: "Check Dune for more details",
@@ -269,7 +269,7 @@ export function EarnPositionSummary({
                 <div
                   title={
                     active
-                      ? `${fmtnum(earnPosition?.deposit, "full")} USDN`
+                      ? `${fmtnum(earnPosition?.deposit, "full")} USND`
                       : undefined
                   }
                   className={css({
@@ -281,11 +281,11 @@ export function EarnPositionSummary({
                   })}
                 >
                   {active && fmtnum(earnPosition?.deposit)}
-                  <TokenIcon symbol='USDN' size='mini' title={null} />
+                  <TokenIcon symbol='USND' size='mini' title={null} />
                 </div>
                 {prevEarnPosition && (
                   <div
-                    title={`${fmtnum(prevEarnPosition.deposit, "full")} USDN`}
+                    title={`${fmtnum(prevEarnPosition.deposit, "full")} USND`}
                     className={css({
                       display: "flex",
                       justifyContent: "flex-start",
@@ -297,7 +297,7 @@ export function EarnPositionSummary({
                     })}
                   >
                     {fmtnum(prevEarnPosition.deposit)}
-                    <TokenIcon symbol='USDN' size='mini' title={null} />
+                    <TokenIcon symbol='USND' size='mini' title={null} />
                   </div>
                 )}
               </div>
@@ -333,15 +333,15 @@ export function EarnPositionSummary({
                       <HFlex
                         gap={4}
                         title={`${fmtnum(
-                          earnPosition?.rewards.usdn,
+                          earnPosition?.rewards.usnd,
                           "full"
-                        )} USDN`}
+                        )} USND`}
                         className={css({
                           fontVariantNumeric: "tabular-nums",
                         })}
                       >
-                        {fmtnum(earnPosition?.rewards.usdn)}
-                        <TokenIcon symbol='USDN' size='mini' title={null} />
+                        {fmtnum(earnPosition?.rewards.usnd)}
+                        <TokenIcon symbol='USND' size='mini' title={null} />
                       </HFlex>
                       <HFlex gap={4}>
                         <Amount value={earnPosition?.rewards.coll} />
@@ -350,7 +350,7 @@ export function EarnPositionSummary({
                     </>
                   ) : (
                     <TokenIcon.Group size='mini'>
-                      <TokenIcon symbol='USDN' />
+                      <TokenIcon symbol='USND' />
                       <TokenIcon symbol={collToken.symbol} />
                     </TokenIcon.Group>
                   )}

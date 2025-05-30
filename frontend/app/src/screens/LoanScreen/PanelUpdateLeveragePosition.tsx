@@ -304,7 +304,7 @@ export function PanelUpdateLeveragePosition({
                       message: `You must borrow at least ${fmtnum(
                         MIN_DEBT,
                         2
-                      )} USDN.`,
+                      )} USND.`,
                     }
                   : null
               }
@@ -390,11 +390,11 @@ export function PanelUpdateLeveragePosition({
                   fontSize={14}
                   before={
                     initialLoanDetails.debt &&
-                    `${fmtnum(initialLoanDetails.debt)} USDN`
+                    `${fmtnum(initialLoanDetails.debt)} USND`
                   }
                   after={
                     newLoanDetails.debt && dn.gt(newLoanDetails.debt, 0)
-                      ? `${fmtnum(newLoanDetails.debt)} USDN`
+                      ? `${fmtnum(newLoanDetails.debt)} USND`
                       : `N/A`
                   }
                 />
