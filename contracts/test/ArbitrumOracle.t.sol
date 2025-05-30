@@ -92,7 +92,7 @@ contract ArbitrumOracles is Test {
     }
 
     function _deployWeETHPriceFeed() internal returns (WeETHPriceFeed _weETHPriceFeed) {
-        _weETHPriceFeed = new WeETHPriceFeed(address(this), ETH_ORACLE_ADDRESS, WEETH_ETH_ORACLE_ADDRESS, WEETH_ADDRESS, 24 hours, 24 hours);
+        _weETHPriceFeed = new WeETHPriceFeed(address(this), ETH_ORACLE_ADDRESS, WEETH_ETH_ORACLE_ADDRESS, 24 hours, 24 hours);
         vm.label(address(_weETHPriceFeed), "WeETHPriceFeed");
     }
 
