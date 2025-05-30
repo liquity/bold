@@ -88,8 +88,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address TBTC_ADDRESS = 0x6c84a8f1c29108F47a79964b5Fe888D4f4D0dE40;
     
     //usdc address for curve stuff.
-    address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-
+    address USDC_ADDRESS = 	0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
 
     // nerite specific addresses
     address constant NERITE_DAO_TREASURY_ADDRESS = 0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d;
@@ -135,11 +134,16 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // rate provider addresses
     address TREEETH_PROVIDER_ADDRESS = 0x353230eF3b5916B280dBAbb720d7b8dB61485615;
     address WSTETH_PROVIDER_ADDRESS = 0xf7c5c26B574063e7b098ed74fAd6779e65E3F836;
+    address RETH_PROVIDER_ADDRESS = 0x7EcCBbd05830EdF593d30005B8F69E965AF4D59f;
 
     // V1
     address LQTY_ADDRESS = 0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D; //actually its NERI
+    // note: @cupOJoseph what do we want to use for the staking address?  nothing is deployed here.
     address LQTY_STAKING_ADDRESS = 0x4f9Fbb3f1E99B56e0Fe2892e623Ed36A76Fc605d; // todo: remove this
-    address LUSD_ADDRESS = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0; // todo: remove this
+    /// note: @cupOJoseph verify that this is the correct LUSD we want to deploy the curve pools with.
+    //  I got this from the arbitrum pools, it's not listed in the lqty docs
+    /// https://arbiscan.io/address/0x93b346b6BC2548dA6A1E7d98E9a421B42541425b 
+    address LUSD_ADDRESS = 0x93b346b6BC2548dA6A1E7d98E9a421B42541425b; // mainnet token: 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0; // todo: remove this
 
     address internal lqty;
     address internal stakingV1;
@@ -288,13 +292,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         SALT = keccak256(bytes(saltStr));
 
         //setup SF factories
-        ISuperTokenFactory superTokenFactory = ISuperTokenFactory(0x0000000000000000000000000000000000000000);
+        ISuperTokenFactory superTokenFactory = ISuperTokenFactory(0x1C21Ead77fd45C84a4c916Db7A6635D0C6FF09D6);
 
         if (vm.envBytes("DEPLOYER").length == 20) {
             // address
             deployer = vm.envAddress("DEPLOYER");
-            console.log("deployer", deployer);
-            console.log("msg.sender", address(msg.sender));
             assert(deployer == address(msg.sender));
             vm.startBroadcast(deployer);
 
@@ -347,7 +349,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // string calldata n,
             // string calldata s
 
-            // boldToken.initialize(superTokenFactory);
+            BoldToken(payable(address(boldToken))).initialize();
 
             assert(address(boldToken) == boldAddress);
             
@@ -359,7 +361,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
 
         if (block.chainid == 42161) {
-            console2.log("deploying on arbitrum mainnet");
             // arbitrum mainnet
             WETH = IWETH(WETH_ADDRESS);
             USDC = IERC20Metadata(USDC_ADDRESS);
@@ -529,7 +530,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             epochStart: epochStart,
             deployer: deployer,
             salt: SALT,
-            stakingV1: stakingV1,
+            stakingV1: stakingV1,  
             lqty: NERI_ERC20_ADDRESS,
             lusd: lusd,
             bold: boldAddress
@@ -711,14 +712,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         string[] memory _collSymbols,
         DeployGovernanceParams memory _deployGovernanceParams
     ) internal returns (DeploymentResult memory r) {
-        console2.log("deploying and connecting contracts");
         assert(_collNames.length == troveManagerParamsArray.length - 1);
         assert(_collSymbols.length == troveManagerParamsArray.length - 1);
 
         DeploymentVars memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         r.boldToken = IBoldToken(payable(_deployGovernanceParams.bold));
-
         // USDC and USDC-BOLD pool
         r.usdcCurvePool = _deployCurvePool(r.boldToken, USDC);
 
@@ -735,8 +734,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vars.priceFeeds[0] = IPriceFeed(address(new WETHPriceFeed(deployer, ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD)));
 
             // wstETH
-            vars.collaterals[0] = IERC20Metadata(WSTETH_ADDRESS);
-            vars.priceFeeds[0] = new WSTETHPriceFeed(
+            vars.collaterals[1] = IERC20Metadata(WSTETH_ADDRESS);
+            vars.priceFeeds[1] = new WSTETHPriceFeed(
                 deployer,
                 ETH_ORACLE_ADDRESS,
                 STETH_ORACLE_ADDRESS,
@@ -831,11 +830,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 vars.priceFeeds[vars.i] = new PriceFeedTestnet();
             }
         }
-        console2.log("deploying addresses registries", vars.numCollaterals);
-        console2.log("collateral Registry", address(r.collateralRegistry));
         // Deploy AddressesRegistries and get TroveManager addresses
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
-            console2.log("deploying addresses registry", vars.i);
             //todo: update troveManagerParamsArray for proper ccr for each collateral
             (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
                 _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
@@ -846,17 +842,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             //todo: set initial debt limit first.
             // r.collateralRegistry.updateDebtLimit(vars.i, troveManagerParamsArray[vars.i].debtLimit);
         }
-        console2.log("deploying collateral registry");
         r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, msg.sender);
         // todo: update debt limits after collateral registry is deployed
-        console2.log("deploying hint helpers");
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
-        console2.log("deploying multi trove getter");
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
-        console2.log("deploying per-branch contracts");
         // Deploy per-branch contracts for each branch
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
-            console2.log("deploying per-branch contracts", vars.i);
             vars.contracts = _deployAndConnectCollateralContracts(
                 vars.collaterals[vars.i],
                 vars.priceFeeds[vars.i],
@@ -941,6 +932,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         addresses.metadataNFT = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)))
         );
+
         assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
         contracts.priceFeed = _priceFeed;
@@ -1034,10 +1026,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ICurveStableswapNGPool _usdcCurvePool
     ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper) {
         IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
-        console2.log("deploying hybrid exchange");
-        console2.log("coll token", address(_collToken));
-        console2.log("bold token", address(_boldToken));
-        console2.log("usdc curve pool", address(_usdcCurvePool));
         IExchange hybridExchange = new HybridCurveUniV3Exchange(
             _collToken,
             _boldToken,
@@ -1066,11 +1054,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IExchange _hybridExchange,
         bool _lst
     ) internal returns (ILeverageZapper) {
-        console2.log("deploying leverage zapper");
-        console2.log("addresses registry", address(_addressesRegistry));    
-        console2.log("flash loan provider", address(_flashLoanProvider));
-        console2.log("hybrid exchange", address(_hybridExchange));
-        console2.log("lst", _lst);
         ILeverageZapper leverageZapperHybrid;
         if (_lst) {
             leverageZapperHybrid = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
@@ -1091,20 +1074,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // local
             return ICurveStableswapNGPool(address(0));
         }
-        console2.log("deploying curve pool");
-        console2.log("curve factory", address(curveStableswapFactory));
+
         // deploy Curve StableswapNG pool
         address[] memory coins = new address[](2);
         coins[BOLD_TOKEN_INDEX] = address(_boldToken);
         coins[OTHER_TOKEN_INDEX] = address(_otherToken);
         uint8[] memory assetTypes = new uint8[](2); // 0: standard
-        bytes4[] memory methodIds = new bytes4[](2);
-        address[] memory oracles = new address[](2);
+        bytes4[] memory methodIds = new bytes4[](2); // func sig of oracle function to call
+        address[] memory oracles = new address[](2); // oracle address
 
-        // note: @cupOJoseph this call is failing in simulations
         ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool({
-            name: string.concat("BOLD/", _otherToken.symbol(), " Pool"),
-            symbol: string.concat("BOLD", _otherToken.symbol()),
+            name: string.concat("USND/", _otherToken.symbol(), " Pool"),
+            symbol: string.concat("USND", _otherToken.symbol()),
             coins: coins,
             A: 100,
             fee: 4000000,
@@ -1115,8 +1096,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             method_ids: methodIds,
             oracles: oracles
         });
-
-        console2.log("curve pool", address(curvePool));
 
         return curvePool;
     }
