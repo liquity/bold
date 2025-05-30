@@ -503,7 +503,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         string[] memory collNames = new string[](troveManagerParamsArray.length - 1);
         string[] memory collSymbols = new string[](troveManagerParamsArray.length - 1);
-        collNames[0] = "Wrapped liquid staked Ether 2.0";
+        collNames[0] = "Wrapped Lido Staked ETH";
         collSymbols[0] = "wstETH";
 
         collNames[1] = "Rocket Pool ETH";
@@ -566,32 +566,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 }
             }
 
-            _provideCurveLiquidity(deployed.boldToken, deployed.contractsArray[0]);
-
-            // deployed.contractsArray[1].collToken.mint(deployer, 1 ether);
-            // deployed.contractsArray[1].collToken.approve(address(deployed.contractsArray[1].leverageZapper), 1 ether);
-            // deployed.contractsArray[1].leverageZapper.openLeveragedTroveWithRawETH{value: ETH_GAS_COMPENSATION}(
-            //     ILeverageZapper.OpenLeveragedTroveParams({
-            //         owner: deployer,
-            //         ownerIndex: 1,
-            //         collAmount: 1 ether,
-            //         flashLoanAmount: 1 ether,
-            //         boldAmount: 2_000 ether,
-            //         upperHint: 0,
-            //         lowerHint: 0,
-            //         annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-            //         batchManager: address(0),
-            //         maxUpfrontFee: type(uint256).max,
-            //         addManager: address(0),
-            //         removeManager: address(0),
-            //         receiver: address(0)
-            //     })
-            // );
-        }
-
-        ICurveStableswapNGPool lusdCurvePool;
-        if (block.chainid == 42161) {
-            lusdCurvePool = _deployCurvePool(deployed.boldToken, IERC20Metadata(LUSD_ADDRESS));
         }
 
         // Governance
@@ -608,7 +582,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         if (vm.envOr("OPEN_DEMO_TROVES", false)) {
             // Anvil default accounts
-            // TODO: get accounts from env
+            // get accounts from env
             uint256[] memory demoAccounts = new uint256[](8);
             demoAccounts[0] = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
             demoAccounts[1] = 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d;
@@ -719,6 +693,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         DeploymentVars memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         r.boldToken = IBoldToken(payable(_deployGovernanceParams.bold));
+        
         // USDC and USDC-BOLD pool
         r.usdcCurvePool = _deployCurvePool(r.boldToken, USDC);
 
@@ -832,18 +807,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
         // Deploy AddressesRegistries and get TroveManager addresses
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
-            //todo: update troveManagerParamsArray for proper ccr for each collateral
             (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
                 _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
-            //updateDebtLimit
-            // todo: collateral registry doesn't exist yet
-            //todo: set initial debt limit first.
-            // r.collateralRegistry.updateDebtLimit(vars.i, troveManagerParamsArray[vars.i].debtLimit);
         }
         r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, msg.sender);
-        // todo: update debt limits after collateral registry is deployed
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
         // Deploy per-branch contracts for each branch
@@ -883,21 +852,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         internal
         returns (IAddressesRegistry, address)
     {
-        /* address _owner,
-        uint256 _ccr,
-        uint256 _mcr,
-        uint256 _bcr,
-        uint256 _scr,
-        uint256 _debtLimit,
-        uint256 _liquidationPenaltySP,
-        uint256 _liquidationPenaltyRedistribution**/
-        
         IAddressesRegistry addressesRegistry = new AddressesRegistry(
             deployer,
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
             _troveManagerParams.BCR,
-            _troveManagerParams.SCR,  // todo:  figure out why bcr and scr are swapped in the AddressesRegistry constructor
+            _troveManagerParams.SCR,  
             _troveManagerParams.debtLimit,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
