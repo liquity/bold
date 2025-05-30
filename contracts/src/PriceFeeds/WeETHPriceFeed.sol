@@ -10,7 +10,6 @@ contract WeETHPriceFeed is MainnetPriceFeedBase {
         address _owner,
         address _ethUsdOracleAddress,
         address _weEthEthOracleAddress,
-        address _weEthRateProviderAddress,
         uint256 _ethUsdStalenessThreshold,
         uint256 _weEthEthStalenessThreshold
     ) MainnetPriceFeedBase(_owner, _ethUsdOracleAddress, _ethUsdStalenessThreshold) {
