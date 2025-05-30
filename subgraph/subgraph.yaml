@@ -6,8 +6,8 @@ dataSources:
     name: BoldToken
     source:
       abi: BoldToken
-      address: "0x242a2f669224b225d38514c1785411a6036981f1"
-      startBlock: 48152382
+      address: "0x96C6995A7737959708C2eD9129d07c94F012D2Ce"
+      startBlock: 1594335
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -33,11 +33,11 @@ dataSources:
         - event: CollateralRegistryAddressChanged(address)
           handler: handleCollateralRegistryAddressChanged
       file: ./src/BoldToken.mapping.ts
-    network: bsc
+    network: katana
 templates:
   - name: TroveManager
     kind: ethereum/contract
-    network: bsc
+    network: katana
     source:
       abi: TroveManager
     mapping:
@@ -66,7 +66,7 @@ templates:
           handler: handleBatchUpdated
   - name: TroveNFT
     kind: ethereum/contract
-    network: bsc
+    network: katana
     source:
       abi: TroveNFT
     mapping:
@@ -85,7 +85,7 @@ templates:
           handler: handleTransfer
   - name: StabilityPool
     kind: ethereum/contract
-    network: bsc
+    network: katana
     source:
       abi: StabilityPool
     mapping:
