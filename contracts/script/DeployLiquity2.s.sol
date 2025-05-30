@@ -138,8 +138,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     // V1
     address LQTY_ADDRESS = 0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D; //actually its NERI
+    // note: @cupOJoseph what do we want to use for the staking address?  nothing is deployed here.
     address LQTY_STAKING_ADDRESS = 0x4f9Fbb3f1E99B56e0Fe2892e623Ed36A76Fc605d; // todo: remove this
-    address LUSD_ADDRESS = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0; // todo: remove this
+    /// note: @cupOJoseph verify that this is the correct LUSD we want to deploy the curve pools with.
+    //  I got this from the arbitrum pools, it's not listed in the lqty docs
+    /// https://arbiscan.io/address/0x93b346b6BC2548dA6A1E7d98E9a421B42541425b 
+    address LUSD_ADDRESS = 0x93b346b6BC2548dA6A1E7d98E9a421B42541425b; // mainnet token: 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0; // todo: remove this
 
     address internal lqty;
     address internal stakingV1;
@@ -526,7 +530,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             epochStart: epochStart,
             deployer: deployer,
             salt: SALT,
-            stakingV1: stakingV1,
+            stakingV1: stakingV1,  
             lqty: NERI_ERC20_ADDRESS,
             lusd: lusd,
             bold: boldAddress
@@ -730,8 +734,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vars.priceFeeds[0] = IPriceFeed(address(new WETHPriceFeed(deployer, ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD)));
 
             // wstETH
-            vars.collaterals[0] = IERC20Metadata(WSTETH_ADDRESS);
-            vars.priceFeeds[0] = new WSTETHPriceFeed(
+            vars.collaterals[1] = IERC20Metadata(WSTETH_ADDRESS);
+            vars.priceFeeds[1] = new WSTETHPriceFeed(
                 deployer,
                 ETH_ORACLE_ADDRESS,
                 STETH_ORACLE_ADDRESS,
@@ -746,11 +750,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 deployer,
                 ETH_ORACLE_ADDRESS,
                 RETH_ORACLE_ADDRESS,
-<<<<<<< HEAD
-                RETH_PROVIDER_ADDRESS,
-=======
                 RETH_RATE_PROVIDER_ADDRESS,
->>>>>>> main
                 ETH_USD_STALENESS_THRESHOLD,
                 RETH_ETH_STALENESS_THRESHOLD
             );
@@ -932,6 +932,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         addresses.metadataNFT = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(MetadataNFT).creationCode, address(initializedFixedAssetReader)))
         );
+
         assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
         contracts.priceFeed = _priceFeed;
@@ -1083,8 +1084,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         address[] memory oracles = new address[](2); // oracle address
 
         ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool({
-            name: string.concat("BOLD/", _otherToken.symbol(), " Pool"),
-            symbol: string.concat("BOLD", _otherToken.symbol()),
+            name: string.concat("USND/", _otherToken.symbol(), " Pool"),
+            symbol: string.concat("USND", _otherToken.symbol()),
             coins: coins,
             A: 100,
             fee: 4000000,
