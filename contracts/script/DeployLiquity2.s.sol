@@ -807,18 +807,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
         // Deploy AddressesRegistries and get TroveManager addresses
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
-            //todo: update troveManagerParamsArray for proper ccr for each collateral
             (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
                 _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
-            //updateDebtLimit
-            // todo: collateral registry doesn't exist yet
-            //todo: set initial debt limit first.
-            // r.collateralRegistry.updateDebtLimit(vars.i, troveManagerParamsArray[vars.i].debtLimit);
         }
         r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, msg.sender);
-        // todo: update debt limits after collateral registry is deployed
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
         // Deploy per-branch contracts for each branch
