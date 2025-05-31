@@ -77,25 +77,29 @@ export function Amount({
   });
 
   return (
-    <div
+    <span
       title={title ?? undefined}
       className={css({
-        display: "inline-flex",
-        width: "fit-content",
+        display: "inline",
+        textDecoration: "inherit",
         whiteSpace: "nowrap",
         overflow: "hidden",
         textOverflow: "ellipsis",
         transformOrigin: "50% 50%",
-        textDecoration: "inherit",
       })}
     >
       {appear((style, { showFallback, content }) => (
         showFallback ? content : (
-          <a.div style={{ transform: style.transform }}>
+          <a.span
+            style={{
+              display: "inline",
+              transform: style.transform,
+            }}
+          >
             {content}
-          </a.div>
+          </a.span>
         )
       ))}
-    </div>
+    </span>
   );
 }
