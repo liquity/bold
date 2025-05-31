@@ -64,11 +64,11 @@ export function TokenIconGroup<
 }) {
   return (
     <div
-      style={{
+      className={css({
         display: "flex",
         justifyContent: "center",
         gap: 0,
-      }}
+      })}
     >
       <TokenIconGroupSize.Provider value={size}>
         {Children.map(children, (child, index) => (
