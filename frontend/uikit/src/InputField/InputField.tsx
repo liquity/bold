@@ -5,8 +5,6 @@ import type { ReactNode, Ref } from "react";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import { useEffect, useId, useRef, useState } from "react";
 import { css, cx } from "../../styled-system/css";
-import { IconCross } from "../icons";
-import { useElementSize } from "../react-utils";
 
 const diffSpringConfig = {
   mass: 1,
@@ -22,7 +20,6 @@ type Drawer = {
 
 function InputField({
   contextual,
-  difference,
   disabled = false,
   drawer,
   id: idFromProps,
@@ -32,7 +29,6 @@ function InputField({
   labelSpacing = 12,
   onBlur,
   onChange,
-  onDifferenceClick,
   onFocus,
   placeholder,
   ref,
@@ -43,7 +39,6 @@ function InputField({
   valueUnfocused,
 }: {
   contextual?: ReactNode;
-  difference?: ReactNode;
   disabled?: boolean;
   drawer?: null | Drawer;
   id?: string;
@@ -56,7 +51,6 @@ function InputField({
   labelSpacing?: number;
   onBlur?: () => void;
   onChange?: (value: string) => void;
-  onDifferenceClick?: () => void;
   onFocus?: () => void;
   placeholder?: string;
   ref?: Ref<HTMLInputElement>;
@@ -85,57 +79,6 @@ function InputField({
 
   const autoId = useId();
   const id = idFromProps ?? autoId;
-
-  const valueMeasurement = useRef<HTMLDivElement>(null);
-
-  const [differenceSpring, differenceSpringApi] = useSpring(() => ({
-    initial: {
-      transform: `translate3d(0px, 0, 0) scale3d(1,1,1)`,
-      opacity: 0,
-    },
-    config: diffSpringConfig,
-  }));
-
-  const differenceLeftBeforeHiding = useRef<number | null>(null);
-
-  useElementSize(valueMeasurement, ({ inlineSize }) => {
-    const diffLeft = inlineSize + 26;
-
-    // hide
-    if (!difference) {
-      differenceSpringApi.start({
-        transform: `
-          translate3d(${(differenceLeftBeforeHiding.current ?? diffLeft)}px, 0, 0)
-          scale3d(1.1, 1.1, 1)
-        `,
-        opacity: 0,
-        immediate: true,
-      });
-      return;
-    }
-
-    // prepare before first show
-    if (differenceLeftBeforeHiding.current === null) {
-      differenceSpringApi.start({
-        transform: `
-          translate3d(${diffLeft}px, 0, 0)
-          scale3d(1.1, 1.1, 1)
-        `,
-        immediate: true,
-      });
-    }
-
-    // show
-    differenceSpringApi.start({
-      transform: `
-        translate3d(${diffLeft}px, 0, 0)
-        scale3d(1, 1, 1)
-      `,
-      opacity: 1,
-      config: diffSpringConfig,
-    });
-    differenceLeftBeforeHiding.current = diffLeft;
-  });
 
   const showValueUnfocused = valueUnfocused && !focused;
 
@@ -190,59 +133,11 @@ function InputField({
           {label_.end && <div>{label_.end}</div>}
         </div>
         <div
-          ref={valueMeasurement}
-          className={css({
-            position: "absolute",
-            fontSize: 28,
-            fontWeight: 500,
-            letterSpacing: -1,
-            whiteSpace: "nowrap",
-            visibility: "hidden",
-            pointerEvents: "none",
-          })}
-        >
-          {value}
-        </div>
-        {difference && (
-          <a.button
-            onClick={onDifferenceClick}
-            className={css({
-              position: "absolute",
-              top: (136 - 2) / 2 - 10,
-              left: 0,
-              display: "flex",
-              gap: 10,
-              alignItems: "center",
-              justifyContent: "center",
-              height: 20,
-              padding: "0 8px",
-              whiteSpace: "nowrap",
-              background: "strongSurface",
-              color: "strongSurfaceContent",
-              cursor: "pointer",
-              borderRadius: 10,
-              outline: 0,
-              _active: {
-                translate: "0 1px",
-              },
-              _focusVisible: {
-                outline: "2px solid token(colors.focused)",
-              },
-            })}
-            style={{
-              ...differenceSpring,
-              pointerEvents: difference ? "auto" : "none",
-            }}
-          >
-            {difference}
-            <IconCross size={12} />
-          </a.button>
-        )}
-        <div
           className={css({
             position: "relative",
             zIndex: 2,
             display: "flex",
+            gap: 16,
             height: 40,
           })}
         >
@@ -275,6 +170,8 @@ function InputField({
                 fontSize: 28,
                 fontWeight: 500,
                 letterSpacing: -1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
                 color: "content",
                 background: "transparent",
                 border: 0,
@@ -308,10 +205,7 @@ function InputField({
           {contextual && (
             <div
               className={css({
-                position: "absolute",
-                zIndex: 2,
-                inset: `50% 0 auto auto`,
-                transform: "translateY(-50%)",
+                flexShrink: 0,
                 display: "flex",
                 alignItems: "center",
               })}
