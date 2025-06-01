@@ -166,7 +166,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                         </>
                       ),
                       footerLink: {
-                        href: "https://docs.liquity.org/v2-faq/borrowing-and-liquidations#can-i-adjust-the-rate",
+                        href: "https://docs.nerite.org/docs/user-docs/borrowing-and-liquidations#can-i-adjust-the-rate",
                         label: "Learn more",
                       },
                     }}
