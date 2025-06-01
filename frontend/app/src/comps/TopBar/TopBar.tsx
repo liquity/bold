@@ -11,7 +11,7 @@ import {
   IconBorrow,
   IconDashboard,
   IconEarn,
-  IconLeverage,
+  // IconLeverage,
   IconStake,
 } from "@liquity2/uikit";
 import Link from "next/link";
@@ -21,9 +21,9 @@ import { Menu } from "./Menu";
 const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
   [content.menu.dashboard, "/", IconDashboard, "dashboard"],
   [content.menu.borrow, "/borrow", IconBorrow, "borrow"],
-  [content.menu.multiply, "/multiply", IconLeverage, "multiply"],
+  // [content.menu.multiply, "/multiply", IconLeverage, "multiply"],
   [content.menu.earn, "/earn", IconEarn, "earn"],
-  [content.menu.stake, "/stake", IconStake, "stake"],
+  // [content.menu.stake, "/stake", IconStake, "stake"],
   [content.menu.buy, "/buy", IconStake, "buy"],
 ];
 

@@ -6,7 +6,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MenuItem } from "./MenuItem";
 
-export type MenuItemType = 'dashboard' | 'borrow' | 'multiply' | 'earn' | 'buy' | 'stake'
+export type MenuItemType =
+  | 'dashboard'
+  | 'borrow'
+  | 'multiply'
+  | 'earn'
+  | 'buy'
+  // | 'stake';
 
 export function Menu({
   menuItems,
