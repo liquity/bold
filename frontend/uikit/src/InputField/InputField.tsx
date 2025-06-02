@@ -3,7 +3,7 @@
 import type { ReactNode, Ref } from "react";
 
 import { a, useSpring, useTransition } from "@react-spring/web";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { css, cx } from "../../styled-system/css";
 
 const diffSpringConfig = {
