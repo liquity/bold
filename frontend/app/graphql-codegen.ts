@@ -1,6 +1,6 @@
 import type { CodegenConfig } from "@graphql-codegen/cli";
 
-function findSubgraphUrl(envFile: string) {
+function findSubgraphUrl(envFile: string, key: string) {
   console.log("envFile: ", envFile);
   const fs = require("fs");
   const path = require("path");
@@ -11,9 +11,9 @@ function findSubgraphUrl(envFile: string) {
     console.log("envContent: ", envContent);
 
     for (const line of envContent.split("\n")) {
-      if (line.trim().startsWith("NEXT_PUBLIC_SUBGRAPH_URL=")) {
-        console.log("line: ", line.slice("NEXT_PUBLIC_SUBGRAPH_URL=".length));
-        return line.slice("NEXT_PUBLIC_SUBGRAPH_URL=".length);
+      if (line.trim().startsWith(`${key}=`)) {
+        console.log("line: ", line.slice(`${key}=`.length));
+        return line.slice(`${key}=`.length);
       }
     }
     return null;
@@ -23,7 +23,8 @@ function findSubgraphUrl(envFile: string) {
   }
 }
 
-const subgraphUrl = "https://gateway.thegraph.com/api/subgraphs/id/9KA2FiTvU1k4qMTzSPLwFTwwqDu2fejksQXXtbG45MiM" // findSubgraphUrl(".env.local") ?? findSubgraphUrl(".env");
+const subgraphUrl = findSubgraphUrl(".env.local", "NEXT_PUBLIC_SUBGRAPH_URL") ?? findSubgraphUrl(".env", "NEXT_PUBLIC_SUBGRAPH_URL");
+const subgraphApiKey = findSubgraphUrl(".env.local", "NEXT_PUBLIC_SUBGRAPH_API_KEY") ?? findSubgraphUrl(".env", "NEXT_PUBLIC_SUBGRAPH_API_KEY");
 
 if (!subgraphUrl) {
   throw new Error(
@@ -34,7 +35,13 @@ if (!subgraphUrl) {
 console.log("Using subgraph URL:", subgraphUrl, "\n");
 
 const config: CodegenConfig = {
-  schema: subgraphUrl,
+  schema: {
+    [subgraphUrl]: {
+      headers: {
+        Authorization: `Bearer ${subgraphApiKey}`
+      },
+    },
+  },
   documents: "src/**/*.{ts,tsx}",
   ignoreNoDocuments: true,
   generates: {
