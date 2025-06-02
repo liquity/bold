@@ -157,14 +157,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error NewOracleFailureDetected();
     error BatchSharesRatioTooLow();
 
-    event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event GasPoolAddressChanged(address _gasPoolAddress);
-    event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
-    event SortedTrovesAddressChanged(address _sortedTrovesAddress);
-    event BoldTokenAddressChanged(address _boldTokenAddress);
-
-    event ShutDown(uint256 _tcr);
-
     constructor(IAddressesRegistry _addressesRegistry)
         AddRemoveManagers(_addressesRegistry)
         LiquityBase(_addressesRegistry)
@@ -186,12 +178,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         collSurplusPool = _addressesRegistry.collSurplusPool();
         sortedTroves = _addressesRegistry.sortedTroves();
         boldToken = _addressesRegistry.boldToken();
-
-        emit TroveManagerAddressChanged(address(troveManager));
-        emit GasPoolAddressChanged(gasPoolAddress);
-        emit CollSurplusPoolAddressChanged(address(collSurplusPool));
-        emit SortedTrovesAddressChanged(address(sortedTroves));
-        emit BoldTokenAddressChanged(address(boldToken));
 
         // Allow funds movements between Liquity contracts
         collToken.approve(address(activePool), type(uint256).max);
@@ -1231,8 +1217,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         if (TCR >= SCR) revert TCRNotBelowSCR();
 
         _applyShutdown();
-
-        emit ShutDown(TCR);
     }
 
     // Not technically a "Borrower op", but seems best placed here given current shutdown logic.
