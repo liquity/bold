@@ -205,11 +205,6 @@ export function PanelUpdate({
     && !depositPreview.isFetching
     && !redeemPreview.isFetching;
 
-  console.log("allowSubmit", {
-    depositFetching: depositPreview.isFetching,
-    redeemFetching: redeemPreview.isFetching,
-  });
-
   return (
     <div
       style={{
