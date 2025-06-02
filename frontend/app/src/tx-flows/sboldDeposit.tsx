@@ -14,18 +14,17 @@ import { maxUint256 } from "viem";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
-  "sboldUpdate",
+  "sboldDeposit",
   {
     depositFee: vDnum(),
     prevSboldPosition: vPositionSbold(),
     sboldPosition: vPositionSbold(),
-    withdrawAll: v.boolean(),
   },
 );
 
-export type SboldUpdateRequest = v.InferOutput<typeof RequestSchema>;
+export type SboldDepositRequest = v.InferOutput<typeof RequestSchema>;
 
-export const sboldUpdate: FlowDeclaration<SboldUpdateRequest> = {
+export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
   title: "Review & Send Transaction",
 
   Summary({ request }) {
@@ -40,26 +39,31 @@ export const sboldUpdate: FlowDeclaration<SboldUpdateRequest> = {
   },
 
   Details({ request }) {
-    const { sboldPosition, prevSboldPosition, depositFee, withdrawAll } = request;
-    const depositChange = dn.sub(sboldPosition.bold, prevSboldPosition.bold);
-    const mode = dn.gt(depositChange, 0) ? "deposit" : "withdraw";
+    const { sboldPosition, prevSboldPosition, depositFee } = request;
+    const depositChange = dn.sub(
+      sboldPosition.bold,
+      prevSboldPosition.bold,
+    );
+
+    const sboldPosition_ = { ...sboldPosition };
+    if (dn.lt(depositFee, 0.0001)) {
+      sboldPosition_.bold = dn.add(
+        sboldPosition.bold,
+        depositFee,
+      );
+    }
+
     return (
       <>
         <TransactionDetailsRow
-          label={mode === "deposit" ? "You deposit" : "You withdraw"}
+          label="You deposit"
           value={[
             <Amount
               key="start"
               suffix=" BOLD"
-              value={mode === "withdraw"
-                ? (
-                  withdrawAll
-                    ? dn.abs(prevSboldPosition.bold)
-                    : depositChange
-                )
-                : dn.abs(depositChange)}
+              value={depositChange}
             />,
-            mode === "deposit" && (
+            dn.gt(depositFee, 0) && (
               <div
                 key="end"
                 className={css({
@@ -87,7 +91,7 @@ export const sboldUpdate: FlowDeclaration<SboldUpdateRequest> = {
           ]}
         />
         <TransactionDetailsRow
-          label={mode === "deposit" ? "You receive" : "You send"}
+          label="You receive"
           value={[
             <Amount
               key="start"
@@ -162,46 +166,12 @@ export const sboldUpdate: FlowDeclaration<SboldUpdateRequest> = {
         await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe, false);
       },
     },
-    withdraw: {
-      name: () => "Withdraw",
-      Status: TransactionStatus,
-      async commit({ account, request, writeContract }) {
-        const SboldContract = getSboldContract();
-        const { sboldPosition, prevSboldPosition } = request;
-
-        const boldChange = dn.sub(sboldPosition.bold, prevSboldPosition.bold);
-        if (!dn.lt(boldChange, 0)) {
-          throw new Error("Invalid withdraw amount (must be negative)");
-        }
-
-        if (request.withdrawAll) {
-          return writeContract({
-            ...SboldContract,
-            functionName: "redeem",
-            args: [dn.abs(prevSboldPosition.sbold)[0], account, account],
-          });
-        }
-
-        return writeContract({
-          ...SboldContract,
-          functionName: "withdraw",
-          args: [dn.abs(boldChange)[0], account, account],
-        });
-      },
-      async verify(ctx, hash) {
-        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe, false);
-      },
-    },
   },
 
   async getSteps(ctx) {
-    const { request: { sboldPosition, prevSboldPosition } } = ctx;
+    const { prevSboldPosition, sboldPosition } = ctx.request;
 
     const depositChange = sboldPosition.bold[0] - prevSboldPosition.bold[0];
-
-    if (depositChange < 0n) {
-      return ["withdraw"];
-    }
 
     const allowance = await ctx.readContract({
       ...ctx.contracts.BoldToken,

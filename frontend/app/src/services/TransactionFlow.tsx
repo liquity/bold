@@ -36,7 +36,8 @@ import { legacyUnstakeAll, type LegacyUnstakeAllRequest } from "@/src/tx-flows/l
 import { openBorrowPosition, type OpenBorrowPositionRequest } from "@/src/tx-flows/openBorrowPosition";
 import { openLeveragePosition, type OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
 import { redeemCollateral, type RedeemCollateralRequest } from "@/src/tx-flows/redeemCollateral";
-import { sboldUpdate, type SboldUpdateRequest } from "@/src/tx-flows/sboldUpdate";
+import { sboldDeposit, type SboldDepositRequest } from "@/src/tx-flows/sboldDeposit";
+import { sboldRedeem, type SboldRedeemRequest } from "@/src/tx-flows/sboldRedeem";
 import { stakeClaimRewards, type StakeClaimRewardsRequest } from "@/src/tx-flows/stakeClaimRewards";
 import { stakeDeposit, type StakeDepositRequest } from "@/src/tx-flows/stakeDeposit";
 import { unstakeDeposit, type UnstakeDepositRequest } from "@/src/tx-flows/unstakeDeposit";
@@ -57,7 +58,8 @@ export type FlowRequestMap = {
   "openBorrowPosition": OpenBorrowPositionRequest;
   "openLeveragePosition": OpenLeveragePositionRequest;
   "redeemCollateral": RedeemCollateralRequest;
-  "sboldUpdate": SboldUpdateRequest;
+  "sboldDeposit": SboldDepositRequest;
+  "sboldRedeem": SboldRedeemRequest;
   "stakeClaimRewards": StakeClaimRewardsRequest;
   "stakeDeposit": StakeDepositRequest;
   "unstakeDeposit": UnstakeDepositRequest;
@@ -79,7 +81,8 @@ const FlowIdSchema = v.union([
   v.literal("openBorrowPosition"),
   v.literal("openLeveragePosition"),
   v.literal("redeemCollateral"),
-  v.literal("sboldUpdate"),
+  v.literal("sboldDeposit"),
+  v.literal("sboldRedeem"),
   v.literal("stakeClaimRewards"),
   v.literal("stakeDeposit"),
   v.literal("unstakeDeposit"),
@@ -101,7 +104,8 @@ export const flows: FlowsMap = {
   openBorrowPosition,
   openLeveragePosition,
   redeemCollateral,
-  sboldUpdate,
+  sboldDeposit,
+  sboldRedeem,
   stakeClaimRewards,
   stakeDeposit,
   unstakeDeposit,

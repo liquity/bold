@@ -17,7 +17,7 @@ import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { useWait } from "@/src/react-utils";
-import { isSboldEnabled, usePreviewDeposit, usePreviewWithdrawal, useSboldPosition, useSboldStats } from "@/src/sbold";
+import { isSboldEnabled, usePreviewDeposit, usePreviewRedeem, useSboldPosition, useSboldStats } from "@/src/sbold";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -27,12 +27,6 @@ import * as dn from "dnum";
 import { notFound } from "next/navigation";
 import { useEffect, useState } from "react";
 import { match } from "ts-pattern";
-
-export const WITHDRAW_ALL_THRESHOLD = dn.from(0.001, 18); // less than 0.001 BOLD left = withdrawing all (redeem)
-
-function withdrawAllThresholdReached(boldAfterWithdrawal: Dnum) {
-  return dn.lt(boldAfterWithdrawal, WITHDRAW_ALL_THRESHOLD);
-}
 
 export function SboldPoolScreen() {
   if (!isSboldEnabled()) {
@@ -83,7 +77,7 @@ export function SboldPoolScreen() {
             .with("success", () => "ready")
             .with("loading", () => "loading")
             .exhaustive()}
-          finalHeight={breakpointName === "large" ? 140 : 248}
+          finalHeight={breakpointName === "large" ? 140 : 194}
         >
           {loadingState === "success"
             ? (
@@ -123,37 +117,20 @@ export function SboldPoolScreen() {
             )}
         </ScreenCard>
       }
-      className={css({
-        position: "relative",
-      })}
     >
       {loadingTransition((style, item) => (
         item === "success" && (
           <a.div
-            className={css({
-              display: "flex",
-              flexDirection: "column",
-              gap: 24,
-              width: "100%",
-            })}
             style={{
+              display: "flex",
               opacity: style.opacity,
             }}
           >
-            <div
-              className={css({
-                display: "flex",
-                flexDirection: "column",
-                gap: 24,
-                width: "100%",
-              })}
-            >
-              <PanelUpdate
-                boldBalance={boldBalance.data ?? DNUM_0}
-                sboldPosition={sboldPosition.data ?? null}
-                sboldStats={sboldStats}
-              />
-            </div>
+            <PanelUpdate
+              boldBalance={boldBalance.data ?? DNUM_0}
+              sboldPosition={sboldPosition.data ?? null}
+              sboldStats={sboldStats}
+            />
           </a.div>
         )
       ))}
@@ -161,7 +138,7 @@ export function SboldPoolScreen() {
   );
 }
 
-type ValueUpdateMode = "add" | "remove";
+type ValueUpdateMode = "deposit" | "redeem";
 
 export function PanelUpdate({
   boldBalance,
@@ -174,7 +151,7 @@ export function PanelUpdate({
 }) {
   const account = useAccount();
 
-  const [mode, setMode] = useState<ValueUpdateMode>("add");
+  const [mode, setMode] = useState<ValueUpdateMode>("deposit");
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
 
@@ -183,7 +160,7 @@ export function PanelUpdate({
   const hasAnyBoldDeposited = dn.gt(sboldPosition?.bold ?? DNUM_0, 0);
   const depositDifference = dn.mul(
     parsedValue ?? DNUM_0,
-    mode === "remove" ? -1 : 1,
+    mode === "redeem" ? -1 : 1,
   );
 
   const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0))
@@ -204,27 +181,34 @@ export function PanelUpdate({
     ? dn.div(updatedDeposit, totalDepositedBoldUpdated)
     : DNUM_0;
 
-  const insufficientBalance = mode === "add"
+  const insufficientBalance = mode === "deposit"
     && parsedValue
     && dn.lt(boldBalance, parsedValue);
 
-  const withdrawAboveDeposit = mode === "remove"
+  const withdrawAboveDeposit = mode === "redeem"
     && parsedValue
     && dn.gt(parsedValue, sboldPosition?.bold ?? DNUM_0);
 
   const depositPreview = usePreviewDeposit(
-    mode === "add" && parsedValue ? parsedValue : null,
+    mode === "deposit" && parsedValue ? parsedValue : null,
   );
 
-  const withdrawalPreview = usePreviewWithdrawal(
-    mode === "remove" && parsedValue ? parsedValue : null,
+  const redeemPreview = usePreviewRedeem(
+    mode === "redeem" && parsedValue ? parsedValue : null,
   );
 
   const allowSubmit = account.isConnected
     && parsedValue
     && dn.gt(parsedValue, 0)
     && !insufficientBalance
-    && !withdrawAboveDeposit;
+    && !withdrawAboveDeposit
+    && !depositPreview.isFetching
+    && !redeemPreview.isFetching;
+
+  console.log("allowSubmit", {
+    depositFetching: depositPreview.isFetching,
+    redeemFetching: redeemPreview.isFetching,
+  });
 
   return (
     <div
@@ -242,6 +226,7 @@ export function PanelUpdate({
           flexDirection: "column",
           justifyContent: "center",
           width: "100%",
+          overflow: "hidden",
           gap: 24,
         }}
       >
@@ -264,31 +249,31 @@ export function PanelUpdate({
               contextual={
                 <InputTokenBadge
                   background={false}
-                  icon={<TokenIcon symbol="BOLD" />}
-                  label="BOLD"
+                  icon={<TokenIcon symbol={mode === "deposit" ? "BOLD" : "SBOLD"} />}
+                  label={mode === "deposit" ? "BOLD" : "sBOLD"}
                 />
               }
               id="input-deposit-change"
               label={{
-                start: mode === "remove"
-                  ? content.earnScreen.withdrawPanel.label
-                  : content.earnScreen.depositPanel.label,
+                start: mode === "redeem"
+                  ? "Redeem sBOLD"
+                  : "Deposit BOLD",
                 end: (
                   <Tabs
                     compact
                     items={[
                       { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
-                      { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
+                      { label: "Redeem", panelId: "panel-withdraw", tabId: "tab-withdraw" },
                     ]}
                     onSelect={(index, { origin, event }) => {
-                      setMode(index === 1 ? "remove" : "add");
+                      setMode(index === 1 ? "redeem" : "deposit");
                       setValue("");
                       if (origin !== "keyboard") {
                         event.preventDefault();
                         (event.target as HTMLElement).focus();
                       }
                     }}
-                    selected={mode === "remove" ? 1 : 0}
+                    selected={mode === "redeem" ? 1 : 0}
                   />
                 ),
               }}
@@ -312,7 +297,7 @@ export function PanelUpdate({
                     <InfoTooltip {...infoTooltipProps(content.earnScreen.infoTooltips.depositPoolShare)} />
                   </HFlex>
                 ),
-                end: mode === "add"
+                end: mode === "deposit"
                   ? (
                     dn.gt(boldBalance, 0) && (
                       <TextButton
@@ -323,11 +308,11 @@ export function PanelUpdate({
                       />
                     )
                   )
-                  : sboldPosition?.bold && dn.gt(sboldPosition?.bold, 0) && (
+                  : sboldPosition?.sbold && dn.gt(sboldPosition.sbold, 0) && (
                     <TextButton
-                      label={`Max ${fmtnum(sboldPosition?.bold, 2)} BOLD`}
+                      label={`Max ${fmtnum(sboldPosition.sbold, 2)} sBOLD`}
                       onClick={() => {
-                        setValue(dn.toString(sboldPosition?.bold));
+                        setValue(dn.toString(sboldPosition.sbold));
                       }}
                     />
                   ),
@@ -335,13 +320,22 @@ export function PanelUpdate({
             />
           }
         />
+
         <SboldInfo
-          conversion={mode === "add" && parsedValue
+          conversion={mode === "deposit"
             ? {
+              mode: "deposit",
               boldAmount: parsedValue ?? DNUM_0,
               sboldAmount: depositPreview.data?.sbold ?? null,
             }
-            : null}
+            : {
+              mode: "redeem",
+              boldAmount: redeemPreview.data ?? null,
+              sboldAmount: parsedValue ?? DNUM_0,
+            }}
+          loading={mode === "deposit"
+            ? depositPreview.isFetching
+            : redeemPreview.isFetching}
         />
       </div>
 
@@ -357,24 +351,17 @@ export function PanelUpdate({
         <FlowButton
           disabled={!allowSubmit}
           request={() => {
-            if (withdrawalPreview.isError) {
-              throw withdrawalPreview.error;
+            if (redeemPreview.isError) {
+              throw redeemPreview.error;
             }
             if (depositPreview.isError) {
               throw depositPreview.error;
             }
             if (
               !account.address
-              || (
-                mode === "add" && (
-                  depositPreview.isFetching || !depositPreview.data
-                )
-              )
-              || (
-                mode === "remove" && (
-                  withdrawalPreview.isFetching || !withdrawalPreview.data
-                )
-              )
+              || !parsedValue
+              || (mode === "deposit" && (depositPreview.isFetching || !depositPreview.data))
+              || (mode === "redeem" && (redeemPreview.isFetching || !redeemPreview.data))
             ) {
               return null;
             }
@@ -386,50 +373,46 @@ export function PanelUpdate({
               sbold: DNUM_0,
             };
 
-            const newSboldBalance = mode === "add"
-              ? dn.add(
-                prevSboldPosition.sbold,
-                depositPreview.data?.sbold ?? DNUM_0,
-              )
-              : dn.sub(
-                prevSboldPosition.sbold,
-                withdrawalPreview.data?.sbold ?? DNUM_0,
-              );
-
-            const newBoldDeposit = mode === "add"
-              ? dn.add(
-                prevSboldPosition.bold,
-                depositPreview.data?.boldMinusFee ?? DNUM_0,
-              )
-              : dn.sub(
-                prevSboldPosition.bold,
-                parsedValue ?? DNUM_0,
-              );
-
-            const withdrawAll = mode === "remove"
-              && withdrawAllThresholdReached(newBoldDeposit);
+            const [newBoldDeposit, newSboldBalance] = mode === "deposit"
+              ? [
+                dn.add(prevSboldPosition.bold, parsedValue),
+                dn.add(prevSboldPosition.sbold, depositPreview.data?.sbold ?? DNUM_0),
+              ]
+              : [
+                dnumMax(dn.sub(prevSboldPosition.bold, redeemPreview.data ?? DNUM_0), DNUM_0),
+                dn.sub(prevSboldPosition.sbold, parsedValue),
+              ];
 
             const newSboldPosition = {
               ...prevSboldPosition,
-              bold: withdrawAll ? DNUM_0 : newBoldDeposit,
-              sbold: withdrawAll ? DNUM_0 : newSboldBalance,
+              bold: newBoldDeposit,
+              sbold: newSboldBalance,
             };
 
-            const depositFee = mode === "add"
-              ? depositPreview.data?.boldFee ?? DNUM_0
+            const depositFee = mode === "deposit"
+                && depositPreview.data?.isFeeNegligible === false
+              ? depositPreview.data.boldFee
               : DNUM_0;
 
+            if (mode === "redeem") {
+              return {
+                flowId: "sboldRedeem",
+                backLink: ["/earn/sbold", "Back to editing"],
+                successLink: ["/earn/sbold", "Go to the sBOLD Pool"],
+                successMessage: "The sBOLD has been redeemed successfully.",
+                sboldPosition: newSboldPosition,
+                prevSboldPosition,
+              };
+            }
+
             return {
-              flowId: "sboldUpdate",
+              flowId: "sboldDeposit",
               backLink: ["/earn/sbold", "Back to editing"],
               successLink: ["/earn/sbold", "Go to the sBOLD Pool"],
-              successMessage: mode === "remove"
-                ? "The withdrawal has been processed successfully."
-                : "The deposit has been processed successfully.",
+              successMessage: "The deposit has been processed successfully.",
               depositFee,
               sboldPosition: newSboldPosition,
               prevSboldPosition,
-              withdrawAll,
             };
           }}
         />

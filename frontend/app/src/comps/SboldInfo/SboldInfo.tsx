@@ -1,6 +1,6 @@
 import type { Dnum } from "@/src/types";
 
-import { Amount } from "@/src/comps/Amount/Amount";
+import { TokenAmount } from "@/src/comps/Amount/TokenAmount";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
@@ -25,11 +25,18 @@ const iconComponents = {
 
 export function SboldInfo({
   conversion,
+  loading,
 }: {
-  conversion: null | {
+  conversion: {
+    mode: "deposit";
     boldAmount: Dnum;
     sboldAmount: Dnum | null;
+  } | {
+    mode: "redeem";
+    boldAmount: Dnum | null;
+    sboldAmount: Dnum;
   };
+  loading: boolean;
 }) {
   const [ref, inView] = useInView({ once: true });
 
@@ -61,6 +68,26 @@ export function SboldInfo({
     },
   );
 
+  const bold = (
+    <TokenAmount
+      symbol="BOLD"
+      animate={false}
+      value={conversion.boldAmount}
+      fallback={loading ? "… BOLD" : "− BOLD"}
+      suffix=" BOLD"
+    />
+  );
+
+  const sbold = (
+    <TokenAmount
+      symbol="SBOLD"
+      animate={false}
+      value={conversion.sboldAmount}
+      fallback={loading ? "… sBOLD" : "− sBOLD"}
+      suffix=" sBOLD"
+    />
+  );
+
   return (
     <section
       className={css({
@@ -72,6 +99,7 @@ export function SboldInfo({
         background: "infoSurface",
         border: "1px solid token(colors.infoSurfaceBorder)",
         borderRadius: 8,
+        userSelect: "none",
         medium: {
           gap: 20,
         },
@@ -93,67 +121,11 @@ export function SboldInfo({
             flexShrink: 1,
             display: "grid",
             overflow: "hidden",
-            maxWidth: "100%",
           })}
         >
           <ValueUpdate
-            before={
-              <div
-                className={css({
-                  display: "grid",
-                  gridAutoFlow: "column",
-                  alignItems: "center",
-                  gap: 4,
-                  color: "content",
-                  overflow: "hidden",
-                })}
-              >
-                <TokenIcon
-                  symbol="BOLD"
-                  size={16}
-                />
-                <Amount
-                  value={conversion?.boldAmount ?? 0}
-                  suffix=" BOLD"
-                />
-              </div>
-            }
-            after={conversion?.sboldAmount
-              ? (
-                <div
-                  className={css({
-                    display: "grid",
-                    gridAutoFlow: "column",
-                    alignItems: "center",
-                    gap: 4,
-                    overflow: "hidden",
-                    minWidth: 0,
-                  })}
-                >
-                  <TokenIcon
-                    symbol="SBOLD"
-                    size={16}
-                  />
-                  <div
-                    className={css({
-                      display: "grid",
-                      gridAutoFlow: "column",
-                      alignItems: "center",
-                      gap: 4,
-                      overflow: "hidden",
-                      minWidth: 0,
-                      textOverflow: "ellipsis",
-                    })}
-                  >
-                    <Amount
-                      animate={false}
-                      value={conversion?.sboldAmount ?? 0}
-                      suffix=" sBOLD"
-                    />
-                  </div>
-                </div>
-              )
-              : "… sBOLD"}
+            before={conversion.mode === "deposit" ? bold : sbold}
+            after={conversion.mode === "deposit" ? sbold : bold}
           />
         </div>
       </div>
@@ -166,7 +138,7 @@ export function SboldInfo({
           fontSize: 15,
           medium: {
             gridTemplateColumns: "repeat(3, max-content)",
-            gap: 36,
+            gap: 16,
             fontSize: 14,
           },
         })}

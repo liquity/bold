@@ -2,9 +2,14 @@ import type { Address, Dnum, PositionSbold } from "@/src/types";
 
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { SBOLD } from "@/src/env";
+import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { erc20Abi, parseAbi, zeroAddress } from "viem";
-import { useReadContract, useReadContracts } from "wagmi";
+import { useConfig as useWagmiConfig, useReadContracts } from "wagmi";
+import { readContract } from "wagmi/actions";
+
+// if the fee is below this % of the deposit, we consider it negligible
+const NEGLIGIBLE_FEE_THRESHOLD = 0.0001; // 0.01%
 
 const SboldContract = !SBOLD ? null : {
   abi: [
@@ -17,6 +22,7 @@ const SboldContract = !SBOLD ? null : {
       "function maxWithdraw(address owner) view returns (uint256)",
       "function previewDeposit(uint256 assets) view returns (uint256)",
       "function previewWithdraw(uint256 assets) view returns (uint256)",
+      "function previewRedeem(uint256 shares) view returns (uint256)",
       "function redeem(uint256 shares, address receiver, address owner) returns (uint256)",
       "function withdraw(uint256 assets, address receiver, address owner) returns (uint256)",
     ]),
@@ -67,63 +73,56 @@ export function useSboldPosition(address: Address | null) {
 
 export function usePreviewDeposit(bold: Dnum | null) {
   const SboldContract = getSboldContract();
+  const config = useWagmiConfig();
+  return useQuery({
+    queryKey: ["sbold", "previewDeposit", String(bold?.[0])],
+    queryFn: async () => {
+      if (!bold || bold[0] === 0n) {
+        return null;
+      }
 
-  const sboldFromDeposit = useReadContract({
-    ...SboldContract,
-    functionName: "previewDeposit",
-    args: [bold?.[0] ?? 0n],
-    query: {
-      enabled: Boolean(bold),
-    },
-  });
+      const [bold_] = bold;
 
-  return useReadContract({
-    ...SboldContract,
-    functionName: "convertToAssets",
-    args: [sboldFromDeposit.data ?? 0n],
-    query: {
-      enabled: Boolean(bold) && sboldFromDeposit.data !== undefined,
-      select: (boldMinusFee_) => {
-        if (!bold || sboldFromDeposit.data === undefined) {
-          return undefined;
-        }
-        return {
-          boldFee: dnum18(bold[0] - boldMinusFee_),
-          boldMinusFee: dnum18(boldMinusFee_),
-          sbold: dnum18(sboldFromDeposit.data),
-        };
-      },
+      const sboldFromDeposit = await readContract(config, {
+        ...SboldContract,
+        functionName: "previewDeposit",
+        args: [bold_],
+      });
+
+      const boldMinusFee = await readContract(config, {
+        ...SboldContract,
+        functionName: "convertToAssets",
+        args: [sboldFromDeposit],
+      });
+
+      const boldFee = dnum18(bold_ - boldMinusFee);
+      const sbold = dnum18(sboldFromDeposit);
+      const isFeeNegligible = dn.lt(
+        dn.div(boldFee, bold),
+        NEGLIGIBLE_FEE_THRESHOLD,
+      );
+
+      return { bold, boldFee, isFeeNegligible, sbold };
     },
   });
 }
 
-export function usePreviewWithdrawal(bold: Dnum | null) {
+export function usePreviewRedeem(sbold: Dnum | null) {
   const SboldContract = getSboldContract();
-  const sboldFromWithdraw = useReadContract({
-    ...SboldContract,
-    functionName: "previewWithdraw",
-    args: [bold?.[0] ?? 0n],
-    query: {
-      enabled: Boolean(bold),
-    },
-  });
-  return useReadContract({
-    ...SboldContract,
-    functionName: "convertToAssets",
-    args: [sboldFromWithdraw.data ?? 0n],
-    query: {
-      enabled: Boolean(bold) && sboldFromWithdraw.data !== undefined,
-      select: (boldFromShares_) => {
-        if (!bold || sboldFromWithdraw.data === undefined) {
-          return undefined;
-        }
-        const boldFromShares = dnum18(boldFromShares_);
-        return {
-          boldFee: DNUM_0, // no fees on withdrawal
-          boldMinusFee: boldFromShares,
-          sbold: dnum18(sboldFromWithdraw.data),
-        };
-      },
+  const config = useWagmiConfig();
+  return useQuery({
+    queryKey: ["sbold", "previewRedeem", String(sbold?.[0])],
+    queryFn: async () => {
+      if (!sbold || sbold[0] === 0n) {
+        return null;
+      }
+      return dnum18(
+        await readContract(config, {
+          ...SboldContract,
+          functionName: "previewRedeem",
+          args: [sbold[0]],
+        }),
+      );
     },
   });
 }
