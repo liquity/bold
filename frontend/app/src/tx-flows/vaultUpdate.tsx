@@ -11,7 +11,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
 import { VaultPositionSummary } from "@/src/comps/VaultPositionSummary/VaultPositionSummary";
-import { erc20Abi, maxUint256 } from "viem";
+import { erc20Abi, erc4626Abi, maxUint256 } from "viem";
 import { readContract, sendTransaction, writeContract } from "wagmi/actions";
 import { ENSO_API_KEY } from "@/src/env";
 
@@ -101,7 +101,7 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
       async commit(ctx) {
         const { mode, earnPosition, prevEarnPosition } = ctx.request;
         let change = BigInt(0);
-        if(mode === "add") {
+        if (mode === "add") {
           change = earnPosition.deposit[0] - prevEarnPosition.deposit[0];
         }
         else {
@@ -123,26 +123,34 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
         await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
-    
+
     deposit: {
       name: () => "Deposit",
       Status: TransactionStatus,
       async commit(ctx) {
         const { earnPosition, prevEarnPosition } = ctx.request;
         const change = earnPosition.deposit[0] - prevEarnPosition.deposit[0];
-        const ensoRes = (await fetch(
-          `https://api.enso.finance/api/v1/shortcuts/route?chainId=56&fromAddress=${ctx.account}&spender=${ctx.account}&receiver=${ctx.account}&amountIn=${change.toLocaleString("fullwide", { useGrouping: false })}&slippage=10&tokenIn=0x55d398326f99059fF775485246999027B3197955&tokenOut=0x0471D185cc7Be61E154277cAB2396cD397663da6&routingStrategy=router`,
-          { headers: { Authorization: `Bearer ${ENSO_API_KEY}` } }
-        ))
-        const ensoResJson = await ensoRes.json()
-        
-        return sendTransaction(ctx.wagmiConfig, { 
-          chain: 56, 
-          account: ctx.account, 
-          to: ensoResJson.tx.to,
-          data: ensoResJson.tx.data as `0x${string}`,
-          value: ensoResJson.tx.value 
-          });
+
+        return ctx.writeContract({
+          address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+          abi: erc4626Abi,
+          functionName: "deposit",
+          args: [change, ctx.account],
+        });
+
+        // const ensoRes = (await fetch(
+        //   `https://api.enso.finance/api/v1/shortcuts/route?chainId=56&fromAddress=${ctx.account}&spender=${ctx.account}&receiver=${ctx.account}&amountIn=${change.toLocaleString("fullwide", { useGrouping: false })}&slippage=10&tokenIn=0x55d398326f99059fF775485246999027B3197955&tokenOut=0x0471D185cc7Be61E154277cAB2396cD397663da6&routingStrategy=router`,
+        //   { headers: { Authorization: `Bearer ${ENSO_API_KEY}` } }
+        // ))
+        // const ensoResJson = await ensoRes.json()
+
+        // return sendTransaction(ctx.wagmiConfig, { 
+        //   chain: 56, 
+        //   account: ctx.account, 
+        //   to: ensoResJson.tx.to,
+        //   data: ensoResJson.tx.data as `0x${string}`,
+        //   value: ensoResJson.tx.value 
+        //   });
       },
       async verify(ctx, hash) {
         await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
@@ -155,19 +163,27 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
       async commit(ctx) {
         const { earnPosition, prevEarnPosition } = ctx.request;
         const change = prevEarnPosition.deposit[0] - earnPosition.deposit[0];
-        const ensoRes = (await fetch(
-          `https://api.enso.finance/api/v1/shortcuts/route?chainId=56&fromAddress=${ctx.account}&spender=${ctx.account}&receiver=${ctx.account}&amountIn=${change.toLocaleString("fullwide", { useGrouping: false })}&slippage=10&tokenIn=0x0471D185cc7Be61E154277cAB2396cD397663da6&tokenOut=0x55d398326f99059fF775485246999027B3197955&routingStrategy=router`,
-          { headers: { Authorization: `Bearer ${ENSO_API_KEY}` } }
-        ))
-        const ensoResJson = await ensoRes.json()
+
+        return ctx.writeContract({
+          address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+          abi: erc4626Abi,
+          functionName: "withdraw",
+          args: [change, ctx.account, ctx.account],
+        });
         
-        return sendTransaction(ctx.wagmiConfig, { 
-          chain: 56, 
-          account: ctx.account, 
-          to: ensoResJson.tx.to,
-          data: ensoResJson.tx.data as `0x${string}`,
-          value: ensoResJson.tx.value 
-          });
+        // const ensoRes = (await fetch(
+        //   `https://api.enso.finance/api/v1/shortcuts/route?chainId=56&fromAddress=${ctx.account}&spender=${ctx.account}&receiver=${ctx.account}&amountIn=${change.toLocaleString("fullwide", { useGrouping: false })}&slippage=10&tokenIn=0x0471D185cc7Be61E154277cAB2396cD397663da6&tokenOut=0x55d398326f99059fF775485246999027B3197955&routingStrategy=router`,
+        //   { headers: { Authorization: `Bearer ${ENSO_API_KEY}` } }
+        // ))
+        // const ensoResJson = await ensoRes.json()
+
+        // return sendTransaction(ctx.wagmiConfig, {
+        //   chain: 56,
+        //   account: ctx.account,
+        //   to: ensoResJson.tx.to,
+        //   data: ensoResJson.tx.data as `0x${string}`,
+        //   value: ensoResJson.tx.value
+        // });
       },
       async verify(ctx, hash) {
         await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
