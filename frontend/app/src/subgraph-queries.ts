@@ -1,6 +1,6 @@
 import type { TypedDocumentString } from "@/src/graphql/graphql";
 
-import { SUBGRAPH_URL } from "@/src/env";
+import { SUBGRAPH_API_KEY, SUBGRAPH_URL } from "@/src/env";
 import { graphql } from "@/src/graphql";
 
 export async function graphQuery<TResult, TVariables>(
@@ -12,6 +12,7 @@ export async function graphQuery<TResult, TVariables>(
     headers: {
       "Content-Type": "application/json",
       Accept: "application/graphql-response+json",
+      "Authorization": `Bearer ${SUBGRAPH_API_KEY}`
     },
     body: JSON.stringify(
       { query, variables },

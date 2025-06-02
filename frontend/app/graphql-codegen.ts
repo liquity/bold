@@ -23,7 +23,7 @@ function findSubgraphUrl(envFile: string) {
   }
 }
 
-const subgraphUrl = "https://api.studio.thegraph.com/query/18615/bnb-test/version/latest" // findSubgraphUrl(".env.local") ?? findSubgraphUrl(".env");
+const subgraphUrl = "https://gateway.thegraph.com/api/subgraphs/id/9KA2FiTvU1k4qMTzSPLwFTwwqDu2fejksQXXtbG45MiM" // findSubgraphUrl(".env.local") ?? findSubgraphUrl(".env");
 
 if (!subgraphUrl) {
   throw new Error(
