@@ -138,13 +138,18 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       ),
       async commit(ctx) {
         const debtChange = getDebtChange(ctx.request.loan, ctx.request.prevLoan);
+        const collChange = getCollChange(ctx.request.loan, ctx.request.prevLoan);
 
         const branch = getBranch(ctx.request.loan.branchId);
 
-        const Controller = branch.symbol === "WETH"
-          ? branch.contracts.LeverageWETHZapper
-          : branch.contracts.LeverageLSTZapper;
-
+        // const Controller = branch.symbol === "WETH"
+        //   ? branch.contracts.LeverageWETHZapper
+        //   : branch.contracts.LeverageLSTZapper;
+      
+        const Controller = dn.gt(collChange, 0) && dn.gt(debtChange, 0) 
+          ? branch.contracts.BorrowerOperations 
+          : branch.contracts.LeverageLSTZapper
+      
         return ctx.writeContract({
           ...ctx.contracts.BoldToken,
           functionName: "approve",
@@ -173,11 +178,14 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         />
       ),
       async commit(ctx) {
+        const debtChange = getDebtChange(ctx.request.loan, ctx.request.prevLoan);
         const collChange = getCollChange(ctx.request.loan, ctx.request.prevLoan);
 
         const branch = getBranch(ctx.request.loan.branchId);
 
-        const Controller = branch.contracts.LeverageLSTZapper;
+        const Controller = dn.gt(collChange, 0) && dn.gt(debtChange, 0) 
+          ? branch.contracts.BorrowerOperations 
+          : branch.contracts.LeverageLSTZapper
 
         return ctx.writeContract({
           ...branch.contracts.CollToken,
@@ -212,7 +220,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         }
 
         return ctx.writeContract({
-          ...branch.contracts.LeverageLSTZapper,
+          ...branch.contracts.BorrowerOperations,
           functionName: "adjustTrove",
           args: [
             BigInt(loan.troveId),
@@ -270,18 +278,18 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
         const branch = getBranch(loan.branchId);
 
-        if (branch.symbol === "WETH") {
-          return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
-            functionName: "addCollWithRawETH",
-            args: [BigInt(loan.troveId)],
-            value: dn.abs(collChange)[0],
-          });
-        }
+        // if (branch.symbol === "WETH") {
+        //   return ctx.writeContract({
+        //     ...branch.contracts.LeverageWETHZapper,
+        //     functionName: "addCollWithRawETH",
+        //     args: [BigInt(loan.troveId)],
+        //     value: dn.abs(collChange)[0],
+        //   });
+        // }
 
         return ctx.writeContract({
           ...branch.contracts.LeverageLSTZapper,
-          functionName: "addColl",
+          functionName: "addCollWithRawETH",
           args: [BigInt(loan.troveId), dn.abs(collChange)[0]],
         });
       },
@@ -300,13 +308,13 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         const debtChange = getDebtChange(loan, ctx.request.prevLoan);
         const branch = getBranch(loan.branchId);
 
-        if (branch.symbol === "WETH") {
-          return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
-            functionName: "withdrawBold",
-            args: [BigInt(loan.troveId), dn.abs(debtChange)[0], maxUpfrontFee[0]],
-          });
-        }
+        // if (branch.symbol === "WETH") {
+        //   return ctx.writeContract({
+        //     ...branch.contracts.LeverageWETHZapper,
+        //     functionName: "withdrawBold",
+        //     args: [BigInt(loan.troveId), dn.abs(debtChange)[0], maxUpfrontFee[0]],
+        //   });
+        // }
 
         return ctx.writeContract({
           ...branch.contracts.LeverageLSTZapper,
@@ -329,17 +337,17 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         const collChange = getCollChange(loan, ctx.request.prevLoan);
         const branch = getBranch(loan.branchId);
 
-        if (branch.symbol === "WETH") {
-          return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
-            functionName: "withdrawCollToRawETH",
-            args: [BigInt(loan.troveId), dn.abs(collChange)[0]],
-          });
-        }
+        // if (branch.symbol === "WETH") {
+        // return ctx.writeContract({
+        //   ...branch.contracts.LeverageWETHZapper,
+        //   functionName: "withdrawCollToRawETH",
+        //   args: [BigInt(loan.troveId), dn.abs(collChange)[0]],
+        // });
+        // // }
 
         return ctx.writeContract({
           ...branch.contracts.LeverageLSTZapper,
-          functionName: "withdrawColl",
+          functionName: "withdrawCollToRawETH",
           args: [BigInt(loan.troveId), dn.abs(collChange)[0]],
         });
       },
@@ -356,10 +364,15 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
     const branch = getBranch(ctx.request.loan.branchId);
 
-    const Controller = branch.symbol === "WETH"
-      ? branch.contracts.LeverageWETHZapper
-      : branch.contracts.LeverageLSTZapper;
+    // const Controller = branch.symbol === "WETH"
+    //   ? branch.contracts.LeverageWETHZapper
+    //   : branch.contracts.LeverageLSTZapper;
 
+    // if adjust position go to borrower operations
+    const Controller = dn.gt(collChange, 0) && dn.gt(debtChange, 0) 
+      ? branch.contracts.BorrowerOperations 
+      : branch.contracts.LeverageLSTZapper
+  
     const isBoldApproved = !dn.lt(debtChange, 0) || !dn.gt(
       dn.abs(debtChange),
       [
