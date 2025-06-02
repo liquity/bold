@@ -108,10 +108,6 @@ export function Tabs({
         "--background": token("colors.accent"),
         borderRadius: 12,
       },
-      activeTabContent: {
-        // color: token("colors.accentContent"),
-        color: token(`colors.${selected ? "selected" : "interactive"}`),
-      },
       tabsGap: 0,
     }
     : {
@@ -127,9 +123,6 @@ export function Tabs({
         "--background": token("colors.controlSurface"),
         borderRadius: 8,
       },
-      activeTabContent: {
-        color: token(`colors.${selected ? "selected" : "interactive"}`),
-      },
       tabsGap: 8,
     };
 
@@ -138,7 +131,6 @@ export function Tabs({
       ref={container}
       role="tablist"
       className={css({
-        overflow: "hidden",
         display: "flex",
         width: "100%",
         padding: 4,
@@ -193,7 +185,7 @@ export function Tabs({
             background: "var(--background)",
             border: "1px solid token(colors.border)",
             transformOrigin: "0 0",
-            borderRadius: 8,
+            borderRadius: 0,
           })}
           style={{
             transform: barSpring.transform,
@@ -217,17 +209,9 @@ function Tab({
   selected: boolean;
   tabItem: TabItem;
 }) {
-  const styles = compact
-    ? {
-      activeTabContent: {
-        color: selected ? token("colors.accentContent") : token("colors.interactive"),
-      },
-    }
-    : {
-      activeTabContent: {
-        color: selected ? token("colors.selected") : token("colors.interactive"),
-      },
-    };
+  const tabColor = compact
+    ? (selected ? token("colors.accentContent") : token("colors.interactive"))
+    : (selected ? token("colors.selected") : token("colors.interactive"));
   return (
     <button
       aria-controls={panelId}
@@ -252,22 +236,22 @@ function Tab({
         justifyContent: "center",
         height: "100%",
         fontSize: 16,
-        color: "interactive",
         cursor: "pointer",
         whiteSpace: "nowrap",
         textOverflow: "ellipsis",
         overflow: "hidden",
+        transition: "color 80ms ease-in-out",
         _focusVisible: {
           outline: "2px solid token(colors.focused)",
-          borderRadius: 8,
         },
       })}
       style={{
-        color: styles.activeTabContent.color,
+        color: tabColor,
         padding: compact ? "0 12px" : "0 16px",
         outlineOffset: compact ? 1 : -2,
         pointerEvents: disabled ? "none" : "auto",
         opacity: disabled ? 0.5 : 1,
+        borderRadius: compact ? 12 : 8,
       }}
     >
       <div
