@@ -11,7 +11,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
 import { VaultPositionSummary } from "@/src/comps/VaultPositionSummary/VaultPositionSummary";
-import { erc20Abi, erc4626Abi, maxUint256 } from "viem";
+import { Address, erc20Abi, erc4626Abi, getAddress, maxUint256, zeroAddress } from "viem";
 import { readContract, sendTransaction, writeContract } from "wagmi/actions";
 import { ENSO_API_KEY } from "@/src/env";
 
@@ -87,6 +87,46 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
   },
 
   steps: {
+    setOperator: {
+      name: (ctx) => {
+        return `Set Operator`;
+      },
+      Status: TransactionStatus,
+      async commit(ctx) {
+        return ctx.writeContract({
+          address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+          abi: [{
+            "inputs": [
+              {
+                "internalType": "address",
+                "name": "operator",
+                "type": "address"
+              },
+              {
+                "internalType": "bool",
+                "name": "approved",
+                "type": "bool"
+              }
+            ],
+            "name": "setOperator",
+            "outputs": [
+              {
+                "internalType": "bool",
+                "name": "success",
+                "type": "bool"
+              }
+            ],
+            "stateMutability": "nonpayable",
+            "type": "function"
+          }],
+          functionName: "setOperator",
+          args: ["0x06C0c876419a76E89AD55D1225bB335939C25150", true],
+        })
+      },
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
+      },
+    },
     // Approve
     approve: {
       name: (ctx) => {
@@ -100,19 +140,22 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
       ),
       async commit(ctx) {
         const { mode, earnPosition, prevEarnPosition } = ctx.request;
-        let change = BigInt(0);
+        let change: BigInt = BigInt(0);
+        let spender: Address = zeroAddress
         if (mode === "add") {
           change = earnPosition.deposit[0] - prevEarnPosition.deposit[0];
+          spender = getAddress("0x6c869d1D11299172586A4fe225b9BF6f5DBA6225")
         }
         else {
           change = prevEarnPosition.deposit[0] - earnPosition.deposit[0];
+          spender = getAddress("0x06C0c876419a76E89AD55D1225bB335939C25150")
         }
         return ctx.writeContract({
           address: ctx.request.token,
           abi: erc20Abi,
           functionName: "approve",
           args: [
-            "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+            spender,
             ctx.preferredApproveMethod === "approve-infinite"
               ? maxUint256 // infinite approval
               : change, // exact amount
@@ -164,13 +207,42 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
         const { earnPosition, prevEarnPosition } = ctx.request;
         const change = prevEarnPosition.deposit[0] - earnPosition.deposit[0];
 
-        return ctx.writeContract({
+        const shares = await readContract(ctx.wagmiConfig, {
           address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
           abi: erc4626Abi,
-          functionName: "withdraw",
-          args: [change, ctx.account, ctx.account],
+          functionName: "convertToShares",
+          args: [change],
         });
-        
+
+        return ctx.writeContract({
+          address: "0x06C0c876419a76E89AD55D1225bB335939C25150",
+          abi: [{
+            "inputs": [
+              {
+                "internalType": "address",
+                "name": "vault",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "receiver",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "shares",
+                "type": "uint256"
+              }
+            ],
+            "name": "requestFulfillWithdraw",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+          }],
+          functionName: "requestFulfillWithdraw",
+          args: ["0x6c869d1D11299172586A4fe225b9BF6f5DBA6225", ctx.account, shares],
+        });
+
         // const ensoRes = (await fetch(
         //   `https://api.enso.finance/api/v1/shortcuts/route?chainId=56&fromAddress=${ctx.account}&spender=${ctx.account}&receiver=${ctx.account}&amountIn=${change.toLocaleString("fullwide", { useGrouping: false })}&slippage=10&tokenIn=0x0471D185cc7Be61E154277cAB2396cD397663da6&tokenOut=0x55d398326f99059fF775485246999027B3197955&routingStrategy=router`,
         //   { headers: { Authorization: `Bearer ${ENSO_API_KEY}` } }
@@ -213,13 +285,48 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
         address: token,
         abi: erc20Abi,
         functionName: "allowance",
-        args: [ctx.account, "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225"],
+        args: [ctx.account, "0x06C0c876419a76E89AD55D1225bB335939C25150"],
       });
 
       var amount = dn.sub(prevEarnPosition.deposit, earnPosition.deposit)
       if (allowance < amount[0]) {
         steps.push("approve");
       }
+
+
+      const isOperator = await readContract(ctx.wagmiConfig, {
+        address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+        abi: [{
+          "inputs": [
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "",
+              "type": "address"
+            }
+          ],
+          "name": "isOperator",
+          "outputs": [
+            {
+              "internalType": "bool",
+              "name": "",
+              "type": "bool"
+            }
+          ],
+          "stateMutability": "view",
+          "type": "function"
+        }],
+        functionName: "isOperator",
+        args: [ctx.account, "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225"],
+      });
+      if (!isOperator) {
+        steps.push("setOperator");
+      }
+
       steps.push("withdraw");
     }
 
