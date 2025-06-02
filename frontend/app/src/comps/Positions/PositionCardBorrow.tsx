@@ -86,7 +86,13 @@ export function PositionCardBorrow({
       main={{
         value: (
           <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-            <Amount value={debt} fallback="−" />
+            <div
+              className={css({
+                display: "grid",
+              })}
+            >
+              <Amount value={debt} fallback="−" />
+            </div>
             <TokenIcon
               size={24}
               symbol="BOLD"

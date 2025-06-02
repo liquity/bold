@@ -117,7 +117,18 @@ export type PositionStake = {
   };
 };
 
-export type Position = PositionLoan | PositionEarn | PositionStake;
+export type PositionSbold = {
+  type: "sbold";
+  bold: Dnum;
+  owner: Address;
+  sbold: Dnum;
+};
+
+export type Position =
+  | PositionEarn
+  | PositionLoan
+  | PositionSbold
+  | PositionStake;
 
 export type Delegate = {
   address: Address;

@@ -232,6 +232,15 @@ export function vPositionEarn() {
   });
 }
 
+export function vPositionSbold() {
+  return v.object({
+    type: v.literal("sbold"),
+    owner: vAddress(),
+    bold: vDnum(),
+    sbold: vDnum(),
+  });
+}
+
 export function vVote() {
   return v.union([
     v.literal("for"),

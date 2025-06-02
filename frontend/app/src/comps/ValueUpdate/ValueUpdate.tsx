@@ -1,9 +1,7 @@
 import type { ReactNode } from "react";
 
+import { ARROW_RIGHT } from "@/src/characters";
 import { css } from "@/styled-system/css";
-import { HFlex } from "@liquity2/uikit";
-
-const ARROW_RIGHT = "→";
 
 export function ValueUpdate({
   after,
@@ -17,16 +15,51 @@ export function ValueUpdate({
   tabularNums?: boolean;
 }) {
   return (
-    <HFlex
-      gap={8}
+    <div
+      className={css({
+        display: "grid",
+        gridTemplateColumns: "auto auto auto",
+        gap: 8,
+        width: "100%",
+        userSelect: "none",
+        "--color-dimmed": "token(colors.contentAlt)",
+      })}
       style={{
         fontSize,
         fontVariantNumeric: tabularNums ? "tabular-nums" : "inherit",
       }}
     >
-      <div className={css({ color: "contentAlt" })}>{before}</div>
-      <div className={css({ color: "contentAlt" })}>{ARROW_RIGHT}</div>
-      <div>{after}</div>
-    </HFlex>
+      <SingleValue dimmed>{before}</SingleValue>
+      <div className={css({ color: "var(--color-dimmed)" })}>
+        {ARROW_RIGHT}
+      </div>
+      <SingleValue>{after}</SingleValue>
+    </div>
+  );
+}
+
+function SingleValue({
+  children,
+  dimmed,
+}: {
+  children: ReactNode;
+  dimmed?: boolean;
+}) {
+  return (
+    <div
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        minWidth: 0,
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+      })}
+      style={{
+        color: dimmed ? "var(--color-dimmed)" : undefined,
+      }}
+    >
+      {children}
+    </div>
   );
 }
