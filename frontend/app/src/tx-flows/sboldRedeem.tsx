@@ -15,7 +15,6 @@ const RequestSchema = createRequestSchema(
   {
     prevSboldPosition: vPositionSbold(),
     sboldPosition: vPositionSbold(),
-    withdrawAll: v.boolean(),
   },
 );
 
