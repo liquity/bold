@@ -38,7 +38,7 @@ const config: CodegenConfig = {
   schema: {
     [subgraphUrl]: {
       headers: {
-        Authorization: `Bearer ${subgraphApiKey}`
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUBGRAPH_API_KEY}`
       },
     },
   },
