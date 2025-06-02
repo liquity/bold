@@ -183,9 +183,9 @@ export function BorrowScreen() {
           width: 534,
         })}
       >
-        {account.isConnected ?
+        {account && account.isConnected ?
           <>
-            {collBalance.data && collPrice.data ?
+            {collBalance && collBalance.data && collPrice && collPrice.data ?
               <>
                 <Field
                   // “You deposit”
