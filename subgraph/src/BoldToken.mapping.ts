@@ -38,11 +38,11 @@ function getTokenAddress(collIndex: i32): Address {
 function getTroveManagerAddress(collIndex: i32): Address {
   switch (collIndex) {
     case 0:
-      return Address.fromString("0x3f984c8ecbd25e0f3580853c4e081d376def8fdd");
+      return Address.fromString("0xA4867B8f66E724072802A7C8CFD59A26E40aC721");
     case 1:
-      return Address.fromString("0x3fa5b92c2b53348d383fd265e6ec13473537fb21");
+      return Address.fromString("0x3Fa5b92c2b53348d383Fd265e6EC13473537Fb21");
     case 2:
-      return Address.fromString("0x0079eb9ebd9820c5961b406c1400e1e5dd177592");
+      return Address.fromString("0x0079Eb9EbD9820C5961b406C1400e1E5dD177592");
     default:
       return Address.fromString("0x0000000000000000000000000000000000000000");
   }
