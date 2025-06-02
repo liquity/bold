@@ -3,7 +3,9 @@ import type { Dnum, PositionSbold } from "@/src/types";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
+import { getBranch } from "@/src/liquity-utils";
 import { useSboldStats } from "@/src/sbold";
+import { isBranchId } from "@/src/types";
 import { css } from "@/styled-system/css";
 import { InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -28,6 +30,7 @@ export function SboldPositionSummary({
   const active = Boolean(
     txPreviewMode || (sboldPosition && dn.gt(sboldPosition.sbold, 0)),
   );
+
   return (
     <EarnPositionSummaryBase
       action={!linkToScreen ? null : {
@@ -57,13 +60,13 @@ export function SboldPositionSummary({
                 fallback="-%"
                 format="1z"
                 percentage
-                value={null}
+                value={stats.data?.apr ?? null}
               />
             </div>
             <InfoTooltip
               content={{
                 heading: "Current APR",
-                body: "The annualized rate sBOLD deposits earned over the last 24 hours.",
+                body: <>The annualized rate sBOLD deposits earned over the last 24 hours.</>,
                 footerLink: {
                   label: "Check Dune for more details",
                   href: "https://dune.com/liquity/liquity-v2",
@@ -95,7 +98,7 @@ export function SboldPositionSummary({
             <InfoTooltip
               content={{
                 heading: "APR (last 7 days)",
-                body: "The annualized rate sBOLD deposits earned over the last 7 days.",
+                body: <>The annualized rate sBOLD deposits earned over the last 7 days.</>,
                 footerLink: {
                   label: "Check Dune for more details",
                   href: "https://dune.com/liquity/liquity-v2",
@@ -117,7 +120,50 @@ export function SboldPositionSummary({
             />
           </div>
           <InfoTooltip heading="Total Value Locked (TVL)">
-            Total amount of BOLD deposited in the sBOLD pool.
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+              })}
+            >
+              <div>Total amount of BOLD deposited in the sBOLD pool.</div>
+              <div
+                className={css({
+                  display: "flex",
+                  gap: 8,
+                  whiteSpace: "nowrap",
+                })}
+              >
+                <div>Pools weight:</div>
+                {stats.data?.weights.map((weight, index) => {
+                  if (!isBranchId(index)) {
+                    return null;
+                  }
+                  const branch = getBranch(index);
+                  return (
+                    <div
+                      key={index}
+                      className={css({
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      })}
+                    >
+                      <TokenIcon
+                        symbol={branch.symbol}
+                        size="mini"
+                      />
+                      <Amount
+                        percentage
+                        format="pctfull"
+                        value={weight}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </InfoTooltip>
         </>
       }
