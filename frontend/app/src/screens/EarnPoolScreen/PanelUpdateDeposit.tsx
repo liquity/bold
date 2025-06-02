@@ -9,7 +9,7 @@ import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { getCollToken, isEarnPositionActive, useEarnPool } from "@/src/liquity-utils";
+import { getCollToken, isEarnPositionActive } from "@/src/liquity-utils";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -20,15 +20,16 @@ import { useState } from "react";
 type ValueUpdateMode = "add" | "remove";
 
 export function PanelUpdateDeposit({
-  deposited,
+  poolDeposit,
   branchId,
   position,
 }: {
-  deposited: Dnum;
+  poolDeposit: Dnum;
   branchId: BranchId;
   position?: PositionEarn;
 }) {
   const account = useAccount();
+  const collateral = getCollToken(branchId);
 
   const [mode, setMode] = useState<ValueUpdateMode>("add");
   const [value, setValue] = useState("");
@@ -46,19 +47,14 @@ export function PanelUpdateDeposit({
     DNUM_0,
   );
 
-  const earnPool = useEarnPool(branchId);
-  const poolDeposit = earnPool.data?.totalDeposited;
   const updatedPoolDeposit = poolDeposit && dn.add(poolDeposit, depositDifference);
-
-  const boldBalance = useBalance(account.address, "BOLD");
-
-  const updatedBoldQty = dn.add(deposited, depositDifference);
+  const updatedBoldQty = dn.add(poolDeposit, depositDifference);
 
   const updatedPoolShare = depositDifference && dn.gt(updatedBoldQty, 0)
     ? dn.div(updatedDeposit, updatedBoldQty)
     : DNUM_0;
 
-  const collateral = getCollToken(branchId);
+  const boldBalance = useBalance(account.address, "BOLD");
 
   const insufficientBalance = mode === "add"
     && parsedValue
@@ -155,7 +151,9 @@ export function PanelUpdateDeposit({
               end: mode === "add"
                 ? boldBalance.data && (
                   <TextButton
-                    label={dn.gt(boldBalance.data, 0) ? `Max ${fmtnum(boldBalance.data, 2)} BOLD` : null}
+                    label={dn.gt(boldBalance.data, 0)
+                      ? `Max ${fmtnum(boldBalance.data, 2)} BOLD`
+                      : null}
                     onClick={() => {
                       if (boldBalance.data) {
                         setValue(dn.toString(boldBalance.data));
@@ -236,18 +234,16 @@ export function PanelUpdateDeposit({
                     BOLD
                   </span>
                 </div>
-                {collateral && (
-                  <div>
-                    <Amount value={position.rewards.coll} />{" "}
-                    <span
-                      className={css({
-                        color: "contentAlt",
-                      })}
-                    >
-                      {collateral.name}
-                    </span>
-                  </div>
-                )}
+                <div>
+                  <Amount value={position.rewards.coll} />{" "}
+                  <span
+                    className={css({
+                      color: "contentAlt",
+                    })}
+                  >
+                    {collateral.name}
+                  </span>
+                </div>
               </div>
             )}
           </HFlex>
@@ -256,13 +252,7 @@ export function PanelUpdateDeposit({
         <FlowButton
           disabled={!allowSubmit}
           request={() => {
-            if (
-              !account.address
-              || !collateral
-              || (mode === "remove" && !position)
-              || !poolDeposit
-              || !updatedPoolDeposit
-            ) {
+            if (!account.address || (mode === "remove" && !position)) {
               return null;
             }
 

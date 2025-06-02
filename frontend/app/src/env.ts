@@ -282,6 +282,7 @@ export const EnvSchema = v.pipe(
     LEGACY_CHECK: v.optional(vLegacyCheck(), "true"),
     LIQUITY_STATS_URL: v.optional(v.pipe(v.string(), v.url())),
     SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
+    SBOLD: v.optional(v.union([vAddress(), v.null()]), null),
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.pipe(
@@ -408,6 +409,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   LEGACY_CHECK: process.env.NEXT_PUBLIC_LEGACY_CHECK,
   LIQUITY_STATS_URL: process.env.NEXT_PUBLIC_LIQUITY_STATS_URL,
   SAFE_API_URL: process.env.NEXT_PUBLIC_SAFE_API_URL,
+  SBOLD: process.env.NEXT_PUBLIC_SBOLD,
   SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
   VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
@@ -517,6 +519,7 @@ export const {
   LEGACY_CHECK,
   LIQUITY_STATS_URL,
   SAFE_API_URL,
+  SBOLD,
   SUBGRAPH_URL,
   VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,

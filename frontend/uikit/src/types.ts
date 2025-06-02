@@ -6,8 +6,9 @@ export type TokenSymbol =
   | "BOLD"
   | "ETH"
   | "LQTY"
-  | "RETH"
   | "LUSD"
+  | "RETH"
+  | "SBOLD"
   | "WSTETH";
 
 export type Token = {
