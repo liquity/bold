@@ -125,6 +125,10 @@ export function getBranches(): Branch[] {
   });
 }
 
+export function getBranchesCount(): number {
+  return ENV_BRANCHES.length;
+}
+
 export function getBranch(idOrSymbol: null): null;
 export function getBranch(idOrSymbol: CollateralSymbol | BranchId): Branch;
 export function getBranch(
@@ -180,7 +184,7 @@ export function useEarnPool(branchId: BranchId | null) {
       jsonStringifyWithDnum(spApyAvg7d),
     ],
     queryFn: async () => {
-      if (!branchId) {
+      if (branchId === null) {
         return null;
       }
       const totalBoldDeposits = await readContract(wagmiConfig, {
