@@ -311,6 +311,7 @@ function createTrove(
   trove.status = "active";
   trove.troveId = troveId.toHexString();
   trove.updatedAt = timestamp;
+  trove.previousOwner = Address.zero();
 
   // batches are handled separately, not
   // when creating the trove but right after

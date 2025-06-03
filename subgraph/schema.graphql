@@ -46,6 +46,7 @@ type Trove @entity(immutable: false) {
   interestRate: BigInt!
   stake: BigInt!
   troveId: String!
+  previousOwner: Bytes!
 }
 
 type BorrowerInfo @entity(immutable: false) {
@@ -87,3 +88,4 @@ type GovernanceAllocation @entity(immutable: false) {
 type GovernanceInitiative @entity(immutable: false) {
   id: ID! # "initiativeAddress", e.g. "0x0000000000000000000000000000000000000000"
 }
+
