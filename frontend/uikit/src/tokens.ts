@@ -2,12 +2,13 @@ import type { Token } from "./types";
 
 import tokenNeri from "./token-icons/neri.svg"; // Clone of USDN SVG (MUST REPLACE)
 import tokenUsnd from "./token-icons/usnd.svg";
+import tokenArb from "./token-icons/arb.svg";
 import tokenComp from "./token-icons/comp.svg";
 import tokenEth from "./token-icons/eth.svg";
 import tokenLqty from "./token-icons/lqty.svg";
 import tokenLusd from "./token-icons/lusd.svg";
 import tokenReth from "./token-icons/reth.svg";
-import tokenSfrxeth from "./token-icons/sfrxeth.svg";
+import tokenRsEth from "./token-icons/rseth.svg";
 import tokenSteth from "./token-icons/wsteth.svg";
 import tokenTbtc from "./token-icons/tbtc.svg";
 import tokenTeth from "./token-icons/teth.svg";
@@ -16,17 +17,18 @@ import tokenWeeth from "./token-icons/weeth.svg";
 
 export type CollateralSymbol = 
   | "ETH" 
+  | "ARB" 
+  | "COMP"
   | "RETH" 
-  | "WSTETH" 
-  | "COMP" 
-  | "SFRXETH" 
+  | "RSETH"
   | "TBTC" 
   | "TETH" 
   | "WETH" 
-  | "WEETH";
+  | "WEETH"
+  | "WSTETH"; 
 
 export function isCollateralSymbol(symbol: string): symbol is CollateralSymbol {
-  return symbol === "ETH" || symbol === "RETH" || symbol === "WSTETH" || symbol === "COMP" || symbol === "SFRXETH" || symbol === "TBTC" || symbol === "TETH" || symbol === "WETH" || symbol === "WEETH";
+  return symbol === "ETH" || symbol === "ARB" || symbol === "COMP" || symbol === "RETH" || symbol === "RSETH" || symbol === "TBTC" || symbol === "TETH" || symbol === "WETH" || symbol === "WEETH" || symbol === "WSTETH";
 }
 
 export type CollateralToken = Token & {
@@ -62,6 +64,13 @@ export const LUSD: Token = {
 
 // Collaterals
 
+export const ARB: CollateralToken = {
+  collateralRatio: 1.2,
+  icon: tokenArb,
+  name: "ARB",
+  symbol: "ARB" as const,
+} as const;
+
 export const COMP: CollateralToken = {
   collateralRatio: 1.2,
   icon: tokenComp,
@@ -76,18 +85,18 @@ export const ETH: CollateralToken = {
   symbol: "ETH" as const,
 } as const;
 
-export const SFRXETH: CollateralToken = {
-  collateralRatio: 1.2,
-  icon: tokenSfrxeth,
-  name: "sfrxETH",
-  symbol: "SFRXETH" as const,
-} as const;
-
 export const RETH: CollateralToken = {
   collateralRatio: 1.2,
   icon: tokenReth,
   name: "rETH",
   symbol: "RETH" as const,
+} as const;
+
+export const RSETH: CollateralToken = {
+  collateralRatio: 1.2,
+  icon: tokenRsEth,
+  name: "rsETH",
+  symbol: "RSETH" as const,
 } as const;
 
 export const TBTC: CollateralToken = {
@@ -130,7 +139,8 @@ export const COLLATERALS: CollateralToken[] = [
   RETH,
   WSTETH,
   COMP,
-  SFRXETH,
+  ARB,
+  RSETH,
   TBTC,
   TETH,
   WETH,
@@ -146,7 +156,8 @@ export const TOKENS_BY_SYMBOL = {
   WSTETH,
   LUSD,
   COMP,
-  SFRXETH,
+  ARB,
+  RSETH,
   TBTC,
   TETH,
   WETH,

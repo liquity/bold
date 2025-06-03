@@ -93,7 +93,8 @@ export function Positions({
 }
 
 function PositionsGroup({
-  columns = 4,
+  // columns = 4,
+  columns = 3,
   mode,
   onTitleClick,
   positions,
@@ -144,22 +145,26 @@ function PositionsGroup({
       [0, <PositionCard key='0' loading />],
       [1, <PositionCard key='1' loading />],
       [2, <PositionCard key='2' loading />],
-      [3, <PositionCard key='3' loading />],
+      // [3, <PositionCard key='3' loading />],
     ])
     .with("actions", () =>
       showNewPositionCard
         ? [
+            // [0, <ActionCard key='0' type='borrow' />],
+            // [1, <ActionCard key='1' type='multiply' />],
+            // [2, <ActionCard key='2' type='earn' />],
+            // [3, <ActionCard key='3' type='buy' />],
             [0, <ActionCard key='0' type='borrow' />],
-            [1, <ActionCard key='1' type='multiply' />],
-            [2, <ActionCard key='2' type='earn' />],
-            [3, <ActionCard key='3' type='buy' />],
+            [1, <ActionCard key='2' type='earn' />],
+            [2, <ActionCard key='3' type='buy' />],
           ]
         : []
     )
     .exhaustive();
 
   if (mode === "actions") {
-    columns = 4;
+    // columns = 4;
+    columns = 3;
   }
 
   const cardHeight = mode === "actions" ? 144 : 180;

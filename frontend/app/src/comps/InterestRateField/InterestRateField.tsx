@@ -447,7 +447,7 @@ function CustomDelegateModalContent({
                 The address is not a valid{" "}
                 <AnchorTextButton
                   label='delegate'
-                  href='https://docs.liquity.org/v2-faq/redemptions-and-delegation#what-is-delegation-of-interest-rates'
+                  href='https://docs.nerite.org/docs/user-docs/redemption-and-delegation#what-is-delegation-of-interest-rates'
                   external
                 />
                 .
@@ -460,7 +460,7 @@ function CustomDelegateModalContent({
               Set a valid{" "}
               <AnchorTextButton
                 label='delegate'
-                href='https://docs.liquity.org/v2-faq/redemptions-and-delegation#what-is-delegation-of-interest-rates'
+                href='https://docs.nerite.org/docs/user-docs/redemption-and-delegation#what-is-delegation-of-interest-rates'
                 external
               />{" "}
               address.
@@ -470,7 +470,7 @@ function CustomDelegateModalContent({
               Delegate addresses can be found{"  "}
               <AnchorTextButton
                 label='here'
-                href='https://docs.liquity.org/v2-faq/redemptions-and-delegation#docs-internal-guid-441d8c3f-7fff-4efa-6319-4ba00d908597'
+                href='https://docs.nerite.org/docs/user-docs/redemption-and-delegation#who-are-the-current-active-interest-rate-delegates-'
                 external
               />
               .
