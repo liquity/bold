@@ -215,9 +215,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
         const branch = getBranch(loan.branchId);
 
-        if (branch.symbol === "WETH") {
-          throw new Error("ETH collateral not supported for adjustTrove");
-        }
+        // if (branch.symbol === "WETH") {
+        //   throw new Error("ETH collateral not supported for adjustTrove");
+        // }
 
         return ctx.writeContract({
           ...branch.contracts.BorrowerOperations,
@@ -248,13 +248,13 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
         const branch = getBranch(loan.branchId);
 
-        if (branch.symbol === "WETH") {
-          return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
-            functionName: "repayBold",
-            args: [BigInt(loan.troveId), dn.abs(debtChange)[0]],
-          });
-        }
+        // if (branch.symbol === "WETH") {
+        //   return ctx.writeContract({
+        //     ...branch.contracts.LeverageWETHZapper,
+        //     functionName: "repayBold",
+        //     args: [BigInt(loan.troveId), dn.abs(debtChange)[0]],
+        //   });
+        // }
 
         return ctx.writeContract({
           ...branch.contracts.LeverageLSTZapper,
@@ -386,7 +386,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     );
 
     // Collateral token needs to be approved if collChange > 0 and collToken != "ETH" (no LeverageWETHZapper)
-    const isCollApproved = branch.symbol === "WETH" || !dn.gt(collChange, 0) || !dn.gt(collChange, [
+    const isCollApproved = !dn.gt(collChange, 0) || !dn.gt(collChange, [
       await ctx.readContract({
         ...branch.contracts.CollToken,
         functionName: "allowance",
