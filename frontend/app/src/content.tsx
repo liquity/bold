@@ -92,7 +92,7 @@ export default {
         </>
       ),
       footerLink: {
-        href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation",
+        href: "https://docs.nerite.org/docs/user-docs/redemption-and-delegation",
         label: "Learn more",
       },
     },
@@ -103,7 +103,7 @@ export default {
     title: "Redemptions in a nutshell",
     subtitle: (
       <>
-        Redemptions help maintain BOLD’s peg in a decentralized way. If a user
+        Redemptions help maintain USND's peg in a decentralized way. If a user
         is redeemed, their collateral and debt are reduced equally, resulting in
         no net loss.
       </>
@@ -124,7 +124,7 @@ export default {
     ],
     learnMore: {
       text: "Learn more about redemptions",
-      href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation",
+      href: "https://docs.nerite.org/docs/user-docs/redemption-and-delegation",
     },
   },
 

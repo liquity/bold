@@ -412,7 +412,7 @@ export function StakePositionSummary({
                               </div>
                             ),
                             footerLink: {
-                              href: "https://docs.liquity.org/v2-faq/lqty-staking", // TO DO: change to NERI
+                              href: "https://docs.nerite.org/docs/user-docs/NERI-staking-and-voting",
                               label: "Learn more",
                             },
                           }}

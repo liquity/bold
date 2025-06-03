@@ -17,8 +17,8 @@ const getSnailIcon = ({ icon, type }: { icon: ReactNode, type?: MenuItemType }) 
       return <Image src='/cute-snails/blue.png' alt='Earn' width={24} height={24} />;
     case "buy":
       return <Image src='/cute-snails/gold.png' alt='Buy' width={24} height={24} />;
-    case "stake":
-      return <Image src='/cute-snails/red.png' alt='Stake' width={24} height={24} />;
+    // case "stake":
+    //   return <Image src='/cute-snails/red.png' alt='Stake' width={24} height={24} />;
     default:
       return icon;
   }
