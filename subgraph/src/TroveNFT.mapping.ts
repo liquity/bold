@@ -36,6 +36,7 @@ export function handleTransfer(event: TransferEvent): void {
   );
 
   // update the trove borrower
+  trove.previousOwner = trove.borrower;
   trove.borrower = event.params.to;
   trove.save();
 }
