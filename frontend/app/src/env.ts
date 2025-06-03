@@ -188,6 +188,7 @@ export const EnvSchema = v.pipe(
     LIQUITY_STATS_URL: v.optional(v.pipe(v.string(), v.url())),
     SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
+    SUBGRAPH_API_KEY: v.string(),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.pipe(
       v.string(),
@@ -306,6 +307,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   LIQUITY_STATS_URL: process.env.NEXT_PUBLIC_LIQUITY_STATS_URL,
   SAFE_API_URL: process.env.NEXT_PUBLIC_SAFE_API_URL,
   SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
+  SUBGRAPH_API_KEY: process.env.NEXT_PUBLIC_SUBGRAPH_API_KEY,
   VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 
@@ -425,6 +427,7 @@ export const {
   LIQUITY_STATS_URL,
   SAFE_API_URL,
   SUBGRAPH_URL,
+  SUBGRAPH_API_KEY,
   VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,
 } = parsedEnv.output;
