@@ -2,7 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { SboldPositionSummary } from "@/src/comps/EarnPositionSummary/SboldPositionSummary";
-import { getSboldContract } from "@/src/sbold";
+import { SboldContract } from "@/src/sbold";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { vDnum, vPositionSbold } from "@/src/valibot-utils";
@@ -138,7 +138,7 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
           ...ctx.contracts.BoldToken,
           functionName: "approve",
           args: [
-            getSboldContract().address,
+            SboldContract.address,
             ctx.preferredApproveMethod === "approve-infinite"
               ? maxUint256 // infinite approval
               : dn.abs(depositChange)[0], // exact amount
@@ -153,7 +153,6 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
       name: () => "Deposit",
       Status: TransactionStatus,
       async commit({ request, writeContract, account }) {
-        const SboldContract = getSboldContract();
         const { sboldPosition, prevSboldPosition } = request;
         const boldChange = sboldPosition.bold[0] - prevSboldPosition.bold[0];
         return writeContract({
@@ -176,7 +175,7 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
     const allowance = await ctx.readContract({
       ...ctx.contracts.BoldToken,
       functionName: "allowance",
-      args: [ctx.account, getSboldContract().address],
+      args: [ctx.account, SboldContract.address],
     });
 
     return allowance >= depositChange
