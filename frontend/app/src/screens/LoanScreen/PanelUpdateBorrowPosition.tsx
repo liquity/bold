@@ -21,6 +21,7 @@ import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
   Button,
+  ErrorMessage,
   HFlex,
   InfoTooltip,
   InputField,
@@ -289,8 +290,8 @@ export function PanelUpdateBorrowPosition({
               drawer={!debtChange.isFocused && isBelowMinDebt
                 ? { mode: "error", message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} bvUSD.` }
                 : insufficientBold
-                ? { mode: "error", message: "Insufficient bvUSD balance." }
-                : null}
+                  ? { mode: "error", message: "Insufficient bvUSD balance." }
+                  : null}
               label={{
                 start: debtMode === "remove"
                   ? "Decrease loan"
@@ -441,6 +442,22 @@ export function PanelUpdateBorrowPosition({
         }}
       >
         <ConnectWarningBox />
+
+        {
+          isAboveMaxLtv &&
+          <ErrorMessage message="You are at your max LTV. You can't borrow more." />
+        }
+
+        {
+          insufficientBold &&
+          <ErrorMessage message="Insufficient bvUSD balance." />
+        }
+
+        {
+          isBelowMinDebt &&
+          <ErrorMessage message={`You must borrow at least ${fmtnum(MIN_DEBT, 2)} bvUSD.`} />
+        }
+
         <Button
           disabled={!allowSubmit}
           label="Update position"

@@ -336,7 +336,6 @@ export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveI
 
 export function useAverageInterestRate(branchId: null | BranchId) {
   const brackets = useInterestRateBrackets(branchId);
-  console.log({ brackets });
 
   const data = useMemo(() => {
     if (!brackets.isSuccess) {
@@ -358,8 +357,6 @@ export function useAverageInterestRate(branchId: null | BranchId) {
       ? DNUM_0
       : dn.div(totalWeightedRate, totalDebt);
   }, [brackets.isSuccess, brackets.data]);
-
-  console.log("useAverageInterestRate", { brackets, data })
 
   return {
     ...brackets,

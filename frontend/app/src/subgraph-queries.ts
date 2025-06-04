@@ -31,8 +31,6 @@ export async function graphQuery<TResult, TVariables>(
     throw new Error("Invalid response from the subgraph");
   }
 
-  console.log("graphQuery", { graphResponse: response, result, data: result.data });
-
   return result.data as TResult;
 }
 

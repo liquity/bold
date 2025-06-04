@@ -58,7 +58,6 @@ export const InterestRateField = memo(
     const inputId = inputIdFromProps ?? autoInputId;
 
     const averageInterestRate = useAverageInterestRate(branchId);
-    console.log({ averageInterestRate });
 
     const rateTouchedForBranch = useRef<
       | null // rate not touched for this branch, average rate should be applied
@@ -119,8 +118,6 @@ export const InterestRateField = memo(
     const activeDelegateModes = DELEGATE_MODES.filter((mode) => mode !== "strategy" || hasStrategies);
 
     const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
-
-    console.log("interestRateField", { averageInterestRate, interestRate, debt, boldInterestPerYear });
 
     return (
       <>

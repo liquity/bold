@@ -107,8 +107,6 @@ export const fetchSpAverageApysFromDune = async ({
     validate: isDuneSpAverageApyResponse,
   });
 
-  // console.log(sevenDaysApys);
-
   return Object.fromEntries(
     branches.map((branch) => {
       const apys = sevenDaysApys.filter(

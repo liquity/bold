@@ -36,8 +36,6 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
     const boldChange = estimatedGains.data?.find(({ symbol }) => symbol === "bvUSD")?.change;
     const collChanges = estimatedGains.data?.filter(({ symbol }) => symbol !== "bvUSD");
 
-    console.log({ ctx, estimatedGains: estimatedGains })
-
     return (
       <>
         <TransactionDetailsRow
@@ -171,8 +169,6 @@ export function useSimulatedBalancesChange({
     queryFn: async () => {
       const CollateralRegistry = getProtocolContract("CollateralRegistry");
       const BoldToken = getProtocolContract("BoldToken");
-      console.log("got here1")
-
 
       let stored: v.InferOutput<typeof StoredBalancesChangeSchema> | null = null;
       try {
@@ -185,8 +181,6 @@ export function useSimulatedBalancesChange({
           ),
         );
       } catch (_) { }
-
-      console.log("got here2")
 
       if (stored && stored.stringifiedRequest === jsonStringifyWithDnum(request)) {
         return stored.balanceChanges;
@@ -211,25 +205,6 @@ export function useSimulatedBalancesChange({
         args: [account],
       } as const;
 
-      console.log("got here3")
-
-      console.log(
-        {
-          account,
-          calls:
-            [boldBalanceCall,
-              // ...branchesBalanceCalls,
-              // {
-              //   to: CollateralRegistry.address,
-              //   abi: CollateralRegistry.abi,
-              //   functionName: "redeemCollateral",
-              //   args: [request.amount[0], 0n, request.maxFee[0]],
-              // },
-              // boldBalanceCall,
-              // ...branchesBalanceCalls,
-            ]
-        })
-
       const simulation = await client.simulateCalls({
         account,
         calls: [
@@ -245,9 +220,6 @@ export function useSimulatedBalancesChange({
           ...branchesBalanceCalls,
         ],
       });
-      console.log(simulation)
-      console.log("got here4")
-
 
       const getBalancesFromSimulated = (position: number) => {
         return simulation.results
@@ -264,8 +236,6 @@ export function useSimulatedBalancesChange({
       const balancesBefore = getBalancesFromSimulated(0);
       const balancesAfter = getBalancesFromSimulated(branches.length + 2);
 
-      console.log("got here5")
-
       const balanceChanges = balancesBefore.map((balanceBefore, index) => {
         const balanceAfter = balancesAfter[index];
         if (!balanceAfter) throw new Error();
@@ -275,8 +245,6 @@ export function useSimulatedBalancesChange({
         };
       });
 
-      console.log("got here6")
-
       localStorage.setItem(
         `${LOCAL_STORAGE_PREFIX}:simulatedBalancesChange`,
         jsonStringifyWithDnum({
@@ -284,8 +252,6 @@ export function useSimulatedBalancesChange({
           balanceChanges,
         }),
       );
-
-      console.log("got here7")
 
       return balanceChanges;
     },

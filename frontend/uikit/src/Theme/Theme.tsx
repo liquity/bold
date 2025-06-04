@@ -18,6 +18,8 @@ export const colors = {
   neutralDimmed200: "#23262F80",
   neutralDimmed300: "#14141680",
 
+  redDimmed: "#F3674040",
+
   gray100: "#D7D7D7",
   gray200: "#C8C8C8",
   gray300: "#AFAFAF",

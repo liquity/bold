@@ -41,7 +41,7 @@ export function WhitelistScreen() {
   }
   
   const addressesRegistry = getBranchContract(collSymbol, "AddressesRegistry");
-  const owner = "0x22f5413C075Ccd56D575A54763831C4c27A37Bdb" // useProtocolOwner(addressesRegistry.address);
+  const owner = useProtocolOwner(addressesRegistry.address);
 
   console.log("OWNER", owner);
 

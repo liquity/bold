@@ -33,6 +33,7 @@ import {
   PillButton,
   TextButton,
   TokenIcon,
+  ErrorMessage,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
@@ -131,7 +132,6 @@ export function BorrowScreen() {
       }
 
       const risk = ltv && getLiquidationRisk(ltv, loanDetails.maxLtv);
-      console.log("stuff: ", { debt, ltv, risk });
       return { debt, ltv, risk };
     })
     : null;
@@ -377,45 +377,56 @@ export function BorrowScreen() {
                   }}
                 >
                   {account.isConnected ?
-                    <Button
-                      disabled={!allowSubmit}
-                      label={content.borrowScreen.action}
-                      mode="primary"
-                      size="medium"
-                      shape="rectangular"
-                      wide
-                      onClick={() => {
-                        if (
-                          deposit.parsed
-                          && debt.parsed
-                          && account.address
-                          && typeof nextOwnerIndex.data === "number"
-                        ) {
-                          txFlow.start({
-                            flowId: "openBorrowPosition",
-                            backLink: [
-                              `/borrow/${collSymbol.toLowerCase()}`,
-                              "Back to editing",
-                            ],
-                            successLink: ["/", "Go to the Dashboard"],
-                            successMessage: "The position has been created successfully.",
+                    <>
+                      {
+                        loanDetails.ltv >= loanDetails.maxLtv &&
+                        <ErrorMessage message="You are at your max LTV. You can't borrow more." />
+                      }
+                      {
+                        isBelowMinDebt &&
+                        <ErrorMessage message={`You must borrow at least ${fmtnum(MIN_DEBT, 2)} bvUSD.`} />
+                      }
 
-                            branchId: branch.id,
-                            owner: account.address,
-                            ownerIndex: nextOwnerIndex.data,
-                            collAmount: deposit.parsed,
-                            boldAmount: debt.parsed,
-                            // TODO: fix this
-                            // @ts-ignore
-                            annualInterestRate: interestRate,
-                            maxUpfrontFee: dnum18(maxUint256),
-                            interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate
-                              ? null
-                              : interestRateDelegate,
-                          });
-                        }
-                      }}
-                    />
+                      <Button
+                        disabled={!allowSubmit}
+                        label={content.borrowScreen.action}
+                        mode="primary"
+                        size="medium"
+                        shape="rectangular"
+                        wide
+                        onClick={() => {
+                          if (
+                            deposit.parsed
+                            && debt.parsed
+                            && account.address
+                            && typeof nextOwnerIndex.data === "number"
+                          ) {
+                            txFlow.start({
+                              flowId: "openBorrowPosition",
+                              backLink: [
+                                `/borrow/${collSymbol.toLowerCase()}`,
+                                "Back to editing",
+                              ],
+                              successLink: ["/", "Go to the Dashboard"],
+                              successMessage: "The position has been created successfully.",
+
+                              branchId: branch.id,
+                              owner: account.address,
+                              ownerIndex: nextOwnerIndex.data,
+                              collAmount: deposit.parsed,
+                              boldAmount: debt.parsed,
+                              // TODO: fix this
+                              // @ts-ignore
+                              annualInterestRate: interestRate,
+                              maxUpfrontFee: dnum18(maxUint256),
+                              interestRateDelegate: interestRateMode === "manual" || !interestRateDelegate
+                                ? null
+                                : interestRateDelegate,
+                            });
+                          }
+                        }}
+                      />
+                    </>
                     : <AccountButton />
                   }
                 </div>
