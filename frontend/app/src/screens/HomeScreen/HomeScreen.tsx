@@ -7,6 +7,7 @@ import { useBreakpoint } from "@/src/breakpoints";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Positions } from "@/src/comps/Positions/Positions";
+import { FORKS_INFO } from "@/src/constants";
 import content from "@/src/content";
 import { DNUM_1 } from "@/src/dnum-utils";
 import {
@@ -24,11 +25,10 @@ import { css } from "@/styled-system/css";
 import { IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { HomeTable } from "./HomeTable";
 
-import fork1Icon from "./liquity2-fork-1.png";
-import fork2Icon from "./liquity2-fork-2.png";
+type ForkInfo = (typeof FORKS_INFO)[number];
 
 export function HomeScreen() {
   const account = useAccount();
@@ -190,6 +190,7 @@ function EarnTable({
 }
 
 function ForksInfoDrawer() {
+  const pickedForkIcons = useMemo(() => pickRandomForks(2), []);
   return (
     <div
       className={css({
@@ -221,33 +222,32 @@ function ForksInfoDrawer() {
             gap: 0,
           })}
         >
-          <div
-            className={css({
-              display: "grid",
-              placeItems: "center",
-            })}
-          >
-            <Image
-              alt="Liquity V2 fork 1"
-              height={18}
-              src={fork1Icon}
-              width={18}
-            />
-          </div>
-          <div
-            className={css({
-              display: "grid",
-              placeItems: "center",
-              marginLeft: -4,
-            })}
-          >
-            <Image
-              alt="Liquity V2 fork 2"
-              height={18}
-              src={fork2Icon}
-              width={18}
-            />
-          </div>
+          {pickedForkIcons.map(([name, icon], index) => (
+            <div
+              key={name}
+              className={css({
+                display: "grid",
+                placeItems: "center",
+                background: "white",
+                borderRadius: "50%",
+                width: 18,
+                height: 18,
+              })}
+              style={{
+                marginLeft: index > 0 ? -4 : 0,
+              }}
+            >
+              <Image
+                loading="eager"
+                unoptimized
+                alt={name}
+                title={name}
+                height={18}
+                src={icon}
+                width={18}
+              />
+            </div>
+          ))}
         </div>
         <div
           className={css({
@@ -455,4 +455,20 @@ function EarnRewardsRow({
       )}
     </tr>
   );
+}
+
+function pickRandomForks(count: number): ForkInfo[] {
+  const forks = [...FORKS_INFO];
+  if (forks.length < count) {
+    return forks;
+  }
+  const picked: ForkInfo[] = [];
+  for (let i = 0; i < count; i++) {
+    const [info] = forks.splice(
+      Math.floor(Math.random() * forks.length),
+      1,
+    );
+    if (info) picked.push(info);
+  }
+  return picked;
 }

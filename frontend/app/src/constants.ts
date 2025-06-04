@@ -5,6 +5,14 @@ import type { CollateralSymbol, RiskLevel } from "@/src/types";
 import { norm } from "@liquity2/uikit";
 import * as dn from "dnum";
 
+// make sure the icons in /public/fork-icons/
+// are 54x54px, especially for PNGs.
+export const FORKS_INFO = [
+  ["Felix", "/fork-icons/felix.png"],
+  ["Orki Finance", "/fork-icons/orki.svg"],
+  ["Quill Finance", "/fork-icons/quill.svg"],
+] as const;
+
 export const ONE_SECOND = 1000;
 export const ONE_MINUTE = 60 * ONE_SECOND;
 export const ONE_HOUR = 60 * ONE_MINUTE;
