@@ -2,7 +2,8 @@
 
 pragma solidity 0.8.24;
 
-import "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+
 
 import "./Interfaces/IBorrowerOperations.sol";
 import "./Interfaces/IAddressesRegistry.sol";
@@ -16,7 +17,7 @@ import "./Types/LatestTroveData.sol";
 import "./Types/LatestBatchData.sol";
 
 contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperations {
-    using SafeERC20 for IERC20;
+    //using SafeERC20 for IERC20;
 
     // --- Connected contract declarations ---
 
@@ -157,14 +158,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     error NewOracleFailureDetected();
     error BatchSharesRatioTooLow();
 
-    event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event GasPoolAddressChanged(address _gasPoolAddress);
-    event CollSurplusPoolAddressChanged(address _collSurplusPoolAddress);
-    event SortedTrovesAddressChanged(address _sortedTrovesAddress);
-    event BoldTokenAddressChanged(address _boldTokenAddress);
-
-    event ShutDown(uint256 _tcr);
-
     constructor(IAddressesRegistry _addressesRegistry)
         AddRemoveManagers(_addressesRegistry)
         LiquityBase(_addressesRegistry)
@@ -186,12 +179,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         collSurplusPool = _addressesRegistry.collSurplusPool();
         sortedTroves = _addressesRegistry.sortedTroves();
         boldToken = _addressesRegistry.boldToken();
-
-        emit TroveManagerAddressChanged(address(troveManager));
-        emit GasPoolAddressChanged(gasPoolAddress);
-        emit CollSurplusPoolAddressChanged(address(collSurplusPool));
-        emit SortedTrovesAddressChanged(address(sortedTroves));
-        emit BoldTokenAddressChanged(address(boldToken));
 
         // Allow funds movements between Liquity contracts
         collToken.approve(address(activePool), type(uint256).max);
@@ -1231,8 +1218,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         if (TCR >= SCR) revert TCRNotBelowSCR();
 
         _applyShutdown();
-
-        emit ShutDown(TCR);
     }
 
     // Not technically a "Borrower op", but seems best placed here given current shutdown logic.
@@ -1301,7 +1286,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
     function _pullCollAndSendToActivePool(IActivePool _activePool, uint256 _amount) internal {
         // Send Coll tokens from sender to active pool
-        collToken.safeTransferFrom(msg.sender, address(_activePool), _amount);
+        collToken.transferFrom(msg.sender, address(_activePool), _amount);
         // Make sure Active Pool accountancy is right
         _activePool.accountForReceivedColl(_amount);
     }

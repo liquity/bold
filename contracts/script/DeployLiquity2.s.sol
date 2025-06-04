@@ -289,8 +289,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     }
 
     function run() external {
-        string memory saltStr = vm.envOr("SALT", block.timestamp.toString());
-        SALT = keccak256(bytes(saltStr));
+        //string memory saltStr = vm.envOr("SALT", block.timestamp.toString());
+        //SALT = keccak256(bytes(saltStr));
+        SALT = 0xd79110da63c6dad10aba193010eb906a4bc7ba9fe0aec03c0d8098e2dec596b6;
 
         //setup SF factories
         ISuperTokenFactory superTokenFactory = ISuperTokenFactory(0x1C21Ead77fd45C84a4c916Db7A6635D0C6FF09D6);
@@ -325,7 +326,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         _log("Deployer:               ", deployer.toHexString());
         _log("Deployer balance:       ", deployer.balance.decimal());
         _log("Deployment mode:        ", deploymentMode);
-        _log("CREATE2 salt:           ", 'keccak256(bytes("', saltStr, '")) = ', uint256(SALT).toHexString());
+        _log("CREATE2 salt:           ", '0xd79110da63c6dad10aba193010eb906a4bc7ba9fe0aec03c0d8098e2dec596b6');//'keccak256(bytes("', saltStr, '")) = ', uint256(SALT).toHexString());
         _log("Governance epoch start: ", epochStart.toString());
         _log("Use testnet PriceFeeds: ", useTestnetPriceFeeds ? "yes" : "no");
 
