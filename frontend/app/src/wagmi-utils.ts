@@ -9,6 +9,7 @@ import { useModal as useConnectKitModal } from "connectkit";
 import { match } from "ts-pattern";
 import { erc20Abi } from "viem";
 import { useAccount as useWagmiAccount, useEnsName, useReadContract } from "wagmi";
+import { CONTRACT_BOLD_TOKEN, CONTRACT_VAULT } from "./env";
 
 export function useBalance(
   address: Address | undefined,
@@ -22,10 +23,10 @@ export function useBalance(
           return null;
         }
         if(symbol === "bvUSD") {
-          return "0x96c6995a7737959708c2ed9129d07c94f012d2ce";
+          return CONTRACT_BOLD_TOKEN;
         }
         if(symbol === "sbvUSD") {
-          return "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225";
+          return CONTRACT_VAULT;
         }
         if(symbol === "VCRAFT") {
           return "0xc6675024FD3A9D37EDF3fE421bbE8ec994D9c262";

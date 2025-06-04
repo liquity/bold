@@ -24,7 +24,7 @@ import {
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
+import { CHAIN_BLOCK_EXPLORER, CONTRACT_VAULT, ENV_BRANCHES, LIQUITY_STATS_URL } from "@/src/env";
 import { useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
   useAllInterestRateBrackets,
@@ -156,11 +156,11 @@ export function useVault() {
   const vaultReads = useReadContracts({
     // @ts-ignore
     contracts: [{
-      address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+      address: CONTRACT_VAULT,
       abi: erc4626Abi,
       functionName: "totalAssets",
     }, {
-      address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+      address: CONTRACT_VAULT,
       abi: erc4626Abi,
       functionName: "totalSupply",
     }],
@@ -299,7 +299,7 @@ export function useVaultPosition(
   account: null | Address,
 ): UseQueryResult<PositionEarn | null> {
   const balance = useReadContract({
-    address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+    address: CONTRACT_VAULT,
     abi: erc4626Abi,
     functionName: "balanceOf",
     args: [account ?? "0x"],

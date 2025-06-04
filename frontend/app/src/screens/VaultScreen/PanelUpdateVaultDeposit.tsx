@@ -16,6 +16,7 @@ import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { Button, bvUSD, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon, USDT } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
+import { CONTRACT_BOLD_TOKEN, CONTRACT_VAULT } from "@/src/env";
 
 type ValueUpdateMode = "add" | "remove";
 
@@ -211,7 +212,7 @@ export function PanelUpdateVaultDeposit({
               successMessage: mode === "remove"
                 ? "The withdrawal has been processed successfully."
                 : "The deposit has been processed successfully.",
-              token: mode === "remove" ? "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225" : "0x96c6995a7737959708c2ed9129d07c94f012d2ce",
+              token: mode === "remove" ? CONTRACT_VAULT : CONTRACT_BOLD_TOKEN,
               mode: mode,
               prevEarnPosition,
               earnPosition: {

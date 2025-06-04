@@ -13,7 +13,7 @@ import { createRequestSchema, verifyTransaction } from "./shared";
 import { VaultPositionSummary } from "@/src/comps/VaultPositionSummary/VaultPositionSummary";
 import { Address, erc20Abi, erc4626Abi, getAddress, maxUint256, zeroAddress } from "viem";
 import { readContract, sendTransaction, writeContract } from "wagmi/actions";
-import { ENSO_API_KEY } from "@/src/env";
+import { CONTRACT_ROUTER, CONTRACT_VAULT, ENSO_API_KEY } from "@/src/env";
 
 const RequestSchema = createRequestSchema(
   "vaultUpdate",
@@ -94,7 +94,7 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
       Status: TransactionStatus,
       async commit(ctx) {
         return ctx.writeContract({
-          address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+          address: CONTRACT_VAULT,
           abi: [{
             "inputs": [
               {
@@ -120,7 +120,7 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
             "type": "function"
           }],
           functionName: "setOperator",
-          args: ["0x06C0c876419a76E89AD55D1225bB335939C25150", true],
+          args: [CONTRACT_ROUTER, true],
         })
       },
       async verify(ctx, hash) {
@@ -139,17 +139,19 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
         />
       ),
       async commit(ctx) {
+        console.log("APPROVAL COMMIT")
         const { mode, earnPosition, prevEarnPosition } = ctx.request;
         let change: BigInt = BigInt(0);
         let spender: Address = zeroAddress
         if (mode === "add") {
           change = earnPosition.deposit[0] - prevEarnPosition.deposit[0];
-          spender = getAddress("0x6c869d1D11299172586A4fe225b9BF6f5DBA6225")
+          spender = CONTRACT_VAULT
         }
         else {
           change = prevEarnPosition.deposit[0] - earnPosition.deposit[0];
-          spender = getAddress("0x06C0c876419a76E89AD55D1225bB335939C25150")
+          spender = CONTRACT_ROUTER
         }
+        console.log("Approval:", {token: ctx.request.token, spender, change})
         return ctx.writeContract({
           address: ctx.request.token,
           abi: erc20Abi,
@@ -175,7 +177,7 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
         const change = earnPosition.deposit[0] - prevEarnPosition.deposit[0];
 
         return ctx.writeContract({
-          address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+          address: CONTRACT_VAULT,
           abi: erc4626Abi,
           functionName: "deposit",
           args: [change, ctx.account],
@@ -208,14 +210,14 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
         const change = prevEarnPosition.deposit[0] - earnPosition.deposit[0];
 
         const shares = await readContract(ctx.wagmiConfig, {
-          address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+          address: CONTRACT_VAULT,
           abi: erc4626Abi,
           functionName: "convertToShares",
           args: [change],
         });
 
         return ctx.writeContract({
-          address: "0x06C0c876419a76E89AD55D1225bB335939C25150",
+          address: CONTRACT_ROUTER,
           abi: [{
             "inputs": [
               {
@@ -240,7 +242,7 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
             "type": "function"
           }],
           functionName: "requestFulfillWithdraw",
-          args: ["0x6c869d1D11299172586A4fe225b9BF6f5DBA6225", ctx.account, shares],
+          args: [CONTRACT_VAULT, ctx.account, shares],
         });
 
         // const ensoRes = (await fetch(
@@ -266,36 +268,42 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
   async getSteps(ctx) {
     const steps: string[] = [];
     const { token, mode, earnPosition, prevEarnPosition } = ctx.request;
+
     if (mode === "add") {
       const allowance = await readContract(ctx.wagmiConfig, {
         address: token,
         abi: erc20Abi,
         functionName: "allowance",
-        args: [ctx.account, "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225"],
+        args: [ctx.account, CONTRACT_VAULT],
       });
-
       var amount = dn.sub(earnPosition.deposit, prevEarnPosition.deposit)
+
+      console.log("allowance", allowance);
+      console.log("amount",  amount[0])
       if (allowance < amount[0]) {
         steps.push("approve");
       }
       steps.push("deposit");
     }
+
     else {
       const allowance = await readContract(ctx.wagmiConfig, {
         address: token,
         abi: erc20Abi,
         functionName: "allowance",
-        args: [ctx.account, "0x06C0c876419a76E89AD55D1225bB335939C25150"],
+        args: [ctx.account, CONTRACT_ROUTER],
       });
-
       var amount = dn.sub(prevEarnPosition.deposit, earnPosition.deposit)
+
+      console.log("allowance", allowance);
+      console.log("amount",  amount[0])
       if (allowance < amount[0]) {
         steps.push("approve");
       }
 
 
       const isOperator = await readContract(ctx.wagmiConfig, {
-        address: "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225",
+        address: CONTRACT_VAULT,
         abi: [{
           "inputs": [
             {
@@ -321,8 +329,9 @@ export const vaultUpdate: FlowDeclaration<VaultUpdateRequest> = {
           "type": "function"
         }],
         functionName: "isOperator",
-        args: [ctx.account, "0x6c869d1D11299172586A4fe225b9BF6f5DBA6225"],
+        args: [ctx.account, CONTRACT_ROUTER],
       });
+      console.log("isOperator", isOperator);
       if (!isOperator) {
         steps.push("setOperator");
       }

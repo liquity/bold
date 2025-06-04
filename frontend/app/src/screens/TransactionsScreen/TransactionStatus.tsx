@@ -14,6 +14,7 @@ export function TransactionStatus(
     approval?: "all" | "approve-only" | null;
   },
 ) {
+  console.log("props", props);
   const { preferredApproveMethod } = useStoredState();
   return (
     <div
