@@ -41,7 +41,7 @@ import {
 } from "@/src/subgraph";
 import { isBranchId, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { bigIntAbs, jsonStringifyWithBigInt } from "@/src/utils";
-import { vAddress, vPrefixedTroveId } from "@/src/valibot-utils";
+import { vAddress, vPrefixedTroveId, vTokenSymbol } from "@/src/valibot-utils";
 import { addressesEqual, COLLATERALS, isAddress, shortenAddress, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
@@ -665,6 +665,10 @@ const StatsSchema = v.pipe(
     total_sp_deposits: v.string(),
     total_value_locked: v.string(),
     max_sp_apy: v.string(),
+    prices: v.record(
+      vTokenSymbol(),
+      v.string(),
+    ),
     branch: v.record(
       v.string(),
       v.object({
@@ -712,6 +716,12 @@ const StatsSchema = v.pipe(
         }];
       }),
     ),
+    prices: Object.fromEntries(
+      Object.entries(value.prices).map(([symbol, price]) => [
+        symbol,
+        dnumOrNull(price, 18),
+      ]),
+    ) as Record<TokenSymbol, Dnum | null>,
   })),
 );
 

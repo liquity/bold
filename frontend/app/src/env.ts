@@ -245,27 +245,6 @@ export const EnvSchema = v.pipe(
       null,
     ),
     CHAIN_CONTRACT_MULTICALL: vAddress(),
-    COINGECKO_API_KEY: v.pipe(
-      v.optional(v.string(), ""),
-      v.rawTransform(({ dataset, addIssue, NEVER }) => {
-        const [apiType, apiKey] = dataset.value.split("|");
-        if (!apiKey) {
-          return null; // no API key
-        }
-        if (apiType !== "demo" && apiType !== "pro") {
-          addIssue({ message: `Invalid CoinGecko API type: ${apiType}` });
-          return NEVER;
-        }
-        if (!apiKey.trim()) {
-          addIssue({ message: `Invalid CoinGecko API key (empty)` });
-          return NEVER;
-        }
-        return {
-          apiType: apiType as "demo" | "pro",
-          apiKey,
-        };
-      }),
-    ),
     CONTRACTS_COMMIT_HASH: v.string(),
     CONTRACTS_COMMIT_URL: v.pipe(
       vEnvUrlOrDefault(DEFAULT_COMMIT_URL),
@@ -396,7 +375,6 @@ const parsedEnv = v.safeParse(EnvSchema, {
   CHAIN_ID: process.env.NEXT_PUBLIC_CHAIN_ID,
   CHAIN_NAME: process.env.NEXT_PUBLIC_CHAIN_NAME,
   CHAIN_RPC_URL: process.env.NEXT_PUBLIC_CHAIN_RPC_URL,
-  COINGECKO_API_KEY: process.env.NEXT_PUBLIC_COINGECKO_API_KEY,
   CONTRACTS_COMMIT_HASH: (
     // CONTRACTS_COMMIT_HASH_FROM_BUILD is set at build time (see next.config.js)
     // and gets overridden by NEXT_PUBLIC_CONTRACTS_COMMIT_HASH if set.
@@ -500,7 +478,6 @@ export const {
   CHAIN_ID,
   CHAIN_NAME,
   CHAIN_RPC_URL,
-  COINGECKO_API_KEY,
   ENV_BRANCHES,
   CONTRACTS_COMMIT_HASH,
   CONTRACTS_COMMIT_URL,
