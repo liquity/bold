@@ -9,10 +9,10 @@
 
 ## How to develop
 
-Copy the `.env` file to `.env.local`:
+Copy the `.env.example` file to `.env.local`:
 
 ```sh
-cp .env .env.local
+cp .env.example .env.local
 ```
 
 Edit the `.env.local` file to set the environment variables.
@@ -43,10 +43,10 @@ pnpm test                   # run the tests
 
 ## Environment
 
-Create `.env.local` from the `.env` file and fill in the required values (see the description of each variable below).
+Create `.env.local` from the `.env.example` file and fill in the required values (see the description of each variable below).
 
 ```sh
-cp .env .env.local
+cp .env.example .env.local
 ```
 
 See [./src/env.ts](./src/env.ts) for details about how the environment variables are being imported by the app.
