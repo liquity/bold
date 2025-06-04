@@ -3,12 +3,23 @@ import {
   AllocateLQTY as AllocateLQTYEvent,
   DepositLQTY as DepositLQTYEvent,
   RegisterInitiative as RegisterInitiativeEvent,
+  UnregisterInitiative as UnregisterInitiativeEvent,
   WithdrawLQTY as WithdrawLQTYEvent,
 } from "../generated/Governance/Governance";
 import { GovernanceAllocation, GovernanceInitiative, GovernanceUser } from "../generated/schema";
 
 export function handleRegisterInitiative(event: RegisterInitiativeEvent): void {
   let initiative = new GovernanceInitiative(event.params.initiative.toHex());
+  initiative.registered = true;
+  initiative.save();
+}
+
+export function handleUnregisterInitiative(event: UnregisterInitiativeEvent): void {
+  let initiative = GovernanceInitiative.load(event.params.initiative.toHex());
+  if (initiative === null) {
+    throw new Error("UnregisterInitiative event for non-existing initiative");
+  }
+  initiative.registered = false;
   initiative.save();
 }
 
@@ -95,3 +106,4 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
   user.save();
   initiative.save();
 }
+

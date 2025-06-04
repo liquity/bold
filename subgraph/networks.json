@@ -19,12 +19,12 @@
   },
   "sepolia": {
     "BoldToken": {
-      "address": "0x8809CBbe606Dd212F5F66A80F1792a111a96c48c",
-      "startBlock": 8008124
+      "address": "0x181dff47198bf3f3ed65877332e8395eb6817c4c",
+      "startBlock": 8316063
     },
     "Governance": {
-      "address": "0xf03ee2696e6b04cbe37978a9a32aea0b05d2f7a9",
-      "startBlock": 8008265
+      "address": "0xf68db4e851d89daf0fb842b01f75d94e0cb44f49",
+      "startBlock": 8316191
     }
   }
 }
