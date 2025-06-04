@@ -34,10 +34,10 @@ export function EarnPositionSummary({
   let prevShare = dn.from(0, 18);
   if (totalPoolDeposit && dn.gt(totalPoolDeposit, 0)) {
     if (earnPosition) {
-      share = dn.div(earnPosition.deposit, totalPoolDeposit);
+      share = dn.div(earnPosition.deposit, dn.add(totalPoolDeposit, earnPosition.deposit));
     }
     if (prevEarnPosition) {
-      prevShare = dn.div(prevEarnPosition.deposit, totalPoolDeposit);
+      prevShare = dn.div(prevEarnPosition.deposit, dn.add(totalPoolDeposit, prevEarnPosition.deposit));
     }
   }
 
