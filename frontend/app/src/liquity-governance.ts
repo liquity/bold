@@ -127,26 +127,6 @@ export function useInitiativeState(initiativeAddress: Address | null) {
   });
 }
 
-export async function getUserStates(
-  wagmiConfig: WagmiConfig,
-  account: Address,
-) {
-  const Governance = getProtocolContract("Governance");
-  const result = await readContract(wagmiConfig, {
-    ...Governance,
-    functionName: "userStates",
-    args: [account],
-  });
-
-  return {
-    allocatedLQTY: result[2],
-    allocatedOffset: result[3],
-    stakedLQTY: result[2] + result[0],
-    unallocatedLQTY: result[0],
-    unallocatedOffset: result[1],
-  };
-}
-
 const KnownInitiativesSchema = v.record(
   v.pipe(
     vAddress(),
@@ -281,17 +261,19 @@ export async function getUserAllocatedInitiatives(
   account: Address,
   initiatives?: Address[],
 ) {
-  return (await getUserAllocations(wagmiConfig, account, initiatives))
+  const allocations = await getUserAllocations(wagmiConfig, account, initiatives);
+  return allocations
     .filter(({ voteLQTY, vetoLQTY }) => (voteLQTY + vetoLQTY) > 0n)
     .map(({ initiative }) => initiative);
 }
 
-export async function getUserState(
+export async function getUserStates(
   wagmiConfig: WagmiConfig,
   account: Address,
 ) {
-  const userState = await readContract(wagmiConfig, {
-    ...getProtocolContract("Governance"),
+  const Governance = getProtocolContract("Governance");
+  const result = await readContract(wagmiConfig, {
+    ...Governance,
     functionName: "userStates",
     args: [account],
   });
@@ -301,14 +283,14 @@ export async function getUserState(
     unallocatedOffset,
     allocatedLQTY,
     allocatedOffset,
-  ] = userState;
+  ] = result;
 
   return {
-    id: account,
     allocatedLQTY,
     allocatedOffset,
-    stakedLQTY: unallocatedLQTY,
-    stakedOffset: unallocatedOffset,
+    stakedLQTY: allocatedLQTY + unallocatedLQTY,
+    unallocatedLQTY,
+    unallocatedOffset,
   };
 }
 
