@@ -47,7 +47,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
-import { encodeAbiParameters, erc20Abi, keccak256, parseAbiParameters } from "viem";
+import { encodeAbiParameters, erc20Abi, keccak256, parseAbiParameters, zeroAddress } from "viem";
 import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
@@ -152,6 +152,7 @@ export function getBranch(
 }
 
 function statusFromEnum(status: number): TroveStatus {
+  if (status === 0) return "nonexistent";
   if (status === 1) return "active";
   if (status === 2) return "closed";
   if (status === 3) return "liquidated";
@@ -884,8 +885,9 @@ export async function fetchLoanById(
   const TroveNft = getBranchContract(branchId, "TroveNFT");
 
   const [
-    indexdTrove,
-    [troveTuple, troveData, borrower],
+    indexedTrove,
+    [troveTuple, troveData],
+    borrower,
   ] = await Promise.all([
     getIndexedTroveById(branchId, troveId),
     readContracts(wagmiConfig, {
@@ -898,27 +900,28 @@ export async function fetchLoanById(
         ...TroveManager,
         functionName: "getLatestTroveData",
         args: [BigInt(troveId)],
-      }, {
-        ...TroveNft,
-        functionName: "ownerOf",
-        args: [BigInt(troveId)],
       }],
     }),
+    readContract(wagmiConfig, {
+      ...TroveNft,
+      functionName: "ownerOf",
+      args: [BigInt(troveId)],
+    }).catch((_err) => zeroAddress),
   ]);
 
   const status = troveTuple[3];
   const batchManager = troveTuple[8];
 
   return {
-    type: indexdTrove?.mightBeLeveraged ? "multiply" : "borrow",
+    type: indexedTrove?.mightBeLeveraged ? "multiply" : "borrow",
     batchManager: BigInt(batchManager) === 0n ? null : batchManager,
     borrowed: dnum18(troveData.entireDebt),
     borrower,
     branchId,
-    createdAt: indexdTrove?.createdAt ?? 0,
+    createdAt: indexedTrove?.createdAt ?? 0,
     deposit: dnum18(troveData.entireColl),
     interestRate: dnum18(troveData.annualInterestRate),
-    status: indexdTrove?.status ?? statusFromEnum(status),
+    status: indexedTrove?.status ?? statusFromEnum(status),
     troveId,
   };
 }

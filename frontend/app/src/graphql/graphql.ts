@@ -378,6 +378,7 @@ export enum GovernanceAllocation_OrderBy {
   Id = 'id',
   Initiative = 'initiative',
   InitiativeId = 'initiative__id',
+  InitiativeRegistered = 'initiative__registered',
   User = 'user',
   UserAllocatedLqty = 'user__allocatedLQTY',
   UserId = 'user__id',
@@ -390,6 +391,7 @@ export enum GovernanceAllocation_OrderBy {
 export type GovernanceInitiative = {
   __typename?: 'GovernanceInitiative';
   id: Scalars['ID']['output'];
+  registered: Scalars['Boolean']['output'];
 };
 
 export type GovernanceInitiative_Filter = {
@@ -405,10 +407,15 @@ export type GovernanceInitiative_Filter = {
   id_not?: InputMaybe<Scalars['ID']['input']>;
   id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
   or?: InputMaybe<Array<InputMaybe<GovernanceInitiative_Filter>>>;
+  registered?: InputMaybe<Scalars['Boolean']['input']>;
+  registered_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
+  registered_not?: InputMaybe<Scalars['Boolean']['input']>;
+  registered_not_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
 };
 
 export enum GovernanceInitiative_OrderBy {
-  Id = 'id'
+  Id = 'id',
+  Registered = 'registered'
 }
 
 export type GovernanceUser = {
