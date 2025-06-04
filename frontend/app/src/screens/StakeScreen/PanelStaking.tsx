@@ -266,7 +266,11 @@ export function PanelStaking() {
           request={account.address && {
             flowId: mode === "deposit" ? "stakeDeposit" : "unstakeDeposit",
             backLink: ["/stake", "Back to stake position"],
-            successLink: ["/stake/voting", "Go to Voting"],
+            successLink: mode === "deposit"
+              ? ["/stake/voting", "Go to voting"]
+              : dn.eq(updatedDeposit, 0)
+              ? ["/", "Go to the dashboard"]
+              : ["/stake", "Go to stake position"],
             successMessage: "The stake position has been updated successfully.",
             lqtyAmount: dn.abs(depositDifference),
             stakePosition: {
