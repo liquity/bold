@@ -440,7 +440,6 @@ export function PanelVoting() {
             },
             "& th:first-child": {
               textAlign: "left",
-              width: "40%",
             },
           },
           "& tbody": {
@@ -453,7 +452,6 @@ export function PanelVoting() {
             "& td:first-child": {
               paddingLeft: 0,
               textAlign: "left",
-              width: "40%",
             },
             "& td:last-child": {
               paddingRight: 0,
@@ -738,13 +736,13 @@ function InitiativeRow({
       <td>
         <div
           className={css({
-            display: "flex",
-            flexDirection: "column",
+            display: "grid",
           })}
         >
           <div
             title={initiative.address}
             className={css({
+              minWidth: 0,
               display: "flex",
               alignItems: "center",
               paddingTop: 6,
@@ -753,9 +751,10 @@ function InitiativeRow({
           >
             <div
               className={css({
+                minWidth: 0,
                 textOverflow: "ellipsis",
                 overflow: "hidden",
-                maxWidth: 200,
+                whiteSpace: "nowrap",
               })}
             >
               {initiative.url
@@ -779,7 +778,7 @@ function InitiativeRow({
               <div
                 title={`${initiativeStatusLabel(initiativesStatus)} (${initiativesStatus})`}
                 className={css({
-                  display: "inline-flex",
+                  display: "flex",
                   alignItems: "center",
                   height: 16,
                   padding: "0 4px 1px",
@@ -790,8 +789,8 @@ function InitiativeRow({
                   borderRadius: 8,
                   userSelect: "none",
                   textTransform: "lowercase",
-                  transform: "translateY(1px)",
-
+                  transform: "translateY(0.5px)",
+                  whiteSpace: "nowrap",
                   "--color-warning": "token(colors.warningAltContent)",
                   "--background-warning": "token(colors.warningAlt)",
                 })}
