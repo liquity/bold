@@ -29,12 +29,13 @@ export function EarnPositionSummary({
   const earnPool = useEarnPool(branchId);
 
   const { totalDeposited: totalPoolDeposit } = earnPool.data;
-
   let share = dn.from(0, 18);
   let prevShare = dn.from(0, 18);
   if (totalPoolDeposit && dn.gt(totalPoolDeposit, 0)) {
-    if (earnPosition) {
-      share = dn.div(earnPosition.deposit, totalPoolDeposit);
+    if (earnPosition && prevEarnPosition) {
+        share = dn.div(earnPosition.deposit, dn.add(totalPoolDeposit, prevEarnPosition.deposit));
+    } else if (earnPosition && !prevEarnPosition) {
+      share = dn.div(earnPosition.deposit, dn.add(totalPoolDeposit, earnPosition.deposit));
     }
     if (prevEarnPosition) {
       prevShare = dn.div(prevEarnPosition.deposit, totalPoolDeposit);
