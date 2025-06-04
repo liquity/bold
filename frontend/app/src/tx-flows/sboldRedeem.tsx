@@ -2,7 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { SboldPositionSummary } from "@/src/comps/EarnPositionSummary/SboldPositionSummary";
-import { getSboldContract } from "@/src/sbold";
+import { SboldContract } from "@/src/sbold";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { vPositionSbold } from "@/src/valibot-utils";
@@ -69,7 +69,6 @@ export const sboldRedeem: FlowDeclaration<SboldRedeemRequest> = {
       name: () => "Redeem",
       Status: TransactionStatus,
       async commit({ account, request, writeContract }) {
-        const SboldContract = getSboldContract();
         const { sboldPosition, prevSboldPosition } = request;
         const redeemAmount = (sboldPosition.sbold[0] - prevSboldPosition.sbold[0]) * -1n;
         if (redeemAmount <= 0n) {

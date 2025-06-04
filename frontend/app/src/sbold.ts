@@ -13,7 +13,7 @@ import { readContract } from "wagmi/actions";
 // if the fee is below this % of the deposit, we consider it negligible
 const NEGLIGIBLE_FEE_THRESHOLD = 0.0001; // 0.01%
 
-const SboldContract = !SBOLD ? null : {
+export const SboldContract = {
   abi: [
     ...erc20Abi,
     ...parseAbi([
@@ -30,22 +30,14 @@ const SboldContract = !SBOLD ? null : {
       "function withdraw(uint256 assets, address receiver, address owner) returns (uint256)",
     ]),
   ] as const,
-  address: SBOLD,
+  address: SBOLD ?? zeroAddress,
 };
-
-export function getSboldContract() {
-  if (!SboldContract) {
-    throw new Error("SBOLD contract address is not defined");
-  }
-  return SboldContract;
-}
 
 export function isSboldEnabled() {
   return Boolean(SBOLD);
 }
 
 export function useSboldPosition(address: Address | null) {
-  const SboldContract = getSboldContract();
   return useReadContracts({
     contracts: [{
       ...SboldContract,
@@ -57,7 +49,7 @@ export function useSboldPosition(address: Address | null) {
       args: [address ?? zeroAddress],
     }],
     query: {
-      enabled: Boolean(SBOLD && address),
+      enabled: Boolean(isSboldEnabled() && address),
       select: ([balance, maxWithdraw]): PositionSbold => {
         if (!address) {
           throw new Error(); // should never happen (see enabled)
@@ -69,13 +61,13 @@ export function useSboldPosition(address: Address | null) {
           sbold: dnum18(balance),
         };
       },
+      initialData: [0n, 0n],
     },
     allowFailure: false,
   });
 }
 
 export function usePreviewDeposit(bold: Dnum | null) {
-  const SboldContract = getSboldContract();
   const config = useWagmiConfig();
   return useQuery({
     queryKey: ["sbold", "previewDeposit", String(bold?.[0])],
@@ -111,7 +103,6 @@ export function usePreviewDeposit(bold: Dnum | null) {
 }
 
 export function usePreviewRedeem(sbold: Dnum | null) {
-  const SboldContract = getSboldContract();
   const config = useWagmiConfig();
   return useQuery({
     queryKey: ["sbold", "previewRedeem", String(sbold?.[0])],
@@ -147,10 +138,9 @@ function calculateSboldApr(spData: {
 }
 
 export function useSboldStats() {
-  const SBoldContract = getSboldContract();
   const liquityStats = useLiquityStats();
 
-  type SpsCall = typeof SBoldContract & {
+  type SpsCall = typeof SboldContract & {
     functionName: "sps";
     args: [bigint];
   };
@@ -170,17 +160,17 @@ export function useSboldStats() {
 
   return useReadContracts({
     contracts: [
-      { ...SBoldContract, functionName: "totalSupply" },
-      { ...SBoldContract, functionName: "calcFragments" },
+      { ...SboldContract, functionName: "totalSupply" },
+      { ...SboldContract, functionName: "calcFragments" },
       ...(Array.from({ length: getBranchesCount() }, (_, index) => ({
-        ...SBoldContract,
+        ...SboldContract,
         functionName: "sps",
         args: [BigInt(index)],
       })) as SpsCalls),
     ],
     allowFailure: false,
     query: {
-      enabled: Boolean(SBOLD && liquityStats.isSuccess),
+      enabled: isSboldEnabled() && liquityStats.isSuccess,
       select: ([totalSupply_, [totalBold_], ...sps]) => {
         const totalSupply = dnum18(totalSupply_);
         const totalBold = dnum18(totalBold_);
