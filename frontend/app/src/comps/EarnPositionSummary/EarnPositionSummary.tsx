@@ -11,6 +11,7 @@ import * as dn from "dnum";
 import Link from "next/link";
 
 export function EarnPositionSummary({
+  parent,
   branchId,
   prevEarnPosition,
   earnPosition,
@@ -18,6 +19,7 @@ export function EarnPositionSummary({
   title,
   txPreviewMode,
 }: {
+  parent: boolean;
   branchId: BranchId;
   prevEarnPosition?: PositionEarn | null;
   earnPosition: PositionEarn | null;
@@ -33,9 +35,12 @@ export function EarnPositionSummary({
   let prevShare = dn.from(0, 18);
   if (totalPoolDeposit && dn.gt(totalPoolDeposit, 0)) {
     if (earnPosition && prevEarnPosition) {
-        share = dn.div(earnPosition.deposit, dn.add(totalPoolDeposit, prevEarnPosition.deposit));
+      share = dn.div(earnPosition.deposit, dn.add(totalPoolDeposit, prevEarnPosition.deposit));
     } else if (earnPosition && !prevEarnPosition) {
-      share = dn.div(earnPosition.deposit, dn.add(totalPoolDeposit, earnPosition.deposit));
+      if(parent)
+        share = dn.div(earnPosition.deposit, totalPoolDeposit);
+      else 
+        share = dn.div(earnPosition.deposit, dn.add(totalPoolDeposit, earnPosition.deposit));
     }
     if (prevEarnPosition) {
       prevShare = dn.div(prevEarnPosition.deposit, totalPoolDeposit);

@@ -82,6 +82,7 @@ export function EarnPoolScreen() {
             {loadingState === "success"
               ? (
                 <EarnPositionSummary
+                  parent={true}
                   earnPosition={earnPosition.data ?? null}
                   branchId={branch.id}
                 />

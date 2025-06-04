@@ -26,6 +26,7 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
   Summary({ request }) {
     return (
       <EarnPositionSummary
+        parent = {false}
         branchId={request.earnPosition.branchId}
         earnPosition={request.earnPosition}
         txPreviewMode

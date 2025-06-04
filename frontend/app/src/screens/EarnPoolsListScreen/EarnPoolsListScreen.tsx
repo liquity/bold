@@ -104,6 +104,7 @@ function EarnPool({
     >
       {earnPosition.data &&
         <EarnPositionSummary
+          parent={true}
           branchId={branchId}
           earnPosition={earnPosition.data ?? null}
           linkToScreen

@@ -30,6 +30,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
   Summary({ request }) {
     return (
       <EarnPositionSummary
+        parent={false}
         branchId={request.branchId}
         earnPosition={{
           ...request.earnPosition,
