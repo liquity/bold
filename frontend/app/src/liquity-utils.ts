@@ -152,6 +152,7 @@ export function getBranch(
 }
 
 function statusFromEnum(status: number): TroveStatus {
+  if (status === 0) return "nonexistent";
   if (status === 1) return "active";
   if (status === 2) return "closed";
   if (status === 3) return "liquidated";
