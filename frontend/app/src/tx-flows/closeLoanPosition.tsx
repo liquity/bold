@@ -45,7 +45,8 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
   },
 
   Details({ request }) {
-    const { loan, repayWithCollateral } = request;
+    const { loan } = request;
+    const repayWithCollateral = false; // not supported in current zapper
     const collateral = getCollToken(loan.branchId);
     const collPrice = usePrice(collateral.symbol);
 
@@ -118,9 +119,11 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           args: [BigInt(loan.troveId)],
         });
 
-        const Zapper = branch.symbol === "WETH"
-          ? branch.contracts.LeverageWETHZapper
-          : branch.contracts.LeverageLSTZapper;
+        // const Zapper = branch.symbol === "WETH"
+        //   ? branch.contracts.LeverageWETHZapper
+        //   : branch.contracts.LeverageLSTZapper;
+
+        const Zapper = branch.contracts.LeverageLSTZapper;
 
         return ctx.writeContract({
           ...ctx.contracts.BoldToken,
@@ -148,13 +151,13 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         const branch = getBranch(loan.branchId);
 
         // repay with bvUSD => get ETH
-        if (!ctx.request.repayWithCollateral && branch.symbol === "WETH") {
-          return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
-            functionName: "closeTroveToRawETH",
-            args: [BigInt(loan.troveId)],
-          });
-        }
+        // if (!ctx.request.repayWithCollateral && branch.symbol === "WETH") {
+        //   return ctx.writeContract({
+        //     ...branch.contracts.LeverageWETHZapper,
+        //     functionName: "closeTroveToRawETH",
+        //     args: [BigInt(loan.troveId)],
+        //   });
+        // }
 
         // repay with bvUSD => get LST
         if (!ctx.request.repayWithCollateral) {
@@ -178,13 +181,13 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         }
 
         // repay with collateral => get ETH
-        if (branch.symbol === "WETH") {
-          return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
-            functionName: "closeTroveFromCollateral",
-            args: [BigInt(loan.troveId), closeFlashLoanAmount],
-          });
-        }
+        // if (branch.symbol === "WETH") {
+        //   return ctx.writeContract({
+        //     ...branch.contracts.LeverageWETHZapper,
+        //     functionName: "closeTroveFromCollateral",
+        //     args: [BigInt(loan.troveId), closeFlashLoanAmount],
+        //   });
+        // }
 
         // repay with collateral => get LST
         return ctx.writeContract({
