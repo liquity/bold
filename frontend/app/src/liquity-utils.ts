@@ -899,8 +899,9 @@ export async function fetchLoanById(
   const TroveNft = getBranchContract(branchId, "TroveNFT");
 
   const [
-    indexdTrove,
-    [troveTuple, troveData, borrower],
+    indexedTrove,
+    [troveTuple, troveData],
+    borrower,
   ] = await Promise.all([
     getIndexedTroveById(branchId, troveId),
     readContracts(wagmiConfig, {
@@ -913,27 +914,28 @@ export async function fetchLoanById(
         ...TroveManager,
         functionName: "getLatestTroveData",
         args: [BigInt(troveId)],
-      }, {
-        ...TroveNft,
-        functionName: "ownerOf",
-        args: [BigInt(troveId)],
       }],
     }),
+    readContract(wagmiConfig, {
+      ...TroveNft,
+      functionName: "ownerOf",
+      args: [BigInt(troveId)],
+    }).catch((_err) => zeroAddress),
   ]);
 
   const status = troveTuple[3];
   const batchManager = troveTuple[8];
 
   return {
-    type: indexdTrove?.mightBeLeveraged ? "multiply" : "borrow",
+    type: indexedTrove?.mightBeLeveraged ? "multiply" : "borrow",
     batchManager: BigInt(batchManager) === 0n ? null : batchManager,
     borrowed: dnum18(troveData.entireDebt),
     borrower,
     branchId,
-    createdAt: indexdTrove?.createdAt ?? 0,
+    createdAt: indexedTrove?.createdAt ?? 0,
     deposit: dnum18(troveData.entireColl),
     interestRate: dnum18(troveData.annualInterestRate),
-    status: indexdTrove?.status ?? statusFromEnum(status),
+    status: indexedTrove?.status ?? statusFromEnum(status),
     troveId,
   };
 }
