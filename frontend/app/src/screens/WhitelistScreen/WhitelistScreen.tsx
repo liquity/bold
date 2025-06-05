@@ -77,11 +77,13 @@ export function WhitelistScreen() {
   );
 
   useEffect(() => {
-    if (owner === account.address) {
-      if (owner !== undefined) setShowPage(true);
-    } else {
-      setShowPage(false);
-      router.push("/");
+    if (owner !== undefined) {
+      if (owner === account.address)
+        setShowPage(true);
+      else {
+        setShowPage(false);
+        router.push("/");
+      }
     }
   }, [account]);
 
