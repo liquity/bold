@@ -31,11 +31,6 @@ uint256 constant CCR_SETH = 160 * _1pct; // Branch minimum for adjustments
 uint256 constant MCR_SETH = 110 * _1pct; // Trove minimum for liquidation
 uint256 constant SCR_SETH = 110 * _1pct; //shutdown threshold (should be same as MCR)
 
-//TREE. tETH LRT from treehouse
-uint256 constant CCR_TREE = 165 * _1pct; // Branch minimum for adjustments
-uint256 constant MCR_TREE = 120 * _1pct; // Trove minimum for liquidation
-uint256 constant SCR_TREE = 120 * _1pct; //shutdown threshold (should be same as MCR)
-
 //LRT: weETH, rsETH. Liquidation restaking tokens
 uint256 constant CCR_LRT = 160 * _1pct; // Branch minimum for adjustments
 uint256 constant MCR_LRT = 130 * _1pct; // Trove minimum for liquidation
