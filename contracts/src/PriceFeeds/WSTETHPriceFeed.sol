@@ -21,9 +21,9 @@ contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
 
     constructor(
         address _owner,
-        address _ethUsdOracleAddress,
-        address _stEthUsdOracleAddress,
-        address _wstethRateProviderAddress,
+        address _ethUsdOracleAddress, //ETH/USD 
+        address _stEthUsdOracleAddress, //STETH/USD 
+        address _wstethRateProviderAddress, //WSTETH/STETH
         uint256 _ethUsdStalenessThreshold,
         uint256 _stEthUsdStalenessThreshold
     ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _wstethRateProviderAddress, _ethUsdStalenessThreshold) {
