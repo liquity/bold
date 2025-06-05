@@ -64,8 +64,8 @@ export function Positions({
   const positions = isPositionsPending ? [] : [
     ...(loans.data ?? []),
     ...(earnPositions.data ?? []),
-    ...(hasStakePosition ? [stakePosition.data] : []),
-    ...(hasSboldPosition ? [sboldPosition.data] : []),
+    ...(stakePosition.data && hasStakePosition ? [stakePosition.data] : []),
+    ...(sboldPosition.data && hasSboldPosition ? [sboldPosition.data] : []),
   ];
 
   let mode: Mode = address && positions && positions.length > 0

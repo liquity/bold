@@ -352,13 +352,14 @@ export function useStakePosition(address: null | Address) {
         pendingEthGainResult,
         pendingLusdGainResult,
         lusdBalanceResult,
-      ]): PositionStake | null => {
+      ]): PositionStake | undefined => {
         if (
           depositResult.status === "failure"
-          || pendingEthGainResult.status === "failure" || pendingLusdGainResult.status === "failure"
+          || pendingEthGainResult.status === "failure"
+          || pendingLusdGainResult.status === "failure"
           || lusdBalanceResult.status === "failure"
         ) {
-          return null;
+          return undefined;
         }
         const deposit = dnum18(depositResult.result);
         return {
