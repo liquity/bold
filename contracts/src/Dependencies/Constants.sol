@@ -34,7 +34,7 @@ uint256 constant SCR_SETH = 110 * _1pct; //shutdown threshold (should be same as
 //LRT: weETH, rsETH. Liquidation restaking tokens
 uint256 constant CCR_LRT = 160 * _1pct; // Branch minimum for adjustments
 uint256 constant MCR_LRT = 130 * _1pct; // Trove minimum for liquidation
-uint256 constant SCR_LRT = 110 * _1pct; //shutdown threshold (should be same as MCR)
+uint256 constant SCR_LRT = 115 * _1pct; //shutdown threshold (should be same as MCR)
 
 //ARB. Arbitrum
 uint256 constant CCR_ARB = 165 * _1pct; // Branch minimum for adjustments
@@ -47,7 +47,7 @@ uint256 constant MCR_COMP = 140 * _1pct; // Trove minimum for liquidation
 uint256 constant SCR_COMP = 115 * _1pct; //shutdown threshold (should be same as MCR)
 
 //tBTC from threshold
-uint256 constant CCR_BTC = 160 * _1pct; // Branch minimum for adjustments
+uint256 constant CCR_BTC = 150 * _1pct; // Branch minimum for adjustments
 uint256 constant MCR_BTC = 115 * _1pct; // Trove minimum for liquidation
 uint256 constant SCR_BTC = 110 * _1pct; //shutdown threshold (should be same as MCR)
 
