@@ -100,11 +100,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     //oracle addresses
     address ETH_ORACLE_ADDRESS = 0x4DF393Fa84e4a0CFdF14ce52f2a4E0c3d1AB0668; // api3 eth/usd
-    address STETH_ORACLE_ADDRESS = 0xAC7d5c56eBADdcBd97F9Efe586875F61410a54B4; // steth / ETH
+    address WSTETH_STETH_ORACLE_ADDRESS = 0xAC7d5c56eBADdcBd97F9Efe586875F61410a54B4; // wsteth / stETH
+    address STETH_USD_ORACLE_ADDRESS = 0x07C5b924399cc23c24a95c8743DE4006a32b7f2a; // chainlink stETH / USD
     address RETH_ORACLE_ADDRESS = 0xA99a7c32c68Ec86127C0Cff875eE10B9C87fA12d; // rETH / ETH
-
-    address WSTETH_STETH_ORACLE_ADDRESS = 0xB1552C5e96B312d0Bf8b554186F846C40614a540; 
-    address WSTETH_ETH_ORACLE_ADDRESS = 0xb523AE262D20A936BC152e6023996e46FDC2A95D;
 
     //usd price oracle addresses
     address RSETH_ETH_ORACLE_ADDRESS = 0x8fE61e9D74ab69cE9185F365dfc21FC168c4B56c;
@@ -129,7 +127,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
 
     // rate provider addresses
-    address WSTETH_PROVIDER_ADDRESS = 0xf7c5c26B574063e7b098ed74fAd6779e65E3F836;
+    address WSTETH_PROVIDER_ADDRESS = 0xf7c5c26B574063e7b098ed74fAd6779e65E3F836; // wsteth / stETH
     address RETH_PROVIDER_ADDRESS = 0x7EcCBbd05830EdF593d30005B8F69E965AF4D59f;
 
     // V1
@@ -699,12 +697,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // wstETH
             vars.collaterals[1] = IERC20Metadata(WSTETH_ADDRESS);
             vars.priceFeeds[1] = new WSTETHPriceFeed(
-                deployer,
-                ETH_ORACLE_ADDRESS,
-                STETH_ORACLE_ADDRESS,
-                WSTETH_PROVIDER_ADDRESS,
-                ETH_USD_STALENESS_THRESHOLD,
-                STETH_USD_STALENESS_THRESHOLD
+                deployer, //_owner
+                ETH_ORACLE_ADDRESS,  //_ethUsdOracleAddress
+                STETH_USD_ORACLE_ADDRESS, //_stEthUsdOracleAddress
+                WSTETH_PROVIDER_ADDRESS, //_wstethRateProviderAddress (gives cannonical steth per wsteth)
+                ETH_USD_STALENESS_THRESHOLD, //_ethUsdStalenessThreshold
+                STETH_USD_STALENESS_THRESHOLD //_stEthUsdStalenessThreshold
             );
 
             // RETH  todo: update with provider fixes
