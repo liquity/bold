@@ -924,9 +924,22 @@ The collateral portion of the gas compensation is calculated at liquidation. It 
 
 That is, the max collateral that can be paid is 2 stETH on the stETH branch, 2 rETH on the rETH branch, etc.
 
+These two components are termed the **WETH gas compensation** and the **collateral gas compensation**, respectively.
+
 Thus the total funds the liquidator receives upon a Trove liquidation is:
 
 `0.0375 WETH + min(0.5% trove_collateral, 2_units_of_LST)`. 
+
+
+The collateral gas compensation is paid out only for liquidations that offset debt against funds in the SP.  A pure redistribution liquidation sends no collateral gas compensation to the liquidator. 
+
+In the case of a mixed offset and redistribution liquidation, the liquidator receives collateral gas compensation only in proportion to the fraction of the Trove’s debt that was offset against the Stability Pool. e.g. if 25% of the Trove’s debt was offset against the SP and the remaining 75% redistributed, then the collateral gas compensation would be given by:
+
+`min(0.5% trove_collateral / 4, 2_units_of_LST)`
+
+
+The WETH gas compensation is always paid out regardless of the liquidation type.
+
 
 ## Redistributions
 
