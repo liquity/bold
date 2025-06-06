@@ -1240,6 +1240,46 @@ The trade-off of this solution that redemptions may sometimes be unprofitable du
 
 However, this "worst price" solution only applies if the delta between market price and canonical price is within the oracle deviation threshold (1% for WSTETH, 2% for RETH). If the difference is greater, then the normal primary pricing calculation is used - a large delta is assumed to reflect a legitimate difference between market price and canonical rate.
 
+### Is the “worst price” approach sufficient to mitigate front-running?
+
+An assumption of the v2 system is that adverse redemption arbs from oracle frontrunning are overall not worse than in Liquity v1, which uses only the ETH-USD Chainlink oracle. This is justified as follows:
+
+### WETH branch
+
+The WETH branch uses only the ETH-USD oracle, thus the adverse arb risks are the same as v1.
+
+### RETH branch
+
+RETH redemption price logic compares the RETH-ETH market oracle with the RETH-ETH LST exchange rate. When the delta between these is <2%, the system takes the max of the two for its RETH-ETH value, and otherwise, takes the min. The RETH-ETH value is multiplied by the ETH-USD market oracle price to derive a RETH-USD price.
+
+Here is RETH-ETH data for 07-2024 to 05-2025, for the latest Chainlink aggregator:
+https://docs.google.com/spreadsheets/d/1LxaKZwipSWmre2YxS_0AHT0cDd97yVae_DuJwKbejkQ/edit?usp=sharing
+
+Empirically, the relative market oracle deltas - i.e. the percentage difference between update `i` and update `i + 1` - are small. The largest was 0.46% in the dataset. Assuming no depeg (i.e.that the true RETH-ETH price equals the LST exchange rate), this implies the deltas between market oracle and exchange rate were always well under 2%. Thus usage of the min price for redemptions should be very rare, if it ever happens. In nearly all cases, it will use the “worst” price.
+
+
+Thus, the RETH branch just inherits the adverse arb risks of the ETH-USD oracle.
+
+### STETH branch
+
+The STETH redemption price logic compares two market oracles - STETH-USD and ETH-USD. 
+
+When the delta between oracle prices is >1%,the system uses the STETH-USD price rather than the max (“worst”) price.
+
+However it is ultimately the **redemption fee** that protects the system against market price movements:
+
+As in Liquity v1, any market price rise in range `[0.5%,1%]` can result in adverse profitable redemptions, since even though the ETH-USD oracle should update and the v2 system would use that (max) price, it can still be frontrun, and the fee is only 0.5%. The attacker can extract a profit (ignoring gas) of `market_price - stale_oracle_price - fee`.
+
+For market price rises above 1%, the STETH-USD oracle is used. The oracle should update, but if its frontrun (or if it’s just laggy and doesn’t update) the impact is actually the same as in v1: the system doesn’t use a max “worst” price, but it also didn’t in v1 either. The attacker extracts a profit of `market_price - stale_oracle_price - fee`, which for a given market price change >1%, would be the same quantity as if they frontran a stale ETH-USD oracle update.
+
+As long as both oracles are responsive (and assuming no LST depegs), the v2 system inherits the same adverse redemption arb risks as Liquity v1. 
+
+If for some reason the STETH-USD oracle doesn’t update quickly enough when the market price movement _should_ trigger it to update, then a  larger `market_price - stale_oracle_price` delta could result, in turn leading to larger adverse redemption volumes.
+
+However that would be purely an oracle issue. Chainlink has been chosen as the oracle provider in part due to their highly responsive oracles, and it’s assumed that STETH-USD oracle updates as responsively as ETH-USD, since they utilise the same underlying oracle network and infrastructure.
+
+Finally, Liquity v2 has extra protection from two measures that each reduce overall adverse arb profits: 1) a greater redemption fee gain (lower `BETA` parameter) and 2) redemption routing, which reduces adverse profits either by routing itself, or the flash loan fee required to manipulate StabilityPool quantities and bypass routing.
+
 ### TODO - [INHERITANCE DIAGRAM]
 
 
@@ -1812,6 +1852,26 @@ Previous calculations showed that it would take on the order of ~1000 redistribu
 Deliberately triggering sizable redistributions is difficult to engineer, since they require both the Stability Pool to be empty and large liquidateable Troves to be available.
 
 Despite this, the collateral gas compensation is now not paid out for redistributed collateral, making redistributions less profitable than in Liquity v1.
+
+### 23 - Redistributions and CR drag-down cascades
+
+When a redistribution occurs, debt and collateral of the liquidated Trove is assigned to all healthy Troves in proportion to their collateral.
+
+As long as the liquidated Trove has `ICR > 100%`, this distribution constitutes a net gain for all recipient Troves - that is, the dollar value of the collateral they receive is greater than the debt they receive.
+
+However, since the liquidated Trove has `ICR < MCR` and active Troves have `ICR >= MCR`, the redistribution reduces the ICR of all each active Trove.
+
+For active Troves close to the MCR, it is possible that the redistribution results in a `ICR < MCR` - i.e. they could be “dragged down” to below MCR and thus in turn liquidateable.  It is even possible that a “cascade” occurs - i.e. active Troves become liquidateable, and in turn are redistributed, potentially dragging more healthy Troves below MCR.
+
+This drag-down effect depends on:
+
+- The amount of debt and collateral liquidated
+- The ICR of the liquidated Trove
+- The distribution of branch collateral in healthy Troves - i.e. what proportion of collateral is in low-ICR active Troves
+
+For realistic distributions of Troves, the drag-down effect is fairly small and self-limiting.
+
+This drag-down dynamic is inherited from Liquity v1. However, Liquity v2 does not pay the collateral gas compensation for redistributions - as such, all else equal, the magnitude of the drag-down effect in v2 is somewhat reduced. As are the incentives for a liquidator to trigger repeated redistributions.
 
 ### Issues identified in audits requiring no fix
 A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/issues?q=label%3Awontfix+).
