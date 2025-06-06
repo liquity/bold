@@ -5,7 +5,7 @@ import { useAppear } from "@/src/anim-utils";
 import { useBreakpointName } from "@/src/breakpoints";
 import { INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
-import { jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { findClosestRateIndex, getBranch, useAverageInterestRate, useInterestRateChartData } from "@/src/liquity-utils";
@@ -92,6 +92,21 @@ export const InterestRateField = memo(
       averageInterestRate.data,
       branchId,
       onAverageInterestRateLoad,
+    ]);
+
+    useEffect(() => {
+      setDelegatePicker(null);
+      onDelegateChange(null);
+      onModeChange("manual");
+      if (averageInterestRate.data) {
+        onChange(averageInterestRate.data);
+      }
+    }, [
+      averageInterestRate.data,
+      branchId,
+      onChange,
+      onDelegateChange,
+      onModeChange,
     ]);
 
     const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
@@ -478,7 +493,7 @@ function ManualInterestRateSlider({
                 Math.round(value * (interestChartData.data.length)),
               );
               fieldValue.setValue(String(dn.toNumber(dn.mul(
-                interestChartData.data[index]?.rate ?? dn.from(0, 18),
+                interestChartData.data[index]?.rate ?? DNUM_0,
                 100,
               ))));
             }
