@@ -15,7 +15,6 @@ export const CollateralSymbolSchema = v.union([
   v.literal("ARB"),
   v.literal("RSETH"),
   v.literal("TBTC"),
-  v.literal("TETH"),
   v.literal("WETH"),
   v.literal("WEETH"),
 ]);
