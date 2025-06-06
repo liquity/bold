@@ -7,6 +7,8 @@ export type { Address, CollateralSymbol, Dnum, Token, TokenSymbol };
 
 export type RiskLevel = "low" | "medium" | "high";
 
+export type ChainId = number;
+
 export type BranchId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 export type TroveId = `0x${string}`;
