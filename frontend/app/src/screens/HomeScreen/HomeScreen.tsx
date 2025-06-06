@@ -257,7 +257,7 @@ function ForksInfoDrawer() {
           })}
         >
           <span
-            title={content.home.earnTable.forksInfo.text}
+            title={content.home.earnTable.forksInfo.titleAttr}
             className={css({
               overflow: "hidden",
               textOverflow: "ellipsis",
