@@ -136,7 +136,6 @@ export type Delegate = {
   address: Address;
   boldAmount: Dnum;
   fee?: Dnum;
-  followers: number;
   id: string;
   interestRate: Dnum;
   interestRateChange: {
@@ -144,9 +143,7 @@ export type Delegate = {
     max: Dnum;
     period: bigint;
   };
-  lastDays: number;
   name: string;
-  redemptions: Dnum;
 };
 
 export type LoanDetails = {
