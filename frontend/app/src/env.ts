@@ -1,25 +1,21 @@
 "use client";
 
-import type { Address, Branch, BranchId } from "@/src/types";
+import type { Address, Branch, BranchId, IcStrategy } from "@/src/types";
 
 import { DEFAULT_COMMIT_URL, DEFAULT_LEGACY_CHECKS, DEFAULT_STRATEGIES, DEFAULT_VERSION_URL } from "@/src/constants";
 import { isBranchId } from "@/src/types";
 import {
   vAddress,
-  vCollateralSymbol,
   vEnvAddressAndBlock,
   vEnvCurrency,
   vEnvFlag,
+  vEnvLegacyCheck,
   vEnvLink,
   vEnvUrlOrDefault,
+  vIcStrategy,
 } from "@/src/valibot-utils";
 import { isAddress } from "@liquity2/uikit";
 import * as v from "valibot";
-
-export type IcStrategy = {
-  address: Address;
-  name: string;
-};
 
 function isIcStrategyList(value: unknown): value is IcStrategy[] {
   return Array.isArray(value) && value.every((value) => (
@@ -79,64 +75,6 @@ function vBranchEnvVars(branchId: BranchId) {
     [`${prefix}_TOKEN_ID`]: v.optional(CollateralSymbolSchema),
   });
 }
-
-function vIcStrategy() {
-  return v.union([
-    vEnvFlag(),
-    v.pipe(
-      v.string(),
-      v.regex(/^\s?([^:]+:0x[0-9a-fA-F]{40},?)*\s?$/),
-      v.transform((value): IcStrategy[] => {
-        value = value.trim();
-        if (value.endsWith(",")) {
-          value = value.slice(0, -1);
-        }
-        return value.split(",")
-          .map((s) => {
-            const [name, address_] = s.split(":");
-            const address = address_?.trim().toLowerCase();
-            if (!name || !isAddress(address)) {
-              return null;
-            }
-            return { address, name };
-          })
-          .filter((x) => x !== null);
-      }),
-    ),
-  ]);
-}
-
-function vLegacyCheck() {
-  return v.union([
-    vEnvFlag(),
-    v.pipe(
-      v.string(),
-      v.transform((value) => JSON.parse(value)),
-      v.object({
-        BOLD_TOKEN: vAddress(),
-        COLLATERAL_REGISTRY: vAddress(),
-        GOVERNANCE: vAddress(),
-        INITIATIVES_SNAPSHOT_URL: v.string(),
-        TROVES_SNAPSHOT_URL: v.string(),
-        BRANCHES: v.array(
-          v.object({
-            symbol: vCollateralSymbol(),
-            name: v.string(),
-            COLL_TOKEN: vAddress(),
-            LEVERAGE_ZAPPER: vAddress(),
-            STABILITY_POOL: vAddress(),
-            TROVE_MANAGER: vAddress(),
-          }),
-        ),
-      }),
-    ),
-  ]);
-}
-
-export type LegacyCheck = Exclude<
-  v.InferOutput<ReturnType<typeof vLegacyCheck>>,
-  boolean
->;
 
 export const EnvSchema = v.pipe(
   v.object({
@@ -218,7 +156,7 @@ export const EnvSchema = v.pipe(
       v.transform((value) => value.trim() || null),
     ),
     KNOWN_INITIATIVES_URL: v.optional(v.pipe(v.string(), v.url())),
-    LEGACY_CHECK: v.optional(vLegacyCheck(), "true"),
+    LEGACY_CHECK: v.optional(vEnvLegacyCheck(), "true"),
     LIQUITY_STATS_URL: v.optional(v.pipe(v.string(), v.url())),
     SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
     SBOLD: v.optional(v.union([vAddress(), v.null()]), null),

@@ -1,10 +1,11 @@
 "use client";
 
-import type { IcStrategy, LegacyCheck } from "@/src/env";
-import type { BranchId, ChainId, CollateralSymbol, RiskLevel } from "@/src/types";
+import type { BranchId, ChainId, CollateralSymbol, IcStrategy, RiskLevel } from "@/src/types";
 
+import { vEnvLegacyCheck } from "@/src/valibot-utils";
 import { norm } from "@liquity2/uikit";
 import * as dn from "dnum";
+import * as v from "valibot";
 
 // make sure the icons in /public/fork-icons/
 // are 54x54px, especially for PNGs.
@@ -88,7 +89,10 @@ export const REDEMPTION_RISK: Record<Exclude<RiskLevel, "high">, number> = {
 };
 
 // default LEGACY_CHECKS when not set by the env
-export const DEFAULT_LEGACY_CHECKS = new Map<ChainId, LegacyCheck>([
+export const DEFAULT_LEGACY_CHECKS = new Map<
+  ChainId,
+  Exclude<v.InferOutput<ReturnType<typeof vEnvLegacyCheck>>, boolean>
+>([
   // mainnet
   [1, {
     BOLD_TOKEN: "0xb01dd87b29d187f3e3a4bf6cdaebfb97f3d9ab98",

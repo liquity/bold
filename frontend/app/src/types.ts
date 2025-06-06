@@ -188,3 +188,8 @@ export type Initiative =
 export type Vote = "for" | "against";
 export type VoteAllocation = { vote: Vote | null; value: Dnum };
 export type VoteAllocations = Record<Address, VoteAllocation>;
+
+export type IcStrategy = {
+  address: Address;
+  name: string;
+};
