@@ -118,7 +118,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 STETH_USD_STALENESS_THRESHOLD = 25 hours;
-    uint256 RETH_ETH_STALENESS_THRESHOLD = 58 hours;
+    uint256 RETH_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 RSETH_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 WEETH_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 ARB_USD_STALENESS_THRESHOLD = 25 hours;
@@ -500,17 +500,14 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collNames[3] = "Wrapped Etherfi Staked ETH";
         collSymbols[3] = "weETH";
 
-        collNames[4] = "Treehouse ETH ";
-        collSymbols[4] = "tETH";
+        collNames[4] = "Arbitrum";
+        collSymbols[4] = "ARB";
 
-        collNames[5] = "Arbitrum";
-        collSymbols[5] = "ARB";
+        collNames[5] = "Compound";
+        collSymbols[5] = "COMP";
 
-        collNames[6] = "Compound";
-        collSymbols[6] = "COMP";
-
-        collNames[7] = "Bitcoin";
-        collSymbols[7] = "tBTC";
+        collNames[6] = "Bitcoin";
+        collSymbols[6] = "tBTC";
 
         DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
             epochStart: epochStart,
