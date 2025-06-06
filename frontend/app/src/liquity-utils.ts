@@ -863,14 +863,10 @@ export function useInterestBatchDelegates(
             interestRateChange: {
               min: dnum18(batchFromChain.minInterestRate),
               max: dnum18(batchFromChain.maxInterestRate),
+              // period is sometimes called "max update frequency"
               period: batchFromChain.minInterestRateChangePeriod,
             },
             fee: batch.fee,
-
-            // not available in the subgraph yet
-            followers: 0,
-            lastDays: 0,
-            redemptions: dnum18(0),
           };
         })
         .filter((delegate) => delegate !== null);
