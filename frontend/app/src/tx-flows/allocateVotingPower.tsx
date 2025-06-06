@@ -4,10 +4,10 @@ import type { Address, Dnum, Initiative, VoteAllocation } from "@/src/types";
 import { AddressLink } from "@/src/comps/AddressLink/AddressLink";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { GAS_ALLOCATE_LQTY_MIN_HEADROOM } from "@/src/constants";
+import { getUserAllocatedInitiatives } from "@/src/liquity-governance";
 import { getUserStates, useGovernanceUser, useNamedInitiatives } from "@/src/liquity-governance";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { getIndexedUserAllocated } from "@/src/subgraph";
 import { vVoteAllocations } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { IconDownvote, IconStake, IconUpvote } from "@liquity2/uikit";
@@ -219,7 +219,10 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
           }
         }
 
-        const allocated = await getIndexedUserAllocated(ctx.account);
+        const allocated = await getUserAllocatedInitiatives(
+          ctx.wagmiConfig,
+          ctx.account,
+        );
 
         return ctx.writeContract({
           ...ctx.contracts.Governance,

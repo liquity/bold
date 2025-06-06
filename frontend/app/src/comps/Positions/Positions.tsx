@@ -58,11 +58,14 @@ export function Positions({
     ),
   );
 
+  const hasStakePosition = stakePosition.data && dn.gt(stakePosition.data.deposit, 0);
+  const hasSboldPosition = sboldPosition.data && dn.gt(sboldPosition.data.sbold, 0);
+
   const positions = isPositionsPending ? [] : [
     ...(loans.data ?? []),
     ...(earnPositions.data ?? []),
-    ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0) ? [stakePosition.data] : []),
-    ...(sboldPosition.data && dn.gt(sboldPosition.data.sbold, 0) ? [sboldPosition.data] : []),
+    ...(stakePosition.data && hasStakePosition ? [stakePosition.data] : []),
+    ...(sboldPosition.data && hasSboldPosition ? [sboldPosition.data] : []),
   ];
 
   let mode: Mode = address && positions && positions.length > 0

@@ -7,6 +7,7 @@ import { a, useTransition } from "@react-spring/web";
 export function Amount({
   animate = true,
   fallback = "",
+  fixed = false, // fixed numbers width
   format,
   percentage = false,
   prefix = "",
@@ -16,6 +17,7 @@ export function Amount({
 }: {
   animate?: boolean;
   fallback?: string;
+  fixed?: boolean;
   format?: FmtnumPresetName | number;
   percentage?: boolean;
   prefix?: string;
@@ -87,6 +89,9 @@ export function Amount({
         textOverflow: "ellipsis",
         transformOrigin: "50% 50%",
       })}
+      style={{
+        fontVariantNumeric: fixed ? "tabular-nums" : undefined,
+      }}
     >
       {appear((style, { showFallback, content }) => (
         showFallback ? content : (

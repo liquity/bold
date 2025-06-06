@@ -327,56 +327,45 @@ export function useStakePosition(address: null | Address) {
     },
   });
 
-  const stakePosition = useReadContracts({
-    contracts: [
-      {
-        ...LqtyStaking,
-        functionName: "stakes",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LqtyStaking,
-        functionName: "totalLQTYStaked",
-      },
-      {
-        ...LqtyStaking,
-        functionName: "getPendingETHGain",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LqtyStaking,
-        functionName: "getPendingLUSDGain",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LusdToken,
-        functionName: "balanceOf",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-    ],
+  return useReadContracts({
+    contracts: [{
+      ...LqtyStaking,
+      functionName: "stakes",
+      args: [userProxyAddress.data ?? "0x"],
+    }, {
+      ...LqtyStaking,
+      functionName: "getPendingETHGain",
+      args: [userProxyAddress.data ?? "0x"],
+    }, {
+      ...LqtyStaking,
+      functionName: "getPendingLUSDGain",
+      args: [userProxyAddress.data ?? "0x"],
+    }, {
+      ...LusdToken,
+      functionName: "balanceOf",
+      args: [userProxyAddress.data ?? "0x"],
+    }],
     query: {
       enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
       select: ([
         depositResult,
-        totalStakedResult,
         pendingEthGainResult,
         pendingLusdGainResult,
         lusdBalanceResult,
-      ]): PositionStake | null => {
+      ]): PositionStake | undefined => {
         if (
-          depositResult.status === "failure" || totalStakedResult.status === "failure"
-          || pendingEthGainResult.status === "failure" || pendingLusdGainResult.status === "failure"
+          depositResult.status === "failure"
+          || pendingEthGainResult.status === "failure"
+          || pendingLusdGainResult.status === "failure"
           || lusdBalanceResult.status === "failure"
         ) {
-          return null;
+          return undefined;
         }
         const deposit = dnum18(depositResult.result);
-        const totalStaked = dnum18(totalStakedResult.result);
         return {
           type: "stake",
           deposit,
           owner: address ?? "0x",
-          totalStaked,
           rewards: {
             eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
             lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
@@ -385,8 +374,6 @@ export function useStakePosition(address: null | Address) {
       },
     },
   });
-
-  return stakePosition;
 }
 
 export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveId) {

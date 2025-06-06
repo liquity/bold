@@ -18,7 +18,7 @@ import { vPositionLoanCommited } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { ADDRESS_ZERO, InfoTooltip } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { match, P } from "ts-pattern";
+import { match } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
 import { createRequestSchema, verifyTransaction } from "./shared";
@@ -50,7 +50,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
       .returnType<LoadingState>()
       .with({ status: "error" }, () => "error")
       .with({ status: "pending" }, () => "loading")
-      .with({ data: P.nonNullable }, () => "success")
+      .with({ status: "success" }, () => "success")
       .exhaustive();
 
     return (

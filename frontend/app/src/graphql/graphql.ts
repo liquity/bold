@@ -378,7 +378,6 @@ export enum GovernanceAllocation_OrderBy {
   Id = 'id',
   Initiative = 'initiative',
   InitiativeId = 'initiative__id',
-  InitiativeRegistered = 'initiative__registered',
   User = 'user',
   UserAllocatedLqty = 'user__allocatedLQTY',
   UserId = 'user__id',
@@ -391,7 +390,6 @@ export enum GovernanceAllocation_OrderBy {
 export type GovernanceInitiative = {
   __typename?: 'GovernanceInitiative';
   id: Scalars['ID']['output'];
-  registered: Scalars['Boolean']['output'];
 };
 
 export type GovernanceInitiative_Filter = {
@@ -407,15 +405,10 @@ export type GovernanceInitiative_Filter = {
   id_not?: InputMaybe<Scalars['ID']['input']>;
   id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
   or?: InputMaybe<Array<InputMaybe<GovernanceInitiative_Filter>>>;
-  registered?: InputMaybe<Scalars['Boolean']['input']>;
-  registered_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
-  registered_not?: InputMaybe<Scalars['Boolean']['input']>;
-  registered_not_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
 };
 
 export enum GovernanceInitiative_OrderBy {
-  Id = 'id',
-  Registered = 'registered'
+  Id = 'id'
 }
 
 export type GovernanceUser = {
@@ -1166,13 +1159,6 @@ export type GovernanceInitiativesQueryVariables = Exact<{ [key: string]: never; 
 
 export type GovernanceInitiativesQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string }> };
 
-export type GovernanceUserAllocationsQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GovernanceUserAllocationsQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', allocated: Array<string> } | null };
-
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
@@ -1266,10 +1252,3 @@ export const GovernanceInitiativesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GovernanceInitiativesQuery, GovernanceInitiativesQueryVariables>;
-export const GovernanceUserAllocationsDocument = new TypedDocumentString(`
-    query GovernanceUserAllocations($id: ID!) {
-  governanceUser(id: $id) {
-    allocated
-  }
-}
-    `) as unknown as TypedDocumentString<GovernanceUserAllocationsQuery, GovernanceUserAllocationsQueryVariables>;
