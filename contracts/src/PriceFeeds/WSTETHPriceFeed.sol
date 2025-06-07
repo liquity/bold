@@ -14,19 +14,19 @@ interface IWSTETH_Provider{
 
 contract WSTETHPriceFeed is CompositePriceFeed, IWSTETHPriceFeed {
     Oracle public stEthUsdOracle;
-    IWSTETH_Provider public provider = IWSTETH_Provider(0xf7c5c26B574063e7b098ed74fAd6779e65E3F836); //arbitrum rate provider via chainlink which calls mainnet rate provider directly.
-
+    IWSTETH_Provider public provider;
 
     uint256 public constant STETH_USD_DEVIATION_THRESHOLD = 1e16; // 1%
 
     constructor(
         address _owner,
-        address _ethUsdOracleAddress,
-        address _stEthUsdOracleAddress,
-        address _wstethRateProviderAddress,
+        address _ethUsdOracleAddress, //ETH/USD 
+        address _stEthUsdOracleAddress, //STETH/USD 
+        address _wstethRateProviderAddress, //WSTETH/STETH cannonical rate
         uint256 _ethUsdStalenessThreshold,
         uint256 _stEthUsdStalenessThreshold
     ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _wstethRateProviderAddress, _ethUsdStalenessThreshold) {
+        provider = IWSTETH_Provider(_wstethRateProviderAddress);
         stEthUsdOracle.aggregator = AggregatorV3Interface(_stEthUsdOracleAddress);
         stEthUsdOracle.stalenessThreshold = _stEthUsdStalenessThreshold;
         stEthUsdOracle.decimals = stEthUsdOracle.aggregator.decimals();

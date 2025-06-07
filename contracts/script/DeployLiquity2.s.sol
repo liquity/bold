@@ -32,7 +32,6 @@ import "src/PriceFeeds/tBTCPriceFeed.sol";
 import "src/PriceFeeds/ARBPriceFeed.sol";
 import "src/PriceFeeds/COMPPriceFeed.sol";
 import "src/PriceFeeds/WeETHPriceFeed.sol";
-import "src/PriceFeeds/treeETHPriceFeed.sol";
 import "src/CollateralRegistry.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "test/TestContracts/MetadataDeployment.sol";
@@ -74,7 +73,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     string constant DEPLOYMENT_MODE_USE_EXISTING_BOLD = "use-existing-bold";
 
 
-    //collateral token addresses. ETH, wstETH, rETH, rsETH, weETH, tETH, ARB, COMP, or tBTC.
+    //collateral token addresses. ETH, wstETH, rETH, rsETH, weETH, ARB, COMP, or tBTC.
     address WETH_ADDRESS = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
     address WSTETH_ADDRESS = 0x5979D7b546E38E414F7E9822514be443A4800529;
     address RETH_ADDRESS = 0xEC70Dcb4A1EFa46b8F2D97C310C9c4790ba5ffA8;
@@ -82,7 +81,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     address RSETH_ADDRESS = 0x4186BFC76E2E237523CBC30FD220FE055156b41F;
     address WEETH_ADDRESS = 0x35751007a407ca6FEFfE80b3cB397736D2cf4dbe;
-    address TETH_ADDRESS = 0xd09ACb80C1E8f2291862c4978A008791c9167003;
 
     address ARB_ADDRESS = 0x912CE59144191C1204E64559FE8253a0e49E6548;
     address COMP_ADDRESS = 0x354A6dA3fcde098F8389cad84b0182725c6C91dE;
@@ -102,16 +100,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     //oracle addresses
     address ETH_ORACLE_ADDRESS = 0x4DF393Fa84e4a0CFdF14ce52f2a4E0c3d1AB0668; // api3 eth/usd
-    address STETH_ORACLE_ADDRESS = 0xAC7d5c56eBADdcBd97F9Efe586875F61410a54B4; // steth / ETH
+    address WSTETH_STETH_ORACLE_ADDRESS = 0xAC7d5c56eBADdcBd97F9Efe586875F61410a54B4; // wsteth / stETH
+    address STETH_USD_ORACLE_ADDRESS = 0x07C5b924399cc23c24a95c8743DE4006a32b7f2a; // chainlink stETH / USD
     address RETH_ORACLE_ADDRESS = 0xA99a7c32c68Ec86127C0Cff875eE10B9C87fA12d; // rETH / ETH
-
-    address WSTETH_STETH_ORACLE_ADDRESS = 0xB1552C5e96B312d0Bf8b554186F846C40614a540; 
-    address WSTETH_ETH_ORACLE_ADDRESS = 0xb523AE262D20A936BC152e6023996e46FDC2A95D;
 
     //usd price oracle addresses
     address RSETH_ETH_ORACLE_ADDRESS = 0x8fE61e9D74ab69cE9185F365dfc21FC168c4B56c;
     address WEETH_ETH_ORACLE_ADDRESS = 0xabB160Db40515B77998289afCD16DC06Ae71d12E;
-    address TETH_WSTETH_ORACLE_ADDRESS = 0x98a977Ba31C72aeF2e15B950Eb5Ae3158863D856;
     
     //basic oracles for USD
     address ARB_USD_ORACLE_ADDRESS = 0x016aAE62d4c3a9b1101a8F9597227c045a41656F;
@@ -123,18 +118,16 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 STETH_USD_STALENESS_THRESHOLD = 25 hours;
-    uint256 RETH_ETH_STALENESS_THRESHOLD = 58 hours;
+    uint256 RETH_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 RSETH_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 WEETH_ETH_STALENESS_THRESHOLD = 25 hours;
-    uint256 TETH_WSTETH_STALENESS_THRESHOLD = 24 hours;
     uint256 ARB_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 COMP_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 TBTC_USD_STALENESS_THRESHOLD = 25 hours;
 
 
     // rate provider addresses
-    address TREEETH_PROVIDER_ADDRESS = 0x353230eF3b5916B280dBAbb720d7b8dB61485615;
-    address WSTETH_PROVIDER_ADDRESS = 0xf7c5c26B574063e7b098ed74fAd6779e65E3F836;
+    address WSTETH_PROVIDER_ADDRESS = 0xf7c5c26B574063e7b098ed74fAd6779e65E3F836; // wsteth / stETH
     address RETH_PROVIDER_ADDRESS = 0x7EcCBbd05830EdF593d30005B8F69E965AF4D59f;
 
     // V1
@@ -404,6 +397,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         //Interface TroveManagerParams:
         //(CCR, MCR, SCR, BCR, liquidation penalty, Liquidation penalty during redistribution, debt limit)
         //Use same liwuidation penalty for all troves.
+        
         //WETH
         troveManagerParamsArray[0] = TroveManagerParams(
             CCR_WETH, 
@@ -456,20 +450,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_SP_SETH, 
             LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
             2_000_000e18);
-        
-        //treeETH
-        troveManagerParamsArray[5] = TroveManagerParams(
-            CCR_TREE, 
-            MCR_TREE, 
-            SCR_TREE, 
-            BCR_ALL, 
-            LIQUIDATION_PENALTY_SP_SETH, 
-            LIQUIDATION_PENALTY_REDISTRIBUTION_SETH, 
-            2000000e18
-        ); 
+
         
         // ARB
-        troveManagerParamsArray[6] = TroveManagerParams(
+        troveManagerParamsArray[5] = TroveManagerParams(
             CCR_ARB, 
             MCR_ARB, 
             SCR_ARB, 
@@ -480,7 +464,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ); 
         
         //COMP
-        troveManagerParamsArray[7] = TroveManagerParams(
+        troveManagerParamsArray[6] = TroveManagerParams(
             CCR_COMP, 
             MCR_COMP, 
             SCR_COMP, 
@@ -491,7 +475,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
         
         // tbtc
-        troveManagerParamsArray[8] = TroveManagerParams(
+        troveManagerParamsArray[7] = TroveManagerParams(
             CCR_BTC, 
             MCR_BTC, 
             SCR_BTC, 
@@ -516,17 +500,14 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collNames[3] = "Wrapped Etherfi Staked ETH";
         collSymbols[3] = "weETH";
 
-        collNames[4] = "Treehouse ETH ";
-        collSymbols[4] = "tETH";
+        collNames[4] = "Arbitrum";
+        collSymbols[4] = "ARB";
 
-        collNames[5] = "Arbitrum";
-        collSymbols[5] = "ARB";
+        collNames[5] = "Compound";
+        collSymbols[5] = "COMP";
 
-        collNames[6] = "Compound";
-        collSymbols[6] = "COMP";
-
-        collNames[7] = "Bitcoin";
-        collSymbols[7] = "tBTC";
+        collNames[6] = "Bitcoin";
+        collSymbols[6] = "tBTC";
 
         DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
             epochStart: epochStart,
@@ -713,12 +694,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // wstETH
             vars.collaterals[1] = IERC20Metadata(WSTETH_ADDRESS);
             vars.priceFeeds[1] = new WSTETHPriceFeed(
-                deployer,
-                ETH_ORACLE_ADDRESS,
-                STETH_ORACLE_ADDRESS,
-                WSTETH_PROVIDER_ADDRESS,
-                ETH_USD_STALENESS_THRESHOLD,
-                STETH_USD_STALENESS_THRESHOLD
+                deployer, //_owner
+                ETH_ORACLE_ADDRESS,  //_ethUsdOracleAddress
+                STETH_USD_ORACLE_ADDRESS, //_stEthUsdOracleAddress
+                WSTETH_PROVIDER_ADDRESS, //_wstethRateProviderAddress (gives cannonical steth per wsteth)
+                ETH_USD_STALENESS_THRESHOLD, //_ethUsdStalenessThreshold
+                STETH_USD_STALENESS_THRESHOLD //_stEthUsdStalenessThreshold
             );
 
             // RETH  todo: update with provider fixes
@@ -752,36 +733,25 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 WEETH_ETH_STALENESS_THRESHOLD
             );
 
-            // TreeETH
-            vars.collaterals[5] = IERC20Metadata(TETH_ADDRESS);
-            vars.priceFeeds[5] = new TreeETHPriceFeed(
-                deployer,
-                ETH_ORACLE_ADDRESS,
-                TETH_WSTETH_ORACLE_ADDRESS,
-                TREEETH_PROVIDER_ADDRESS,
-                ETH_USD_STALENESS_THRESHOLD,
-                TETH_WSTETH_STALENESS_THRESHOLD
-            );
-
             // Arbitrum
-            vars.collaterals[6] = IERC20Metadata(ARB_ADDRESS);
-            vars.priceFeeds[6] = IPriceFeed(address(new ARBPriceFeed(
+            vars.collaterals[5] = IERC20Metadata(ARB_ADDRESS);
+            vars.priceFeeds[5] = IPriceFeed(address(new ARBPriceFeed(
                 deployer,
                 ARB_USD_ORACLE_ADDRESS,
                 ARB_USD_STALENESS_THRESHOLD
             )));
 
             // Compound
-            vars.collaterals[7] = IERC20Metadata(COMP_ADDRESS);
-            vars.priceFeeds[7] = IPriceFeed(address(new COMPPriceFeed(
+            vars.collaterals[6] = IERC20Metadata(COMP_ADDRESS);
+            vars.priceFeeds[6] = IPriceFeed(address(new COMPPriceFeed(
                 deployer,
                 COMP_USD_ORACLE_ADDRESS,
                 COMP_USD_STALENESS_THRESHOLD
             )));
 
             // tBTC
-            vars.collaterals[8] = IERC20Metadata(TBTC_ADDRESS);
-            vars.priceFeeds[8] = new tBTCPriceFeed(
+            vars.collaterals[7] = IERC20Metadata(TBTC_ADDRESS);
+            vars.priceFeeds[7] = new tBTCPriceFeed(
                 deployer,
                 TBTC_USD_ORACLE_ADDRESS,
                 BTC_USD_ORACLE_ADDRESS,
