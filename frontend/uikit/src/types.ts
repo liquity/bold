@@ -14,7 +14,6 @@ export type TokenSymbol =
   | "ARB"
   | "RSETH"
   | "TBTC"
-  | "TETH"
   | "WETH"
   | "WEETH";
 

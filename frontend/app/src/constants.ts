@@ -45,7 +45,6 @@ export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = {
   ARB: dn.from(100_000_000n, 18),
   RSETH: dn.from(100_000_000n, 18),
   TBTC: dn.from(100_000_000n, 18),
-  TETH: dn.from(100_000_000n, 18),
   WETH: dn.from(100_000_000n, 18),
   WEETH: dn.from(100_000_000n, 18),
 };
@@ -60,7 +59,6 @@ export const MAX_DEBT_LIMITS: Record<CollateralSymbol, dn.Dnum> = {
   ARB: dn.from(5_000_000n, 18),
   RSETH: dn.from(5_000_000n, 18),
   TBTC: dn.from(5_000_000n, 18),
-  TETH: dn.from(2_000_000n, 18),
   WETH: dn.from(100_000_000n, 18),
   WEETH: dn.from(2_000_000n, 18),
 };

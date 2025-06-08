@@ -134,10 +134,6 @@ export const EARN_POOLS: Record<
     apr: dn.from(0.054, 18),
     boldQty: [25_700_000n, 0],
   },
-  TETH: {
-    apr: dn.from(0.054, 18),
-    boldQty: [25_700_000n, 0],
-  },
   WETH: {
     apr: dn.from(0.054, 18),
     boldQty: [25_700_000n, 0],
