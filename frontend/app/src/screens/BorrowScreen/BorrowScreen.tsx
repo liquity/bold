@@ -175,7 +175,7 @@ export function BorrowScreen() {
                     />
                   ))}
                 </TokenIcon.Group>
-                {NBSP}BOLD
+                {NBSP}ETH
               </div>,
               <div
                 className={css({
@@ -184,7 +184,7 @@ export function BorrowScreen() {
                 })}
               >
                 <TokenIcon symbol="BOLD" />
-                {NBSP}ETH
+                {NBSP}BOLD
               </div>,
             )}
           </div>

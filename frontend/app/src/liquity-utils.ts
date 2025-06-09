@@ -8,6 +8,7 @@ import type {
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
+  Token,
   TokenSymbol,
   TroveId,
   TroveStatus,
@@ -28,9 +29,8 @@ import {
   INTEREST_RATE_START,
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
-import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER, DEMO_MODE, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
+import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
 import {
   getAllInterestRateBrackets,
   getIndexedTroveById,
@@ -39,15 +39,15 @@ import {
   getInterestRateBrackets,
   getNextOwnerIndex,
 } from "@/src/subgraph";
-import { isBranchId, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
-import { bigIntAbs, jsonStringifyWithBigInt, sleep } from "@/src/utils";
-import { vAddress, vPrefixedTroveId } from "@/src/valibot-utils";
-import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
+import { isBranchId, isPrefixedtroveId, isTroveId } from "@/src/types";
+import { bigIntAbs, jsonStringifyWithBigInt } from "@/src/utils";
+import { vAddress, vPrefixedTroveId, vTokenSymbol } from "@/src/valibot-utils";
+import { addressesEqual, COLLATERALS, isAddress, shortenAddress, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
-import { encodeAbiParameters, erc20Abi, keccak256, parseAbiParameters } from "viem";
+import { encodeAbiParameters, erc20Abi, keccak256, parseAbiParameters, zeroAddress } from "viem";
 import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
@@ -99,6 +99,16 @@ export function getCollToken(branchId: BranchId | null): CollateralToken | null 
   return token;
 }
 
+export function getToken(symbol: CollateralSymbol): CollateralToken;
+export function getToken(symbol: TokenSymbol): Token;
+export function getToken(symbol: TokenSymbol): Token {
+  const token = TOKENS_BY_SYMBOL[symbol];
+  if (!token) {
+    throw new Error(`Unknown token symbol: ${symbol}`);
+  }
+  return token;
+}
+
 export function getBranches(): Branch[] {
   return ENV_BRANCHES.map((branch) => {
     const contracts = CONTRACTS.branches.find((b) => b.id === branch.id);
@@ -113,6 +123,10 @@ export function getBranches(): Branch[] {
       strategies: branch.strategies,
     };
   });
+}
+
+export function getBranchesCount(): number {
+  return ENV_BRANCHES.length;
 }
 
 export function getBranch(idOrSymbol: null): null;
@@ -138,6 +152,7 @@ export function getBranch(
 }
 
 function statusFromEnum(status: number): TroveStatus {
+  if (status === 0) return "nonexistent";
   if (status === 1) return "active";
   if (status === 2) return "closed";
   if (status === 3) return "liquidated";
@@ -145,7 +160,16 @@ function statusFromEnum(status: number): TroveStatus {
   throw new Error(`Invalid status: ${status}`);
 }
 
-export function useEarnPool(branchId: BranchId) {
+type EarnPool = {
+  apr: Dnum | null;
+  apr7d: Dnum | null;
+  collateral: CollateralToken;
+  totalDeposited: Dnum;
+};
+export function useEarnPool(branchId: null): UseQueryResult<null>;
+export function useEarnPool(branchId: BranchId): UseQueryResult<EarnPool>;
+export function useEarnPool(branchId: BranchId | null): UseQueryResult<EarnPool | null>;
+export function useEarnPool(branchId: BranchId | null) {
   const wagmiConfig = useWagmiConfig();
   const stats = useLiquityStats();
   const collateral = getCollToken(branchId);
@@ -161,6 +185,9 @@ export function useEarnPool(branchId: BranchId) {
       jsonStringifyWithDnum(spApyAvg7d),
     ],
     queryFn: async () => {
+      if (branchId === null) {
+        return null;
+      }
       const totalBoldDeposits = await readContract(wagmiConfig, {
         ...getBranchContract(branchId, "StabilityPool"),
         functionName: "getTotalBoldDeposits",
@@ -254,37 +281,28 @@ export function useEarnPosition(
 
 export function useEarnPositionsByAccount(account: null | Address) {
   const wagmiConfig = useWagmiConfig();
-
-  let queryFn = async () => {
-    if (!account) return null;
-
-    const branches = getBranches();
-
-    const depositsPerBranch = await Promise.all(
-      branches.map(async (branch) => {
-        const setup = earnPositionsContractsReadSetup(branch.id, account);
-        const deposits = await readContracts(wagmiConfig, {
-          contracts: setup.contracts,
-          allowFailure: false,
-        });
-        return setup.select(deposits);
-      }),
-    );
-
-    return depositsPerBranch.filter((position) => position !== null);
-  };
-
-  if (DEMO_MODE) {
-    queryFn = async () => {
-      return account
-        ? ACCOUNT_POSITIONS.filter((position) => position.type === "earn")
-        : null;
-    };
-  }
-
   return useQuery({
     queryKey: ["StabilityPoolDepositsByAccount", account],
-    queryFn,
+    queryFn: async () => {
+      if (!account) {
+        return null;
+      }
+
+      const branches = getBranches();
+
+      const depositsPerBranch = await Promise.all(
+        branches.map(async (branch) => {
+          const setup = earnPositionsContractsReadSetup(branch.id, account);
+          const deposits = await readContracts(wagmiConfig, {
+            contracts: setup.contracts,
+            allowFailure: false,
+          });
+          return setup.select(deposits);
+        }),
+      );
+
+      return depositsPerBranch.filter((position) => position !== null);
+    },
   });
 }
 
@@ -309,56 +327,45 @@ export function useStakePosition(address: null | Address) {
     },
   });
 
-  const stakePosition = useReadContracts({
-    contracts: [
-      {
-        ...LqtyStaking,
-        functionName: "stakes",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LqtyStaking,
-        functionName: "totalLQTYStaked",
-      },
-      {
-        ...LqtyStaking,
-        functionName: "getPendingETHGain",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LqtyStaking,
-        functionName: "getPendingLUSDGain",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LusdToken,
-        functionName: "balanceOf",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-    ],
+  return useReadContracts({
+    contracts: [{
+      ...LqtyStaking,
+      functionName: "stakes",
+      args: [userProxyAddress.data ?? "0x"],
+    }, {
+      ...LqtyStaking,
+      functionName: "getPendingETHGain",
+      args: [userProxyAddress.data ?? "0x"],
+    }, {
+      ...LqtyStaking,
+      functionName: "getPendingLUSDGain",
+      args: [userProxyAddress.data ?? "0x"],
+    }, {
+      ...LusdToken,
+      functionName: "balanceOf",
+      args: [userProxyAddress.data ?? "0x"],
+    }],
     query: {
       enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
       select: ([
         depositResult,
-        totalStakedResult,
         pendingEthGainResult,
         pendingLusdGainResult,
         lusdBalanceResult,
-      ]): PositionStake | null => {
+      ]): PositionStake | undefined => {
         if (
-          depositResult.status === "failure" || totalStakedResult.status === "failure"
-          || pendingEthGainResult.status === "failure" || pendingLusdGainResult.status === "failure"
+          depositResult.status === "failure"
+          || pendingEthGainResult.status === "failure"
+          || pendingLusdGainResult.status === "failure"
           || lusdBalanceResult.status === "failure"
         ) {
-          return null;
+          return undefined;
         }
         const deposit = dnum18(depositResult.result);
-        const totalStaked = dnum18(totalStakedResult.result);
         return {
           type: "stake",
           deposit,
           owner: address ?? "0x",
-          totalStaked,
           rewards: {
             eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
             lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
@@ -367,8 +374,6 @@ export function useStakePosition(address: null | Address) {
       },
     },
   });
-
-  return stakePosition;
 }
 
 export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveId) {
@@ -377,11 +382,16 @@ export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveI
 }
 
 export function useInterestRateBrackets(branchId: BranchId) {
-  let queryFn = async () => getInterestRateBrackets(branchId);
-  if (DEMO_MODE) queryFn = async () => [];
   return useQuery({
     queryKey: ["InterestRateBrackets", branchId],
-    queryFn,
+    queryFn: () => getInterestRateBrackets(branchId),
+  });
+}
+
+export function useAllInterestRateBrackets() {
+  return useQuery({
+    queryKey: ["AllInterestRateBrackets"],
+    queryFn: () => getAllInterestRateBrackets(),
   });
 }
 
@@ -415,22 +425,13 @@ export function useAverageInterestRate(branchId: BranchId) {
   };
 }
 
-export function useAllInterestRateBrackets() {
-  let queryFn = async () => getAllInterestRateBrackets();
-  if (DEMO_MODE) queryFn = async () => [];
-  return useQuery({
-    queryKey: ["AllInterestRateBrackets"],
-    queryFn,
-  });
-}
-
 export function useInterestRateChartData() {
   const brackets = useAllInterestRateBrackets();
   return useQuery({
     queryKey: ["useInterestRateChartData", jsonStringifyWithDnum(brackets.data)],
     queryFn: () => {
       if (!brackets.isSuccess) {
-        throw new Error();
+        throw new Error(); // should never happen (see enabled)
       }
 
       const debtByRate = new Map<string, Dnum>();
@@ -651,6 +652,10 @@ const StatsSchema = v.pipe(
     total_sp_deposits: v.string(),
     total_value_locked: v.string(),
     max_sp_apy: v.string(),
+    prices: v.record(
+      vTokenSymbol(),
+      v.string(),
+    ),
     branch: v.record(
       v.string(),
       v.object({
@@ -698,6 +703,12 @@ const StatsSchema = v.pipe(
         }];
       }),
     ),
+    prices: Object.fromEntries(
+      Object.entries(value.prices).map(([symbol, price]) => [
+        symbol,
+        dnumOrNull(price, 18),
+      ]),
+    ) as Record<TokenSymbol, Dnum | null>,
   })),
 );
 
@@ -839,14 +850,10 @@ export function useInterestBatchDelegates(
             interestRateChange: {
               min: dnum18(batchFromChain.minInterestRate),
               max: dnum18(batchFromChain.maxInterestRate),
+              // period is sometimes called "max update frequency"
               period: batchFromChain.minInterestRateChangePeriod,
             },
             fee: batch.fee,
-
-            // not available in the subgraph yet
-            followers: 0,
-            lastDays: 0,
-            redemptions: dnum18(0),
           };
         })
         .filter((delegate) => delegate !== null);
@@ -885,8 +892,9 @@ export async function fetchLoanById(
   const TroveNft = getBranchContract(branchId, "TroveNFT");
 
   const [
-    indexdTrove,
-    [troveTuple, troveData, borrower],
+    indexedTrove,
+    [troveTuple, troveData],
+    borrower,
   ] = await Promise.all([
     getIndexedTroveById(branchId, troveId),
     readContracts(wagmiConfig, {
@@ -899,56 +907,39 @@ export async function fetchLoanById(
         ...TroveManager,
         functionName: "getLatestTroveData",
         args: [BigInt(troveId)],
-      }, {
-        ...TroveNft,
-        functionName: "ownerOf",
-        args: [BigInt(troveId)],
       }],
     }),
+    readContract(wagmiConfig, {
+      ...TroveNft,
+      functionName: "ownerOf",
+      args: [BigInt(troveId)],
+    }).catch((_err) => zeroAddress),
   ]);
 
   const status = troveTuple[3];
   const batchManager = troveTuple[8];
 
   return {
-    type: indexdTrove?.mightBeLeveraged ? "multiply" : "borrow",
+    type: indexedTrove?.mightBeLeveraged ? "multiply" : "borrow",
     batchManager: BigInt(batchManager) === 0n ? null : batchManager,
     borrowed: dnum18(troveData.entireDebt),
     borrower,
     branchId,
-    createdAt: indexdTrove?.createdAt ?? 0,
+    createdAt: indexedTrove?.createdAt ?? 0,
     deposit: dnum18(troveData.entireColl),
     interestRate: dnum18(troveData.annualInterestRate),
-    status: indexdTrove?.status ?? statusFromEnum(status),
+    status: indexedTrove?.status ?? statusFromEnum(status),
     troveId,
   };
 }
 
 export function useLoanById(id?: null | PrefixedTroveId) {
   const wagmiConfig = useWagmiConfig();
-
-  let queryFn: () => Promise<PositionLoanCommitted | null>;
-
-  queryFn = async () => (
-    id ? fetchLoanById(wagmiConfig, id) : null
-  );
-
-  if (DEMO_MODE) {
-    queryFn = async () => {
-      if (!isPrefixedtroveId(id)) return null;
-      await sleep(500);
-      for (const pos of ACCOUNT_POSITIONS) {
-        if (isPositionLoanCommitted(pos) && `${pos.branchId}:${pos.troveId}` === id) {
-          return pos;
-        }
-      }
-      return null;
-    };
-  }
-
   return useQuery<PositionLoanCommitted | null>({
     queryKey: ["TroveById", id],
-    queryFn,
+    queryFn: () => (
+      id ? fetchLoanById(wagmiConfig, id) : null
+    ),
   });
 }
 
@@ -972,21 +963,9 @@ export async function fetchLoansByAccount(
 
 export function useLoansByAccount(account?: Address | null) {
   const wagmiConfig = useWagmiConfig();
-
-  let queryFn: () => Promise<PositionLoanCommitted[] | null>;
-
-  queryFn = () => fetchLoansByAccount(wagmiConfig, account);
-
-  if (DEMO_MODE) {
-    queryFn = async () =>
-      account
-        ? ACCOUNT_POSITIONS.filter(isPositionLoanCommitted)
-        : null;
-  }
-
-  return useQuery({
+  return useQuery<PositionLoanCommitted[] | null>({
     queryKey: ["TrovesByAccount", account],
-    queryFn,
+    queryFn: () => fetchLoansByAccount(wagmiConfig, account),
   });
 }
 
@@ -1205,25 +1184,13 @@ export function useNextOwnerIndex(
   borrower: null | Address,
   branchId: null | BranchId,
 ) {
-  let queryFn = async () => (
-    borrower && branchId !== null
-      ? getNextOwnerIndex(branchId, borrower)
-      : null
-  );
-
-  if (DEMO_MODE) {
-    queryFn = async () => (
-      borrower
-        ? Object.values(ACCOUNT_POSITIONS)
-          .filter(isPositionLoanCommitted)
-          .length
-        : null
-    );
-  }
-
   return useQuery({
     queryKey: ["NextTroveId", borrower, branchId],
-    queryFn,
+    queryFn: () => (
+      borrower && branchId !== null
+        ? getNextOwnerIndex(branchId, borrower)
+        : null
+    ),
     enabled: borrower !== null && branchId !== null,
   });
 }

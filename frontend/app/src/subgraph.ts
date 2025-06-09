@@ -70,12 +70,14 @@ export async function getNextOwnerIndex(
   return Number(borrowerInfo?.nextOwnerIndexes[branchId] ?? 0);
 }
 
-const TroveByAccountQuery = graphql(`
+const TrovesByAccountQuery = graphql(`
   query TroveStatusesByAccount($account: Bytes!) {
     troves(
       where: {
-        borrower: $account,
-        status_in: [active,redeemed,liquidated],
+        or: [
+          { previousOwner: $account, status: liquidated },
+          { borrower: $account, status_in: [active,redeemed] }
+        ],
       }
       orderBy: updatedAt
       orderDirection: desc
@@ -98,7 +100,7 @@ export async function getIndexedTrovesByAccount(
   mightBeLeveraged: boolean;
   status: string;
 }[]> {
-  const { troves } = await graphQuery(TroveByAccountQuery, {
+  const { troves } = await graphQuery(TrovesByAccountQuery, {
     account: account.toLowerCase(),
   });
   return troves.map((trove) => ({
@@ -226,20 +228,4 @@ const GovernanceInitiatives = graphql(`
 export async function getIndexedInitiatives() {
   const { governanceInitiatives } = await graphQuery(GovernanceInitiatives);
   return governanceInitiatives.map((initiative) => initiative.id as Address);
-}
-
-const GovernanceUserAllocated = graphql(`
-  query GovernanceUserAllocations($id: ID!) {
-    governanceUser(id: $id) {
-      allocated
-    }
-  }
-`);
-
-// get the allocated initiatives for a given account
-export async function getIndexedUserAllocated(account: Address) {
-  const allocated = await graphQuery(GovernanceUserAllocated, {
-    id: account.toLowerCase(),
-  });
-  return (allocated.governanceUser?.allocated ?? []) as Address[];
 }

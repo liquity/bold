@@ -11,6 +11,7 @@ import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionS
 import { vDnum } from "@/src/valibot-utils";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
+import { Fragment } from "react";
 import * as v from "valibot";
 import { createPublicClient } from "viem";
 import { http, useConfig as useWagmiConfig } from "wagmi";
@@ -56,7 +57,9 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
               fallback="fetching…"
               suffix=" BOLD"
             />,
-            <>Estimated BOLD that will be redeemed.</>,
+            <Fragment key="end">
+              Estimated BOLD that will be redeemed.
+            </Fragment>,
           ]}
         />
         {branches.map(({ symbol }) => {
@@ -73,7 +76,9 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
                   fallback="fetching…"
                   suffix={` ${symbol_}`}
                 />,
-                <>Estimated {symbol_} you will receive.</>,
+                <Fragment key="end">
+                  Estimated {symbol_} you will receive.
+                </Fragment>,
               ]}
             />
           );
@@ -178,7 +183,9 @@ export function useSimulatedBalancesChange({
             ) ?? "",
           ),
         );
-      } catch (_) {}
+      } catch (_) {
+        stored = null;
+      }
 
       if (stored && stored.stringifiedRequest === jsonStringifyWithDnum(request)) {
         return stored.balanceChanges;

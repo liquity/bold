@@ -16,6 +16,7 @@ import {
 } from "@/src/env";
 import { blo } from "blo";
 import { ConnectKitProvider, getDefaultConfig as getDefaultConfigFromConnectKit } from "connectkit";
+import Image from "next/image";
 import { createConfig, http, WagmiProvider } from "wagmi";
 
 export const wagmiConfig = createConfig(
@@ -60,7 +61,7 @@ export function Ethereum({
           avoidLayoutShift: true,
           customAvatar: ({ address, size }) => (
             address && (
-              <img
+              <Image
                 alt={address}
                 src={blo(address)}
                 width={size}

@@ -197,18 +197,6 @@ NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=address|blockCreated
 NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=0xca11bde05977b3631167028862be2a173976ca11|14353601
 ```
 
-### `NEXT_PUBLIC_COINGECKO_API_KEY`
-
-API key for CoinGecko integration. Use 'demo' for the demo API or 'pro' for the pro API.
-
-```dosini
-# Format
-NEXT_PUBLIC_COINGECKO_API_KEY=apiType|API_KEY
-
-# Example
-NEXT_PUBLIC_COINGECKO_API_KEY=pro|CG-xxxxxxxxxxxxxxxxxxxx
-```
-
 ### `NEXT_PUBLIC_BLOCKING_LIST`
 
 Smart contract address for the blocking list implementation. The contract must implement `isBlackListed(address)(bool)`.
@@ -228,15 +216,6 @@ NEXT_PUBLIC_BLOCKING_VPNAPI=key|countryCodes
 
 # Example
 NEXT_PUBLIC_BLOCKING_VPNAPI=1234|US,CA
-```
-
-### `NEXT_PUBLIC_DEMO_MODE`
-
-Enable or disable demo mode for testing purposes.
-
-```dosini
-# Example
-NEXT_PUBLIC_DEMO_MODE=false
 ```
 
 ### `NEXT_PUBLIC_DELEGATE_AUTO`
@@ -314,7 +293,6 @@ src/
   abi/         # ABIs of the Liquity contracts
   app/         # The Next.js app (mostly routing only)
   comps/       # UI Components
-  demo-mode/   # Files related to the app running in demo mode
   screens/     # App Screens (used by /app routing components)
   services/    # Service Components
   tx-flows/    # Transaction Flows

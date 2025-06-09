@@ -9,22 +9,22 @@
   },
   "mainnet": {
     "BoldToken": {
-      "address": "0xb01dd87b29d187f3e3a4bf6cdaebfb97f3d9ab98",
-      "startBlock": 21640111
+      "address": "0x6440f144b7e50d6a8439336510312d2f54beb01d",
+      "startBlock": 22483043
     },
     "Governance": {
-      "address": "0x636deb767cd7d0f15ca4ab8ea9a9b26e98b426ac",
-      "startBlock": 21640111
+      "address": "0x807def5e7d057df05c796f4bc75c3fe82bd6eee1",
+      "startBlock": 22496547
     }
   },
   "sepolia": {
     "BoldToken": {
-      "address": "0x8809CBbe606Dd212F5F66A80F1792a111a96c48c",
-      "startBlock": 8008124
+      "address": "0x181dff47198bf3f3ed65877332e8395eb6817c4c",
+      "startBlock": 8316063
     },
     "Governance": {
-      "address": "0xf03ee2696e6b04cbe37978a9a32aea0b05d2f7a9",
-      "startBlock": 8008265
+      "address": "0xf68db4e851d89daf0fb842b01f75d94e0cb44f49",
+      "startBlock": 8316191
     }
   }
 }

@@ -1,18 +1,14 @@
 import type { ComponentPropsWithRef } from "react";
 
 import content from "@/src/content";
-import { useDemoMode } from "@/src/demo-mode";
 import { css } from "@/styled-system/css";
 import { Button, IconAccount, shortenAddress, ShowAfter } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { ConnectKitButton } from "connectkit";
 import { match, P } from "ts-pattern";
+import { useSwitchChain } from "wagmi";
 
 export function AccountButton() {
-  const demoMode = useDemoMode();
-  if (demoMode.enabled) {
-    return <DemoModeAccountButton />;
-  }
   return (
     <ShowAfter delay={500}>
       <ConnectKitButton.Custom>
@@ -100,6 +96,8 @@ function ButtonNotConnected({
   mode: "connecting" | "disconnected" | "unsupported";
   show?: () => void;
 }) {
+  const { switchChain, chains } = useSwitchChain();
+
   const props = {
     mode: "primary",
     label: mode === "connecting"
@@ -107,7 +105,11 @@ function ButtonNotConnected({
       : mode === "unsupported"
       ? content.accountButton.wrongNetwork
       : content.accountButton.connectAccount,
-    onClick: show,
+    onClick: mode === "unsupported"
+      ? () => {
+        switchChain({ chainId: chains[0].id });
+      }
+      : show,
   } as const;
 
   return (
@@ -129,16 +131,6 @@ function ButtonNotConnected({
       />
     </>
   );
-}
-
-function DemoModeAccountButton() {
-  const { account, updateAccountConnected } = useDemoMode();
-  const onClick = () => {
-    updateAccountConnected(!account.isConnected);
-  };
-  return account.isConnected
-    ? <ButtonConnected label="demo.eth" onClick={onClick} />
-    : <Button mode="primary" label="Connect" onClick={onClick} />;
 }
 
 function ButtonConnected({

@@ -152,6 +152,7 @@ export function Screen({
           flexGrow: 1,
           display: "grid",
           justifyItems: "center",
+          minWidth: 0,
           gap: {
             base: 20,
             large: 48,

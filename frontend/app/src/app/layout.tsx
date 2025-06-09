@@ -9,7 +9,6 @@ import { About } from "@/src/comps/About/About";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Blocking } from "@/src/comps/Blocking/Blocking";
 import content from "@/src/content";
-import { DemoMode } from "@/src/demo-mode";
 import { Ethereum } from "@/src/services/Ethereum";
 import { ReactQuery } from "@/src/services/ReactQuery";
 import { StoredState } from "@/src/services/StoredState";
@@ -42,19 +41,17 @@ export default function Layout({
           <UiKit>
             <StoredState>
               <BreakpointName>
-                <DemoMode>
-                  <Ethereum>
-                    <Blocking>
-                      <TransactionFlow>
-                        <About>
-                          <AppLayout>
-                            {children}
-                          </AppLayout>
-                        </About>
-                      </TransactionFlow>
-                    </Blocking>
-                  </Ethereum>
-                </DemoMode>
+                <Ethereum>
+                  <Blocking>
+                    <TransactionFlow>
+                      <About>
+                        <AppLayout>
+                          {children}
+                        </AppLayout>
+                      </About>
+                    </TransactionFlow>
+                  </Blocking>
+                </Ethereum>
               </BreakpointName>
             </StoredState>
           </UiKit>

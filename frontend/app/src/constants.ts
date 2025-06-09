@@ -1,9 +1,19 @@
 "use client";
 
-import type { CollateralSymbol, RiskLevel } from "@/src/types";
+import type { BranchId, ChainId, CollateralSymbol, IcStrategy, RiskLevel } from "@/src/types";
 
+import { vEnvLegacyCheck } from "@/src/valibot-utils";
 import { norm } from "@liquity2/uikit";
 import * as dn from "dnum";
+import * as v from "valibot";
+
+// make sure the icons in /public/fork-icons/
+// are 54x54px, especially for PNGs.
+export const FORKS_INFO = [
+  ["Felix", "/fork-icons/felix.png"],
+  ["Orki Finance", "/fork-icons/orki.svg"],
+  ["Quill Finance", "/fork-icons/quill.svg"],
+] as const;
 
 export const ONE_SECOND = 1000;
 export const ONE_MINUTE = 60 * ONE_SECOND;
@@ -77,3 +87,98 @@ export const REDEMPTION_RISK: Record<Exclude<RiskLevel, "high">, number> = {
   medium: 3.5 / 100,
   low: 5 / 100,
 };
+
+// default LEGACY_CHECKS when not set by the env
+export const DEFAULT_LEGACY_CHECKS = new Map<
+  ChainId,
+  Exclude<v.InferOutput<ReturnType<typeof vEnvLegacyCheck>>, boolean>
+>([
+  // mainnet
+  [1, {
+    BOLD_TOKEN: "0xb01dd87b29d187f3e3a4bf6cdaebfb97f3d9ab98",
+    COLLATERAL_REGISTRY: "0xd99de73b95236f69a559117ecd6f519af780f3f7",
+    GOVERNANCE: "0x636deb767cd7d0f15ca4ab8ea9a9b26e98b426ac",
+    INITIATIVES_SNAPSHOT_URL: "/initiatives-snapshot-1.json",
+    TROVES_SNAPSHOT_URL: "/troves-snapshot-1.json",
+    BRANCHES: [{
+      symbol: "ETH",
+      name: "ETH",
+      COLL_TOKEN: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      LEVERAGE_ZAPPER: "0x978d7188ae01881d254ad7e94874653b0c268004",
+      STABILITY_POOL: "0xf69eb8c0d95d4094c16686769460f678727393cf",
+      TROVE_MANAGER: "0x81d78814df42da2cab0e8870c477bc3ed861de66",
+    }, {
+      symbol: "WSTETH",
+      name: "wstETH",
+      COLL_TOKEN: "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+      LEVERAGE_ZAPPER: "0xc3d864adc2a9b49d52e640b697241408d896179f",
+      STABILITY_POOL: "0xcf46dab575c364a8b91bda147720ff4361f4627f",
+      TROVE_MANAGER: "0xb47ef60132deabc89580fd40e49c062d93070046",
+    }, {
+      symbol: "RETH",
+      name: "rETH",
+      COLL_TOKEN: "0xae78736cd615f374d3085123a210448e74fc6393",
+      LEVERAGE_ZAPPER: "0x7d5f19a1e48479a95c4eb40fd1a534585026e7e5",
+      STABILITY_POOL: "0xc4463b26be1a6064000558a84ef9b6a58abe4f7a",
+      TROVE_MANAGER: "0xde026433882a9dded65cac4fff8402fafff40fca",
+    }],
+  }],
+  // sepolia
+  [11155111, {
+    BOLD_TOKEN: "0xb01d32c05f4aa066eef2bfd4d461833fddd56d0a",
+    COLLATERAL_REGISTRY: "0x55cefb9c04724ba3c67d92df5e386c6f1585a83b",
+    GOVERNANCE: "0xe3f9ca5398cc3d0099c3ad37d3252e37431555b8",
+    INITIATIVES_SNAPSHOT_URL: "/initiatives-snapshot-11155111.json",
+    TROVES_SNAPSHOT_URL: "/troves-snapshot-11155111.json",
+    BRANCHES: [{
+      symbol: "ETH",
+      name: "ETH",
+      COLL_TOKEN: "0x8116d0a0e8d4f0197b428c520953f302adca0b50",
+      LEVERAGE_ZAPPER: "0x482bf4d6a2e61d259a7f97ef6aac8b3ce5dd9f99",
+      STABILITY_POOL: "0x89fb98c98792c8b9e9d468148c6593fa0fc47b40",
+      TROVE_MANAGER: "0x364038750236739e0cd96d5754516c9b8168fb0c",
+    }, {
+      symbol: "WSTETH",
+      name: "wstETH",
+      COLL_TOKEN: "0xff9f477b09c6937ff6313ae90e79022609851a9c",
+      LEVERAGE_ZAPPER: "0xea7fb1919bf9bae007df10ad8b748ee75fd5971d",
+      STABILITY_POOL: "0x68320bd4bbc16fe14f91501380edaa9ffe5890e1",
+      TROVE_MANAGER: "0xa7b57913b5643025a15c80ca3a56eb6fb59d095d",
+    }, {
+      symbol: "RETH",
+      name: "rETH",
+      COLL_TOKEN: "0xbdb72f78302e6174e48aa5872f0dd986ed6d98d9",
+      LEVERAGE_ZAPPER: "0x251dfe2078a910c644289f2344fac96bffea7c02",
+      STABILITY_POOL: "0x8492ad1df9f89e4b6c54c81149058172592e1c94",
+      TROVE_MANAGER: "0x310fa1d1d711c75da45952029861bcf0d330aa81",
+    }],
+  }],
+]);
+
+// default COLL_$INDEX_IC_STRATEGIES values when not set by the env
+export const DEFAULT_STRATEGIES: Array<[
+  ChainId,
+  Array<[BranchId, IcStrategy[]]>,
+]> = [
+  // mainnet
+  [1, [
+    // ETH
+    [0, [{
+      name: "Conservative Strategy",
+      address: "0xE507E4d0763851A6287238aadD243948D18AB60a",
+    }]],
+    // WSTETH
+    [1, [{
+      name: "Conservative Strategy",
+      address: "0x8869a6FB59a8Df330F90D9Fbf46eBfaFf6D4BC14",
+    }]],
+    // RETH
+    [2, [{
+      name: "Conservative Strategy",
+      address: "0x7700B2D305f47aE82e9598BAb6D7CCb57299A82b",
+    }]],
+  ]],
+];
+
+export const DEFAULT_COMMIT_URL = "https://github.com/liquity/bold/tree/{commit}";
+export const DEFAULT_VERSION_URL = "https://github.com/liquity/bold/releases/tag/%40liquity2%2Fapp-v{version}";

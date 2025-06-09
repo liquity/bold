@@ -5,6 +5,7 @@ import tokenEth from "./token-icons/eth.svg";
 import tokenLqty from "./token-icons/lqty.svg";
 import tokenLusd from "./token-icons/lusd.svg";
 import tokenReth from "./token-icons/reth.svg";
+import tokenSbold from "./token-icons/sbold.svg";
 import tokenSteth from "./token-icons/wsteth.svg";
 
 export type CollateralSymbol = "ETH" | "RETH" | "WSTETH";
@@ -34,6 +35,12 @@ export const LQTY: Token = {
   icon: tokenLqty,
   name: "LQTY",
   symbol: "LQTY" as const,
+} as const;
+
+export const SBOLD: Token = {
+  icon: tokenSbold,
+  name: "sBOLD",
+  symbol: "SBOLD" as const,
 } as const;
 
 export const ETH: CollateralToken = {
@@ -67,7 +74,8 @@ export const TOKENS_BY_SYMBOL = {
   BOLD,
   ETH,
   LQTY,
-  RETH,
-  WSTETH,
   LUSD,
+  RETH,
+  SBOLD,
+  WSTETH,
 } as const;

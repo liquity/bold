@@ -878,6 +878,7 @@ export type Trove = {
   interestBatch?: Maybe<InterestBatch>;
   interestRate: Scalars['BigInt']['output'];
   mightBeLeveraged: Scalars['Boolean']['output'];
+  previousOwner: Scalars['Bytes']['output'];
   stake: Scalars['BigInt']['output'];
   status: TroveStatus;
   troveId: Scalars['String']['output'];
@@ -1000,6 +1001,16 @@ export type Trove_Filter = {
   mightBeLeveraged_not?: InputMaybe<Scalars['Boolean']['input']>;
   mightBeLeveraged_not_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
   or?: InputMaybe<Array<InputMaybe<Trove_Filter>>>;
+  previousOwner?: InputMaybe<Scalars['Bytes']['input']>;
+  previousOwner_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  previousOwner_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  previousOwner_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  previousOwner_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  previousOwner_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  previousOwner_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  previousOwner_not?: InputMaybe<Scalars['Bytes']['input']>;
+  previousOwner_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  previousOwner_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
   stake?: InputMaybe<Scalars['BigInt']['input']>;
   stake_gt?: InputMaybe<Scalars['BigInt']['input']>;
   stake_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -1062,6 +1073,7 @@ export enum Trove_OrderBy {
   InterestBatchId = 'interestBatch__id',
   InterestRate = 'interestRate',
   MightBeLeveraged = 'mightBeLeveraged',
+  PreviousOwner = 'previousOwner',
   Stake = 'stake',
   Status = 'status',
   TroveId = 'troveId',
@@ -1147,13 +1159,6 @@ export type GovernanceInitiativesQueryVariables = Exact<{ [key: string]: never; 
 
 export type GovernanceInitiativesQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string }> };
 
-export type GovernanceUserAllocationsQueryVariables = Exact<{
-  id: Scalars['ID']['input'];
-}>;
-
-
-export type GovernanceUserAllocationsQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', allocated: Array<string> } | null };
-
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
@@ -1192,7 +1197,7 @@ export const BorrowerInfoDocument = new TypedDocumentString(`
 export const TroveStatusesByAccountDocument = new TypedDocumentString(`
     query TroveStatusesByAccount($account: Bytes!) {
   troves(
-    where: {borrower: $account, status_in: [active, redeemed, liquidated]}
+    where: {or: [{previousOwner: $account, status: liquidated}, {borrower: $account, status_in: [active, redeemed]}]}
     orderBy: updatedAt
     orderDirection: desc
   ) {
@@ -1247,10 +1252,3 @@ export const GovernanceInitiativesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GovernanceInitiativesQuery, GovernanceInitiativesQueryVariables>;
-export const GovernanceUserAllocationsDocument = new TypedDocumentString(`
-    query GovernanceUserAllocations($id: ID!) {
-  governanceUser(id: $id) {
-    allocated
-  }
-}
-    `) as unknown as TypedDocumentString<GovernanceUserAllocationsQuery, GovernanceUserAllocationsQueryVariables>;

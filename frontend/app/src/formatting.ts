@@ -77,7 +77,7 @@ export function fmtnum(
   const {
     dust = true,
     prefix = "",
-    preset,
+    preset: _preset,
     scale = 1,
     suffix = "",
     ...dnOptions
