@@ -121,16 +121,13 @@ export function usePreviewRedeem(sbold: Dnum | null) {
   });
 }
 
-function calculateSboldApr(spData: {
-  weight: Dnum;
-  apr: Dnum | null;
-}[]) {
+function calculateSboldApr(spData: Array<[apr: Dnum | null, weight: Dnum]>) {
   let weightedAprSum = DNUM_0;
   let totalWeight = DNUM_0;
-  for (const sp of spData) {
-    if (!sp.apr) continue;
-    weightedAprSum = dn.add(weightedAprSum, dn.mul(sp.weight, sp.apr));
-    totalWeight = dn.add(totalWeight, sp.weight);
+  for (const [apr, weight] of spData) {
+    if (!apr) continue;
+    weightedAprSum = dn.add(weightedAprSum, dn.mul(weight, apr));
+    totalWeight = dn.add(totalWeight, weight);
   }
   return dn.eq(totalWeight, 0)
     ? DNUM_0
@@ -187,12 +184,13 @@ export function useSboldStats() {
           const statsBranch = liquityStats.data?.branch[branch.symbol];
           return {
             apr: statsBranch?.spApyAvg1d ?? null,
+            apr7d: statsBranch?.spApyAvg7d ?? null,
             weight: dn.div(dn.from(weight, 18), 100_00), // from basis points
           };
         });
-
         return {
-          apr: calculateSboldApr(spAprs),
+          apr: calculateSboldApr(spAprs.map((sp) => [sp.apr, sp.weight])),
+          apr7d: calculateSboldApr(spAprs.map((sp) => [sp.apr7d, sp.weight])),
           sboldRate,
           totalBold,
           weights: spAprs.map((sp) => sp.weight),
