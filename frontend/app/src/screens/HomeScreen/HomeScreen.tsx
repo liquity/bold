@@ -402,14 +402,18 @@ function EarnRewardsRow({
         <Amount
           fallback="…"
           percentage
-          value={earnPool.data?.apr}
+          value={symbol === "SBOLD"
+            ? sboldStats.data?.apr
+            : earnPool.data?.apr}
         />
       </td>
       <td>
         <Amount
           fallback="…"
           percentage
-          value={earnPool.data?.apr7d}
+          value={symbol === "SBOLD"
+            ? sboldStats.data?.apr7d
+            : earnPool.data?.apr7d}
         />
       </td>
       <td>
