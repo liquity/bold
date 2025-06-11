@@ -74,10 +74,8 @@ const TrovesByAccountQuery = graphql(`
   query TroveStatusesByAccount($account: Bytes!) {
     troves(
       where: {
-        or: [
-          { previousOwner: $account, status: liquidated },
-          { borrower: $account, status_in: [active,redeemed] }
-        ],
+    borrower: $account,
+    status_in: [active, redeemed, liquidated]
       }
       orderBy: updatedAt
       orderDirection: desc

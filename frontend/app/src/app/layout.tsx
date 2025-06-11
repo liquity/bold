@@ -9,7 +9,6 @@ import { About } from "@/src/comps/About/About";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Blocking } from "@/src/comps/Blocking/Blocking";
 import content from "@/src/content";
-import { VERCEL_ANALYTICS } from "@/src/env";
 import { Ethereum } from "@/src/services/Ethereum";
 import { ReactQuery } from "@/src/services/ReactQuery";
 import { StoredState } from "@/src/services/StoredState";
@@ -20,7 +19,7 @@ import { GeistSans } from "geist/font/sans";
 
 export const metadata: Metadata = {
   title: content.appName,
-  icons: "/favicon.svg",
+  icons: "/favicon.png",
 };
 
 export const viewport: Viewport = {
@@ -57,7 +56,7 @@ export default function Layout({
             </StoredState>
           </UiKit>
         </ReactQuery>
-        {VERCEL_ANALYTICS && <Analytics />}
+        <Analytics />
       </body>
     </html>
   );
