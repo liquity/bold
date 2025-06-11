@@ -33,6 +33,7 @@ export function Positions({
   title?: (mode: Mode) => ReactNode;
 }) {
   const loans = useLoansByAccount(address);
+  console.log("LOAN", loans);
   const earnPositions = useEarnPositionsByAccount(address);
 
   const isPositionsPending = Boolean(

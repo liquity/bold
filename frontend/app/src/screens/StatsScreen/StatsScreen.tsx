@@ -157,26 +157,26 @@ export function StatsScreen() {
                       {
                         label: "Collateral",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["WETH"].collActive),
+                          Number(liquityStats.data.branch["bvBTC"].collActive),
                           "2z"
                         )} BTC`,
                       },
                       {
                         label: "Debt",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["WETH"].totalDebt),
+                          Number(liquityStats.data.branch["bvBTC"].totalDebt),
                           "2z"
                         )} bvUSD`,
                       },
                       {
                         label: "Collateral Ratio",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["WETH"].totalDebt) > 0
+                          Number(liquityStats.data.branch["bvBTC"].totalDebt) > 0
                             ? (Number(
-                                liquityStats.data.branch["WETH"].collValue
+                                liquityStats.data.branch["bvBTC"].collValue
                               ) /
                                 Number(
-                                  liquityStats.data.branch["WETH"].totalDebt
+                                  liquityStats.data.branch["bvBTC"].totalDebt
                                 )) *
                                 100
                             : 0,
@@ -238,7 +238,7 @@ export function StatsScreen() {
                     title="Global Collateral Ratio"
                   />
                   <CollateralRatioChart
-                    data={liquityStats.data.branch["WETH"].historicalCR}
+                    data={liquityStats.data.branch["bvBTC"].historicalCR}
                     title="ETH Branch Collateral Ratio"
                   />
                   <CollateralRatioChart

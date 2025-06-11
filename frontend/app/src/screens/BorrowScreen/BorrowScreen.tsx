@@ -45,6 +45,7 @@ const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
 
 export function BorrowScreen() {
   const branches = getBranches();
+
   // useParams() can return an array but not with the current
   // routing setup, so we can safely cast it to a string
   const collSymbol = `${useParams().collateral ?? branches[0]?.symbol}`.toUpperCase();

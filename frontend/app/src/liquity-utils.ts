@@ -119,6 +119,7 @@ export function getBranch(
     return null;
   }
 
+  console.log("ID", idOrSymbol.toString(), getBranches());
   const branch = getBranches().find((b) => (
     typeof idOrSymbol === "string"
       ? b.symbol === idOrSymbol

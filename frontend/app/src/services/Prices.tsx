@@ -14,14 +14,14 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol | "sbvUSD" | "VCRAFT" | "WBTC" | "USDT" | "WBNB";
+type PriceToken = "bvUSD" | "BOLD" | CollateralSymbol | "sbvUSD" | "VCRAFT" | "WBTC" | "USDT";
 
 function useCollateralPrice(
   symbol: null | CollateralSymbol
 ): UseQueryResult<Dnum> {
   // "ETH" is a fallback when null is passed, so we can return a standard
   // query object from the PriceFeed ABI, while the query stays disabled
-  const PriceFeed = getBranchContract(symbol ?? "WETH", "PriceFeed");
+  const PriceFeed = getBranchContract(symbol ?? "BVBTC", "PriceFeed");
 
   if (!PriceFeed) {
     throw new Error(`Price feed contract not found for ${symbol}`);
@@ -43,13 +43,11 @@ function useCollateralPrice(
   });
 }
 
-type CoinGeckoSymbol = TokenSymbol & ("WETH" | "BVBTC" | "WBNB");
+type CoinGeckoSymbol = TokenSymbol & ("BVBTC");
 const coinGeckoTokenIds: {
   [key in CoinGeckoSymbol]: string;
 } = {
-  WETH: "ethereum",
-  BVBTC: "bitcoin",
-  WBNB: "binance coin"
+  BVBTC: "bitcoin"
 };
 
 function useCoinGeckoPrice(
@@ -119,9 +117,7 @@ function useCoinGeckoPrice(
 const defiLlamaTokenIds: {
   [key in CoinGeckoSymbol]: string;
 } = {
-  WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-  BVBTC: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
-  WBNB: "0xB8c77482e45F1F44dE1745F52C74426C631bDD52"
+  BVBTC: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599"
 };
 
 function useDefiLlamaPrice(
@@ -175,7 +171,7 @@ function useDefiLlamaPrice(
 export function usePrice<PT extends PriceToken>(
   symbol: PT | null
 ): UseQueryResult<Dnum> {
-  const fromCoinGecko = symbol === "WETH" || symbol === "BVBTC" || symbol === "WBNB";
+  const fromCoinGecko = symbol === "BVBTC";
   const fromPriceFeed =
     !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
 

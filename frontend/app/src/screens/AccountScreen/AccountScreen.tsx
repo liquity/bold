@@ -32,6 +32,7 @@ export function AccountScreen({
 }) {
   const account = useAccount();
   const branches = getBranches();
+  
   const tapEnabled = CHAIN_ID !== 1;
   return (
     <Screen>
@@ -133,7 +134,7 @@ export function AccountScreen({
                   address={address}
                   tokenSymbol={symbol}
                   tapButton={tapEnabled
-                    && symbol !== "WETH" && account.address
+                    && account.address
                     && addressesEqual(address, account.address)}
                 />
               </GridItem>
