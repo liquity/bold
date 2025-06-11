@@ -36,10 +36,6 @@ export function VaultPoolScreen() {
   return (
     <Screen
       ready={loadingState === "success"}
-      back={{
-        href: "/earn",
-        label: content.earnScreen.backButton,
-      }}
       heading={
         <div
           className={css({
