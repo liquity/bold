@@ -1,4 +1,4 @@
-![Liquity V2](https://github.com/user-attachments/assets/b3ffbc5e-b7a8-46b6-a080-e18a0792bb64)
+<img width="668" alt="image" src="https://github.com/user-attachments/assets/c15c23c4-95ea-4bdd-81c7-e552abb23348" />![Liquity V2](https://github.com/user-attachments/assets/b3ffbc5e-b7a8-46b6-a080-e18a0792bb64)
 
 [![Coverage Status](https://coveralls.io/repos/github/liquity/bold/badge.svg?branch=main&t=yZSfc8)](https://coveralls.io/github/liquity/bold?branch=main)
 
@@ -996,11 +996,12 @@ When the TCR of a branch falls below its Critical Collateral Ratio (CCR), the sy
 
 Here is the full CCR-based logic:
 
-<img width="672" alt="image" src="https://github.com/user-attachments/assets/6afc6deb-5301-4918-8477-e74e2753629c" />
+<img width="668" alt="image" src="https://github.com/user-attachments/assets/03dcfd5c-9ffc-40fd-be60-392af5cb8baa" />
 
 As a result, when `TCR < CCR`, the following restrictions apply:
 
-<img width="672" alt="image" src="https://github.com/user-attachments/assets/20a3d6ef-472c-44bf-84d3-8c96533d932a" />
+<img width="671" alt="image" src="https://github.com/user-attachments/assets/dd01d27e-27ed-4e71-b97e-6527f722a111" />
+
 
 
 ### Rationale
