@@ -1166,6 +1166,12 @@ The following operations are still allowed after shut down:
 - Depositing to and withdrawing from the SP
 - Urgent redemptions (see below)
 
+### Closing the last Trove in the system
+
+Ordinarily, on active branches, the last Trove in the system can not be closed. This is to ensure there is always a final recipient active Trove available to receive redistributions. The owner of the last Trove is free to repay debt down to the minimum level, and the Trove can still be redeemed down to 0 debt (and thus become a zombie Trove), as usual.
+
+On shutdown branches, the last Trove _ca_ be closed by its owner - since the priority on a shutdown branch is to clear all debt and remove collateral ASAP.
+
  ### Urgent redemptions 
 
 During shutdown the redemption logic is modified to incentivize swift reduction of the branch’s debt, and even do so when BOLD is trading at peg ($1 USD). Redemptions in shutdown are known as “urgent” redemptions.
