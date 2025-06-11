@@ -1886,5 +1886,64 @@ For realistic distributions of Troves, the drag-down effect is fairly small and 
 
 This drag-down dynamic is inherited from Liquity v1. However, Liquity v2 does not pay the collateral gas compensation for redistributions - as such, all else equal, the magnitude of the drag-down effect in v2 is somewhat reduced. As are the incentives for a liquidator to trigger repeated redistributions.
 
+### 24 - SP loss evasion
+
+It is possible that a Stability Pool depositor may frontrun and evade an incoming liquidation in order to avoid making a net loss. For example:
+
+- Depositor sees incoming liquidation of Trove with ICR < 100% in the mempool
+- Depositor frontruns and withdraws their deposit before the liquidation occurs
+- Liquidation is absorbed by the remaining funds in the SP
+- Depositor re-deposits
+
+The impact of this is that all other depositors in the SP absorb the loss of the unprofitable liquidation, and the frontrunner evades it.
+
+This was partially mitigated in Liquity v1 by requiring that no undercollateralized Troves were present in the system upon a withdrawal from the SP. However, this is infeasible in v2 since Troves are no longer ordered by collateral ratio, and also accrue interest at different rates. Thus, checking for undercollateralized Troves in v2 would require an inefficient loop over all Troves, which is prohibitively expensive gas-wise.
+
+
+However, no fix is required since it’s expected that:
+
+- Most liquidations are profitable for SP depositors, i.e. occur at ICR > 100%, so the collateral value that SP depositors receive is greater than the amount of debt cancelled against their BOLD deposit.
+
+- Liquidations are MEV competitive and a significant portion of liquidations are expected to be performed via private pools e.g. Flashbots, and not via the public gas auction
+
+- The majority of SP deposits are “sticky” - that is, most depositors leave their deposit in the SP for the medium/long term to earn continuous BOLD yield, and are not running frontrunning bots in order to evade a very occasional unprofitable liquidation.
+
+### 25 - Redistribution Loss evasion
+
+It is possible that a borrower may frontrun and evade an income redistribution liquidation in order to avoid making a net loss. For example:
+
+- Borrower sees incoming redistribution liquidation of a Trove with ICR < 100% in the mempool
+- Borrower frontruns and closes their Trove before the redistribution occurs
+- Redistribution is absorbed by the remaining active Troves
+- Borrower re-opens Trove
+
+The impact of this is that all other active Troves absorb the loss from the unprofitable liquidation, and the frontrunniner evades it.
+
+However, no fix is required since it’s expected that:
+
+- Most redistributions are profitable for active Troves, i.e. occur at ICR > 100% - thus the collateral value that active Troves receive is greater than the amount of debt cancelled against their BOLD deposit.
+
+- Redistributions are expected to be very rare, and only occur if the Stability Pool has already been emptied.  Even if the SP _is_ empty, JIT deposits to the Stability Pool can in most cases profitably absorb liquidations
+
+- Liquidations are MEV intensive and a significant portion of liquidations are expected to be performed via private pools e.g. Flashbots, and not performed via the public gas auction
+
+
+### 26 - Debt in front should not include Troves at the same interest rate
+
+When borrowers assess their redemption risk, it’s recommended that they consider their  “debt-in-front” metric - i.e. how much branch debt is in Troves at lower interest rates than theirs, and thus, all else equal, how much must be redeemed before theirs will be redeemed.
+
+This metric is not perfect, since debt-in-front can fluctuate dramatically: any borrower may adjust their debt at any time. Trove debts also change continuously over time based on their respective interest rates. However, debt-in-front does provide a rough metric on which a redemption risk estimate can be based, and is used by several front ends.
+
+
+Debt-in-front has one more caveat - that is, borrowers should not consider Troves at the _same_ interest rate as part of their debt-in-front.
+
+This is due to the fact that all Troves at the same interest rate are redeemed in LIFO order.  
+
+Thus, it’s possible (for example) for a batch manager with a batch at a given interest rate to re-insert their batch at a different position for free (ignoring gas) by re-setting the batch’s interest rate to the same value. They could do this as a frontrun to a redemption transaction in order to put more debt in front of another Trove they control, just prior to redemption.
+
+
+Thus, Borrowers should not consider Troves at identical interest rates to be part of their ‘debt-in-front’. To be conservative, borrowers and front ends should consider debt-in-front to only include debt from Troves in the branch at lower interest rates.
+
+
 ### Issues identified in audits requiring no fix
 A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/issues?q=label%3Awontfix+).
