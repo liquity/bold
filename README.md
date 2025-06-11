@@ -69,12 +69,14 @@
 - [Collateral branch shutdown](#collateral-branch-shutdown)
   - [Interest rates and shutdown](#interest-rates-and-shutdown)
   - [Shutdown logic](#shutdown-logic)
+  - [Closing the last Trove in the system](#closing-the-last-trove-in-the-system)
   - [Urgent redemptions](#urgent-redemptions)
     - [Urgent redemption best practice](#urgent-redemption-best-practice)
 - [Collateral choices in Liquity v2](#collateral-choices-in-liquity-v2)
 - [Oracles in Liquity v2](#oracles-in-liquity-v2)
   - [Choice of oracles and price calculations](#choice-of-oracles-and-price-calculations)
   - [Mitigating redemption arbitrages / oracle frontrunning](#mitigating-redemption-arbitrages--oracle-frontrunning)
+  - [Worst price approach analysis](#is-the-worst-price-approach-sufficient-to-mitigate-front-running)
   - [PriceFeed Deployment](#pricefeed-deployment)
   - [Fetching the price](#fetching-the-price)
   - [Fallback price calculations if an oracle has failed](#fallback-price-calculations-if-an-oracle-has-failed)
@@ -102,6 +104,11 @@
   - [20 - Users can game upfront fees by joining an empty batch](#20---Users-can-game-upfront-fees-by-joining-an-empty-batch)
   - [21 - Deployment backrunning](#21---deployment-backrunning)
   - [22 - Repeated redistribution can eventually result in zero stake Troves](#22---repeated-redistribution-can-eventually-result-in-zero-stake-Troves)
+  - [23 - Redistributions and CR drag down cascades](23---redistributions-and-cr-drag-down-cascades)
+  - [24 - SP loss evasion](#24---sp-loss-evasion)
+  - [25 - Redistribution loss evasion](25---redistribution-loss-evasion)
+  - [26 - Debt in front considerations](#26---debt-in-front-should-not-include-troves-at-the-same-interest-rate)
+
   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
 
 ## Significant changes in Liquity v2
@@ -1873,7 +1880,7 @@ Deliberately triggering sizable redistributions is difficult to engineer, since 
 
 Despite this, the collateral gas compensation is now not paid out for redistributed collateral, making redistributions less profitable than in Liquity v1.
 
-### 23 - Redistributions and CR drag-down cascades
+### 23 - Redistributions and CR drag down cascades
 
 When a redistribution occurs, debt and collateral of the liquidated Trove is assigned to all healthy Troves in proportion to their collateral.
 
