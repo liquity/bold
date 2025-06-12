@@ -221,14 +221,14 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         const branch = getBranch(ctx.request.loan.branchId);
 
         // add ETH
-        if (branch.symbol === "WETH") {
-          return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
-            functionName: "addCollWithRawETH",
-            args: [BigInt(ctx.request.loan.troveId)],
-            value: ctx.request.depositChange[0],
-          });
-        }
+        // if (branch.symbol === "WETH") {
+        //   return ctx.writeContract({
+        //     ...branch.contracts.LeverageWETHZapper,
+        //     functionName: "addCollWithRawETH",
+        //     args: [BigInt(ctx.request.loan.troveId)],
+        //     value: ctx.request.depositChange[0],
+        //   });
+        // }
 
         // add LST
         return ctx.writeContract({
@@ -260,13 +260,13 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         ] as const;
 
         // withdraw ETH
-        if (branch.symbol === "WETH") {
-          return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
-            functionName: "withdrawCollToRawETH",
-            args,
-          });
-        }
+        // if (branch.symbol === "WETH") {
+        //   return ctx.writeContract({
+        //     ...branch.contracts.LeverageWETHZapper,
+        //     functionName: "withdrawCollToRawETH",
+        //     args,
+        //   });
+        // }
 
         // withdraw LST
         return ctx.writeContract({
@@ -310,13 +310,13 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }] as const;
 
         // leverage up ETH trove
-        if (branch.symbol === "WETH") {
-          return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
-            functionName: "leverUpTrove",
-            args,
-          });
-        }
+        // if (branch.symbol === "WETH") {
+        //   return ctx.writeContract({
+        //     ...branch.contracts.LeverageWETHZapper,
+        //     functionName: "leverUpTrove",
+        //     args,
+        //   });
+        // }
 
         // leverage up LST trove
         return ctx.writeContract({
@@ -358,13 +358,13 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           minBoldAmount: params.minBoldAmount,
         }] as const;
 
-        if (branch.symbol === "WETH") {
-          return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
-            functionName: "leverDownTrove",
-            args,
-          });
-        }
+        // if (branch.symbol === "WETH") {
+        //   return ctx.writeContract({
+        //     ...branch.contracts.LeverageWETHZapper,
+        //     functionName: "leverDownTrove",
+        //     args,
+        //   });
+        // }
 
         return ctx.writeContract({
           ...branch.contracts.LeverageLSTZapper,
