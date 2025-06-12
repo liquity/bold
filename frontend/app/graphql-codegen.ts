@@ -23,8 +23,8 @@ function findSubgraphUrl(envFile: string, key: string) {
   }
 }
 
-const subgraphUrl = "https://gateway.thegraph.com/api/subgraphs/id/9KA2FiTvU1k4qMTzSPLwFTwwqDu2fejksQXXtbG45MiM" //findSubgraphUrl(".env.local", "NEXT_PUBLIC_SUBGRAPH_URL") ?? findSubgraphUrl(".env", "NEXT_PUBLIC_SUBGRAPH_URL");
-const subgraphApiKey = process.env.NEXT_PUBLIC_SUBGRAPH_API_KEY //findSubgraphUrl(".env.local", "NEXT_PUBLIC_SUBGRAPH_API_KEY") ?? findSubgraphUrl(".env", "NEXT_PUBLIC_SUBGRAPH_API_KEY");
+const subgraphUrl = findSubgraphUrl(".env.local", "NEXT_PUBLIC_SUBGRAPH_URL") ?? findSubgraphUrl(".env", "NEXT_PUBLIC_SUBGRAPH_URL");
+const subgraphApiKey = findSubgraphUrl(".env.local", "NEXT_PUBLIC_SUBGRAPH_API_KEY") ?? findSubgraphUrl(".env", "NEXT_PUBLIC_SUBGRAPH_API_KEY");
 
 if (!subgraphUrl) {
   throw new Error(
