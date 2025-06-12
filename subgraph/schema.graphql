@@ -1,4 +1,4 @@
-type Collateral @entity(immutable: true) {
+type Collateral @entity {
   id: ID! # "collIndex", e.g. "0"
   collIndex: Int!
   token: Token!
@@ -28,7 +28,7 @@ type CollateralAddresses @entity(immutable: true) {
   troveNft: Bytes!
 }
 
-type InterestRateBracket @entity(immutable: true) {
+type InterestRateBracket @entity {
   id: ID! # "collIndex:rateFloored", e.g. "0:44000000000000000"
   collateral: Collateral!
   rate: BigInt!
@@ -59,24 +59,24 @@ type Trove @entity(immutable: true) {
   updatedAt: BigInt!
 }
 
-type CollSurplus @entity(immutable: true) {
+type CollSurplus @entity {
   id: String! # address
   amount: BigInt!
 }
 
-type BorrowerInfo @entity(immutable: true) {
+type BorrowerInfo @entity {
   id: ID! # "borrowerAddress", e.g. "0x0000000000000000000000000000000000000000"
   troves: Int!
   trovesByCollateral: [Int!]!
   nextOwnerIndexes: [Int!]!
 }
 
-type StabilityPool @entity(immutable: true) {
+type StabilityPool @entity {
   id: ID! # "collIndex", e.g. "0"
   totalDeposited: BigInt!
 }
 
-type StabilityPoolDeposit @entity(immutable: true) {
+type StabilityPoolDeposit @entity {
   id: ID! # "collIndex:depositor", e.g. "0:0x0000000000000000000000000000000000000000"
   collateral: Collateral!
   deposit: BigInt!
@@ -84,7 +84,7 @@ type StabilityPoolDeposit @entity(immutable: true) {
   snapshot: StabilityPoolDepositSnapshot!
 }
 
-type StabilityPoolDepositSnapshot @entity(immutable: true) {
+type StabilityPoolDepositSnapshot @entity {
   id: ID! # "collIndex:depositor", e.g. "0:0x0000000000000000000000000000000000000000"
   B: BigInt!
   P: BigInt!
@@ -96,13 +96,13 @@ type StabilityPoolDepositSnapshot @entity(immutable: true) {
 
 # Data (S and B snapshots) related to a given epoch + scale combination.
 # It corresponds to the epochToScaleToS and epochToScaleToB mappings in StabilityPool.sol.
-type StabilityPoolEpochScale @entity(immutable: true) {
+type StabilityPoolEpochScale @entity {
   id: ID! # "collIndex:epoch:scale", e.g. "0:0:0"
   S: BigInt!
   B: BigInt!
 }
 
-type InterestBatch @entity(immutable: true) {
+type InterestBatch @entity {
   id: ID! # "collIndex:batchManager", e.g. "0:0x0000000000000000000000000000000000000000"
   collateral: Collateral!
   batchManager: Bytes!
