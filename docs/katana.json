@@ -4,7 +4,7 @@
   "total_coll_value": "0",
   "total_sp_deposits": "0",
   "total_value_locked": "0",
-  "max_sp_apy": "NaN",
+  "max_sp_apy": "0",
   "day_supply": [
     {
       "day": "2025-06-12 00:00:00",
@@ -2063,8 +2063,8 @@
       "debt_pending": "0",
       "coll_value": "0",
       "value_locked": "0",
-      "sp_apy": "NaN",
-      "apy_avg": "NaN",
+      "sp_apy": "0",
+      "apy_avg": "0",
       "historical_cr": [
         {
           "time": "2025-06-12 08:00:00",

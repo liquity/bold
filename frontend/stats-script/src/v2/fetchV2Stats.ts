@@ -161,6 +161,7 @@ export const fetchV2Stats = async ({
     ]);
 
   const sp_apys = branches.map((b) => b.sp_apy).filter((x) => !isNaN(x));
+  console.log(sp_apys);
 
   return {
     total_bold_supply: `${total_bold_supply}`,
@@ -176,7 +177,7 @@ export const fetchV2Stats = async ({
     total_value_locked: `${branches
       .map((b) => b.value_locked)
       .reduce((a, b) => a.add(b))}`,
-    max_sp_apy: `${sp_apys.length > 0 ? Math.max(...sp_apys) : NaN}`,
+    max_sp_apy: `${sp_apys.length > 0 ? Math.max(...sp_apys) : 0}`,
     day_supply: historicalSupply!.map((daily) =>
       mapObj(
         {
@@ -226,8 +227,8 @@ export const fetchV2Stats = async ({
             ...mapObj(
               {
                 ...branch,
-                sp_apy,
-                apy_avg: sp_apy,
+                sp_apy: isNaN(sp_apy) ? 0 : sp_apy,
+                apy_avg: isNaN(sp_apy) ? 0 : sp_apy, // TODO
                 // ...(sp_apy_avg_1d !== undefined ? { sp_apy_avg_1d } : {}),
                 // ...(sp_apy_avg_7d !== undefined ? { sp_apy_avg_7d } : {})
               },
