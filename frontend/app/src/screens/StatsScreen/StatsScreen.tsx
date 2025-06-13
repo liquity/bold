@@ -116,9 +116,12 @@ export function StatsScreen() {
                       {
                         label: "",
                         value: `${fmtnum(
-                          (Number(liquityStats.data.totalCollValue) /
-                            Number(liquityStats.data.totalBoldSupply)) *
-                            100,
+                          Number(liquityStats.data.totalCollValue)>
+                            0
+                            ? (Number(liquityStats.data.totalCollValue) /
+                                Number(liquityStats.data.totalBoldSupply)) *
+                                100
+                            : 0,
                           "2z"
                         )} %`,
                       },
@@ -157,61 +160,27 @@ export function StatsScreen() {
                       {
                         label: "Collateral",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["bvBTC"].collActive),
+                          Number(liquityStats.data.branch["BVBTC"].collActive),
                           "2z"
                         )} BTC`,
                       },
                       {
                         label: "Debt",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["bvBTC"].totalDebt),
+                          Number(liquityStats.data.branch["BVBTC"].totalDebt),
                           "2z"
                         )} bvUSD`,
                       },
                       {
                         label: "Collateral Ratio",
                         value: `${fmtnum(
-                          Number(liquityStats.data.branch["bvBTC"].totalDebt) > 0
+                          Number(liquityStats.data.branch["BVBTC"].totalDebt) >
+                            0
                             ? (Number(
-                                liquityStats.data.branch["bvBTC"].collValue
+                                liquityStats.data.branch["BVBTC"].collValue
                               ) /
                                 Number(
-                                  liquityStats.data.branch["bvBTC"].totalDebt
-                                )) *
-                                100
-                            : 0,
-                          "2z"
-                        )} %`,
-                      },
-                    ]}
-                    link={{ label: "", href: "" }}
-                  />
-                  <TokenCard
-                    token="ETH Branch"
-                    subValues={[
-                      {
-                        label: "Collateral",
-                        value: `${fmtnum(
-                          Number(liquityStats.data.branch["ETH"].collActive),
-                          "2z"
-                        )} ETH`,
-                      },
-                      {
-                        label: "Debt",
-                        value: `${fmtnum(
-                          Number(liquityStats.data.branch["ETH"].totalDebt),
-                          "2z"
-                        )} bvUSD`,
-                      },
-                      {
-                        label: "Collateral Ratio",
-                        value: `${fmtnum(
-                          Number(liquityStats.data.branch["ETH"].totalDebt) > 0
-                            ? (Number(
-                                liquityStats.data.branch["ETH"].collValue
-                              ) /
-                                Number(
-                                  liquityStats.data.branch["ETH"].totalDebt
+                                  liquityStats.data.branch["BVBTC"].totalDebt
                                 )) *
                                 100
                             : 0,
@@ -238,11 +207,7 @@ export function StatsScreen() {
                     title="Global Collateral Ratio"
                   />
                   <CollateralRatioChart
-                    data={liquityStats.data.branch["bvBTC"].historicalCR}
-                    title="ETH Branch Collateral Ratio"
-                  />
-                  <CollateralRatioChart
-                    data={liquityStats.data.branch["ETH"].historicalCR}
+                    data={liquityStats.data.branch["BVBTC"].historicalCR}
                     title="BTC Branch Collateral Ratio"
                   />
                 </div>

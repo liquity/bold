@@ -23,11 +23,11 @@ const writeTree = (parentDir: string, tree: Tree) => {
 
 export async function fetchAndUpdateStats() {
   const alchemyApiKey = env.ALCHEMY_KEY;
-  const bscProvider = getProvider(56, { alchemyApiKey });
+  const katanaProvider = getProvider(747474, { alchemyApiKey });
   const [bscStats] = await Promise.all([
     fetchV2Stats({
       deployment: v2MainnetDeployment,
-      provider: bscProvider,
+      provider: katanaProvider,
       duneKey: env.DUNE_KEY
     })
   ]);
@@ -42,7 +42,7 @@ export async function fetchAndUpdateStats() {
   // writeTree(OUTPUT_DIR_V2, v2Stats); -> prints all txt files as well
 
   if (!fs.existsSync(OUTPUT_DIR_V2)) fs.mkdirSync(OUTPUT_DIR_V2, {recursive:true});
-  fs.writeFileSync(path.join(OUTPUT_DIR_V2, "bsc.json"), JSON.stringify(v2Stats, null, 2));
+  fs.writeFileSync(path.join(OUTPUT_DIR_V2, "katana.json"), JSON.stringify(v2Stats, null, 2));
 }
 
 await fetchAndUpdateStats();

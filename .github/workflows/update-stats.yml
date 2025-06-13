@@ -2,7 +2,7 @@ name: Update Protocol Statistics
 
 on:
   schedule:
-    - cron: '0 * * * *'  # every hour
+    - cron: '0 0 * * *'  # every day at midnight
   workflow_dispatch:     # allow manual trigger
 
 # test action is not indexing
@@ -23,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 23.4.0
+          node-version: 18.15.0
           cache: 'yarn'
 
       - name: Install dependencies
