@@ -90,6 +90,8 @@ export class AlchemyProvider extends UrlJsonRpcProvider {
         break;
       case "bnb":
         host = "bnb-mainnet.g.alchemy.com/v2/";
+      case "katana":
+        host = "rpc.katanarpc.com/"
         break;
       default:
         logger.throwArgumentError("unsupported network", "network", arguments[0]);

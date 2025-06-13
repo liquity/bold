@@ -86,7 +86,7 @@ export const fetchSpAverageApysFromDune = async ({
 }: {
   branches: LiquityV2BranchContracts[];
   apiKey: string;
-  network: "bnb" | "mainnet";
+  network: "bnb" | "mainnet" | "katana";
 }) => {
   // const url = network === "sepolia"
   //   ? DUNE_SPV2_AVERAGE_APY_URL_SEPOLIA
@@ -134,7 +134,7 @@ export const fetchHistSupplyFromDune = async ({
   network,
 }: {
   apiKey: string;
-  network: "bnb" | "mainnet";
+  network: "bnb" | "mainnet" | "katana";
 }) => {
   // TODO use network for different queries
   const url = BOLD_SUPPLY_DAILY_QUERY;
@@ -165,7 +165,7 @@ export const fetchHistCRFromDune = async ({
   network,
 }: {
   apiKey: string;
-  network: "bnb" | "mainnet";
+  network: "bnb" | "mainnet" | "katana";
 }) => {
   // TODO use network for different queries
   const url = COLLATERAL_RATIO_QUERY;

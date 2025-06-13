@@ -14,6 +14,14 @@ export const getProvider = (
   networkish: Networkish,
   options?: LiquityConnectionOptions
 ): Provider => {
+
+  if(networkish.toString() === "747474"){
+    const network = { chainId: 74747, name: "katana"};
+    const provider = new BatchedAlchemyProvider(network, options?.alchemyApiKey);
+    provider.chainId == network.chainId;
+    return provider;
+  }
+
   const network = getNetwork(networkish);
   const provider = new BatchedAlchemyProvider(network, options?.alchemyApiKey);
 

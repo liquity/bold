@@ -147,7 +147,7 @@ export const fetchV2Stats = async ({
       deployed
         ? fetchHistSupplyFromDune({
             apiKey: duneKey,
-            network: "bnb",
+            network: "katana",
           })
         : null,
 
@@ -155,7 +155,7 @@ export const fetchV2Stats = async ({
       deployed
         ? fetchHistCRFromDune({
             apiKey: duneKey,
-            network: "bnb",
+            network: "katana",
           })
         : null,
     ]);
