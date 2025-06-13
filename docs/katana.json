@@ -2054,7 +2054,7 @@
     "bvBTC": {
       "coll_active": "0",
       "coll_default": "0",
-      "coll_price": "0",
+      "coll_price": "100000",
       "sp_deposits": "0",
       "interest_accrual_1y": "0",
       "interest_pending": "0",
