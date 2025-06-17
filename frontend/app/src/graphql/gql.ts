@@ -16,18 +16,18 @@ import * as types from './graphql';
  */
 type Documents = {
     "\n  query BlockNumber {\n    _meta {\n      block {\n        number\n      }\n    }\n  }\n": typeof types.BlockNumberDocument,
-    "\n  query BorrowerInfo($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n    }\n  }\n": typeof types.BorrowerInfoDocument,
-    "\n  query TroveStatusesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        or: [\n          { previousOwner: $account, status: liquidated },\n          { borrower: $account, status_in: [active,redeemed] }\n        ],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      closedAt\n      createdAt\n      mightBeLeveraged\n      status\n    }\n  }\n": typeof types.TroveStatusesByAccountDocument,
-    "\n  query TroveStatusById($id: ID!) {\n    trove(id: $id) {\n      id\n      closedAt\n      createdAt\n      mightBeLeveraged\n      status\n    }\n  }\n": typeof types.TroveStatusByIdDocument,
+    "\n  query NextOwnerIndexesByBorrower($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n    }\n  }\n": typeof types.NextOwnerIndexesByBorrowerDocument,
+    "\n  query TrovesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        or: [\n          { previousOwner: $account, status: liquidated },\n          { borrower: $account, status_in: [active,redeemed] }\n        ],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      closedAt\n      createdAt\n      mightBeLeveraged\n      status\n    }\n  }\n": typeof types.TrovesByAccountDocument,
+    "\n  query TroveById($id: ID!) {\n    trove(id: $id) {\n      id\n      borrower\n      closedAt\n      createdAt\n      mightBeLeveraged\n      previousOwner\n      status\n    }\n  }\n": typeof types.TroveByIdDocument,
     "\n  query InterestBatches($ids: [ID!]!) {\n    interestBatches(where: { id_in: $ids }) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n": typeof types.InterestBatchesDocument,
     "\n  query AllInterestRateBrackets {\n    interestRateBrackets(orderBy: rate) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n    }\n  }\n": typeof types.AllInterestRateBracketsDocument,
     "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n": typeof types.GovernanceInitiativesDocument,
 };
 const documents: Documents = {
     "\n  query BlockNumber {\n    _meta {\n      block {\n        number\n      }\n    }\n  }\n": types.BlockNumberDocument,
-    "\n  query BorrowerInfo($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n    }\n  }\n": types.BorrowerInfoDocument,
-    "\n  query TroveStatusesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        or: [\n          { previousOwner: $account, status: liquidated },\n          { borrower: $account, status_in: [active,redeemed] }\n        ],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      closedAt\n      createdAt\n      mightBeLeveraged\n      status\n    }\n  }\n": types.TroveStatusesByAccountDocument,
-    "\n  query TroveStatusById($id: ID!) {\n    trove(id: $id) {\n      id\n      closedAt\n      createdAt\n      mightBeLeveraged\n      status\n    }\n  }\n": types.TroveStatusByIdDocument,
+    "\n  query NextOwnerIndexesByBorrower($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n    }\n  }\n": types.NextOwnerIndexesByBorrowerDocument,
+    "\n  query TrovesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        or: [\n          { previousOwner: $account, status: liquidated },\n          { borrower: $account, status_in: [active,redeemed] }\n        ],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      closedAt\n      createdAt\n      mightBeLeveraged\n      status\n    }\n  }\n": types.TrovesByAccountDocument,
+    "\n  query TroveById($id: ID!) {\n    trove(id: $id) {\n      id\n      borrower\n      closedAt\n      createdAt\n      mightBeLeveraged\n      previousOwner\n      status\n    }\n  }\n": types.TroveByIdDocument,
     "\n  query InterestBatches($ids: [ID!]!) {\n    interestBatches(where: { id_in: $ids }) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n": types.InterestBatchesDocument,
     "\n  query AllInterestRateBrackets {\n    interestRateBrackets(orderBy: rate) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n    }\n  }\n": types.AllInterestRateBracketsDocument,
     "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n": types.GovernanceInitiativesDocument,
@@ -40,15 +40,15 @@ export function graphql(source: "\n  query BlockNumber {\n    _meta {\n      blo
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query BorrowerInfo($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n    }\n  }\n"): typeof import('./graphql').BorrowerInfoDocument;
+export function graphql(source: "\n  query NextOwnerIndexesByBorrower($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n    }\n  }\n"): typeof import('./graphql').NextOwnerIndexesByBorrowerDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query TroveStatusesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        or: [\n          { previousOwner: $account, status: liquidated },\n          { borrower: $account, status_in: [active,redeemed] }\n        ],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      closedAt\n      createdAt\n      mightBeLeveraged\n      status\n    }\n  }\n"): typeof import('./graphql').TroveStatusesByAccountDocument;
+export function graphql(source: "\n  query TrovesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        or: [\n          { previousOwner: $account, status: liquidated },\n          { borrower: $account, status_in: [active,redeemed] }\n        ],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      closedAt\n      createdAt\n      mightBeLeveraged\n      status\n    }\n  }\n"): typeof import('./graphql').TrovesByAccountDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query TroveStatusById($id: ID!) {\n    trove(id: $id) {\n      id\n      closedAt\n      createdAt\n      mightBeLeveraged\n      status\n    }\n  }\n"): typeof import('./graphql').TroveStatusByIdDocument;
+export function graphql(source: "\n  query TroveById($id: ID!) {\n    trove(id: $id) {\n      id\n      borrower\n      closedAt\n      createdAt\n      mightBeLeveraged\n      previousOwner\n      status\n    }\n  }\n"): typeof import('./graphql').TroveByIdDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

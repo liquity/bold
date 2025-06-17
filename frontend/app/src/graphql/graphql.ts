@@ -1121,26 +1121,26 @@ export type BlockNumberQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type BlockNumberQuery = { __typename?: 'Query', _meta?: { __typename?: '_Meta_', block: { __typename?: '_Block_', number: number } } | null };
 
-export type BorrowerInfoQueryVariables = Exact<{
+export type NextOwnerIndexesByBorrowerQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type BorrowerInfoQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', nextOwnerIndexes: Array<number> } | null };
+export type NextOwnerIndexesByBorrowerQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', nextOwnerIndexes: Array<number> } | null };
 
-export type TroveStatusesByAccountQueryVariables = Exact<{
+export type TrovesByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
 }>;
 
 
-export type TroveStatusesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: bigint | null, createdAt: bigint, mightBeLeveraged: boolean, status: TroveStatus }> };
+export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: bigint | null, createdAt: bigint, mightBeLeveraged: boolean, status: TroveStatus }> };
 
-export type TroveStatusByIdQueryVariables = Exact<{
+export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TroveStatusByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, closedAt?: bigint | null, createdAt: bigint, mightBeLeveraged: boolean, status: TroveStatus } | null };
+export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, mightBeLeveraged: boolean, previousOwner: string, status: TroveStatus } | null };
 
 export type InterestBatchesQueryVariables = Exact<{
   ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -1187,15 +1187,15 @@ export const BlockNumberDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<BlockNumberQuery, BlockNumberQueryVariables>;
-export const BorrowerInfoDocument = new TypedDocumentString(`
-    query BorrowerInfo($id: ID!) {
+export const NextOwnerIndexesByBorrowerDocument = new TypedDocumentString(`
+    query NextOwnerIndexesByBorrower($id: ID!) {
   borrowerInfo(id: $id) {
     nextOwnerIndexes
   }
 }
-    `) as unknown as TypedDocumentString<BorrowerInfoQuery, BorrowerInfoQueryVariables>;
-export const TroveStatusesByAccountDocument = new TypedDocumentString(`
-    query TroveStatusesByAccount($account: Bytes!) {
+    `) as unknown as TypedDocumentString<NextOwnerIndexesByBorrowerQuery, NextOwnerIndexesByBorrowerQueryVariables>;
+export const TrovesByAccountDocument = new TypedDocumentString(`
+    query TrovesByAccount($account: Bytes!) {
   troves(
     where: {or: [{previousOwner: $account, status: liquidated}, {borrower: $account, status_in: [active, redeemed]}]}
     orderBy: updatedAt
@@ -1208,18 +1208,20 @@ export const TroveStatusesByAccountDocument = new TypedDocumentString(`
     status
   }
 }
-    `) as unknown as TypedDocumentString<TroveStatusesByAccountQuery, TroveStatusesByAccountQueryVariables>;
-export const TroveStatusByIdDocument = new TypedDocumentString(`
-    query TroveStatusById($id: ID!) {
+    `) as unknown as TypedDocumentString<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
+export const TroveByIdDocument = new TypedDocumentString(`
+    query TroveById($id: ID!) {
   trove(id: $id) {
     id
+    borrower
     closedAt
     createdAt
     mightBeLeveraged
+    previousOwner
     status
   }
 }
-    `) as unknown as TypedDocumentString<TroveStatusByIdQuery, TroveStatusByIdQueryVariables>;
+    `) as unknown as TypedDocumentString<TroveByIdQuery, TroveByIdQueryVariables>;
 export const InterestBatchesDocument = new TypedDocumentString(`
     query InterestBatches($ids: [ID!]!) {
   interestBatches(where: {id_in: $ids}) {

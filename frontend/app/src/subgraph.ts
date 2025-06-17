@@ -6,6 +6,15 @@ import { SUBGRAPH_URL } from "@/src/env";
 import { graphql } from "@/src/graphql";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
 
+type IndexedTrove = {
+  id: string;
+  borrower: Address;
+  closedAt: number | null;
+  createdAt: number;
+  mightBeLeveraged: boolean;
+  status: string;
+};
+
 async function graphQuery<TResult, TVariables>(
   query: TypedDocumentString<TResult, TVariables>,
   ...[variables]: TVariables extends Record<string, never> ? [] : [TVariables]
@@ -51,8 +60,8 @@ export async function getIndexedBlockNumber() {
   return BigInt(result._meta?.block.number ?? -1);
 }
 
-const NextOwnerIndexesByBorrower = graphql(`
-  query BorrowerInfo($id: ID!) {
+const NextOwnerIndexesByBorrowerQuery = graphql(`
+  query NextOwnerIndexesByBorrower($id: ID!) {
     borrowerInfo(id: $id) {
       nextOwnerIndexes
     }
@@ -64,14 +73,14 @@ export async function getNextOwnerIndex(
   borrower: Address,
 ): Promise<number> {
   const { borrowerInfo } = await graphQuery(
-    NextOwnerIndexesByBorrower,
+    NextOwnerIndexesByBorrowerQuery,
     { id: borrower.toLowerCase() },
   );
   return Number(borrowerInfo?.nextOwnerIndexes[branchId] ?? 0);
 }
 
 const TrovesByAccountQuery = graphql(`
-  query TroveStatusesByAccount($account: Bytes!) {
+  query TrovesByAccount($account: Bytes!) {
     troves(
       where: {
         or: [
@@ -91,20 +100,13 @@ const TrovesByAccountQuery = graphql(`
   }
 `);
 
-export async function getIndexedTrovesByAccount(
-  account: Address,
-): Promise<{
-  id: string;
-  closedAt: number | null;
-  createdAt: number;
-  mightBeLeveraged: boolean;
-  status: string;
-}[]> {
+export async function getIndexedTrovesByAccount(account: Address): Promise<IndexedTrove[]> {
   const { troves } = await graphQuery(TrovesByAccountQuery, {
     account: account.toLowerCase(),
   });
   return troves.map((trove) => ({
     id: trove.id,
+    borrower: account,
     closedAt: trove.closedAt === null || trove.closedAt === undefined
       ? null
       : Number(trove.closedAt) * 1000,
@@ -115,22 +117,30 @@ export async function getIndexedTrovesByAccount(
 }
 
 const TroveByIdQuery = graphql(`
-  query TroveStatusById($id: ID!) {
+  query TroveById($id: ID!) {
     trove(id: $id) {
       id
+      borrower
       closedAt
       createdAt
       mightBeLeveraged
+      previousOwner
       status
     }
   }
 `);
 
-export async function getIndexedTroveById(branchId: BranchId, troveId: TroveId) {
+export async function getIndexedTroveById(
+  branchId: BranchId,
+  troveId: TroveId,
+): Promise<IndexedTrove | null> {
   const prefixedTroveId = getPrefixedTroveId(branchId, troveId);
   const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
   return !trove ? null : {
     id: trove.id,
+    borrower: (
+      trove.status === "liquidated" ? trove.previousOwner : trove.borrower
+    ) as Address,
     closedAt: trove.closedAt === null || trove.closedAt === undefined
       ? null
       : Number(trove.closedAt) * 1000,
@@ -216,7 +226,7 @@ export async function getAllInterestRateBrackets() {
     });
 }
 
-const GovernanceInitiatives = graphql(`
+const GovernanceInitiativesQuery = graphql(`
   query GovernanceInitiatives {
     governanceInitiatives {
       id
@@ -226,6 +236,6 @@ const GovernanceInitiatives = graphql(`
 
 // get all the registered initiatives
 export async function getIndexedInitiatives() {
-  const { governanceInitiatives } = await graphQuery(GovernanceInitiatives);
+  const { governanceInitiatives } = await graphQuery(GovernanceInitiativesQuery);
   return governanceInitiatives.map((initiative) => initiative.id as Address);
 }
