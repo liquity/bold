@@ -103,27 +103,31 @@ export function PositionCardLeverage({
                 >
                   LTV
                 </div>
-                {ltv && (
-                  <div
-                    className={css({
-                      "--status-positive": "token(colors.positiveAlt)",
-                      "--status-warning": "token(colors.warning)",
-                      "--status-negative": "token(colors.negative)",
-                    })}
-                    style={{
-                      color: liquidationRisk === "low"
-                        ? "var(--status-positive)"
-                        : liquidationRisk === "medium"
-                        ? "var(--status-warning)"
-                        : "var(--status-negative)",
-                    }}
-                  >
-                    {fmtnum(ltv, "pct2")}%
-                  </div>
-                )}
+                {liquidated
+                  ? "N/A"
+                  : ltv
+                  ? (
+                    <div
+                      className={css({
+                        "--status-positive": "token(colors.positiveAlt)",
+                        "--status-warning": "token(colors.warning)",
+                        "--status-negative": "token(colors.negative)",
+                      })}
+                      style={{
+                        color: liquidationRisk === "low"
+                          ? "var(--status-positive)"
+                          : liquidationRisk === "medium"
+                          ? "var(--status-warning)"
+                          : "var(--status-negative)",
+                      }}
+                    >
+                      {fmtnum(ltv, "pct2")}%
+                    </div>
+                  )
+                  : "−"}
               </div>
             }
-            end={
+            end={!liquidated && (
               <div
                 className={css({
                   display: "flex",
@@ -147,7 +151,7 @@ export function PositionCardLeverage({
                   size={8}
                 />
               </div>
-            }
+            )}
           />
           <CardRow
             start={
@@ -170,11 +174,13 @@ export function PositionCardLeverage({
                     color: "positionContent",
                   })}
                 >
-                  {fmtnum(interestRate, "pct2")}%
+                  {liquidated
+                    ? "N/A"
+                    : fmtnum(interestRate, "pct2")}%
                 </div>
               </div>
             }
-            end={
+            end={!liquidated && (
               <div
                 className={css({
                   display: "flex",
@@ -195,7 +201,7 @@ export function PositionCardLeverage({
                   size={8}
                 />
               </div>
-            }
+            )}
           />
         </CardRows>
       }
