@@ -21,6 +21,7 @@ export function PositionCardBorrow({
   branchId,
   deposit,
   interestRate,
+  liquidated = false,
   statusTag,
   troveId,
 }:
@@ -28,19 +29,20 @@ export function PositionCardBorrow({
     PositionLoanCommitted,
     | "batchManager"
     | "branchId"
-    | "deposit"
     | "interestRate"
     | "troveId"
   >
   & {
     debt: null | Dnum;
+    deposit: null | Dnum;
+    liquidated?: boolean;
     statusTag?: ReactNode;
   })
 {
   const token = getCollToken(branchId);
   const collateralPriceUsd = usePrice(token?.symbol ?? null);
 
-  const ltv = debt && collateralPriceUsd.data
+  const ltv = debt && deposit && collateralPriceUsd.data
     && getLtv(deposit, debt, collateralPriceUsd.data);
   const redemptionRisk = getRedemptionRisk(interestRate);
 
@@ -131,30 +133,35 @@ export function PositionCardBorrow({
                 >
                   LTV
                 </div>
-                {ltv && (
-                  <div
-                    className={css({
-                      "--status-positive": "token(colors.positiveAlt)",
-                      "--status-warning": "token(colors.warning)",
-                      "--status-negative": "token(colors.negative)",
-                    })}
-                    style={{
-                      color: liquidationRisk === "low"
-                        ? "var(--status-positive)"
-                        : liquidationRisk === "medium"
-                        ? "var(--status-warning)"
-                        : "var(--status-negative)",
-                    }}
-                  >
-                    {fmtnum(ltv, "pct2")}%
-                  </div>
-                )}
+                {liquidated
+                  ? "N/A"
+                  : ltv
+                  ? (
+                    <div
+                      className={css({
+                        "--status-positive": "token(colors.positiveAlt)",
+                        "--status-warning": "token(colors.warning)",
+                        "--status-negative": "token(colors.negative)",
+                      })}
+                      style={{
+                        color: liquidationRisk === "low"
+                          ? "var(--status-positive)"
+                          : liquidationRisk === "medium"
+                          ? "var(--status-warning)"
+                          : "var(--status-negative)",
+                      }}
+                    >
+                      {fmtnum(ltv, "pct2")}%
+                    </div>
+                  )
+                  : "−"}
               </div>
             }
-            end={
+            end={!liquidated && (
               <div
                 className={css({
-                  display: "flex",
+                  display: "grid",
+                  gridAutoFlow: "column",
                   alignItems: "center",
                   gap: 8,
                   fontSize: 14,
@@ -172,7 +179,7 @@ export function PositionCardBorrow({
                   size={8}
                 />
               </div>
-            }
+            )}
           />
           <CardRow
             start={
@@ -196,7 +203,9 @@ export function PositionCardBorrow({
                     color: "positionContent",
                   })}
                 >
-                  {fmtnum(interestRate, "pct2")}%
+                  {liquidated
+                    ? "N/A"
+                    : fmtnum(interestRate, { preset: "pct2", suffix: "%" })}
                 </div>
                 {batchManager && (
                   <div
@@ -218,32 +227,38 @@ export function PositionCardBorrow({
                 )}
               </div>
             }
-            end={
+            end={!liquidated && (
               <div
                 className={css({
                   display: "grid",
-                  gridTemplateColumns: "auto auto",
+                  gridAutoFlow: "column",
                   alignItems: "center",
                   gap: 8,
                   fontSize: 14,
                 })}
               >
-                <div
-                  className={css({
-                    flexShrink: 1,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    color: "positionContent",
-                  })}
-                >
-                  {redemptionRisk === "low" ? "Low" : redemptionRisk === "medium" ? "Medium" : "High"} redemption risk
-                </div>
+                {
+                  <div
+                    className={css({
+                      flexShrink: 1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      color: "positionContent",
+                    })}
+                  >
+                    {redemptionRisk === "low"
+                      ? "Low"
+                      : redemptionRisk === "medium"
+                      ? "Medium"
+                      : "High"} redemption risk
+                  </div>
+                }
                 <StatusDot
                   mode={riskLevelToStatusMode(redemptionRisk)}
                   size={8}
                 />
               </div>
-            }
+            )}
           />
         </CardRows>
       }

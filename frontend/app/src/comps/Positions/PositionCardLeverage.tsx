@@ -19,18 +19,20 @@ export function PositionCardLeverage({
   branchId,
   deposit,
   interestRate,
+  liquidated = false,
   statusTag,
   troveId,
 }:
   & Pick<
     PositionLoanCommitted,
     | "branchId"
-    | "deposit"
     | "interestRate"
     | "troveId"
   >
   & {
     debt: null | Dnum;
+    deposit: null | Dnum;
+    liquidated?: boolean;
     statusTag?: ReactNode;
   })
 {
@@ -42,7 +44,7 @@ export function PositionCardLeverage({
   const collateralPriceUsd = usePrice(token.symbol);
 
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
-  const ltv = debt && collateralPriceUsd.data
+  const ltv = debt && deposit && collateralPriceUsd.data
     && getLtv(deposit, debt, collateralPriceUsd.data);
   const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
   const redemptionRisk = getRedemptionRisk(interestRate);

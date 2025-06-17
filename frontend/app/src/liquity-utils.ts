@@ -47,7 +47,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
-import { encodeAbiParameters, erc20Abi, keccak256, parseAbiParameters, zeroAddress } from "viem";
+import { encodeAbiParameters, erc20Abi, isAddressEqual, keccak256, parseAbiParameters, zeroAddress } from "viem";
 import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
@@ -887,14 +887,11 @@ export async function fetchLoanById(
   if (!isPrefixedtroveId(fullId)) return null;
 
   const { branchId, troveId } = parsePrefixedTroveId(fullId);
-
   const TroveManager = getBranchContract(branchId, "TroveManager");
-  const TroveNft = getBranchContract(branchId, "TroveNFT");
 
   const [
     indexedTrove,
     [troveTuple, troveData],
-    borrower,
   ] = await Promise.all([
     getIndexedTroveById(branchId, troveId),
     readContracts(wagmiConfig, {
@@ -909,26 +906,18 @@ export async function fetchLoanById(
         args: [BigInt(troveId)],
       }],
     }),
-    readContract(wagmiConfig, {
-      ...TroveNft,
-      functionName: "ownerOf",
-      args: [BigInt(troveId)],
-    }).catch((_err) => zeroAddress),
   ]);
 
-  const status = troveTuple[3];
-  const batchManager = troveTuple[8];
-
-  return {
-    type: indexedTrove?.mightBeLeveraged ? "multiply" : "borrow",
-    batchManager: BigInt(batchManager) === 0n ? null : batchManager,
+  return !indexedTrove ? null : {
+    type: indexedTrove.mightBeLeveraged ? "multiply" : "borrow",
+    batchManager: isAddressEqual(troveTuple[8], zeroAddress) ? null : troveTuple[8],
     borrowed: dnum18(troveData.entireDebt),
-    borrower,
+    borrower: indexedTrove.borrower,
     branchId,
-    createdAt: indexedTrove?.createdAt ?? 0,
+    createdAt: indexedTrove.createdAt,
     deposit: dnum18(troveData.entireColl),
     interestRate: dnum18(troveData.annualInterestRate),
-    status: indexedTrove?.status ?? statusFromEnum(status),
+    status: statusFromEnum(troveTuple[3]),
     troveId,
   };
 }
