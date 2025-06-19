@@ -82,10 +82,10 @@ export const LTV_RISK: Record<Exclude<RiskLevel, "low">, number> = {
   high: 0.73,
 };
 
-// redemption risk levels, as interest rate ratios
+// redemption risk levels, as debt positioning ratios
 export const REDEMPTION_RISK: Record<Exclude<RiskLevel, "high">, number> = {
-  medium: 3.5 / 100,
-  low: 5 / 100,
+  medium: 0.05, // 5% of total debt in front
+  low: 0.60, // 60% of total debt in front
 };
 
 // default LEGACY_CHECKS when not set by the env

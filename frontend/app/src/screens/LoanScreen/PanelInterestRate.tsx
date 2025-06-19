@@ -12,7 +12,7 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRelativeTime } from "@/src/formatting";
 import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getBranch, getCollToken, useTroveRateUpdateCooldown } from "@/src/liquity-utils";
+import { getBranch, getCollToken, useDebtPositioning, useTroveRateUpdateCooldown } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { useAccount } from "@/src/wagmi-utils";
@@ -57,12 +57,17 @@ export function PanelInterestRate({
 
   const updateRateCooldown = useUpdateRateCooldown(loan.branchId, loan.troveId);
 
+  const currentDebtPositioning = useDebtPositioning(loan.interestRate);
+  const newDebtPositioning = useDebtPositioning(interestRate);
+
   const loanDetails = getLoanDetails(
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
     collToken.collateralRatio,
     collPrice.data ?? null,
+    currentDebtPositioning.debtInFront,
+    currentDebtPositioning.totalDebt,
   );
 
   const newLoanDetails = getLoanDetails(
@@ -71,6 +76,8 @@ export function PanelInterestRate({
     interestRate,
     collToken.collateralRatio,
     collPrice.data ?? null,
+    newDebtPositioning.debtInFront,
+    newDebtPositioning.totalDebt,
   );
 
   const boldInterestPerYear = interestRate

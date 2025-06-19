@@ -1183,3 +1183,42 @@ export function useNextOwnerIndex(
     enabled: borrower !== null && branchId !== null,
   });
 }
+
+export function useDebtPositioning(interestRate: Dnum | null) {
+  const chartData = useInterestRateChartData();
+
+  return useMemo(() => {
+    if (!chartData.data || !interestRate) {
+      return { debtInFront: null, totalDebt: null };
+    }
+
+    // find the bracket that contains this interest rate
+    const bracket = chartData.data.find((item) =>
+      dn.lte(item.rate, interestRate)
+      && dn.lt(
+        interestRate,
+        dn.add(
+          item.rate,
+          dn.lt(item.rate, INTEREST_RATE_PRECISE_UNTIL)
+            ? INTEREST_RATE_INCREMENT_PRECISE
+            : INTEREST_RATE_INCREMENT_NORMAL,
+        ),
+      )
+    );
+
+    if (!bracket) {
+      return { debtInFront: null, totalDebt: null };
+    }
+
+    // calculate total debt from all brackets
+    const totalDebt = chartData.data.reduce(
+      (sum, item) => dn.add(sum, item.debt),
+      DNUM_0,
+    );
+
+    return {
+      debtInFront: bracket.debtInFront,
+      totalDebt,
+    };
+  }, [chartData.data, interestRate]);
+}

@@ -5,13 +5,20 @@ import { LTV_RISK, MAX_LTV_ALLOWED_RATIO, REDEMPTION_RISK } from "@/src/constant
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 
-export function getRedemptionRisk(interest: Dnum | null): null | RiskLevel {
-  return match(interest)
-    .returnType<RiskLevel | null>()
-    .with(P.nullish, () => null)
-    .when((r) => dn.lt(r, 0) || dn.eq(r, 0), () => "high")
-    .when((r) => dn.gt(r, REDEMPTION_RISK.low), () => "low")
-    .when((r) => dn.gt(r, REDEMPTION_RISK.medium), () => "medium")
+export function getRedemptionRisk(
+  debtInFront: Dnum | null,
+  totalDebt: Dnum | null,
+): null | RiskLevel {
+  if (!debtInFront || !totalDebt || dn.eq(totalDebt, 0)) {
+    return null;
+  }
+
+  const debtInFrontRatio = dn.div(debtInFront, totalDebt);
+  
+  return match(debtInFrontRatio)
+    .returnType<RiskLevel>()
+    .when((ratio) => dn.gt(ratio, REDEMPTION_RISK.low), () => "low")
+    .when((ratio) => dn.gt(ratio, REDEMPTION_RISK.medium), () => "medium")
     .otherwise(() => "high");
 }
 
@@ -108,6 +115,8 @@ export function getLoanDetails(
   interestRate: Dnum | null,
   minCollRatio: number,
   collPrice: Dnum | null,
+  debtInFront?: Dnum | null,
+  totalDebt?: Dnum | null,
 ): LoanDetails {
   const maxLtv = dn.div(dn.from(1, 18), minCollRatio);
   const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED_RATIO);
@@ -140,7 +149,7 @@ export function getLoanDetails(
     ? getLiquidationRisk(ltv, maxLtv)
     : null;
 
-  const redemptionRisk = getRedemptionRisk(interestRate);
+  const redemptionRisk = getRedemptionRisk(debtInFront ?? null, totalDebt ?? null);
 
   const leverageFactor = ltv
     ? getLeverageFactorFromLtv(ltv)
