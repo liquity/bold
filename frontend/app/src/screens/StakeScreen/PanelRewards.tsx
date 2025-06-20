@@ -89,6 +89,7 @@ export function PanelRewards() {
           <HFlex justifyContent="space-between" gap={24}>
             <div>Expected Gas Fee</div>
             <Amount
+              dust={false}
               format="2z"
               prefix="~$"
               value={txGasPriceUsd ?? 0}

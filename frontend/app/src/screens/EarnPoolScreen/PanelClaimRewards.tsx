@@ -5,13 +5,16 @@ import { ReactNode } from "react";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import content from "@/src/content";
-import { DNUM_0 } from "@/src/dnum-utils";
+import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { getCollToken } from "@/src/liquity-utils";
+import { getBranch } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
+import { encodeFunctionData } from "viem";
+import { useEstimateGas, useGasPrice } from "wagmi";
 
 export function PanelClaimRewards({
   branchId,
@@ -23,10 +26,11 @@ export function PanelClaimRewards({
   const account = useAccount();
 
   const collateral = getCollToken(branchId);
-  if (!collateral) {
+  if (!collateral || branchId === null) {
     throw new Error(`Invalid branch: ${branchId}`);
   }
 
+  const ethPrice = usePrice("ETH");
   const boldPriceUsd = usePrice("BOLD");
   const collPriceUsd = usePrice(collateral.symbol);
 
@@ -35,7 +39,25 @@ export function PanelClaimRewards({
     dn.mul(position?.rewards?.coll ?? DNUM_0, collPriceUsd.data),
   );
 
-  const gasFeeUsd = collPriceUsd.data && dn.multiply(dn.from(0.0015, 18), collPriceUsd.data);
+  const branch = getBranch(branchId);
+  const gasEstimate = useEstimateGas({
+    account: account.address,
+    data: encodeFunctionData({
+      abi: branch.contracts.StabilityPool.abi,
+      functionName: "withdrawFromSP",
+      args: [0n, true], // withdraw 0, claim rewards (true)
+    }),
+    to: branch.contracts.StabilityPool.address,
+  });
+
+  const gasPrice = useGasPrice();
+
+  const gasPriceEth = gasEstimate.data && gasPrice.data
+    ? dnum18(gasEstimate.data * gasPrice.data)
+    : null;
+
+  const txGasPriceUsd = gasPriceEth && ethPrice.data
+    && dn.mul(gasPriceEth, ethPrice.data);
 
   const allowSubmit = account.isConnected && totalRewards && dn.gt(totalRewards, 0);
 
@@ -73,9 +95,10 @@ export function PanelClaimRewards({
           <HFlex justifyContent="space-between" gap={24}>
             <div>{content.earnScreen.rewardsPanel.expectedGasFeeLabel}</div>
             <Amount
+              dust={false}
+              format="2z"
               prefix="~$"
-              value={gasFeeUsd}
-              format={2}
+              value={txGasPriceUsd ?? 0}
             />
           </HFlex>
         </div>
