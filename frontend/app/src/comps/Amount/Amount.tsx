@@ -6,6 +6,7 @@ import { a, useTransition } from "@react-spring/web";
 
 export function Amount({
   animate = true,
+  dust = true,
   fallback = "",
   fixed = false, // fixed numbers width
   format,
@@ -16,6 +17,7 @@ export function Amount({
   value,
 }: {
   animate?: boolean;
+  dust?: boolean;
   fallback?: string;
   fixed?: boolean;
   format?: FmtnumPresetName | number;
@@ -43,7 +45,7 @@ export function Amount({
 
   const showFallback = value === null || value === undefined;
 
-  const fmtOptions: FmtnumOptions = { prefix, scale, suffix };
+  const fmtOptions: FmtnumOptions = { dust, prefix, scale, suffix };
   if (typeof format === "number") {
     fmtOptions.digits = format;
   } else if (typeof format === "string") {
