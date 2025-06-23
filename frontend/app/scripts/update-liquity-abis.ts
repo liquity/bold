@@ -16,6 +16,10 @@ const ABIS = [
   ["HintHelpers"],
   ["MultiTroveGetter"],
 
+  // Governance (V2-gov lib)
+  ["Governance"],
+  ["BribeInitiative"],
+
   // Collaterals
   ["ActivePool"],
   ["BorrowerOperations"],
