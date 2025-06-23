@@ -1,4 +1,14 @@
 {
+  "arbitrum": {
+    "BoldToken": {
+      "address": "0x285d8ffa57b54ad387c971b189f927ead5ac0221",
+      "startBlock": 350400460
+    },
+    "Governance": {
+      "address": "0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d",
+      "startBlock": 350400460
+    }
+  },
   "local": {
     "BoldToken": {
       "address": "0x0e18b884ec3095f7c27bbbeb0a266a5674bcaffd"
