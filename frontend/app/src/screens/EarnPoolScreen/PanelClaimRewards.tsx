@@ -9,7 +9,6 @@ import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { getCollToken, isEarnPositionActive } from "@/src/liquity-utils";
 import { getBranch } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { Checkbox, InfoTooltip, TokenIcon } from "@liquity2/uikit";
@@ -49,7 +48,7 @@ export function PanelClaimRewards({
     data: encodeFunctionData({
       abi: branch.contracts.StabilityPool.abi,
       functionName: "withdrawFromSP",
-      args: [0n, !compound], // withdraw 0, claim/compound based on toggle
+      args: [0n, !compound], // withdraw 0, either claim or compound
     }),
     to: branch.contracts.StabilityPool.address,
   });
