@@ -12,12 +12,14 @@ type FlowRequestParam = FlowRequest | null | undefined;
 
 export function FlowButton({
   disabled,
-  request,
   label,
+  request,
+  size = "large",
 }: {
   disabled?: boolean;
-  request?: (() => FlowRequestParam) | FlowRequestParam;
   label?: string;
+  request?: (() => FlowRequestParam) | FlowRequestParam;
+  size?: "medium" | "large";
 }) {
   const txFlow = useTransactionFlow();
   const breakpointName = useBreakpointName();
@@ -35,13 +37,15 @@ export function FlowButton({
         disabled={disabled || !request}
         label={label ?? "Next: Summary"}
         mode="primary"
-        size={breakpointName === "small" ? "medium" : "large"}
+        size={breakpointName === "small" ? "medium" : size}
         wide
-        style={{
-          height: breakpointName === "small" ? 56 : 72,
-          fontSize: breakpointName === "small" ? 20 : 24,
-          borderRadius: breakpointName === "small" ? 56 : 120,
-        }}
+        style={size === "large"
+          ? {
+            height: breakpointName === "small" ? 56 : 72,
+            fontSize: breakpointName === "small" ? 20 : 24,
+            borderRadius: breakpointName === "small" ? 56 : 120,
+          }
+          : {}}
         onClick={() => {
           if (typeof request === "function") {
             request = request();
