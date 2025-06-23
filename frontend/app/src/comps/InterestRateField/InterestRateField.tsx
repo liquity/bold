@@ -128,7 +128,7 @@ export const InterestRateField = memo(
       },
     });
 
-    const interestChartData = useInterestRateChartData();
+    const interestChartData = useInterestRateChartData(branchId);
     const interestRateRounded = interestRate && dn.div(dn.round(dn.mul(interestRate, 1000)), 1000);
 
     const bracket = interestRateRounded && interestChartData.data?.find(

@@ -425,8 +425,8 @@ export function useAverageInterestRate(branchId: BranchId) {
   };
 }
 
-export function useInterestRateChartData() {
-  const brackets = useAllInterestRateBrackets();
+export function useInterestRateChartData(branchId: BranchId) {
+  const brackets = useInterestRateBrackets(branchId);
   return useQuery({
     queryKey: ["useInterestRateChartData", jsonStringifyWithDnum(brackets.data)],
     queryFn: () => {
