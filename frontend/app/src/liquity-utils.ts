@@ -1184,8 +1184,8 @@ export function useNextOwnerIndex(
   });
 }
 
-export function useDebtPositioning(interestRate: Dnum | null) {
-  const chartData = useInterestRateChartData();
+export function useDebtPositioning(branchId: BranchId, interestRate: Dnum | null) {
+  const chartData = useInterestRateChartData(branchId);
 
   return useMemo(() => {
     if (!chartData.data || !interestRate) {
