@@ -338,14 +338,14 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             require(BoldToken(payable(address(boldToken))).owner() == deployer, "Not BOLD owner");
         } else {
             boldToken = IBoldToken(address(new BoldToken{salt: SALT}(deployer, superTokenFactory)));
-            // todo: uncomment initialize and add correct params:
+            
             //  IERC20 underlyingToken,
             // uint8 underlyingDecimals,
             // string calldata n,
             // string calldata s
 
             BoldToken(payable(address(boldToken))).initialize();
-
+            console.log("boldToken is here:", address(boldToken));
             assert(address(boldToken) == boldAddress);
             
         }
@@ -393,7 +393,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             ERC20Faucet(lqty).mock_setWildcardSpender(address(stakingV1), true);
         }
 
-        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](9);
+        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](8);
         //Interface TroveManagerParams:
         //(CCR, MCR, SCR, BCR, liquidation penalty, Liquidation penalty during redistribution, debt limit)
         //Use same liwuidation penalty for all troves.
@@ -686,6 +686,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
         if (block.chainid == 42161 && !useTestnetPriceFeeds) {
+            console.log("deploying on arbitrum");
             // arbitrum
             // WETH
             vars.collaterals[0] = IERC20Metadata(WETH);
@@ -782,6 +783,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
+
+            console.log("deployed addressesRegistry #", vars.i);
         }
         r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, msg.sender);
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
