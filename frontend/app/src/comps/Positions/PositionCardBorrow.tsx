@@ -6,7 +6,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { formatLiquidationRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
-import { getCollToken, shortenTroveId } from "@/src/liquity-utils";
+import { getCollToken, shortenTroveId, useDebtPositioning } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -44,7 +44,8 @@ export function PositionCardBorrow({
 
   const ltv = debt && deposit && collateralPriceUsd.data
     && getLtv(deposit, debt, collateralPriceUsd.data);
-  const redemptionRisk = getRedemptionRisk(interestRate);
+  const debtPositioning = useDebtPositioning(branchId, interestRate);
+  const redemptionRisk = getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
 
   const maxLtv = token && dn.from(1 / token.collateralRatio, 18);
   const liquidationRisk = ltv && maxLtv && getLiquidationRisk(ltv, maxLtv);

@@ -57,8 +57,8 @@ export function PanelInterestRate({
 
   const updateRateCooldown = useUpdateRateCooldown(loan.branchId, loan.troveId);
 
-  const currentDebtPositioning = useDebtPositioning(loan.interestRate);
-  const newDebtPositioning = useDebtPositioning(interestRate);
+  const currentDebtPositioning = useDebtPositioning(loan.branchId, loan.interestRate);
+  const newDebtPositioning = useDebtPositioning(loan.branchId, interestRate);
 
   const loanDetails = getLoanDetails(
     loan.deposit,

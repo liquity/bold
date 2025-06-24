@@ -3,7 +3,7 @@ import type { Dnum } from "dnum";
 
 import { LTV_RISK, MAX_LTV_ALLOWED_RATIO, REDEMPTION_RISK } from "@/src/constants";
 import * as dn from "dnum";
-import { match, P } from "ts-pattern";
+import { match } from "ts-pattern";
 
 export function getRedemptionRisk(
   debtInFront: Dnum | null,
@@ -14,7 +14,7 @@ export function getRedemptionRisk(
   }
 
   const debtInFrontRatio = dn.div(debtInFront, totalDebt);
-  
+
   return match(debtInFrontRatio)
     .returnType<RiskLevel>()
     .when((ratio) => dn.gt(ratio, REDEMPTION_RISK.low), () => "low")
