@@ -74,6 +74,7 @@ export function IcStrategiesModal({
           return (
             <DelegateBox
               key={delegate.address}
+              branchId={branchId}
               delegate={delegate}
               selectLabel="Choose"
               onSelect={onSelectDelegate}

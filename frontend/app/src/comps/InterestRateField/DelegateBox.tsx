@@ -1,8 +1,9 @@
-import type { Delegate } from "@/src/types";
+import type { BranchId, Delegate } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { fmtnum, formatDuration, formatRedemptionRisk } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
+import { useDebtPositioning } from "@/src/liquity-utils";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { Button, IconCopy, StatusDot, TextButton } from "@liquity2/uikit";
@@ -10,15 +11,18 @@ import { MiniChart } from "./MiniChart";
 import { ShadowBox } from "./ShadowBox";
 
 export function DelegateBox({
+  branchId,
   delegate,
   onSelect,
   selectLabel = "Select",
 }: {
+  branchId: BranchId;
   delegate: Delegate;
   onSelect: (delegate: Delegate) => void;
   selectLabel: string;
 }) {
-  const delegationRisk = getRedemptionRisk(delegate.interestRate);
+  const debtPositioning = useDebtPositioning(branchId, delegate.interestRate);
+  const delegationRisk = getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
   return (
     <ShadowBox key={delegate.id}>
       <section

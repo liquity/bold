@@ -113,6 +113,7 @@ export function DelegateModal({
                   delegate.data
                     ? (
                       <DelegateBox
+                        branchId={branchId}
                         delegate={delegate.data}
                         selectLabel="Choose"
                         onSelect={onSelectDelegate}

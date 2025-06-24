@@ -83,7 +83,7 @@ export function BorrowScreen() {
   }
 
   const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, branch.id);
-  const debtPositioning = useDebtPositioning(interestRate);
+  const debtPositioning = useDebtPositioning(branch.id, interestRate);
 
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,

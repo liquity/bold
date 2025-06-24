@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { formatRedemptionRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
-import { getCollToken } from "@/src/liquity-utils";
+import { getCollToken, useDebtPositioning } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -47,7 +47,8 @@ export function PositionCardLeverage({
   const ltv = debt && deposit && collateralPriceUsd.data
     && getLtv(deposit, debt, collateralPriceUsd.data);
   const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
-  const redemptionRisk = getRedemptionRisk(interestRate);
+  const debtPositioning = useDebtPositioning(branchId, interestRate);
+  const redemptionRisk = getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
 
   return (
     <PositionCard

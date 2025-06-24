@@ -17,7 +17,7 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { useCheckLeverageSlippage } from "@/src/liquity-leverage";
 import { getRedemptionRisk } from "@/src/liquity-math";
-import { getBranch, getBranches, getCollToken, useNextOwnerIndex } from "@/src/liquity-utils";
+import { getBranch, getBranches, getCollToken, useNextOwnerIndex, useDebtPositioning } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
@@ -92,7 +92,8 @@ export function LeverageScreen() {
     leverageField.updateLeverageFactor(leverageField.leverageFactorSuggestions[0] ?? 1.1);
   }, [collateral.symbol, leverageField.leverageFactorSuggestions]);
 
-  const redemptionRisk = getRedemptionRisk(interestRate);
+  const debtPositioning = useDebtPositioning(branch.id, interestRate);
+  const redemptionRisk = getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
   const depositUsd = depositPreLeverage.parsed && collPrice.data && dn.mul(
     depositPreLeverage.parsed,
     collPrice.data,
