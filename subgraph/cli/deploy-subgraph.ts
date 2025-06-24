@@ -79,7 +79,7 @@ export async function main() {
 
   if (networkPreset === "arbitrum-dev") {
     options.name ??= "nerite-dev";
-    options.network ??= "arbitrum";
+    options.network ??= "arbitrum-one";
   }
 
   if (networkPreset === "sepolia") {
