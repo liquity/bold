@@ -393,7 +393,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             ERC20Faucet(lqty).mock_setWildcardSpender(address(stakingV1), true);
         }
 
-        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](9);
+        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](8);
         //Interface TroveManagerParams:
         //(CCR, MCR, SCR, BCR, liquidation penalty, Liquidation penalty during redistribution, debt limit)
         //Use same liwuidation penalty for all troves.
