@@ -15,7 +15,7 @@ import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
-import { getBranch, getBranches, getCollToken, useDebtPositioning, useNextOwnerIndex } from "@/src/liquity-utils";
+import { getBranch, getBranches, getCollToken, useNextOwnerIndex, useRedemptionRisk } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalances } from "@/src/wagmi-utils";
@@ -83,7 +83,7 @@ export function BorrowScreen() {
   }
 
   const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, branch.id);
-  const debtPositioning = useDebtPositioning(branch.id, interestRate);
+  const redemptionRisk = useRedemptionRisk(branch.id, interestRate);
 
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
@@ -91,8 +91,6 @@ export function BorrowScreen() {
     interestRate,
     collateral.collateralRatio,
     collPrice.data ?? null,
-    debtPositioning.debtInFront,
-    debtPositioning.totalDebt,
   );
 
   const debtSuggestions = loanDetails.maxDebt
@@ -352,7 +350,7 @@ export function BorrowScreen() {
         footer={{
           start: (
             <Field.FooterInfoRedemptionRisk
-              riskLevel={loanDetails.redemptionRisk}
+              riskLevel={redemptionRisk.data ?? null}
             />
           ),
           end: (

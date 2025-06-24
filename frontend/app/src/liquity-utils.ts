@@ -8,6 +8,7 @@ import type {
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
+  RiskLevel,
   Token,
   TokenSymbol,
   TroveId,
@@ -31,6 +32,7 @@ import {
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
+import { getRedemptionRisk } from "@/src/liquity-math";
 import {
   getAllInterestRateBrackets,
   getIndexedTroveById,
@@ -1221,4 +1223,22 @@ export function useDebtPositioning(branchId: BranchId, interestRate: Dnum | null
       totalDebt,
     };
   }, [chartData.data, interestRate]);
+}
+
+export function useRedemptionRisk(
+  branchId: BranchId,
+  interestRate: Dnum | null,
+): UseQueryResult<RiskLevel | null> {
+  const debtPositioning = useDebtPositioning(branchId, interestRate);
+
+  return useQuery({
+    queryKey: ["useRedemptionRisk", branchId, jsonStringifyWithDnum(interestRate)],
+    queryFn: () => {
+      if (!debtPositioning.debtInFront || !debtPositioning.totalDebt) {
+        return null;
+      }
+      return getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
+    },
+    enabled: debtPositioning.debtInFront !== null && debtPositioning.totalDebt !== null,
+  });
 }
