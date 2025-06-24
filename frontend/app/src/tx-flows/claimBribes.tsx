@@ -1,5 +1,4 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
-import type { Address } from "@/src/types";
 
 import { BribeInitiative } from "@/src/abi/BribeInitiative";
 import { Amount } from "@/src/comps/Amount/Amount";
