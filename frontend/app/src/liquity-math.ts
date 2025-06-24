@@ -115,8 +115,6 @@ export function getLoanDetails(
   interestRate: Dnum | null,
   minCollRatio: number,
   collPrice: Dnum | null,
-  debtInFront?: Dnum | null,
-  totalDebt?: Dnum | null,
 ): LoanDetails {
   const maxLtv = dn.div(dn.from(1, 18), minCollRatio);
   const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED_RATIO);
@@ -148,8 +146,6 @@ export function getLoanDetails(
   const liquidationRisk = ltv
     ? getLiquidationRisk(ltv, maxLtv)
     : null;
-
-  const redemptionRisk = getRedemptionRisk(debtInFront ?? null, totalDebt ?? null);
 
   const leverageFactor = ltv
     ? getLeverageFactorFromLtv(ltv)
@@ -183,7 +179,6 @@ export function getLoanDetails(
     maxDebtAllowed,
     maxLtv,
     maxLtvAllowed,
-    redemptionRisk,
     status,
   };
 }

@@ -9,7 +9,7 @@ import { Value } from "@/src/comps/Value/Value";
 import { formatRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getCollToken } from "@/src/liquity-utils";
+import { getCollToken, useRedemptionRisk } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { roundToDecimal } from "@/src/utils";
@@ -46,6 +46,8 @@ export function LoanCard({
   }
 
   const collPriceUsd = usePrice(collToken.symbol);
+  const redemptionRisk = useRedemptionRisk(loan?.branchId ?? 0, loan?.interestRate ?? null);
+  const prevRedemptionRisk = useRedemptionRisk(prevLoan?.branchId ?? 0, prevLoan?.interestRate ?? null);
 
   const isLoanClosing = prevLoan && !loan;
   const maxLtv = dn.div(dn.from(1, 18), collToken.collateralRatio);
@@ -70,7 +72,6 @@ export function LoanCard({
     ltv,
     depositPreLeverage,
     leverageFactor,
-    redemptionRisk,
     liquidationRisk,
     liquidationPrice,
   } = loanDetails || {};
@@ -365,18 +366,18 @@ export function LoanCard({
                     )}
                   </HFlex>
                 </GridItem>
-                {redemptionRisk && (
+                {redemptionRisk.data && (
                   <GridItem label="Redemption risk">
                     <HFlex gap={8} alignItems="center" justifyContent="flex-start">
                       <StatusDot
-                        mode={riskLevelToStatusMode(redemptionRisk)}
+                        mode={riskLevelToStatusMode(redemptionRisk.data)}
                         size={8}
                       />
-                      {formatRisk(redemptionRisk)}
-                      {prevLoanDetails && redemptionRisk !== prevLoanDetails.redemptionRisk && (
+                      {formatRisk(redemptionRisk.data)}
+                      {prevRedemptionRisk.data && redemptionRisk.data !== prevRedemptionRisk.data && (
                         <>
                           <StatusDot
-                            mode={riskLevelToStatusMode(prevLoanDetails.redemptionRisk)}
+                            mode={riskLevelToStatusMode(prevRedemptionRisk.data)}
                             size={8}
                           />
                           <div
@@ -385,7 +386,7 @@ export function LoanCard({
                               textDecoration: "line-through",
                             })}
                           >
-                            {formatRisk(prevLoanDetails.redemptionRisk)}
+                            {formatRisk(prevRedemptionRisk.data)}
                           </div>
                         </>
                       )}
