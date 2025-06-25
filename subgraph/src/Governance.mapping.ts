@@ -1,5 +1,7 @@
-import { RegisterInitiative as RegisterInitiativeEvent } from "../generated/Governance/Governance";
-import { UnregisterInitiative as UnregisterInitiativeEvent } from "../generated/Governance/Governance";
+import {
+  RegisterInitiative as RegisterInitiativeEvent,
+  UnregisterInitiative as UnregisterInitiativeEvent,
+} from "../generated/Governance/Governance";
 import { GovernanceInitiative } from "../generated/schema";
 
 export function handleRegisterInitiative(event: RegisterInitiativeEvent): void {
