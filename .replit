@@ -5,7 +5,8 @@ run = "cd ~/workspace/frontend/app && pnpm build && pnpm start"
 channel = "stable-24_05"
 
 [deployment]
-run = ["sh", "-c", "pnpm start --prefix frontend/app"]
+run = "cd ~/workspace/frontend/app && pnpm build && pnpm start"
+# run = ["sh", "-c", "pnpm start --prefix frontend/app"]
 # build = ["sh", "-c", "pnpm build --prefix frontend/app"]
 
 [[ports]]
