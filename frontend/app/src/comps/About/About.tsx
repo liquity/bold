@@ -20,7 +20,6 @@ const ENV_EXCLUDE: Set<keyof typeof env> = new Set([
   "APP_COMMIT_URL",
   "APP_VERSION",
   "APP_VERSION_URL",
-  "COINGECKO_API_KEY",
   "CONTRACTS_COMMIT_HASH",
   "CONTRACTS_COMMIT_URL",
   "CollateralSymbolSchema",

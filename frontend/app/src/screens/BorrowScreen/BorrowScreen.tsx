@@ -4,9 +4,11 @@ import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateFie
 import type { Address, Dnum } from "@/src/types";
 
 import { NBSP } from "@/src/characters";
+import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS, ETH_MAX_RESERVE, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
@@ -15,7 +17,14 @@ import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
-import { getBranch, getBranches, getCollToken, useNextOwnerIndex } from "@/src/liquity-utils";
+import {
+  getBranch,
+  getBranches,
+  getCollToken,
+  useBranchCollateralRatios,
+  useNextOwnerIndex,
+  useRedemptionRisk,
+} from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalances } from "@/src/wagmi-utils";
@@ -24,6 +33,7 @@ import {
   COLLATERALS as KNOWN_COLLATERALS,
   Dropdown,
   HFlex,
+  IconExternal,
   IconSuggestion,
   InfoTooltip,
   InputField,
@@ -76,6 +86,7 @@ export function BorrowScreen() {
   const collPrice = usePrice(collateral.symbol);
 
   const balances = useBalances(account.address, KNOWN_COLLATERAL_SYMBOLS);
+  const collateralRatios = useBranchCollateralRatios(branch.id);
 
   const collBalance = balances[collateral.symbol];
   if (!collBalance) {
@@ -83,6 +94,7 @@ export function BorrowScreen() {
   }
 
   const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, branch.id);
+  const redemptionRisk = useRedemptionRisk(branch.id, interestRate);
 
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
@@ -349,7 +361,7 @@ export function BorrowScreen() {
         footer={{
           start: (
             <Field.FooterInfoRedemptionRisk
-              riskLevel={loanDetails.redemptionRisk}
+              riskLevel={redemptionRisk.data ?? null}
             />
           ),
           end: (
@@ -398,6 +410,161 @@ export function BorrowScreen() {
       />
 
       <RedemptionInfo />
+
+      {collateralRatios.data?.isBelowCcr && collateralRatios.data?.tcr && (
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            padding: 16,
+            fontSize: 16,
+            color: "content",
+            background: "infoSurface",
+            border: "1px solid token(colors.infoSurfaceBorder)",
+            borderRadius: 8,
+          })}
+        >
+          <div
+            className={css({
+              fontSize: 16,
+              fontWeight: 600,
+              marginBottom: 12,
+            })}
+          >
+            Borrowing Restrictions Active
+          </div>
+          <div
+            className={css({
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              fontSize: 15,
+              medium: {
+                fontSize: 14,
+              },
+            })}
+          >
+            <div
+              className={css({
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              })}
+            >
+              <span>Current TCR:</span>
+              <Amount
+                value={collateralRatios.data.tcr}
+                percentage
+                format={0}
+              />
+            </div>
+            <div
+              className={css({
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              })}
+            >
+              <span>Critical Threshold (CCR):</span>
+              <Amount
+                value={collateralRatios.data.ccr}
+                percentage
+                format={0}
+              />
+            </div>
+          </div>
+          <div
+            className={css({
+              marginTop: 12,
+              fontSize: 15,
+              color: "contentAlt",
+              lineHeight: 1.4,
+              medium: {
+                fontSize: 14,
+              },
+            })}
+          >
+            <div className={css({ marginBottom: 8 })}>
+              When the branch TCR falls below the CCR, these restrictions apply:
+            </div>
+            <ul
+              className={css({
+                margin: 0,
+                marginBottom: 8,
+                listStyle: "none",
+              })}
+            >
+              <li
+                className={css({
+                  position: "relative",
+                  paddingLeft: 12,
+                  "&::before": {
+                    content: "\"•\"",
+                    position: "absolute",
+                    left: 0,
+                    color: "contentAlt",
+                  },
+                })}
+              >
+                Opening a position: only allowed if resulting TCR {">"}{" "}
+                <Amount value={collateralRatios.data.ccr} percentage format={0} />
+              </li>
+              <li
+                className={css({
+                  position: "relative",
+                  paddingLeft: 12,
+                  "&::before": {
+                    content: "\"•\"",
+                    position: "absolute",
+                    left: 0,
+                    color: "contentAlt",
+                  },
+                })}
+              >
+                New borrowing: must bring resulting TCR {">"}{" "}
+                <Amount value={collateralRatios.data.ccr} percentage format={0} />
+              </li>
+              <li
+                className={css({
+                  position: "relative",
+                  paddingLeft: 12,
+                  "&::before": {
+                    content: "\"•\"",
+                    position: "absolute",
+                    left: 0,
+                    color: "contentAlt",
+                  },
+                })}
+              >
+                Collateral withdrawal: must be matched by debt repayment
+              </li>
+            </ul>
+          </div>
+          <LinkTextButton
+            href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
+            rel="noopener noreferrer"
+            target="_blank"
+            label={
+              <span
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  color: "accent",
+                  fontSize: 15,
+                  medium: {
+                    fontSize: 16,
+                  },
+                })}
+              >
+                <span>Learn more about borrowing restrictions</span>
+                <IconExternal size={16} />
+              </span>
+            }
+          />
+        </div>
+      )}
 
       <FlowButton
         disabled={!allowSubmit}

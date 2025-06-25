@@ -12,7 +12,7 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRelativeTime } from "@/src/formatting";
 import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getBranch, getCollToken, useTroveRateUpdateCooldown } from "@/src/liquity-utils";
+import { getBranch, getCollToken, useRedemptionRisk, useTroveRateUpdateCooldown } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { useAccount } from "@/src/wagmi-utils";
@@ -56,6 +56,9 @@ export function PanelInterestRate({
   );
 
   const updateRateCooldown = useUpdateRateCooldown(loan.branchId, loan.troveId);
+
+  const currentRedemptionRisk = useRedemptionRisk(loan.branchId, loan.interestRate);
+  const newRedemptionRisk = useRedemptionRisk(loan.branchId, interestRate);
 
   const loanDetails = getLoanDetails(
     loan.deposit,
@@ -202,16 +205,16 @@ export function PanelInterestRate({
           updates={[
             {
               label: "Redemption risk",
-              before: loanDetails.redemptionRisk && (
+              before: currentRedemptionRisk.data && (
                 <>
-                  <StatusDot mode={riskLevelToStatusMode(loanDetails.redemptionRisk)} />
-                  {formatRisk(loanDetails.redemptionRisk)}
+                  <StatusDot mode={riskLevelToStatusMode(currentRedemptionRisk.data)} />
+                  {formatRisk(currentRedemptionRisk.data)}
                 </>
               ),
-              after: newLoanDetails.redemptionRisk && (
+              after: newRedemptionRisk.data && (
                 <>
-                  <StatusDot mode={riskLevelToStatusMode(newLoanDetails.redemptionRisk)} />
-                  {formatRisk(newLoanDetails.redemptionRisk)}
+                  <StatusDot mode={riskLevelToStatusMode(newRedemptionRisk.data)} />
+                  {formatRisk(newRedemptionRisk.data)}
                 </>
               ),
             },

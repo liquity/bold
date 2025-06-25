@@ -197,18 +197,6 @@ NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=address|blockCreated
 NEXT_PUBLIC_CHAIN_CONTRACT_MULTICALL=0xca11bde05977b3631167028862be2a173976ca11|14353601
 ```
 
-### `NEXT_PUBLIC_COINGECKO_API_KEY`
-
-API key for CoinGecko integration. Use 'demo' for the demo API or 'pro' for the pro API.
-
-```dosini
-# Format
-NEXT_PUBLIC_COINGECKO_API_KEY=apiType|API_KEY
-
-# Example
-NEXT_PUBLIC_COINGECKO_API_KEY=pro|CG-xxxxxxxxxxxxxxxxxxxx
-```
-
 ### `NEXT_PUBLIC_BLOCKING_LIST`
 
 Smart contract address for the blocking list implementation. The contract must implement `isBlackListed(address)(bool)`.

@@ -8,6 +8,8 @@ import type {
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
+  RiskLevel,
+  Token,
   TokenSymbol,
   TroveId,
   TroveStatus,
@@ -30,6 +32,8 @@ import {
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
+import { getRedemptionRisk } from "@/src/liquity-math";
+import { usePrice } from "@/src/services/Prices";
 import {
   getAllInterestRateBrackets,
   getIndexedTroveById,
@@ -40,13 +44,13 @@ import {
 } from "@/src/subgraph";
 import { isBranchId, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { bigIntAbs, jsonStringifyWithBigInt } from "@/src/utils";
-import { vAddress, vPrefixedTroveId } from "@/src/valibot-utils";
-import { addressesEqual, COLLATERALS, isAddress, shortenAddress } from "@liquity2/uikit";
+import { vAddress, vPrefixedTroveId, vTokenSymbol } from "@/src/valibot-utils";
+import { addressesEqual, COLLATERALS, isAddress, shortenAddress, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
-import { encodeAbiParameters, erc20Abi, keccak256, parseAbiParameters } from "viem";
+import { encodeAbiParameters, erc20Abi, isAddressEqual, keccak256, parseAbiParameters, zeroAddress } from "viem";
 import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
@@ -98,6 +102,16 @@ export function getCollToken(branchId: BranchId | null): CollateralToken | null 
   return token;
 }
 
+export function getToken(symbol: CollateralSymbol): CollateralToken;
+export function getToken(symbol: TokenSymbol): Token;
+export function getToken(symbol: TokenSymbol): Token {
+  const token = TOKENS_BY_SYMBOL[symbol];
+  if (!token) {
+    throw new Error(`Unknown token symbol: ${symbol}`);
+  }
+  return token;
+}
+
 export function getBranches(): Branch[] {
   return ENV_BRANCHES.map((branch) => {
     const contracts = CONTRACTS.branches.find((b) => b.id === branch.id);
@@ -112,6 +126,10 @@ export function getBranches(): Branch[] {
       strategies: branch.strategies,
     };
   });
+}
+
+export function getBranchesCount(): number {
+  return ENV_BRANCHES.length;
 }
 
 export function getBranch(idOrSymbol: null): null;
@@ -137,6 +155,7 @@ export function getBranch(
 }
 
 function statusFromEnum(status: number): TroveStatus {
+  if (status === 0) return "nonexistent";
   if (status === 1) return "active";
   if (status === 2) return "closed";
   if (status === 3) return "liquidated";
@@ -144,7 +163,16 @@ function statusFromEnum(status: number): TroveStatus {
   throw new Error(`Invalid status: ${status}`);
 }
 
-export function useEarnPool(branchId: BranchId) {
+type EarnPool = {
+  apr: Dnum | null;
+  apr7d: Dnum | null;
+  collateral: CollateralToken;
+  totalDeposited: Dnum;
+};
+export function useEarnPool(branchId: null): UseQueryResult<null>;
+export function useEarnPool(branchId: BranchId): UseQueryResult<EarnPool>;
+export function useEarnPool(branchId: BranchId | null): UseQueryResult<EarnPool | null>;
+export function useEarnPool(branchId: BranchId | null) {
   const wagmiConfig = useWagmiConfig();
   const stats = useLiquityStats();
   const collateral = getCollToken(branchId);
@@ -160,6 +188,9 @@ export function useEarnPool(branchId: BranchId) {
       jsonStringifyWithDnum(spApyAvg7d),
     ],
     queryFn: async () => {
+      if (branchId === null) {
+        return null;
+      }
       const totalBoldDeposits = await readContract(wagmiConfig, {
         ...getBranchContract(branchId, "StabilityPool"),
         functionName: "getTotalBoldDeposits",
@@ -299,56 +330,45 @@ export function useStakePosition(address: null | Address) {
     },
   });
 
-  const stakePosition = useReadContracts({
-    contracts: [
-      {
-        ...LqtyStaking,
-        functionName: "stakes",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LqtyStaking,
-        functionName: "totalLQTYStaked",
-      },
-      {
-        ...LqtyStaking,
-        functionName: "getPendingETHGain",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LqtyStaking,
-        functionName: "getPendingLUSDGain",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-      {
-        ...LusdToken,
-        functionName: "balanceOf",
-        args: [userProxyAddress.data ?? "0x"],
-      },
-    ],
+  return useReadContracts({
+    contracts: [{
+      ...LqtyStaking,
+      functionName: "stakes",
+      args: [userProxyAddress.data ?? "0x"],
+    }, {
+      ...LqtyStaking,
+      functionName: "getPendingETHGain",
+      args: [userProxyAddress.data ?? "0x"],
+    }, {
+      ...LqtyStaking,
+      functionName: "getPendingLUSDGain",
+      args: [userProxyAddress.data ?? "0x"],
+    }, {
+      ...LusdToken,
+      functionName: "balanceOf",
+      args: [userProxyAddress.data ?? "0x"],
+    }],
     query: {
       enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
       select: ([
         depositResult,
-        totalStakedResult,
         pendingEthGainResult,
         pendingLusdGainResult,
         lusdBalanceResult,
-      ]): PositionStake | null => {
+      ]): PositionStake | undefined => {
         if (
-          depositResult.status === "failure" || totalStakedResult.status === "failure"
-          || pendingEthGainResult.status === "failure" || pendingLusdGainResult.status === "failure"
+          depositResult.status === "failure"
+          || pendingEthGainResult.status === "failure"
+          || pendingLusdGainResult.status === "failure"
           || lusdBalanceResult.status === "failure"
         ) {
-          return null;
+          return undefined;
         }
         const deposit = dnum18(depositResult.result);
-        const totalStaked = dnum18(totalStakedResult.result);
         return {
           type: "stake",
           deposit,
           owner: address ?? "0x",
-          totalStaked,
           rewards: {
             eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
             lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
@@ -357,8 +377,6 @@ export function useStakePosition(address: null | Address) {
       },
     },
   });
-
-  return stakePosition;
 }
 
 export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveId) {
@@ -410,8 +428,8 @@ export function useAverageInterestRate(branchId: BranchId) {
   };
 }
 
-export function useInterestRateChartData() {
-  const brackets = useAllInterestRateBrackets();
+export function useInterestRateChartData(branchId: BranchId) {
+  const brackets = useInterestRateBrackets(branchId);
   return useQuery({
     queryKey: ["useInterestRateChartData", jsonStringifyWithDnum(brackets.data)],
     queryFn: () => {
@@ -637,6 +655,10 @@ const StatsSchema = v.pipe(
     total_sp_deposits: v.string(),
     total_value_locked: v.string(),
     max_sp_apy: v.string(),
+    prices: v.record(
+      vTokenSymbol(),
+      v.string(),
+    ),
     branch: v.record(
       v.string(),
       v.object({
@@ -684,6 +706,12 @@ const StatsSchema = v.pipe(
         }];
       }),
     ),
+    prices: Object.fromEntries(
+      Object.entries(value.prices).map(([symbol, price]) => [
+        symbol,
+        dnumOrNull(price, 18),
+      ]),
+    ) as Record<TokenSymbol, Dnum | null>,
   })),
 );
 
@@ -695,6 +723,54 @@ export function useBranchDebt(branchId: BranchId) {
     query: {
       select: dnum18,
     },
+  });
+}
+
+export function useBranchCollateralRatios(branchId: BranchId) {
+  const wagmiConfig = useWagmiConfig();
+  const collToken = getCollToken(branchId);
+  const collTokenPrice = usePrice(collToken?.symbol ?? null);
+
+  return useQuery({
+    queryKey: [
+      "branchCollateralRatios",
+      branchId,
+      jsonStringifyWithDnum(collTokenPrice.data),
+    ],
+    queryFn: async () => {
+      const TroveManager = getBranchContract(branchId, "TroveManager");
+
+      const [totalColl, totalDebt, ccr_] = await readContracts(wagmiConfig, {
+        contracts: [{
+          ...TroveManager,
+          functionName: "getEntireBranchColl",
+        }, {
+          ...TroveManager,
+          functionName: "getEntireBranchDebt",
+        }, {
+          ...TroveManager,
+          functionName: "CCR",
+        }],
+        allowFailure: false,
+      });
+
+      const ccr = dnum18(ccr_);
+
+      if (!collTokenPrice.data || dn.eq(totalDebt, 0)) {
+        return { ccr, isBelowCcr: false, tcr: null };
+      }
+
+      // TCR = (totalCollateral * collTokenPrice) / totalDebt
+      const tcr = dn.div(
+        dn.mul(dnum18(totalColl), collTokenPrice.data),
+        dnum18(totalDebt),
+      );
+
+      const isBelowCcr = dn.lt(tcr, ccr);
+
+      return { ccr, isBelowCcr, tcr };
+    },
+    enabled: Boolean(collTokenPrice.data),
   });
 }
 
@@ -825,14 +901,10 @@ export function useInterestBatchDelegates(
             interestRateChange: {
               min: dnum18(batchFromChain.minInterestRate),
               max: dnum18(batchFromChain.maxInterestRate),
+              // period is sometimes called "max update frequency"
               period: batchFromChain.minInterestRateChangePeriod,
             },
             fee: batch.fee,
-
-            // not available in the subgraph yet
-            followers: 0,
-            lastDays: 0,
-            redemptions: dnum18(0),
           };
         })
         .filter((delegate) => delegate !== null);
@@ -866,13 +938,11 @@ export async function fetchLoanById(
   if (!isPrefixedtroveId(fullId)) return null;
 
   const { branchId, troveId } = parsePrefixedTroveId(fullId);
-
   const TroveManager = getBranchContract(branchId, "TroveManager");
-  const TroveNft = getBranchContract(branchId, "TroveNFT");
 
   const [
-    indexdTrove,
-    [troveTuple, troveData, borrower],
+    indexedTrove,
+    [troveTuple, troveData],
   ] = await Promise.all([
     getIndexedTroveById(branchId, troveId),
     readContracts(wagmiConfig, {
@@ -885,27 +955,20 @@ export async function fetchLoanById(
         ...TroveManager,
         functionName: "getLatestTroveData",
         args: [BigInt(troveId)],
-      }, {
-        ...TroveNft,
-        functionName: "ownerOf",
-        args: [BigInt(troveId)],
       }],
     }),
   ]);
 
-  const status = troveTuple[3];
-  const batchManager = troveTuple[8];
-
-  return {
-    type: indexdTrove?.mightBeLeveraged ? "multiply" : "borrow",
-    batchManager: BigInt(batchManager) === 0n ? null : batchManager,
+  return !indexedTrove ? null : {
+    type: indexedTrove.mightBeLeveraged ? "multiply" : "borrow",
+    batchManager: isAddressEqual(troveTuple[8], zeroAddress) ? null : troveTuple[8],
     borrowed: dnum18(troveData.entireDebt),
-    borrower,
+    borrower: indexedTrove.borrower,
     branchId,
-    createdAt: indexdTrove?.createdAt ?? 0,
+    createdAt: indexedTrove.createdAt,
     deposit: dnum18(troveData.entireColl),
     interestRate: dnum18(troveData.annualInterestRate),
-    status: indexdTrove?.status ?? statusFromEnum(status),
+    status: statusFromEnum(troveTuple[3]),
     troveId,
   };
 }
@@ -1169,5 +1232,62 @@ export function useNextOwnerIndex(
         : null
     ),
     enabled: borrower !== null && branchId !== null,
+  });
+}
+
+export function useDebtPositioning(branchId: BranchId, interestRate: Dnum | null) {
+  const chartData = useInterestRateChartData(branchId);
+
+  return useMemo(() => {
+    if (!chartData.data || !interestRate) {
+      return { debtInFront: null, totalDebt: null };
+    }
+
+    // find the bracket that contains this interest rate
+    const bracket = chartData.data.find((item) =>
+      dn.lte(item.rate, interestRate)
+      && dn.lt(
+        interestRate,
+        dn.add(
+          item.rate,
+          dn.lt(item.rate, INTEREST_RATE_PRECISE_UNTIL)
+            ? INTEREST_RATE_INCREMENT_PRECISE
+            : INTEREST_RATE_INCREMENT_NORMAL,
+        ),
+      )
+    );
+
+    if (!bracket) {
+      return { debtInFront: null, totalDebt: null };
+    }
+
+    // calculate total debt from all brackets
+    const totalDebt = chartData.data.reduce(
+      (sum, item) => dn.add(sum, item.debt),
+      DNUM_0,
+    );
+
+    return {
+      debtInFront: bracket.debtInFront,
+      totalDebt,
+    };
+  }, [chartData.data, interestRate]);
+}
+
+export function useRedemptionRisk(
+  branchId: BranchId,
+  interestRate: Dnum | null,
+): UseQueryResult<RiskLevel | null> {
+  const debtPositioning = useDebtPositioning(branchId, interestRate);
+
+  return useQuery({
+    queryKey: ["useRedemptionRisk", branchId, jsonStringifyWithDnum(interestRate)],
+    queryFn: () => {
+      if (!debtPositioning.debtInFront || !debtPositioning.totalDebt) {
+        return null;
+      }
+      return getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
+    },
+    enabled: debtPositioning.debtInFront !== null && debtPositioning.totalDebt !== null,
   });
 }

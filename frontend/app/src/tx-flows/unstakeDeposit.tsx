@@ -2,10 +2,10 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
+import { getUserAllocatedInitiatives } from "@/src/liquity-governance";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { getIndexedUserAllocated } from "@/src/subgraph";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
@@ -40,7 +40,10 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
     const lqtyPrice = usePrice("LQTY");
     return (
       <TransactionDetailsRow
-        label="You withdraw"
+        label={[
+          "You withdraw",
+          "Your voting power will be reset.",
+        ]}
         value={[
           <Amount
             key="start"
@@ -63,10 +66,12 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
       Status: TransactionStatus,
       async commit(ctx) {
         const { Governance } = ctx.contracts;
-
         const inputs: `0x${string}`[] = [];
 
-        const allocatedInitiatives = await getIndexedUserAllocated(ctx.account);
+        const allocatedInitiatives = await getUserAllocatedInitiatives(
+          ctx.wagmiConfig,
+          ctx.account,
+        );
 
         // reset allocations if the user has any
         if (allocatedInitiatives.length > 0) {
@@ -85,7 +90,7 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
         }));
 
         return ctx.writeContract({
-          ...ctx.contracts.Governance,
+          ...Governance,
           functionName: "multiDelegateCall",
           args: [inputs],
         });

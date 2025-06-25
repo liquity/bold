@@ -1,4 +1,4 @@
-![Liquity V2](https://github.com/user-attachments/assets/b3ffbc5e-b7a8-46b6-a080-e18a0792bb64)
+[Liquity V2](https://github.com/user-attachments/assets/b3ffbc5e-b7a8-46b6-a080-e18a0792bb64)
 
 [![Coverage Status](https://coveralls.io/repos/github/liquity/bold/badge.svg?branch=main&t=yZSfc8)](https://coveralls.io/github/liquity/bold?branch=main)
 
@@ -69,12 +69,14 @@
 - [Collateral branch shutdown](#collateral-branch-shutdown)
   - [Interest rates and shutdown](#interest-rates-and-shutdown)
   - [Shutdown logic](#shutdown-logic)
+  - [Closing the last Trove in the system](#closing-the-last-trove-in-the-system)
   - [Urgent redemptions](#urgent-redemptions)
     - [Urgent redemption best practice](#urgent-redemption-best-practice)
 - [Collateral choices in Liquity v2](#collateral-choices-in-liquity-v2)
 - [Oracles in Liquity v2](#oracles-in-liquity-v2)
   - [Choice of oracles and price calculations](#choice-of-oracles-and-price-calculations)
   - [Mitigating redemption arbitrages / oracle frontrunning](#mitigating-redemption-arbitrages--oracle-frontrunning)
+  - [Worst price approach analysis](#is-the-worst-price-approach-sufficient-to-mitigate-front-running)
   - [PriceFeed Deployment](#pricefeed-deployment)
   - [Fetching the price](#fetching-the-price)
   - [Fallback price calculations if an oracle has failed](#fallback-price-calculations-if-an-oracle-has-failed)
@@ -102,6 +104,11 @@
   - [20 - Users can game upfront fees by joining an empty batch](#20---Users-can-game-upfront-fees-by-joining-an-empty-batch)
   - [21 - Deployment backrunning](#21---deployment-backrunning)
   - [22 - Repeated redistribution can eventually result in zero stake Troves](#22---repeated-redistribution-can-eventually-result-in-zero-stake-Troves)
+  - [23 - Redistributions and CR drag down cascades](23---redistributions-and-cr-drag-down-cascades)
+  - [24 - SP loss evasion](#24---sp-loss-evasion)
+  - [25 - Redistribution loss evasion](25---redistribution-loss-evasion)
+  - [26 - Debt in front considerations](#26---debt-in-front-should-not-include-troves-at-the-same-interest-rate)
+
   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
 
 ## Significant changes in Liquity v2
@@ -924,9 +931,22 @@ The collateral portion of the gas compensation is calculated at liquidation. It 
 
 That is, the max collateral that can be paid is 2 stETH on the stETH branch, 2 rETH on the rETH branch, etc.
 
+These two components are termed the **WETH gas compensation** and the **collateral gas compensation**, respectively.
+
 Thus the total funds the liquidator receives upon a Trove liquidation is:
 
 `0.0375 WETH + min(0.5% trove_collateral, 2_units_of_LST)`. 
+
+
+The collateral gas compensation is paid out only for liquidations that offset debt against funds in the SP.  A pure redistribution liquidation sends no collateral gas compensation to the liquidator. 
+
+In the case of a mixed offset and redistribution liquidation, the liquidator receives collateral gas compensation only in proportion to the fraction of the Trove’s debt that was offset against the Stability Pool. e.g. if 25% of the Trove’s debt was offset against the SP and the remaining 75% redistributed, then the collateral gas compensation would be given by:
+
+`min(0.5% trove_collateral / 4, 2_units_of_LST)`
+
+
+The WETH gas compensation is always paid out regardless of the liquidation type.
+
 
 ## Redistributions
 
@@ -983,11 +1003,12 @@ When the TCR of a branch falls below its Critical Collateral Ratio (CCR), the sy
 
 Here is the full CCR-based logic:
 
-<img width="672" alt="image" src="https://github.com/user-attachments/assets/6afc6deb-5301-4918-8477-e74e2753629c" />
+<img width="668" alt="image" src="https://github.com/user-attachments/assets/03dcfd5c-9ffc-40fd-be60-392af5cb8baa" />
 
 As a result, when `TCR < CCR`, the following restrictions apply:
 
-<img width="672" alt="image" src="https://github.com/user-attachments/assets/20a3d6ef-472c-44bf-84d3-8c96533d932a" />
+<img width="671" alt="image" src="https://github.com/user-attachments/assets/dd01d27e-27ed-4e71-b97e-6527f722a111" />
+
 
 
 ### Rationale
@@ -1153,6 +1174,12 @@ The following operations are still allowed after shut down:
 - Depositing to and withdrawing from the SP
 - Urgent redemptions (see below)
 
+### Closing the last Trove in the system
+
+Ordinarily, on active branches, the last Trove in the system can not be closed. This is to ensure there is always a final recipient active Trove available to receive redistributions. The owner of the last Trove is free to repay debt down to the minimum level, and the Trove can still be redeemed down to 0 debt (and thus become a zombie Trove), as usual.
+
+On shutdown branches, the last Trove _ca_ be closed by its owner - since the priority on a shutdown branch is to clear all debt and remove collateral ASAP.
+
  ### Urgent redemptions 
 
 During shutdown the redemption logic is modified to incentivize swift reduction of the branch’s debt, and even do so when BOLD is trading at peg ($1 USD). Redemptions in shutdown are known as “urgent” redemptions.
@@ -1239,6 +1266,46 @@ To mitigate this value extraction on RETH and WSTETH branches, the system uses t
 The trade-off of this solution that redemptions may sometimes be unprofitable during volatile periods with high oracle lag. However, as long as redemptions do happen eventually and in the long term, then peg maintenance will hold.
 
 However, this "worst price" solution only applies if the delta between market price and canonical price is within the oracle deviation threshold (1% for WSTETH, 2% for RETH). If the difference is greater, then the normal primary pricing calculation is used - a large delta is assumed to reflect a legitimate difference between market price and canonical rate.
+
+### Is the “worst price” approach sufficient to mitigate front-running?
+
+An assumption of the v2 system is that adverse redemption arbs from oracle frontrunning are overall not worse than in Liquity v1, which uses only the ETH-USD Chainlink oracle. This is justified as follows:
+
+### WETH branch
+
+The WETH branch uses only the ETH-USD oracle, thus the adverse arb risks are the same as v1.
+
+### RETH branch
+
+RETH redemption price logic compares the RETH-ETH market oracle with the RETH-ETH LST exchange rate. When the delta between these is <2%, the system takes the max of the two for its RETH-ETH value, and otherwise, takes the min. The RETH-ETH value is multiplied by the ETH-USD market oracle price to derive a RETH-USD price.
+
+Here is RETH-ETH data for 07-2024 to 05-2025, for the latest Chainlink aggregator:
+https://docs.google.com/spreadsheets/d/1LxaKZwipSWmre2YxS_0AHT0cDd97yVae_DuJwKbejkQ/edit?usp=sharing
+
+Empirically, the relative market oracle deltas - i.e. the percentage difference between update `i` and update `i + 1` - are small. The largest was 0.46% in the dataset. Assuming no depeg (i.e.that the true RETH-ETH price equals the LST exchange rate), this implies the deltas between market oracle and exchange rate were always well under 2%. Thus usage of the min price for redemptions should be very rare, if it ever happens. In nearly all cases, it will use the “worst” price.
+
+
+Thus, the RETH branch just inherits the adverse arb risks of the ETH-USD oracle.
+
+### STETH branch
+
+The STETH redemption price logic compares two market oracles - STETH-USD and ETH-USD. 
+
+When the delta between oracle prices is >1%,the system uses the STETH-USD price rather than the max (“worst”) price.
+
+However it is ultimately the **redemption fee** that protects the system against market price movements:
+
+As in Liquity v1, any market price rise in range `[0.5%,1%]` can result in adverse profitable redemptions, since even though the ETH-USD oracle should update and the v2 system would use that (max) price, it can still be frontrun, and the fee is only 0.5%. The attacker can extract a profit (ignoring gas) of `market_price - stale_oracle_price - fee`.
+
+For market price rises above 1%, the STETH-USD oracle is used. The oracle should update, but if its frontrun (or if it’s just laggy and doesn’t update) the impact is actually the same as in v1: the system doesn’t use a max “worst” price, but it also didn’t in v1 either. The attacker extracts a profit of `market_price - stale_oracle_price - fee`, which for a given market price change >1%, would be the same quantity as if they frontran a stale ETH-USD oracle update.
+
+As long as both oracles are responsive (and assuming no LST depegs), the v2 system inherits the same adverse redemption arb risks as Liquity v1. 
+
+If for some reason the STETH-USD oracle doesn’t update quickly enough when the market price movement _should_ trigger it to update, then a  larger `market_price - stale_oracle_price` delta could result, in turn leading to larger adverse redemption volumes.
+
+However that would be purely an oracle issue. Chainlink has been chosen as the oracle provider in part due to their highly responsive oracles, and it’s assumed that STETH-USD oracle updates as responsively as ETH-USD, since they utilise the same underlying oracle network and infrastructure.
+
+Finally, Liquity v2 has extra protection from two measures that each reduce overall adverse arb profits: 1) a greater redemption fee gain (lower `BETA` parameter) and 2) redemption routing, which reduces adverse profits either by routing itself, or the flash loan fee required to manipulate StabilityPool quantities and bypass routing.
 
 ### TODO - [INHERITANCE DIAGRAM]
 
@@ -1812,6 +1879,85 @@ Previous calculations showed that it would take on the order of ~1000 redistribu
 Deliberately triggering sizable redistributions is difficult to engineer, since they require both the Stability Pool to be empty and large liquidateable Troves to be available.
 
 Despite this, the collateral gas compensation is now not paid out for redistributed collateral, making redistributions less profitable than in Liquity v1.
+
+### 23 - Redistributions and CR drag down cascades
+
+When a redistribution occurs, debt and collateral of the liquidated Trove is assigned to all healthy Troves in proportion to their collateral.
+
+As long as the liquidated Trove has `ICR > 100%`, this distribution constitutes a net gain for all recipient Troves - that is, the dollar value of the collateral they receive is greater than the debt they receive.
+
+However, since the liquidated Trove has `ICR < MCR` and active Troves have `ICR >= MCR`, the redistribution reduces the ICR of all each active Trove.
+
+For active Troves close to the MCR, it is possible that the redistribution results in a `ICR < MCR` - i.e. they could be “dragged down” to below MCR and thus in turn liquidateable.  It is even possible that a “cascade” occurs - i.e. active Troves become liquidateable, and in turn are redistributed, potentially dragging more healthy Troves below MCR.
+
+This drag-down effect depends on:
+
+- The amount of debt and collateral liquidated
+- The ICR of the liquidated Trove
+- The distribution of branch collateral in healthy Troves - i.e. what proportion of collateral is in low-ICR active Troves
+
+For realistic distributions of Troves, the drag-down effect is fairly small and self-limiting.
+
+This drag-down dynamic is inherited from Liquity v1. However, Liquity v2 does not pay the collateral gas compensation for redistributions - as such, all else equal, the magnitude of the drag-down effect in v2 is somewhat reduced. As are the incentives for a liquidator to trigger repeated redistributions.
+
+### 24 - SP loss evasion
+
+It is possible that a Stability Pool depositor may frontrun and evade an incoming liquidation in order to avoid making a net loss. For example:
+
+- Depositor sees incoming liquidation of Trove with ICR < 100% in the mempool
+- Depositor frontruns and withdraws their deposit before the liquidation occurs
+- Liquidation is absorbed by the remaining funds in the SP
+- Depositor re-deposits
+
+The impact of this is that all other depositors in the SP absorb the loss of the unprofitable liquidation, and the frontrunner evades it.
+
+This was partially mitigated in Liquity v1 by requiring that no undercollateralized Troves were present in the system upon a withdrawal from the SP. However, this is infeasible in v2 since Troves are no longer ordered by collateral ratio, and also accrue interest at different rates. Thus, checking for undercollateralized Troves in v2 would require an inefficient loop over all Troves, which is prohibitively expensive gas-wise.
+
+
+However, no fix is required since it’s expected that:
+
+- Most liquidations are profitable for SP depositors, i.e. occur at ICR > 100%, so the collateral value that SP depositors receive is greater than the amount of debt cancelled against their BOLD deposit.
+
+- Liquidations are MEV competitive and a significant portion of liquidations are expected to be performed via private pools e.g. Flashbots, and not via the public gas auction
+
+- The majority of SP deposits are “sticky” - that is, most depositors leave their deposit in the SP for the medium/long term to earn continuous BOLD yield, and are not running frontrunning bots in order to evade a very occasional unprofitable liquidation.
+
+### 25 - Redistribution Loss evasion
+
+It is possible that a borrower may frontrun and evade an income redistribution liquidation in order to avoid making a net loss. For example:
+
+- Borrower sees incoming redistribution liquidation of a Trove with ICR < 100% in the mempool
+- Borrower frontruns and closes their Trove before the redistribution occurs
+- Redistribution is absorbed by the remaining active Troves
+- Borrower re-opens Trove
+
+The impact of this is that all other active Troves absorb the loss from the unprofitable liquidation, and the frontrunniner evades it.
+
+However, no fix is required since it’s expected that:
+
+- Most redistributions are profitable for active Troves, i.e. occur at ICR > 100% - thus the collateral value that active Troves receive is greater than the amount of debt cancelled against their BOLD deposit.
+
+- Redistributions are expected to be very rare, and only occur if the Stability Pool has already been emptied.  Even if the SP _is_ empty, JIT deposits to the Stability Pool can in most cases profitably absorb liquidations
+
+- Liquidations are MEV intensive and a significant portion of liquidations are expected to be performed via private pools e.g. Flashbots, and not performed via the public gas auction
+
+
+### 26 - Debt in front should not include Troves at the same interest rate
+
+When borrowers assess their redemption risk, it’s recommended that they consider their  “debt-in-front” metric - i.e. how much branch debt is in Troves at lower interest rates than theirs, and thus, all else equal, how much must be redeemed before theirs will be redeemed.
+
+This metric is not perfect, since debt-in-front can fluctuate dramatically: any borrower may adjust their debt at any time. Trove debts also change continuously over time based on their respective interest rates. However, debt-in-front does provide a rough metric on which a redemption risk estimate can be based, and is used by several front ends.
+
+
+Debt-in-front has one more caveat - that is, borrowers should not consider Troves at the _same_ interest rate as part of their debt-in-front.
+
+This is due to the fact that all Troves at the same interest rate are redeemed in LIFO order.  
+
+Thus, it’s possible (for example) for a batch manager with a batch at a given interest rate to re-insert their batch at a different position for free (ignoring gas) by re-setting the batch’s interest rate to the same value. They could do this as a frontrun to a redemption transaction in order to put more debt in front of another Trove they control, just prior to redemption.
+
+
+Thus, Borrowers should not consider Troves at identical interest rates to be part of their ‘debt-in-front’. To be conservative, borrowers and front ends should consider debt-in-front to only include debt from Troves in the branch at lower interest rates.
+
 
 ### Issues identified in audits requiring no fix
 A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/issues?q=label%3Awontfix+).

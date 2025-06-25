@@ -7,6 +7,8 @@ export type { Address, CollateralSymbol, Dnum, Token, TokenSymbol };
 
 export type RiskLevel = "low" | "medium" | "high";
 
+export type ChainId = number;
+
 export type BranchId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
 export type TroveId = `0x${string}`;
@@ -52,6 +54,7 @@ export type MenuSection = {
 };
 
 export type TroveStatus =
+  | "nonexistent"
   | "active"
   | "closed"
   | "liquidated"
@@ -111,20 +114,29 @@ export type PositionStake = {
   type: "stake";
   owner: Address;
   deposit: Dnum;
-  totalStaked: Dnum;
   rewards: {
     lusd: Dnum;
     eth: Dnum;
   };
 };
 
-export type Position = PositionLoan | PositionEarn | PositionStake;
+export type PositionSbold = {
+  type: "sbold";
+  bold: Dnum;
+  owner: Address;
+  sbold: Dnum;
+};
+
+export type Position =
+  | PositionEarn
+  | PositionLoan
+  | PositionSbold
+  | PositionStake;
 
 export type Delegate = {
   address: Address;
   boldAmount: Dnum;
   fee?: Dnum;
-  followers: number;
   id: string;
   interestRate: Dnum;
   interestRateChange: {
@@ -132,9 +144,7 @@ export type Delegate = {
     max: Dnum;
     period: bigint;
   };
-  lastDays: number;
   name: string;
-  redemptions: Dnum;
 };
 
 export type LoanDetails = {
@@ -153,7 +163,6 @@ export type LoanDetails = {
   maxDebtAllowed: Dnum | null;
   maxLtv: Dnum;
   maxLtvAllowed: Dnum;
-  redemptionRisk: RiskLevel | null;
   status:
     | null
     | "healthy"
@@ -168,6 +177,7 @@ export type Initiative =
     address: Address;
     name: string | null;
     protocol: string | null;
+    url: string | null;
   }
   & (
     | { tvl: Dnum; pairVolume: Dnum; votesDistribution: Dnum }
@@ -177,3 +187,8 @@ export type Initiative =
 export type Vote = "for" | "against";
 export type VoteAllocation = { vote: Vote | null; value: Dnum };
 export type VoteAllocations = Record<Address, VoteAllocation>;
+
+export type IcStrategy = {
+  address: Address;
+  name: string;
+};

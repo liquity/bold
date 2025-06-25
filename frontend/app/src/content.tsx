@@ -217,6 +217,23 @@ export default {
         description: "Direct protocol incentives with LQTY while earning from Liquity V1",
       },
     },
+    earnTable: {
+      title: "Earn rewards with BOLD",
+      subtitle: "Earn BOLD & (staked) ETH rewards by depositing your BOLD in a stability pool",
+      forksInfo: {
+        text: (
+          <>
+            <abbr title="Stability Pool">SP</abbr> depositors earn additional rewards from forks.
+          </>
+        ),
+        titleAttr: "Stability Pool depositors earn additional rewards from forks.",
+        learnMore: {
+          url: "https://docs.liquity.org/v2-documentation/friendly-fork-program",
+          label: "Learn more",
+          title: "Learn more about the Liquity V2 Friendly Fork Program",
+        },
+      },
+    },
     statsBar: {
       label: "Protocol stats",
     },
@@ -421,7 +438,10 @@ export default {
         By staking LQTY you can vote on incentives for Liquity V2, while still earning Liquity V1 fees.
       </>
     ),
-    learnMore: ["https://docs.liquity.org/faq/staking", "Learn more"],
+    learnMore: [
+      "https://docs.liquity.org/v2-faq/lqty-staking",
+      "Learn more",
+    ],
     accountDetails: {
       myDeposit: "My deposit",
       votingPower: "Voting power",
@@ -467,6 +487,17 @@ export default {
           Rewards will be paid out as part of the update transaction.
         </>,
       ],
+      votingShare: (
+        <>
+          Your voting share is the amount of LQTY you have staked and that is available to vote, divided by the total
+          amount of LQTY staked via the governance contract.
+        </>
+      ),
+      votingPower: (
+        <>
+          Your relative voting power changes over time, depending on your and others allocations of LQTY.
+        </>
+      ),
     },
   },
 } as const;

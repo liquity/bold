@@ -1,5 +1,4 @@
-import type { PrefixedTroveId, TroveId } from "@/src/types";
-import type { Address } from "@liquity2/uikit";
+import type { Address, IcStrategy, PrefixedTroveId, TroveId } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { isPrefixedtroveId, isTroveId } from "@/src/types";
@@ -167,7 +166,6 @@ export function vPositionStake() {
     type: v.literal("stake"),
     owner: vAddress(),
     deposit: vDnum(),
-    totalStaked: vDnum(),
     rewards: v.object({
       lusd: vDnum(),
       eth: vDnum(),
@@ -191,6 +189,7 @@ const VPositionLoanBase = v.object({
     v.literal("closed"),
     v.literal("liquidated"),
     v.literal("redeemed"),
+    v.literal("nonexistent"),
   ]),
 });
 
@@ -233,6 +232,15 @@ export function vPositionEarn() {
   });
 }
 
+export function vPositionSbold() {
+  return v.object({
+    type: v.literal("sbold"),
+    owner: vAddress(),
+    bold: vDnum(),
+    sbold: vDnum(),
+  });
+}
+
 export function vVote() {
   return v.union([
     v.literal("for"),
@@ -256,5 +264,69 @@ export function vCollateralSymbol() {
     v.literal("ETH"),
     v.literal("RETH"),
     v.literal("WSTETH"),
+  ]);
+}
+
+export function vTokenSymbol() {
+  return v.union([
+    vCollateralSymbol(),
+    v.literal("BOLD"),
+    v.literal("LEGACY_BOLD"),
+    v.literal("LQTY"),
+    v.literal("LUSD"),
+    v.literal("SBOLD"),
+  ]);
+}
+
+export function vEnvLegacyCheck() {
+  return v.union([
+    vEnvFlag(),
+    v.pipe(
+      v.string(),
+      v.transform((value) => JSON.parse(value)),
+      v.object({
+        BOLD_TOKEN: vAddress(),
+        COLLATERAL_REGISTRY: vAddress(),
+        GOVERNANCE: vAddress(),
+        INITIATIVES_SNAPSHOT_URL: v.string(),
+        TROVES_SNAPSHOT_URL: v.string(),
+        BRANCHES: v.array(
+          v.object({
+            symbol: vCollateralSymbol(),
+            name: v.string(),
+            COLL_TOKEN: vAddress(),
+            LEVERAGE_ZAPPER: vAddress(),
+            STABILITY_POOL: vAddress(),
+            TROVE_MANAGER: vAddress(),
+          }),
+        ),
+      }),
+    ),
+  ]);
+}
+
+export function vIcStrategy() {
+  return v.union([
+    vEnvFlag(),
+    v.pipe(
+      v.string(),
+      v.regex(/^\s?([^:]+:0x[0-9a-fA-F]{40},?)*\s?$/),
+      v.transform((value): IcStrategy[] => {
+        value = value.trim();
+        if (value.endsWith(",")) {
+          value = value.slice(0, -1);
+        }
+        return value.split(",")
+          .map((s) => {
+            const [name, address_] = s.split(":");
+            const address = address_?.trim().toLowerCase();
+            if (!name || !isAddress(address)) {
+              return null;
+            }
+            return { address, name };
+          })
+          .filter((x) => x !== null);
+      }),
+    ),
   ]);
 }

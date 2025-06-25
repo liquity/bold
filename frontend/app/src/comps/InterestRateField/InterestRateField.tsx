@@ -5,7 +5,7 @@ import { useAppear } from "@/src/anim-utils";
 import { useBreakpointName } from "@/src/breakpoints";
 import { INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
-import { jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { findClosestRateIndex, getBranch, useAverageInterestRate, useInterestRateChartData } from "@/src/liquity-utils";
@@ -17,7 +17,7 @@ import { a } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
-import { memo, useEffect, useId, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { match } from "ts-pattern";
 import { DelegateModal } from "./DelegateModal";
 import { IcStrategiesModal } from "./IcStrategiesModal";
@@ -32,6 +32,10 @@ const DELEGATE_MODES = [
 ] as const;
 
 export type DelegateMode = typeof DELEGATE_MODES[number];
+
+const SHOW_AVERAGE_BUTTON_MODES: DelegateMode[] = [
+  "manual",
+] as const;
 
 export const InterestRateField = memo(
   function InterestRateField({
@@ -94,6 +98,21 @@ export const InterestRateField = memo(
       onAverageInterestRateLoad,
     ]);
 
+    useEffect(() => {
+      setDelegatePicker(null);
+      onDelegateChange(null);
+      onModeChange("manual");
+      if (averageInterestRate.data) {
+        onChange(averageInterestRate.data);
+      }
+    }, [
+      averageInterestRate.data,
+      branchId,
+      onChange,
+      onDelegateChange,
+      onModeChange,
+    ]);
+
     const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
       onFocusChange: ({ parsed, focused }) => {
         if (!focused && parsed) {
@@ -113,7 +132,7 @@ export const InterestRateField = memo(
       },
     });
 
-    const interestChartData = useInterestRateChartData();
+    const interestChartData = useInterestRateChartData(branchId);
     const interestRateRounded = interestRate && dn.div(dn.round(dn.mul(interestRate, 1000)), 1000);
 
     const bracket = interestRateRounded && interestChartData.data?.find(
@@ -230,7 +249,7 @@ export const InterestRateField = memo(
                 })}
               >
                 <div>Interest rate</div>
-                {averageInterestRate.data && (
+                {averageInterestRate.data && SHOW_AVERAGE_BUTTON_MODES.includes(mode) && (
                   <div>
                     <TextButton
                       size="small"
@@ -420,9 +439,7 @@ function ManualInterestRateSlider({
   interestChartData: ReturnType<typeof useInterestRateChartData>;
   interestRate: Dnum | null;
 }) {
-  const value = useMemo(() => {
-    const rate = interestRate?.[0] ?? 0n;
-    const chartRates = interestChartData.data?.map(({ rate }) => rate[0]);
+  const rateToSliderPosition = useCallback((rate: bigint, chartRates: bigint[]) => {
     if (!rate || !chartRates || chartRates.length === 0) return 0;
 
     const firstRate = chartRates.at(0) ?? 0n;
@@ -432,24 +449,65 @@ function ManualInterestRateSlider({
     if (rate >= lastRate) return 1;
 
     return findClosestRateIndex(chartRates, rate) / chartRates.length;
+  }, []);
+
+  const value = useMemo(() => {
+    const rate = interestRate?.[0] ?? 0n;
+    const chartRates = interestChartData.data?.map(({ rate }) => rate[0]);
+    if (!chartRates) return 0;
+
+    return rateToSliderPosition(rate, chartRates);
   }, [
     jsonStringifyWithDnum(interestChartData.data),
     jsonStringifyWithDnum(interestRate),
+    rateToSliderPosition,
   ]);
 
-  const gradientStops = useMemo((): [number, number] => {
+  const gradientStops = useMemo((): [
+    medium: number,
+    low: number,
+  ] => {
     if (!interestChartData.data || interestChartData.data.length === 0) {
       return [0, 0];
     }
-    const rates = interestChartData.data.map((bar) => bar.rate[0]);
-    const stop = (rate: number) => (
-      findClosestRateIndex(rates, BigInt(rate * 10 ** 18)) / rates.length
+
+    const totalDebt = interestChartData.data.reduce(
+      (sum, item) => dn.add(sum, item.debt),
+      DNUM_0,
     );
+
+    if (dn.eq(totalDebt, 0)) {
+      return [0, 0];
+    }
+
+    // find exact rates where debt positioning crosses thresholds
+    let mediumThresholdRate = null;
+    let lowThresholdRate = null;
+
+    for (const [index, item] of interestChartData.data.entries()) {
+      const prevItem = index > 0 ? interestChartData.data[index - 1] : null;
+      const prevRate = prevItem?.rate[0] ?? null;
+
+      const debtInFrontRatio = dn.div(item.debtInFront, totalDebt);
+
+      // place boundary at the rate before crossing threshold (so slider changes at the right position)
+      if (dn.gt(debtInFrontRatio, REDEMPTION_RISK.medium) && !mediumThresholdRate) {
+        mediumThresholdRate = prevRate;
+      }
+
+      if (dn.gt(debtInFrontRatio, REDEMPTION_RISK.low) && !lowThresholdRate) {
+        lowThresholdRate = prevRate;
+        // low threshold found: no need to continue
+        break;
+      }
+    }
+
+    const chartRates = interestChartData.data.map(({ rate }) => rate[0]);
     return [
-      stop(REDEMPTION_RISK.medium),
-      stop(REDEMPTION_RISK.low),
+      mediumThresholdRate ? rateToSliderPosition(mediumThresholdRate, chartRates) : 0,
+      lowThresholdRate ? rateToSliderPosition(lowThresholdRate, chartRates) : 0,
     ];
-  }, [interestChartData.data]);
+  }, [interestChartData.data, rateToSliderPosition]);
 
   const transition = useAppear(value !== -1);
 
@@ -478,7 +536,7 @@ function ManualInterestRateSlider({
                 Math.round(value * (interestChartData.data.length)),
               );
               fieldValue.setValue(String(dn.toNumber(dn.mul(
-                interestChartData.data[index]?.rate ?? dn.from(0, 18),
+                interestChartData.data[index]?.rate ?? DNUM_0,
                 100,
               ))));
             }

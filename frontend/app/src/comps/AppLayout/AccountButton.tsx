@@ -6,6 +6,7 @@ import { Button, IconAccount, shortenAddress, ShowAfter } from "@liquity2/uikit"
 import { a, useTransition } from "@react-spring/web";
 import { ConnectKitButton } from "connectkit";
 import { match, P } from "ts-pattern";
+import { useSwitchChain } from "wagmi";
 
 export function AccountButton() {
   return (
@@ -95,6 +96,8 @@ function ButtonNotConnected({
   mode: "connecting" | "disconnected" | "unsupported";
   show?: () => void;
 }) {
+  const { switchChain, chains } = useSwitchChain();
+
   const props = {
     mode: "primary",
     label: mode === "connecting"
@@ -102,7 +105,11 @@ function ButtonNotConnected({
       : mode === "unsupported"
       ? content.accountButton.wrongNetwork
       : content.accountButton.connectAccount,
-    onClick: show,
+    onClick: mode === "unsupported"
+      ? () => {
+        switchChain({ chainId: chains[0].id });
+      }
+      : show,
   } as const;
 
   return (
