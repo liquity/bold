@@ -15,6 +15,9 @@ export const FORKS_INFO = [
   ["Quill Finance", "/fork-icons/quill.svg"],
 ] as const;
 
+// TODO: make it possible to override this in the env
+export const TOKEN_ICON_URL = "https://assets.smold.app/api/token/{chainId}/{tokenAddress}/logo.svg";
+
 export const ONE_SECOND = 1000;
 export const ONE_MINUTE = 60 * ONE_SECOND;
 export const ONE_HOUR = 60 * ONE_MINUTE;
