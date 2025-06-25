@@ -23,7 +23,7 @@ export function FlowButton({
   footnote?: ReactNode;
   label?: string;
   request?: (() => FlowRequestParam) | FlowRequestParam;
-  size?: "medium" | "large";
+  size?: "medium" | "large" | "small" | "mini";
 }) {
   const txFlow = useTransactionFlow();
   const breakpointName = useBreakpointName();
@@ -42,7 +42,7 @@ export function FlowButton({
           disabled={disabled || !request}
           label={label ?? "Next: Summary"}
           mode="primary"
-          size={breakpointName === "small" ? "medium" : size}
+          size={size === "large" && breakpointName === "small" ? "medium" : size}
           wide
           style={size === "large"
             ? {
