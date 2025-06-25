@@ -4,7 +4,9 @@
   "license": "MIT",
   "version": "1.0.0",
   "scripts": {
-    "codegen": "pnpm graph codegen"
+    "build": "pnpm graph build",
+    "codegen": "pnpm graph codegen",
+    "deploy-dev": "pnpm graph deploy nerite-dev"
   },
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.80.1"

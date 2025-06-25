@@ -6,8 +6,8 @@ dataSources:
     name: BoldToken
     source:
       abi: BoldToken
-      address: "0xb01dd87b29d187f3e3a4bf6cdaebfb97f3d9ab98"
-      startBlock: 21640111
+      address: "0x285d8ffa57b54ad387c971b189f927ead5ac0221"
+      startBlock: 350400460
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -37,14 +37,13 @@ dataSources:
         - event: CollateralRegistryAddressChanged(address)
           handler: handleCollateralRegistryAddressChanged
       file: ./src/BoldToken.mapping.ts
-    network: mainnet
-    # TODO: This does not exist in the contracts. Remove?
+    network: arbitrum-one
   - kind: ethereum/contract
     name: Governance
     source:
       abi: Governance
-      address: "0x636deb767cd7d0f15ca4ab8ea9a9b26e98b426ac"
-      startBlock: 21640111
+      address: "0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d"
+      startBlock: 350400460
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -75,11 +74,11 @@ dataSources:
             address,address,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleWithdrawLQTY
       file: ./src/Governance.mapping.ts
-    network: mainnet
+    network: arbitrum-one
 templates:
   - name: TroveManager
     kind: ethereum/contract
-    network: mainnet
+    network: arbitrum-one
     source:
       abi: TroveManager
     mapping:
@@ -106,17 +105,15 @@ templates:
         - event: BatchUpdated(indexed
             address,uint8,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleBatchUpdated
-          # TODO: test handler for this event
         - event: TroveUpdated(indexed
             uint256,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleTroveUpdated
-          # TODO: test handler for this event
         - event: BatchedTroveUpdated(indexed
             uint256,address,uint256,uint256,uint256,uint256,uint256)
           handler: handleBatchedTroveUpdated
   - name: TroveNFT
     kind: ethereum/contract
-    network: mainnet
+    network: arbitrum-one
     source:
       abi: TroveNFT
     mapping:
@@ -135,7 +132,7 @@ templates:
           handler: handleTransfer
   - name: StabilityPool
     kind: ethereum/contract
-    network: mainnet
+    network: arbitrum-one
     source:
       abi: StabilityPool
     mapping:
@@ -151,19 +148,16 @@ templates:
           file: ../contracts/out/StabilityPool.sol/StabilityPool.json
       eventHandlers:
         - event: DepositUpdated(indexed
-            address,uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+            address,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleDepositUpdated
-        - event: S_Updated(uint256,uint128,uint128)
+        - event: S_Updated(uint256,uint256)
           handler: handleSUpdated
-        - event: B_Updated(uint256,uint128,uint128)
+        - event: B_Updated(uint256,uint256)
           handler: handleBUpdated
-          # TODO: test handler for this event
         - event: DepositOperation(indexed
             address,uint8,uint256,int256,uint256,uint256,uint256,uint256)
           handler: handleDepositOperation
-          # TODO: test handler for this event
         - event: StabilityPoolCollBalanceUpdated(uint256)
           handler: handleStabilityPoolCollBalanceUpdated
-          # TODO: test handler for this event
         - event: StabilityPoolBoldBalanceUpdated(uint256)
           handler: handleStabilityPoolBoldBalanceUpdated
