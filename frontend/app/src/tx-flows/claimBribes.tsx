@@ -2,38 +2,32 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { BribeInitiative } from "@/src/abi/BribeInitiative";
 import { Amount } from "@/src/comps/Amount/Amount";
+import { CHAIN_ID } from "@/src/env";
+import { fmtnum } from "@/src/formatting";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
+import { tokenIconUrl } from "@/src/utils";
 import { vAddress, vDnum } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
+import * as dn from "dnum";
 import * as v from "valibot";
-import { encodeFunctionData } from "viem";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "claimBribes",
   {
-    bribeTokens: v.array(v.object({
-      address: vAddress(),
-      symbol: v.string(),
-      amount: vDnum(),
+    initiative: vAddress(),
+    initiativeName: v.optional(v.string()),
+    boldAmount: vDnum(),
+    bribeTokenAmount: vDnum(),
+    bribeTokenAddress: vAddress(),
+    bribeTokenSymbol: v.string(),
+    claimData: v.array(v.object({
+      epoch: v.number(),
+      prevLQTYAllocationEpoch: v.number(),
+      prevTotalLQTYAllocationEpoch: v.number(),
     })),
-    claimableInitiatives: v.array(
-      v.object({
-        initiative: vAddress(),
-        boldAmount: vDnum(),
-        bribeTokenAmount: vDnum(),
-        bribeTokenAddress: vAddress(),
-        epochs: v.array(v.number()),
-        claimData: v.array(v.object({
-          epoch: v.number(),
-          prevLQTYAllocationEpoch: v.number(),
-          prevTotalLQTYAllocationEpoch: v.number(),
-        })),
-      }),
-    ),
-    totalBold: vDnum(),
   },
 );
 
@@ -45,10 +39,16 @@ export const claimBribes: FlowDeclaration<ClaimBribesRequest> = {
   Summary: () => null,
 
   Details({ request }) {
-    const { claimableInitiatives, totalBold, bribeTokens } = request;
-    const totalEpochs = (
-      new Set(claimableInitiatives.flatMap((init) => init.epochs))
-    ).size;
+    const {
+      initiativeName,
+      initiative,
+      boldAmount,
+      bribeTokenAmount,
+      bribeTokenAddress,
+      bribeTokenSymbol,
+      claimData,
+    } = request;
+    const totalEpochs = claimData.length;
     return (
       <>
         <div
@@ -59,81 +59,92 @@ export const claimBribes: FlowDeclaration<ClaimBribesRequest> = {
             color: "contentAlt",
           })}
         >
-          Claiming {bribeTokens.length + 1} types of rewards from {claimableInitiatives.length}{" "}
-          initiative{claimableInitiatives.length > 1 ? "s" : ""} over {totalEpochs} epoch{totalEpochs > 1 ? "s" : ""}.
+          Claiming rewards from <span title={initiative}>{initiativeName ?? initiative}</span> over {totalEpochs}{" "}
+          epoch{totalEpochs > 1 ? "s" : ""}.
         </div>
         <TransactionDetailsRow
-          label="Total BOLD rewards"
+          label="BOLD rewards"
           value={[
-            <div className={css({ display: "flex", alignItems: "center", gap: 8 })}>
-              <Amount value={totalBold} format="2z" />
-              <TokenIcon symbol="BOLD" size={16} />
+            <div
+              key="bold"
+              title={`${fmtnum(boldAmount)} BOLD`}
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                userSelect: "none",
+              })}
+            >
+              <Amount
+                format={2}
+                title={null}
+                value={boldAmount}
+              />
+              <TokenIcon
+                size={16}
+                symbol="BOLD"
+                title={null}
+              />
             </div>,
           ]}
         />
-        {bribeTokens.map((token) => (
+        {dn.gt(bribeTokenAmount, 0) && (
           <TransactionDetailsRow
-            key={token.address}
-            label={`Total ${token.symbol} rewards`}
+            label={`${bribeTokenSymbol} rewards`}
             value={[
-              <div className={css({ display: "flex", alignItems: "center", gap: 8 })}>
-                <Amount value={token.amount} format="2z" />
-                <span>{token.symbol}</span>
+              <div
+                key="bribe"
+                title={`${fmtnum(bribeTokenAmount)} ${bribeTokenSymbol}`}
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  userSelect: "none",
+                })}
+              >
+                <Amount
+                  format={2}
+                  title={null}
+                  value={bribeTokenAmount}
+                />
+                <TokenIcon
+                  size={16}
+                  title={null}
+                  token={{
+                    icon: tokenIconUrl(CHAIN_ID, bribeTokenAddress),
+                    name: bribeTokenSymbol,
+                    symbol: bribeTokenSymbol,
+                  }}
+                />
               </div>,
             ]}
           />
-        ))}
+        )}
       </>
     );
   },
 
   steps: {
     claimBribes: {
-      name: () => "Claim all bribes",
+      name: () => "Claim bribes",
       Status: TransactionStatus,
 
       async commit(ctx) {
-        const { claimableInitiatives } = ctx.request;
-
-        if (claimableInitiatives.length === 0) {
-          throw new Error("No claimable initiatives found");
-        }
-
-        // single initiative: claim directly
-        if (claimableInitiatives.length === 1) {
-          const initiative = claimableInitiatives[0];
-          if (!initiative) throw new Error(); // should not happen
-          return ctx.writeContract({
-            abi: BribeInitiative,
-            address: initiative.initiative,
-            functionName: "claimBribes",
-            args: [initiative.claimData.map((data) => ({
-              epoch: BigInt(data.epoch),
-              prevLQTYAllocationEpoch: BigInt(data.prevLQTYAllocationEpoch),
-              prevTotalLQTYAllocationEpoch: BigInt(data.prevTotalLQTYAllocationEpoch),
-            }))],
-          });
-        }
-
-        // multiple initiatives: multicall
-        const { Governance } = ctx.contracts;
-        const inputs: `0x${string}`[] = [];
-        for (const initiative of claimableInitiatives) {
-          inputs.push(encodeFunctionData({
-            abi: BribeInitiative,
-            functionName: "claimBribes",
-            args: [initiative.claimData.map((data) => ({
-              epoch: BigInt(data.epoch),
-              prevLQTYAllocationEpoch: BigInt(data.prevLQTYAllocationEpoch),
-              prevTotalLQTYAllocationEpoch: BigInt(data.prevTotalLQTYAllocationEpoch),
-            }))],
-          }));
-        }
-
+        const { initiative, claimData } = ctx.request;
         return ctx.writeContract({
-          ...Governance,
-          functionName: "multiDelegateCall",
-          args: [inputs],
+          abi: BribeInitiative,
+          address: initiative,
+          functionName: "claimBribes",
+          args: [
+            [...claimData]
+              // sort claimData by epoch (oldest to newest) as required (see IBribeInitiative.sol)
+              .sort((a, b) => a.epoch - b.epoch)
+              .map((data) => ({
+                epoch: BigInt(data.epoch),
+                prevLQTYAllocationEpoch: BigInt(data.prevLQTYAllocationEpoch),
+                prevTotalLQTYAllocationEpoch: BigInt(data.prevTotalLQTYAllocationEpoch),
+              })),
+          ],
         });
       },
 

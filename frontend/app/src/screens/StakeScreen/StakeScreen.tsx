@@ -6,9 +6,12 @@ import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import content from "@/src/content";
+import { CHAIN_ID } from "@/src/env";
+import { fmtnum } from "@/src/formatting";
 import { useBribingClaim, useNamedInitiatives } from "@/src/liquity-governance";
 import { useStakePosition } from "@/src/liquity-utils";
 import type { Address, Dnum, Initiative } from "@/src/types";
+import { tokenIconUrl } from "@/src/utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { shortenAddress, Tabs, TokenIcon, VFlex } from "@liquity2/uikit";
@@ -110,28 +113,21 @@ function BribesInfoBox({
   bribingClaim: NonNullable<ReturnType<typeof useBribingClaim>["data"]>;
   initiatives: Initiative[];
 }) {
-  const initiativeNames = useMemo(() => {
-    const nameMap = new Map<Address, string>();
-    initiatives.forEach((i) => {
-      nameMap.set(i.address.toLowerCase() as Address, i.name ?? shortenAddress(i.address, 6));
-    });
-    return nameMap;
-  }, [initiatives]);
+  const { claimableInitiatives } = bribingClaim;
 
-  const bribesByInitiative = useMemo(() => {
-    const grouped = new Map<Address, {
-      boldAmount: Dnum;
-      bribeTokenAmount: Dnum;
-      bribeTokenAddress: Address;
-      epochs: number[];
-    }>();
+  const bribesByInitiative = useMemo(() => (
+    new Map(claimableInitiatives.map((claim) => [
+      claim.initiative.toLowerCase() as Address,
+      claim,
+    ]))
+  ), [claimableInitiatives]);
 
-    bribingClaim.claimableInitiatives.forEach((claim) => {
-      grouped.set(claim.initiative, claim);
-    });
-
-    return grouped;
-  }, [bribingClaim.claimableInitiatives]);
+  const initiativesByAddress = useMemo(() => (
+    new Map(initiatives.map((initiative) => [
+      initiative.address.toLowerCase() as Address,
+      initiative,
+    ]))
+  ), [initiatives]);
 
   return (
     <div
@@ -176,7 +172,9 @@ function BribesInfoBox({
         })}
       >
         {[...bribesByInitiative.entries()].map(([initiative, data]) => {
-          const initiativeName = initiativeNames.get(initiative.toLowerCase() as Address);
+          const initiativeData = initiativesByAddress.get(initiative.toLowerCase() as Address);
+          const initiativeName = initiativeData?.name ?? shortenAddress(initiative, 6);
+          const bribeToken = bribingClaim.bribeTokens.find((token) => token.address === data.bribeTokenAddress);
           return (
             <div
               key={initiative}
@@ -187,11 +185,12 @@ function BribesInfoBox({
               })}
             >
               <div
+                title={initiative}
                 className={css({
                   fontWeight: 500,
                 })}
               >
-                {initiativeName ?? shortenAddress(initiative, 6)}
+                {initiativeName}
               </div>
               <div
                 className={css({
@@ -200,93 +199,93 @@ function BribesInfoBox({
                   gap: 8,
                   color: "contentAlt",
                   fontSize: 13,
+                  userSelect: "none",
                 })}
               >
-                <span
+                <div
+                  title={`${fmtnum(data.boldAmount)} BOLD`}
                   className={css({
                     display: "flex",
                     alignItems: "center",
                     gap: 4,
                   })}
                 >
-                  <Amount value={data.boldAmount} format="2z" />
-                  <TokenIcon symbol="BOLD" size={16} />
-                </span>
+                  <Amount
+                    format={2}
+                    title={null}
+                    value={data.boldAmount}
+                  />
+                  <TokenIcon
+                    size={16}
+                    symbol="BOLD"
+                    title={null}
+                  />
+                </div>
                 {dn.gt(data.bribeTokenAmount, 0) && (
-                  <>
-                    <span>+</span>
-                    <span>
-                      <Amount value={data.bribeTokenAmount} format="2z" /> {bribingClaim.bribeTokens.find((token) => (
-                        token.address === data.bribeTokenAddress
-                      ))?.symbol ?? "Unknown"}
-                    </span>
-                  </>
+                  <div
+                    title={`${fmtnum(data.bribeTokenAmount)} ${bribeToken?.symbol ?? "Unknown"}`}
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    })}
+                  >
+                    <Amount
+                      format={2}
+                      title={null}
+                      value={data.bribeTokenAmount}
+                    />
+                    <TokenIcon
+                      size={16}
+                      title={null}
+                      token={{
+                        icon: tokenIconUrl(CHAIN_ID, data.bribeTokenAddress),
+                        name: bribeToken?.symbol ?? "Unknown",
+                        symbol: bribeToken?.symbol ?? "Unknown",
+                      }}
+                    />
+                  </div>
                 )}
-                <span
+                <div
                   title={`Epochs: ${data.epochs.join(", ")}`}
                   className={css({
-                    marginLeft: "auto",
                     fontSize: 12,
                     opacity: 0.7,
                   })}
                 >
                   {data.epochs.length} epoch{data.epochs.length > 1 ? "s" : ""}
-                </span>
+                </div>
+                <div
+                  className={css({
+                    marginLeft: "auto",
+                  })}
+                >
+                  <FlowButton
+                    label="Claim"
+                    request={() => {
+                      const claimData = bribingClaim.claimableInitiatives
+                        .find((c) => c.initiative === initiative)?.claimData;
+                      return claimData && {
+                        flowId: "claimBribes",
+                        backLink: ["/stake", "Back to staking"],
+                        successLink: ["/stake", "Back to staking"],
+                        successMessage: "Bribes have been claimed successfully.",
+                        initiative,
+                        initiativeName,
+                        boldAmount: data.boldAmount,
+                        bribeTokenAmount: data.bribeTokenAmount,
+                        bribeTokenAddress: data.bribeTokenAddress,
+                        bribeTokenSymbol: bribeToken?.symbol ?? "UNKNOWN",
+                        claimData,
+                      };
+                    }}
+                    size="mini"
+                  />
+                </div>
               </div>
             </div>
           );
         })}
-      </div>
-
-      <div
-        className={css({
-          paddingTop: 12,
-          borderTop: "1px solid token(colors.separator)",
-        })}
-      >
-        <div
-          className={css({
-            fontWeight: 500,
-            marginBottom: 8,
-          })}
-        >
-          Total rewards
-        </div>
-        <div
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            color: "contentAlt",
-            fontSize: 13,
-            marginBottom: 16,
-          })}
-        >
-          <span className={css({ display: "flex", alignItems: "center", gap: 4 })}>
-            <Amount value={bribingClaim.totalBold} format="2z" />
-            <TokenIcon symbol="BOLD" size={16} />
-          </span>
-          {bribingClaim.bribeTokens.map((token) => (
-            <span key={token.address} className={css({ display: "flex", alignItems: "center", gap: 4 })}>
-              <Amount value={token.amount} format="2z" />
-              <span>{token.symbol}</span>
-            </span>
-          ))}
-        </div>
-
-        <FlowButton
-          label="Claim all bribes"
-          request={{
-            flowId: "claimBribes",
-            backLink: ["/stake", "Back to staking"],
-            successLink: ["/stake", "Back to staking"],
-            successMessage: "Bribes have been claimed successfully.",
-            claimableInitiatives: bribingClaim.claimableInitiatives,
-            totalBold: bribingClaim.totalBold,
-            bribeTokens: bribingClaim.bribeTokens,
-          }}
-          size="medium"
-        />
       </div>
     </div>
   );
