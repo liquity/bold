@@ -10,7 +10,7 @@ import { CHAIN_ID } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
 import { useBribingClaim, useNamedInitiatives } from "@/src/liquity-governance";
 import { useStakePosition } from "@/src/liquity-utils";
-import type { Address, Dnum, Initiative } from "@/src/types";
+import type { Address, Initiative } from "@/src/types";
 import { tokenIconUrl } from "@/src/utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
