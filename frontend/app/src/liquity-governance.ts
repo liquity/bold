@@ -538,6 +538,9 @@ export function useCurrentEpochBribes(
   });
 }
 
+// limit checks to the last 52 epochs
+const BRIBING_CHECK_EPOCH_LIMIT = 52;
+
 export function useBribingClaim(
   account: Address | null,
 ): UseQueryResult<BribeClaim | null> {
@@ -606,29 +609,36 @@ export function useBribingClaim(
 
       const bribeDetailsPerInitiative = await Promise.all(
         bribeInitiatives.map(async ({ address, bribeToken }) => {
-          const epochsToCheck = Math.min(Number(currentEpoch), 40); // limit to the last 40 epochs to avoid excessive load
-          const startEpoch = Math.max(1, Number(currentEpoch) - epochsToCheck + 1);
+          const completedEpochs = Number(currentEpoch) - 1; // exclude current epoch
+
+          // no completed epochs yet
+          if (completedEpochs < 1) {
+            return null;
+          }
+
+          const epochsToCheck = Math.min(completedEpochs, BRIBING_CHECK_EPOCH_LIMIT);
+          const startEpoch = Math.max(1, completedEpochs - epochsToCheck + 1);
 
           const results = await readContracts(wagmiConfig, {
             contracts: Array.from({ length: epochsToCheck }, (_, index) => {
-              const epoch = startEpoch + index;
               const BribeContract = { abi: BribeInitiative, address } as const;
+              const epoch = BigInt(startEpoch + index);
               return [{
                 ...BribeContract,
                 functionName: "claimedBribeAtEpoch",
-                args: [account, BigInt(epoch)],
+                args: [account, epoch],
               }, {
                 ...BribeContract,
                 functionName: "bribeByEpoch",
-                args: [BigInt(epoch)],
+                args: [epoch],
               }, {
                 ...BribeContract,
                 functionName: "lqtyAllocatedByUserAtEpoch",
-                args: [account, BigInt(epoch)],
+                args: [account, epoch],
               }, {
                 ...BribeContract,
                 functionName: "totalLQTYAllocatedByEpoch",
-                args: [BigInt(epoch)],
+                args: [epoch],
               }] as const;
             }).flat(),
             allowFailure: false,
@@ -657,7 +667,9 @@ export function useBribingClaim(
               continue;
             }
 
-            const epochEnd = govState.data.epochStart + (BigInt(epoch + 1) * epochDuration);
+            const epochEnd = govState.data.epochStart
+              - ((currentEpoch - BigInt(epoch)) * epochDuration)
+              + epochDuration;
 
             // voting power at the end of the epoch
             const userVP = votingPower(userLqty, userOffset, epochEnd);
