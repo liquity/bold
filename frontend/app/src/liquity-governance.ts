@@ -192,20 +192,13 @@ export function useInitiativesStates(initiatives: Address[]) {
   return useQuery({
     queryKey: ["initiativesStates", initiatives.join("")],
     queryFn: async () => {
-      // Declared explicitly to avoid this TS error:
-      // “Type instantiation is excessively deep and possibly infinite”
-      const contracts: {
-        abi: typeof Governance.abi;
-        address: Address;
-        functionName: "getInitiativeState";
-        args: [Address];
-      }[] = initiatives.map((address) => ({
-        ...Governance,
-        functionName: "getInitiativeState",
-        args: [address],
-      }));
-
-      const results = await readContracts(wagmiConfig, { contracts });
+      const results = await readContracts(wagmiConfig, {
+        contracts: initiatives.map((address) => ({
+          ...Governance,
+          functionName: "getInitiativeState",
+          args: [address],
+        } as const)),
+      });
 
       const initiativesStates: Record<Address, {
         status: InitiativeStatus;
@@ -224,6 +217,41 @@ export function useInitiativesStates(initiatives: Address[]) {
       }
 
       return initiativesStates;
+    },
+  });
+}
+
+export function useInitiativesVoteTotals(initiatives: Address[]) {
+  const wagmiConfig = useWagmiConfig();
+  const Governance = getProtocolContract("Governance");
+
+  return useQuery({
+    queryKey: ["initiativesVoteTotals", initiatives.join("")],
+    queryFn: async () => {
+      const voteTotals: Record<Address, {
+        totalVotes: Dnum;
+        totalVetos: Dnum;
+      }> = {};
+
+      const results = await readContracts(wagmiConfig, {
+        contracts: initiatives.map((address) => ({
+          ...Governance,
+          functionName: "getInitiativeSnapshotAndState",
+          args: [address],
+        } as const)),
+      });
+
+      for (const [i, { result }] of results.entries()) {
+        if (result && initiatives[i]) {
+          const [{ votes, vetos }] = result;
+          voteTotals[initiatives[i]] = {
+            totalVotes: dnum18(votes),
+            totalVetos: dnum18(vetos),
+          };
+        }
+      }
+
+      return voteTotals;
     },
   });
 }

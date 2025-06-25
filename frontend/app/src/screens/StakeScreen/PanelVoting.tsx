@@ -16,6 +16,7 @@ import {
   useGovernanceState,
   useGovernanceUser,
   useInitiativesStates,
+  useInitiativesVoteTotals,
   useNamedInitiatives,
 } from "@/src/liquity-governance";
 import { jsonStringifyWithBigInt } from "@/src/utils";
@@ -76,6 +77,7 @@ export function PanelVoting() {
   const governanceUser = useGovernanceUser(account.address ?? null);
   const initiatives = useNamedInitiatives();
   const initiativesStates = useInitiativesStates(initiatives.data?.map((i) => i.address) ?? []);
+  const voteTotals = useInitiativesVoteTotals(initiatives.data?.map((i) => i.address) ?? []);
 
   const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
 
@@ -258,6 +260,7 @@ export function PanelVoting() {
     governanceState.status !== "success"
     || initiatives.status !== "success"
     || initiativesStates.status !== "success"
+    || voteTotals.status !== "success"
     || governanceUser.status !== "success"
   ) {
     return (
@@ -529,6 +532,7 @@ export function PanelVoting() {
                   onVoteInputChange={handleVoteInputChange}
                   totalStaked={stakedLQTY}
                   voteAllocation={voteAllocations[initiative.address]}
+                  voteTotals={voteTotals.data?.[initiative.address]}
                 />
               );
             })}
@@ -716,6 +720,7 @@ function InitiativeRow({
   onVoteInputChange,
   totalStaked,
   voteAllocation,
+  voteTotals,
 }: {
   disableFor: boolean;
   disabled: boolean;
@@ -726,6 +731,7 @@ function InitiativeRow({
   onVoteInputChange: (initiative: Address, value: Dnum) => void;
   totalStaked: Dnum;
   voteAllocation?: VoteAllocation;
+  voteTotals?: { totalVotes: Dnum; totalVetos: Dnum };
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [editIntent, setEditIntent] = useState(false);
@@ -859,6 +865,7 @@ function InitiativeRow({
                     totalStaked,
                   )}
                   vote={voteAllocation?.vote ?? null}
+                  voteTotals={voteTotals}
                 />
               )
             )}
@@ -873,11 +880,13 @@ function Vote({
   disabled,
   share,
   vote,
+  voteTotals,
 }: {
   onEdit?: () => void;
   disabled: boolean;
   share: Dnum;
   vote: Vote;
+  voteTotals?: { totalVotes: Dnum; totalVetos: Dnum };
 }) {
   return (
     <div
@@ -896,9 +905,6 @@ function Vote({
         })}
       >
         <div
-          title={`${fmtnum(share, "pct2")}% of your voting power has been allocated to ${
-            vote === "for" ? "upvote" : "downvote"
-          } this initiative`}
           className={css({
             display: "flex",
             alignItems: "center",
@@ -918,6 +924,13 @@ function Vote({
             </div>
           )}
           <div
+            title={`${fmtnum(share, "pct2")}% of your voting power has been allocated to ${
+              vote === "for" ? "upvote" : "downvote"
+            } this initiative${
+              voteTotals 
+                ? ` (${fmtnum(vote === "for" ? voteTotals.totalVotes : voteTotals.totalVetos)} total ${vote === "for" ? "votes" : "vetos"})`
+                : ""
+            }`}
             className={css({
               width: 30,
             })}
