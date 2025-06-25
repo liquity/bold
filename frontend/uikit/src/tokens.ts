@@ -1,5 +1,3 @@
-import type { Token } from "./types";
-
 import tokenBold from "./token-icons/bold.svg";
 import tokenEth from "./token-icons/eth.svg";
 import tokenLqty from "./token-icons/lqty.svg";
@@ -8,10 +6,55 @@ import tokenReth from "./token-icons/reth.svg";
 import tokenSbold from "./token-icons/sbold.svg";
 import tokenSteth from "./token-icons/wsteth.svg";
 
-export type CollateralSymbol = "ETH" | "RETH" | "WSTETH";
+// any external token, without a known symbol
+export type ExternalToken = {
+  icon: string;
+  name: string;
+  symbol: string;
+};
+
+// a token with a known symbol (TokenSymbol)
+export type Token = ExternalToken & {
+  icon: string;
+  name: string;
+  symbol: TokenSymbol;
+};
+
+export type TokenSymbol =
+  | "BOLD"
+  | "ETH"
+  | "LQTY"
+  | "LUSD"
+  | "RETH"
+  | "SBOLD"
+  | "WSTETH";
+
+export type CollateralSymbol =
+  & TokenSymbol
+  & (
+    | "ETH"
+    | "RETH"
+    | "WSTETH"
+  );
+
+export function isTokenSymbol(symbolOrUrl: string): symbolOrUrl is TokenSymbol {
+  return (
+    symbolOrUrl === "BOLD"
+    || symbolOrUrl === "ETH"
+    || symbolOrUrl === "LQTY"
+    || symbolOrUrl === "LUSD"
+    || symbolOrUrl === "RETH"
+    || symbolOrUrl === "SBOLD"
+    || symbolOrUrl === "WSTETH"
+  );
+}
 
 export function isCollateralSymbol(symbol: string): symbol is CollateralSymbol {
-  return symbol === "ETH" || symbol === "RETH" || symbol === "WSTETH";
+  return (
+    symbol === "ETH"
+    || symbol === "RETH"
+    || symbol === "WSTETH"
+  );
 }
 
 export type CollateralToken = Token & {

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps, ReactElement } from "react";
-import type { Token } from "../types";
+import type { ExternalToken, TokenSymbol } from "../tokens";
 
 import { Children, createContext, useContext } from "react";
 import { match } from "ts-pattern";
@@ -12,11 +12,17 @@ export function TokenIcon({
   size = "medium",
   symbol,
   title,
-}: {
-  size?: "medium" | "large" | "small" | "mini" | number;
-  symbol: Token["symbol"];
-  title?: string | null;
-}) {
+  token,
+}:
+  & {
+    size?: "medium" | "large" | "small" | "mini" | number;
+    title?: string | null;
+  }
+  & (
+    | { symbol: TokenSymbol; token?: never }
+    | { symbol?: never; token: ExternalToken }
+  ))
+{
   const sizeFromGroup = useContext(TokenIconGroupSize);
 
   const size_ = match(sizeFromGroup ?? size)
@@ -26,7 +32,9 @@ export function TokenIcon({
     .with("mini", () => 16)
     .otherwise(() => size);
 
-  const token = TOKENS_BY_SYMBOL[symbol];
+  const token_ = symbol
+    ? TOKENS_BY_SYMBOL[symbol]
+    : token;
 
   return (
     <div
@@ -39,10 +47,10 @@ export function TokenIcon({
       }}
     >
       <img
-        alt={token.name}
+        alt={token_.name}
         height={size_}
-        src={token.icon}
-        title={title === undefined ? token.name : title ?? undefined}
+        src={token_.icon}
+        title={title === undefined ? token_.name : title ?? undefined}
         width={size_}
       />
     </div>
