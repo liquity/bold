@@ -9,18 +9,20 @@ import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
+import { CHAIN_BLOCK_EXPLORER, CHAIN_ID } from "@/src/env";
 import { fmtnum, formatDate } from "@/src/formatting";
 import {
+  useCurrentEpochBribes,
   useGovernanceState,
   useGovernanceUser,
   useInitiativesStates,
   useNamedInitiatives,
 } from "@/src/liquity-governance";
+import { tokenIconUrl } from "@/src/utils";
 import { jsonStringifyWithBigInt } from "@/src/utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, IconDownvote, IconEdit, IconExternal, IconUpvote, shortenAddress } from "@liquity2/uikit";
+import { Button, IconDownvote, IconEdit, IconExternal, IconUpvote, shortenAddress, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -75,6 +77,7 @@ export function PanelVoting() {
   const governanceUser = useGovernanceUser(account.address ?? null);
   const initiatives = useNamedInitiatives();
   const initiativesStates = useInitiativesStates(initiatives.data?.map((i) => i.address) ?? []);
+  const currentBribes = useCurrentEpochBribes(initiatives.data?.map((i) => i.address) ?? []);
 
   const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
 
@@ -519,6 +522,7 @@ export function PanelVoting() {
               return (
                 <InitiativeRow
                   key={index}
+                  bribe={currentBribes.data?.[initiative.address]}
                   disabled={!isInitiativeStatusActive(status ?? "nonexistent")}
                   disableFor={isCutoff}
                   initiative={initiative}
@@ -694,6 +698,7 @@ export function PanelVoting() {
 }
 
 function InitiativeRow({
+  bribe,
   disableFor,
   disabled,
   initiative,
@@ -704,6 +709,12 @@ function InitiativeRow({
   totalStaked,
   voteAllocation,
 }: {
+  bribe?: {
+    boldAmount: Dnum;
+    tokenAmount: Dnum;
+    tokenAddress: Address;
+    tokenSymbol: string;
+  };
   disableFor: boolean;
   disabled: boolean;
   initiative: Initiative;
@@ -803,6 +814,74 @@ function InitiativeRow({
               })}
             />
           </div>
+          {bribe && (dn.gt(bribe.boldAmount, 0) || dn.gt(bribe.tokenAmount, 0)) && (
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 12,
+              })}
+              title="Available bribes for voting on this initiative"
+            >
+              <span>Bribing:</span>
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  flexWrap: "wrap",
+                })}
+              >
+                {dn.gt(bribe.boldAmount, 0) && (
+                  <div
+                    title={`${fmtnum(bribe.boldAmount)} BOLD`}
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    })}
+                  >
+                    <Amount
+                      format="compact"
+                      title={null}
+                      value={bribe.boldAmount}
+                    />
+                    <TokenIcon
+                      symbol="BOLD"
+                      size={12}
+                      title={null}
+                    />
+                  </div>
+                )}
+                {dn.gt(bribe.tokenAmount, 0) && (
+                  <div
+                    title={`${fmtnum(bribe.tokenAmount)} ${bribe.tokenSymbol} (${bribe.tokenAddress})`}
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    })}
+                  >
+                    <Amount
+                      format="compact"
+                      title={null}
+                      value={bribe.tokenAmount}
+                    />
+                    <TokenIcon
+                      size={12}
+                      title={null}
+                      token={{
+                        icon: tokenIconUrl(CHAIN_ID, bribe.tokenAddress),
+                        name: bribe.tokenSymbol,
+                        symbol: bribe.tokenSymbol,
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </td>
       <td>

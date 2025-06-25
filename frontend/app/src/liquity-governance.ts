@@ -416,6 +416,100 @@ type BribeClaim = {
   totalBold: Dnum;
 };
 
+// represents an initiative bribe for a given epoch
+type InitiativeBribe = {
+  boldAmount: Dnum;
+  tokenAmount: Dnum;
+  tokenAddress: Address;
+  tokenSymbol: string;
+};
+
+export function useCurrentEpochBribes(
+  initiatives: Address[],
+): UseQueryResult<Record<Address, InitiativeBribe>> {
+  const wagmiConfig = useWagmiConfig();
+  const govState = useGovernanceState();
+
+  return useQuery({
+    queryKey: [
+      "currentEpochBribes",
+      initiatives.join(""),
+      String(govState.data?.epoch),
+    ],
+    queryFn: async () => {
+      if (!govState.data || initiatives.length === 0) {
+        return {};
+      }
+
+      const bribeTokens = await readContracts(wagmiConfig, {
+        contracts: initiatives.map((initiative) => ({
+          abi: BribeInitiative,
+          address: initiative,
+          functionName: "bribeToken",
+        } as const)),
+        // this is needed because some initiatives may revert if they don't have a bribe token
+        allowFailure: true,
+      });
+
+      const bribeInitiatives: Array<{
+        initiative: Address;
+        bribeToken: Address;
+      }> = [];
+
+      for (const [index, bribeTokenResult] of bribeTokens.entries()) {
+        if (bribeTokenResult.result && initiatives[index]) {
+          bribeInitiatives.push({
+            initiative: initiatives[index],
+            bribeToken: bribeTokenResult.result,
+          });
+        }
+      }
+
+      if (bribeInitiatives.length === 0) {
+        return {};
+      }
+
+      const bribeAmounts = await readContracts(wagmiConfig, {
+        contracts: bribeInitiatives.map(({ initiative }) => ({
+          abi: BribeInitiative,
+          address: initiative,
+          functionName: "bribeByEpoch",
+          args: [govState.data.epoch],
+        } as const)),
+        allowFailure: false,
+      });
+
+      const tokenSymbols = await readContracts(wagmiConfig, {
+        contracts: bribeInitiatives.map(({ bribeToken }) => ({
+          abi: erc20Abi,
+          address: bribeToken,
+          functionName: "symbol",
+        } as const)),
+        allowFailure: false,
+      });
+
+      const bribes: Record<Address, InitiativeBribe> = {};
+
+      for (const [index, [remainingBold, remainingBribeToken]] of bribeAmounts.entries()) {
+        const bribeInitiative = bribeInitiatives[index];
+        if (!bribeInitiative) continue;
+
+        const { initiative, bribeToken } = bribeInitiative;
+
+        bribes[initiative] = {
+          boldAmount: dnum18(remainingBold),
+          tokenAmount: dnum18(remainingBribeToken),
+          tokenAddress: bribeToken,
+          tokenSymbol: tokenSymbols[index] ?? "Unknown",
+        };
+      }
+
+      return bribes;
+    },
+    enabled: Boolean(govState.data && initiatives.length > 0),
+  });
+}
+
 export function useBribingClaim(
   account: Address | null,
 ): UseQueryResult<BribeClaim | null> {
