@@ -3,9 +3,10 @@
 import type { ComponentProps, ReactElement } from "react";
 import type { ExternalToken, TokenSymbol } from "../tokens";
 
-import { Children, createContext, useContext } from "react";
+import { Children, createContext, useContext, useEffect, useState } from "react";
 import { match } from "ts-pattern";
 import { css } from "../../styled-system/css";
+import tokenDefault from "../token-icons/default.svg";
 import { TOKENS_BY_SYMBOL } from "../tokens";
 
 export function TokenIcon({
@@ -36,6 +37,19 @@ export function TokenIcon({
     ? TOKENS_BY_SYMBOL[symbol]
     : token;
 
+  const tokenUrl = token_.icon;
+  const [tokenUrlReady, setUrl] = useState(tokenDefault);
+  useEffect(() => {
+    const img = new Image();
+    img.src = tokenUrl;
+    img.onload = () => setUrl(tokenUrl);
+    img.onerror = () => setUrl(tokenDefault);
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [tokenUrl]);
+
   return (
     <div
       className={css({
@@ -49,7 +63,7 @@ export function TokenIcon({
       <img
         alt={token_.name}
         height={size_}
-        src={token_.icon}
+        src={tokenUrlReady}
         title={title === undefined ? token_.name : title ?? undefined}
         width={size_}
       />
