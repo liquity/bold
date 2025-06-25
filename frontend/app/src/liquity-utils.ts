@@ -33,6 +33,7 @@ import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contrac
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
 import { getRedemptionRisk } from "@/src/liquity-math";
+import { usePrice } from "@/src/services/Prices";
 import {
   getAllInterestRateBrackets,
   getIndexedTroveById,
@@ -722,6 +723,54 @@ export function useBranchDebt(branchId: BranchId) {
     query: {
       select: dnum18,
     },
+  });
+}
+
+export function useBranchCollateralRatios(branchId: BranchId) {
+  const wagmiConfig = useWagmiConfig();
+  const collToken = getCollToken(branchId);
+  const collTokenPrice = usePrice(collToken?.symbol ?? null);
+
+  return useQuery({
+    queryKey: [
+      "branchCollateralRatios",
+      branchId,
+      jsonStringifyWithDnum(collTokenPrice.data),
+    ],
+    queryFn: async () => {
+      const TroveManager = getBranchContract(branchId, "TroveManager");
+
+      const [totalColl, totalDebt, ccr_] = await readContracts(wagmiConfig, {
+        contracts: [{
+          ...TroveManager,
+          functionName: "getEntireBranchColl",
+        }, {
+          ...TroveManager,
+          functionName: "getEntireBranchDebt",
+        }, {
+          ...TroveManager,
+          functionName: "CCR",
+        }],
+        allowFailure: false,
+      });
+
+      const ccr = dnum18(ccr_);
+
+      if (!collTokenPrice.data || dn.eq(totalDebt, 0)) {
+        return { ccr, isBelowCcr: false, tcr: null };
+      }
+
+      // TCR = (totalCollateral * collTokenPrice) / totalDebt
+      const tcr = dn.div(
+        dn.mul(dnum18(totalColl), collTokenPrice.data),
+        dnum18(totalDebt),
+      );
+
+      const isBelowCcr = dn.lt(tcr, ccr);
+
+      return { ccr, isBelowCcr, tcr };
+    },
+    enabled: Boolean(collTokenPrice.data),
   });
 }
 
