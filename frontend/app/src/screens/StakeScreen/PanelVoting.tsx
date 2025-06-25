@@ -1,6 +1,5 @@
 import type { InitiativeStatus } from "@/src/liquity-governance";
 import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocation, VoteAllocations } from "@/src/types";
-import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
@@ -671,6 +670,13 @@ export function PanelVoting() {
 
       <FlowButton
         disabled={!allowSubmit}
+        footnote={!allowSubmit && dn.eq(stakedLQTY, 0)
+          ? "You have no voting power to allocate. Please stake LQTY before voting."
+          : !allowSubmit && hasAnyAllocations
+          ? "You can reset your votes by allocating 0% to all initiatives."
+          : allowSubmit && dn.eq(remainingVotingPower, 1)
+          ? "Your votes will be reset to 0% for all initiatives."
+          : null}
         label="Cast votes"
         request={{
           flowId: "allocateVotingPower",
@@ -683,25 +689,6 @@ export function PanelVoting() {
           ),
         }}
       />
-      {!allowSubmit && dn.eq(stakedLQTY, 0)
-        ? (
-          <FlowButtonNote>
-            You have no voting power to allocate. Please stake LQTY before voting.
-          </FlowButtonNote>
-        )
-        : !allowSubmit && hasAnyAllocations
-        ? (
-          <FlowButtonNote>
-            You can reset your votes by allocating 0% to all initiatives.
-          </FlowButtonNote>
-        )
-        : allowSubmit && dn.eq(remainingVotingPower, 1)
-        ? (
-          <FlowButtonNote>
-            Your votes will be reset to 0% for all initiatives.
-          </FlowButtonNote>
-        )
-        : null}
     </section>
   );
 }
@@ -940,23 +927,6 @@ function Vote({
           })}
         />
       </div>
-    </div>
-  );
-}
-
-function FlowButtonNote({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return (
-    <div
-      className={css({
-        fontSize: 14,
-        textAlign: "center",
-      })}
-    >
-      {children}
     </div>
   );
 }
