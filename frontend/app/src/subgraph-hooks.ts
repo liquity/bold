@@ -25,7 +25,8 @@ import {
   InterestBatchQuery,
   StabilityPoolDepositQuery,
   StabilityPoolDepositsByAccountQuery,
-  StabilityPoolEpochScaleQuery,
+  StabilityPoolScaleQuery,
+  // StabilityPoolEpochScaleQuery,
   StabilityPoolsQuery,
   TroveByIdQuery,
   TrovesByAccountQuery,
@@ -207,7 +208,7 @@ export function useStabilityPoolDeposits(
         B: BigInt(deposit.snapshot.B),
         P: BigInt(deposit.snapshot.P),
         S: BigInt(deposit.snapshot.S),
-        epoch: BigInt(deposit.snapshot.epoch),
+        // epoch: BigInt(deposit.snapshot.epoch),
         scale: BigInt(deposit.snapshot.scale),
       },
     }));
@@ -223,7 +224,13 @@ export function useStabilityPoolDeposits(
           collateral: { collIndex: position.collIndex },
           deposit: position.deposit[0],
           depositor: account.toLowerCase(),
-          snapshot: { B: 0n, P: 0n, S: 0n, epoch: 0n, scale: 0n },
+          snapshot: {
+            B: 0n,
+            P: 0n,
+            S: 0n,
+            // epoch: 0n,
+            scale: 0n,
+          },
         }));
     };
   }
@@ -256,7 +263,7 @@ export function useStabilityPoolDeposit(
         B: BigInt(stabilityPoolDeposit.snapshot.B),
         P: BigInt(stabilityPoolDeposit.snapshot.P),
         S: BigInt(stabilityPoolDeposit.snapshot.S),
-        epoch: BigInt(stabilityPoolDeposit.snapshot.epoch),
+        // epoch: BigInt(stabilityPoolDeposit.snapshot.epoch),
         scale: BigInt(stabilityPoolDeposit.snapshot.scale),
       },
     };
@@ -275,7 +282,13 @@ export function useStabilityPoolDeposit(
         collateral: { collIndex },
         deposit: position.deposit[0],
         depositor: account.toLowerCase(),
-        snapshot: { B: 0n, P: 0n, S: 0n, epoch: 0n, scale: 0n },
+        snapshot: {
+          B: 0n,
+          P: 0n,
+          S: 0n,
+          // epoch: 0n,
+          scale: 0n,
+        },
       };
     };
   }
@@ -333,20 +346,20 @@ export function useStabilityPool(
   });
 }
 
-export function useStabilityPoolEpochScale(
+export function useStabilityPoolScale(
   collIndex: null | number,
-  epoch: null | bigint,
+  // epoch: null | bigint,
   scale: null | bigint,
   options?: Options,
 ) {
   let queryFn = async () => {
-    const { stabilityPoolEpochScale } = await graphQuery(
-      StabilityPoolEpochScaleQuery,
-      { id: `${collIndex}:${epoch}:${scale}` },
+    const { stabilityPoolScale } = await graphQuery(
+      StabilityPoolScaleQuery,
+      { id: `${collIndex}:${scale}` },
     );
     return {
-      B: BigInt(stabilityPoolEpochScale?.B ?? 0n),
-      S: BigInt(stabilityPoolEpochScale?.S ?? 0n),
+      B: BigInt(stabilityPoolScale?.B ?? 0n),
+      S: BigInt(stabilityPoolScale?.S ?? 0n),
     };
   };
 
@@ -355,7 +368,7 @@ export function useStabilityPoolEpochScale(
   }
 
   return useQuery<{ B: bigint; S: bigint }>({
-    queryKey: ["StabilityPoolEpochScale", collIndex, String(epoch), String(scale)],
+    queryKey: ["StabilityPoolScale", collIndex, String(scale)],
     queryFn,
     ...prepareOptions(options),
   });

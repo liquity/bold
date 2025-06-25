@@ -103,6 +103,12 @@ type StabilityPoolDepositSnapshot @entity {
 #   S: BigInt!
 #   B: BigInt!
 # }
+# Adjusted to correspond to the new scaleToS and scaleToB mappings in StabilityPool.sol.
+type StabilityPoolScale @entity {
+  id: ID! # "collIndex:scale", e.g. "0:0"
+  S: BigInt!
+  B: BigInt!
+}
 
 type InterestBatch @entity {
   id: ID! # "collIndex:batchManager", e.g. "0:0x0000000000000000000000000000000000000000"

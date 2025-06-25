@@ -20,10 +20,10 @@ const documents = {
     "\n  query TrovesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        borrower: $account,\n        status_in: [active,redeemed,liquidated],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      borrower\n      closedAt\n      createdAt\n      debt\n      deposit\n      interestRate\n      mightBeLeveraged\n      stake\n      status\n      troveId\n      updatedAt\n      collateral {\n        id\n        token {\n          symbol\n          name\n        }\n        minCollRatio\n        collIndex\n      }\n      interestBatch {\n        id\n        annualInterestRate\n        annualManagementFee\n        batchManager\n      }\n    }\n  }\n": types.TrovesByAccountDocument,
     "\n  query TroveById($id: ID!) {\n    trove(id: $id) {\n      id\n      borrower\n      closedAt\n      createdAt\n      debt\n      deposit\n      interestRate\n      mightBeLeveraged\n      stake\n      status\n      troveId\n      updatedAt\n      collateral {\n        id\n        token {\n          symbol\n          name\n        }\n        minCollRatio\n        collIndex\n      }\n      interestBatch {\n        id\n        annualInterestRate\n        annualManagementFee\n        batchManager\n      }\n    }\n  }\n": types.TroveByIdDocument,
     "\n  query StabilityPools {\n    stabilityPools {\n      id\n      totalDeposited\n    }\n  }\n": types.StabilityPoolsDocument,
-    "\n  fragment StabilityPoolDepositFragment on StabilityPoolDeposit {\n    id\n    deposit\n    depositor\n    collateral {\n      collIndex\n    }\n    snapshot {\n      B\n      P\n      S\n      epoch\n      scale\n    }\n  }\n": types.StabilityPoolDepositFragmentFragmentDoc,
-    "\n  query StabilityPoolDepositsByAccount($account: Bytes!) {\n    stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        epoch\n        scale\n      }\n    }\n  }\n": types.StabilityPoolDepositsByAccountDocument,
-    "\n  query StabilityPoolDeposit($id: ID!) {\n    stabilityPoolDeposit(id: $id) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        epoch\n        scale\n      }\n    }\n  }\n": types.StabilityPoolDepositDocument,
-    "\n  query StabilityPoolEpochScale($id: ID!) {\n    stabilityPoolEpochScale(id: $id) {\n      id\n      B\n      S\n    }\n  }\n": types.StabilityPoolEpochScaleDocument,
+    "\n  fragment StabilityPoolDepositFragment on StabilityPoolDeposit {\n    id\n    deposit\n    depositor\n    collateral {\n      collIndex\n    }\n    snapshot {\n      B\n      P\n      S\n      scale\n    }\n  }\n": types.StabilityPoolDepositFragmentFragmentDoc,
+    "\n  query StabilityPoolDepositsByAccount($account: Bytes!) {\n    stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        scale\n      }\n    }\n  }\n": types.StabilityPoolDepositsByAccountDocument,
+    "\n  query StabilityPoolDeposit($id: ID!) {\n    stabilityPoolDeposit(id: $id) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        scale\n      }\n    }\n  }\n": types.StabilityPoolDepositDocument,
+    "\n  query StabilityPoolScale($id: ID!) {\n    stabilityPoolScale(id: $id) {\n      id\n      B\n      S\n    }\n  }\n": types.StabilityPoolScaleDocument,
     "\n  query InterestBatch($id: ID!) {\n    interestBatch(id: $id) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n": types.InterestBatchDocument,
     "\n  query AllInterestRateBrackets {\n    interestRateBrackets(orderBy: rate) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n    }\n  }\n": types.AllInterestRateBracketsDocument,
     "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n": types.GovernanceInitiativesDocument,
@@ -55,19 +55,19 @@ export function graphql(source: "\n  query StabilityPools {\n    stabilityPools 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment StabilityPoolDepositFragment on StabilityPoolDeposit {\n    id\n    deposit\n    depositor\n    collateral {\n      collIndex\n    }\n    snapshot {\n      B\n      P\n      S\n      epoch\n      scale\n    }\n  }\n"): typeof import('./graphql').StabilityPoolDepositFragmentFragmentDoc;
+export function graphql(source: "\n  fragment StabilityPoolDepositFragment on StabilityPoolDeposit {\n    id\n    deposit\n    depositor\n    collateral {\n      collIndex\n    }\n    snapshot {\n      B\n      P\n      S\n      scale\n    }\n  }\n"): typeof import('./graphql').StabilityPoolDepositFragmentFragmentDoc;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query StabilityPoolDepositsByAccount($account: Bytes!) {\n    stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        epoch\n        scale\n      }\n    }\n  }\n"): typeof import('./graphql').StabilityPoolDepositsByAccountDocument;
+export function graphql(source: "\n  query StabilityPoolDepositsByAccount($account: Bytes!) {\n    stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        scale\n      }\n    }\n  }\n"): typeof import('./graphql').StabilityPoolDepositsByAccountDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query StabilityPoolDeposit($id: ID!) {\n    stabilityPoolDeposit(id: $id) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        epoch\n        scale\n      }\n    }\n  }\n"): typeof import('./graphql').StabilityPoolDepositDocument;
+export function graphql(source: "\n  query StabilityPoolDeposit($id: ID!) {\n    stabilityPoolDeposit(id: $id) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        scale\n      }\n    }\n  }\n"): typeof import('./graphql').StabilityPoolDepositDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query StabilityPoolEpochScale($id: ID!) {\n    stabilityPoolEpochScale(id: $id) {\n      id\n      B\n      S\n    }\n  }\n"): typeof import('./graphql').StabilityPoolEpochScaleDocument;
+export function graphql(source: "\n  query StabilityPoolScale($id: ID!) {\n    stabilityPoolScale(id: $id) {\n      id\n      B\n      S\n    }\n  }\n"): typeof import('./graphql').StabilityPoolScaleDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

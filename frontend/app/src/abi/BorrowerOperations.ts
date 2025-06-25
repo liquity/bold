@@ -451,26 +451,8 @@ export const BorrowerOperations = [
   },
   {
     "type": "event",
-    "name": "BoldTokenAddressChanged",
-    "inputs": [{ "name": "_boldTokenAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "CollSurplusPoolAddressChanged",
-    "inputs": [{ "name": "_collSurplusPoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
     "name": "DefaultPoolAddressChanged",
     "inputs": [{ "name": "_newDefaultPoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "GasPoolAddressChanged",
-    "inputs": [{ "name": "_gasPoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
     "anonymous": false,
   },
   {
@@ -488,24 +470,6 @@ export const BorrowerOperations = [
       "indexed": false,
       "internalType": "address",
     }, { "name": "_newReceiver", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "ShutDown",
-    "inputs": [{ "name": "_tcr", "type": "uint256", "indexed": false, "internalType": "uint256" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "SortedTrovesAddressChanged",
-    "inputs": [{ "name": "_sortedTrovesAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "TroveManagerAddressChanged",
-    "inputs": [{ "name": "_newTroveManagerAddress", "type": "address", "indexed": false, "internalType": "address" }],
     "anonymous": false,
   },
   {
