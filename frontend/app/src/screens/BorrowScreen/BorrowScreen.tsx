@@ -133,6 +133,7 @@ export function BorrowScreen() {
   const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, collIndex);
 
   const loanDetails = getLoanDetails(
+    collateral.symbol,
     deposit.isEmpty ? null : deposit.parsed,
     debt.isEmpty ? null : debt.parsed,
     interestRate,

@@ -66,6 +66,7 @@ export function LoanScreenCard({
     loan &&
     collateral &&
     getLoanDetails(
+      collateral.symbol,
       loan.deposit,
       loan.borrowed,
       loan.interestRate,

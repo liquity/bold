@@ -54,6 +54,7 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoanCommitted }) {
   );
 
   const loanDetails = getLoanDetails(
+    collToken.symbol,
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
@@ -62,6 +63,7 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoanCommitted }) {
   );
 
   const newLoanDetails = getLoanDetails(
+    collToken.symbol,
     deposit.isEmpty ? null : deposit.parsed,
     debt.isEmpty ? null : debt.parsed,
     interestRate,
