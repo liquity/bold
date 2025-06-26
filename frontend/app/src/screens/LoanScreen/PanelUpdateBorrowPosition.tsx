@@ -105,6 +105,7 @@ export function PanelUpdateBorrowPosition({
     debtChange.parsed && dn.mul(debtChange.parsed, boldPriceUsd.data);
 
   const loanDetails = getLoanDetails(
+    collToken.symbol,
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
@@ -113,6 +114,7 @@ export function PanelUpdateBorrowPosition({
   );
 
   const newLoanDetails = getLoanDetails(
+    collToken.symbol,
     newDeposit,
     newDebt,
     loanDetails.interestRate,

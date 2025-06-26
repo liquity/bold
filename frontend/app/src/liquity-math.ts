@@ -1,7 +1,12 @@
-import type { LoanDetails, RiskLevel } from "@/src/types";
+import type { CollateralSymbol, LoanDetails, RiskLevel } from "@/src/types";
 import type { Dnum } from "dnum";
 
-import { LTV_RISK, MAX_LTV_ALLOWED_RATIO, REDEMPTION_RISK } from "@/src/constants";
+import {
+  LTV_RISK, 
+  MAX_LTV_ALLOWED_RATIOS, 
+  // MAX_LTV_ALLOWED_RATIO, 
+  REDEMPTION_RISK
+} from "@/src/constants";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 
@@ -103,6 +108,7 @@ export function getLtv(
 }
 
 export function getLoanDetails(
+  collSymbol: CollateralSymbol,
   deposit: Dnum | null,
   debt: Dnum | null,
   interestRate: Dnum | null,
@@ -110,7 +116,7 @@ export function getLoanDetails(
   collPrice: Dnum | null,
 ): LoanDetails {
   const maxLtv = dn.div(dn.from(1, 18), minCollRatio);
-  const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED_RATIO);
+  const maxLtvAllowed = dn.mul(maxLtv, MAX_LTV_ALLOWED_RATIOS[collSymbol]);
   const depositUsd = deposit && collPrice ? dn.mul(deposit, collPrice) : null;
 
   const ltv = debt && depositUsd && !dn.eq(depositUsd, 0)

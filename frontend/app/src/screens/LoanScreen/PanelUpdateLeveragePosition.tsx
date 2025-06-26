@@ -63,6 +63,7 @@ export function PanelUpdateLeveragePosition({
 
   // loan details before the update
   const initialLoanDetails = getLoanDetails(
+    collToken.symbol,
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
@@ -106,6 +107,7 @@ export function PanelUpdateLeveragePosition({
   );
 
   const newLoanDetails = getLoanDetails(
+    collToken.symbol,
     newDeposit,
     newDebt,
     initialLoanDetails.interestRate,

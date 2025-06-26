@@ -60,6 +60,7 @@ export function LoanCard({
   const loanDetails =
     loan &&
     getLoanDetails(
+      collToken.symbol,
       loan.deposit,
       loan.borrowed,
       loan.interestRate,
@@ -70,6 +71,7 @@ export function LoanCard({
   const prevLoanDetails =
     prevLoan &&
     getLoanDetails(
+      collToken.symbol,
       prevLoan.deposit,
       prevLoan.borrowed,
       prevLoan.interestRate,
