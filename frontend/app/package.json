@@ -22,7 +22,7 @@
     "start": "next start"
   },
   "dependencies": {
-    "@0xsquid/widget": "^4.2.2",
+    "@0xsquid/widget": "4.4.1-rollup-beta.4",
     "@emotion/is-prop-valid": "^1.3.1",
     "@graphql-typed-document-node/core": "^3.2.0",
     "@liquity2/uikit": "workspace:*",

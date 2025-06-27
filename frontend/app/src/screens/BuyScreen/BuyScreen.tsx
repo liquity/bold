@@ -4,6 +4,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { AnchorTextButton, HFlex } from "@liquity2/uikit";
 import { SquidWidget } from "@0xsquid/widget";
+import { css } from "@/styled-system/css";
 
 export function BuyScreen() {
   return (
@@ -23,7 +24,14 @@ export function BuyScreen() {
       }}
       gap={48}
     >
-      <div style={{ width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
+      <div className={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: 48,
+        width: 534,
+        justifyContent: "center",
+        alignItems: "center",
+      })}>
         <SquidWidget config={{
           "integratorId": process.env.NEXT_PUBLIC_SQUID_INTEGRATOR_ID ?? "",
           "theme": {
