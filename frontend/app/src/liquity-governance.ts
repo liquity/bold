@@ -479,6 +479,7 @@ export function useCurrentEpochBribes(
         allowFailure: true,
       });
 
+      // initiatives with a bribe token
       const bribeInitiatives: Array<{
         initiative: Address;
         bribeToken: Address;
@@ -581,7 +582,7 @@ export function useBribingClaim(
           address: initiative,
           functionName: "bribeToken",
         } as const)),
-        allowFailure: false,
+        allowFailure: true,
       });
 
       const bribeInitiatives: Array<{
@@ -591,11 +592,12 @@ export function useBribingClaim(
 
       for (const [index, token] of bribeChecks.entries()) {
         const address = initiativesToCheck[index];
-        // should not happen since bribeChecks is derived from initiativesToCheck
-        if (!address) {
-          throw new Error("Unexpected undefined initiative address");
+        if (address && token.result) {
+          bribeInitiatives.push({
+            address,
+            bribeToken: token.result,
+          });
         }
-        bribeInitiatives.push({ address, bribeToken: token });
       }
 
       // should not happen since we check for initiativesToCheck.length above
@@ -710,21 +712,23 @@ export function useBribingClaim(
             allowFailure: false,
           });
 
+          const claimData = claimableEpochs.map((epoch, index) => {
+            const userEpochIndex = index * 2;
+            const totalEpochIndex = index * 2 + 1;
+            return {
+              epoch,
+              prevLQTYAllocationEpoch: Number(claimDataResults[userEpochIndex]),
+              prevTotalLQTYAllocationEpoch: Number(claimDataResults[totalEpochIndex]),
+            };
+          });
+
           return {
             boldAmount: initiativeBold,
             bribeTokenAddress: bribeToken,
             bribeTokenAmount: initiativeBribeToken,
             epochs: claimableEpochs,
             initiative: address,
-            claimData: claimableEpochs.map((epoch, index) => {
-              const userEpochIndex = index * 2;
-              const totalEpochIndex = index * 2 + 1;
-              return {
-                epoch,
-                prevLQTYAllocationEpoch: Number(claimDataResults[userEpochIndex] as bigint),
-                prevTotalLQTYAllocationEpoch: Number(claimDataResults[totalEpochIndex] as bigint),
-              };
-            }),
+            claimData,
           };
         }),
       );
