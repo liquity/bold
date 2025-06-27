@@ -541,6 +541,7 @@ export function useCurrentEpochBribes(
 
 // limit checks to the last 52 epochs
 const BRIBING_CHECK_EPOCH_LIMIT = 52;
+const ENABLE_BRIBING_CLAIM = false; // temporary flag to enable/disable bribe claims
 
 export function useBribingClaim(
   account: Address | null,
@@ -557,7 +558,7 @@ export function useBribingClaim(
       jsonStringifyWithBigInt(govUser.data),
     ],
     queryFn: async () => {
-      if (!account || !govState.data || !govUser.data) {
+      if (!account || !govState.data || !govUser.data || !ENABLE_BRIBING_CLAIM) {
         return null;
       }
 
