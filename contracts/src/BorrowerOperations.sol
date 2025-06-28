@@ -38,8 +38,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     uint256 public immutable SCR;
     bool public hasBeenShutDown;
 
-    // Minimum collateral ratio for individual troves
+    // Minimum collateral ratio for individual troves (for liquidation)
     uint256 public immutable MCR;
+
+    // Minimum collateral ratio for borrowing operations
+    uint256 public immutable BORROWING_MCR;
 
     // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
     uint256 public immutable BCR;
@@ -164,7 +167,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
     event ShutDown(uint256 _tcr);
 
-    constructor(IAddressesRegistry _addressesRegistry)
+    constructor(IAddressesRegistry _addressesRegistry, uint256 _borrowingMCR)
         AddRemoveManagers(_addressesRegistry)
         LiquityBase(_addressesRegistry)
     {
@@ -177,7 +180,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         CCR = _addressesRegistry.CCR();
         SCR = _addressesRegistry.SCR();
-        MCR = _addressesRegistry.MCR();
+        MCR = _addressesRegistry.MCR(); // Liquidation MCR
+        BORROWING_MCR = _borrowingMCR; // Borrowing MCR
         BCR = _addressesRegistry.BCR();
 
         troveManager = _addressesRegistry.troveManager();
@@ -1442,14 +1446,14 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     }
 
     function _requireICRisAboveMCR(uint256 _newICR) internal view {
-        if (_newICR < MCR) {
-            revert ICRBelowMCR();
+        if (_newICR < BORROWING_MCR) {
+            revert ICRBelowMCR(); // Consider renaming error if MCR now means different things
         }
     }
 
     function _requireICRisAboveMCRPlusBCR(uint256 _newICR) internal view {
-        if (_newICR < MCR + BCR) {
-            revert ICRBelowMCRPlusBCR();
+        if (_newICR < BORROWING_MCR + BCR) {
+            revert ICRBelowMCRPlusBCR(); // Consider renaming error
         }
     }
 

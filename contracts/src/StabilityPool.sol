@@ -10,6 +10,9 @@ import "./Interfaces/IStabilityPoolEvents.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Dependencies/LiquityBase.sol";
+import "openzeppelin-contracts/contracts/access/Ownable.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import "./Interfaces/IDEXRouter.sol";
 
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
@@ -115,489 +118,185 @@ import "./Dependencies/LiquityBase.sol";
  *
  *
  */
-contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
+contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents, Ownable {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "StabilityPool";
 
-    IERC20 public immutable collToken;
-    ITroveManager public immutable troveManager;
-    IBoldToken public immutable boldToken;
+    // collToken is inherited from LiquityBase via AddressesRegistry if needed by activePool.sendColl
+    // It's the memecoin for this specific pool.
+    // IBoldToken public immutable boldToken; // The global StableMToken, inherited from LiquityBase via AR
 
-    uint256 internal collBalance; // deposited coll tracker
+    uint256 internal collBalance; // Tracks liquidated memecoin collateral held by this contract
+    uint256 internal totalBoldDeposits; // Tracks the $StableM balance held by this contract for burning bad debt
 
-    // Tracker for Bold held in the pool. Changes when users deposit/withdraw, and when Trove debt is offset.
-    uint256 internal totalBoldDeposits;
+    // Swap Configuration
+    address public dexRouter;
+    address public targetStablecoin; // e.g., USDC address to swap memecoin into
+    address public collateralRecipient; // Address to send the swapped stablecoins to (e.g., DAO Treasury)
 
-    // Total remaining Bold yield gains (from Trove interest mints) held by SP, and not yet paid out to depositors
-    // From the contract's perspective, this is a write-only variable.
-    uint256 internal yieldGainsOwed;
-    // Total remaining Bold yield gains (from Trove interest mints) held by SP, not yet paid out to depositors,
-    // and not accounted for because they were received when the total deposits were too small
-    uint256 internal yieldGainsPending;
+    // Events to keep (or ensure they are in IStabilityPoolEvents)
+    // event StabilityPoolBoldBalanceUpdated(uint256 _newBalance); // This is in IStabilityPoolEvents
+    // event StabilityPoolCollBalanceUpdated(uint256 _newBalance); // This is in IStabilityPoolEvents
+    // event TroveManagerAddressChanged(address _newTroveManagerAddress); (From constructor if needed, or implicit via registry)
+    // event BoldTokenAddressChanged(address _newBoldTokenAddress); (From constructor if needed, or implicit via registry)
+    // Other events related to new functionality (like collateral swaps) will be added later.
+    event SwapConfigurationUpdated(
+        address dexRouter,
+        address targetStablecoin,
+        address collateralRecipient
+    );
+    event CollateralSwapped(
+        address indexed fromToken,
+        address indexed toToken,
+        uint256 amountSwapped,
+        uint256 amountReceived,
+        address recipient
+    );
 
-    // --- Data structures ---
-
-    struct Deposit {
-        uint256 initialValue;
+    constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) Ownable(msg.sender) {
+        // collToken, troveManager, boldToken are available via addressesRegistry passed to LiquityBase
+        // No explicit initialization of P needed anymore.
+        // No explicit TroveManagerAddressChanged or BoldTokenAddressChanged events needed here if not overriding.
     }
 
-    struct Snapshots {
-        uint256 S; // Coll reward sum liqs
-        uint256 P;
-        uint256 B; // Bold reward sum from minted interest
-        uint256 scale;
-    }
-
-    mapping(address => Deposit) public deposits; // depositor address -> Deposit struct
-    mapping(address => Snapshots) public depositSnapshots; // depositor address -> snapshots struct
-    mapping(address => uint256) public stashedColl;
-
-    /*  Product 'P': Running product by which to multiply an initial deposit, in order to find the current compounded deposit,
-    * after a series of liquidations have occurred, each of which cancel some Bold debt with the deposit.
-    *
-    * During its lifetime, a deposit's value evolves from d_t to d_t * P / P_t , where P_t
-    * is the snapshot of P taken at the instant the deposit was made. 18-digit decimal.
-    */
-    uint256 public P = P_PRECISION;
-
-    uint256 public constant P_PRECISION = 1e36;
-
-    // A scale change will happen if P decreases by a factor of at least this much
-    uint256 public constant SCALE_FACTOR = 1e9;
-
-    // Highest power `SCALE_FACTOR` can be raised to without overflow
-    uint256 public constant MAX_SCALE_FACTOR_EXPONENT = 8;
-
-    // The number of scale changes after which an untouched deposit stops receiving yield / coll gains
-    uint256 public constant SCALE_SPAN = 2;
-
-    // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
-    uint256 public currentScale;
-
-    /* Coll Gain sum 'S': During its lifetime, each deposit d_t earns an Coll gain of ( d_t * [S - S_t] )/P_t, where S_t
-    * is the depositor's snapshot of S taken at the time t when the deposit was made.
-    *
-    * The 'S' sums are stored in a mapping (scale => sum).
-    * - The mapping records the sum S at different scales.
-    */
-    mapping(uint256 => uint256) public scaleToS;
-    mapping(uint256 => uint256) public scaleToB;
-
-    // --- Events ---
-
-    event TroveManagerAddressChanged(address _newTroveManagerAddress);
-    event BoldTokenAddressChanged(address _newBoldTokenAddress);
-
-    constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
-        collToken = _addressesRegistry.collToken();
-        troveManager = _addressesRegistry.troveManager();
-        boldToken = _addressesRegistry.boldToken();
-
-        emit TroveManagerAddressChanged(address(troveManager));
-        emit BoldTokenAddressChanged(address(boldToken));
-    }
-
-    // --- Getters for public variables. Required by IPool interface ---
-
+    // --- Getters ---
     function getCollBalance() external view override returns (uint256) {
         return collBalance;
     }
 
     function getTotalBoldDeposits() external view override returns (uint256) {
+        // This now refers to the $StableM balance of this contract available for burning
         return totalBoldDeposits;
     }
 
-    function getYieldGainsOwed() external view override returns (uint256) {
-        return yieldGainsOwed;
-    }
-
-    function getYieldGainsPending() external view override returns (uint256) {
-        return yieldGainsPending;
-    }
-
-    // --- External Depositor Functions ---
-
-    /*  provideToSP():
-    * - Calculates depositor's Coll gain
-    * - Calculates the compounded deposit
-    * - Increases deposit, and takes new snapshots of accumulators P and S
-    * - Sends depositor's accumulated Coll gains to depositor
-    */
-    function provideToSP(uint256 _topUp, bool _doClaim) external override {
-        _requireNonZeroAmount(_topUp);
-
-        activePool.mintAggInterest();
-
-        uint256 initialDeposit = deposits[msg.sender].initialValue;
-
-        uint256 currentCollGain = getDepositorCollGain(msg.sender);
-        uint256 currentYieldGain = getDepositorYieldGain(msg.sender);
-        uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
-        (uint256 keptYieldGain, uint256 yieldGainToSend) = _getYieldToKeepOrSend(currentYieldGain, _doClaim);
-        uint256 newDeposit = compoundedBoldDeposit + _topUp + keptYieldGain;
-        (uint256 newStashedColl, uint256 collToSend) =
-            _getNewStashedCollAndCollToSend(msg.sender, currentCollGain, _doClaim);
-
-        emit DepositOperation(
-            msg.sender,
-            Operation.provideToSP,
-            initialDeposit - compoundedBoldDeposit,
-            int256(_topUp),
-            currentYieldGain,
-            yieldGainToSend,
-            currentCollGain,
-            collToSend
-        );
-
-        _updateDepositAndSnapshots(msg.sender, newDeposit, newStashedColl);
-        boldToken.sendToPool(msg.sender, address(this), _topUp);
-        _updateTotalBoldDeposits(_topUp + keptYieldGain, 0);
-        _decreaseYieldGainsOwed(currentYieldGain);
-        _sendBoldtoDepositor(msg.sender, yieldGainToSend);
-        _sendCollGainToDepositor(collToSend);
-
-        // If there were pending yields and with the new deposit we are reaching the threshold, let’s move the yield to owed
-        _updateYieldRewardsSum(0);
-    }
-
-    function _getYieldToKeepOrSend(uint256 _currentYieldGain, bool _doClaim) internal pure returns (uint256, uint256) {
-        uint256 yieldToKeep;
-        uint256 yieldToSend;
-
-        if (_doClaim) {
-            yieldToKeep = 0;
-            yieldToSend = _currentYieldGain;
-        } else {
-            yieldToKeep = _currentYieldGain;
-            yieldToSend = 0;
-        }
-
-        return (yieldToKeep, yieldToSend);
-    }
-
-    /*  withdrawFromSP():
-    * - Calculates depositor's Coll gain
-    * - Calculates the compounded deposit
-    * - Sends the requested BOLD withdrawal to depositor
-    * - (If _amount > userDeposit, the user withdraws all of their compounded deposit)
-    * - Decreases deposit by withdrawn amount and takes new snapshots of accumulators P and S
-    */
-    function withdrawFromSP(uint256 _amount, bool _doClaim) external override {
-        uint256 initialDeposit = deposits[msg.sender].initialValue;
-        _requireUserHasDeposit(initialDeposit);
-
-        activePool.mintAggInterest();
-
-        uint256 currentCollGain = getDepositorCollGain(msg.sender);
-        uint256 currentYieldGain = getDepositorYieldGain(msg.sender);
-        uint256 compoundedBoldDeposit = getCompoundedBoldDeposit(msg.sender);
-        uint256 boldToWithdraw = LiquityMath._min(_amount, compoundedBoldDeposit);
-        (uint256 keptYieldGain, uint256 yieldGainToSend) = _getYieldToKeepOrSend(currentYieldGain, _doClaim);
-        uint256 newDeposit = compoundedBoldDeposit - boldToWithdraw + keptYieldGain;
-        (uint256 newStashedColl, uint256 collToSend) =
-            _getNewStashedCollAndCollToSend(msg.sender, currentCollGain, _doClaim);
-
-        emit DepositOperation(
-            msg.sender,
-            Operation.withdrawFromSP,
-            initialDeposit - compoundedBoldDeposit,
-            -int256(boldToWithdraw),
-            currentYieldGain,
-            yieldGainToSend,
-            currentCollGain,
-            collToSend
-        );
-
-        _updateDepositAndSnapshots(msg.sender, newDeposit, newStashedColl);
-        _decreaseYieldGainsOwed(currentYieldGain);
-        uint256 newTotalBoldDeposits = _updateTotalBoldDeposits(keptYieldGain, boldToWithdraw);
-        _sendBoldtoDepositor(msg.sender, boldToWithdraw + yieldGainToSend);
-        _sendCollGainToDepositor(collToSend);
-
-        require(newTotalBoldDeposits >= MIN_BOLD_IN_SP, "Withdrawal must leave totalBoldDeposits >= MIN_BOLD_IN_SP");
-    }
-
-    function _getNewStashedCollAndCollToSend(address _depositor, uint256 _currentCollGain, bool _doClaim)
-        internal
-        view
-        returns (uint256 newStashedColl, uint256 collToSend)
-    {
-        if (_doClaim) {
-            newStashedColl = 0;
-            collToSend = stashedColl[_depositor] + _currentCollGain;
-        } else {
-            newStashedColl = stashedColl[_depositor] + _currentCollGain;
-            collToSend = 0;
-        }
-    }
-
-    // This function is only needed in the case a user has no deposit but still has remaining stashed Coll gains.
-    function claimAllCollGains() external {
-        _requireUserHasNoDeposit(msg.sender);
-
-        activePool.mintAggInterest();
-
-        uint256 collToSend = stashedColl[msg.sender];
-        _requireNonZeroAmount(collToSend);
-        stashedColl[msg.sender] = 0;
-
-        emit DepositOperation(msg.sender, Operation.claimAllCollGains, 0, 0, 0, 0, 0, collToSend);
-        emit DepositUpdated(msg.sender, 0, 0, 0, 0, 0, 0);
-
-        _sendCollGainToDepositor(collToSend);
-    }
-
-    // --- BOLD reward functions ---
-
-    function triggerBoldRewards(uint256 _boldYield) external {
-        _requireCallerIsActivePool();
-        _updateYieldRewardsSum(_boldYield);
-    }
-
-    function _updateYieldRewardsSum(uint256 _newYield) internal {
-        uint256 accumulatedYieldGains = yieldGainsPending + _newYield;
-        if (accumulatedYieldGains == 0) return;
-
-        // When total deposits is very small, B is not updated. In this case, the BOLD issued is held
-        // until the total deposits reach 1 BOLD (remains in the balance of the SP).
-        if (totalBoldDeposits < MIN_BOLD_IN_SP) {
-            yieldGainsPending = accumulatedYieldGains;
-            return;
-        }
-
-        yieldGainsOwed += accumulatedYieldGains;
-        yieldGainsPending = 0;
-
-        scaleToB[currentScale] += P * accumulatedYieldGains / totalBoldDeposits;
-        emit B_Updated(scaleToB[currentScale], currentScale);
-    }
-
-    // --- Liquidation functions ---
-
-    /*
-    * Cancels out the specified debt against the Bold contained in the Stability Pool (as far as possible)
-    * and transfers the Trove's Coll collateral from ActivePool to StabilityPool.
-    * Only called by liquidation functions in the TroveManager.
-    */
+    // --- Liquidation Handling ---
     function offset(uint256 _debtToOffset, uint256 _collToAdd) external override {
-        _requireCallerIsTroveManager();
+        _requireCallerIsTroveManager(); // Ensure this check exists or add it
 
-        scaleToS[currentScale] += P * _collToAdd / totalBoldDeposits;
-        emit S_Updated(scaleToS[currentScale], currentScale);
-
-        uint256 numerator = P * (totalBoldDeposits - _debtToOffset);
-        uint256 newP = numerator / totalBoldDeposits;
-
-        // For `P` to turn zero, `totalBoldDeposits` has to be greater than `P * (totalBoldDeposits - _debtToOffset)`.
-        // - As the offset must leave at least 1 BOLD in the SP (MIN_BOLD_IN_SP),
-        //   the minimum value of `totalBoldDeposits - _debtToOffset` is `1e18`
-        // - It can be shown that `P` is always in range [1e27, 1e36].
-        // Thus, to turn `P` zero, `totalBoldDeposits` has to be greater than `1e27 * 1e18`,
-        // and the offset has to be (near) maximal.
-        // In other words, there needs to be octillions of BOLD in the SP, which is unlikely to happen in practice.
-        require(newP > 0, "P must never decrease to 0");
-
-        // Overflow analyisis of scaling up P:
-        // We know that the resulting P is <= 1e36, and it's the result of dividing numerator by totalBoldDeposits.
-        // Thus, numerator <= 1e36 * totalBoldDeposits, so unless totalBoldDeposits is septillions of BOLD, it won’t overflow.
-        // That holds on every iteration as an upper bound. We multiply numerator by SCALE_FACTOR,
-        // but numerator is by definition smaller than 1e36 * totalBoldDeposits / SCALE_FACTOR.
-        while (newP < P_PRECISION / SCALE_FACTOR) {
-            numerator *= SCALE_FACTOR;
-            newP = numerator / totalBoldDeposits;
-            currentScale += 1;
-            emit ScaleUpdated(currentScale);
-        }
-
-        emit P_Updated(newP);
-        P = newP;
-
+        // No more P and S updates here
         _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
     }
 
     function _moveOffsetCollAndDebt(uint256 _collToAdd, uint256 _debtToOffset) internal {
-        // Cancel the liquidated Bold debt with the Bold in the stability pool
-        _updateTotalBoldDeposits(0, _debtToOffset);
+        IBoldToken currentBoldToken = addressesRegistry.boldToken(); // Get from registry
 
-        // Burn the debt that was successfully offset
-        boldToken.burn(address(this), _debtToOffset);
+        if (_debtToOffset > totalBoldDeposits) {
+            // This case should ideally not happen if the pool is properly funded.
+            // Or, it means only a partial offset is possible.
+            // For now, assume totalBoldDeposits is sufficient.
+            // Revert or handle partial burn if necessary.
+            revert("SP: Insufficient $StableM to offset debt"); // Consider specific error code
+        }
 
-        // Update internal Coll balance tracker
+        _updateTotalBoldDeposits(0, _debtToOffset); // Decrease internal $StableM tracking
+
+        currentBoldToken.burn(address(this), _debtToOffset); // Burn $StableM from this contract
+
         uint256 newCollBalance = collBalance + _collToAdd;
         collBalance = newCollBalance;
 
-        // Pull Coll from Active Pool
-        activePool.sendColl(address(this), _collToAdd);
+        activePool.sendColl(address(this), _collToAdd); // Receive memecoin collateral
 
         emit StabilityPoolCollBalanceUpdated(newCollBalance);
     }
 
-    function _updateTotalBoldDeposits(uint256 _depositIncrease, uint256 _depositDecrease) internal returns (uint256) {
-        if (_depositIncrease == 0 && _depositDecrease == 0) return totalBoldDeposits;
-        uint256 newTotalBoldDeposits = totalBoldDeposits + _depositIncrease - _depositDecrease;
-        totalBoldDeposits = newTotalBoldDeposits;
-
-        emit StabilityPoolBoldBalanceUpdated(newTotalBoldDeposits);
-        return newTotalBoldDeposits;
+    // --- Funding and Management (New) ---
+    // Allows DAO/protocol to fund the pool with $StableM for debt offsetting
+    function fundPool(uint256 _amount) external onlyOwner {
+        IBoldToken currentBoldToken = addressesRegistry.boldToken();
+        currentBoldToken.transferFrom(msg.sender, address(this), _amount);
+        _updateTotalBoldDeposits(_amount, 0);
     }
 
-    function _decreaseYieldGainsOwed(uint256 _amount) internal {
-        if (_amount == 0) return;
-        uint256 newYieldGainsOwed = yieldGainsOwed - _amount;
-        yieldGainsOwed = newYieldGainsOwed;
+    function setSwapConfiguration(
+        address _dexRouter,
+        address _targetStablecoin,
+        address _collateralRecipient
+    ) external onlyOwner {
+        require(_dexRouter != address(0), "SP: DEX router cannot be zero");
+        require(_targetStablecoin != address(0), "SP: Target stablecoin cannot be zero");
+        require(_collateralRecipient != address(0), "SP: Collateral recipient cannot be zero");
+
+        dexRouter = _dexRouter;
+        targetStablecoin = _targetStablecoin;
+        collateralRecipient = _collateralRecipient;
+
+        emit SwapConfigurationUpdated(_dexRouter, _targetStablecoin, _collateralRecipient);
     }
 
-    // --- Reward calculator functions for depositor ---
+    // Placeholder for swapping and adding liquidity - to be implemented in a later sub-task
+    // function swapAndAddLiquidity(address _memecoinAddress, uint256 _amountToSwap, address _dexRouter, address _targetLPPool) external { ... }
 
-    function getDepositorCollGain(address _depositor) public view override returns (uint256) {
-        uint256 initialDeposit = deposits[_depositor].initialValue;
-        if (initialDeposit == 0) return 0;
+    function swapCollateral(
+        uint256 _amountToSwap,
+        uint256 _amountOutMin // Minimum amount of targetStablecoin to receive
+    ) external onlyOwner { // Or a new dedicated role
+        require(dexRouter != address(0), "SP: DEX router not set");
+        require(targetStablecoin != address(0), "SP: Target stablecoin not set");
+        require(collateralRecipient != address(0), "SP: Collateral recipient not set");
+        require(_amountToSwap > 0, "SP: Amount to swap must be positive");
 
-        Snapshots storage snapshots = depositSnapshots[_depositor];
+        IERC20 currentCollToken = addressesRegistry.collToken();
+        require(collBalance >= _amountToSwap, "SP: Insufficient collateral balance to swap");
 
-        // Coll gains from the same scale in which the deposit was made need no scaling
-        uint256 normalizedGains = scaleToS[snapshots.scale] - snapshots.S;
+        // Approve DEX router to spend the collateral
+        IERC20(currentCollToken).approve(dexRouter, _amountToSwap);
 
-        // Scale down further coll gains by a power of `SCALE_FACTOR` depending on how many scale changes they span
-        for (uint256 i = 1; i <= SCALE_SPAN; ++i) {
-            normalizedGains += scaleToS[snapshots.scale + i] / SCALE_FACTOR ** i;
-        }
+        // Prepare path for the swap
+        address[] memory path = new address[](2);
+        path[0] = address(currentCollToken);
+        path[1] = targetStablecoin;
 
-        return LiquityMath._min(initialDeposit * normalizedGains / snapshots.P, collBalance);
+        // Execute swap
+        uint256 balanceBeforeSwap = IERC20(targetStablecoin).balanceOf(address(this));
+
+        IDEXRouter(dexRouter).swapExactTokensForTokens(
+            _amountToSwap,
+            _amountOutMin,
+            path,
+            address(this), // Output tokens to this contract
+            block.timestamp // Deadline (can be slightly in future)
+        );
+
+        uint256 amountReceived = IERC20(targetStablecoin).balanceOf(address(this)) - balanceBeforeSwap;
+        require(amountReceived > 0, "SP: Swap resulted in no output tokens"); // Basic check
+
+        // Update internal collateral balance
+        collBalance -= _amountToSwap;
+
+        // Transfer received stablecoins to the recipient
+        IERC20(targetStablecoin).transfer(collateralRecipient, amountReceived);
+
+        emit CollateralSwapped(
+            address(currentCollToken),
+            targetStablecoin,
+            _amountToSwap,
+            amountReceived,
+            collateralRecipient
+        );
+        emit StabilityPoolCollBalanceUpdated(collBalance); // Update collateral balance event
     }
 
-    function getDepositorYieldGain(address _depositor) public view override returns (uint256) {
-        uint256 initialDeposit = deposits[_depositor].initialValue;
-        if (initialDeposit == 0) return 0;
-
-        Snapshots storage snapshots = depositSnapshots[_depositor];
-
-        // Yield gains from the same scale in which the deposit was made need no scaling
-        uint256 normalizedGains = scaleToB[snapshots.scale] - snapshots.B;
-
-        // Scale down further yield gains by a power of `SCALE_FACTOR` depending on how many scale changes they span
-        for (uint256 i = 1; i <= SCALE_SPAN; ++i) {
-            normalizedGains += scaleToB[snapshots.scale + i] / SCALE_FACTOR ** i;
-        }
-
-        return LiquityMath._min(initialDeposit * normalizedGains / snapshots.P, yieldGainsOwed);
-    }
-
-    function getDepositorYieldGainWithPending(address _depositor) external view override returns (uint256) {
-        if (totalBoldDeposits < MIN_BOLD_IN_SP) return 0;
-
-        uint256 initialDeposit = deposits[_depositor].initialValue;
-        if (initialDeposit == 0) return 0;
-
-        Snapshots storage snapshots = depositSnapshots[_depositor];
-        uint256 newYieldGainsOwed = yieldGainsOwed;
-
-        // Yield gains from the same scale in which the deposit was made need no scaling
-        uint256 normalizedGains = scaleToB[snapshots.scale] - snapshots.B;
-
-        // Scale down further yield gains by a power of `SCALE_FACTOR` depending on how many scale changes they span
-        for (uint256 i = 1; i <= SCALE_SPAN; ++i) {
-            normalizedGains += scaleToB[snapshots.scale + i] / SCALE_FACTOR ** i;
-        }
-
-        // Pending gains
-        uint256 pendingSPYield = activePool.calcPendingSPYield();
-        newYieldGainsOwed += pendingSPYield;
-
-        if (currentScale <= snapshots.scale + SCALE_SPAN) {
-            normalizedGains += P * pendingSPYield / totalBoldDeposits / SCALE_FACTOR ** (currentScale - snapshots.scale);
-        }
-
-        return LiquityMath._min(initialDeposit * normalizedGains / snapshots.P, newYieldGainsOwed);
-    }
-
-    // --- Compounded deposit ---
-
-    function getCompoundedBoldDeposit(address _depositor) public view override returns (uint256 compoundedDeposit) {
-        uint256 initialDeposit = deposits[_depositor].initialValue;
-        if (initialDeposit == 0) return 0;
-
-        Snapshots storage snapshots = depositSnapshots[_depositor];
-
-        uint256 scaleDiff = currentScale - snapshots.scale;
-
-        // Compute the compounded deposit. If one or more scale changes in `P` were made during the deposit's lifetime,
-        // account for them.
-        // If more than `MAX_SCALE_FACTOR_EXPONENT` scale changes were made, then the divisor is greater than 2^256 so
-        // any deposit amount would be rounded down to zero.
-        if (scaleDiff <= MAX_SCALE_FACTOR_EXPONENT) {
-            compoundedDeposit = initialDeposit * P / snapshots.P / SCALE_FACTOR ** scaleDiff;
+    // --- Internal $StableM Balance Tracking ---
+    function _updateTotalBoldDeposits(uint256 _increase, uint256 _decrease) internal {
+        uint256 oldTotalBoldDeposits = totalBoldDeposits;
+        if (_decrease > oldTotalBoldDeposits) { // Should not happen if fundPool is used correctly before offset
+            totalBoldDeposits = 0;
         } else {
-            compoundedDeposit = 0;
+            totalBoldDeposits = oldTotalBoldDeposits - _decrease;
         }
+        totalBoldDeposits = totalBoldDeposits + _increase; // Add increase after potential decrease
+
+        emit StabilityPoolBoldBalanceUpdated(totalBoldDeposits);
     }
 
-    // --- Sender functions for Bold deposit and Coll gains ---
-
-    function _sendCollGainToDepositor(uint256 _collAmount) internal {
-        if (_collAmount == 0) return;
-
-        uint256 newCollBalance = collBalance - _collAmount;
-        collBalance = newCollBalance;
-        emit StabilityPoolCollBalanceUpdated(newCollBalance);
-        collToken.safeTransfer(msg.sender, _collAmount);
-    }
-
-    // Send Bold to user and decrease Bold in Pool
-    function _sendBoldtoDepositor(address _depositor, uint256 _boldToSend) internal {
-        if (_boldToSend == 0) return;
-        boldToken.returnFromPool(address(this), _depositor, _boldToSend);
-    }
-
-    // --- Stability Pool Deposit Functionality ---
-
-    function _updateDepositAndSnapshots(address _depositor, uint256 _newDeposit, uint256 _newStashedColl) internal {
-        deposits[_depositor].initialValue = _newDeposit;
-        stashedColl[_depositor] = _newStashedColl;
-
-        if (_newDeposit == 0) {
-            delete depositSnapshots[_depositor];
-            emit DepositUpdated(_depositor, 0, _newStashedColl, 0, 0, 0, 0);
-            return;
-        }
-
-        uint256 currentScaleCached = currentScale;
-        uint256 currentP = P;
-
-        // Get S for the current scale
-        uint256 currentS = scaleToS[currentScaleCached];
-        uint256 currentB = scaleToB[currentScaleCached];
-
-        // Record new snapshots of the latest running product P and sum S for the depositor
-        depositSnapshots[_depositor].P = currentP;
-        depositSnapshots[_depositor].S = currentS;
-        depositSnapshots[_depositor].B = currentB;
-        depositSnapshots[_depositor].scale = currentScaleCached;
-
-        emit DepositUpdated(_depositor, _newDeposit, _newStashedColl, currentP, currentS, currentB, currentScaleCached);
-    }
-
-    // --- 'require' functions ---
-
-    function _requireCallerIsActivePool() internal view {
-        require(msg.sender == address(activePool), "StabilityPool: Caller is not ActivePool");
-    }
-
+    // --- 'require' functions (simplified) ---
     function _requireCallerIsTroveManager() internal view {
-        require(msg.sender == address(troveManager), "StabilityPool: Caller is not TroveManager");
+        // Assuming troveManager is accessible from AddressesRegistry (it is)
+        require(msg.sender == address(addressesRegistry.troveManager()), "SP: Caller is not TroveManager");
     }
 
-    function _requireUserHasDeposit(uint256 _initialDeposit) internal pure {
-        require(_initialDeposit > 0, "StabilityPool: User must have a non-zero deposit");
-    }
-
-    function _requireUserHasNoDeposit(address _address) internal view {
-        uint256 initialDeposit = deposits[_address].initialValue;
-        require(initialDeposit == 0, "StabilityPool: User must have no deposit");
-    }
-
-    function _requireNonZeroAmount(uint256 _amount) internal pure {
-        require(_amount > 0, "StabilityPool: Amount must be non-zero");
-    }
+    // Removed _requireUserHasDeposit, _requireNonZeroAmount (if only used by removed functions)
+    // Removed _requireCallerIsActivePool (if triggerBoldRewards is removed)
 }
