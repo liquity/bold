@@ -6,7 +6,7 @@ import { getProtocolContract } from "@/src/contracts";
 import { getCollateralContracts } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { useDebouncedQueryKey } from "@/src/react-utils";
-import { useWagmiConfig } from "@/src/services/Ethereum";
+import { useWagmiConfig } from "@/src/services/Arbitrum";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { readContract, readContracts } from "wagmi/actions";
@@ -146,11 +146,21 @@ export async function getOpenLeveragedTroveParams(
 
   const { PriceFeed } = collContracts;
 
-  const [price] = await readContract(wagmiConfig, {
+  // TODO: Fix and/or test this
+  // Changed from "fetchPrice" to "getPrice"
+  // "fetchPrice" changed from view to nonpayable function
+  const price = await readContract(wagmiConfig, {
     abi: PriceFeed.abi,
     address: PriceFeed.address,
-    functionName: "fetchPrice",
+    functionName: "getPrice", // Previously "fetchPrice"
   });
+
+  // Previously:
+  // const [price] = await readContract(wagmiConfig, {
+  //   abi: PriceFeed.abi,
+  //   address: PriceFeed.address,
+  //   functionName: "fetchPrice",
+  // });
 
   const leverageRatio = BigInt(leverageFactor * 1000) * DECIMAL_PRECISION / 1000n;
   const flashLoanAmount = collAmount * (leverageRatio - DECIMAL_PRECISION) / DECIMAL_PRECISION;

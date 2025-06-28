@@ -16,6 +16,18 @@ export const LEVERAGE_FACTOR_MIN = 1.1;
 export const MAX_LTV_ALLOWED_RATIO = 0.916; // ratio of the max LTV allowed by the app (when opening a position)
 export const MAX_LTV_RESERVE_RATIO = 0.04; // ratio of the max LTV in non-limited mode (e.g. when updating a position), to prevent reaching the max LTV
 
+export const MAX_LTV_ALLOWED_RATIOS = {
+  ETH: 0.9091,
+  WETH: 0.9091,
+  WSTETH: 0.9091,
+  RETH: 0.9091,
+  RSETH: 0.7692,
+  WEETH: 0.7692,
+  ARB: 0.7143,
+  COMP: 0.7143,
+  TBTC: 0.8696,
+};
+
 export const ETH_MAX_RESERVE = dn.from(0.1, 18); // leave 0.1 ETH when users click on "max" to deposit from their account
 
 export const ETH_GAS_COMPENSATION = dn.from(0.0375, 18); // see contracts/src/Dependencies/Constants.sol
@@ -35,12 +47,32 @@ export const PRICE_REFRESH_INTERVAL = 60_000;
 export const LEVERAGE_MAX_SLIPPAGE = 0.05; // 5%
 export const CLOSE_FROM_COLLATERAL_SLIPPAGE = 0.05; // 5%
 export const MAX_UPFRONT_FEE = 1000n * 10n ** 18n;
-export const MIN_DEBT = dn.from(2000, 18);
+export const MIN_DEBT = dn.from(500, 18);
 
 export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = {
   ETH: dn.from(100_000_000n, 18),
+  WETH: dn.from(100_000_000n, 18),
   WSTETH: dn.from(100_000_000n, 18),
   RETH: dn.from(100_000_000n, 18),
+  RSETH: dn.from(100_000_000n, 18),
+  WEETH: dn.from(100_000_000n, 18),
+  ARB: dn.from(100_000_000n, 18),
+  COMP: dn.from(100_000_000n, 18),
+  TBTC: dn.from(100_000_000n, 18),
+};
+
+// Debt limits, as max amounts of USND that can be borrowed against a collateral
+// These will be queried from the subgraph, but for now we're using these values
+export const MAX_DEBT_LIMITS: Record<CollateralSymbol, dn.Dnum> = {
+  ETH: dn.from(100_000_000n, 18),
+  WETH: dn.from(100_000_000n, 18),
+  WSTETH: dn.from(25_000_000n, 18),
+  RETH: dn.from(25_000_000n, 18),
+  RSETH: dn.from(5_000_000n, 18),
+  WEETH: dn.from(2_000_000n, 18),
+  ARB: dn.from(5_000_000n, 18),
+  COMP: dn.from(2_000_000n, 18),
+  TBTC: dn.from(5_000_000n, 18),
 };
 
 // LTV factor suggestions, as ratios of the multiply factor range

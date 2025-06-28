@@ -1,0 +1,14 @@
+modules = ["nodejs-20", "ruby-3.2", "python-3.12"]
+run = "cd ~/workspace/frontend/app && pnpm build && pnpm start"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = "cd ~/workspace/frontend/app && pnpm build && pnpm start"
+# run = ["sh", "-c", "pnpm start --prefix frontend/app"]
+# build = ["sh", "-c", "pnpm build --prefix frontend/app"]
+
+[[ports]]
+localPort = 3000
+externalPort = 80

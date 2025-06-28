@@ -77,6 +77,11 @@ export async function main() {
     isLocal = true;
   }
 
+  if (networkPreset === "arbitrum-dev") {
+    options.name ??= "nerite-dev";
+    options.network ??= "arbitrum-one";
+  }
+
   if (networkPreset === "sepolia") {
     options.name ??= "liquity2-sepolia";
     options.network ??= "sepolia";

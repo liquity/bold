@@ -3,12 +3,15 @@ import {
   StabilityPool,
   StabilityPoolDeposit,
   StabilityPoolDepositSnapshot,
-  StabilityPoolEpochScale,
+  StabilityPoolScale,
 } from "../generated/schema";
 import {
   B_Updated as B_UpdatedEvent,
+  DepositOperation as DepositOperationEvent,
   DepositUpdated as DepositUpdatedEvent,
   S_Updated as S_UpdatedEvent,
+  StabilityPoolCollBalanceUpdated as StabilityPoolCollBalanceUpdatedEvent,
+  StabilityPoolBoldBalanceUpdated as StabilityPoolBoldBalanceUpdatedEvent,
 } from "../generated/templates/StabilityPool/StabilityPool";
 
 export function handleDepositUpdated(event: DepositUpdatedEvent): void {
@@ -33,15 +36,14 @@ export function handleDepositUpdated(event: DepositUpdatedEvent): void {
   spDepositSnapshot.S = event.params._snapshotS;
   spDepositSnapshot.B = event.params._snapshotB;
   spDepositSnapshot.scale = event.params._snapshotScale;
-  spDepositSnapshot.epoch = event.params._snapshotEpoch;
 
   spDepositSnapshot.save();
   spDeposit.save();
 }
 
 export function handleSUpdated(event: S_UpdatedEvent): void {
-  let spEpochScale = loadOrCreateStabilitiPoolEpochScale(
-    event.params._epoch,
+  let spEpochScale = loadOrCreateStabilityPoolScale(
+    // event.params._epoch,
     event.params._scale,
   );
   spEpochScale.S = event.params._S;
@@ -49,24 +51,101 @@ export function handleSUpdated(event: S_UpdatedEvent): void {
 }
 
 export function handleBUpdated(event: B_UpdatedEvent): void {
-  let spEpochScale = loadOrCreateStabilitiPoolEpochScale(
-    event.params._epoch,
+  let spEpochScale = loadOrCreateStabilityPoolScale(
+    // event.params._epoch,
     event.params._scale,
   );
   spEpochScale.B = event.params._B;
   spEpochScale.save();
 }
 
-function loadOrCreateStabilitiPoolEpochScale(
-  epoch: BigInt,
-  scale: BigInt,
-): StabilityPoolEpochScale {
+export function handleDepositOperation(event: DepositOperationEvent): void {
   let collId = dataSource.context().getString("collId");
-  let spEpochScaleId = collId + ":" + epoch.toString() + ":" + scale.toString();
+  let depositor = event.params._depositor;
 
-  let spEpochScale = StabilityPoolEpochScale.load(spEpochScaleId);
+  // Load or create the stability pool
+  let sp = StabilityPool.load(collId);
+  if (!sp) {
+    sp = new StabilityPool(collId);
+    sp.totalDeposited = BigInt.fromI32(0);
+    sp.save();
+  }
+
+  // Load or create the stability pool deposit
+  let spDeposit = loadOrCreateStabilityPoolDeposit(depositor, collId);
+  
+  // Update the deposit based on the operation type and deposit change
+  // depositChange can be positive or negative depending on the operation
+  // let depositChange = event.params._depositChange; <-- Old field name
+  let depositChange = event.params._topUpOrWithdrawal;
+  
+  if (depositChange.gt(BigInt.fromI32(0))) {
+    // Deposit increased
+    sp.totalDeposited = sp.totalDeposited.plus(depositChange);
+    spDeposit.deposit = spDeposit.deposit.plus(depositChange);
+  } else if (depositChange.lt(BigInt.fromI32(0))) {
+    // Deposit decreased (withdrawal)
+    let absChange = depositChange.abs();
+    sp.totalDeposited = sp.totalDeposited.minus(absChange);
+    spDeposit.deposit = spDeposit.deposit.minus(absChange);
+  }
+  
+  // Save the updated entities
+  sp.save();
+  spDeposit.save();
+}
+
+export function handleStabilityPoolCollBalanceUpdated(event: StabilityPoolCollBalanceUpdatedEvent): void {
+  let collId = dataSource.context().getString("collId");
+  
+  // Load or create the stability pool
+  let sp = StabilityPool.load(collId);
+  if (!sp) {
+    sp = new StabilityPool(collId);
+    sp.totalDeposited = BigInt.fromI32(0);
+  }
+
+  sp.collBalance = event.params._newBalance;
+  
+  // Since the StabilityPool entity doesn't have a collateralBalance field in the schema,
+  // we don't update it directly. If needed, this data could be tracked in a separate entity 
+  // or the schema could be updated to include this field.
+  
+  // The event is still processed, which means it's tracked in the subgraph
+  sp.save();
+}
+
+export function handleStabilityPoolBoldBalanceUpdated(event: StabilityPoolBoldBalanceUpdatedEvent): void {
+  let collId = dataSource.context().getString("collId");
+  
+  // Load or create the stability pool
+  let sp = StabilityPool.load(collId);
+  if (!sp) {
+    sp = new StabilityPool(collId);
+    sp.totalDeposited = BigInt.fromI32(0);
+  }
+
+  sp.totalDeposited = event.params._newBalance;
+  
+  // Since the StabilityPool entity doesn't have a boldBalance field in the schema,
+  // we don't update it directly. If needed, this data could be tracked in a separate entity 
+  // or the schema could be updated to include this field.
+  
+  // The event is still processed, which means it's tracked in the subgraph
+  sp.save();
+}
+
+function loadOrCreateStabilityPoolScale(
+  // epoch: BigInt,
+  scale: BigInt,
+): StabilityPoolScale {
+  let collId = dataSource.context().getString("collId");
+  // let spEpochScaleId = collId + ":" + epoch.toString() + ":" + scale.toString(); <-- Old ID
+  let spEpochScaleId = collId + ":" + scale.toString();
+
+  let spEpochScale = StabilityPoolScale.load(spEpochScaleId);
   if (!spEpochScale) {
-    spEpochScale = new StabilityPoolEpochScale(spEpochScaleId);
+    spEpochScale = new StabilityPoolScale(spEpochScaleId);
     spEpochScale.B = BigInt.fromI32(0);
     spEpochScale.S = BigInt.fromI32(0);
   }
@@ -97,7 +176,6 @@ function loadOrCreateSnapshot(spId: string): StabilityPoolDepositSnapshot {
     snapshot.S = BigInt.fromI32(0);
     snapshot.B = BigInt.fromI32(0);
     snapshot.scale = BigInt.fromI32(0);
-    snapshot.epoch = BigInt.fromI32(0);
   }
   return snapshot;
 }

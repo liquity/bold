@@ -170,7 +170,6 @@ export const StabilityPoolDepositQueryFragment = graphql(`
       B
       P
       S
-      epoch
       scale
     }
   }
@@ -189,7 +188,6 @@ export const StabilityPoolDepositsByAccountQuery = graphql(`
         B
         P
         S
-        epoch
         scale
       }
     }
@@ -209,16 +207,15 @@ export const StabilityPoolDepositQuery = graphql(`
         B
         P
         S
-        epoch
         scale
       }
     }
   }
 `);
 
-export const StabilityPoolEpochScaleQuery = graphql(`
-  query StabilityPoolEpochScale($id: ID!) {
-    stabilityPoolEpochScale(id: $id) {
+export const StabilityPoolScaleQuery = graphql(`
+  query StabilityPoolScale($id: ID!) {
+    stabilityPoolScale(id: $id) {
       id
       B
       S

@@ -2,7 +2,11 @@
 // please do not edit it manually
 export const TroveNFT = [{
   "type": "constructor",
-  "inputs": [{ "name": "_addressesRegistry", "type": "address", "internalType": "contract IAddressesRegistry" }],
+  "inputs": [{ "name": "_addressesRegistry", "type": "address", "internalType": "contract IAddressesRegistry" }, {
+    "name": "_governor",
+    "type": "address",
+    "internalType": "address",
+  }],
   "stateMutability": "nonpayable",
 }, {
   "type": "function",
@@ -28,10 +32,28 @@ export const TroveNFT = [{
   "stateMutability": "nonpayable",
 }, {
   "type": "function",
+  "name": "externalNFTUriAddress",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
   "name": "getApproved",
   "inputs": [{ "name": "tokenId", "type": "uint256", "internalType": "uint256" }],
   "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
   "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "governor",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "governorUpdateURI",
+  "inputs": [{ "name": "_externalNFTUriAddress", "type": "address", "internalType": "address" }],
+  "outputs": [],
+  "stateMutability": "nonpayable",
 }, {
   "type": "function",
   "name": "isApprovedForAll",
@@ -135,6 +157,12 @@ export const TroveNFT = [{
   "inputs": [],
   "outputs": [{ "name": "", "type": "address", "internalType": "contract ITroveManager" }],
   "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "updateGovernor",
+  "inputs": [{ "name": "_governor", "type": "address", "internalType": "address" }],
+  "outputs": [],
+  "stateMutability": "nonpayable",
 }, {
   "type": "event",
   "name": "Approval",

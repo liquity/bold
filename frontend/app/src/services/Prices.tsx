@@ -14,9 +14,11 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "LQTY" | "BOLD" | "LUSD" | CollateralSymbol;
+type PriceToken = "LQTY" | "NERI" | "USND" | "LUSD" | CollateralSymbol;
 
-function useCollateralPrice(symbol: null | CollateralSymbol): UseQueryResult<Dnum> {
+function useCollateralPrice(
+  symbol: null | CollateralSymbol
+): UseQueryResult<Dnum> {
   // "ETH" is a fallback when null is passed, so we can return a standard
   // query object from the PriceFeed ABI, while the query stays disabled
   const PriceFeed = getCollateralContract(symbol ?? "ETH", "PriceFeed");
@@ -27,11 +29,13 @@ function useCollateralPrice(symbol: null | CollateralSymbol): UseQueryResult<Dnu
 
   return useReadContract({
     ...PriceFeed,
-    functionName: "fetchPrice",
+    // functionName: "fetchPrice",
+    functionName: "getPrice",
     query: {
       enabled: symbol !== null,
       refetchInterval: PRICE_REFRESH_INTERVAL,
-      select: ([price]) => dnum18(price),
+      // select: ([price]) => dnum18(price),
+      select: (price) => dnum18(price),
     },
   });
 }
@@ -40,11 +44,13 @@ type CoinGeckoSymbol = TokenSymbol & ("LQTY" | "LUSD");
 const coinGeckoTokenIds: {
   [key in CoinGeckoSymbol]: string;
 } = {
-  "LQTY": "liquity",
-  "LUSD": "liquity-usd",
+  LQTY: "liquity",
+  LUSD: "liquity-usd",
 };
 
-function useCoinGeckoPrice(supportedSymbol: null | CoinGeckoSymbol): UseQueryResult<Dnum> {
+function useCoinGeckoPrice(
+  supportedSymbol: null | CoinGeckoSymbol
+): UseQueryResult<Dnum> {
   return useQuery({
     queryKey: ["coinGeckoPrice", ...Object.keys(coinGeckoTokenIds)],
     queryFn: async () => {
@@ -67,17 +73,21 @@ function useCoinGeckoPrice(supportedSymbol: null | CoinGeckoSymbol): UseQueryRes
       const response = await fetch(url, { headers });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch price for ${Object.keys(coinGeckoTokenIds).join(",")}`);
+        throw new Error(
+          `Failed to fetch price for ${Object.keys(coinGeckoTokenIds).join(
+            ","
+          )}`
+        );
       }
 
       const result = v.parse(
         v.object(
           v.entriesFromList(
             Object.values(coinGeckoTokenIds),
-            v.object({ "usd": v.number() }),
-          ),
+            v.object({ usd: v.number() })
+          )
         ),
-        await response.json(),
+        await response.json()
       );
 
       const prices = {} as { [key in CoinGeckoSymbol]: Dnum | null };
@@ -102,16 +112,19 @@ function useCoinGeckoPrice(supportedSymbol: null | CoinGeckoSymbol): UseQueryRes
   });
 }
 
-export function usePrice<PT extends PriceToken>(symbol: PT | null): UseQueryResult<Dnum> {
+export function usePrice<PT extends PriceToken>(
+  symbol: PT | null
+): UseQueryResult<Dnum> {
   const fromCoinGecko = symbol === "LQTY" || symbol === "LUSD";
-  const fromPriceFeed = !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
+  const fromPriceFeed =
+    !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
 
   const collPrice = useCollateralPrice(fromPriceFeed ? symbol : null);
   const coinGeckoPrice = useCoinGeckoPrice(fromCoinGecko ? symbol : null);
   const boldPrice = useQuery({
     queryKey: ["boldPrice"],
     queryFn: () => dn.from(1, 18),
-    enabled: symbol === "BOLD",
+    enabled: symbol === "USND",
   });
 
   // could be any of the three, we just need
@@ -128,8 +141,12 @@ export function usePrice<PT extends PriceToken>(symbol: PT | null): UseQueryResu
     return collPrice;
   }
 
-  if (symbol === "BOLD") {
+  if (symbol === "USND") {
     return boldPrice;
+  }
+
+  if (symbol === "NERI") {
+    return coinGeckoPrice;
   }
 
   throw new Error(`Unsupported token: ${symbol}`);

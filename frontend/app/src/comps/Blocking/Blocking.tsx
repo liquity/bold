@@ -3,20 +3,18 @@
 import type { ReactNode } from "react";
 
 import { BLOCKING_LIST, BLOCKING_VPNAPI } from "@/src/env";
-import { useAccount } from "@/src/services/Ethereum";
+import { useAccount } from "@/src/services/Arbitrum";
 import type { Address } from "@/src/types";
 import { css } from "@/styled-system/css";
 import { useQuery } from "@tanstack/react-query";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-export function Blocking({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function Blocking({ children }: { children: ReactNode }) {
   const account = useAccount();
-  const accountInBlockingList = useIsAccountInBlockingList(account.address ?? null);
+  const accountInBlockingList = useIsAccountInBlockingList(
+    account.address ?? null
+  );
   const accountVpnapi = useVpnapiBlock();
 
   let blocked: {
@@ -83,13 +81,15 @@ export function Blocking({
 export function useIsAccountInBlockingList(account: Address | null) {
   return useReadContract({
     address: BLOCKING_LIST ?? undefined,
-    abi: [{
-      "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
-      "name": "isBlacklisted",
-      "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
-      "stateMutability": "view",
-      "type": "function",
-    }],
+    abi: [
+      {
+        inputs: [{ internalType: "address", name: "", type: "address" }],
+        name: "isBlacklisted",
+        outputs: [{ internalType: "bool", name: "", type: "bool" }],
+        stateMutability: "view",
+        type: "function",
+      },
+    ],
     functionName: "isBlacklisted",
     args: [account ?? "0x"],
     query: {
@@ -117,7 +117,7 @@ const VpnapiResponseSchema = v.pipe(
   v.transform((value) => ({
     isRouted: Object.values(value.security).some((is) => is),
     country: value.location.country_code,
-  })),
+  }))
 );
 export function useVpnapiBlock() {
   return useQuery({
@@ -127,7 +127,7 @@ export function useVpnapiBlock() {
         return null;
       }
       const response = await fetch(
-        `https://vpnapi.io/api/?key=${BLOCKING_VPNAPI.apiKey}`,
+        `https://vpnapi.io/api/?key=${BLOCKING_VPNAPI.apiKey}`
       );
       const result = await response.json();
       const { isRouted, country } = v.parse(VpnapiResponseSchema, result);

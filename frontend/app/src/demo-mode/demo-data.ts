@@ -14,12 +14,20 @@ export const ACCOUNT_STAKED_LQTY = {
 } as const;
 
 export const ACCOUNT_BALANCES = {
-  BOLD: dn.from(3_987, 18),
+  USND: dn.from(3_987, 18),
   ETH: dn.from(2.429387, 18),
   LQTY: dn.from(2008.217, 18),
+  NERI: dn.from(2008.217, 18),
   RETH: dn.from(1.3732, 18),
   WSTETH: dn.from(17.912, 18),
   LUSD: dn.from(1_200, 18),
+  COMP: dn.from(1_200, 18),
+  ARB: dn.from(1_200, 18),
+  RSETH: dn.from(1_200, 18),
+  TBTC: dn.from(1_200, 18),
+  TETH: dn.from(1_200, 18),
+  WETH: dn.from(1_200, 18),
+  WEETH: dn.from(1_200, 18),
 } as const;
 
 const DEMO_ACCOUNT = `0x${"0".repeat(39)}1` as const;
@@ -62,7 +70,7 @@ export const ACCOUNT_POSITIONS: Exclude<Position, PositionLoanUncommitted>[] = [
     collIndex: 0,
     deposit: dn.from(5_000, 18),
     rewards: {
-      bold: dn.from(789.438, 18),
+      usnd: dn.from(789.438, 18),
       coll: dn.from(0.943, 18),
     },
   },
@@ -107,6 +115,30 @@ export const EARN_POOLS: Record<
     boldQty: [44_100_000n, 0],
   },
   WSTETH: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  COMP: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  ARB: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  RSETH: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  TBTC: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  WETH: {
+    apr: dn.from(0.054, 18),
+    boldQty: [25_700_000n, 0],
+  },
+  WEETH: {
     apr: dn.from(0.054, 18),
     boldQty: [25_700_000n, 0],
   },

@@ -7,17 +7,24 @@ import { Tag } from "@/src/comps/Tag/Tag";
 import content from "@/src/content";
 import { DEPLOYMENT_FLAVOR } from "@/src/env";
 import { css } from "@/styled-system/css";
-import { IconBorrow, IconDashboard, IconEarn, IconLeverage, IconStake } from "@liquity2/uikit";
+import {
+  IconBorrow,
+  IconDashboard,
+  IconEarn,
+  // IconLeverage,
+  IconStake,
+} from "@liquity2/uikit";
 import Link from "next/link";
 import { AccountButton } from "./AccountButton";
 import { Menu } from "./Menu";
 
 const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
-  [content.menu.dashboard, "/", IconDashboard],
-  [content.menu.borrow, "/borrow", IconBorrow],
-  [content.menu.multiply, "/multiply", IconLeverage],
-  [content.menu.earn, "/earn", IconEarn],
-  [content.menu.stake, "/stake", IconStake],
+  [content.menu.dashboard, "/", IconDashboard, "dashboard"],
+  [content.menu.borrow, "/borrow", IconBorrow, "borrow"],
+  // [content.menu.multiply, "/multiply", IconLeverage, "multiply"],
+  [content.menu.earn, "/earn", IconEarn, "earn"],
+  // [content.menu.stake, "/stake", IconStake, "stake"],
+  [content.menu.buy, "/buy", IconStake, "buy"],
 ];
 
 export function TopBar() {
@@ -46,7 +53,7 @@ export function TopBar() {
         })}
       >
         <Link
-          href="/"
+          href='/'
           className={css({
             position: "relative",
             display: "flex",
@@ -87,7 +94,7 @@ export function TopBar() {
                 })}
               >
                 <Tag
-                  size="mini"
+                  size='mini'
                   css={{
                     color: "accentContent",
                     background: "brandCoral",

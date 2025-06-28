@@ -2,11 +2,12 @@
 // please do not edit it manually
 export const CollateralRegistry = [{
   "type": "constructor",
-  "inputs": [{ "name": "_boldToken", "type": "address", "internalType": "contract IBoldToken" }, {
-    "name": "_tokens",
-    "type": "address[]",
-    "internalType": "contract IERC20Metadata[]",
-  }, { "name": "_troveManagers", "type": "address[]", "internalType": "contract ITroveManager[]" }],
+  "inputs": [
+    { "name": "_boldToken", "type": "address", "internalType": "contract IBoldToken" },
+    { "name": "_tokens", "type": "address[]", "internalType": "contract IERC20Metadata[]" },
+    { "name": "_troveManagers", "type": "address[]", "internalType": "contract ITroveManager[]" },
+    { "name": "_governor", "type": "address", "internalType": "address" },
+  ],
   "stateMutability": "nonpayable",
 }, {
   "type": "function",
@@ -19,6 +20,12 @@ export const CollateralRegistry = [{
   "name": "boldToken",
   "inputs": [],
   "outputs": [{ "name": "", "type": "address", "internalType": "contract IBoldToken" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "getDebtLimit",
+  "inputs": [{ "name": "_indexTroveManager", "type": "uint256", "internalType": "uint256" }],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
   "stateMutability": "view",
 }, {
   "type": "function",
@@ -64,6 +71,12 @@ export const CollateralRegistry = [{
   "stateMutability": "view",
 }, {
   "type": "function",
+  "name": "governor",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
   "name": "lastFeeOperationTime",
   "inputs": [],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
@@ -84,6 +97,22 @@ export const CollateralRegistry = [{
   "inputs": [],
   "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
   "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "updateDebtLimit",
+  "inputs": [{ "name": "_indexTroveManager", "type": "uint256", "internalType": "uint256" }, {
+    "name": "_newDebtLimit",
+    "type": "uint256",
+    "internalType": "uint256",
+  }],
+  "outputs": [],
+  "stateMutability": "nonpayable",
+}, {
+  "type": "function",
+  "name": "updateGovernor",
+  "inputs": [{ "name": "_newGovernor", "type": "address", "internalType": "address" }],
+  "outputs": [],
+  "stateMutability": "nonpayable",
 }, {
   "type": "event",
   "name": "BaseRateUpdated",

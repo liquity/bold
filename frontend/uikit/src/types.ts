@@ -3,12 +3,19 @@ export type Address = `0x${string}`;
 export type Direction = -1 | 1;
 
 export type TokenSymbol =
-  | "BOLD"
+  | "USND"
+  | "NERI"
   | "ETH"
   | "LQTY"
   | "RETH"
   | "LUSD"
-  | "WSTETH";
+  | "WSTETH"
+  | "COMP"
+  | "ARB"
+  | "RSETH"
+  | "TBTC"
+  | "WETH"
+  | "WEETH";
 
 export type Token = {
   icon: string;

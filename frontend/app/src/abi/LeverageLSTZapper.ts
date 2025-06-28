@@ -87,7 +87,7 @@ export const LeverageLSTZapper = [
       "name": "_flashLoanAmount",
       "type": "uint256",
       "internalType": "uint256",
-    }],
+    }, { "name": "_minExpectedCollateral", "type": "uint256", "internalType": "uint256" }],
     "outputs": [],
     "stateMutability": "nonpayable",
   },
@@ -217,11 +217,12 @@ export const LeverageLSTZapper = [
       "name": "_params",
       "type": "tuple",
       "internalType": "struct IZapper.CloseTroveParams",
-      "components": [{ "name": "troveId", "type": "uint256", "internalType": "uint256" }, {
-        "name": "flashLoanAmount",
-        "type": "uint256",
-        "internalType": "uint256",
-      }, { "name": "receiver", "type": "address", "internalType": "address" }],
+      "components": [
+        { "name": "troveId", "type": "uint256", "internalType": "uint256" },
+        { "name": "flashLoanAmount", "type": "uint256", "internalType": "uint256" },
+        { "name": "minExpectedCollateral", "type": "uint256", "internalType": "uint256" },
+        { "name": "receiver", "type": "address", "internalType": "address" },
+      ],
     }, { "name": "_effectiveFlashLoanAmount", "type": "uint256", "internalType": "uint256" }],
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -262,7 +263,7 @@ export const LeverageLSTZapper = [
   {
     "type": "function",
     "name": "receiveFlashLoanOnOpenLeveragedTrove",
-    "inputs": [{
+    "inputs": [{ "name": "_originalSender", "type": "address", "internalType": "address" }, {
       "name": "_params",
       "type": "tuple",
       "internalType": "struct ILeverageZapper.OpenLeveragedTroveParams",

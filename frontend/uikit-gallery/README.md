@@ -1,1 +1,1 @@
-# Liquity V2 UI kit Gallery
+# Nerite UI kit Gallery

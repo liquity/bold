@@ -10,15 +10,12 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
-const RequestSchema = createRequestSchema(
-  "earnWithdraw",
-  {
-    prevEarnPosition: vPositionEarn(),
-    earnPosition: vPositionEarn(),
-    collIndex: vCollIndex(),
-    claim: v.boolean(),
-  },
-);
+const RequestSchema = createRequestSchema("earnWithdraw", {
+  prevEarnPosition: vPositionEarn(),
+  earnPosition: vPositionEarn(),
+  collIndex: vCollIndex(),
+  claim: v.boolean(),
+});
 
 export type EarnWithdrawRequest = v.InferOutput<typeof RequestSchema>;
 
@@ -37,24 +34,19 @@ export const earnWithdraw: FlowDeclaration<EarnWithdrawRequest> = {
   },
 
   Details({ request }) {
-    const boldPrice = usePrice("BOLD");
-    const boldAmount = dn.abs(dn.sub(
-      request.earnPosition.deposit,
-      request.prevEarnPosition.deposit,
-    ));
+    const boldPrice = usePrice("USND");
+    const boldAmount = dn.abs(
+      dn.sub(request.earnPosition.deposit, request.prevEarnPosition.deposit)
+    );
     return (
       <>
         <TransactionDetailsRow
-          label="You withdraw"
+          label='You withdraw'
           value={[
+            <Amount key='start' suffix=' USND' value={boldAmount} />,
             <Amount
-              key="start"
-              suffix=" BOLD"
-              value={boldAmount}
-            />,
-            <Amount
-              key="end"
-              prefix="$"
+              key='end'
+              prefix='$'
               value={boldPrice.data && dn.mul(boldAmount, boldPrice.data)}
             />,
           ]}
@@ -75,10 +67,12 @@ export const earnWithdraw: FlowDeclaration<EarnWithdrawRequest> = {
         }
         const { StabilityPool } = collateral.contracts;
 
-        const boldAmount = dn.abs(dn.sub(
-          ctx.request.earnPosition.deposit,
-          ctx.request.prevEarnPosition.deposit,
-        ));
+        const boldAmount = dn.abs(
+          dn.sub(
+            ctx.request.earnPosition.deposit,
+            ctx.request.prevEarnPosition.deposit
+          )
+        );
 
         return ctx.writeContract({
           ...StabilityPool,

@@ -18,13 +18,10 @@ import { maxUint256 } from "viem";
 import { readContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
-const RequestSchema = createRequestSchema(
-  "closeLoanPosition",
-  {
-    loan: vPositionLoanCommited(),
-    repayWithCollateral: v.boolean(),
-  },
-);
+const RequestSchema = createRequestSchema("closeLoanPosition", {
+  loan: vPositionLoanCommited(),
+  repayWithCollateral: v.boolean(),
+});
 
 export type CloseLoanPositionRequest = v.InferOutput<typeof RequestSchema>;
 
@@ -35,7 +32,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
     return (
       <LoanCard
         leverageMode={false}
-        loadingState="success"
+        loadingState='success'
         loan={null}
         prevLoan={request.loan}
         onRetry={() => {}}
@@ -59,8 +56,8 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
     }
 
     const amountToRepay = repayWithCollateral
-      ? (dn.div(loan.borrowed ?? dn.from(0), collPrice.data))
-      : (loan.borrowed ?? dn.from(0));
+      ? dn.div(loan.borrowed ?? dn.from(0), collPrice.data)
+      : loan.borrowed ?? dn.from(0);
 
     const collToReclaim = repayWithCollateral
       ? dn.sub(loan.deposit, amountToRepay)
@@ -70,31 +67,33 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       <>
         {dn.gt(amountToRepay, 0) && (
           <TransactionDetailsRow
-            label={repayWithCollateral ? "You repay (from collateral)" : "You repay"}
+            label={
+              repayWithCollateral ? "You repay (from collateral)" : "You repay"
+            }
             value={[
               <Amount
-                key="start"
+                key='start'
                 value={amountToRepay}
-                suffix={` ${repayWithCollateral ? collateral.symbol : "BOLD"}`}
+                suffix={` ${repayWithCollateral ? collateral.symbol : "USDN"}`}
               />,
             ]}
           />
         )}
         <TransactionDetailsRow
-          label="You reclaim collateral"
+          label='You reclaim collateral'
           value={[
             <Amount
-              key="start"
+              key='start'
               value={collToReclaim}
               suffix={` ${collateral.symbol}`}
             />,
           ]}
         />
         <TransactionDetailsRow
-          label="You reclaim the gas compensation deposit"
+          label='You reclaim the gas compensation deposit'
           value={[
             <div
-              key="start"
+              key='start'
               title={`${fmtnum(ETH_GAS_COMPENSATION, "full")} ETH`}
             >
               {fmtnum(ETH_GAS_COMPENSATION, 4)} ETH
@@ -107,12 +106,9 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
 
   steps: {
     approveBold: {
-      name: () => "Approve BOLD",
+      name: () => "Approve USDN",
       Status: (props) => (
-        <TransactionStatus
-          {...props}
-          approval="approve-only"
-        />
+        <TransactionStatus {...props} approval='approve-only' />
       ),
       async commit(ctx) {
         const { loan } = ctx.request;
@@ -126,9 +122,10 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           args: [BigInt(loan.troveId)],
         });
 
-        const Zapper = coll.symbol === "ETH"
-          ? coll.contracts.LeverageWETHZapper
-          : coll.contracts.LeverageLSTZapper;
+        const Zapper =
+          coll.symbol === "ETH"
+            ? coll.contracts.LeverageWETHZapper
+            : coll.contracts.LeverageLSTZapper;
 
         return ctx.writeContract({
           ...ctx.contracts.BoldToken,
@@ -146,7 +143,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       },
     },
 
-    // Close a loan position, repaying with BOLD or with the collateral
+    // Close a loan position, repaying with USDN or with the collateral
     closeLoanPosition: {
       name: () => "Close loan",
       Status: TransactionStatus,
@@ -158,7 +155,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           throw new Error("Invalid collateral index: " + loan.collIndex);
         }
 
-        // repay with BOLD => get ETH
+        // repay with USDN => get ETH
         if (!ctx.request.repayWithCollateral && coll.symbol === "ETH") {
           return ctx.writeContract({
             ...coll.contracts.LeverageWETHZapper,
@@ -167,7 +164,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           });
         }
 
-        // repay with BOLD => get LST
+        // repay with USDN => get LST
         if (!ctx.request.repayWithCollateral) {
           return ctx.writeContract({
             ...coll.contracts.LeverageLSTZapper,
@@ -181,7 +178,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         const closeFlashLoanAmount = await getCloseFlashLoanAmount(
           loan.collIndex,
           loan.troveId,
-          ctx.wagmiConfig,
+          ctx.wagmiConfig
         );
 
         if (closeFlashLoanAmount === null) {
@@ -210,12 +207,14 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
 
         const prefixedTroveId = getPrefixedTroveId(
           ctx.request.loan.collIndex,
-          ctx.request.loan.troveId,
+          ctx.request.loan.troveId
         );
 
         // wait for the trove to be seen as closed in the subgraph
         while (true) {
-          const { trove } = await graphQuery(TroveByIdQuery, { id: prefixedTroveId });
+          const { trove } = await graphQuery(TroveByIdQuery, {
+            id: prefixedTroveId,
+          });
           if (trove?.closedAt !== undefined) {
             break;
           }
@@ -237,9 +236,10 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       throw new Error("Invalid collateral index: " + loan.collIndex);
     }
 
-    const Zapper = coll.symbol === "ETH"
-      ? coll.contracts.LeverageWETHZapper
-      : coll.contracts.LeverageLSTZapper;
+    const Zapper =
+      coll.symbol === "ETH"
+        ? coll.contracts.LeverageWETHZapper
+        : coll.contracts.LeverageLSTZapper;
 
     const { entireDebt } = await ctx.readContract({
       ...coll.contracts.TroveManager,
@@ -247,14 +247,16 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       args: [BigInt(loan.troveId)],
     });
 
-    const isBoldApproved = ctx.request.repayWithCollateral || !dn.gt(entireDebt, [
-      await ctx.readContract({
-        ...ctx.contracts.BoldToken,
-        functionName: "allowance",
-        args: [ctx.account, Zapper.address],
-      }) ?? 0n,
-      18,
-    ]);
+    const isBoldApproved =
+      ctx.request.repayWithCollateral ||
+      !dn.gt(entireDebt, [
+        (await ctx.readContract({
+          ...ctx.contracts.BoldToken,
+          functionName: "allowance",
+          args: [ctx.account, Zapper.address],
+        })) ?? 0n,
+        18,
+      ]);
 
     const steps: string[] = [];
 

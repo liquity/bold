@@ -25,7 +25,8 @@ import {
   useLoanById,
   useStabilityPool,
   useStabilityPoolDeposit,
-  useStabilityPoolEpochScale,
+  useStabilityPoolScale,
+  // useStabilityPoolEpochScale,
 } from "@/src/subgraph-hooks";
 import { isCollIndex, isTroveId } from "@/src/types";
 import { COLLATERALS, isAddress } from "@liquity2/uikit";
@@ -129,15 +130,15 @@ export function useEarnPosition(
   const spDeposit = useStabilityPoolDeposit(collIndex, account);
   const spDepositSnapshot = spDeposit.data?.snapshot;
 
-  const epochScale1 = useStabilityPoolEpochScale(
+  const scale1 = useStabilityPoolScale(
     collIndex,
-    spDepositSnapshot?.epoch ?? null,
+    // spDepositSnapshot?.epoch ?? null,
     spDepositSnapshot?.scale ?? null,
   );
 
-  const epochScale2 = useStabilityPoolEpochScale(
+  const scale2 = useStabilityPoolScale(
     collIndex,
-    spDepositSnapshot?.epoch ?? null,
+    // spDepositSnapshot?.epoch ?? null,
     spDepositSnapshot?.scale ? spDepositSnapshot?.scale + 1n : null,
   );
 
@@ -145,28 +146,28 @@ export function useEarnPosition(
     getBoldGains,
     boldGains,
     spDeposit,
-    epochScale1,
-    epochScale2,
-  ].find((r) => r.status !== "success") ?? epochScale2;
+    scale1,
+    scale2,
+  ].find((r) => r.status !== "success") ?? boldGains;
 
   return {
     ...base,
     data: (
         !spDeposit.data
         || !boldGains.data
-        || !epochScale1.data
-        || !epochScale2.data
+        || !scale1.data
+        || !scale2.data
       )
       ? null
       : earnPositionFromGraph(spDeposit.data, {
-        bold: boldGains.data,
+        usnd: boldGains.data,
         coll: dnum18(
           getCollGainFromSnapshots(
             spDeposit.data.deposit,
             spDeposit.data.snapshot.P,
             spDeposit.data.snapshot.S,
-            epochScale1.data.S,
-            epochScale2.data.S,
+            scale1.data.S,
+            scale2.data.S,
           ),
         ),
       }),
@@ -175,7 +176,7 @@ export function useEarnPosition(
 
 function earnPositionFromGraph(
   spDeposit: NonNullable<StabilityPoolDepositQuery["stabilityPoolDeposit"]>,
-  rewards: { bold: Dnum; coll: Dnum },
+  rewards: { usnd: Dnum; coll: Dnum },
 ): PositionEarn {
   const collIndex = spDeposit.collateral.collIndex;
   if (!isCollIndex(collIndex)) {
@@ -466,7 +467,7 @@ export function usePredictAdjustInterestRateUpfrontFee(
   });
 }
 
-// from https://github.com/liquity/bold/blob/204a3dec54a0e8689120ca48faf4ece5cf8ccd22/README.md#example-opentrove-transaction-with-hints
+// from https://github.com/liquity/usdn/blob/204a3dec54a0e8689120ca48faf4ece5cf8ccd22/README.md#example-opentrove-transaction-with-hints
 export async function getTroveOperationHints({
   wagmiConfig,
   contracts,

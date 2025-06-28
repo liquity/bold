@@ -18,9 +18,11 @@
     "fmt": "dprint fmt **/*.{ts,tsx,js,json,html,md}",
     "lint": "pnpm oxlint ./src --import-plugin --nextjs-plugin --react-perf-plugin --allow pedantic",
     "test": "vitest",
-    "update-liquity-abis": "pnpm exec tsx ./scripts/update-liquity-abis.ts"
+    "update-liquity-abis": "pnpm exec tsx ./scripts/update-liquity-abis.ts",
+    "start": "next start"
   },
   "dependencies": {
+    "@0xsquid/widget": "^4.2.2",
     "@graphql-typed-document-node/core": "^3.2.0",
     "@liquity2/uikit": "workspace:*",
     "@next/bundle-analyzer": "^15.1.4",

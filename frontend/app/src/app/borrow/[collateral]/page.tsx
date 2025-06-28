@@ -1,8 +1,14 @@
 export function generateStaticParams() {
   return [
     { collateral: "eth" },
-    { collateral: "reth" },
+    { collateral: "weth" },
     { collateral: "wsteth" },
+    { collateral: "reth" },
+    { collateral: "rseth" },
+    { collateral: "weeth" },
+    { collateral: "arb" },
+    { collateral: "comp" },
+    { collateral: "tbtc" },
   ];
 }
 

@@ -8,6 +8,13 @@ export const BorrowerOperations = [
   },
   {
     "type": "function",
+    "name": "BCR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
     "name": "CCR",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
@@ -123,14 +130,14 @@ export const BorrowerOperations = [
   },
   {
     "type": "function",
-    "name": "getEntireSystemColl",
+    "name": "getEntireBranchColl",
     "inputs": [],
     "outputs": [{ "name": "entireSystemColl", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
   {
     "type": "function",
-    "name": "getEntireSystemDebt",
+    "name": "getEntireBranchDebt",
     "inputs": [],
     "outputs": [{ "name": "entireSystemDebt", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
@@ -181,6 +188,17 @@ export const BorrowerOperations = [
     "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
     "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "kickFromBatch",
+    "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }, {
+      "name": "_upperHint",
+      "type": "uint256",
+      "internalType": "uint256",
+    }, { "name": "_lowerHint", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
   },
   {
     "type": "function",
@@ -433,26 +451,8 @@ export const BorrowerOperations = [
   },
   {
     "type": "event",
-    "name": "BoldTokenAddressChanged",
-    "inputs": [{ "name": "_boldTokenAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "CollSurplusPoolAddressChanged",
-    "inputs": [{ "name": "_collSurplusPoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
     "name": "DefaultPoolAddressChanged",
     "inputs": [{ "name": "_newDefaultPoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "GasPoolAddressChanged",
-    "inputs": [{ "name": "_gasPoolAddress", "type": "address", "indexed": false, "internalType": "address" }],
     "anonymous": false,
   },
   {
@@ -474,24 +474,6 @@ export const BorrowerOperations = [
   },
   {
     "type": "event",
-    "name": "ShutDown",
-    "inputs": [{ "name": "_tcr", "type": "uint256", "indexed": false, "internalType": "uint256" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "SortedTrovesAddressChanged",
-    "inputs": [{ "name": "_sortedTrovesAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "TroveManagerAddressChanged",
-    "inputs": [{ "name": "_newTroveManagerAddress", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
     "name": "TroveNFTAddressChanged",
     "inputs": [{ "name": "_newTroveNFTAddress", "type": "address", "indexed": false, "internalType": "address" }],
     "anonymous": false,
@@ -500,6 +482,7 @@ export const BorrowerOperations = [
   { "type": "error", "name": "BatchInterestRateChangePeriodNotPassed", "inputs": [] },
   { "type": "error", "name": "BatchManagerExists", "inputs": [] },
   { "type": "error", "name": "BatchManagerNotNew", "inputs": [] },
+  { "type": "error", "name": "BatchSharesRatioTooLow", "inputs": [] },
   { "type": "error", "name": "CallerNotPriceFeed", "inputs": [] },
   { "type": "error", "name": "CallerNotTroveManager", "inputs": [] },
   { "type": "error", "name": "CollWithdrawalTooHigh", "inputs": [] },
@@ -507,6 +490,7 @@ export const BorrowerOperations = [
   { "type": "error", "name": "DelegateInterestRateChangePeriodNotPassed", "inputs": [] },
   { "type": "error", "name": "EmptyManager", "inputs": [] },
   { "type": "error", "name": "ICRBelowMCR", "inputs": [] },
+  { "type": "error", "name": "ICRBelowMCRPlusBCR", "inputs": [] },
   { "type": "error", "name": "InterestNotInRange", "inputs": [] },
   { "type": "error", "name": "InterestRateNotNew", "inputs": [] },
   { "type": "error", "name": "InterestRateTooHigh", "inputs": [] },

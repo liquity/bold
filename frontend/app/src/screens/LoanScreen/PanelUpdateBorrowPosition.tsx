@@ -14,7 +14,7 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import { getCollToken } from "@/src/liquity-utils";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
+import { useAccount, useBalance } from "@/src/services/Arbitrum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
@@ -53,92 +53,102 @@ export function PanelUpdateBorrowPosition({
 
   // balances
   const collBalance = useBalance(account.address, collToken.symbol);
-  const boldBalance = useBalance(account.address, "BOLD");
+  const boldBalance = useBalance(account.address, "USND");
 
   // prices
   const collPrice = usePrice(collToken.symbol ?? null);
-  const boldPriceUsd = usePrice("BOLD") ?? dnum18(0);
+  const boldPriceUsd = usePrice("USND") ?? dnum18(0);
 
   // deposit change
   const [depositMode, setDepositMode] = useState<ValueUpdateMode>("add");
   const depositChange = useInputFieldValue((value) => fmtnum(value, "full"));
 
   // deposit update
-  const newDeposit = depositChange.parsed && (
-    depositMode === "remove"
+  const newDeposit =
+    depositChange.parsed &&
+    (depositMode === "remove"
       ? dn.sub(loan.deposit, depositChange.parsed)
-      : dn.add(loan.deposit, depositChange.parsed)
-  );
+      : dn.add(loan.deposit, depositChange.parsed));
 
   // debt change
   const [debtMode, setDebtMode] = useState<ValueUpdateMode>("add");
   const debtChange = useInputFieldValue((value) => fmtnum(value, "full"));
 
-  const newDebt = debtChange.parsed && (
-    debtMode === "remove"
+  const newDebt =
+    debtChange.parsed &&
+    (debtMode === "remove"
       ? dn.sub(loan.borrowed, debtChange.parsed)
-      : dn.add(loan.borrowed, debtChange.parsed)
-  );
+      : dn.add(loan.borrowed, debtChange.parsed));
 
-  const collMax = depositMode === "remove" ? null : (
-    collBalance.data && dnumMax(
-      dn.sub(
-        collBalance.data,
-        collToken.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
-      ),
-      dnum18(0),
-    )
-  );
+  const collMax =
+    depositMode === "remove"
+      ? null
+      : collBalance.data &&
+        dnumMax(
+          dn.sub(
+            collBalance.data,
+            collToken.symbol === "ETH" ? ETH_MAX_RESERVE : 0 // Only keep a reserve for ETH, not LSTs
+          ),
+          dnum18(0)
+        );
 
-  const boldMax = debtMode === "remove" && boldBalance.data
-    ? dnumMin(
-      boldBalance.data,
-      loan.borrowed,
-    )
-    : null;
+  const boldMax =
+    debtMode === "remove" && boldBalance.data
+      ? dnumMin(boldBalance.data, loan.borrowed)
+      : null;
 
   if (!collPrice.data || !boldPriceUsd.data) {
     return null;
   }
 
-  const debtChangeUsd = debtChange.parsed && dn.mul(debtChange.parsed, boldPriceUsd.data);
+  const debtChangeUsd =
+    debtChange.parsed && dn.mul(debtChange.parsed, boldPriceUsd.data);
 
   const loanDetails = getLoanDetails(
+    collToken.symbol,
     loan.deposit,
     loan.borrowed,
     loan.interestRate,
     collToken.collateralRatio,
-    collPrice.data,
+    collPrice.data
   );
 
   const newLoanDetails = getLoanDetails(
+    collToken.symbol,
     newDeposit,
     newDebt,
     loanDetails.interestRate,
     collToken.collateralRatio,
-    collPrice.data,
+    collPrice.data
   );
 
-  const isBelowMinDebt = debtChange.parsed && !debtChange.isEmpty && newDebt && dn.lt(newDebt, MIN_DEBT);
+  const isBelowMinDebt =
+    debtChange.parsed &&
+    !debtChange.isEmpty &&
+    newDebt &&
+    dn.lt(newDebt, MIN_DEBT);
 
-  const insufficientBold = debtMode === "remove"
-    && debtChange.parsed
-    && !debtChange.isEmpty
-    && boldBalance.data
-    && dn.gt(debtChange.parsed, boldBalance.data);
+  const insufficientBold =
+    debtMode === "remove" &&
+    debtChange.parsed &&
+    !debtChange.isEmpty &&
+    boldBalance.data &&
+    dn.gt(debtChange.parsed, boldBalance.data);
 
-  const allowSubmit = account.isConnected
+  const allowSubmit =
+    account.isConnected &&
     // above min. debt
-    && !isBelowMinDebt
+    !isBelowMinDebt &&
     // the new deposit must be positive
-    && dn.gt(newLoanDetails.deposit ?? dnum18(0), 0)
-    // the account must have enough BOLD
-    && !insufficientBold
+    dn.gt(newLoanDetails.deposit ?? dnum18(0), 0) &&
+    // the account must have enough USND
+    !insufficientBold &&
     // there should be a change in the deposit or debt
-    && (
-      !dn.eq(loanDetails.deposit ?? dnum18(0), newLoanDetails.deposit ?? dnum18(0))
-      || !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0))
-    );
+    (!dn.eq(
+      loanDetails.deposit ?? dnum18(0),
+      newLoanDetails.deposit ?? dnum18(0)
+    ) ||
+      !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0)));
 
   return (
     <>
@@ -147,7 +157,7 @@ export function PanelUpdateBorrowPosition({
           field={
             <InputField
               {...depositChange.inputFieldProps}
-              id="input-deposit-change"
+              id='input-deposit-change'
               contextual={
                 <InputTokenBadge
                   background={false}
@@ -156,15 +166,24 @@ export function PanelUpdateBorrowPosition({
                 />
               }
               label={{
-                start: depositMode === "remove"
-                  ? "Decrease collateral"
-                  : "Increase collateral",
+                start:
+                  depositMode === "remove"
+                    ? "Decrease collateral"
+                    : "Increase collateral",
                 end: (
                   <Tabs
                     compact
                     items={[
-                      { label: "Deposit", panelId: "panel-deposit", tabId: "tab-deposit" },
-                      { label: "Withdraw", panelId: "panel-withdraw", tabId: "tab-withdraw" },
+                      {
+                        label: "Deposit",
+                        panelId: "panel-deposit",
+                        tabId: "tab-deposit",
+                      },
+                      {
+                        label: "Withdraw",
+                        panelId: "panel-withdraw",
+                        tabId: "tab-withdraw",
+                      },
                     ]}
                     onSelect={(index, { origin, event }) => {
                       setDepositMode(index === 1 ? "remove" : "add");
@@ -179,19 +198,23 @@ export function PanelUpdateBorrowPosition({
                 ),
               }}
               labelHeight={32}
-              placeholder="0.00"
+              placeholder='0.00'
               secondary={{
                 start: (
                   <Amount
-                    value={depositChange.parsed
-                      ? dn.mul(depositChange.parsed, collPrice.data)
-                      : 0}
-                    suffix="$"
+                    value={
+                      depositChange.parsed
+                        ? dn.mul(depositChange.parsed, collPrice.data)
+                        : 0
+                    }
+                    suffix='$'
                   />
                 ),
                 end: collMax && dn.gt(collMax, 0) && (
                   <TextButton
-                    label={`Max ${fmtnum(collMax, 2)} ${TOKENS_BY_SYMBOL[collToken.symbol].name}`}
+                    label={`Max ${fmtnum(collMax, 2)} ${
+                      TOKENS_BY_SYMBOL[collToken.symbol].name
+                    }`}
                     onClick={() => {
                       depositChange.setValue(dn.toString(collMax));
                     }}
@@ -204,22 +227,21 @@ export function PanelUpdateBorrowPosition({
             end: loanDetails.deposit && newLoanDetails.deposit && (
               <Field.FooterInfo
                 label={
-                  <HFlex alignItems="center" gap={8}>
-                    <Amount
-                      format={2}
-                      value={loanDetails.deposit}
-                    />
+                  <HFlex alignItems='center' gap={8}>
+                    <Amount format={2} value={loanDetails.deposit} />
                     <div>{ARROW_RIGHT}</div>
                   </HFlex>
                 }
                 value={
-                  <HFlex alignItems="center" gap={8}>
+                  <HFlex alignItems='center' gap={8}>
                     <div
                       className={css({
                         "--color-error": "token(colors.negativeStrong)",
                       })}
                       style={{
-                        color: dn.lt(newLoanDetails.deposit, 0) ? "var(--color-error)" : "inherit",
+                        color: dn.lt(newLoanDetails.deposit, 0)
+                          ? "var(--color-error)"
+                          : "inherit",
                       }}
                     >
                       <Amount
@@ -228,7 +250,7 @@ export function PanelUpdateBorrowPosition({
                         value={newLoanDetails.deposit}
                       />
                     </div>
-                    <InfoTooltip heading="Collateral update">
+                    <InfoTooltip heading='Collateral update'>
                       <div>
                         Before:{" "}
                         <Amount
@@ -239,7 +261,7 @@ export function PanelUpdateBorrowPosition({
                         {" ("}
                         <Amount
                           format={2}
-                          prefix="$"
+                          prefix='$'
                           value={dn.mul(loanDetails.deposit, collPrice.data)}
                         />
                         {")"}
@@ -254,7 +276,7 @@ export function PanelUpdateBorrowPosition({
                         {" ("}
                         <Amount
                           format={2}
-                          prefix="$"
+                          prefix='$'
                           value={dn.mul(newLoanDetails.deposit, collPrice.data)}
                         />
                         {")"}
@@ -271,29 +293,44 @@ export function PanelUpdateBorrowPosition({
           field={
             <InputField
               {...debtChange.inputFieldProps}
-              id="input-debt-change"
+              id='input-debt-change'
               contextual={
                 <InputTokenBadge
                   background={false}
-                  icon={<TokenIcon symbol="BOLD" />}
-                  label="BOLD"
+                  icon={<TokenIcon symbol='USND' />}
+                  label='USND'
                 />
               }
-              drawer={!debtChange.isFocused && isBelowMinDebt
-                ? { mode: "error", message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
-                : insufficientBold
-                ? { mode: "error", message: "Insufficient BOLD balance." }
-                : null}
+              drawer={
+                !debtChange.isFocused && isBelowMinDebt
+                  ? {
+                      mode: "error",
+                      message: `You must borrow at least ${fmtnum(
+                        MIN_DEBT,
+                        2
+                      )} USND.`,
+                    }
+                  : insufficientBold
+                  ? { mode: "error", message: "Insufficient USND balance." }
+                  : null
+              }
               label={{
-                start: debtMode === "remove"
-                  ? "Decrease loan"
-                  : "Increase loan",
+                start:
+                  debtMode === "remove" ? "Decrease loan" : "Increase loan",
                 end: (
                   <Tabs
                     compact
                     items={[
-                      { label: "Borrow", panelId: "panel-borrow", tabId: "tab-borrow" },
-                      { label: "Repay", panelId: "panel-repay", tabId: "tab-repay" },
+                      {
+                        label: "Borrow",
+                        panelId: "panel-borrow",
+                        tabId: "tab-borrow",
+                      },
+                      {
+                        label: "Repay",
+                        panelId: "panel-repay",
+                        tabId: "tab-repay",
+                      },
                     ]}
                     onSelect={(index, { origin, event }) => {
                       setDebtMode(index === 1 ? "remove" : "add");
@@ -308,18 +345,16 @@ export function PanelUpdateBorrowPosition({
                 ),
               }}
               labelHeight={32}
-              placeholder="0.00"
+              placeholder='0.00'
               secondary={{
-                start: <Amount value={debtChangeUsd ?? 0} suffix="$" />,
-                end: (
-                  boldMax && (
-                    <TextButton
-                      label={`Max ${fmtnum(boldMax)} BOLD`}
-                      onClick={() => {
-                        debtChange.setValue(dn.toString(boldMax));
-                      }}
-                    />
-                  )
+                start: <Amount value={debtChangeUsd ?? 0} suffix='$' />,
+                end: boldMax && (
+                  <TextButton
+                    label={`Max ${fmtnum(boldMax)} USND`}
+                    onClick={() => {
+                      debtChange.setValue(dn.toString(boldMax));
+                    }}
+                  />
                 ),
               }}
             />
@@ -328,32 +363,33 @@ export function PanelUpdateBorrowPosition({
             end: loanDetails.debt && newLoanDetails.debt && (
               <Field.FooterInfo
                 label={
-                  <HFlex alignItems="center" gap={8}>
+                  <HFlex alignItems='center' gap={8}>
                     <Amount value={loanDetails.debt} />
                     <div>{ARROW_RIGHT}</div>
                   </HFlex>
                 }
                 value={
-                  <HFlex alignItems="center" gap={8}>
+                  <HFlex alignItems='center' gap={8}>
                     <div
                       className={css({
                         "--color-error": "token(colors.negativeStrong)",
                       })}
                       style={{
-                        color: isBelowMinDebt ? "var(--color-error)" : "inherit",
+                        color: isBelowMinDebt
+                          ? "var(--color-error)"
+                          : "inherit",
                       }}
                     >
-                      <Amount
-                        value={newLoanDetails.debt}
-                        suffix=" BOLD"
-                      />
+                      <Amount value={newLoanDetails.debt} suffix=' USND' />
                     </div>
-                    <InfoTooltip heading="Debt update">
+                    <InfoTooltip heading='Debt update'>
                       <div>
-                        Before: <Amount value={loanDetails.debt} suffix=" BOLD" />
+                        Before:{" "}
+                        <Amount value={loanDetails.debt} suffix=' USND' />
                       </div>
                       <div>
-                        After: <Amount value={newLoanDetails.debt} suffix=" BOLD" />
+                        After:{" "}
+                        <Amount value={newLoanDetails.debt} suffix=' USND' />
                       </div>
                     </InfoTooltip>
                   </HFlex>
@@ -375,30 +411,43 @@ export function PanelUpdateBorrowPosition({
                 label: "Liquidation risk",
                 before: loanDetails.liquidationRisk && (
                   <>
-                    <StatusDot mode={riskLevelToStatusMode(loanDetails.liquidationRisk)} />
+                    <StatusDot
+                      mode={riskLevelToStatusMode(loanDetails.liquidationRisk)}
+                    />
                     {formatRisk(loanDetails.liquidationRisk)}
                   </>
                 ),
                 after: newLoanDetails.liquidationRisk && (
                   <>
-                    <StatusDot mode={riskLevelToStatusMode(newLoanDetails.liquidationRisk)} />
+                    <StatusDot
+                      mode={riskLevelToStatusMode(
+                        newLoanDetails.liquidationRisk
+                      )}
+                    />
                     {formatRisk(newLoanDetails.liquidationRisk)}
                   </>
                 ),
               },
               {
-                label: <abbr title="Loan-to-value ratio">LTV</abbr>,
+                label: <abbr title='Loan-to-value ratio'>LTV</abbr>,
                 before: <Amount value={loanDetails.ltv} percentage />,
-                after: newLoanDetails.ltv && dn.gt(newLoanDetails.ltv, 0)
-                  ? <Amount value={newLoanDetails.ltv} percentage />
-                  : "N/A",
+                after:
+                  newLoanDetails.ltv && dn.gt(newLoanDetails.ltv, 0) ? (
+                    <Amount value={newLoanDetails.ltv} percentage />
+                  ) : (
+                    "N/A"
+                  ),
               },
               {
                 label: "Liquidation price",
-                before: <Amount prefix="$" value={loanDetails.liquidationPrice} />,
-                after: newLoanDetails.liquidationPrice
-                  ? <Amount prefix="$" value={newLoanDetails.liquidationPrice} />
-                  : "N/A",
+                before: (
+                  <Amount prefix='$' value={loanDetails.liquidationPrice} />
+                ),
+                after: newLoanDetails.liquidationPrice ? (
+                  <Amount prefix='$' value={newLoanDetails.liquidationPrice} />
+                ) : (
+                  "N/A"
+                ),
               },
             ]}
           />
@@ -417,15 +466,18 @@ export function PanelUpdateBorrowPosition({
         <ConnectWarningBox />
         <Button
           disabled={!allowSubmit}
-          label="Update position"
-          mode="primary"
-          size="large"
+          label='Update position'
+          mode='primary'
+          size='large'
           wide
           onClick={() => {
             if (account.address) {
               txFlow.start({
                 flowId: "updateBorrowPosition",
-                backLink: [`/loan?id=${loan.collIndex}:${loan.troveId}`, "Back to editing"],
+                backLink: [
+                  `/loan?id=${loan.collIndex}:${loan.troveId}`,
+                  "Back to editing",
+                ],
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The position has been updated successfully.",
 

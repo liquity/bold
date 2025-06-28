@@ -10,18 +10,12 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
-const RequestSchema = createRequestSchema(
-  "earnDeposit",
-  {
-    prevEarnPosition: v.union([
-      v.null(),
-      vPositionEarn(),
-    ]),
-    earnPosition: vPositionEarn(),
-    collIndex: vCollIndex(),
-    claim: v.boolean(),
-  },
-);
+const RequestSchema = createRequestSchema("earnDeposit", {
+  prevEarnPosition: v.union([v.null(), vPositionEarn()]),
+  earnPosition: vPositionEarn(),
+  collIndex: vCollIndex(),
+  claim: v.boolean(),
+});
 
 export type EarnDepositRequest = v.InferOutput<typeof RequestSchema>;
 
@@ -40,24 +34,20 @@ export const earnDeposit: FlowDeclaration<EarnDepositRequest> = {
   },
 
   Details({ request }) {
-    const boldPrice = usePrice("BOLD");
+    const boldPrice = usePrice("USND");
     const boldAmount = dn.sub(
       request.earnPosition.deposit,
-      request.prevEarnPosition?.deposit ?? dn.from(0, 18),
+      request.prevEarnPosition?.deposit ?? dn.from(0, 18)
     );
     return (
       <>
         <TransactionDetailsRow
-          label="You deposit"
+          label='You deposit'
           value={[
+            <Amount key='start' suffix=' USND' value={boldAmount} />,
             <Amount
-              key="start"
-              suffix=" BOLD"
-              value={boldAmount}
-            />,
-            <Amount
-              key="end"
-              prefix="$"
+              key='end'
+              prefix='$'
               value={boldPrice.data && dn.mul(boldAmount, boldPrice.data)}
             />,
           ]}
@@ -78,16 +68,13 @@ export const earnDeposit: FlowDeclaration<EarnDepositRequest> = {
         }
         const boldAmount = dn.sub(
           ctx.request.earnPosition.deposit,
-          ctx.request.prevEarnPosition?.deposit ?? dn.from(0, 18),
+          ctx.request.prevEarnPosition?.deposit ?? dn.from(0, 18)
         );
 
         return ctx.writeContract({
           ...collateral.contracts.StabilityPool,
           functionName: "provideToSP",
-          args: [
-            boldAmount[0],
-            ctx.request.claim,
-          ],
+          args: [boldAmount[0], ctx.request.claim],
         });
       },
 

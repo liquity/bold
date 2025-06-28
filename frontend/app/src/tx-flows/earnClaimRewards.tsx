@@ -11,12 +11,9 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
-const RequestSchema = createRequestSchema(
-  "earnClaimRewards",
-  {
-    earnPosition: vPositionEarn(),
-  },
-);
+const RequestSchema = createRequestSchema("earnClaimRewards", {
+  earnPosition: vPositionEarn(),
+});
 
 export type EarnClaimRewardsRequest = v.InferOutput<typeof RequestSchema>;
 
@@ -40,44 +37,34 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
       return null;
     }
 
-    const boldPrice = usePrice("BOLD");
+    const boldPrice = usePrice("USND");
     const collPrice = usePrice(collateral.symbol);
 
-    const rewardsBold = request.earnPosition.rewards.bold;
+    const rewardsBold = request.earnPosition.rewards.usnd;
     const rewardsColl = request.earnPosition.rewards.coll;
-    const rewardsBoldUsd = boldPrice.data && dn.mul(rewardsBold, boldPrice.data);
-    const rewardsCollUsd = collPrice.data && dn.mul(rewardsColl, collPrice.data);
+    const rewardsBoldUsd =
+      boldPrice.data && dn.mul(rewardsBold, boldPrice.data);
+    const rewardsCollUsd =
+      collPrice.data && dn.mul(rewardsColl, collPrice.data);
 
     return (
       <>
         <TransactionDetailsRow
-          label="Claiming BOLD rewards"
+          label='Claiming USND rewards'
           value={[
-            <Amount
-              key="start"
-              value={rewardsBold}
-              suffix=" BOLD"
-            />,
-            <Amount
-              key="end"
-              value={rewardsBoldUsd}
-              prefix="$"
-            />,
+            <Amount key='start' value={rewardsBold} suffix=' USND' />,
+            <Amount key='end' value={rewardsBoldUsd} prefix='$' />,
           ]}
         />
         <TransactionDetailsRow
           label={`Claiming ${collateral.name} rewards`}
           value={[
             <Amount
-              key="start"
+              key='start'
               value={rewardsColl}
               suffix={` ${collateral.symbol}`}
             />,
-            <Amount
-              key="end"
-              value={rewardsCollUsd}
-              prefix="$"
-            />,
+            <Amount key='end' value={rewardsCollUsd} prefix='$' />,
           ]}
         />
       </>

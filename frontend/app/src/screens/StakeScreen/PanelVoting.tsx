@@ -10,10 +10,10 @@ import content from "@/src/content";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { fmtnum, formatDate } from "@/src/formatting";
 import { useGovernanceState, useInitiatives, useInitiativesStates } from "@/src/liquity-governance";
-import { useAccount } from "@/src/services/Ethereum";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useGovernanceUser } from "@/src/subgraph-hooks";
 import { jsonStringifyWithBigInt } from "@/src/utils";
+// import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
   AnchorTextButton,
@@ -27,6 +27,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAccount } from "wagmi";
 
 function isInitiativeStatusActive(
   status: InitiativeStatus,

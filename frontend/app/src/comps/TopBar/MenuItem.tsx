@@ -2,15 +2,38 @@ import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
 import { token } from "@/styled-system/tokens";
+import Image from "next/image";
+import { MenuItemType } from "./Menu";
+
+const getSnailIcon = ({ icon, type }: { icon: ReactNode, type?: MenuItemType }) => {
+  switch (type) {
+    case "dashboard":
+      return <Image src='/cute-snails/brown.png' alt='Dashboard' width={24} height={24} />;
+    case "borrow":
+      return <Image src='/cute-snails/battle.png' alt='Borrow' width={24} height={24} />;
+    case "multiply":
+      return <Image src='/cute-snails/green.png' alt='Leverage' width={24} height={24} />;
+    case "earn":
+      return <Image src='/cute-snails/blue.png' alt='Earn' width={24} height={24} />;
+    case "buy":
+      return <Image src='/cute-snails/gold.png' alt='Buy' width={24} height={24} />;
+    // case "stake":
+    //   return <Image src='/cute-snails/red.png' alt='Stake' width={24} height={24} />;
+    default:
+      return icon;
+  }
+};
 
 export function MenuItem({
   icon,
   label,
   selected,
+  type,
 }: {
   icon: ReactNode;
   label: string;
   selected?: boolean;
+  type?: MenuItemType;
 }) {
   return (
     <div
@@ -36,7 +59,8 @@ export function MenuItem({
           height: 24,
         })}
       >
-        {icon}
+        {/* {icon} */}
+        {getSnailIcon({ icon, type })}
       </div>
       {label}
     </div>

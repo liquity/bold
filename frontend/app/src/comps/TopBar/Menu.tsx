@@ -6,6 +6,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MenuItem } from "./MenuItem";
 
+export type MenuItemType =
+  | 'dashboard'
+  | 'borrow'
+  | 'multiply'
+  | 'earn'
+  | 'buy'
+  // | 'stake';
+
 export function Menu({
   menuItems,
 }: {
@@ -13,6 +21,7 @@ export function Menu({
     string,
     string,
     ComponentType<{}>,
+    MenuItemType
   ][];
 }) {
   const pathname = usePathname();
@@ -27,7 +36,7 @@ export function Menu({
           height: "100%",
         })}
       >
-        {menuItems.map(([label, href, Icon]) => {
+        {menuItems.map(([label, href, Icon, type]) => {
           const selected = href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
             <li key={label + href}>
@@ -55,6 +64,7 @@ export function Menu({
                   icon={<Icon />}
                   label={label}
                   selected={selected}
+                  type={type}
                 />
               </Link>
             </li>

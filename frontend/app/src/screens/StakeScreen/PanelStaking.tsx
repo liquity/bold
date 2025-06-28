@@ -3,17 +3,19 @@ import { Field } from "@/src/comps/Field/Field";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import content from "@/src/content";
 import { dnumMax } from "@/src/dnum-utils";
+import { CONTRACT_LQTY_TOKEN } from "@/src/env";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { useAccountVotingPower, useStakePosition } from "@/src/liquity-utils";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
+// import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { Button, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
+import { useAccount, useBalance } from "wagmi";
 
 export function PanelStaking() {
   const account = useAccount();
@@ -49,7 +51,7 @@ export function PanelStaking() {
     )
     : dn.from(0, 18);
 
-  const lqtyBalance = useBalance(account.address, "LQTY");
+  const lqtyBalance = useBalance({ address: CONTRACT_LQTY_TOKEN });
   const isDepositFilled = parsedValue && dn.gt(parsedValue, 0);
   const hasDeposit = stakePosition.data?.deposit && dn.gt(
     stakePosition.data?.deposit,
@@ -57,7 +59,7 @@ export function PanelStaking() {
   );
 
   const insufficientBalance = mode === "deposit" && isDepositFilled && (
-    !lqtyBalance.data || dn.lt(lqtyBalance.data, parsedValue)
+    !lqtyBalance.data || dn.lt(lqtyBalance.data.value, parsedValue)
   );
 
   const withdrawOutOfRange = mode === "withdraw" && isDepositFilled && (
@@ -82,7 +84,7 @@ export function PanelStaking() {
             drawer={insufficientBalance
               ? {
                 mode: "error",
-                message: `Insufficient balance. You have ${fmtnum(lqtyBalance.data ?? 0, 2)} LQTY.`,
+                message: `Insufficient balance. You have ${fmtnum(dn.from(lqtyBalance.data?.value ?? 0) ?? 0, 2)} LQTY.`,
               }
               : withdrawOutOfRange
               ? {
@@ -94,7 +96,7 @@ export function PanelStaking() {
               <InputTokenBadge
                 background={false}
                 icon={<TokenIcon symbol="LQTY" />}
-                label="LQTY"
+                label="NERI"
               />
             }
             label={{
@@ -130,11 +132,11 @@ export function PanelStaking() {
                 : null,
               end: mode === "deposit"
                 ? (
-                  lqtyBalance.data && dn.gt(lqtyBalance.data, 0) && (
+                  lqtyBalance.data && dn.gt(lqtyBalance.data.value, 0) && (
                     <TextButton
-                      label={`Max. ${(fmtnum(lqtyBalance.data, 2))} LQTY`}
+                      label={`Max. ${(fmtnum(dn.from(lqtyBalance.data.value), 2))} LQTY`}
                       onClick={() => {
-                        setValue(dn.toString(lqtyBalance.data));
+                        setValue(dn.toString(dn.from(lqtyBalance.data.value)));
                       }}
                     />
                   )
