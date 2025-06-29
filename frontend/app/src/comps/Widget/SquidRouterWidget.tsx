@@ -1,3 +1,5 @@
+"use client";
+
 import { SquidWidget } from "@0xsquid/widget";
 
 export function SquidRouterWidget() {
@@ -91,7 +93,6 @@ export function SquidRouterWidget() {
           "modal-backdrop": "#17191C54"
         }
       },
-      "themeType": "dark",
       "apiUrl": "https://v2.api.squidrouter.com",
       "priceImpactWarnings": {
         "warning": 3,
