@@ -5,7 +5,7 @@ import type { ComponentProps } from "react";
 import { Logo } from "@/src/comps/Logo/Logo";
 import { Tag } from "@/src/comps/Tag/Tag";
 import content from "@/src/content";
-import { DEPLOYMENT_FLAVOR } from "@/src/env";
+import { BUY_PAGE_URL, DEPLOYMENT_FLAVOR } from "@/src/env";
 import { css } from "@/styled-system/css";
 import {
   IconBorrow,
@@ -18,13 +18,16 @@ import Link from "next/link";
 import { AccountButton } from "./AccountButton";
 import { Menu } from "./Menu";
 
+const buyPageUrl = BUY_PAGE_URL ?? "/buy";
+const buyPageTarget = BUY_PAGE_URL ? "_blank" : "_self";
+
 const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
-  [content.menu.dashboard, "/", IconDashboard, "dashboard"],
-  [content.menu.borrow, "/borrow", IconBorrow, "borrow"],
+  [content.menu.dashboard, "/", IconDashboard, "dashboard", "_self"],
+  [content.menu.borrow, "/borrow", IconBorrow, "borrow", "_self"],
   // [content.menu.multiply, "/multiply", IconLeverage, "multiply"],
-  [content.menu.earn, "/earn", IconEarn, "earn"],
+  [content.menu.earn, "/earn", IconEarn, "earn", "_self"],
   // [content.menu.stake, "/stake", IconStake, "stake"],
-  [content.menu.buy, "/buy", IconStake, "buy"],
+  [content.menu.buy, buyPageUrl, IconStake, "buy", buyPageTarget],
 ];
 
 export function TopBar() {

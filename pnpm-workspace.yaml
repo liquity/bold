@@ -1,6 +1,7 @@
 packages:
   - './contracts'
   - './frontend/app'
+  - './frontend/buy-app'
   - './frontend/uikit'
   - './frontend/uikit-gallery'
   - './subgraph'
