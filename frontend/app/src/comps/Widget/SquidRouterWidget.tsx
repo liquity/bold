@@ -1,11 +1,12 @@
 "use client";
 
 import { SquidWidget } from "@0xsquid/widget";
+import { SQUID_INTEGRATOR_ID } from "@/src/env";
 
 export function SquidRouterWidget() {
   return (
     <SquidWidget config={{
-      "integratorId": process.env.NEXT_PUBLIC_SQUID_INTEGRATOR_ID ?? "",
+      "integratorId": SQUID_INTEGRATOR_ID ?? "",
       "theme": {
         "borderRadius": {
           "button-lg-primary": "3.75rem",

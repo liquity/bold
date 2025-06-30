@@ -63,6 +63,10 @@ export const EnvSchema = v.pipe(
         };
       }),
     ),
+    BUY_PAGE_URL: v.pipe(
+      v.optional(v.string(), ""),
+      v.transform((value) => value.trim() || null),
+    ),
     CHAIN_ID: v.pipe(
       v.string(),
       v.transform((value) => {
@@ -124,6 +128,7 @@ export const EnvSchema = v.pipe(
     KNOWN_INITIATIVES_URL: v.optional(v.pipe(v.string(), v.url())),
     LIQUITY_STATS_URL: v.optional(v.pipe(v.string(), v.url())),
     SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
+    SQUID_INTEGRATOR_ID: v.optional(v.string(), ""),
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.pipe(
@@ -368,6 +373,8 @@ const parsedEnv = v.safeParse(EnvSchema, {
   DELEGATE_AUTO: process.env.NEXT_PUBLIC_DELEGATE_AUTO,
   DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE,
   DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
+  BUY_PAGE_URL: process.env.NEXT_PUBLIC_BUY_PAGE_URL,
+  SQUID_INTEGRATOR_ID: process.env.NEXT_PUBLIC_SQUID_INTEGRATOR_ID,
   KNOWN_INITIATIVES_URL: process.env.NEXT_PUBLIC_KNOWN_INITIATIVES_URL,
   LIQUITY_STATS_URL: process.env.NEXT_PUBLIC_LIQUITY_STATS_URL,
   SAFE_API_URL: process.env.NEXT_PUBLIC_SAFE_API_URL,
@@ -541,6 +548,7 @@ export const {
   APP_VERSION_URL,
   BLOCKING_LIST,
   BLOCKING_VPNAPI,
+  BUY_PAGE_URL,
   CHAIN_BLOCK_EXPLORER,
   CHAIN_CONTRACT_ENS_REGISTRY,
   CHAIN_CONTRACT_ENS_RESOLVER,
@@ -566,6 +574,7 @@ export const {
   DELEGATE_AUTO,
   DEMO_MODE,
   DEPLOYMENT_FLAVOR,
+  SQUID_INTEGRATOR_ID,
   KNOWN_INITIATIVES_URL,
   LIQUITY_STATS_URL,
   SAFE_API_URL,
