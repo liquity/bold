@@ -4,7 +4,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { AnchorTextButton, HFlex } from "@liquity2/uikit";
 // import { SquidWidget } from "@0xsquid/widget";
-import { SquidRouterWidget } from "@/src/comps/Widget/SquidRouterWidget";
+// import { SquidRouterWidget } from "@/src/comps/Widget/SquidRouterWidget";
 import { css } from "@/styled-system/css";
 
 export function BuyScreen() {
@@ -33,7 +33,7 @@ export function BuyScreen() {
         justifyContent: "center",
         alignItems: "center",
       })}>
-        <SquidRouterWidget />
+        {/* <SquidRouterWidget /> */}
       </div>
     </Screen>
   );
