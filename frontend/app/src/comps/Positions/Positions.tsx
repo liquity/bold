@@ -5,14 +5,14 @@ import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
-import { useStakePosition } from "@/src/liquity-utils";
+// import { useStakePosition } from "@/src/liquity-utils";
 import {
   useEarnPositionsByAccount,
   useLoansByAccount,
 } from "@/src/subgraph-hooks";
 import { css } from "@/styled-system/css";
 import { a, useSpring, useTransition } from "@react-spring/web";
-import * as dn from "dnum";
+// import * as dn from "dnum";
 import { useEffect, useRef, useState } from "react";
 import { match, P } from "ts-pattern";
 import { NewPositionCard } from "./NewPositionCard";
@@ -41,11 +41,15 @@ export function Positions({
 }) {
   const loans = useLoansByAccount(address);
   const earnPositions = useEarnPositionsByAccount(address);
-  const stakePosition = useStakePosition(address);
+  // const stakePosition = useStakePosition(address);
 
   const isPositionsPending = Boolean(
     address &&
-      (loans.isPending || earnPositions.isPending || stakePosition.isPending)
+      (
+        loans.isPending 
+        || earnPositions.isPending 
+        // || stakePosition.isPending
+      )
   );
 
   const positions = isPositionsPending
@@ -55,9 +59,9 @@ export function Positions({
     : [
         ...(loans.data ?? []),
         ...(earnPositions.data ?? []),
-        ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0)
-          ? [stakePosition.data]
-          : []),
+        // ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0)
+        //   ? [stakePosition.data]
+        //   : []),
       ];
 
   let mode: Mode =

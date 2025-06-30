@@ -20,7 +20,7 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 export default withBundleAnalyzer({
-  output: "export",
+  // output: "export",
   reactStrictMode: false,
   images: { unoptimized: true },
   trailingSlash: flag(process.env.NEXT_TRAILING_SLASH),
