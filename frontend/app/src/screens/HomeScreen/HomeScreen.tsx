@@ -155,7 +155,7 @@ function BorrowingRow({ symbol }: { symbol: CollateralSymbol }) {
               title={`Borrow ${collateral?.name} from ${symbol}`}
             />
           </Link>
-          <Link
+          {/* <Link
             href={`/multiply/${symbol.toLowerCase()}`}
             legacyBehavior
             passHref
@@ -176,7 +176,7 @@ function BorrowingRow({ symbol }: { symbol: CollateralSymbol }) {
               }
               title={`Borrow ${collateral?.name} from ${symbol}`}
             />
-          </Link>
+          </Link> */}
         </div>
       </td>
     </tr>
