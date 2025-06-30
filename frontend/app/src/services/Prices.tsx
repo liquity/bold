@@ -16,6 +16,11 @@ import { useReadContract } from "wagmi";
 
 type PriceToken = "LQTY" | "NERI" | "USND" | "LUSD" | CollateralSymbol;
 
+// TODO: Fix type errors in useReadContract here.
+// Our PriceFeed contract has a fetchPrice function that returns a tuple of
+// (uint256, bool) instead of getPrice that expects a uint256. However,
+// it gives a type error for not using getPrice and returning a tuple.
+// Using the `any` type to bypass the type error.
 function useCollateralPrice(
   symbol: null | CollateralSymbol
 ): UseQueryResult<Dnum> {
@@ -29,13 +34,13 @@ function useCollateralPrice(
 
   return useReadContract({
     ...PriceFeed,
-    // functionName: "fetchPrice",
-    functionName: "getPrice",
+    functionName: "fetchPrice" as any,
+    // functionName: "getPrice",
     query: {
       enabled: symbol !== null,
       refetchInterval: PRICE_REFRESH_INTERVAL,
-      // select: ([price]) => dnum18(price),
-      select: (price) => dnum18(price),
+      select: ([price]: any) => dnum18(price),
+      // select: (price) => dnum18(price),
     },
   });
 }
