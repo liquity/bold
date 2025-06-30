@@ -922,36 +922,34 @@ function InitiativeRow({
                 vote={inputVoteAllocation?.vote ?? null}
               />
             )
+            : voteAllocation?.vote
+            ? (
+              <Vote
+                onEdit={() => {
+                  setEditIntent(true);
+                  setTimeout(() => {
+                    inputRef.current?.focus();
+                  }, 0);
+                }}
+                disabled={disabled}
+                share={dn.eq(totalStaked, 0) ? DNUM_0 : dn.div(
+                  voteAllocation?.value ?? DNUM_0,
+                  totalStaked,
+                )}
+                vote={voteAllocation?.vote ?? null}
+                voteTotals={voteTotals}
+              />
+            )
             : (
-              voteAllocation?.vote
-                ? (
-                  <Vote
-                    onEdit={() => {
-                      setEditIntent(true);
-                      setTimeout(() => {
-                        inputRef.current?.focus();
-                      }, 0);
-                    }}
-                    disabled={disabled}
-                    share={dn.eq(totalStaked, 0) ? DNUM_0 : dn.div(
-                      voteAllocation?.value ?? DNUM_0,
-                      totalStaked,
-                    )}
-                    vote={voteAllocation?.vote ?? null}
-                    voteTotals={voteTotals}
-                  />
-                )
-                : (
-                  <VoteInput
-                    ref={inputRef}
-                    forDisabled={true}
-                    againstDisabled={true}
-                    onChange={() => {}}
-                    onVote={() => {}}
-                    value={null}
-                    vote={null}
-                  />
-                )
+              <VoteInput
+                ref={inputRef}
+                forDisabled={true}
+                againstDisabled={true}
+                onChange={() => {}}
+                onVote={() => {}}
+                value={null}
+                vote={null}
+              />
             )}
         </div>
       </td>
