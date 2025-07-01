@@ -29,10 +29,11 @@ contract ActivePool is IActivePool {
     address public immutable borrowerOperationsAddress;
     address public immutable troveManagerAddress;
     address public immutable defaultPoolAddress;
+    IAddressesRegistry public immutable addressesRegistry;
 
     IBoldToken public immutable boldToken;
 
-    IInterestRouter public immutable interestRouter;
+    IInterestRouter public interestRouter;
     IBoldRewardsReceiver public immutable stabilityPool;
 
     uint256 internal collBalance; // deposited coll tracker
@@ -83,6 +84,7 @@ contract ActivePool is IActivePool {
         defaultPoolAddress = address(_addressesRegistry.defaultPool());
         interestRouter = _addressesRegistry.interestRouter();
         boldToken = _addressesRegistry.boldToken();
+        addressesRegistry = _addressesRegistry;
 
         emit CollTokenAddressChanged(address(collToken));
         emit BorrowerOperationsAddressChanged(borrowerOperationsAddress);
@@ -260,7 +262,7 @@ contract ActivePool is IActivePool {
             uint256 spYield = SP_YIELD_SPLIT * mintedAmount / DECIMAL_PRECISION;
             uint256 remainderToLPs = mintedAmount - spYield;
 
-            boldToken.mint(address(interestRouter), remainderToLPs);
+            boldToken.mint(address(addressesRegistry.interestRouter()), remainderToLPs);
 
             if (spYield > 0) {
                 boldToken.mint(address(stabilityPool), spYield);
@@ -367,6 +369,13 @@ contract ActivePool is IActivePool {
     //Anyone can call this safely
     function delegateTokens() external {
         ERC20Votes(address(collToken)).delegate(delegateRepresentative);
+    }
+
+    // DAO can update the interest router address to direct funds to gauges contract later.
+    //This is helpful for launching without a token live yet.
+    function daoUpdateInterestRouter(address _interestRouterAddress) external {
+        require(msg.sender == address(interestRouter), "Only the existing interestRouter can update the interest router.");
+        interestRouter = IInterestRouter(_interestRouterAddress);
     }
 
 }

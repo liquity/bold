@@ -143,4 +143,14 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
 
         _renounceOwnership();
     }
+
+    // DAO can update the interest router address to direct funds to gauges contract later.
+    function daoUpdateInterestRouter(address _interestRouter) external {
+        require(msg.sender == address(interestRouter), "Only the existing interestRouter can update the interest router.");
+        interestRouter = IInterestRouter(_interestRouter);
+
+        emit InterestRouterAddressChanged(address(_interestRouter));
+    }
+
+    
 }
