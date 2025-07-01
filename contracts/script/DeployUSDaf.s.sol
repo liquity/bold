@@ -52,23 +52,18 @@ import {IRateProvider, IWeightedPool, IWeightedPoolFactory} from "./Interfaces/B
 import {IVault} from "./Interfaces/Balancer/IVault.sol";
 import {MockStakingV1} from "V2-gov/test/mocks/MockStakingV1.sol";
 import {InterestRouter} from "src/InterestRouter.sol";
+import {StyBoldOracle} from "src/PriceFeeds/USDaf/StyBoldOracle.sol";
 import {CrvUsdFallbackOracle} from "src/PriceFeeds/USDaf/Fallbacks/CrvUsdFallbackOracle.sol";
 import {ScrvUsdOracle} from "src/PriceFeeds/USDaf/ScrvUsdOracle.sol";
-import {SdaiOracle} from "src/PriceFeeds/USDaf/SdaiOracle.sol";
 import {SusdsOracle} from "src/PriceFeeds/USDaf/SusdsOracle.sol";
 import {SfrxUsdOracle} from "src/PriceFeeds/USDaf/SfrxUsdOracle.sol";
-import {SusdeOracle} from "src/PriceFeeds/USDaf/SusdeOracle.sol";
 import {TbtcFallbackOracle} from "src/PriceFeeds/USDaf/Fallbacks/TbtcFallbackOracle.sol";
 import {TbtcOracle} from "src/PriceFeeds/USDaf/TbtcOracle.sol";
 import {WbtcFallbackOracle} from "src/PriceFeeds/USDaf/Fallbacks/WbtcFallbackOracle.sol";
 import {WbtcOracle} from "src/PriceFeeds/USDaf/WbtcOracle.sol";
-import {CbbtcFallbackOracle} from "src/PriceFeeds/USDaf/Fallbacks/CbbtcFallbackOracle.sol";
-import {CbbtcOracle} from "src/PriceFeeds/USDaf/CbbtcOracle.sol";
 import {WrappedWbtc} from "src/WrappedWbtc.sol";
-import {WrappedCbbtc} from "src/WrappedCbbtc.sol";
 import {ZapperAsFuck} from "src/Zappers/ZapperAsFuck.sol";
 import {WbtcZapper} from "src/Zappers/WbtcZapper.sol";
-import {CbbtcZapper} from "src/Zappers/CbbtcZapper.sol";
 import {BTCPriceFeed} from "src/PriceFeeds/USDaf/BTCPriceFeed.sol";
 
 import {DeployGovernance} from "./DeployGovernance.s.sol";
@@ -88,16 +83,14 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
     CrvUsdFallbackOracle scrvUsdFallbackOracle;
     TbtcFallbackOracle tbtcFallbackOracle;
     WbtcFallbackOracle wbtcFallbackOracle;
-    CbbtcFallbackOracle cbbtcFallbackOracle;
 
     WrappedWbtc wrappedWbtc;
-    WrappedCbbtc wrappedCbbtc;
 
     string constant DEPLOYMENT_MODE_COMPLETE = "complete";
     string constant DEPLOYMENT_MODE_BOLD_ONLY = "bold-only";
     string constant DEPLOYMENT_MODE_USE_EXISTING_BOLD = "use-existing-bold";
 
-    uint256 constant NUM_BRANCHES = 8;
+    uint256 constant NUM_BRANCHES = 6;
 
     address WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -115,16 +108,15 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
     uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
     uint256 RETH_ETH_STALENESS_THRESHOLD = 48 hours;
 
-    uint256 constant _24_HOURS = 86400;
-    uint256 constant _1_HOUR = 3600;
+    uint256 constant _24_HOURS = 86400 * 2; // actually 48 hours
+    uint256 constant _1_HOUR = 3600 * 24; // actually 24 hours
+    address constant STYBOLD = 0x23346B04a7f55b8760E5860AA5A77383D63491cD;
     address constant SCRVUSD = 0x0655977FEb2f289A4aB78af67BAB0d17aAb84367;
-    address constant SDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
     address constant TBTC = 0x18084fbA666a33d37592fA2633fD49a74DD93a88;
     address constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
     // address constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant SUSDS = 0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD;
     address constant SFRXUSD = 0xcf62F905562626CfcDD2261162a51fd02Fc9c5b6;
-    address constant SUSDE = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
 
     // Curve
     ICurveStableswapNGFactory curveStableswapFactory;
@@ -242,36 +234,29 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         curveStableswapFactory = curveStableswapFactoryMainnet;
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](NUM_BRANCHES);
-        troveManagerParamsArray[0] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // scrvUSD
-        troveManagerParamsArray[1] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // sDAI
+        troveManagerParamsArray[0] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // st-yBOLD
+        troveManagerParamsArray[1] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // scrvUSD
         troveManagerParamsArray[2] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // sUSDS
         troveManagerParamsArray[3] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // sfrxUSD
-        troveManagerParamsArray[4] = TroveManagerParams(120e16, 110e16, 105e16, BCR_ALL, 5e16, 10e16); // sUSDe
-        troveManagerParamsArray[5] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // tBTC
-        troveManagerParamsArray[6] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // WBTC
-        troveManagerParamsArray[7] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // cbBTC
+        troveManagerParamsArray[4] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // tBTC
+        troveManagerParamsArray[5] = TroveManagerParams(150e16, 120e16, 110e16, BCR_ALL, 5e16, 10e16); // WBTC
 
         string[] memory collNames = new string[](NUM_BRANCHES);
         string[] memory collSymbols = new string[](NUM_BRANCHES);
-        collNames[0] = "Savings crvUSD";
-        collNames[1] = "Savings DAI";
+        collNames[0] = "Staked yBOLD";
+        collNames[1] = "Savings crvUSD";
         collNames[2] = "Savings USDS";
         collNames[3] = "Staked Frax USD";
-        collNames[4] = "Staked USDe";
-        collNames[5] = "tBTC v2";
-        collNames[6] = "Wrapped WBTC";
-        collNames[7] = "Wrapped Coinbase BTC";
-        collSymbols[0] = "scrvUSD";
-        collSymbols[1] = "sDAI";
+        collNames[4] = "tBTC v2";
+        collNames[5] = "Wrapped WBTC";
+        collSymbols[0] = "st-yBOLD";
+        collSymbols[1] = "scrvUSD";
         collSymbols[2] = "sUSDS";
         collSymbols[3] = "sfrxUSD";
-        collSymbols[4] = "sUSDe";
-        collSymbols[5] = "tBTC";
-        collSymbols[6] = "WBTC18";
-        collSymbols[7] = "cbBTC18";
+        collSymbols[4] = "tBTC";
+        collSymbols[5] = "WBTC18";
 
         wrappedWbtc = new WrappedWbtc();
-        wrappedCbbtc = new WrappedCbbtc();
 
         deployed = _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols, boldAddress);
 
@@ -309,14 +294,12 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
         // Collaterals
-        vars.collaterals[0] = IERC20Metadata(SCRVUSD);
-        vars.collaterals[1] = IERC20Metadata(SDAI);
+        vars.collaterals[0] = IERC20Metadata(STYBOLD);
+        vars.collaterals[1] = IERC20Metadata(SCRVUSD);
         vars.collaterals[2] = IERC20Metadata(SUSDS);
         vars.collaterals[3] = IERC20Metadata(SFRXUSD);
-        vars.collaterals[4] = IERC20Metadata(SUSDE);
-        vars.collaterals[5] = IERC20Metadata(TBTC);
-        vars.collaterals[6] = IERC20Metadata(wrappedWbtc);
-        vars.collaterals[7] = IERC20Metadata(wrappedCbbtc);
+        vars.collaterals[4] = IERC20Metadata(TBTC);
+        vars.collaterals[5] = IERC20Metadata(wrappedWbtc);
 
         // Deploy AddressesRegistries and get TroveManager addresses
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
@@ -489,18 +472,15 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
             CrvUsdFallbackOracle fallbackOracle = new CrvUsdFallbackOracle();
             _oracle = address(new ScrvUsdOracle(address(fallbackOracle)));
             scrvUsdFallbackOracle = fallbackOracle;
-        } else if (_collTokenAddress == SDAI) {
-            _stalenessThreshold = _1_HOUR; // CL DAI/USD heartbeat. No Fallback
-            _oracle = address(new SdaiOracle());
+        } else if (_collTokenAddress == STYBOLD) {
+            _stalenessThreshold = type(uint256).max; // Never stale!
+            _oracle = address(new StyBoldOracle());
         } else if (_collTokenAddress == SUSDS) {
             _stalenessThreshold = _1_HOUR; // CL DAI/USD heartbeat. No Fallback
             _oracle = address(new SusdsOracle());
         } else if (_collTokenAddress == SFRXUSD) {
             _stalenessThreshold = _24_HOURS; // CL frxUSD/USD heartbeat. No Fallback
             _oracle = address(new SfrxUsdOracle());
-        } else if (_collTokenAddress == SUSDE) {
-            _stalenessThreshold = _24_HOURS; // CL sUSDe/USD heartbeat. No Fallback
-            _oracle = address(new SusdeOracle());
         } else if (_collTokenAddress == TBTC) {
             _stalenessThreshold = _24_HOURS; // CL tBTC/USD heartbeat. Fallback is block.timestamp
             TbtcFallbackOracle fallbackOracle = new TbtcFallbackOracle();
@@ -513,12 +493,6 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
             _oracle = address(new WbtcOracle(address(fallbackOracle)));
             wbtcFallbackOracle = fallbackOracle;
             return new BTCPriceFeed(_oracle, _stalenessThreshold, _borroweOperationsAddress);
-        } else if (_collTokenAddress == address(wrappedCbbtc)) {
-            _stalenessThreshold = _24_HOURS; // CL cbBTC/BTC heartbeat. Fallback is block.timestamp
-            CbbtcFallbackOracle fallbackOracle = new CbbtcFallbackOracle();
-            _oracle = address(new CbbtcOracle(address(fallbackOracle)));
-            cbbtcFallbackOracle = fallbackOracle;
-            return new BTCPriceFeed(_oracle, _stalenessThreshold, _borroweOperationsAddress);
         } else {
             revert("Collateral not supported");
         }
@@ -529,8 +503,6 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
     function _deployZappersAF(IERC20 _collToken, IAddressesRegistry _addressesRegistry) internal returns (address) {
         if (address(_collToken) == address(wrappedWbtc)) {
             return address(new WbtcZapper(_addressesRegistry));
-        } else if (address(_collToken) == address(wrappedCbbtc)) {
-            return address(new CbbtcZapper(_addressesRegistry));
         } else {
             return address(new ZapperAsFuck(_addressesRegistry));
         }
@@ -540,35 +512,36 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         internal
         returns (ICurveStableswapNGPool)
     {
-        address basePool = address(0x4f493B7dE8aAC7d55F71853688b1F7C8F0243C85); // USDC/USDT Reserves Pool
-        string memory name = "AF Power Pool Strategic Reserve";
-        string memory symbol = "crv2USDaf";
-        address coin = address(_boldToken);
-        uint256 A = 200;
-        uint256 fee = 2000000;
-        uint256 offpeg_fee_multiplier = 50000000000;
-        uint256 ma_exp_time = 866;
-        uint256 implementation_id = 0;
-        uint8 asset_type = 0;
-        bytes4 method_id = 0x00000000;
-        address oracle = address(0);
+        // address basePool = address(0x4f493B7dE8aAC7d55F71853688b1F7C8F0243C85); // USDC/USDT Reserves Pool
+        // string memory name = "AF Power Pool Strategic Reserve";
+        // string memory symbol = "crv2USDaf";
+        // address coin = address(_boldToken);
+        // uint256 A = 200;
+        // uint256 fee = 2000000;
+        // uint256 offpeg_fee_multiplier = 50000000000;
+        // uint256 ma_exp_time = 866;
+        // uint256 implementation_id = 0;
+        // uint8 asset_type = 0;
+        // bytes4 method_id = 0x00000000;
+        // address oracle = address(0);
 
-        ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_metapool(
-            basePool,
-            name,
-            symbol,
-            coin,
-            A,
-            fee,
-            offpeg_fee_multiplier,
-            ma_exp_time,
-            implementation_id,
-            asset_type,
-            method_id,
-            oracle
-        );
+        // ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_metapool(
+        //     basePool,
+        //     name,
+        //     symbol,
+        //     coin,
+        //     A,
+        //     fee,
+        //     offpeg_fee_multiplier,
+        //     ma_exp_time,
+        //     implementation_id,
+        //     asset_type,
+        //     method_id,
+        //     oracle
+        // );
 
-        return curvePool;
+        // return curvePool;
+        return ICurveStableswapNGPool(address(0));
     }
 
     function _getBranchContractsJson(LiquityContracts memory c) internal view returns (string memory) {

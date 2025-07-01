@@ -8,8 +8,8 @@ abstract contract BaseOracle is AggregatorV3Interface {
     string public description;
 
     uint256 internal constant _WAD = 1e18;
-    uint256 internal constant _24_HOURS = 86400;
-    uint256 internal constant _1_HOUR = 3600;
+    uint256 internal constant _24_HOURS = 86400 * 2; // actually 48 hours
+    uint256 internal constant _1_HOUR = 3600 * 24; // actually 24 hours
 
     constructor(string memory _description) {
         description = _description;
@@ -31,7 +31,7 @@ abstract contract BaseOracle is AggregatorV3Interface {
         uint256 updatedAt,
         uint256 heartbeat
     ) internal view virtual returns (bool) {
-        bool stale = updatedAt + heartbeat < block.timestamp;
+        bool stale = updatedAt + heartbeat <= block.timestamp;
         return stale || answer <= 0;
     }
 }

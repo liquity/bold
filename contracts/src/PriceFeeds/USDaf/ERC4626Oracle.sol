@@ -18,8 +18,11 @@ abstract contract ERC4626Oracle is BaseOracle {
         BaseOracle(_description) {
             PRIMARY_ORACLE_HEARTBEAT = _heartbeat;
             TOKEN = IERC4626(_token);
-            PRIMARY_ORACLE = AggregatorV3Interface(_primary);
-            require(PRIMARY_ORACLE.decimals() == 8, "!primary");
+
+            if (_primary != address(0)) {
+                PRIMARY_ORACLE = AggregatorV3Interface(_primary);
+                require(PRIMARY_ORACLE.decimals() == 8, "!primary");
+            }
 
             if (_fallback != address(0)) {
                 FALLBACK_ORACLE = AggregatorV3Interface(_fallback);

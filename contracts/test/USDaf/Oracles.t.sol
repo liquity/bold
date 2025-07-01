@@ -17,9 +17,25 @@ contract OraclesTest is Base {
         super.setUp();
     }
 
-    function testScrvUsdOracle() public {
+    function testBoldOracle() public {
         DeploymentResult memory _deployment = deploy();
         LiquityContracts memory _contracts = _deployment.contractsArray[0];
+
+        // Primary
+        (uint256 _pricePrimary, bool _isOracleDownPrimary) = _contracts.priceFeed.fetchPrice();
+        assertGt(_pricePrimary, 1 ether, "testBoldOracle: E0");
+        assertFalse(_isOracleDownPrimary, "testBoldOracle: E1");
+        console2.log(_pricePrimary, "st-yBOLD price primary");
+
+        // Shutdown
+        vm.warp(block.timestamp + 100 days);
+        (,bool _isOracleDownShutdown) = _contracts.priceFeed.fetchPrice();
+        assertFalse(_isOracleDownShutdown, "testBoldOracle: E3"); // NEVER SHUTDOWN
+    }
+
+    function testScrvUsdOracle() public {
+        DeploymentResult memory _deployment = deploy();
+        LiquityContracts memory _contracts = _deployment.contractsArray[1];
 
         // Primary
         (uint256 _pricePrimary, bool _isOracleDownPrimary) = _contracts.priceFeed.fetchPrice();
@@ -28,7 +44,7 @@ contract OraclesTest is Base {
         console2.log(_pricePrimary, "scrvUSD price primary");
 
         // Fallback
-        vm.warp(block.timestamp + 1 days + 1 hours);
+        vm.warp(block.timestamp + 2 days + 1 hours);
         (uint256 _priceFallback, bool _isOracleDownFallback) = _contracts.priceFeed.fetchPrice();
         assertGt(_priceFallback, 1 ether, "testScrvUsdOracle: E2");
         assertFalse(_isOracleDownFallback, "testScrvUsdOracle: E3");
@@ -43,21 +59,16 @@ contract OraclesTest is Base {
         assertTrue(_isOracleDownShutdown, "testScrvUsdOracle: E6");
     }
 
-    function testSdaiOracle() public {
+    function test_shutdownAtHeartbeat_scrvUsdOracle() public {
         DeploymentResult memory _deployment = deploy();
         LiquityContracts memory _contracts = _deployment.contractsArray[1];
 
-        // Primary
-        (uint256 _pricePrimary, bool _isOracleDownPrimary) = _contracts.priceFeed.fetchPrice();
-        assertGt(_pricePrimary, 1 ether, "testSdaiOracle: E0");
-        assertFalse(_isOracleDownPrimary, "testSdaiOracle: E1");
-        console2.log(_pricePrimary, "sDAI price primary");
-
-        // Shutdown
-        vm.warp(block.timestamp + 2 hours);
-        (uint256 _priceShutdown, bool _isOracleDownShutdown) = _contracts.priceFeed.fetchPrice();
-        assertEq(_priceShutdown, _pricePrimary, "testSdaiOracle: E2");
-        assertTrue(_isOracleDownShutdown, "testSdaiOracle: E3");
+        uint256 _heartbeat = 2 days;
+        AggregatorV3Interface _aggregator = AggregatorV3Interface(0xEEf0C605546958c1f899b6fB336C20671f9cD49F); // CL crvUSD/USD
+        (,,,uint256 _updatedAt,) = _aggregator.latestRoundData();
+        vm.warp(_updatedAt + _heartbeat);
+        (,bool _isOracleDownFallback) = _contracts.priceFeed.fetchPrice();
+        assertFalse(_isOracleDownFallback, "test_shutdownAtHeartbeat_scrvUsdOracle");
     }
 
     function testSusdsOracle() public {
@@ -71,7 +82,7 @@ contract OraclesTest is Base {
         console2.log(_pricePrimary, "sUSDS price primary");
 
         // Shutdown
-        vm.warp(block.timestamp + 2 hours);
+        vm.warp(block.timestamp + 25 hours);
         (uint256 _priceShutdown, bool _isOracleDownShutdown) = _contracts.priceFeed.fetchPrice();
         assertEq(_priceShutdown, _pricePrimary, "testSusdsOracle: E2");
         assertTrue(_isOracleDownShutdown, "testSusdsOracle: E3");
@@ -88,32 +99,15 @@ contract OraclesTest is Base {
         console2.log(_pricePrimary, "sfrxusd price primary");
 
         // Shutdown
-        vm.warp(block.timestamp + 1 days + 1 hours);
+        vm.warp(block.timestamp + 2 days + 1 hours);
         (uint256 _priceShutdown, bool _isOracleDownShutdown) = _contracts.priceFeed.fetchPrice();
         assertEq(_priceShutdown, _pricePrimary, "testSfrxusdOracle: E2");
         assertTrue(_isOracleDownShutdown, "testSfrxusdOracle: E3");
     }
 
-    function testSusdeOracle() public {
-        DeploymentResult memory _deployment = deploy();
-        LiquityContracts memory _contracts = _deployment.contractsArray[4];
-
-        // Primary
-        (uint256 _pricePrimary, bool _isOracleDownPrimary) = _contracts.priceFeed.fetchPrice();
-        assertGt(_pricePrimary, 1 ether, "testSusdeOracle: E0");
-        assertFalse(_isOracleDownPrimary, "testSfusdeOracle: E1");
-        console2.log(_pricePrimary, "susde price primary");
-
-        // Shutdown
-        vm.warp(block.timestamp + 1 days + 1 hours);
-        (uint256 _priceShutdown, bool _isOracleDownShutdown) = _contracts.priceFeed.fetchPrice();
-        assertEq(_priceShutdown, _pricePrimary, "testSusdeOracle: E2");
-        assertTrue(_isOracleDownShutdown, "testSusdeOracle: E3");
-    }
-
     function testTbtcOracle() public {
         DeploymentResult memory _deployment = deploy();
-        LiquityContracts memory _contracts = _deployment.contractsArray[5];
+        LiquityContracts memory _contracts = _deployment.contractsArray[4];
 
         // Primary
         (uint256 _pricePrimary, bool _isOracleDownPrimary) = _contracts.priceFeed.fetchPrice();
@@ -122,7 +116,7 @@ contract OraclesTest is Base {
         console2.log(_pricePrimary, "tBTC price primary");
 
         // Fallback
-        vm.warp(block.timestamp + 1 days + 1 hours);
+        vm.warp(block.timestamp + 2 days + 1 hours);
         (uint256 _priceFallback, bool _isOracleDownFallback) = _contracts.priceFeed.fetchPrice();
         assertGt(_priceFallback, MIN_BTC_PRICE, "testTbtcOracle: E2");
         assertFalse(_isOracleDownFallback, "testTbtcOracle: E3");
@@ -137,9 +131,21 @@ contract OraclesTest is Base {
         assertTrue(_isOracleDownShutdown, "testTbtcOracle: E6");
     }
 
+    function test_shutdownAtHeartbeat_tbtcOracle() public {
+        DeploymentResult memory _deployment = deploy();
+        LiquityContracts memory _contracts = _deployment.contractsArray[4];
+
+        uint256 _heartbeat = 1 days;
+        AggregatorV3Interface _aggregator = AggregatorV3Interface(0x8350b7De6a6a2C1368E7D4Bd968190e13E354297); // CL tBTC/USD
+        (,,,uint256 _updatedAt,) = _aggregator.latestRoundData();
+        vm.warp(_updatedAt + _heartbeat);
+        (,bool _isOracleDownFallback) = _contracts.priceFeed.fetchPrice();
+        assertFalse(_isOracleDownFallback, "test_shutdownAtHeartbeat_tbtcOracle");
+    }
+
     function testWbtcOracle() public {
         DeploymentResult memory _deployment = deploy();
-        LiquityContracts memory _contracts = _deployment.contractsArray[6];
+        LiquityContracts memory _contracts = _deployment.contractsArray[5];
 
         // Primary
         (uint256 _pricePrimary, bool _isOracleDownPrimary) = _contracts.priceFeed.fetchPrice();
@@ -148,7 +154,7 @@ contract OraclesTest is Base {
         console2.log(_pricePrimary, "wBTC price primary");
 
         // Fallback
-        vm.warp(block.timestamp + 2 hours);
+        vm.warp(block.timestamp + 25 hours);
         (uint256 _priceFallback, bool _isOracleDownFallback) = _contracts.priceFeed.fetchPrice();
         assertGt(_priceFallback, MIN_BTC_PRICE, "testWbtcOracle: E2");
         assertFalse(_isOracleDownFallback, "testWbtcOracle: E3");
@@ -161,31 +167,5 @@ contract OraclesTest is Base {
         (uint256 _priceShutdown, bool _isOracleDownShutdown) = _contracts.priceFeed.fetchPrice();
         assertEq(_priceShutdown, _priceFallback, "testWbtcOracle: E5");
         assertTrue(_isOracleDownShutdown, "testWbtcOracle: E6");
-    }
-
-    function testCbbtcOracle() public {
-        DeploymentResult memory _deployment = deploy();
-        LiquityContracts memory _contracts = _deployment.contractsArray[7];
-
-        // Primary
-        (uint256 _pricePrimary, bool _isOracleDownPrimary) = _contracts.priceFeed.fetchPrice();
-        assertGt(_pricePrimary, MIN_BTC_PRICE, "testCbbtcOracle: E0");
-        assertFalse(_isOracleDownPrimary, "testCbbtcOracle: E1");
-        console2.log(_pricePrimary, "cbBTC price primary");
-
-        // Fallback
-        vm.warp(block.timestamp + 1 days + 1 hours);
-        (uint256 _priceFallback, bool _isOracleDownFallback) = _contracts.priceFeed.fetchPrice();
-        assertGt(_priceFallback, MIN_BTC_PRICE, "testCbbtcOracle: E2");
-        assertFalse(_isOracleDownFallback, "testCbbtcOracle: E3");
-        assertApproxEqRel(_priceFallback, _pricePrimary, 20 * DIFF, "testCbbtcOracle: E4"); // 2%
-        console2.log(_priceFallback, "cbBTC price fallback");
-
-        // Shutdown fallback
-        vm.prank(OWNER);
-        cbbtcFallbackOracle.disableFallback();
-        (uint256 _priceShutdown, bool _isOracleDownShutdown) = _contracts.priceFeed.fetchPrice();
-        assertEq(_priceShutdown, _priceFallback, "testCbbtcOracle: E5");
-        assertTrue(_isOracleDownShutdown, "testCbbtcOracle: E6");
     }
 }

@@ -9,7 +9,7 @@ import "forge-std/Test.sol";
 abstract contract Base is DeployUsdAsFuckScript, Test {
 
     function setUp() public virtual {
-        uint256 _blockNumber = 22_489_548; // Caching for faster tests
+        uint256 _blockNumber = 22_817_924; // Caching for faster tests
         vm.selectFork(vm.createFork(vm.envString("FORK_URL"), _blockNumber));
         // vm.selectFork(vm.createFork(vm.envString("FORK_URL")));
     }
