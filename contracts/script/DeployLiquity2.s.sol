@@ -870,7 +870,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
         contracts.priceFeed = _priceFeed;
-        contracts.interestRouter = IInterestRouter(_governance);
+        contracts.interestRouter = IInterestRouter(_governance); //interest router is the governor. 
         addresses.borrowerOperations = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry)))
         );
@@ -979,7 +979,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         } else {
             wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
         }
-        leverageZapper = _deployHybridLeverageZapper(_addressesRegistry, flashLoanProvider, hybridExchange, lst);
+        //leverageZapper = _deployHybridLeverageZapper(_addressesRegistry, flashLoanProvider, hybridExchange, lst);
     }
 
     function _deployHybridLeverageZapper(
