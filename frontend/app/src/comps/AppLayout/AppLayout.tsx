@@ -19,6 +19,8 @@ export function AppLayout({
   return (
     <div
       className={css({
+        position: "relative",
+        zIndex: 1,
         display: "grid",
         gridTemplateRows: "auto 1fr",
         minHeight: "100vh",
