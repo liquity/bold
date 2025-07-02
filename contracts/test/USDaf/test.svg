@@ -75,13 +75,14 @@ MS41NXY0LjY3bC43LjAzLjg2LjA3di00Ljc3Wk0yOS40NCwxMy44NGwuNy0uMTMuODUtLjExdi00
 Ljc3aC0xLjU1djUuMDFaIi8+CiAgPC9nPgo8L3N2Zz4=
 " /><text style="font-family: 'DM Sans'" x="16" y="358" font-size="14" fill="white" >Collateral</text><text style="font-family: 'DM Sans'" x="16" y="389" font-size="14" fill="white" >Debt</text><text style="font-family: 'DM Sans'" x="16" y="420" font-size="14" fill="white" >Interest Rate</text><text style="font-family: 'DM Sans'" x="265" y="422" font-size="20" fill="white" >%</text><text style="font-family: 'DM Sans'" x="16" y="462" font-size="14" fill="white" >Owner</text><rect x="16" y="55" width="268" height="268" fill="#033674" /><rect x="16" y="205" width="75" height="118" fill="#DBAC75" /><rect x="91" y="205" width="136" height="59" fill="#ABD2FF" /><rect x="166" y="180" width="118" height="25" fill="#E6C7A0" /><rect x="166" y="55" width="118" height="126" fill="#F8E9D5" /><circle cx="91" cy="130" r="75" fill="#036EEE" /><path d="M284 264 166 264 166 263C166 232 193 206 225 205C258 206 284 232 284 264C284 264 284 264 284 264Z" fill="#036EEE" /><path d="M284 323 166 323 166 323C166 290 193 265 225 264C258 265 284 290 284 323C284 323 284 323 284 323Z" fill="#499CFD" /><text style="font-family: 'DM Sans'" text-anchor="end" x="284" y="33" font-size="14" fill="white" >0x01...</text><text style="font-family: 'DM Sans'" text-anchor="end" x="284" y="462" font-size="14" fill="white" >0x7FA9...1496</text><image x="264" y="342.5" width="20" height="20" href="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz48c3ZnIGlkPSJiIiB4bWxucz0i
 aHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NiA2NiI+PGRlZnM+PHN0
-eWxlPi5le2ZpbGw6I2ZmZjtmb250LWZhbWlseTpETVNhbnMtU2VtaUJvbGQsICdETSBTYW5zJztm
-b250LXNpemU6MTRweDtmb250LXdlaWdodDo2MDA7fS5me2xldHRlci1zcGFjaW5nOi0uMDNlbTt9
-Lmd7bGV0dGVyLXNwYWNpbmc6MGVtO30uaHtmaWxsOiMwMDUyZmY7c3Ryb2tlOiNmZmY7c3Ryb2tl
-LXdpZHRoOjJweDt9PC9zdHlsZT48L2RlZnM+PGcgaWQ9ImMiPjxnIGlkPSJkIj48cGF0aCBjbGFz
-cz0iaCIgZD0iTTMzLDFjMTcuNjcsMCwzMiwxNC4zMywzMiwzMnMtMTQuMzMsMzItMzIsMzJTMSw1
-MC42NywxLDMzLDE1LjMzLDEsMzMsMVoiLz48L2c+PHRleHQgY2xhc3M9ImUiIHRyYW5zZm9ybT0i
-dHJhbnNsYXRlKDExLjQ4IDM3LjA3KSI+PHRzcGFuIHg9IjAiIHk9IjAiPmNiPC90c3Bhbj48dHNw
-YW4gY2xhc3M9ImciIHg9IjE3LjM5IiB5PSIwIj5CPC90c3Bhbj48dHNwYW4gY2xhc3M9ImYiIHg9
-IjI2LjA0IiB5PSIwIj5UPC90c3Bhbj48dHNwYW4geD0iMzMuODgiIHk9IjAiPkM8L3RzcGFuPjwv
-dGV4dD48L2c+PC9zdmc+" /><text style="font-family: 'DM Sans'" x="40" y="33" font-size="14" fill="white" >Active</text><text style="font-family: 'DM Sans'" text-anchor="end" x="256" y="360" font-size="20" fill="white" >00000</text><text style="font-family: 'DM Sans'" text-anchor="end" x="256" y="391" font-size="20" fill="white" >000</text><text style="font-family: 'DM Sans'" text-anchor="end" x="256" y="422" font-size="20" fill="white" >000</text></svg>
+eWxlPi5le2ZpbGw6I2U2ZTZlNjtzdHJva2U6I2Y3OTMxZTtzdHJva2Utd2lkdGg6MnB4O30uZnts
+ZXR0ZXItc3BhY2luZzotLjAzZW07fS5ne2xldHRlci1zcGFjaW5nOi0uMDFlbTt9Lmh7ZmlsbDoj
+MDAxNDBmO2ZvbnQtZmFtaWx5OkRNU2Fucy1TZW1pQm9sZCwgJ0RNIFNhbnMnO2ZvbnQtc2l6ZTox
+NHB4O2ZvbnQtd2VpZ2h0OjYwMDt9PC9zdHlsZT48L2RlZnM+PGcgaWQ9ImMiPjxnIGlkPSJkIj48
+cGF0aCBjbGFzcz0iZSIgZD0iTTMzLDFjMTcuNjcsMCwzMiwxNC4zMywzMiwzMnMtMTQuMzMsMzIt
+MzIsMzJTMSw1MC42NywxLDMzLDE1LjMzLDEsMzMsMVoiLz48L2c+PHRleHQgY2xhc3M9ImgiIHRy
+YW5zZm9ybT0idHJhbnNsYXRlKDE0LjAxIDM3LjA3KSI+PHRzcGFuIHg9IjAiIHk9IjAiPnc8L3Rz
+cGFuPjx0c3BhbiBjbGFzcz0iZyIgeD0iMTEuMjQiIHk9IjAiPkI8L3RzcGFuPjx0c3BhbiBjbGFz
+cz0iZiIgeD0iMTkuODkiIHk9IjAiPlQ8L3RzcGFuPjx0c3BhbiB4PSIyNy43MyIgeT0iMCI+Qzwv
+dHNwYW4+PC90ZXh0PjwvZz48L3N2Zz4=
+" /><text style="font-family: 'DM Sans'" x="40" y="33" font-size="14" fill="white" >Active</text><text style="font-family: 'DM Sans'" text-anchor="end" x="256" y="360" font-size="20" fill="white" >00000</text><text style="font-family: 'DM Sans'" text-anchor="end" x="256" y="391" font-size="20" fill="white" >000</text><text style="font-family: 'DM Sans'" text-anchor="end" x="256" y="422" font-size="20" fill="white" >000</text></svg>

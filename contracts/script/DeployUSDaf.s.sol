@@ -249,7 +249,7 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
         collNames[3] = "Staked Frax USD";
         collNames[4] = "tBTC v2";
         collNames[5] = "Wrapped WBTC";
-        collSymbols[0] = "st-yBOLD";
+        collSymbols[0] = "ysyBOLD";
         collSymbols[1] = "scrvUSD";
         collSymbols[2] = "sUSDS";
         collSymbols[3] = "sfrxUSD";
