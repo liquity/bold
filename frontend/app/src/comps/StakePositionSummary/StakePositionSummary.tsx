@@ -326,7 +326,7 @@ export function StakePositionSummary({
                               <p>
                                 {content.stakeScreen.infoTooltips.votingShare}
                               </p>
-                              {account.address && stakedLqty && dn.gt(stakedLqty, 0) && (
+                              {account.address && stakedLqty && (
                                 <div
                                   className={css({
                                     display: "flex",
