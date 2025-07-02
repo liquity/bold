@@ -109,6 +109,7 @@ export function ErrorBox({
               padding: "8px 24px 24px",
               color: "negativeSurfaceContent",
               overflow: "auto",
+              overflowWrap: "anywhere",
               _focusVisible: {
                 outline: "2px solid token(colors.focused)",
               },
