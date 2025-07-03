@@ -427,9 +427,21 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
   let troveId = event.params._troveId;
   let timestamp = event.block.timestamp;
   let tm = TroveManagerContract.bind(event.address);
+
+  let troveNft = TroveNFTContract.bind(Address.fromBytes(
+    dataSource.context().getBytes("address:troveNft"),
+  ));
+
+  let trove: Trove
   
-  // Update the trove with latest data, no leverage change and don't create if missing
-  let trove = updateTrove(tm, troveId, timestamp, LeverageUpdate.unchanged, false);
+  let owner = troveNft.try_ownerOf(troveId);
+  if (!(owner.reverted || owner.value === Address.fromString("0x0000000000000000000000000000000000000000"))) {
+    // Update the trove with latest data, no leverage change and don't create if missing
+    trove = updateTrove(tm, troveId, timestamp, LeverageUpdate.unchanged, true);
+  } else {
+    // Update the trove with latest data, no leverage change and don't create if missing
+    trove = updateTrove(tm, troveId, timestamp, LeverageUpdate.unchanged, false);
+  }
   
   // Ensure the trove is active
   trove.status = "active";
