@@ -135,14 +135,14 @@ contract troveNFTTest is DevTestSetup {
     }
 
     function testTroveNFTMetadata() public view {
-        assertEq(troveNFTWETH.name(), "Liquity V2 - Wrapped Ether Tester", "Invalid Trove Name");
-        assertEq(troveNFTWETH.symbol(), "LV2_WETH", "Invalid Trove Symbol");
+        assertEq(troveNFTWETH.name(), "Nerite - Wrapped Ether Tester", "Invalid Trove Name");
+        assertEq(troveNFTWETH.symbol(), "NERITE_WETH", "Invalid Trove Symbol");
 
-        assertEq(troveNFTWstETH.name(), "Liquity V2 - Wrapped Staked Ether", "Invalid Trove Name");
-        assertEq(troveNFTWstETH.symbol(), "LV2_wstETH", "Invalid Trove Symbol");
+        assertEq(troveNFTWstETH.name(), "Nerite - Wrapped Staked Ether", "Invalid Trove Name");
+        assertEq(troveNFTWstETH.symbol(), "NERITE_wstETH", "Invalid Trove Symbol");
 
-        assertEq(troveNFTRETH.name(), "Liquity V2 - Rocket Pool ETH", "Invalid Trove Name");
-        assertEq(troveNFTRETH.symbol(), "LV2_rETH", "Invalid Trove Symbol");
+        assertEq(troveNFTRETH.name(), "Nerite - Rocket Pool ETH", "Invalid Trove Name");
+        assertEq(troveNFTRETH.symbol(), "NERITE_rETH", "Invalid Trove Symbol");
     }
 
     string topMulti =
@@ -198,12 +198,14 @@ contract troveNFTTest is DevTestSetup {
         string memory uriSplit = LibString.slice(uri, 29, bytes(uri).length);
         string memory decodedUri = string(Base64.decode(uriSplit));
 
+        console.log(uri);
+
         // Check for expected attributes
-        assertTrue(LibString.contains(decodedUri, '"name": "Liquity V2 - '), "NFT Name attribute missing");
+        assertTrue(LibString.contains(decodedUri, '"name": "Nerite - '), "NFT Name attribute missing");
 
         assertTrue(
             LibString.contains(
-                decodedUri, '"description": "Liquity V2 is a collateralized debt platform. Users can lock up'
+                decodedUri, '"description": "Nerite is a collateralized debt platform. Users can lock up'
             ),
             "NFT description attribute missing"
         );
