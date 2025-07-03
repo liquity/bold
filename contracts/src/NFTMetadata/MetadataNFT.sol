@@ -38,9 +38,9 @@ contract MetadataNFT is IMetadataNFT {
         return json.formattedMetadata(
             string.concat("Liquity V2 - ", IERC20Metadata(_troveData._collToken).name()),
             string.concat(
-                "Liquity V2 is a collateralized debt platform. Users can lock up ",
+                "USDaf is a collateralized debt platform built on Liquity v2. Users can lock up ",
                 IERC20Metadata(_troveData._collToken).symbol(),
-                " to issue stablecoin tokens (BOLD) to their own Ethereum address. The individual collateralized debt positions are called Troves, and are represented as NFTs."
+                " to issue stablecoin tokens (USDaf) to their own Ethereum address. The individual collateralized debt positions are called Troves, and are represented as NFTs."
             ),
             renderSVGImage(_troveData),
             attr
