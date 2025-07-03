@@ -505,6 +505,12 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
           writeContract: getWriteContract(wagmiConfig, account),
         };
 
+        // TODO: An error occurs somewhere here when the flow is openBorrowPosition.
+        // The error is:
+        // Error at step 0: Error:
+        // Invalid response from the subgraph
+        //    at async Object.verify
+
         let artifact = currentArtifact;
 
         if (!artifact) {

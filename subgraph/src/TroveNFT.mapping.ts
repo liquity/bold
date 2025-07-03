@@ -1,4 +1,4 @@
-import { Address, dataSource } from "@graphprotocol/graph-ts";
+import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
 import { Trove } from "../generated/schema";
 import { Transfer as TransferEvent } from "../generated/templates/TroveNFT/TroveNFT";
 import { BorrowerTrovesCountUpdate, updateBorrowerTrovesCount } from "./shared";
@@ -19,7 +19,7 @@ export function handleTransfer(event: TransferEvent): void {
     throw new Error("Trove does not exist: " + troveFullId);
   }
 
-  let collIndex = <i32> parseInt(trove.collateral);
+  let collIndex = BigInt.fromString(trove.collateral).toI32();
 
   // update troves count & ownerIndex for the previous owner
   updateBorrowerTrovesCount(
