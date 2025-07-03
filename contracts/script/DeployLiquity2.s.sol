@@ -791,6 +791,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
         // Deploy per-branch contracts for each branch
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
+            //also deploys zappers.
             vars.contracts = _deployAndConnectCollateralContracts(
                 vars.collaterals[vars.i],
                 vars.priceFeeds[vars.i],
@@ -960,6 +961,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ICurveStableswapNGPool _usdcCurvePool
     ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper) {
         IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
+        
         IExchange hybridExchange = new HybridCurveUniV3Exchange(
             _collToken,
             _boldToken,
@@ -973,13 +975,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             uniV3Router
         );
 
-        bool lst = _collToken != WETH;
+        bool lst = _collToken != WETH; //note: this just means if not ETH. because old liquity code only usess eth and LSTs
         if (lst) {
             gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
         } else {
             wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
         }
-        //leverageZapper = _deployHybridLeverageZapper(_addressesRegistry, flashLoanProvider, hybridExchange, lst);
+        leverageZapper = _deployHybridLeverageZapper(_addressesRegistry, flashLoanProvider, hybridExchange, lst);
     }
 
     function _deployHybridLeverageZapper(
