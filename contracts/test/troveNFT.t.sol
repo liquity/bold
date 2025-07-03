@@ -135,10 +135,10 @@ contract troveNFTTest is DevTestSetup {
     }
 
     function testTroveNFTMetadata() public view {
-        assertEq(troveNFTWETH.name(), "Liquity V2 - Wrapped Ether Tester", "Invalid Trove Name");
-        assertEq(troveNFTWETH.symbol(), "LV2_WETH", "Invalid Trove Symbol");
+        assertEq(troveNFTWETH.name(), "Nerite - Wrapped Ether Tester", "Invalid Trove Name");
+        assertEq(troveNFTWETH.symbol(), "NERITE_WETH", "Invalid Trove Symbol");
 
-        assertEq(troveNFTWstETH.name(), "Liquity V2 - Wrapped Staked Ether", "Invalid Trove Name");
+        assertEq(troveNFTWstETH.name(), "Nerite - Wrapped Staked Ether", "Invalid Trove Name");
         assertEq(troveNFTWstETH.symbol(), "LV2_wstETH", "Invalid Trove Symbol");
 
         assertEq(troveNFTRETH.name(), "Liquity V2 - Rocket Pool ETH", "Invalid Trove Name");

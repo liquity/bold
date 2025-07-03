@@ -36,11 +36,11 @@ contract MetadataNFT is IMetadataNFT {
     function uri(TroveData memory _troveData) public view returns (string memory) {
         string memory attr = attributes(_troveData);
         return json.formattedMetadata(
-            string.concat("Liquity V2 - ", IERC20Metadata(_troveData._collToken).name()),
+            string.concat("Nerite - ", IERC20Metadata(_troveData._collToken).name()),
             string.concat(
-                "Liquity V2 is a collateralized debt platform. Users can lock up ",
+                "Nerite is a collateralized debt platform. Users can lock up ",
                 IERC20Metadata(_troveData._collToken).symbol(),
-                " to issue stablecoin tokens (BOLD) to their own Ethereum address. The individual collateralized debt positions are called Troves, and are represented as NFTs."
+                " to issue stablecoin tokens (USND) to their own Ethereum address. The individual collateralized debt positions are called Troves, and are represented as NFTs. Caution! Transfering this NFT also transfers the underlying trove position."
             ),
             renderSVGImage(_troveData),
             attr
