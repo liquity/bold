@@ -10,7 +10,6 @@ import "./Dependencies/Constants.sol";
 import "./Interfaces/IActivePool.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IBoldToken.sol";
-import "./Interfaces/IInterestRouter.sol";
 import "./Interfaces/IDefaultPool.sol";
 
 /*
@@ -33,7 +32,6 @@ contract ActivePool is IActivePool {
 
     IBoldToken public immutable boldToken;
 
-    IInterestRouter public interestRouter;
     IBoldRewardsReceiver public immutable stabilityPool;
 
     uint256 internal collBalance; // deposited coll tracker
@@ -82,7 +80,6 @@ contract ActivePool is IActivePool {
         troveManagerAddress = address(_addressesRegistry.troveManager());
         stabilityPool = IBoldRewardsReceiver(_addressesRegistry.stabilityPool());
         defaultPoolAddress = address(_addressesRegistry.defaultPool());
-        interestRouter = _addressesRegistry.interestRouter();
         boldToken = _addressesRegistry.boldToken();
         addressesRegistry = _addressesRegistry;
 
@@ -369,13 +366,6 @@ contract ActivePool is IActivePool {
     //Anyone can call this safely
     function delegateTokens() external {
         ERC20Votes(address(collToken)).delegate(delegateRepresentative);
-    }
-
-    // DAO can update the interest router address to direct funds to gauges contract later.
-    //This is helpful for launching without a token live yet.
-    function daoUpdateInterestRouter(address _interestRouterAddress) external {
-        require(msg.sender == address(interestRouter), "Only the existing interestRouter can update the interest router.");
-        interestRouter = IInterestRouter(_interestRouterAddress);
     }
 
 }

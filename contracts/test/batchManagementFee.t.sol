@@ -21,6 +21,27 @@ contract BatchManagementFeeTest is DevTestSetup {
         assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
     }
 
+    function testAdjustTroveMintsFeeForBatchAfterUpdateInterestRouter() public {
+        // Open 2 troves in the same batch manager
+        uint256 troveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
+        openTroveAndJoinBatchManager(C, 200e18, 5000e18, B, 5e16);
+
+        //update interest router
+        vm.startPrank(address(addressesRegistry.interestRouter()));
+        addressesRegistry.daoUpdateInterestRouter(address(888));
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 10 days);
+
+        uint256 batchInitialBalance = boldToken.balanceOf(B);
+        uint256 batchAccruedManagementFee = troveManager.calcBatchAccruedManagementFee(B);
+
+        // Adjust first trove
+        addColl(A, troveId, 1 ether);
+
+        assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
+    }
+
     function testAdjustTroveIncreasesTroveDebtByFee() public {
         // Open 2 troves in the same batch manager
         uint256 troveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
