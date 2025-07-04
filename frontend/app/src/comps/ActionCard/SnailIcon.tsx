@@ -16,6 +16,26 @@ export const springConfig = {
   friction: 40,
 };
 
+export function BorrowIcon({ size = 30 }: { size?: number }) {
+  return <Image src='/cute-snails/battle.png' alt='Borrow' width={size} height={size} />;
+}
+
+export function LeverageIcon({ size = 30 }: { size?: number }) {
+  return <Image src='/cute-snails/green.png' alt='Leverage' width={size} height={size} />;
+}
+
+export function EarnIcon({ size = 30 }: { size?: number }) {
+  return <Image src='/cute-snails/blue.png' alt='Earn' width={size} height={size} />;
+};
+
+export function BuyIcon({ size = 30 }: { size?: number }) {
+  return <Image src='/cute-snails/gold.png' alt='Buy' width={size} height={size} />;
+}
+
+export function StakeIcon({ size = 30 }: { size?: number }) {
+  return <Image src='/cute-snails/red.png' alt='Stake' width={size} height={size} />;
+}
+
 export function ActionIcon({
   colors,
   iconType,
@@ -32,7 +52,7 @@ export function ActionIcon({
     .with("borrow", () => ActionIconBorrow)
     .with("multiply", () => ActionIconLeverage)
     .with("earn", () => ActionIconEarn)
-    .with("buy", () => ActionIconStake)
+    .with("buy", () => ActionIconBuy)
     .exhaustive();
 
   return (
@@ -44,7 +64,7 @@ export function ActionIcon({
   );
 }
 
-function ActionIconBorrow(_: IconProps) {
+export function ActionIconBorrow(_: IconProps) {
   // const { t1, t2 } = useSpring({
   //   t1:
   //     state === "active"
@@ -57,11 +77,11 @@ function ActionIconBorrow(_: IconProps) {
   //   config: springConfig,
   // });
   return (
-    <Image src='/cute-snails/battle.png' alt='Borrow' width={30} height={30} />
+    <BorrowIcon size={30} />
   );
 }
 
-function ActionIconLeverage(_: IconProps) {
+export function ActionIconLeverage(_: IconProps) {
   // const { t1, t2 } = useSpring({
   //   t1:
   //     state === "active"
@@ -75,11 +95,11 @@ function ActionIconLeverage(_: IconProps) {
   // });
 
   return (
-    <Image src='/cute-snails/green.png' alt='Leverage' width={30} height={30} />
+    <LeverageIcon size={30} />
   );
 }
 
-function ActionIconEarn(_: IconProps) {
+export function ActionIconEarn(_: IconProps) {
   // const { squareT, squareRadius, circleT } = useSpring({
   //   squareT: state === "active" ? "scale(1.4)" : "scale(1)",
   //   squareRadius: state === "active" ? "28" : "0",
@@ -87,11 +107,11 @@ function ActionIconEarn(_: IconProps) {
   //   config: springConfig,
   // });
   return (
-    <Image src='/cute-snails/blue.png' alt='Earn' width={30} height={30} />
+    <EarnIcon size={30} />
   );
 }
 
-export function ActionIconStake(_: IconProps) {
+export function ActionIconBuy(_: IconProps) {
   // const active = state === "active";
 
   // // style transform
@@ -136,7 +156,7 @@ export function ActionIconStake(_: IconProps) {
   // });
 
   return (
-    <Image src='/cute-snails/gold.png' alt='Buy' width={30} height={30} />
+    <BuyIcon size={30} />
   );
 }
 

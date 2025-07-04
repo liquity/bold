@@ -1,5 +1,7 @@
-import { ActionIcon } from "@/src/comps/ActionCard/ActionIcon";
+// import { ActionIcon } from "@/src/comps/ActionCard/ActionIcon";
+import { ActionIcon } from "@/src/comps/ActionCard/SnailIcon";
 import content from "@/src/content";
+import { BUY_PAGE_URL } from "@/src/env";
 import { css } from "@/styled-system/css";
 import { token } from "@/styled-system/tokens";
 import { lerp } from "@liquity2/uikit";
@@ -19,16 +21,16 @@ const actionAttributes = {
     path: "/borrow",
     title: "Borrow",
   },
-  multiply: {
-    colors: {
-      background: token("colors.brandGreen"),
-      foreground: token("colors.brandGreenContent"),
-      foregroundAlt: token("colors.brandGreenContentAlt"),
-    },
-    description: contentActions.multiply.description,
-    path: "/multiply",
-    title: "Multiply",
-  },
+  // multiply: {
+  //   colors: {
+  //     background: token("colors.brandGreen"),
+  //     foreground: token("colors.brandGreenContent"),
+  //     foregroundAlt: token("colors.brandGreenContentAlt"),
+  //   },
+  //   description: contentActions.multiply.description,
+  //   path: "/multiply",
+  //   title: "Multiply",
+  // },
   earn: {
     colors: {
       background: token("colors.brandBlue"),
@@ -46,7 +48,7 @@ const actionAttributes = {
       foregroundAlt: token("colors.brandGoldenContentAlt"),
     },
     description: contentActions.buy.description,
-    path: "/buy",
+    path: BUY_PAGE_URL?.startsWith("http") ? BUY_PAGE_URL : "/buy",
     title: "Buy",
   },
 } as const;
@@ -77,33 +79,34 @@ export function NewPositionCard() {
       hovered0: 0,
       hovered1: 0,
       hovered2: 0,
-      hovered3: 0,
+      // hovered3: 0,
 
       compressed0: 0,
       compressed1: 0,
       compressed2: 0,
-      compressed3: 0,
+      // compressed3: 0,
 
-      gridTemplateColumns: "25% 25% 25% 25%",
+      // gridTemplateColumns: "25% 25% 25% 25%",
+      gridTemplateColumns: "1fr 1fr 1fr",
     },
     to: {
       hovered0: hovered === 0 ? 1 : 0,
       hovered1: hovered === 1 ? 1 : 0,
       hovered2: hovered === 2 ? 1 : 0,
-      hovered3: hovered === 3 ? 1 : 0,
+      // hovered3: hovered === 3 ? 1 : 0,
 
       compressed0: hovered !== -1 && hovered !== 0 ? 1 : 0,
       compressed1: hovered !== -1 && hovered !== 1 ? 1 : 0,
       compressed2: hovered !== -1 && hovered !== 2 ? 1 : 0,
-      compressed3: hovered !== -1 && hovered !== 3 ? 1 : 0,
+      // compressed3: hovered !== -1 && hovered !== 3 ? 1 : 0,
 
-      gridTemplateColumns: Array.from({ length: 4 })
+      gridTemplateColumns: Array.from({ length: 3 })
         .map((_, index) =>
           hovered === -1
-            ? "25%"
+            ? "1fr"
             : `${
                 (hovered === index
-                  ? (348 - COMPRESSED_WIDTH * 3) / 348
+                  ? (348 - COMPRESSED_WIDTH * 2) / 348
                   : COMPRESSED_WIDTH / 348) * 100
               }%`
         )
@@ -135,11 +138,11 @@ export function NewPositionCard() {
           ([type, { description, path, title, colors }], index) => {
             const hprogress = spring[
               `hovered${index}` as keyof typeof spring
-            ] as (typeof spring)[`hovered${0 | 1 | 2 | 3}`];
+            ] as (typeof spring)[`hovered${0 | 1 | 2}`];
 
             const cprogress = spring[
               `compressed${index}` as keyof typeof spring
-            ] as (typeof spring)[`compressed${0 | 1 | 2 | 3}`];
+            ] as (typeof spring)[`compressed${0 | 1 | 2}`];
 
             const content = (
               <section
@@ -224,7 +227,7 @@ export function NewPositionCard() {
               background: colors.background,
               color: colors.foreground,
               borderRadius:
-                index === 0 ? "8px 0 0 8px" : index === 3 ? "0 8px 8px 0" : 0,
+                index === 0 ? "8px 0 0 8px" : index === 2 ? "0 8px 8px 0" : 0,
             };
 
             return (

@@ -2,7 +2,12 @@ import type { PositionStake } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { css } from "@/styled-system/css";
-import { HFlex, IconStake, TokenIcon } from "@liquity2/uikit";
+import {
+  HFlex, 
+  // IconStake, 
+  TokenIcon 
+} from "@liquity2/uikit";
+import { StakeIcon } from "@/src/comps/ActionCard/SnailIcon";
 import Link from "next/link";
 import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows } from "./shared";
@@ -43,7 +48,8 @@ export function PositionCardStake({
               color: "positionContent",
             })}
           >
-            <IconStake size={32} />
+            {/* <IconStake size={32} /> */}
+            <StakeIcon size={32} />
           </div>
         }
         main={{

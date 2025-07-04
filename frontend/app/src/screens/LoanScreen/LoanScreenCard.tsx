@@ -20,17 +20,18 @@ import {
   Button,
   Dropdown,
   HFlex,
-  IconBorrow,
+  // IconBorrow,
   IconCopy,
   IconEllipsis,
   IconExternal,
-  IconLeverage,
+  // IconLeverage,
   IconNft,
   shortenAddress,
   StatusDot,
   TokenIcon,
   VFlex,
 } from "@liquity2/uikit";
+import { BorrowIcon, LeverageIcon } from "@/src/comps/ActionCard/SnailIcon";
 import { a, useTransition } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
@@ -255,9 +256,11 @@ function LoanCardHeading({
         }}
       >
         {mode === "multiply" ? (
-          <IconLeverage size={16} />
+          // <IconLeverage size={16} />
+          <LeverageIcon size={16} />
         ) : (
-          <IconBorrow size={16} />
+          // <IconBorrow size={16} />
+          <BorrowIcon size={16} />
         )}
       </div>
       <div>{title}</div>
