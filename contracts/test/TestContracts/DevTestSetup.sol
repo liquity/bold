@@ -46,7 +46,7 @@ contract DevTestSetup is BaseTest {
 		SuperfluidFrameworkDeployer sfDeployer = new SuperfluidFrameworkDeployer();
 		sfDeployer.deployTestFramework();
 		_sf = sfDeployer.getFramework();
-        console.log("Superfluid framework deployed in DevTestSetup with setupSuperToken");
+        //console.log("Superfluid framework deployed in DevTestSetup with setupSuperToken");
     }
 
     function setUp() public virtual {
@@ -66,7 +66,7 @@ contract DevTestSetup is BaseTest {
             accountsList[6]
         );
 
-        console.log("Setting up super token in DevTestSetup");
+        //console.log("Setting up super token in DevTestSetup");
         setupSuperToken();
 
         TestDeployer deployer = new TestDeployer();
@@ -83,7 +83,7 @@ contract DevTestSetup is BaseTest {
         priceFeed = contracts.priceFeed;
         sortedTroves = contracts.sortedTroves;
 
-        console.log("just did sortedTroves in DevTestSetup 69");
+        //console.log("just did sortedTroves in DevTestSetup 69");
         stabilityPool = contracts.stabilityPool;
         troveManager = contracts.troveManager;
         troveNFT = contracts.troveNFT;

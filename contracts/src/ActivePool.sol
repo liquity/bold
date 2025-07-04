@@ -10,7 +10,6 @@ import "./Dependencies/Constants.sol";
 import "./Interfaces/IActivePool.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IBoldToken.sol";
-import "./Interfaces/IInterestRouter.sol";
 import "./Interfaces/IDefaultPool.sol";
 
 /*
@@ -29,10 +28,10 @@ contract ActivePool is IActivePool {
     address public immutable borrowerOperationsAddress;
     address public immutable troveManagerAddress;
     address public immutable defaultPoolAddress;
+    IAddressesRegistry public immutable addressesRegistry;
 
     IBoldToken public immutable boldToken;
 
-    IInterestRouter public immutable interestRouter;
     IBoldRewardsReceiver public immutable stabilityPool;
 
     uint256 internal collBalance; // deposited coll tracker
@@ -81,8 +80,8 @@ contract ActivePool is IActivePool {
         troveManagerAddress = address(_addressesRegistry.troveManager());
         stabilityPool = IBoldRewardsReceiver(_addressesRegistry.stabilityPool());
         defaultPoolAddress = address(_addressesRegistry.defaultPool());
-        interestRouter = _addressesRegistry.interestRouter();
         boldToken = _addressesRegistry.boldToken();
+        addressesRegistry = _addressesRegistry;
 
         emit CollTokenAddressChanged(address(collToken));
         emit BorrowerOperationsAddressChanged(borrowerOperationsAddress);
@@ -260,7 +259,7 @@ contract ActivePool is IActivePool {
             uint256 spYield = SP_YIELD_SPLIT * mintedAmount / DECIMAL_PRECISION;
             uint256 remainderToLPs = mintedAmount - spYield;
 
-            boldToken.mint(address(interestRouter), remainderToLPs);
+            boldToken.mint(address(addressesRegistry.interestRouter()), remainderToLPs);
 
             if (spYield > 0) {
                 boldToken.mint(address(stabilityPool), spYield);

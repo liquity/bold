@@ -10,7 +10,6 @@ interface IActivePool {
     function defaultPoolAddress() external view returns (address);
     function borrowerOperationsAddress() external view returns (address);
     function troveManagerAddress() external view returns (address);
-    function interestRouter() external view returns (IInterestRouter);
     // We avoid IStabilityPool here in order to prevent creating a dependency cycle that would break flattening
     function stabilityPool() external view returns (IBoldRewardsReceiver);
 

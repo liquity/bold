@@ -23,7 +23,7 @@ contract GasCompZapper is BaseZapper {
         // Approve coll to BorrowerOperations
         collToken.approve(address(borrowerOperations), type(uint256).max);
         // Approve Coll to exchange module (for closeTroveFromCollateral)
-        collToken.approve(address(_exchange), type(uint256).max);
+        //collToken.approve(address(_exchange), type(uint256).max);
     }
 
     function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256) {
