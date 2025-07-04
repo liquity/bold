@@ -1,4 +1,5 @@
-import { ActionIcon } from "@/src/comps/ActionCard/ActionIcon";
+// import { ActionIcon } from "@/src/comps/ActionCard/ActionIcon";
+import { ActionIcon } from "@/src/comps/ActionCard/SnailIcon";
 import content from "@/src/content";
 import { BUY_PAGE_URL } from "@/src/env";
 import { css } from "@/styled-system/css";

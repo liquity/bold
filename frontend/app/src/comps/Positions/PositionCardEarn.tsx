@@ -7,7 +7,12 @@ import {
   useEarnPosition,
 } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconEarn, TokenIcon } from "@liquity2/uikit";
+import {
+  HFlex, 
+  // IconEarn, 
+  TokenIcon 
+} from "@liquity2/uikit";
+import { EarnIcon } from "@/src/comps/ActionCard/SnailIcon";
 import Link from "next/link";
 import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows } from "./shared";
@@ -47,7 +52,8 @@ export function PositionCardEarn({
               color: "positionContent",
             })}
           >
-            <IconEarn size={32} />
+            {/* <IconEarn size={32} /> */}
+            <EarnIcon size={32} />
           </div>
         }
         main={{

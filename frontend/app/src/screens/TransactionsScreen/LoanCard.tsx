@@ -18,11 +18,12 @@ import { token } from "@/styled-system/tokens";
 import {
   Button,
   HFlex,
-  IconBorrow,
-  IconLeverage,
+  // IconBorrow,
+  // IconLeverage,
   StatusDot,
   TokenIcon,
 } from "@liquity2/uikit";
+import { BorrowIcon, LeverageIcon } from "@/src/comps/ActionCard/SnailIcon";
 import { a, useSpring } from "@react-spring/web";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
@@ -688,7 +689,8 @@ function LoadingCard({
                 color: "strongSurfaceContentAlt2",
               })}
             >
-              {leverage ? <IconLeverage size={16} /> : <IconBorrow size={16} />}
+              {/* {leverage ? <IconLeverage size={16} /> : <IconBorrow size={16} />} */}
+              {leverage ? <LeverageIcon size={16} /> : <BorrowIcon size={16} />}
             </div>
             {title}
           </div>

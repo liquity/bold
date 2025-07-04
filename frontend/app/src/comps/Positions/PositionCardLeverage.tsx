@@ -9,7 +9,13 @@ import { getCollToken } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconLeverage, StatusDot, TokenIcon } from "@liquity2/uikit";
+import {
+  HFlex, 
+  // IconLeverage, 
+  StatusDot, 
+  TokenIcon 
+} from "@liquity2/uikit";
+import { LeverageIcon } from "@/src/comps/ActionCard/SnailIcon";
 import * as dn from "dnum";
 import Link from "next/link";
 import { PositionCard } from "./PositionCard";
@@ -75,7 +81,8 @@ export function PositionCardLeverage({
               color: "positionContent",
             })}
           >
-            <IconLeverage size={32} />
+            {/* <IconLeverage size={32} /> */}
+            <LeverageIcon size={32} />
           </div>
         }
         main={{

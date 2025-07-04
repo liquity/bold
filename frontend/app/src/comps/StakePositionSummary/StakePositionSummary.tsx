@@ -15,10 +15,10 @@ import {
   TokenIcon,
   useRaf,
 } from "@liquity2/uikit";
+import { StakeIcon } from "@/src/comps/ActionCard/SnailIcon";
 import { a } from "@react-spring/web";
 import * as dn from "dnum";
 import { useRef } from "react";
-import Image from "next/image";
 
 export function StakePositionSummary({
   loadingState = "success",
@@ -159,7 +159,7 @@ export function StakePositionSummary({
               })}
             >
               {/* <IconStake size={16} /> */}
-              <Image src='/cute-snails/red.png' alt='Stake' width={16} height={16} />
+              <StakeIcon size={16} />
             </div>
             NERI Stake
           </div>

@@ -14,7 +14,13 @@ import { getCollToken, shortenTroveId } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconBorrow, StatusDot, TokenIcon } from "@liquity2/uikit";
+import {
+  HFlex, 
+  // IconBorrow, 
+  StatusDot, 
+  TokenIcon 
+} from "@liquity2/uikit";
+import { BorrowIcon } from "@/src/comps/ActionCard/SnailIcon";
 import * as dn from "dnum";
 import Link from "next/link";
 import { PositionCard } from "./PositionCard";
@@ -79,7 +85,8 @@ export function PositionCardBorrow({
               color: "positionContent",
             })}
           >
-            <IconBorrow size={32} />
+            {/* <IconBorrow size={32} /> */}
+            <BorrowIcon size={32} />
           </div>
         }
         main={{
