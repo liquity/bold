@@ -24,12 +24,14 @@ contract BatchManagementFeeTest is DevTestSetup {
     function testAdjustTroveMintsFeeForBatchAfterUpdateInterestRouter() public {
         // Open 2 troves in the same batch manager
         uint256 troveId = openTroveAndJoinBatchManager(A, 100e18, 5000e18, B, 5e16);
-        openTroveAndJoinBatchManager(C, 200e18, 5000e18, B, 5e16);
 
         //update interest router
         vm.startPrank(address(addressesRegistry.interestRouter()));
+        address oldInterestRouter = address(addressesRegistry.interestRouter());
         addressesRegistry.daoUpdateInterestRouter(address(888));
         vm.stopPrank();
+
+        openTroveAndJoinBatchManager(C, 200e18, 5000e18, B, 5e16);
 
         vm.warp(block.timestamp + 10 days);
 
@@ -38,6 +40,13 @@ contract BatchManagementFeeTest is DevTestSetup {
 
         // Adjust first trove
         addColl(A, troveId, 1 ether);
+
+        console.log("Balance of governance 888:", boldToken.balanceOf(address(888)));
+        console.log("Balance of old interest router:", boldToken.balanceOf(oldInterestRouter));
+        //balance of stability pool
+        console.log("Balance of stability pool:", boldToken.balanceOf(address(stabilityPool)));
+
+
 
         assertEq(boldToken.balanceOf(B), batchInitialBalance + batchAccruedManagementFee);
     }

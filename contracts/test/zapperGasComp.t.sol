@@ -825,6 +825,7 @@ contract ZapperGasCompTest is DevTestSetup {
             receiver: address(0)
         });
         vm.startPrank(A);
+        console.log("ETH_GAS_COMPENSATION: ", ETH_GAS_COMPENSATION);
         uint256 troveId = gasCompZapper.openTroveWithRawETH{value: ETH_GAS_COMPENSATION}(params);
         vm.stopPrank();
 
@@ -838,6 +839,7 @@ contract ZapperGasCompTest is DevTestSetup {
         gasCompZapper.adjustTrove(troveId, 1 ether, false, 9000e18, false, 0);
         vm.stopPrank();
 
+        console.log("MIN_DEBT: ", MIN_DEBT);
         assertEq(boldToken.balanceOf(A), boldAmount + MIN_DEBT - boldDebtBefore, "BOLD bal mismatch");
         assertEq(boldToken.balanceOf(address(gasCompZapper)), 0, "Zapper BOLD bal should be zero");
         assertEq(A.balance, ethBalanceBefore, "ETH bal mismatch");
