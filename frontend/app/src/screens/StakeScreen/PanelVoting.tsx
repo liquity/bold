@@ -29,10 +29,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 function isInitiativeStatusActive(
   status: InitiativeStatus,
-): status is Exclude<InitiativeStatus, "disabled" | "nonexistent" | "unregisterable"> {
+): status is Exclude<InitiativeStatus, "disabled" | "nonexistent" | "unregisterable" | "warm up"> {
   return status !== "disabled"
     && status !== "nonexistent"
-    && status !== "unregisterable";
+    && status !== "unregisterable"
+    && status !== "warm up";
 }
 
 function initiativeStatusLabel(status: InitiativeStatus) {
@@ -530,7 +531,7 @@ export function PanelVoting() {
                 <InitiativeRow
                   key={index}
                   bribe={currentBribes.data?.[initiative.address]}
-                  disabled={!isInitiativeStatusActive(status ?? "nonexistent") || status === "warm up"}
+                  disabled={!isInitiativeStatusActive(status ?? "nonexistent")}
                   disableFor={isCutoff}
                   initiative={initiative}
                   initiativesStatus={status}
