@@ -2,12 +2,10 @@ import { useIndicator } from "@/src/services/IndicatorManager";
 import { useEffect, useRef } from "react";
 import { useBlockNumber } from "wagmi";
 
-const MAX_CONSECUTIVE_FAILURES = 2;
 const REFETCH_INTERVAL = 10_000;
 
 export function useRpcIndicator() {
   const indicator = useIndicator();
-  const consecutiveFailures = useRef(0);
   const hasError = useRef(false);
 
   const { isError } = useBlockNumber({
@@ -17,8 +15,7 @@ export function useRpcIndicator() {
 
   useEffect(() => {
     if (isError) {
-      consecutiveFailures.current += 1;
-      if (consecutiveFailures.current >= MAX_CONSECUTIVE_FAILURES && !hasError.current) {
+      if (!hasError.current) {
         hasError.current = true;
         indicator.setError(
           "rpc-error",
@@ -27,7 +24,6 @@ export function useRpcIndicator() {
         );
       }
     } else {
-      consecutiveFailures.current = 0;
       if (hasError.current) {
         hasError.current = false;
         indicator.clearError("rpc-error");
