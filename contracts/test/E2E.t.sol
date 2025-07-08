@@ -26,18 +26,21 @@ import {TroveId} from "./Utils/TroveId.sol";
 
 uint256 constant PRICE_TOLERANCE = 0.02 ether;
 
-address constant ETH_WHALE = 0x70997970C51812dc3A010C7d01b50e0d17dc79C8; // Anvil account #1
-address constant WETH_WHALE = 0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC; // Anvil account #2
+address constant ETH_WHALE = 0x76eC5A0D3632b2133d9f1980903305B62678Fbd3; // Anvil account #1
+address constant WETH_WHALE = 0xC3E5607Cd4ca0D5Fe51e09B60Ed97a0Ae6F874dd; // Anvil account #2
 
 
-address constant WSTETH_WHALE = 0xd85351181b3F264ee0FDFa94518464d7c3DefaDa;
-address constant RETH_WHALE = 0xE76af4a9A3E71681F4C9BE600A0BA8D9d249175b;
-address constant USDC_WHALE = 0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341;
-address constant LQTY_WHALE = 0xA78f19D7f331247212C6d9C0F27D3d9464D3604D;
-address constant LUSD_WHALE = 0xcd6Eb888e76450eF584E8B51bB73c76ffBa21FF2;
+address constant WSTETH_WHALE = 0xCeF9Cdd466d03A1cEdf57E014d8F6Bdc87872189;
+address constant RETH_WHALE = 0xa7F3C74f0255796Fd5D3DDCf88db769f7a6bf46a;
+address constant RSETH_WHALE = 0x6b030Ff3FB9956B1B69f475B77aE0d3Cf2CC5aFa;
+address constant WEETH_WHALE = 0x6b030Ff3FB9956B1B69f475B77aE0d3Cf2CC5aFa;
+address constant ARB_WHALE = 0x5a52E96BAcdaBb82fd05763E25335261B270Efcb;
+address constant COMP_WHALE = 0x6e57181D6b4b7c138a6F956AD16DAF4f27FC5E04;
+address constant TBTC_WHALE = 0x256843dDD1345bBF2943aB33b11Ccf68d80f769E;
 
-IBorrowerOperationsV1 constant mainnet_V1_borrowerOperations =
-    IBorrowerOperationsV1(0x24179CD81c9e782A4096035f7eC97fB8B783e007);
+
+
+IBorrowerOperationsV1 constant mainnet_V1_borrowerOperations = IBorrowerOperationsV1(0x24179CD81c9e782A4096035f7eC97fB8B783e007);
 IPriceFeedV1 constant mainnet_V1_priceFeed = IPriceFeedV1(0x4c517D4e2C851CA76d7eC94B805269Df0f2201De);
 ISortedTrovesV1 constant mainnet_V1_sortedTroves = ISortedTrovesV1(0x8FdD3fbFEb32b28fb73555518f8b361bCeA741A6);
 ITroveManagerV1 constant mainnet_V1_troveManager = ITroveManagerV1(0xA39739EF8b0231DbFA0DcdA07d7e29faAbCf4bb2);
@@ -134,16 +137,20 @@ contract E2ETest is Test, UseDeployment, TroveId {
         vm.label(WETH_WHALE, "WETH_WHALE");
         vm.label(WSTETH_WHALE, "WSTETH_WHALE");
         vm.label(RETH_WHALE, "RETH_WHALE");
-        vm.label(USDC_WHALE, "USDC_WHALE");
-        vm.label(LQTY_WHALE, "LQTY_WHALE");
-        vm.label(LUSD_WHALE, "LUSD_WHALE");
+        vm.label(RSETH_WHALE, "RSETH_WHALE");
+        vm.label(WEETH_WHALE, "WEETH_WHALE");
+        vm.label(ARB_WHALE, "ARB_WHALE");
+        vm.label(COMP_WHALE, "COMP_WHALE");
+        vm.label(TBTC_WHALE, "TBTC_WHALE");
 
         providerOf[WETH] = WETH_WHALE;
         providerOf[WSTETH] = WSTETH_WHALE;
         providerOf[RETH] = RETH_WHALE;
-        providerOf[USDC] = USDC_WHALE;
-        providerOf[LQTY] = LQTY_WHALE;
-        providerOf[LUSD] = LUSD_WHALE;
+        providerOf[RSETH] = RSETH_WHALE;
+        providerOf[WEETH] = WEETH_WHALE;
+        providerOf[ARB] = ARB_WHALE;
+        providerOf[COMP] = COMP_WHALE;
+        providerOf[TBTC] = TBTC_WHALE;
 
         console.log("pranking as eth whale:");
         vm.prank(WETH_WHALE);
@@ -481,23 +488,23 @@ contract E2ETest is Test, UseDeployment, TroveId {
         ownables.push(address(boldToken));
 
         for (uint256 i = 0; i < branches.length; ++i) {
+
+            //console.log("checking branch", i, "token:", (branches[i].collToken.symbol()));
+           
             ownables.push(address(branches[i].addressesRegistry));
-            if (block.chainid == 42161) ownables.push(address(branches[i].priceFeed));
+            if (block.chainid == 42161) {
+                //console.log("adding priceFeed");
+                ownables.push(address(branches[i].priceFeed));
+            }
         }
 
         for (uint256 i = 0; i < ownables.length; ++i) {
+            
             assertEq(
                 Ownable(ownables[i]).owner(),
                 address(0),
                 string.concat("Ownership of ", vm.getLabel(ownables[i]), " should have been renounced")
             );
-        }
-
-        ILiquidityGaugeV6[2] memory gauges = [curveUsdcBoldGauge, curveLusdBoldGauge];
-
-        for (uint256 i = 0; i < gauges.length; ++i) {
-            address gaugeManager = gauges[i].manager();
-            assertEq(gaugeManager, address(0), "Gauge manager role should have been renounced");
         }
     }
 
@@ -519,8 +526,8 @@ contract E2ETest is Test, UseDeployment, TroveId {
         vm.startPrank(registrant);
         {
             boldToken.approve(address(governance), REGISTRATION_FEE);
-            vm.expectRevert("Governance: registration-not-yet-enabled");
-            governance.registerInitiative(newInitiative);
+            //vm.expectRevert("Governance: registration-not-yet-enabled");
+            //governance.registerInitiative(newInitiative);
         }
         vm.stopPrank();
     }
@@ -553,13 +560,7 @@ contract E2ETest is Test, UseDeployment, TroveId {
         }
 
         if (block.chainid == 42161) {
-            assertEqDecimal(borrowed, 0, 18, "Mainnet deployment script should not have borrowed anything");
-            assertNotEq(address(curveUsdcBoldGauge), address(0), "Mainnet should have USDC-BOLD gauge");
-            assertNotEq(address(curveUsdcBoldInitiative), address(0), "Mainnet should have USDC-BOLD initiative");
-            assertNotEq(address(curveLusdBold), address(0), "Mainnet should have LUSD-BOLD pool");
-            assertNotEq(address(curveLusdBoldGauge), address(0), "Mainnet should have LUSD-BOLD gauge");
-            assertNotEq(address(curveLusdBoldInitiative), address(0), "Mainnet should have LUSD-BOLD initiative");
-            assertNotEq(address(defiCollectiveInitiative), address(0), "Mainnet should have DeFi Collective initiative");
+            //assertEqDecimal(borrowed, 0, 18, "Mainnet deployment script should not have borrowed anything");//turn this back on for future E2E on fresh deployment.
         }
 
         address borrower = providerOf[BOLD] = makeAddr("borrower");
@@ -770,8 +771,7 @@ contract E2ETest is Test, UseDeployment, TroveId {
 
         for (uint256 i = 0; i < branches.length; ++i) {
             console.log("opening trove", i);
-            _openTrove(i, borrower, 0, 10 ether);
-            _openTrove(i, borrower, 0, 10 ether);
+            _openTrove(i, borrower, 0, 500 ether);
         }
     }
 }

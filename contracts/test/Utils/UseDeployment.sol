@@ -55,6 +55,12 @@ contract UseDeployment is CommonBase {
     address WETH;
     address WSTETH;
     address RETH;
+    address RSETH;
+    address WEETH;
+    address ARB;
+    address COMP;
+    address TBTC;
+
     address BOLD;
     address USDC;
     address LQTY;
@@ -70,6 +76,11 @@ contract UseDeployment is CommonBase {
     IERC20 usdc;
     IERC20 lqty;
     IERC20 lusd;
+    IERC20 rseth;
+    IERC20 weeth;
+    IERC20 arb;
+    IERC20 comp;
+    IERC20 tbtc;
 
     ICollateralRegistry collateralRegistry;
     IBoldToken boldToken;
@@ -162,6 +173,16 @@ contract UseDeployment is CommonBase {
                 WSTETH = address(branches[i].collToken);
             } else if (collSymbol.eq("rETH")) {
                 RETH = address(branches[i].collToken);
+            } else if (collSymbol.eq("rSETH")) {
+                RSETH = address(branches[i].collToken);
+            } else if (collSymbol.eq("wEETH")) {
+                WEETH = address(branches[i].collToken);
+            } else if (collSymbol.eq("ARB")) {
+                ARB = address(branches[i].collToken);
+            } else if (collSymbol.eq("COMP")) {
+                COMP = address(branches[i].collToken);
+            } else if (collSymbol.eq("tBTC")) {
+                TBTC = address(branches[i].collToken);
             } else {
                 //revert(string.concat("Unexpected collateral ", collSymbol));
                 console.log("Found another collateral. Skipping:", collSymbol);
@@ -171,12 +192,22 @@ contract UseDeployment is CommonBase {
         vm.label(WETH, "WETH");
         vm.label(WSTETH, "wstETH");
         vm.label(RETH, "rETH");
+        vm.label(RSETH, "rSETH");
+        vm.label(WEETH, "wEETH");
+        vm.label(ARB, "ARB");
+        vm.label(COMP, "COMP");
+        vm.label(TBTC, "tBTC");
         vm.label(BOLD, "BOLD");
         //vm.label(USDC, "USDC");
         //vm.label(LQTY, "LQTY");
         //vm.label(LUSD, "LUSD");
 
         weth = IWETH(WETH);
+        rseth = IERC20(RSETH);
+        weeth = IERC20(WEETH);
+        arb = IERC20(ARB);
+        comp = IERC20(COMP);
+        tbtc = IERC20(TBTC);
         //usdc = IERC20(USDC);
         //lqty = IERC20(LQTY);
         //lusd = IERC20(LUSD);
