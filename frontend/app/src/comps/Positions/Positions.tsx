@@ -7,9 +7,10 @@ import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
 // import { useStakePosition } from "@/src/liquity-utils";
 import {
-  useEarnPositionsByAccount,
+  // useEarnPositionsByAccount,
   useLoansByAccount,
 } from "@/src/subgraph-hooks";
+import { useEarnPositionsByAccount } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { a, useSpring, useTransition } from "@react-spring/web";
 // import * as dn from "dnum";
@@ -58,7 +59,10 @@ export function Positions({
     ? ACCOUNT_POSITIONS
     : [
         ...(loans.data ?? []),
-        ...(earnPositions.data ?? []),
+        ...(earnPositions.data?.filter(pos => pos.collIndex !== null).map(pos => ({
+          ...pos,
+          collIndex: pos.collIndex!
+        })) ?? []),
         // ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0)
         //   ? [stakePosition.data]
         //   : []),
