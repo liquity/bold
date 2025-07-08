@@ -4,6 +4,7 @@ import type { Address, BranchId, TroveId } from "@/src/types";
 import { dnum18 } from "@/src/dnum-utils";
 import { SUBGRAPH_URL } from "@/src/env";
 import { graphql } from "@/src/graphql";
+import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
 
 type IndexedTrove = {
@@ -32,6 +33,7 @@ async function graphQuery<TResult, TVariables>(
   });
 
   if (!response.ok) {
+    subgraphIndicator.setError("Subgraph error: unable to fetch data.");
     throw new Error("Error while fetching data from the subgraph");
   }
 
@@ -39,8 +41,12 @@ async function graphQuery<TResult, TVariables>(
 
   if (!result.data) {
     console.error(result);
+    subgraphIndicator.setError("Subgraph error: invalid response.");
     throw new Error("Invalid response from the subgraph");
   }
+
+  // successful query: clear previous indicator errors
+  subgraphIndicator.clearError();
 
   return result.data as TResult;
 }
