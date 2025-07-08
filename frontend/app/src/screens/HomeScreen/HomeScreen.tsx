@@ -203,10 +203,10 @@ function EarnRewardsRow({ symbol }: { symbol: CollateralSymbol }) {
         </div>
       </td>
       <td>
-        <Amount fallback='…' percentage value={earnPool.data.apr} />
+        <Amount fallback='…' percentage value={earnPool.data?.apr} />
       </td>
       <td>
-        <Amount fallback='…' percentage value={earnPool.data.apr7d} />
+        <Amount fallback='…' percentage value={earnPool.data?.apr7d} />
       </td>
       <td>
         <Amount

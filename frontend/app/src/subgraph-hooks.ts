@@ -374,32 +374,32 @@ export function useStabilityPoolScale(
   });
 }
 
-export function useEarnPositionsByAccount(
-  account?: null | Address,
-  options?: Options,
-) {
-  let queryFn = async () => {
-    if (!account) return null;
-    const { stabilityPoolDeposits } = await graphQuery(
-      StabilityPoolDepositsByAccountQuery,
-      { account: account.toLowerCase() },
-    );
-    return stabilityPoolDeposits.map(subgraphStabilityPoolDepositToEarnPosition);
-  };
+// export function useEarnPositionsByAccount(
+//   account?: null | Address,
+//   options?: Options,
+// ) {
+//   let queryFn = async () => {
+//     if (!account) return null;
+//     const { stabilityPoolDeposits } = await graphQuery(
+//       StabilityPoolDepositsByAccountQuery,
+//       { account: account.toLowerCase() },
+//     );
+//     return stabilityPoolDeposits.map(subgraphStabilityPoolDepositToEarnPosition);
+//   };
 
-  if (DEMO_MODE) {
-    queryFn = async () =>
-      account
-        ? ACCOUNT_POSITIONS.filter((position) => position.type === "earn")
-        : null;
-  }
+//   if (DEMO_MODE) {
+//     queryFn = async () =>
+//       account
+//         ? ACCOUNT_POSITIONS.filter((position) => position.type === "earn")
+//         : null;
+//   }
 
-  return useQuery({
-    queryKey: ["StabilityPoolDepositsByAccount", account],
-    queryFn,
-    ...prepareOptions(options),
-  });
-}
+//   return useQuery({
+//     queryKey: ["StabilityPoolDepositsByAccount", account],
+//     queryFn,
+//     ...prepareOptions(options),
+//   });
+// }
 
 export function useInterestRateBrackets(
   collIndex: null | CollIndex,
@@ -535,26 +535,26 @@ function subgraphTroveToLoan(
   };
 }
 
-function subgraphStabilityPoolDepositToEarnPosition(
-  spDeposit: NonNullable<
-    StabilityPoolDepositQueryType["stabilityPoolDeposit"]
-  >,
-): PositionEarn {
-  const collIndex = spDeposit.collateral.collIndex;
-  if (!isCollIndex(collIndex)) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
-  }
-  if (!isAddress(spDeposit.depositor)) {
-    throw new Error(`Invalid depositor address: ${spDeposit.depositor}`);
-  }
-  return {
-    type: "earn",
-    owner: spDeposit.depositor,
-    collIndex,
-    deposit: dnum18(spDeposit.deposit),
-    rewards: {
-      usnd: dnum18(0),
-      coll: dnum18(0),
-    },
-  };
-}
+// function subgraphStabilityPoolDepositToEarnPosition(
+//   spDeposit: NonNullable<
+//     StabilityPoolDepositQueryType["stabilityPoolDeposit"]
+//   >,
+// ): PositionEarn {
+//   const collIndex = spDeposit.collateral.collIndex;
+//   if (!isCollIndex(collIndex)) {
+//     throw new Error(`Invalid collateral index: ${collIndex}`);
+//   }
+//   if (!isAddress(spDeposit.depositor)) {
+//     throw new Error(`Invalid depositor address: ${spDeposit.depositor}`);
+//   }
+//   return {
+//     type: "earn",
+//     owner: spDeposit.depositor,
+//     collIndex,
+//     deposit: dnum18(spDeposit.deposit),
+//     rewards: {
+//       usnd: dnum18(0),
+//       coll: dnum18(0),
+//     },
+//   };
+// }

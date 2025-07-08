@@ -15,6 +15,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
+import { dnum18 } from "@/src/dnum-utils";
 
 export function EarnPositionSummary({
   collIndex,
@@ -26,7 +27,7 @@ export function EarnPositionSummary({
 }: {
   collIndex: CollIndex;
   prevEarnPosition?: PositionEarn | null;
-  earnPosition: PositionEarn | null;
+  earnPosition: PositionEarn | null | undefined;
   linkToScreen?: boolean;
   title?: ReactNode;
   txPreviewMode?: boolean;
@@ -34,7 +35,7 @@ export function EarnPositionSummary({
   const collToken = getCollToken(collIndex);
   const earnPool = useEarnPool(collIndex);
 
-  const { totalDeposited: totalPoolDeposit } = earnPool.data;
+  const { totalDeposited: totalPoolDeposit } = earnPool.data ?? { totalDeposited: dnum18(0) };
 
   let share = dn.from(0, 18);
   let prevShare = dn.from(0, 18);
@@ -45,6 +46,8 @@ export function EarnPositionSummary({
     if (prevEarnPosition) {
       prevShare = dn.div(prevEarnPosition.deposit, totalPoolDeposit);
     }
+  } else if (txPreviewMode) {
+    share = dn.from(1, 18);
   }
 
   // true if the user has any deposit

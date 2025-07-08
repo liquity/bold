@@ -1,5 +1,5 @@
 import type { Contracts } from "@/src/contracts";
-import type { StabilityPoolDepositQuery } from "@/src/graphql/graphql";
+// import type { StabilityPoolDepositQuery } from "@/src/graphql/graphql";
 import type {
   CollIndex,
   Dnum,
@@ -16,16 +16,16 @@ import type { Config as WagmiConfig } from "wagmi";
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
 import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
 import { dnum18, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER, LIQUITY_STATS_URL } from "@/src/env";
-import { getCollGainFromSnapshots, useContinuousBoldGains } from "@/src/liquity-stability-pool";
+import { CHAIN_BLOCK_EXPLORER, COLLATERAL_CONTRACTS, LIQUITY_STATS_URL } from "@/src/env";
+// import { getCollGainFromSnapshots, useContinuousBoldGains } from "@/src/liquity-stability-pool";
 import {
   useGovernanceStats,
   useGovernanceUser,
   useInterestRateBrackets,
   useLoanById,
-  useStabilityPool,
-  useStabilityPoolDeposit,
-  useStabilityPoolScale,
+  // useStabilityPool,
+  // useStabilityPoolDeposit,
+  // useStabilityPoolScale,
   // useStabilityPoolEpochScale,
 } from "@/src/subgraph-hooks";
 import { isCollIndex, isTroveId } from "@/src/types";
@@ -35,8 +35,8 @@ import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
 import { encodeAbiParameters, keccak256, parseAbiParameters } from "viem";
-import { useBalance, useReadContract, useReadContracts } from "wagmi";
-import { readContract } from "wagmi/actions";
+import { useBalance, useReadContract, useReadContracts, useConfig as useWagmiConfig } from "wagmi";
+import { readContract, readContracts } from "wagmi/actions";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -92,107 +92,254 @@ export function getCollIndexFromSymbol(symbol: CollateralSymbol | null): CollInd
   return isCollIndex(collIndex) ? collIndex : null;
 }
 
-export function useEarnPool(collIndex: null | CollIndex) {
+export function useEarnPool(collIndex: CollIndex | null) {
+  const wagmiConfig = useWagmiConfig();
+  const stats = useLiquityStats(); // TODO: Need stats API for this to work
   const collateral = getCollToken(collIndex);
-  const pool = useStabilityPool(collIndex ?? undefined);
-  const stats = useLiquityStats();
+  const { spApyAvg1d = null, spApyAvg7d = null } = (
+    collateral && stats.data?.branch[collateral?.symbol]
+  ) ?? {};
 
-  const branchStats = collateral && stats.data?.branch[collateral?.symbol];
-
-  return {
-    ...pool,
-    data: {
-      apr: dnumOrNull(branchStats?.spApyAvg1d, 18),
-      apr7d: dnumOrNull(branchStats?.spApyAvg7d, 18),
-      collateral,
-      totalDeposited: pool.data?.totalDeposited ?? null,
+  return useQuery({
+    queryKey: [
+      "earnPool",
+      collIndex,
+      jsonStringifyWithDnum(spApyAvg1d),
+      jsonStringifyWithDnum(spApyAvg7d),
+    ],
+    queryFn: async () => {
+      if (collIndex === null) {
+        return null;
+      }
+      const spContract = getCollateralContract(collIndex, "StabilityPool");
+      if (!spContract) {
+        throw new Error(`Stability pool contract not found for collateral index: ${collIndex}`);
+      }
+      const totalBoldDeposits = await readContract(wagmiConfig, {
+        ...spContract,
+        functionName: "getTotalBoldDeposits",
+      });
+      return {
+        apr: spApyAvg1d,
+        apr7d: spApyAvg7d,
+        collateral,
+        totalDeposited: dnum18(totalBoldDeposits),
+      };
     },
-  };
+    // enabled: stats.isSuccess,
+  });
+}
+
+export function isEarnPositionActive(position: PositionEarn | null) {
+  return Boolean(
+    position && (
+      dn.gt(position.deposit, 0)
+      || dn.gt(position.rewards.usnd, 0)
+      || dn.gt(position.rewards.coll, 0)
+    ),
+  );
+}
+
+function earnPositionsContractsReadSetup(collIndex: CollIndex | null, account: Address | null) {
+  const StabilityPool = getCollateralContract(collIndex, "StabilityPool");
+  return {
+    contracts: [
+      {
+        ...StabilityPool,
+        functionName: "getCompoundedBoldDeposit",
+        args: [account ?? "0x"],
+      }, 
+      {
+        ...StabilityPool,
+        functionName: "getDepositorCollGain",
+        args: [account ?? "0x"],
+      }, 
+      {
+        ...StabilityPool,
+        functionName: "stashedColl",
+        args: [account ?? "0x"],
+      }, 
+      {
+        ...StabilityPool,
+        functionName: "getDepositorYieldGainWithPending",
+        args: [account ?? "0x"],
+      }
+    ],
+    select: ([
+      deposit,
+      collGain,
+      stashedColl,
+      yieldGainWithPending,
+    ]: [
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+    ]) => {
+      if (!account) {
+        throw new Error(); // should never happen (see enabled)
+      }
+      return deposit === 0n ? null : {
+        type: "earn",
+        owner: account,
+        deposit: dnum18(deposit),
+        collIndex,
+        rewards: {
+          usnd: dnum18(yieldGainWithPending),
+          coll: dn.add(
+            dnum18(collGain),
+            dnum18(stashedColl),
+          ),
+        },
+      } as const;
+    },
+  } as const;
 }
 
 export function useEarnPosition(
-  collIndex: null | CollIndex,
+  collIndex: CollIndex | null,
   account: null | Address,
-) {
-  const getBoldGains = useContinuousBoldGains(account, collIndex);
+): UseQueryResult<PositionEarn | null> {
+  const setup = earnPositionsContractsReadSetup(collIndex, account);
+  return useReadContracts({
+    contracts: setup.contracts,
+    allowFailure: false,
+    query: {
+      enabled: Boolean(account),
+      select: setup.select as any,
+    },
+  }) as any;
+}
 
-  const getBoldGains_ = () => {
-    return getBoldGains.data?.(Date.now()) ?? null;
-  };
+export function useEarnPositionsByAccount(account: null | Address) {
+  const wagmiConfig = useWagmiConfig();
+  return useQuery({
+    queryKey: ["StabilityPoolDepositsByAccount", account],
+    queryFn: async () => {
+      if (!account) {
+        return null;
+      }
 
-  const boldGains = useQuery({
-    queryFn: () => getBoldGains_(),
-    queryKey: ["useEarnPosition:getBoldGains", collIndex, account],
-    refetchInterval: DATA_REFRESH_INTERVAL,
-    enabled: getBoldGains.status === "success",
+      const branches = COLLATERAL_CONTRACTS;
+
+      const depositsPerBranch = await Promise.all(
+        branches.map(async (branch) => {
+          const i = getCollIndexFromSymbol(branch.symbol);
+          const setup = earnPositionsContractsReadSetup(i!, account);
+          const deposits = await readContracts(wagmiConfig, {
+            contracts: setup.contracts as any,
+            allowFailure: false,
+          });
+          return setup.select(deposits as any);
+        }),
+      );
+
+      return depositsPerBranch.filter((position) => position !== null);
+    },
   });
-
-  const spDeposit = useStabilityPoolDeposit(collIndex, account);
-  const spDepositSnapshot = spDeposit.data?.snapshot;
-
-  const scale1 = useStabilityPoolScale(
-    collIndex,
-    // spDepositSnapshot?.epoch ?? null,
-    spDepositSnapshot?.scale ?? null,
-  );
-
-  const scale2 = useStabilityPoolScale(
-    collIndex,
-    // spDepositSnapshot?.epoch ?? null,
-    spDepositSnapshot?.scale ? spDepositSnapshot?.scale + 1n : null,
-  );
-
-  const base = [
-    getBoldGains,
-    boldGains,
-    spDeposit,
-    scale1,
-    scale2,
-  ].find((r) => r.status !== "success") ?? boldGains;
-
-  return {
-    ...base,
-    data: (
-        !spDeposit.data
-        || !boldGains.data
-        || !scale1.data
-        || !scale2.data
-      )
-      ? null
-      : earnPositionFromGraph(spDeposit.data, {
-        usnd: boldGains.data,
-        coll: dnum18(
-          getCollGainFromSnapshots(
-            spDeposit.data.deposit,
-            spDeposit.data.snapshot.P,
-            spDeposit.data.snapshot.S,
-            scale1.data.S,
-            scale2.data.S,
-          ),
-        ),
-      }),
-  };
 }
 
-function earnPositionFromGraph(
-  spDeposit: NonNullable<StabilityPoolDepositQuery["stabilityPoolDeposit"]>,
-  rewards: { usnd: Dnum; coll: Dnum },
-): PositionEarn {
-  const collIndex = spDeposit.collateral.collIndex;
-  if (!isCollIndex(collIndex)) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
-  }
-  if (!isAddress(spDeposit.depositor)) {
-    throw new Error(`Invalid depositor address: ${spDeposit.depositor}`);
-  }
-  return {
-    type: "earn",
-    owner: spDeposit.depositor,
-    deposit: dnum18(spDeposit.deposit),
-    collIndex,
-    rewards,
-  };
-}
+// export function useEarnPool(collIndex: null | CollIndex) {
+//   const collateral = getCollToken(collIndex);
+//   const pool = useStabilityPool(collIndex ?? undefined);
+//   const stats = useLiquityStats();
+
+//   const branchStats = collateral && stats.data?.branch[collateral?.symbol];
+
+//   return {
+//     ...pool,
+//     data: {
+//       apr: dnumOrNull(branchStats?.spApyAvg1d, 18),
+//       apr7d: dnumOrNull(branchStats?.spApyAvg7d, 18),
+//       collateral,
+//       totalDeposited: pool.data?.totalDeposited ?? null,
+//     },
+//   };
+// }
+
+// export function useEarnPosition(
+//   collIndex: null | CollIndex,
+//   account: null | Address,
+// ) {
+//   const getBoldGains = useContinuousBoldGains(account, collIndex);
+
+//   const getBoldGains_ = () => {
+//     return getBoldGains.data?.(Date.now()) ?? null;
+//   };
+
+//   const boldGains = useQuery({
+//     queryFn: () => getBoldGains_(),
+//     queryKey: ["useEarnPosition:getBoldGains", collIndex, account],
+//     refetchInterval: DATA_REFRESH_INTERVAL,
+//     enabled: getBoldGains.status === "success",
+//   });
+
+//   const spDeposit = useStabilityPoolDeposit(collIndex, account);
+//   const spDepositSnapshot = spDeposit.data?.snapshot;
+
+//   const scale1 = useStabilityPoolScale(
+//     collIndex,
+//     // spDepositSnapshot?.epoch ?? null,
+//     spDepositSnapshot?.scale ?? null,
+//   );
+
+//   const scale2 = useStabilityPoolScale(
+//     collIndex,
+//     // spDepositSnapshot?.epoch ?? null,
+//     spDepositSnapshot?.scale ? spDepositSnapshot?.scale + 1n : null,
+//   );
+
+//   const base = [
+//     getBoldGains,
+//     boldGains,
+//     spDeposit,
+//     scale1,
+//     scale2,
+//   ].find((r) => r.status !== "success") ?? boldGains;
+
+//   return {
+//     ...base,
+//     data: (
+//         !spDeposit.data
+//         || !boldGains.data
+//         || !scale1.data
+//         || !scale2.data
+//       )
+//       ? null
+//       : earnPositionFromGraph(spDeposit.data, {
+//         usnd: boldGains.data,
+//         coll: dnum18(
+//           getCollGainFromSnapshots(
+//             spDeposit.data.deposit,
+//             spDeposit.data.snapshot.P,
+//             spDeposit.data.snapshot.S,
+//             scale1.data.S,
+//             scale2.data.S,
+//           ),
+//         ),
+//       }),
+//   };
+// }
+
+// function earnPositionFromGraph(
+//   spDeposit: NonNullable<StabilityPoolDepositQuery["stabilityPoolDeposit"]>,
+//   rewards: { usnd: Dnum; coll: Dnum },
+// ): PositionEarn {
+//   const collIndex = spDeposit.collateral.collIndex;
+//   if (!isCollIndex(collIndex)) {
+//     throw new Error(`Invalid collateral index: ${collIndex}`);
+//   }
+//   if (!isAddress(spDeposit.depositor)) {
+//     throw new Error(`Invalid depositor address: ${spDeposit.depositor}`);
+//   }
+//   return {
+//     type: "earn",
+//     owner: spDeposit.depositor,
+//     deposit: dnum18(spDeposit.deposit),
+//     collIndex,
+//     rewards,
+//   };
+// }
 
 export function useAccountVotingPower(account: Address | null, lqtyDiff: bigint = 0n) {
   const govUser = useGovernanceUser(account);
