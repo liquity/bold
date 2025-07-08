@@ -7,14 +7,15 @@ import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted,
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
-import { dnum18 } from "@/src/dnum-utils";
-import { DEMO_MODE } from "@/src/env";
+import { dnum18, jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { COLLATERAL_CONTRACTS, DEMO_MODE } from "@/src/env";
 import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { sleep } from "@/src/utils";
 import { isAddress, shortenAddress } from "@liquity2/uikit";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useCallback } from "react";
+import { useReadContracts, useConfig as useWagmiConfig } from "wagmi";
 import {
   AllInterestRateBracketsQuery,
   BorrowerInfoQuery,
@@ -31,6 +32,9 @@ import {
   TroveByIdQuery,
   TrovesByAccountQuery,
 } from "./subgraph-queries";
+import { getCollIndexFromSymbol, getCollToken, useLiquityStats } from "./liquity-utils";
+import { readContract, readContracts } from "wagmi/actions";
+import { getCollateralContract } from "./contracts";
 
 type Options = {
   refetchInterval?: number;
@@ -374,32 +378,179 @@ export function useStabilityPoolScale(
   });
 }
 
-export function useEarnPositionsByAccount(
-  account?: null | Address,
-  options?: Options,
-) {
-  let queryFn = async () => {
-    if (!account) return null;
-    const { stabilityPoolDeposits } = await graphQuery(
-      StabilityPoolDepositsByAccountQuery,
-      { account: account.toLowerCase() },
-    );
-    return stabilityPoolDeposits.map(subgraphStabilityPoolDepositToEarnPosition);
-  };
-
-  if (DEMO_MODE) {
-    queryFn = async () =>
-      account
-        ? ACCOUNT_POSITIONS.filter((position) => position.type === "earn")
-        : null;
-  }
+export function useEarnPool(collIndex: CollIndex | null) {
+  const wagmiConfig = useWagmiConfig();
+  const stats = useLiquityStats();
+  const collateral = getCollToken(collIndex);
+  const { spApyAvg1d = null, spApyAvg7d = null } = (
+    collateral && stats.data?.branch[collateral?.symbol]
+  ) ?? {};
 
   return useQuery({
-    queryKey: ["StabilityPoolDepositsByAccount", account],
-    queryFn,
-    ...prepareOptions(options),
+    queryKey: [
+      "earnPool",
+      collIndex,
+      jsonStringifyWithDnum(spApyAvg1d),
+      jsonStringifyWithDnum(spApyAvg7d),
+    ],
+    queryFn: async () => {
+      if (collIndex === null) {
+        return null;
+      }
+      const spContract = getCollateralContract(collIndex, "StabilityPool");
+      if (!spContract) {
+        return null;
+      }
+      const totalBoldDeposits = await readContract(wagmiConfig, {
+        ...spContract,
+        functionName: "getTotalBoldDeposits",
+      });
+      return {
+        apr: spApyAvg1d,
+        apr7d: spApyAvg7d,
+        collateral,
+        totalDeposited: dnum18(totalBoldDeposits),
+      };
+    },
+    enabled: stats.isSuccess,
   });
 }
+
+export function isEarnPositionActive(position: PositionEarn | null) {
+  return Boolean(
+    position && (
+      dn.gt(position.deposit, 0)
+      || dn.gt(position.rewards.usnd, 0)
+      || dn.gt(position.rewards.coll, 0)
+    ),
+  );
+}
+
+function earnPositionsContractsReadSetup(collIndex: CollIndex, account: Address | null) {
+  const StabilityPool = getCollateralContract(collIndex, "StabilityPool");
+  return {
+    contracts: [
+      {
+        ...StabilityPool,
+        functionName: "getCompoundedBoldDeposit",
+        args: [account ?? "0x"],
+      }, 
+      {
+        ...StabilityPool,
+        functionName: "getDepositorCollGain",
+        args: [account ?? "0x"],
+      }, 
+      {
+        ...StabilityPool,
+        functionName: "stashedColl",
+        args: [account ?? "0x"],
+      }, 
+      {
+        ...StabilityPool,
+        functionName: "getDepositorYieldGainWithPending",
+        args: [account ?? "0x"],
+      }
+    ],
+    select: ([
+      deposit,
+      collGain,
+      stashedColl,
+      yieldGainWithPending,
+    ]: [
+      bigint,
+      bigint,
+      bigint,
+      bigint,
+    ]) => {
+      if (!account) {
+        throw new Error(); // should never happen (see enabled)
+      }
+      return deposit === 0n ? null : {
+        type: "earn",
+        owner: account,
+        deposit: dnum18(deposit),
+        collIndex,
+        rewards: {
+          usnd: dnum18(yieldGainWithPending),
+          coll: dn.add(
+            dnum18(collGain),
+            dnum18(stashedColl),
+          ),
+        },
+      } as const;
+    },
+  } as const;
+}
+
+export function useEarnPosition(
+  collIndex: CollIndex,
+  account: null | Address,
+): UseQueryResult<PositionEarn | null> {
+  const setup = earnPositionsContractsReadSetup(collIndex, account);
+  return useReadContracts({
+    contracts: setup.contracts,
+    allowFailure: false,
+    query: {
+      enabled: Boolean(account),
+      select: setup.select as any,
+    },
+  }) as any;
+}
+
+export function useEarnPositionsByAccount(account: null | Address) {
+  const wagmiConfig = useWagmiConfig();
+  return useQuery({
+    queryKey: ["StabilityPoolDepositsByAccount", account],
+    queryFn: async () => {
+      if (!account) {
+        return null;
+      }
+
+      const branches = COLLATERAL_CONTRACTS;
+
+      const depositsPerBranch = await Promise.all(
+        branches.map(async (branch) => {
+          const i = getCollIndexFromSymbol(branch.symbol);
+          const setup = earnPositionsContractsReadSetup(i!, account);
+          const deposits = await readContracts(wagmiConfig, {
+            contracts: setup.contracts as any,
+            allowFailure: false,
+          });
+          return setup.select(deposits as any);
+        }),
+      );
+
+      return depositsPerBranch.filter((position) => position !== null);
+    },
+  });
+}
+
+// export function useEarnPositionsByAccount(
+//   account?: null | Address,
+//   options?: Options,
+// ) {
+//   let queryFn = async () => {
+//     if (!account) return null;
+//     const { stabilityPoolDeposits } = await graphQuery(
+//       StabilityPoolDepositsByAccountQuery,
+//       { account: account.toLowerCase() },
+//     );
+//     return stabilityPoolDeposits.map(subgraphStabilityPoolDepositToEarnPosition);
+//   };
+
+//   if (DEMO_MODE) {
+//     queryFn = async () =>
+//       account
+//         ? ACCOUNT_POSITIONS.filter((position) => position.type === "earn")
+//         : null;
+//   }
+
+//   return useQuery({
+//     queryKey: ["StabilityPoolDepositsByAccount", account],
+//     queryFn,
+//     ...prepareOptions(options),
+//   });
+// }
 
 export function useInterestRateBrackets(
   collIndex: null | CollIndex,
@@ -535,26 +686,26 @@ function subgraphTroveToLoan(
   };
 }
 
-function subgraphStabilityPoolDepositToEarnPosition(
-  spDeposit: NonNullable<
-    StabilityPoolDepositQueryType["stabilityPoolDeposit"]
-  >,
-): PositionEarn {
-  const collIndex = spDeposit.collateral.collIndex;
-  if (!isCollIndex(collIndex)) {
-    throw new Error(`Invalid collateral index: ${collIndex}`);
-  }
-  if (!isAddress(spDeposit.depositor)) {
-    throw new Error(`Invalid depositor address: ${spDeposit.depositor}`);
-  }
-  return {
-    type: "earn",
-    owner: spDeposit.depositor,
-    collIndex,
-    deposit: dnum18(spDeposit.deposit),
-    rewards: {
-      usnd: dnum18(0),
-      coll: dnum18(0),
-    },
-  };
-}
+// function subgraphStabilityPoolDepositToEarnPosition(
+//   spDeposit: NonNullable<
+//     StabilityPoolDepositQueryType["stabilityPoolDeposit"]
+//   >,
+// ): PositionEarn {
+//   const collIndex = spDeposit.collateral.collIndex;
+//   if (!isCollIndex(collIndex)) {
+//     throw new Error(`Invalid collateral index: ${collIndex}`);
+//   }
+//   if (!isAddress(spDeposit.depositor)) {
+//     throw new Error(`Invalid depositor address: ${spDeposit.depositor}`);
+//   }
+//   return {
+//     type: "earn",
+//     owner: spDeposit.depositor,
+//     collIndex,
+//     deposit: dnum18(spDeposit.deposit),
+//     rewards: {
+//       usnd: dnum18(0),
+//       coll: dnum18(0),
+//     },
+//   };
+// }
