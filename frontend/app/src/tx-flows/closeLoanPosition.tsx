@@ -74,7 +74,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
               <Amount
                 key='start'
                 value={amountToRepay}
-                suffix={` ${repayWithCollateral ? collateral.symbol : "USDN"}`}
+                suffix={` ${repayWithCollateral ? collateral.symbol : "USND"}`}
               />,
             ]}
           />
@@ -106,7 +106,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
 
   steps: {
     approveBold: {
-      name: () => "Approve USDN",
+      name: () => "Approve USND",
       Status: (props) => (
         <TransactionStatus {...props} approval='approve-only' />
       ),
@@ -143,7 +143,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       },
     },
 
-    // Close a loan position, repaying with USDN or with the collateral
+    // Close a loan position, repaying with USND or with the collateral
     closeLoanPosition: {
       name: () => "Close loan",
       Status: TransactionStatus,
@@ -155,7 +155,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           throw new Error("Invalid collateral index: " + loan.collIndex);
         }
 
-        // repay with USDN => get ETH
+        // repay with USND => get ETH
         if (!ctx.request.repayWithCollateral && coll.symbol === "ETH") {
           return ctx.writeContract({
             ...coll.contracts.LeverageWETHZapper,
@@ -164,7 +164,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           });
         }
 
-        // repay with USDN => get LST
+        // repay with USND => get LST
         if (!ctx.request.repayWithCollateral) {
           return ctx.writeContract({
             ...coll.contracts.LeverageLSTZapper,

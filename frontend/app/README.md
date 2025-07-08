@@ -20,7 +20,7 @@ Edit the `.env.local` file to set the environment variables.
 Run the development server:
 
 ```sh
-cd usdn/frontend/app
+cd nerite/frontend/app
 pnpm build-deps # only needed once
 pnpm dev
 ```

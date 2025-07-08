@@ -1,6 +1,6 @@
 import type { Token } from "./types";
 
-import tokenNeri from "./token-icons/neri.svg"; // Clone of USDN SVG (MUST REPLACE)
+import tokenNeri from "./token-icons/neri.svg"; // Clone of USND SVG (MUST REPLACE)
 import tokenUsnd from "./token-icons/usnd.svg";
 import tokenArb from "./token-icons/arb.svg";
 import tokenComp from "./token-icons/comp.svg";
