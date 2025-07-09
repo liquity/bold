@@ -12,7 +12,9 @@ import { css } from "@/styled-system/css";
 import {
   AnchorTextButton,
   HFlex,
+  IconDiscord,
   IconExternal,
+  IconX,
   shortenAddress,
   TokenIcon,
 } from "@liquity2/uikit";
@@ -59,6 +61,44 @@ export function ProtocolStats() {
           {DISPLAYED_PRICES.map((symbol) => (
             <Price key={symbol} symbol={symbol} />
           ))}
+          <Link
+            href='https://discord.gg/5h3avBYxcn'
+            target='_blank'
+            rel='noopener noreferrer'
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              color: "content",
+              _hover: { opacity: 0.8 },
+              _focusVisible: {
+                outline: "2px solid token(colors.focused)",
+              },
+              _active: {
+                translate: "0 1px",
+              },
+            })}
+          >
+            <IconDiscord size={16} />
+          </Link>
+          <Link
+            href='https://x.com/neriteorg'
+            target='_blank'
+            rel='noopener noreferrer'
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              color: "content",
+              _hover: { opacity: 0.8 },
+              _focusVisible: {
+                outline: "2px solid token(colors.focused)",
+              },
+              _active: {
+                translate: "0 1px",
+              },
+            })}
+          >
+            <IconX size={16} />
+          </Link>
           <Link
             href='https://docs.nerite.org/'
             target='_blank'
