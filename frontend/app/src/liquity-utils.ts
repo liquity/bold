@@ -614,7 +614,7 @@ export function usePredictAdjustInterestRateUpfrontFee(
   });
 }
 
-// from https://github.com/liquity/usdn/blob/204a3dec54a0e8689120ca48faf4ece5cf8ccd22/README.md#example-opentrove-transaction-with-hints
+// from https://github.com/liquity/bold/blob/204a3dec54a0e8689120ca48faf4ece5cf8ccd22/README.md#example-opentrove-transaction-with-hints
 export async function getTroveOperationHints({
   wagmiConfig,
   contracts,

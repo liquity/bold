@@ -139,9 +139,10 @@ export function PanelClosePosition({ loan }: { loan: PositionLoanCommitted }) {
                           className={css({
                             color: "contentAlt",
                             fontWeight: 400,
+                            fontSize: 14,
                           })}
                         >
-                          {repayToken.symbol === "USND" ? " account" : " loan"}
+                          {repayToken.symbol === "USND" ? " (account)" : " (collateral)"}
                         </span>
                       </>
                     ),
