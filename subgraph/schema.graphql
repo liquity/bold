@@ -67,6 +67,24 @@ type InterestBatch @entity(immutable: false) {
   troves: [Trove!]! @derivedFrom(field: "interestBatch")
 }
 
+type GovernanceUser @entity(immutable: false) {
+  id: ID! # "userAddress", e.g. "0x0000000000000000000000000000000000000000"
+  allocated: [Bytes!]!
+  allocatedLQTY: BigInt!
+  stakedLQTY: BigInt!
+  stakedOffset: BigInt!
+  allocations: [GovernanceAllocation!]! @derivedFrom(field: "user")
+}
+
+type GovernanceAllocation @entity(immutable: false) {
+  id: ID! # "initiativeAddress:userAddress", e.g. "0x0000000000000000000000000000000000000000:0x0000000000000000000000000000000000000000"
+  user: GovernanceUser!
+  initiative: GovernanceInitiative!
+  voteLQTY: BigInt!
+  vetoLQTY: BigInt!
+  atEpoch: BigInt!
+}
+
 type GovernanceInitiative @entity(immutable: false) {
   id: ID! # "initiativeAddress", e.g. "0x0000000000000000000000000000000000000000"
   registered: Boolean!
