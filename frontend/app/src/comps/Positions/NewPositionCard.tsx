@@ -87,7 +87,7 @@ export function NewPositionCard() {
       // compressed3: 0,
 
       // gridTemplateColumns: "25% 25% 25% 25%",
-      gridTemplateColumns: "1fr 1fr 1fr",
+      gridTemplateColumns: "33.33% 33.33% 33.33%",
     },
     to: {
       hovered0: hovered === 0 ? 1 : 0,
@@ -103,7 +103,7 @@ export function NewPositionCard() {
       gridTemplateColumns: Array.from({ length: 3 })
         .map((_, index) =>
           hovered === -1
-            ? "1fr"
+            ? "33.33%"
             : `${
                 (hovered === index
                   ? (348 - COMPRESSED_WIDTH * 2) / 348
