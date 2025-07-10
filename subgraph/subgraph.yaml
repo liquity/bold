@@ -53,14 +53,8 @@ dataSources:
       eventHandlers:
         - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,uint8)
           handler: handleAllocateLQTY
-        - event: DepositLQTY(indexed
-            address,address,uint256,uint256,uint256,uint256,uint256)
-          handler: handleDepositLQTY
         - event: RegisterInitiative(address,address,uint256,uint8)
           handler: handleRegisterInitiative
-        - event: WithdrawLQTY(indexed
-            address,address,uint256,uint256,uint256,uint256,uint256,uint256)
-          handler: handleWithdrawLQTY
       file: ./src/Governance.mapping.ts
     network: mainnet
 templates:
