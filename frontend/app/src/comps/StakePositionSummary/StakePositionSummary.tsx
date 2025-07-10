@@ -36,7 +36,7 @@ export function StakePositionSummary({
   const allocatedLqty = dnum18(govUser.data?.allocatedLQTY);
   const totalStakedLqty = dnum18(govStats.data?.totalLQTYStaked);
 
-  const stakedShare = stakedLqty && totalStakedLqty
+  const stakedShare = stakedLqty && totalStakedLqty && dn.gt(totalStakedLqty, 0)
     ? dn.div(stakedLqty, totalStakedLqty)
     : null;
 

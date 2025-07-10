@@ -16,11 +16,19 @@ type IndexedTrove = {
   status: string;
 };
 
+async function tryFetch(...args: Parameters<typeof fetch>) {
+  try {
+    return await fetch(...args);
+  } catch {
+    return null;
+  }
+}
+
 async function graphQuery<TResult, TVariables>(
   query: TypedDocumentString<TResult, TVariables>,
   ...[variables]: TVariables extends Record<string, never> ? [] : [TVariables]
 ) {
-  const response = await fetch(SUBGRAPH_URL, {
+  const response = await tryFetch(SUBGRAPH_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -32,7 +40,7 @@ async function graphQuery<TResult, TVariables>(
     ),
   });
 
-  if (!response.ok) {
+  if (response === null || !response.ok) {
     subgraphIndicator.setError("Subgraph error: unable to fetch data.");
     throw new Error("Error while fetching data from the subgraph");
   }
