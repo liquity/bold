@@ -6,7 +6,7 @@ import { TopBar } from "@/components/TopBar";
 
 export default function Home() {
   return (
-    <div className="flex flex-col justify-center items-center h-screen w-screen bg-white mx-auto">
+    <div className="flex flex-col justify-start items-center h-screen w-screen bg-white mx-auto gap-12">
       <TopBar />
       <div style={{
         display: "flex",
