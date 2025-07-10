@@ -8,7 +8,7 @@ contract BTCPriceFeed is CompositePriceFeed {
     Oracle public btcUsdOracle;
 
     uint256 public constant DEVIATION_THRESHOLD = 2e16; // 2%
-    uint256 private constant _CL_BTC_USD_HEARTBEAT = 3600; // 1 hour
+    uint256 private constant _CL_BTC_USD_HEARTBEAT = 24 hours;
     AggregatorV3Interface public constant CL_BTC_USD_PRICE_FEED = AggregatorV3Interface(0xF4030086522a5bEEa4988F8cA5B36dbC97BeE88c);
 
     constructor(
