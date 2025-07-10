@@ -660,6 +660,8 @@ export function useBribingClaim(
               claimedVotes,
             ] = results[resultIndex + 1] as [bigint, bigint, bigint];
 
+            // allocations are ordered by descending epoch,
+            // so this finds the most recent one at the time of `epoch`
             const userAllocation = userAllocations.find((allocation) => allocation.epoch <= epoch);
             const totalAllocation = totalAllocations.find((allocation) => allocation.epoch <= epoch);
 
