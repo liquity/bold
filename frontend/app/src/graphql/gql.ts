@@ -22,6 +22,7 @@ type Documents = {
     "\n  query InterestBatches($ids: [ID!]!) {\n    interestBatches(where: { id_in: $ids }) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n": typeof types.InterestBatchesDocument,
     "\n  query AllInterestRateBrackets {\n    interestRateBrackets(orderBy: rate) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n    }\n  }\n": typeof types.AllInterestRateBracketsDocument,
     "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n": typeof types.GovernanceInitiativesDocument,
+    "\n  query AllocationHistory($user: String $initiative: String) {\n    userAllocations: governanceAllocations(\n      where: {\n        initiative: $initiative\n        user: $user\n      }\n      orderBy: epoch\n      orderDirection: desc\n    ) {\n      epoch\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n\n    totalAllocations: governanceAllocations(\n      where: {\n        initiative: $initiative\n        user: null\n      }\n      orderBy: epoch\n      orderDirection: desc\n    ) {\n      epoch\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n  }\n": typeof types.AllocationHistoryDocument,
 };
 const documents: Documents = {
     "\n  query BlockNumber {\n    _meta {\n      block {\n        number\n      }\n    }\n  }\n": types.BlockNumberDocument,
@@ -31,6 +32,7 @@ const documents: Documents = {
     "\n  query InterestBatches($ids: [ID!]!) {\n    interestBatches(where: { id_in: $ids }) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n": types.InterestBatchesDocument,
     "\n  query AllInterestRateBrackets {\n    interestRateBrackets(orderBy: rate) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n    }\n  }\n": types.AllInterestRateBracketsDocument,
     "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n": types.GovernanceInitiativesDocument,
+    "\n  query AllocationHistory($user: String $initiative: String) {\n    userAllocations: governanceAllocations(\n      where: {\n        initiative: $initiative\n        user: $user\n      }\n      orderBy: epoch\n      orderDirection: desc\n    ) {\n      epoch\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n\n    totalAllocations: governanceAllocations(\n      where: {\n        initiative: $initiative\n        user: null\n      }\n      orderBy: epoch\n      orderDirection: desc\n    ) {\n      epoch\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n  }\n": types.AllocationHistoryDocument,
 };
 
 /**
@@ -61,6 +63,10 @@ export function graphql(source: "\n  query AllInterestRateBrackets {\n    intere
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n"): typeof import('./graphql').GovernanceInitiativesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query AllocationHistory($user: String $initiative: String) {\n    userAllocations: governanceAllocations(\n      where: {\n        initiative: $initiative\n        user: $user\n      }\n      orderBy: epoch\n      orderDirection: desc\n    ) {\n      epoch\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n\n    totalAllocations: governanceAllocations(\n      where: {\n        initiative: $initiative\n        user: null\n      }\n      orderBy: epoch\n      orderDirection: desc\n    ) {\n      epoch\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n  }\n"): typeof import('./graphql').AllocationHistoryDocument;
 
 
 export function graphql(source: string) {
