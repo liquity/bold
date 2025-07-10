@@ -802,7 +802,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 address(vars.troveManagers[vars.i]),
                 r.hintHelpers,
                 r.multiTroveGetter,
-                computeGovernanceAddress(_deployGovernanceParams)
+                NERITE_DAO_TREASURY_ADDRESS
             );
             r.contractsArray[vars.i] = vars.contracts;
         }
