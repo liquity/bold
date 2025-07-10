@@ -50,12 +50,14 @@ export function ProtocolStats() {
       >
         <HFlex gap={4} alignItems='center'>
           <Logo />
-          <span>TVL</span>{" "}
-          <span>
-            {tvl && (
-              <Amount fallback='…' format='compact' prefix='$' value={tvl} />
-            )}
-          </span>
+          {tvl && (
+            <>
+              <span>TVL</span>{" "}
+              <span>
+                <Amount fallback='…' format='compact' prefix='$' value={tvl} />
+              </span>
+            </>
+          )}
         </HFlex>
         <HFlex gap={16}>
           {DISPLAYED_PRICES.map((symbol) => (
