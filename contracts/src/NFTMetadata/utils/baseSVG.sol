@@ -4,11 +4,14 @@ pragma solidity 0.8.24;
 import {svg} from "./SVG.sol";
 import {utils, LibString, numUtils} from "./Utils.sol";
 import "./FixedAssets.sol";
+import "./USNDLogoSVG.sol";
 
 library baseSVG {
     string constant GEIST = 'style="font-family: Geist" ';
     string constant DARK_BLUE = "#121B44";
     string constant STOIC_WHITE = "#DEE4FB";
+
+    USNDLogoSVG constant usndLogo = USNDLogoSVG(0x09673074d6C50c81f9b097E335ff6655bC96ca98);
 
     function _svgProps() internal pure returns (string memory) {
         return string.concat(
@@ -73,7 +76,7 @@ library baseSVG {
                 svg.prop("height", "20"),
                 svg.prop(
                     "href",
-                    USND_LOGO
+                    usndLogo.getLogo()
                 )
             )
         );
