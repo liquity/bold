@@ -1085,8 +1085,7 @@ function BribeMarketsInfo() {
             color: "contentAlt",
           })}
         >
-          Initiatives may offer bribes to incentivize votes, which are displayed in the table above. Claiming
-          functionality coming soon.
+          Initiatives may offer bribes to incentivize votes, which are displayed in the table above.
         </p>
       </header>
       <div>
