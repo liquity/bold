@@ -6,7 +6,7 @@ import { BribeInitiative } from "@/src/abi/BribeInitiative";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { KNOWN_INITIATIVES_URL } from "@/src/env";
-import { getIndexedInitiatives } from "@/src/subgraph";
+import { getAllocationHistory, getIndexedInitiatives } from "@/src/subgraph";
 import { jsonStringifyWithBigInt } from "@/src/utils";
 import { vAddress } from "@/src/valibot-utils";
 import { useRaf } from "@liquity2/uikit";
@@ -423,6 +423,12 @@ export function useGovernanceStats() {
   });
 }
 
+type ClaimData = {
+  epoch: number;
+  prevLQTYAllocationEpoch: number;
+  prevTotalLQTYAllocationEpoch: number;
+};
+
 type BribeClaim = {
   bribeTokens: Array<{
     address: Address;
@@ -435,11 +441,7 @@ type BribeClaim = {
     bribeTokenAmount: Dnum;
     bribeTokenAddress: Address;
     epochs: number[];
-    claimData: Array<{
-      epoch: number;
-      prevLQTYAllocationEpoch: number;
-      prevTotalLQTYAllocationEpoch: number;
-    }>;
+    claimData: ClaimData[];
   }>;
   totalBold: Dnum;
 };
@@ -541,7 +543,6 @@ export function useCurrentEpochBribes(
 
 // limit checks to the last 52 epochs
 const BRIBING_CHECK_EPOCH_LIMIT = 52;
-const ENABLE_BRIBING_CLAIM = false; // temporary flag to enable/disable bribe claims
 
 export function useBribingClaim(
   account: Address | null,
@@ -558,7 +559,7 @@ export function useBribingClaim(
       jsonStringifyWithBigInt(govUser.data),
     ],
     queryFn: async () => {
-      if (!account || !govState.data || !govUser.data || !ENABLE_BRIBING_CLAIM) {
+      if (!account || !govState.data || !govUser.data) {
         return null;
       }
 
@@ -622,39 +623,35 @@ export function useBribingClaim(
           const epochsToCheck = Math.min(completedEpochs, BRIBING_CHECK_EPOCH_LIMIT);
           const startEpoch = Math.max(1, completedEpochs - epochsToCheck + 1);
 
-          const results = await readContracts(wagmiConfig, {
-            contracts: Array.from({ length: epochsToCheck }, (_, index) => {
-              const BribeContract = { abi: BribeInitiative, address } as const;
-              const epoch = BigInt(startEpoch + index);
-              return [{
-                ...BribeContract,
-                functionName: "claimedBribeAtEpoch",
-                args: [account, epoch],
-              }, {
-                ...BribeContract,
-                functionName: "bribeByEpoch",
-                args: [epoch],
-              }, {
-                ...BribeContract,
-                functionName: "lqtyAllocatedByUserAtEpoch",
-                args: [account, epoch],
-              }, {
-                ...BribeContract,
-                functionName: "totalLQTYAllocatedByEpoch",
-                args: [epoch],
-              }] as const;
-            }).flat(),
-            allowFailure: false,
-          });
+          const [{ userAllocations, totalAllocations }, results] = await Promise.all([
+            getAllocationHistory(account, address),
+            readContracts(wagmiConfig, {
+              contracts: Array.from({ length: epochsToCheck }, (_, index) => {
+                const BribeContract = { abi: BribeInitiative, address } as const;
+                const epoch = BigInt(startEpoch + index);
+                return [{
+                  ...BribeContract,
+                  functionName: "claimedBribeAtEpoch",
+                  args: [account, epoch],
+                }, {
+                  ...BribeContract,
+                  functionName: "bribeByEpoch",
+                  args: [epoch],
+                }] as const;
+              }).flat(),
+              allowFailure: false,
+            }),
+          ]);
 
           const claimableEpochs: number[] = [];
+          const claimData: ClaimData[] = [];
           let initiativeBold = DNUM_0;
           let initiativeBribeToken = DNUM_0;
 
-          // process results in groups of 4 (one per epoch)
+          // process results in groups of 2 (one per epoch)
           for (let epochIndex = 0; epochIndex < epochsToCheck; epochIndex++) {
             const epoch = startEpoch + epochIndex;
-            const resultIndex = epochIndex * 4;
+            const resultIndex = epochIndex * 2;
 
             const hasClaimed = results[resultIndex] as boolean;
             const [
@@ -662,11 +659,19 @@ export function useBribingClaim(
               remainingBribeToken,
               claimedVotes,
             ] = results[resultIndex + 1] as [bigint, bigint, bigint];
-            const [userLqty, userOffset] = results[resultIndex + 2] as [bigint, bigint];
-            const [totalLqty, totalOffset] = results[resultIndex + 3] as [bigint, bigint];
+
+            // allocations are ordered by descending epoch,
+            // so this finds the most recent one at the time of `epoch`
+            const userAllocation = userAllocations.find((allocation) => allocation.epoch <= epoch);
+            const totalAllocation = totalAllocations.find((allocation) => allocation.epoch <= epoch);
 
             // skip if already claimed or no bribes available
-            if (hasClaimed || (remainingBold === 0n && remainingBribeToken === 0n) || userLqty === 0n) {
+            if (
+              hasClaimed
+              || (remainingBold === 0n && remainingBribeToken === 0n)
+              || !totalAllocation
+              || !userAllocation || userAllocation.voteLQTY === 0n
+            ) {
               continue;
             }
 
@@ -675,9 +680,8 @@ export function useBribingClaim(
               + epochDuration;
 
             // voting power at the end of the epoch
-            const userVP = votingPower(userLqty, userOffset, epochEnd);
-            const totalVP = votingPower(totalLqty, totalOffset, epochEnd);
-
+            const userVP = votingPower(userAllocation.voteLQTY, userAllocation.voteOffset, epochEnd);
+            const totalVP = votingPower(totalAllocation.voteLQTY, totalAllocation.voteOffset, epochEnd);
             const remainingVP = totalVP - claimedVotes;
 
             if (remainingVP > 0n && userVP > 0n) {
@@ -690,38 +694,17 @@ export function useBribingClaim(
               initiativeBold = dn.add(initiativeBold, boldClaim);
               initiativeBribeToken = dn.add(initiativeBribeToken, bribeTokenClaim);
               claimableEpochs.push(epoch);
+              claimData.push({
+                epoch,
+                prevLQTYAllocationEpoch: Number(userAllocation.epoch),
+                prevTotalLQTYAllocationEpoch: Number(totalAllocation.epoch),
+              });
             }
           }
 
           if (claimableEpochs.length === 0) {
             return null;
           }
-
-          // fetch claim data for each claimable epoch
-          const claimDataResults = await readContracts(wagmiConfig, {
-            contracts: claimableEpochs.flatMap(() => ([{
-              abi: BribeInitiative,
-              address,
-              functionName: "getMostRecentUserEpoch",
-              args: [account],
-            }, {
-              abi: BribeInitiative,
-              address,
-              functionName: "getMostRecentTotalEpoch",
-              args: [],
-            }] as const)),
-            allowFailure: false,
-          });
-
-          const claimData = claimableEpochs.map((epoch, index) => {
-            const userEpochIndex = index * 2;
-            const totalEpochIndex = index * 2 + 1;
-            return {
-              epoch,
-              prevLQTYAllocationEpoch: Number(claimDataResults[userEpochIndex]),
-              prevTotalLQTYAllocationEpoch: Number(claimDataResults[totalEpochIndex]),
-            };
-          });
 
           return {
             boldAmount: initiativeBold,
