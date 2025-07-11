@@ -550,6 +550,7 @@ export function useBribingClaim(
   const wagmiConfig = useWagmiConfig();
   const govState = useGovernanceState();
   const govUser = useGovernanceUser(account);
+  const initiatives = useNamedInitiatives();
 
   return useQuery({
     queryKey: [
@@ -559,16 +560,13 @@ export function useBribingClaim(
       jsonStringifyWithBigInt(govUser.data),
     ],
     queryFn: async () => {
-      if (!account || !govState.data || !govUser.data) {
+      if (!account || !govState.data || !govUser.data || !initiatives.data) {
         return null;
       }
 
       const currentEpoch = govState.data.epoch;
       const epochDuration = govState.data.epochEnd - govState.data.epochStart;
-
-      const initiativesToCheck = govUser.data.allocations
-        .filter(({ voteLQTY, vetoLQTY }) => (voteLQTY + vetoLQTY) > 0n)
-        .map(({ initiative }) => initiative);
+      const initiativesToCheck = initiatives.data.map(({ address }) => address);
 
       if (initiativesToCheck.length === 0) {
         return {
@@ -602,9 +600,12 @@ export function useBribingClaim(
         }
       }
 
-      // should not happen since we check for initiativesToCheck.length above
       if (bribeInitiatives.length === 0) {
-        throw new Error("No bribe initiatives found for the user");
+        return {
+          bribeTokens: [],
+          claimableInitiatives: [],
+          totalBold: DNUM_0,
+        };
       }
 
       // for each bribe initiative, check claimable epochs
