@@ -282,8 +282,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     }
 
     function run() external {
-        //string memory saltStr = vm.envOr("SALT", block.timestamp.toString());
-        //SALT = keccak256(bytes(saltStr));
         SALT = 0xd79110da63c6dad10aba193010eb906a4bc7ba9fe0aec03c0d8098e2dec596b6;
 
         //setup SF factories
