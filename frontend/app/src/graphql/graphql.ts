@@ -1174,7 +1174,7 @@ export const InterestBatchesDocument = new TypedDocumentString(`
     `) as unknown as TypedDocumentString<InterestBatchesQuery, InterestBatchesQueryVariables>;
 export const AllInterestRateBracketsDocument = new TypedDocumentString(`
     query AllInterestRateBrackets {
-  interestRateBrackets(orderBy: rate) {
+  interestRateBrackets(first: 1000, where: {totalDebt_gt: 0}, orderBy: rate) {
     collateral {
       collIndex
     }
