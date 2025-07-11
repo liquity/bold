@@ -23,8 +23,8 @@ export type InitiativeStatus =
   | "skip"
   | "claimable"
   | "claimed"
-  | "disabled"
-  | "unregisterable";
+  | "unregisterable"
+  | "disabled";
 
 export function initiativeStatusFromNumber(status: number): InitiativeStatus {
   const statuses: Record<number, InitiativeStatus> = {
@@ -33,8 +33,8 @@ export function initiativeStatusFromNumber(status: number): InitiativeStatus {
     2: "skip",
     3: "claimable",
     4: "claimed",
-    5: "disabled",
-    6: "unregisterable",
+    5: "unregisterable",
+    6: "disabled",
   };
   return statuses[status] || "nonexistent";
 }
