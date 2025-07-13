@@ -68,4 +68,5 @@ interface IAddressesRegistry {
     function WETH() external returns (IWETH);
 
     function setAddresses(AddressVars memory _vars) external;
+    function daoUpdateInterestRouter(address _interestRouterAddress) external;
 }

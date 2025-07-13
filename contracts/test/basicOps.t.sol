@@ -208,4 +208,16 @@ contract BasicOps is DevTestSetup {
         assertLt(boldToken.balanceOf(A), 2000e18, "Wrong bold balance");
         assertEq(stabilityPool.getCompoundedBoldDeposit(A), 1e18, "Wrong SP deposit");
     }
+
+    function testUpdateInterestRouter() public {
+        vm.startPrank(A);
+        vm.expectRevert("Only the existing interestRouter can update the interest router.");
+        addressesRegistry.daoUpdateInterestRouter(address(0));
+        vm.stopPrank();
+
+        vm.startPrank(address(addressesRegistry.interestRouter()));
+        addressesRegistry.daoUpdateInterestRouter(address(777));
+        assertEq(address(addressesRegistry.interestRouter()), address(777));
+        vm.stopPrank();
+    }
 }

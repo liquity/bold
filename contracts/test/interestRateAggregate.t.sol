@@ -145,6 +145,30 @@ contract InterestRateAggregate is DevTestSetup {
         vm.stopPrank();
     }
 
+    function testMintAggInterestRevertsWhenNotCalledByBOorTMAfterUpdateInterestRouter() public {
+
+        TroveChange memory noChange;
+
+        //update interest router
+        vm.startPrank(address(addressesRegistry.interestRouter()));
+        addressesRegistry.daoUpdateInterestRouter(address(888));
+        vm.stopPrank();
+
+        vm.startPrank(A);
+        vm.expectRevert();
+        activePool.mintAggInterestAndAccountForTroveChange(noChange, address(0));
+        vm.stopPrank();
+
+        vm.startPrank(address(borrowerOperations));
+        activePool.mintAggInterestAndAccountForTroveChange(noChange, address(0));
+        vm.stopPrank();
+
+        vm.startPrank(address(troveManager));
+        activePool.mintAggInterestAndAccountForTroveChange(noChange, address(0));
+        vm.stopPrank();
+
+    }
+
     // --- openTrove impact on aggregates ---
 
     // openTrove increases recorded aggregate debt by correct amount

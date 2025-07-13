@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import {CommonBase} from "forge-std/Base.sol";
 import {stdJson} from "forge-std/StdJson.sol";
+import {console} from "forge-std/console.sol";
 import {IERC20Metadata as IERC20} from "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IUserProxy} from "V2-gov/src/interfaces/IUserProxy.sol";
@@ -54,6 +55,12 @@ contract UseDeployment is CommonBase {
     address WETH;
     address WSTETH;
     address RETH;
+    address RSETH;
+    address WEETH;
+    address ARB;
+    address COMP;
+    address TBTC;
+
     address BOLD;
     address USDC;
     address LQTY;
@@ -69,6 +76,11 @@ contract UseDeployment is CommonBase {
     IERC20 usdc;
     IERC20 lqty;
     IERC20 lusd;
+    IERC20 rseth;
+    IERC20 weeth;
+    IERC20 arb;
+    IERC20 comp;
+    IERC20 tbtc;
 
     ICollateralRegistry collateralRegistry;
     IBoldToken boldToken;
@@ -87,31 +99,34 @@ contract UseDeployment is CommonBase {
         string memory json = vm.readFile(deploymentManifestJson);
         collateralRegistry = ICollateralRegistry(json.readAddress(".collateralRegistry"));
         boldToken = IBoldToken(BOLD = json.readAddress(".boldToken"));
+        console.log("boldToken", address(boldToken));
         hintHelpers = IHintHelpers(json.readAddress(".hintHelpers"));
         governance = Governance(json.readAddress(".governance.governance"));
-        curveUsdcBold = ICurveStableSwapNG(json.readAddress(".governance.curveUsdcBoldPool"));
-        curveUsdcBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.curveUsdcBoldGauge"));
-        curveUsdcBoldInitiative = CurveV2GaugeRewards(json.readAddress(".governance.curveUsdcBoldInitiative"));
-        curveLusdBold = ICurveStableSwapNG(json.readAddress(".governance.curveLusdBoldPool"));
-        curveLusdBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.curveLusdBoldGauge"));
-        curveLusdBoldInitiative = CurveV2GaugeRewards(json.readAddress(".governance.curveLusdBoldInitiative"));
-        defiCollectiveInitiative = json.readAddress(".governance.defiCollectiveInitiative");
+        //curveUsdcBold = ICurveStableSwapNG(json.readAddress(".governance.curveUsdcBoldPool"));
+        //curveUsdcBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.curveUsdcBoldGauge"));
+        //curveUsdcBoldInitiative = CurveV2GaugeRewards(json.readAddress(".governance.curveUsdcBoldInitiative"));
+        //curveLusdBold = ICurveStableSwapNG(json.readAddress(".governance.curveLusdBoldPool"));
+        //curveLusdBoldGauge = ILiquidityGaugeV6(json.readAddress(".governance.curveLusdBoldGauge"));
+        //curveLusdBoldInitiative = CurveV2GaugeRewards(json.readAddress(".governance.curveLusdBoldInitiative"));
+        //defiCollectiveInitiative = json.readAddress(".governance.defiCollectiveInitiative");
 
         vm.label(address(collateralRegistry), "CollateralRegistry");
         vm.label(address(hintHelpers), "HintHelpers");
         vm.label(address(governance), "Governance");
-        vm.label(address(curveUsdcBold), "CurveStableSwapNG");
-        vm.label(address(curveUsdcBoldGauge), "LiquidityGaugeV6");
-        vm.label(address(curveUsdcBoldInitiative), "CurveV2GaugeRewards");
+        //vm.label(address(curveUsdcBold), "CurveStableSwapNG");
+        //vm.label(address(curveUsdcBoldGauge), "LiquidityGaugeV6");
+        //vm.label(address(curveUsdcBoldInitiative), "CurveV2GaugeRewards");
 
         ETH_GAS_COMPENSATION = json.readUint(".constants.ETH_GAS_COMPENSATION");
         MIN_DEBT = json.readUint(".constants.MIN_DEBT");
-        EPOCH_START = json.readUint(".governance.constants.EPOCH_START");
-        EPOCH_DURATION = json.readUint(".governance.constants.EPOCH_DURATION");
-        REGISTRATION_FEE = json.readUint(".governance.constants.REGISTRATION_FEE");
-        LQTY = json.readAddress(".governance.LQTYToken");
-        USDC = curveUsdcBold.coins(0) != BOLD ? curveUsdcBold.coins(0) : curveUsdcBold.coins(1);
-        LUSD = address(IUserProxy(governance.userProxyImplementation()).lusd());
+        //EPOCH_START = json.readUint(".governance.constants.EPOCH_START");
+        //EPOCH_DURATION = json.readUint(".governance.constants.EPOCH_DURATION");
+        //REGISTRATION_FEE = json.readUint(".governance.constants.REGISTRATION_FEE");
+        //LQTY = json.readAddress(".governance.LQTYToken");
+        //USDC = curveUsdcBold.coins(0) != BOLD ? curveUsdcBold.coins(0) : curveUsdcBold.coins(1);
+        //LUSD = address(IUserProxy(governance.userProxyImplementation()).lusd());
+
+        console.log("collateralRegistry address", address(collateralRegistry));
 
         for (uint256 i = 0; i < collateralRegistry.totalCollaterals(); ++i) {
             string memory branch = string.concat(".branches[", i.toString(), "]");
@@ -136,8 +151,11 @@ contract UseDeployment is CommonBase {
                 )
             });
 
+            console.log("collToken", branches[i].collToken.symbol(), "is", address(branches[i].collToken));
+
             vm.label(address(branches[i].priceFeed), "PriceFeed");
             vm.label(address(branches[i].troveNFT), "TroveNFT");
+            //console.log("troveNFT of branch", branches[i].collToken.symbol(), "is", address(branches[i].troveNFT));
             vm.label(address(branches[i].troveManager), "TroveManager");
             vm.label(address(branches[i].borrowerOperations), "BorrowerOperations");
             vm.label(address(branches[i].sortedTroves), "SortedTroves");
@@ -149,27 +167,49 @@ contract UseDeployment is CommonBase {
 
             string memory collSymbol = branches[i].collToken.symbol();
             if (collSymbol.eq("WETH")) {
+                console.log("Found WETH address", address(branches[i].collToken));
                 WETH = address(branches[i].collToken);
             } else if (collSymbol.eq("wstETH")) {
                 WSTETH = address(branches[i].collToken);
             } else if (collSymbol.eq("rETH")) {
                 RETH = address(branches[i].collToken);
+            } else if (collSymbol.eq("rSETH")) {
+                RSETH = address(branches[i].collToken);
+            } else if (collSymbol.eq("wEETH")) {
+                WEETH = address(branches[i].collToken);
+            } else if (collSymbol.eq("ARB")) {
+                ARB = address(branches[i].collToken);
+            } else if (collSymbol.eq("COMP")) {
+                COMP = address(branches[i].collToken);
+            } else if (collSymbol.eq("tBTC")) {
+                TBTC = address(branches[i].collToken);
             } else {
-                revert(string.concat("Unexpected collateral ", collSymbol));
+                //revert(string.concat("Unexpected collateral ", collSymbol));
+                console.log("Found another collateral. Skipping:", collSymbol);
             }
         }
 
         vm.label(WETH, "WETH");
         vm.label(WSTETH, "wstETH");
         vm.label(RETH, "rETH");
+        vm.label(RSETH, "rSETH");
+        vm.label(WEETH, "wEETH");
+        vm.label(ARB, "ARB");
+        vm.label(COMP, "COMP");
+        vm.label(TBTC, "tBTC");
         vm.label(BOLD, "BOLD");
-        vm.label(USDC, "USDC");
-        vm.label(LQTY, "LQTY");
-        vm.label(LUSD, "LUSD");
+        //vm.label(USDC, "USDC");
+        //vm.label(LQTY, "LQTY");
+        //vm.label(LUSD, "LUSD");
 
         weth = IWETH(WETH);
-        usdc = IERC20(USDC);
-        lqty = IERC20(LQTY);
-        lusd = IERC20(LUSD);
+        rseth = IERC20(RSETH);
+        weeth = IERC20(WEETH);
+        arb = IERC20(ARB);
+        comp = IERC20(COMP);
+        tbtc = IERC20(TBTC);
+        //usdc = IERC20(USDC);
+        //lqty = IERC20(LQTY);
+        //lusd = IERC20(LUSD);
     }
 }

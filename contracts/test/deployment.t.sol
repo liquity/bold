@@ -74,7 +74,7 @@ contract Deployment is DevTestSetup {
 
     function testActivePoolHasCorrectInterestRouterAddress() public view {
         address interestRouter = address(mockInterestRouter);
-        address recordedInterestRouterAddress = address(activePool.interestRouter());
+        address recordedInterestRouterAddress = address(addressesRegistry.interestRouter());
         assertEq(interestRouter, recordedInterestRouterAddress);
     }
 

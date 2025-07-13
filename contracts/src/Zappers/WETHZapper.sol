@@ -14,7 +14,7 @@ contract WETHZapper is BaseZapper {
         // Approve coll to BorrowerOperations
         WETH.approve(address(borrowerOperations), type(uint256).max);
         // Approve Coll to exchange module (for closeTroveFromCollateral)
-        WETH.approve(address(_exchange), type(uint256).max);
+        //WETH.approve(address(_exchange), type(uint256).max);
     }
 
     function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256) {
