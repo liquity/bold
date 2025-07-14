@@ -1,7 +1,7 @@
 // import { ActionIcon } from "@/src/comps/ActionCard/ActionIcon";
 import { ActionIcon } from "@/src/comps/ActionCard/SnailIcon";
 import content from "@/src/content";
-import { BUY_PAGE_URL } from "@/src/env";
+// import { BUY_PAGE_URL } from "@/src/env";
 import { css } from "@/styled-system/css";
 import { token } from "@/styled-system/tokens";
 import { lerp } from "@liquity2/uikit";
@@ -41,16 +41,16 @@ const actionAttributes = {
     path: "/earn",
     title: "Earn",
   },
-  buy: {
-    colors: {
-      background: token("colors.brandGolden"),
-      foreground: token("colors.brandGoldenContent"),
-      foregroundAlt: token("colors.brandGoldenContentAlt"),
-    },
-    description: contentActions.buy.description,
-    path: BUY_PAGE_URL?.startsWith("http") ? BUY_PAGE_URL : "/buy",
-    title: "Buy",
-  },
+  // buy: {
+  //   colors: {
+  //     background: token("colors.brandGolden"),
+  //     foreground: token("colors.brandGoldenContent"),
+  //     foregroundAlt: token("colors.brandGoldenContentAlt"),
+  //   },
+  //   description: contentActions.buy.description,
+  //   path: BUY_PAGE_URL?.startsWith("http") ? BUY_PAGE_URL : "/buy",
+  //   title: "Buy",
+  // },
 } as const;
 
 const RESET_DELAY = 500;
@@ -78,35 +78,36 @@ export function NewPositionCard() {
     from: {
       hovered0: 0,
       hovered1: 0,
-      hovered2: 0,
+      // hovered2: 0,
       // hovered3: 0,
 
       compressed0: 0,
       compressed1: 0,
-      compressed2: 0,
+      // compressed2: 0,
       // compressed3: 0,
 
       // gridTemplateColumns: "25% 25% 25% 25%",
-      gridTemplateColumns: "33.33% 33.33% 33.33%",
+      // gridTemplateColumns: "33.33% 33.33% 33.33%",
+      gridTemplateColumns: "50% 50%",
     },
     to: {
       hovered0: hovered === 0 ? 1 : 0,
       hovered1: hovered === 1 ? 1 : 0,
-      hovered2: hovered === 2 ? 1 : 0,
+      // hovered2: hovered === 2 ? 1 : 0,
       // hovered3: hovered === 3 ? 1 : 0,
 
       compressed0: hovered !== -1 && hovered !== 0 ? 1 : 0,
       compressed1: hovered !== -1 && hovered !== 1 ? 1 : 0,
-      compressed2: hovered !== -1 && hovered !== 2 ? 1 : 0,
+      // compressed2: hovered !== -1 && hovered !== 2 ? 1 : 0,
       // compressed3: hovered !== -1 && hovered !== 3 ? 1 : 0,
 
-      gridTemplateColumns: Array.from({ length: 3 })
+      gridTemplateColumns: Array.from({ length: 2 })
         .map((_, index) =>
           hovered === -1
-            ? "33.33%"
+            ? "50%"
             : `${
                 (hovered === index
-                  ? (348 - COMPRESSED_WIDTH * 2) / 348
+                  ? (348 - COMPRESSED_WIDTH * 1) / 348
                   : COMPRESSED_WIDTH / 348) * 100
               }%`
         )
@@ -138,11 +139,11 @@ export function NewPositionCard() {
           ([type, { description, path, title, colors }], index) => {
             const hprogress = spring[
               `hovered${index}` as keyof typeof spring
-            ] as (typeof spring)[`hovered${0 | 1 | 2}`];
+            ] as (typeof spring)[`hovered${0 | 1}`];
 
             const cprogress = spring[
               `compressed${index}` as keyof typeof spring
-            ] as (typeof spring)[`compressed${0 | 1 | 2}`];
+            ] as (typeof spring)[`compressed${0 | 1}`];
 
             const content = (
               <section
@@ -227,7 +228,7 @@ export function NewPositionCard() {
               background: colors.background,
               color: colors.foreground,
               borderRadius:
-                index === 0 ? "8px 0 0 8px" : index === 2 ? "0 8px 8px 0" : 0,
+                index === 0 ? "8px 0 0 8px" : index === 1 ? "0 8px 8px 0" : 0,
             };
 
             return (
