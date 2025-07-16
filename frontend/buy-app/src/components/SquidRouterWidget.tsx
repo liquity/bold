@@ -18,9 +18,9 @@ const SquidWidget = dynamic(
 export function SquidRouterWidget() {
   return (
     <SquidWidget config={{
-      "integratorId": process.env.NEXT_PUBLIC_SQUID_INTEGRATOR_ID ?? "",
-      "theme": {
-        "borderRadius": {
+      integratorId: process.env.NEXT_PUBLIC_SQUID_INTEGRATOR_ID ?? "",
+      theme: {
+        borderRadius: {
           "button-lg-primary": "3.75rem",
           "button-lg-secondary": "3.75rem",
           "button-lg-tertiary": "3.75rem",
@@ -36,7 +36,7 @@ export function SquidRouterWidget() {
           "menu-lg": "1.25rem",
           "modal": "1.875rem"
         },
-        "fontSize": {
+        fontSize: {
           "caption": "0.875rem",
           "body-small": "1.14375rem",
           "body-medium": "1.40625rem",
@@ -45,7 +45,7 @@ export function SquidRouterWidget() {
           "heading-medium": "3.08125rem",
           "heading-large": "4.40625rem"
         },
-        "fontWeight": {
+        fontWeight: {
           "caption": "400",
           "body-small": "400",
           "body-medium": "400",
@@ -54,10 +54,10 @@ export function SquidRouterWidget() {
           "heading-medium": "400",
           "heading-large": "400"
         },
-        "boxShadow": {
+        boxShadow: {
           "container": "0px 2px 4px 0px rgba(0, 0, 0, 0.20), 0px 5px 50px -1px rgba(0, 0, 0, 0.33)"
         },
-        "color": {
+        color: {
           "grey-100": "#FBFBFD",
           "grey-200": "#EDEFF3",
           "grey-300": "#2f4225",
@@ -106,14 +106,23 @@ export function SquidRouterWidget() {
           "modal-backdrop": "#17191C54"
         }
       },
-      "apiUrl": "https://v2.api.squidrouter.com",
-      "priceImpactWarnings": {
+      apiUrl: "https://v2.api.squidrouter.com",
+      priceImpactWarnings: {
         "warning": 3,
         "critical": 5
       },
-      "initialAssets": {},
-      "loadPreviousStateFromLocalStorage": true,
-      "hideAnimations": false
+      initialAssets: {
+        from: {
+          address: "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", // ETH on Arbitrum
+          chainId: "42161",
+        },
+        to: {
+          address: "0x4ecf61a6c2fab8a047ceb3b3b263b401763e9d49", // USND
+          chainId: "42161",
+        }
+      },
+      loadPreviousStateFromLocalStorage: true,
+      hideAnimations: false
     }} />
   )
 }
