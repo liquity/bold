@@ -7,7 +7,7 @@
     "build": "pnpm graph build",
     "codegen": "pnpm graph codegen",
     "deploy-dev": "pnpm graph deploy nerite-dev",
-    "deploy-main": "pnpm graph deploy nerite"
+    "deploy-prod": "pnpm graph deploy nerite"
   },
   "devDependencies": {
     "@graphprotocol/graph-cli": "^0.80.1"
