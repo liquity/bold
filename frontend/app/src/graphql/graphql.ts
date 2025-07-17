@@ -1087,13 +1087,19 @@ export type GovernanceInitiativesQueryVariables = Exact<{ [key: string]: never; 
 
 export type GovernanceInitiativesQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string }> };
 
-export type AllocationHistoryQueryVariables = Exact<{
+export type UserAllocationHistoryQueryVariables = Exact<{
   user?: InputMaybe<Scalars['String']['input']>;
+}>;
+
+
+export type UserAllocationHistoryQuery = { __typename?: 'Query', governanceAllocations: Array<{ __typename?: 'GovernanceAllocation', epoch: string, voteLQTY: string, vetoLQTY: string, voteOffset: string, vetoOffset: string, initiative: { __typename?: 'GovernanceInitiative', id: string } }> };
+
+export type TotalAllocationHistoryQueryVariables = Exact<{
   initiative?: InputMaybe<Scalars['String']['input']>;
 }>;
 
 
-export type AllocationHistoryQuery = { __typename?: 'Query', userAllocations: Array<{ __typename?: 'GovernanceAllocation', epoch: string, voteLQTY: string, vetoLQTY: string, voteOffset: string, vetoOffset: string }>, totalAllocations: Array<{ __typename?: 'GovernanceAllocation', epoch: string, voteLQTY: string, vetoLQTY: string, voteOffset: string, vetoOffset: string }> };
+export type TotalAllocationHistoryQuery = { __typename?: 'Query', governanceAllocations: Array<{ __typename?: 'GovernanceAllocation', epoch: string, voteLQTY: string, vetoLQTY: string, voteOffset: string, vetoOffset: string }> };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -1190,23 +1196,32 @@ export const GovernanceInitiativesDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<GovernanceInitiativesQuery, GovernanceInitiativesQueryVariables>;
-export const AllocationHistoryDocument = new TypedDocumentString(`
-    query AllocationHistory($user: String, $initiative: String) {
-  userAllocations: governanceAllocations(
-    where: {initiative: $initiative, user: $user}
+export const UserAllocationHistoryDocument = new TypedDocumentString(`
+    query UserAllocationHistory($user: String) {
+  governanceAllocations(
+    where: {user: $user}
     orderBy: epoch
     orderDirection: desc
+    first: 1000
   ) {
     epoch
+    initiative {
+      id
+    }
     voteLQTY
     vetoLQTY
     voteOffset
     vetoOffset
   }
-  totalAllocations: governanceAllocations(
+}
+    `) as unknown as TypedDocumentString<UserAllocationHistoryQuery, UserAllocationHistoryQueryVariables>;
+export const TotalAllocationHistoryDocument = new TypedDocumentString(`
+    query TotalAllocationHistory($initiative: String) {
+  governanceAllocations(
     where: {initiative: $initiative, user: null}
     orderBy: epoch
     orderDirection: desc
+    first: 1000
   ) {
     epoch
     voteLQTY
@@ -1215,4 +1230,4 @@ export const AllocationHistoryDocument = new TypedDocumentString(`
     vetoOffset
   }
 }
-    `) as unknown as TypedDocumentString<AllocationHistoryQuery, AllocationHistoryQueryVariables>;
+    `) as unknown as TypedDocumentString<TotalAllocationHistoryQuery, TotalAllocationHistoryQueryVariables>;
