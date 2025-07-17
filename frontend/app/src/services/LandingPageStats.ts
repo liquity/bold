@@ -5,17 +5,19 @@ import { DEMO_MODE, CHAIN_ID } from "@/src/env";
 import { useQuery } from "@tanstack/react-query";
 import { useReadContract } from "wagmi";
 import { getAddress } from "viem";
-import * as v from "valibot";
+// import * as v from "valibot";
+import * as dn from "dnum";
+import { CollateralSymbol } from "@liquity2/uikit";
 
 // Constants
 const ARBITRUM_CHAIN_ID = 42161;
 const GO_SLOW_NFT_CONTRACT_ADDRESS = "0x6da3c02293c96dfa5747b1739ebb492619222a8a";
 
 // DefiLlama API schema for TVL data
-const DefiLlamaSchema = v.object({
-  tvl: v.number(),
-  tokensInUsd: v.optional(v.record(v.string(), v.number())),
-});
+// const DefiLlamaSchema = v.object({
+//   tvl: v.number(),
+//   tokensInUsd: v.optional(v.record(v.string(), v.number())),
+// });
 
 // Stability Pool APR calculation
 export function useStabilityPoolAPR() {
@@ -29,23 +31,18 @@ export function useStabilityPoolAPR() {
     };
   }
 
-  let totalTvl = 0;
-  let weightedAprSum = 0;
+  let totalTvl: dn.Dnum = dn.from(0, 18);
+  let weightedAprSum: dn.Dnum = dn.from(0, 18);
 
   for (const branch of Object.values(stats.data.branch)) {
-    const aprValue = branch.spApyAvg7d?.[0];
-    const branchTvl = Number(branch.valueLocked || 0);
+    const aprValue = branch.spApyAvg7d;
+    const branchTvl = branch.valueLocked;
     
-    if (typeof aprValue === 'bigint') {
-      weightedAprSum += Number(aprValue) * branchTvl;
-      totalTvl += branchTvl;
-    } else if (aprValue) {
-      weightedAprSum += aprValue * branchTvl;
-      totalTvl += branchTvl;
-    }
+    weightedAprSum = dn.add(weightedAprSum, dn.mul(aprValue ?? 0, branchTvl ?? 0));
+    totalTvl = dn.add(totalTvl, branchTvl ?? 0);
   }
 
-  const avgAPR = totalTvl > 0 ? weightedAprSum / totalTvl : null;
+  const avgAPR = dn.gt(totalTvl, 0) ? dn.div(weightedAprSum, totalTvl) : null;
 
   return {
     data: avgAPR,
@@ -64,7 +61,22 @@ export function useDefiLlamaTVL() {
         throw new Error("Failed to fetch DefiLlama TVL data");
       }
       const data = await response.json();
-      return v.parse(DefiLlamaSchema, data);
+      const arrays = {
+        tvl: data.tvl as { date: number, totalLiquidityUSD: number }[],
+        tokens: data.tokens as { date: number, tokens: { [key in CollateralSymbol]: number } }[],
+        tokensInUsd: data.tokensInUsd as { date: number, tokens: { [key in CollateralSymbol]: number } }[],
+      }
+      return {
+        tvl: Array.isArray(arrays.tvl) && arrays.tvl.length > 0
+          ? arrays.tvl.reduce((max, item) => (item.date > (max?.date ?? 0) ? item : max), arrays.tvl[0])
+          : null,
+        tokens: Array.isArray(arrays.tokens) && arrays.tokens.length > 0
+          ? arrays.tokens.reduce((max, item) => (item.date > (max?.date ?? 0) ? item : max), arrays.tokens[0])
+          : null,
+        tokensInUsd: Array.isArray(arrays.tokensInUsd) && arrays.tokensInUsd.length > 0
+          ? arrays.tokensInUsd.reduce((max, item) => (item.date > (max?.date ?? 0) ? item : max), arrays.tokensInUsd[0])
+          : null,
+      }
     },
     refetchInterval: DATA_REFRESH_INTERVAL,
     enabled: true,
@@ -136,22 +148,24 @@ export function useGoSlowNFTCount() {
 
 // Combined hook for all landing page statistics
 export function useLandingPageStats() {
+  const stats = useLiquityStats();
   const stabilityPoolAPR = useStabilityPoolAPR();
-  const defiLlamaTVL = useDefiLlamaTVL();
+  // const defiLlamaTVL = useDefiLlamaTVL();
   const vaultCount = useVaultCount();
   const goSlowNFTCount = useGoSlowNFTCount();
 
   // In demo mode, ignore certain errors since we use mock data
   const relevantError = DEMO_MODE 
     ? null // Ignore all errors in demo mode since we have fallback data
-    : (stabilityPoolAPR.error || defiLlamaTVL.error || vaultCount.error || goSlowNFTCount.error);
+    : (stabilityPoolAPR.error || vaultCount.error || goSlowNFTCount.error);
 
   return {
     stabilityPoolAPR: stabilityPoolAPR.data,
-    tvl: defiLlamaTVL.data?.tvl,
+    // tvl: defiLlamaTVL.data?.tvl,
+    tvl: stats.data?.totalValueLocked,
     vaultCount: vaultCount.data,
     goSlowNFTCount: goSlowNFTCount.data,
-    isLoading: stabilityPoolAPR.isLoading || defiLlamaTVL.isLoading || vaultCount.isLoading || goSlowNFTCount.isLoading,
+    isLoading: stabilityPoolAPR.isLoading || vaultCount.isLoading || goSlowNFTCount.isLoading,
     error: relevantError,
   };
 }

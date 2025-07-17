@@ -21,6 +21,7 @@ import {
 import { blo } from "blo";
 import Image from "next/image";
 import Link from "next/link";
+import * as dn from "dnum";
 
 const DISPLAYED_PRICES = ["USND", "ETH"] as const;
 
@@ -62,13 +63,14 @@ export function ProtocolStats() {
             <span>SP APR</span>{" "}
             <span>
               {landingStats.stabilityPoolAPR ? (
-                <Amount fallback='…' format='2z' suffix='%' value={[BigInt(Math.round(landingStats.stabilityPoolAPR * 100 * 1e18)), 18]} />
+                // <Amount fallback='…' format='2z' suffix='%' value={[BigInt(Math.round(landingStats.stabilityPoolAPR * 100 * 1e18)), 18]} />
+                <Amount fallback='…' format='2z' suffix='%' value={dn.mul(landingStats.stabilityPoolAPR, 100)} />
               ) : (
                 '…'
               )}
             </span>
           </HFlex>
-          <HFlex gap={4} alignItems='center'>
+          {/* <HFlex gap={4} alignItems='center'>
             <span>Vaults</span>{" "}
             <span>
               {landingStats.vaultCount ? (
@@ -77,17 +79,16 @@ export function ProtocolStats() {
                 '…'
               )}
             </span>
-          </HFlex>
-          <HFlex gap={4} alignItems='center'>
+          </HFlex> */}
+          {/* <HFlex gap={4} alignItems='center'>
             <span>Go Slow NFTs</span>{" "}
             <span>
               {landingStats.isLoading ? '...' : 
-              landingStats.error ? 'Error' :
               landingStats.goSlowNFTCount !== null ? (
                 landingStats.goSlowNFTCount.toLocaleString()
               ) : '...'}
             </span>
-          </HFlex>
+          </HFlex> */}
         </HFlex>
         <HFlex gap={16}>
           {DISPLAYED_PRICES.map((symbol) => (
