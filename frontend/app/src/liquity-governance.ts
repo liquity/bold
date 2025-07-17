@@ -5,8 +5,12 @@ import type { Config as WagmiConfig } from "wagmi";
 import { BribeInitiative } from "@/src/abi/BribeInitiative";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { KNOWN_INITIATIVES_URL } from "@/src/env";
-import { getAllocationHistory, getIndexedInitiatives } from "@/src/subgraph";
+import { KNOWN_INITIATIVES_URL, LIQUITY_GOVERNANCE_URL } from "@/src/env";
+import {
+  getIndexedInitiatives,
+  getTotalAllocationHistoryFromSubgraph,
+  getUserAllocationHistoryFromSubgraph,
+} from "@/src/subgraph";
 import { jsonStringifyWithBigInt } from "@/src/utils";
 import { vAddress } from "@/src/valibot-utils";
 import { useRaf } from "@liquity2/uikit";
@@ -541,6 +545,43 @@ export function useCurrentEpochBribes(
   });
 }
 
+const AllocationSchema = v.object({
+  epoch: v.number(),
+  voteLQTY: v.pipe(v.string(), v.transform((x) => BigInt(x))),
+  vetoLQTY: v.pipe(v.string(), v.transform((x) => BigInt(x))),
+  voteOffset: v.pipe(v.string(), v.transform((x) => BigInt(x))),
+  vetoOffset: v.pipe(v.string(), v.transform((x) => BigInt(x))),
+});
+
+const TotalAllocationHistorySchema = v.array(AllocationSchema);
+
+const UserAllocationSchema = v.object({
+  ...AllocationSchema.entries,
+  initiative: v.string(),
+});
+
+const UserAllocationHistorySchema = v.array(UserAllocationSchema);
+
+// A user's allocation history ordered by descending epoch
+async function getUserAllocationHistory(user: Address) {
+  if (LIQUITY_GOVERNANCE_URL) {
+    const response = await fetch(`${LIQUITY_GOVERNANCE_URL}/allocation/user/${user.toLowerCase()}.json`);
+    return v.parse(UserAllocationHistorySchema, await response.json()).sort((a, b) => b.epoch - a.epoch);
+  } else {
+    return getUserAllocationHistoryFromSubgraph(user);
+  }
+}
+
+// An initiative's total allocation history ordered by descending epoch
+async function getTotalAllocationHistory(initiative: Address) {
+  if (LIQUITY_GOVERNANCE_URL) {
+    const response = await fetch(`${LIQUITY_GOVERNANCE_URL}/allocation/total/${initiative.toLowerCase()}.json`);
+    return v.parse(TotalAllocationHistorySchema, await response.json()).sort((a, b) => b.epoch - a.epoch);
+  } else {
+    return getTotalAllocationHistoryFromSubgraph(initiative);
+  }
+}
+
 // limit checks to the last 52 epochs
 const BRIBING_CHECK_EPOCH_LIMIT = 52;
 
@@ -576,14 +617,17 @@ export function useBribingClaim(
         };
       }
 
-      const bribeChecks = await readContracts(wagmiConfig, {
-        contracts: initiativesToCheck.map((initiative) => ({
-          abi: BribeInitiative,
-          address: initiative,
-          functionName: "bribeToken",
-        } as const)),
-        allowFailure: true,
-      });
+      const [userAllocations, bribeChecks] = await Promise.all([
+        getUserAllocationHistory(account),
+        readContracts(wagmiConfig, {
+          contracts: initiativesToCheck.map((initiative) => ({
+            abi: BribeInitiative,
+            address: initiative,
+            functionName: "bribeToken",
+          } as const)),
+          allowFailure: true,
+        }),
+      ]);
 
       const bribeInitiatives: Array<{
         address: Address;
@@ -591,8 +635,12 @@ export function useBribingClaim(
       }> = [];
 
       for (const [index, token] of bribeChecks.entries()) {
-        const address = initiativesToCheck[index];
-        if (address && token.result) {
+        const address = initiativesToCheck[index]?.toLowerCase() as Address | undefined;
+        if (
+          address
+          && token.result
+          && userAllocations.find((allocation) => allocation.initiative === address && allocation.voteLQTY > 0n)
+        ) {
           bribeInitiatives.push({
             address,
             bribeToken: token.result,
@@ -623,9 +671,10 @@ export function useBribingClaim(
 
           const epochsToCheck = Math.min(completedEpochs, BRIBING_CHECK_EPOCH_LIMIT);
           const startEpoch = Math.max(1, completedEpochs - epochsToCheck + 1);
+          const userAllocationsToInitiative = userAllocations.filter((allocation) => allocation.initiative === address);
 
-          const [{ userAllocations, totalAllocations }, results] = await Promise.all([
-            getAllocationHistory(account, address),
+          const [totalAllocationsToInitiative, results] = await Promise.all([
+            getTotalAllocationHistory(address),
             readContracts(wagmiConfig, {
               contracts: Array.from({ length: epochsToCheck }, (_, index) => {
                 const BribeContract = { abi: BribeInitiative, address } as const;
@@ -663,8 +712,8 @@ export function useBribingClaim(
 
             // allocations are ordered by descending epoch,
             // so this finds the most recent one at the time of `epoch`
-            const userAllocation = userAllocations.find((allocation) => allocation.epoch <= epoch);
-            const totalAllocation = totalAllocations.find((allocation) => allocation.epoch <= epoch);
+            const userAllocation = userAllocationsToInitiative.find((allocation) => allocation.epoch <= epoch);
+            const totalAllocation = totalAllocationsToInitiative.find((allocation) => allocation.epoch <= epoch);
 
             // skip if already claimed or no bribes available
             if (
