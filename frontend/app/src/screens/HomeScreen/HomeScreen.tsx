@@ -11,6 +11,7 @@ import {
   getCollToken,
   useAverageInterestRate,
   useEarnPool,
+  useTotalDebtCollateralPositions,
 } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
@@ -61,6 +62,7 @@ export function HomeScreen() {
                 Avg rate, p.a.
               </span>,
               <span title='Maximum Loan-to-Value ratio'>Max LTV</span>,
+              "Debt / Collateral",
               null,
             ] as const
           }
@@ -99,6 +101,7 @@ function BorrowingRow({ symbol }: { symbol: CollateralSymbol }) {
   const collIndex = getCollIndexFromSymbol(symbol);
   const collateral = getCollToken(collIndex);
   const avgInterestRate = useAverageInterestRate(collIndex);
+  const { totalDebt, totalCollateralInUsd } = useTotalDebtCollateralPositions(collIndex);
 
   const maxLtv =
     collateral?.collateralRatio && dn.gt(collateral.collateralRatio, 0)
@@ -124,6 +127,28 @@ function BorrowingRow({ symbol }: { symbol: CollateralSymbol }) {
       </td>
       <td>
         <Amount value={maxLtv} percentage />
+      </td>
+      <td>
+        <div className={css({
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 4,
+        })}>
+          <Amount
+            fallback='…'
+            format='compact'
+            prefix='$'
+            value={totalDebt}
+          />
+          <span>/</span>
+          <Amount
+            fallback='…'
+            format='compact'
+            prefix='$'
+            value={totalCollateralInUsd}
+          />
+        </div>
       </td>
       <td>
         <div
