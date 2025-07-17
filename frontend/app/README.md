@@ -1,11 +1,9 @@
 # Nerite App
 
-
 ## Requirements
 
 - [Node.js](https://nodejs.org/) (v20 or later)
 - [pnpm](https://pnpm.io/) (v8)
-
 
 ## How to develop
 
@@ -32,7 +30,7 @@ You can now open <http://localhost:3000/> in your browser.
 ```sh
 pnpm build                  # build the static app in out/
 pnpm build-deps             # build all the dependencies needed by the app
-pnpm build-graphql          # update the code generated from the GraphQL queries
+pnpm build-graphql          # generate TypeScript types from GraphQL queries (requires valid NEXT_PUBLIC_SUBGRAPH_URL)
 pnpm build-panda            # update the code generated from the Panda CSS config
 pnpm build-uikit            # builds the UI kit in ../uikit
 pnpm dev                    # run the development server
@@ -51,8 +49,7 @@ cp .env.example .env.local
 
 See [./src/env.ts](./src/env.ts) for details about how the environment variables are being imported by the app.
 
-<details>
-<summary>Supported Variables</summary>
+## Supported Variables
 
 ### `NEXT_PUBLIC_ACCOUNT_SCREEN`
 
@@ -65,25 +62,25 @@ NEXT_PUBLIC_ACCOUNT_SCREEN=false
 
 ### `NEXT_PUBLIC_CHAIN_ID`
 
-The Ethereum network to connect to.
+The blockchain network chain ID to connect to.
 
 ```dosini
-# Example
-NEXT_PUBLIC_CHAIN_ID=1
+# Example (Arbitrum One)
+NEXT_PUBLIC_CHAIN_ID=42161
 ```
 
 ### `NEXT_PUBLIC_CHAIN_NAME`
 
-The name of the Ethereum network.
+The name of the blockchain network.
 
 ```dosini
 # Example
-NEXT_PUBLIC_CHAIN_NAME=Ethereum
+NEXT_PUBLIC_CHAIN_NAME=Arbitrum One
 ```
 
 ### `NEXT_PUBLIC_CHAIN_CURRENCY`
 
-The currency of the Ethereum network.
+The native currency of the blockchain network.
 
 ```dosini
 # Format
@@ -95,23 +92,23 @@ NEXT_PUBLIC_CHAIN_CURRENCY=Ether|ETH|18
 
 ### `NEXT_PUBLIC_CHAIN_RPC_URL`
 
-The RPC URL for the Ethereum network.
+The RPC URL for the blockchain network.
 
 ```dosini
-# Example
-NEXT_PUBLIC_CHAIN_RPC_URL=https://cloudflare-eth.com
+# Example (Arbitrum One)
+NEXT_PUBLIC_CHAIN_RPC_URL=https://arb1.arbitrum.io/rpc
 ```
 
 ### `NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER`
 
-The block explorer for the Ethereum network. Optional.
+The block explorer for the blockchain network. Optional.
 
 ```dosini
 # Format
 NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER=name|url
 
-# Example
-NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER=Etherscan|https://etherscan.io
+# Example (Arbitrum One)
+NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER=Arbiscan|https://arbiscan.io
 ```
 
 ### `NEXT_PUBLIC_CHAIN_CONTRACT_ENS_REGISTRY`
@@ -185,12 +182,18 @@ NEXT_PUBLIC_BLOCKING_VPNAPI=1234|US,CA
 
 ### `NEXT_PUBLIC_DEMO_MODE`
 
-Enable or disable demo mode for testing purposes.
+Enable or disable demo mode for testing purposes. When enabled, the app uses mock data instead of real blockchain interactions and gracefully handles API failures.
 
 ```dosini
 # Example
 NEXT_PUBLIC_DEMO_MODE=false
 ```
+
+**Demo Mode Features:**
+
+- Uses predefined mock data for positions, balances, and protocol statistics
+- Fallback behavior when external APIs (subgraph, CoinGecko) are unavailable
+- Allows testing UI components without requiring blockchain connectivity
 
 ### `NEXT_PUBLIC_DELEGATE_AUTO`
 
@@ -214,7 +217,6 @@ NEXT_PUBLIC_DEPLOYMENT_FLAVOR=preview
 
 URL for fetching known initiatives data (optional).
 
-
 ### `NEXT_PUBLIC_SAFE_API_URL`
 
 URL for the Safe transaction service API.
@@ -226,12 +228,14 @@ NEXT_PUBLIC_SAFE_API_URL=https://safe-transaction-mainnet.safe.global/api
 
 ### `NEXT_PUBLIC_SUBGRAPH_URL`
 
-URL for The Graph protocol subgraph queries.
+URL for The Graph protocol subgraph queries. Used for fetching protocol statistics like trove counts, TVL, and other on-chain data efficiently.
 
 ```dosini
 # Example
 NEXT_PUBLIC_SUBGRAPH_URL=https://api.studio.thegraph.com/query/…
 ```
+
+**Note:** If this URL is not set or invalid, the app will fall back to demo mode data for subgraph-dependent features.
 
 ### `NEXT_PUBLIC_VERCEL_ANALYTICS`
 
@@ -251,10 +255,9 @@ A WalletConnect project ID which can be obtained by [creating a WalletConnect pr
 Addresses of the Nerite contracts.
 
 </details>
-
 ## Folder Structure
 
-```
+```text
 src/
   abi/         # ABIs of the Nerite contracts
   app/         # The Next.js app (mostly routing only)
