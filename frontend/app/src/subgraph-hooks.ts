@@ -8,7 +8,7 @@ import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted,
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
-import { DEMO_MODE } from "@/src/env";
+import { DEMO_MODE, SUBGRAPH_URL } from "@/src/env";
 import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { sleep } from "@/src/utils";
 import { isAddress, shortenAddress } from "@liquity2/uikit";
@@ -497,6 +497,63 @@ export function useGovernanceStats(options?: Options) {
 
   return useQuery({
     queryKey: ["GovernanceStats"],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
+export function useTroveCount(options?: Options) {
+  let queryFn = async () => {
+    // Manual GraphQL query to avoid codegen issues
+    const query = `
+      query TroveStats {
+        troves(where: { status: active }) {
+          id
+          collateral {
+            collIndex
+          }
+        }
+      }
+    `;
+    
+    const response = await fetch(SUBGRAPH_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/graphql-response+json",
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Error while fetching trove count from the subgraph");
+    }
+
+    const result = await response.json();
+    if (!result.data) {
+      throw new Error("Invalid response from the subgraph");
+    }
+
+    // Count troves by collateral index
+    const countByCollateral: Record<number, number> = {};
+    
+    for (const trove of result.data.troves) {
+      const collIndex = trove.collateral.collIndex;
+      countByCollateral[collIndex] = (countByCollateral[collIndex] || 0) + 1;
+    }
+    
+    // Return total count across all collaterals
+    return Object.values(countByCollateral).reduce((sum, count) => sum + count, 0);
+  };
+
+  if (DEMO_MODE) {
+    queryFn = async () => {
+      return ACCOUNT_POSITIONS.filter(isPositionLoanCommitted).length;
+    };
+  }
+
+  return useQuery({
+    queryKey: ["TroveCount"],
     queryFn,
     ...prepareOptions(options),
   });
