@@ -5,12 +5,13 @@ import type { CollateralSymbol } from "@/src/types";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { getContracts } from "@/src/contracts";
-import { DNUM_1 } from "@/src/dnum-utils";
+// import { DNUM_1 } from "@/src/dnum-utils";
 import {
   getCollIndexFromSymbol,
   getCollToken,
   useAverageInterestRate,
   useEarnPool,
+  useTotalDebtCollateralPositions,
 } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
@@ -20,7 +21,7 @@ import {
   // IconEarn,
   TokenIcon,
 } from "@liquity2/uikit";
-import * as dn from "dnum";
+// import * as dn from "dnum";
 import Link from "next/link";
 import { HomeTable } from "./HomeTable";
 import Image from "next/image";
@@ -60,7 +61,9 @@ export function HomeScreen() {
               <span title='Average interest rate, per annum'>
                 Avg rate, p.a.
               </span>,
-              <span title='Maximum Loan-to-Value ratio'>Max LTV</span>,
+              // <span title='Maximum Loan-to-Value ratio'>Max LTV</span>,
+              <span title='Total collateral in USD'>Deposited</span>,
+              <span title='Total debt in USD'>Debt Issued</span>,
               null,
             ] as const
           }
@@ -99,11 +102,12 @@ function BorrowingRow({ symbol }: { symbol: CollateralSymbol }) {
   const collIndex = getCollIndexFromSymbol(symbol);
   const collateral = getCollToken(collIndex);
   const avgInterestRate = useAverageInterestRate(collIndex);
+  const { totalDebt, totalCollateralInUsd } = useTotalDebtCollateralPositions(collIndex);
 
-  const maxLtv =
-    collateral?.collateralRatio && dn.gt(collateral.collateralRatio, 0)
-      ? dn.div(DNUM_1, collateral.collateralRatio)
-      : null;
+  // const maxLtv =
+  //   collateral?.collateralRatio && dn.gt(collateral.collateralRatio, 0)
+  //     ? dn.div(DNUM_1, collateral.collateralRatio)
+  //     : null;
 
   return (
     <tr>
@@ -123,7 +127,21 @@ function BorrowingRow({ symbol }: { symbol: CollateralSymbol }) {
         <Amount fallback='…' percentage value={avgInterestRate.data} />
       </td>
       <td>
-        <Amount value={maxLtv} percentage />
+        {/* <Amount value={maxLtv} percentage /> */}
+        <Amount
+          fallback='…'
+          format='compact'
+          prefix='$'
+          value={totalCollateralInUsd}
+        />
+      </td>
+      <td>
+        <Amount
+          fallback='…'
+          format='compact'
+          prefix='$'
+          value={totalDebt}
+        />
       </td>
       <td>
         <div
