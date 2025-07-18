@@ -31,6 +31,7 @@ export function PanelClaimRewards({
 
   const boldPriceUsd = usePrice("USND");
   const collPriceUsd = usePrice(collateral.symbol);
+  const ethPriceUsd = usePrice("ETH");
 
   const totalRewards =
     collPriceUsd.data &&
@@ -41,7 +42,7 @@ export function PanelClaimRewards({
     );
 
   const gasFeeUsd =
-    collPriceUsd.data && dn.multiply(dn.from(0.0015, 18), collPriceUsd.data);
+    ethPriceUsd.data && dn.multiply(dn.from(0.001, 18), ethPriceUsd.data);
 
   const allowSubmit =
     account.isConnected && totalRewards && dn.gt(totalRewards, 0);
