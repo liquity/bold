@@ -40,6 +40,7 @@ type Trove @entity(immutable: false) {
   mightBeLeveraged: Boolean!
   status: TroveStatus!
   updatedAt: BigInt!
+  lastUserActionAt: BigInt!
   debt: BigInt!
   deposit: BigInt!
   interestBatch: InterestBatch
@@ -47,6 +48,9 @@ type Trove @entity(immutable: false) {
   stake: BigInt!
   troveId: String!
   previousOwner: Bytes!
+  redemptionCount: Int!
+  redeemedColl: BigInt!
+  redeemedDebt: BigInt!
 }
 
 type BorrowerInfo @entity(immutable: false) {

@@ -35,6 +35,14 @@ let FLASH_LOAN_TOPIC = Bytes.fromHexString(
   "0x0d7d75e01ab95780d3cd1c8ec0dd6c2ce19e3a20427eec8bf53283b6fb8e95f0",
 );
 
+function touchedByUser(trove: Trove, timestamp: BigInt, status: string): void {
+  trove.status = status;
+  trove.lastUserActionAt = timestamp;
+  trove.redemptionCount = 0;
+  trove.redeemedColl = BigInt.fromI32(0);
+  trove.redeemedDebt = BigInt.fromI32(0);
+}
+
 export function handleTroveOperation(event: TroveOperationEvent): void {
   let timestamp = event.block.timestamp;
   let troveId = event.params._troveId;
@@ -56,7 +64,7 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
 
   if (operation === OP_ADJUST_TROVE) {
     trove = updateTrove(tm, troveId, timestamp, getLeverageUpdate(event), false);
-    trove.status = "active";
+    touchedByUser(trove, timestamp, "active");
     trove.save();
     return;
   }
@@ -74,21 +82,21 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
 
   if (operation === OP_ADJUST_TROVE_INTEREST_RATE) {
     trove = updateTrove(tm, troveId, timestamp, getLeverageUpdate(event), false);
-    trove.status = "active";
+    touchedByUser(trove, timestamp, "active");
     trove.save();
     return;
   }
 
   if (operation === OP_SET_INTEREST_BATCH_MANAGER) {
     trove = enterBatch(collId, troveId, timestamp, tm.Troves(troveId).getInterestBatchManager());
-    trove.status = "active";
+    touchedByUser(trove, timestamp, "active");
     trove.save();
     return;
   }
 
   if (operation === OP_REMOVE_FROM_BATCH) {
     trove = leaveBatch(collId, troveId, timestamp, event.params._annualInterestRate);
-    trove.status = "active";
+    touchedByUser(trove, timestamp, "active");
     trove.save();
     return;
   }
@@ -96,6 +104,10 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   if (operation === OP_REDEEM_COLLATERAL) {
     trove = updateTrove(tm, troveId, timestamp, LeverageUpdate.unchanged, false);
     trove.status = "redeemed";
+    trove.redemptionCount += 1;
+    // increasing redemption accumulators by subtracting negative amounts
+    trove.redeemedColl = trove.redeemedColl.minus(event.params._collChangeFromOperation);
+    trove.redeemedDebt = trove.redeemedDebt.minus(event.params._debtChangeFromOperation);
     trove.save();
     return;
   }
@@ -113,7 +125,7 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
     );
 
     trove.closedAt = timestamp;
-    trove.status = "closed";
+    touchedByUser(trove, timestamp, "closed");
     trove.save();
     return;
   }
@@ -123,8 +135,8 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
     if (trove.interestBatch !== null) {
       leaveBatch(collId, troveId, timestamp, BigInt.fromI32(0));
     }
-    trove.debt = event.params._debtIncreaseFromRedist;
-    trove.deposit = event.params._collIncreaseFromRedist;
+    trove.debt = BigInt.fromI32(0);
+    trove.deposit = BigInt.fromI32(0);
     trove.closedAt = timestamp;
     trove.status = "liquidated";
     trove.save();
@@ -311,7 +323,11 @@ function createTrove(
   trove.status = "active";
   trove.troveId = troveId.toHexString();
   trove.updatedAt = timestamp;
+  trove.lastUserActionAt = timestamp;
   trove.previousOwner = Address.zero();
+  trove.redemptionCount = 0;
+  trove.redeemedColl = BigInt.fromI32(0);
+  trove.redeemedDebt = BigInt.fromI32(0);
 
   // batches are handled separately, not
   // when creating the trove but right after
