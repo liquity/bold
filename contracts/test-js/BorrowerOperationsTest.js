@@ -3050,7 +3050,7 @@ contract("BorrowerOperations", async (accounts) => {
         th.assertIsApproximatelyEqual(activePool_Debt_After, dennisDebt);
       });
 
-      it("closeTrove(): updates the the total stakes", async () => {
+      it("closeTrove(): updates the total stakes", async () => {
         const { troveId: dennisTroveId } = await openTrove({
           extraBoldAmount: toBN(dec(10000, 18)),
           ICR: toBN(dec(2, 18)),

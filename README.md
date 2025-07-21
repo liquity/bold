@@ -670,7 +670,7 @@ As can be seen in the above table and proven in generality (TBD), the outside de
 
 In practice, only `SP.getTotalBoldDeposits() - MIN_BOLD_IN_SP` is used for liquidation  - that is, there is always 1 BOLD in the SP of a given branch  - see the [min 1 BOLD in SP section](https://github.com/liquity/bold?tab=readme-ov-file#minimum-1-bold-token-in-the-sp). This 1 BOLD does not count towards the backing of a branch.
 
-Therefore the true unbacked portion of a given branch is slightly larger than the amount used in the calculation above - and in turn, the the “true” ratio of the unbacked portions of all branches is slightly distorted. However, this distortion is only significant for very small system sizes, and considered a non-issue in practice.  
+Therefore the true unbacked portion of a given branch is slightly larger than the amount used in the calculation above - and in turn, the “true” ratio of the unbacked portions of all branches is slightly distorted. However, this distortion is only significant for very small system sizes, and considered a non-issue in practice.  
 
 ## Redemptions at branch level
 
