@@ -476,7 +476,7 @@ contract DeployUsdAsFuckScript is StdCheats, MetadataDeployment, Logging {
             _stalenessThreshold = type(uint256).max; // Never stale!
             _oracle = address(new StyBoldOracle());
         } else if (_collTokenAddress == SUSDS) {
-            _stalenessThreshold = _1_HOUR; // CL DAI/USD heartbeat. No Fallback
+            _stalenessThreshold = _24_HOURS; // CL USDS/USD heartbeat. No Fallback
             _oracle = address(new SusdsOracle());
         } else if (_collTokenAddress == SFRXUSD) {
             _stalenessThreshold = _24_HOURS; // CL frxUSD/USD heartbeat. No Fallback
