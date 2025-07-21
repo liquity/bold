@@ -1,4 +1,4 @@
-import type { Address, BranchId } from "@/src/types";
+import type { Address, CollIndex } from "@/src/types";
 import type { Dnum } from "dnum";
 import type { BatchManager } from "@/src/summerstone-graphql/graphql";
 import { Delegate } from "@/src/types";
@@ -18,7 +18,7 @@ export type RecommendedDelegate = {
 };
 
 export interface InterestRateFieldProps {
-  branchId: BranchId;
+  branchId: CollIndex;
   debt: Dnum | null;
   delegate: Address | null;
   inputId?: string;

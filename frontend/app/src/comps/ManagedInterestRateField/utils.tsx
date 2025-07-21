@@ -1,5 +1,5 @@
 import type { BatchManager } from "@/src/summerstone-graphql/graphql";
-import type { BranchId, Delegate } from "@/src/types";
+import type { CollIndex, Delegate } from "@/src/types";
 import { isAddress } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { SUMMERSTONE_MANAGER, RecommendedDelegate } from "./types";
@@ -19,7 +19,7 @@ export function formatDuration(totalSeconds: number): string {
 }
 
 // Helper function to map and sort delegates
-export function mapAndSortDelegates(batchData: Delegate[], batchManagers: BatchManager[], branchId: BranchId) {
+export function mapAndSortDelegates(batchData: Delegate[], batchManagers: BatchManager[], branchId: CollIndex) {
   const delegateDataByAddress = new Map(
     batchData.map(delegate => [delegate.address.toLowerCase(), delegate])
   );

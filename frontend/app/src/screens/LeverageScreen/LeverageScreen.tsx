@@ -7,7 +7,7 @@ import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { Amount } from "@/src/comps/Amount/Amount";
 // import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
-import { InterestRateField } from "@/src/comps/CustomInterestRateField/CustomInterestRateField";
+import { InterestRateField } from "@/src/comps/ManagedInterestRateField/ManagedInterestRateField";
 import {
   LeverageField,
   useLeverageField,

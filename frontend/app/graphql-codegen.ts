@@ -1,6 +1,6 @@
 import type { CodegenConfig } from "@graphql-codegen/cli";
 
-const SUBGRAPH_URL_ORIGIN = "https://liquity.app";
+const SUBGRAPH_URL_ORIGIN = "https://app.nerite.org";
 
 function findSubgraphUrl(envFile: string) {
   const fs = require("fs");

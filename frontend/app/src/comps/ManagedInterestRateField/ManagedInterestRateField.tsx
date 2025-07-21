@@ -612,7 +612,7 @@ export const InterestRateField = memo(
                   items={DELEGATE_MODES.map((modeItem) => ({ 
                     label: match(modeItem)
                       .with("manual", () => "Manual")
-                      .with("managed", () => "Managed")
+                      .with("managed", () => "Managed ✨")
                       .with("delegate", () => "Custom Delegate")
                       .with("strategy", () => "Strategy")
                       .exhaustive(),

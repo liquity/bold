@@ -128,7 +128,7 @@ export function ManagedDelegateDetails({
                                 <div className={css({
                                   fontSize: "small",
                                   color: "contentAlt",
-                                })}>BOLD Managed</div>
+                                })}>USND Managed</div>
                                 <div><Amount value={delegate.delegate.boldAmount} format="compact" prefix="$" /></div>
                               </div>
                               
@@ -210,7 +210,7 @@ export function ManagedDelegateDetails({
               fontSize: "small",
               color: "contentAlt" 
             })}>
-                {delegate.delegate.boldAmount && <span>BOLD Managed:&nbsp;
+                {delegate.delegate.boldAmount && <span>USND Managed:&nbsp;
                   <Amount
                     format="compact"
                     prefix="$"
