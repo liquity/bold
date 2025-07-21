@@ -506,8 +506,6 @@ It’s best to think of the `aggRecordedDebt` and aggregate interest calculation
 
 [This example](https://docs.google.com/spreadsheets/d/1Q_PtY4iyUsTNVQi-a90fS0B4ODEQpJE-GwpiIUDRoas/edit?usp=sharing) illustrates how it works.
 
-[TODO - DIAGRAM]
-
 ### Core debt invariant 
 
 For a given branch, the system maintains the following invariant:
@@ -668,9 +666,6 @@ _Example: 2000 BOLD is redeemed across 4 branches_
 
 As can be seen in the above table and proven in generality (TBD), the outside debt is reduced by the same proportion in all branches, making redemptions path-independent.
 
-
-[TODO - GRAPH BRANCH REDEMPTION]
-
 ### True unbacked portions and `MIN_BOLD_IN_SP`
 
 In practice, only `SP.getTotalBoldDeposits() - MIN_BOLD_IN_SP` is used for liquidation  - that is, there is always 1 BOLD in the SP of a given branch  - see the [min 1 BOLD in SP section](https://github.com/liquity/bold?tab=readme-ov-file#minimum-1-bold-token-in-the-sp). This 1 BOLD does not count towards the backing of a branch.
@@ -830,8 +825,7 @@ A mathematical manipulation allows us to factor out the initial deposit, and acc
 The approach is similar in spirit to the Scalable Reward Distribution on the Ethereum Network by Bogdan Batog et al (i.e. the standard UniPool algorithm), however, the arithmetic is more involved as it handles a compounding, decreasing stake along with a corresponding collateral gain.
 
 The formula for a depositor’s accumulated collateral gain is derived here:
-
-[LINK PAPER]
+https://github.com/liquity/dev/blob/main/papers/Scalable_Reward_Distribution_with_Compounding_Stakes.pdf
 
 ### Scalable reward distribution for compounding, decreasing stake
 
@@ -1306,9 +1300,6 @@ If for some reason the STETH-USD oracle doesn’t update quickly enough when the
 However that would be purely an oracle issue. Chainlink has been chosen as the oracle provider in part due to their highly responsive oracles, and it’s assumed that STETH-USD oracle updates as responsively as ETH-USD, since they utilise the same underlying oracle network and infrastructure.
 
 Finally, Liquity v2 has extra protection from two measures that each reduce overall adverse arb profits: 1) a greater redemption fee gain (lower `BETA` parameter) and 2) redemption routing, which reduces adverse profits either by routing itself, or the flash loan fee required to manipulate StabilityPool quantities and bypass routing.
-
-### TODO - [INHERITANCE DIAGRAM]
-
 
 ### PriceFeed Deployment 
 
