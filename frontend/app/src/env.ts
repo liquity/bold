@@ -21,6 +21,7 @@ export const CollateralSymbolSchema = v.union([
 
 export const EnvSchema = v.pipe(
   v.object({
+    SUMMERSTONE_API_URL: v.string(),
     ACCOUNT_SCREEN: v.optional(vEnvFlag(), "false"),
     APP_COMMIT_HASH: v.string(),
     APP_COMMIT_URL: v.pipe(
@@ -334,6 +335,7 @@ export const EnvSchema = v.pipe(
 export type Env = v.InferOutput<typeof EnvSchema>;
 
 const parsedEnv = v.safeParse(EnvSchema, {
+  SUMMERSTONE_API_URL: process.env.NEXT_PUBLIC_SUMMERSTONE_API_URL,
   ACCOUNT_SCREEN: process.env.NEXT_PUBLIC_ACCOUNT_SCREEN,
   APP_VERSION: (
     // APP_VERSION_FROM_BUILD is set at build time (see next.config.js)
@@ -528,6 +530,7 @@ if (!parsedEnv.success) {
 }
 
 export const {
+  SUMMERSTONE_API_URL,
   ACCOUNT_SCREEN,
   APP_COMMIT_HASH,
   APP_COMMIT_URL,

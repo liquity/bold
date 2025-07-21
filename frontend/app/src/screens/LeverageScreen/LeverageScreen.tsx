@@ -7,7 +7,7 @@ import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { Amount } from "@/src/comps/Amount/Amount";
 // import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
-import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
+import { InterestRateField } from "@/src/comps/CustomInterestRateField/CustomInterestRateField";
 import {
   LeverageField,
   useLeverageField,
@@ -344,7 +344,7 @@ export function LeverageScreen() {
         <Field
           field={
             <InterestRateField
-              collIndex={collIndex}
+              branchId={collIndex}
               debt={leverageField.debt}
               delegate={interestRateDelegate}
               inputId='input-interest-rate'
@@ -352,7 +352,7 @@ export function LeverageScreen() {
               mode={interestRateMode}
               onChange={setInterestRate}
               onDelegateChange={setInterestRateDelegate}
-              onModeChange={setInterestRateMode}
+              onModeChange={setInterestRateMode as any}
             />
           }
           footer={{

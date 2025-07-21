@@ -828,3 +828,38 @@ export function useLoan(collIndex: CollIndex, troveId: TroveId): UseQueryResult<
     },
   };
 }
+
+export function bigIntAbs(value: bigint) {
+  return value < 0n ? -value : value;
+}
+
+export function findClosestRateIndex(
+  rates: bigint[], // rates must be sorted
+  rate: bigint,
+): number {
+  const firstRate = rates.at(0);
+  const lastRate = rates.at(-1);
+
+  if (firstRate === undefined || lastRate === undefined) {
+    throw new Error("Invalid rates array");
+  }
+
+  if (rate <= firstRate) return 0;
+  if (rate >= lastRate) return 1;
+
+  let diff = bigIntAbs(firstRate - rate);
+
+  for (let index = 0; index < rates.length - 1; index++) {
+    const nextRate = rates.at(index + 1);
+    if (nextRate === undefined) throw new Error(); // should never happen
+
+    const nextDiff = bigIntAbs(nextRate - rate);
+
+    // diff starts increasing = we passed the closest point
+    if (nextDiff > diff) return index;
+
+    diff = nextDiff;
+  }
+
+  return rates.length - 1;
+}

@@ -5,7 +5,7 @@ import type { Address } from "@/src/types";
 
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
-import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
+import { InterestRateField } from "@/src/comps/CustomInterestRateField/CustomInterestRateField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import {
@@ -384,7 +384,7 @@ export function BorrowScreen() {
           // “Interest rate”
           field={
             <InterestRateField
-              collIndex={collIndex}
+              branchId={collIndex}
               debt={debt.parsed}
               delegate={interestRateDelegate}
               inputId='input-interest-rate'
@@ -392,7 +392,7 @@ export function BorrowScreen() {
               mode={interestRateMode}
               onChange={setInterestRate}
               onDelegateChange={setInterestRateDelegate}
-              onModeChange={setInterestRateMode}
+              onModeChange={setInterestRateMode as any}
             />
           }
           footer={{
