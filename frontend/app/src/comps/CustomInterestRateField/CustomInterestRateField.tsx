@@ -57,22 +57,22 @@ export const InterestRateField = memo(
   }: InterestRateFieldProps) {
     // Create logging wrappers for callbacks (optional debug statements).
     const onChange = useCallback((value: dn.Dnum) => {
-      console.log("InterestRateField onChange called with:", value);
+      // console.log("InterestRateField onChange called with:", value);
       rawOnChange(value);
     }, [rawOnChange]);
 
     const onDelegateChange = useCallback((value: Address | null) => {
-      console.log("InterestRateField onDelegateChange called with:", value);
+      // console.log("InterestRateField onDelegateChange called with:", value);
       rawOnDelegateChange(value);
     }, [rawOnDelegateChange]);
 
     const onModeChange = useCallback((value: DelegateMode) => {
-      console.log("InterestRateField onModeChange called with:", value);
+      // console.log("InterestRateField onModeChange called with:", value);
       rawOnModeChange(value);
     }, [rawOnModeChange]);
 
     const onAverageInterestRateLoad = useCallback((value: dn.Dnum) => {
-      console.log("InterestRateField onAverageInterestRateLoad called with:", value);
+      // console.log("InterestRateField onAverageInterestRateLoad called with:", value);
       rawOnAverageInterestRateLoad(value);
     }, [rawOnAverageInterestRateLoad]);
 
@@ -222,17 +222,25 @@ export const InterestRateField = memo(
       return batchManagersByBranchId.get(branchId) || [];
     }, [batchManagersByBranchId, branchId]);
 
-    // 2. Use a single hook call instead of mapping over addresses
-    const allDelegatesQuery = useInterestBatchDelegate(validBranchId as CollIndex, currentBranchManagerAddresses[0] || null);
+    // 2. Call useInterestBatchDelegate a fixed number of times to avoid Rules of Hooks violation
+    // Support up to 5 delegates per branch (should cover most cases)
+    const delegate1Query = useInterestBatchDelegate(validBranchId as CollIndex, currentBranchManagerAddresses[0] || null);
+    const delegate2Query = useInterestBatchDelegate(validBranchId as CollIndex, currentBranchManagerAddresses[1] || null);
+    const delegate3Query = useInterestBatchDelegate(validBranchId as CollIndex, currentBranchManagerAddresses[2] || null);
+    const delegate4Query = useInterestBatchDelegate(validBranchId as CollIndex, currentBranchManagerAddresses[3] || null);
+    const delegate5Query = useInterestBatchDelegate(validBranchId as CollIndex, currentBranchManagerAddresses[4] || null);
     
-    // 3. For now, we'll handle only the first delegate to avoid Rules of Hooks violation
-    // TODO: Refactor to use a different approach for multiple delegates
+    const allDelegateQueries = [delegate1Query, delegate2Query, delegate3Query, delegate4Query, delegate5Query];
+    
+    // 3. Combine results from all delegate queries
     const delegatesForCurrentBranch = useMemo(() => {
-      return allDelegatesQuery.data ? [allDelegatesQuery.data] : [];
-    }, [allDelegatesQuery.data]);
+      return allDelegateQueries
+        .map(query => query.data)
+        .filter(Boolean);
+    }, [delegate1Query.data, delegate2Query.data, delegate3Query.data, delegate4Query.data, delegate5Query.data]);
     
-    const delegatesAreLoading = allDelegatesQuery.isLoading;
-    const delegatesHaveError = allDelegatesQuery.isError;
+    const delegatesAreLoading = allDelegateQueries.some(query => query.isLoading);
+    const delegatesHaveError = allDelegateQueries.some(query => query.isError);
     
     // 4. Reconstruct batchData based on delegatesForCurrentBranch.
     const batchData = useMemo(() => {
@@ -1136,10 +1144,9 @@ function ManualInterestRateSlider({
                 interestChartData.data.length - 1,
                 Math.round(value * (interestChartData.data.length - 1)),
               );
-              fieldValue.setValue(String(dn.toNumber(dn.mul(
-                interestChartData.data[index]?.rate ?? DNUM_0,
-                100,
-              ))));
+              fieldValue.setValue(String(
+                interestChartData.data[index]?.rate ?? 0
+              ));
             }
           }}
           value={value}
