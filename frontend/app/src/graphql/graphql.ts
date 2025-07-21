@@ -1,4 +1,5 @@
 /* eslint-disable */
+import { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -1850,6 +1851,93 @@ export enum _SubgraphErrorPolicy_ {
   Deny = 'deny'
 }
 
+export type BorrowerInfoQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type BorrowerInfoQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', nextOwnerIndexes: Array<number>, troves: number, trovesByCollateral: Array<number> } | null };
+
+export type FullTroveFragmentFragment = { __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, debt: string, deposit: string, interestRate: string, mightBeLeveraged: boolean, stake: string, status: TroveStatus, troveId: string, updatedAt: string, collateral: { __typename?: 'Collateral', id: string, minCollRatio: string, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: string, annualManagementFee: string, batchManager: string } | null };
+
+export type TrovesByAccountQueryVariables = Exact<{
+  account: Scalars['Bytes']['input'];
+}>;
+
+
+export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, debt: string, deposit: string, interestRate: string, mightBeLeveraged: boolean, stake: string, status: TroveStatus, troveId: string, updatedAt: string, collateral: { __typename?: 'Collateral', id: string, minCollRatio: string, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: string, annualManagementFee: string, batchManager: string } | null }> };
+
+export type TroveByIdQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, debt: string, deposit: string, interestRate: string, mightBeLeveraged: boolean, stake: string, status: TroveStatus, troveId: string, updatedAt: string, collateral: { __typename?: 'Collateral', id: string, minCollRatio: string, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: string, annualManagementFee: string, batchManager: string } | null } | null };
+
+export type StabilityPoolsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type StabilityPoolsQuery = { __typename?: 'Query', stabilityPools: Array<{ __typename?: 'StabilityPool', id: string, totalDeposited: string }> };
+
+export type StabilityPoolDepositFragmentFragment = { __typename?: 'StabilityPoolDeposit', id: string, deposit: string, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: string, P: string, S: string, scale: string } };
+
+export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
+  account: Scalars['Bytes']['input'];
+}>;
+
+
+export type StabilityPoolDepositsByAccountQuery = { __typename?: 'Query', stabilityPoolDeposits: Array<{ __typename?: 'StabilityPoolDeposit', id: string, deposit: string, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: string, P: string, S: string, scale: string } }> };
+
+export type StabilityPoolDepositQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type StabilityPoolDepositQuery = { __typename?: 'Query', stabilityPoolDeposit?: { __typename?: 'StabilityPoolDeposit', id: string, deposit: string, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: string, P: string, S: string, scale: string } } | null };
+
+export type StabilityPoolScaleQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type StabilityPoolScaleQuery = { __typename?: 'Query', stabilityPoolScale?: { __typename?: 'StabilityPoolScale', id: string, B: string, S: string } | null };
+
+export type InterestBatchQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type InterestBatchQuery = { __typename?: 'Query', interestBatch?: { __typename?: 'InterestBatch', batchManager: string, debt: string, coll: string, annualInterestRate: string, annualManagementFee: string, collateral: { __typename?: 'Collateral', collIndex: number } } | null };
+
+export type AllInterestRateBracketsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AllInterestRateBracketsQuery = { __typename?: 'Query', interestRateBrackets: Array<{ __typename?: 'InterestRateBracket', rate: string, totalDebt: string, collateral: { __typename?: 'Collateral', collIndex: number } }> };
+
+export type GovernanceInitiativesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GovernanceInitiativesQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string }> };
+
+export type GovernanceUserQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GovernanceUserQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', id: string, allocatedLQTY: string, stakedLQTY: string, stakedOffset: string, allocations: Array<{ __typename?: 'GovernanceAllocation', id: string, atEpoch: string, vetoLQTY: string, voteLQTY: string, initiative: { __typename?: 'GovernanceInitiative', id: string } }> } | null };
+
+export type GovernanceStatsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GovernanceStatsQuery = { __typename?: 'Query', governanceStats?: { __typename?: 'GovernanceStats', id: string, totalLQTYStaked: string, totalOffset: string, totalInitiatives: number } | null };
+
+export type GovernanceUserAllocationsQueryVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type GovernanceUserAllocationsQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', allocated: Array<string> } | null };
+
 export class TypedDocumentString<TResult, TVariables>
   extends String
   implements DocumentTypeDecoration<TResult, TVariables>
@@ -1864,3 +1952,250 @@ export class TypedDocumentString<TResult, TVariables>
     return this.value;
   }
 }
+export const FullTroveFragmentFragmentDoc = new TypedDocumentString(`
+    fragment FullTroveFragment on Trove {
+  id
+  borrower
+  closedAt
+  createdAt
+  debt
+  deposit
+  interestRate
+  mightBeLeveraged
+  stake
+  status
+  troveId
+  updatedAt
+  collateral {
+    id
+    token {
+      symbol
+      name
+    }
+    minCollRatio
+    collIndex
+  }
+  interestBatch {
+    id
+    annualInterestRate
+    annualManagementFee
+    batchManager
+  }
+}
+    `, {"fragmentName":"FullTroveFragment"}) as unknown as TypedDocumentString<FullTroveFragmentFragment, unknown>;
+export const StabilityPoolDepositFragmentFragmentDoc = new TypedDocumentString(`
+    fragment StabilityPoolDepositFragment on StabilityPoolDeposit {
+  id
+  deposit
+  depositor
+  collateral {
+    collIndex
+  }
+  snapshot {
+    B
+    P
+    S
+    scale
+  }
+}
+    `, {"fragmentName":"StabilityPoolDepositFragment"}) as unknown as TypedDocumentString<StabilityPoolDepositFragmentFragment, unknown>;
+export const BorrowerInfoDocument = new TypedDocumentString(`
+    query BorrowerInfo($id: ID!) {
+  borrowerInfo(id: $id) {
+    nextOwnerIndexes
+    troves
+    trovesByCollateral
+  }
+}
+    `) as unknown as TypedDocumentString<BorrowerInfoQuery, BorrowerInfoQueryVariables>;
+export const TrovesByAccountDocument = new TypedDocumentString(`
+    query TrovesByAccount($account: Bytes!) {
+  troves(
+    where: {borrower: $account, status_in: [active, redeemed, liquidated]}
+    orderBy: updatedAt
+    orderDirection: desc
+  ) {
+    id
+    borrower
+    closedAt
+    createdAt
+    debt
+    deposit
+    interestRate
+    mightBeLeveraged
+    stake
+    status
+    troveId
+    updatedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+      collIndex
+    }
+    interestBatch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
+export const TroveByIdDocument = new TypedDocumentString(`
+    query TroveById($id: ID!) {
+  trove(id: $id) {
+    id
+    borrower
+    closedAt
+    createdAt
+    debt
+    deposit
+    interestRate
+    mightBeLeveraged
+    stake
+    status
+    troveId
+    updatedAt
+    collateral {
+      id
+      token {
+        symbol
+        name
+      }
+      minCollRatio
+      collIndex
+    }
+    interestBatch {
+      id
+      annualInterestRate
+      annualManagementFee
+      batchManager
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<TroveByIdQuery, TroveByIdQueryVariables>;
+export const StabilityPoolsDocument = new TypedDocumentString(`
+    query StabilityPools {
+  stabilityPools {
+    id
+    totalDeposited
+  }
+}
+    `) as unknown as TypedDocumentString<StabilityPoolsQuery, StabilityPoolsQueryVariables>;
+export const StabilityPoolDepositsByAccountDocument = new TypedDocumentString(`
+    query StabilityPoolDepositsByAccount($account: Bytes!) {
+  stabilityPoolDeposits(where: {depositor: $account, deposit_gt: 0}) {
+    id
+    deposit
+    depositor
+    collateral {
+      collIndex
+    }
+    snapshot {
+      B
+      P
+      S
+      scale
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<StabilityPoolDepositsByAccountQuery, StabilityPoolDepositsByAccountQueryVariables>;
+export const StabilityPoolDepositDocument = new TypedDocumentString(`
+    query StabilityPoolDeposit($id: ID!) {
+  stabilityPoolDeposit(id: $id) {
+    id
+    deposit
+    depositor
+    collateral {
+      collIndex
+    }
+    snapshot {
+      B
+      P
+      S
+      scale
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<StabilityPoolDepositQuery, StabilityPoolDepositQueryVariables>;
+export const StabilityPoolScaleDocument = new TypedDocumentString(`
+    query StabilityPoolScale($id: ID!) {
+  stabilityPoolScale(id: $id) {
+    id
+    B
+    S
+  }
+}
+    `) as unknown as TypedDocumentString<StabilityPoolScaleQuery, StabilityPoolScaleQueryVariables>;
+export const InterestBatchDocument = new TypedDocumentString(`
+    query InterestBatch($id: ID!) {
+  interestBatch(id: $id) {
+    collateral {
+      collIndex
+    }
+    batchManager
+    debt
+    coll
+    annualInterestRate
+    annualManagementFee
+  }
+}
+    `) as unknown as TypedDocumentString<InterestBatchQuery, InterestBatchQueryVariables>;
+export const AllInterestRateBracketsDocument = new TypedDocumentString(`
+    query AllInterestRateBrackets {
+  interestRateBrackets(orderBy: rate) {
+    collateral {
+      collIndex
+    }
+    rate
+    totalDebt
+  }
+}
+    `) as unknown as TypedDocumentString<AllInterestRateBracketsQuery, AllInterestRateBracketsQueryVariables>;
+export const GovernanceInitiativesDocument = new TypedDocumentString(`
+    query GovernanceInitiatives {
+  governanceInitiatives {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<GovernanceInitiativesQuery, GovernanceInitiativesQueryVariables>;
+export const GovernanceUserDocument = new TypedDocumentString(`
+    query GovernanceUser($id: ID!) {
+  governanceUser(id: $id) {
+    id
+    allocatedLQTY
+    stakedLQTY
+    stakedOffset
+    allocations {
+      id
+      atEpoch
+      vetoLQTY
+      voteLQTY
+      initiative {
+        id
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GovernanceUserQuery, GovernanceUserQueryVariables>;
+export const GovernanceStatsDocument = new TypedDocumentString(`
+    query GovernanceStats {
+  governanceStats(id: "stats") {
+    id
+    totalLQTYStaked
+    totalOffset
+    totalInitiatives
+  }
+}
+    `) as unknown as TypedDocumentString<GovernanceStatsQuery, GovernanceStatsQueryVariables>;
+export const GovernanceUserAllocationsDocument = new TypedDocumentString(`
+    query GovernanceUserAllocations($id: ID!) {
+  governanceUser(id: $id) {
+    allocated
+  }
+}
+    `) as unknown as TypedDocumentString<GovernanceUserAllocationsQuery, GovernanceUserAllocationsQueryVariables>;

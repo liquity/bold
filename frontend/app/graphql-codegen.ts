@@ -63,6 +63,9 @@ const config: CodegenConfig = {
           Timestamp: "string",
         },
       },
+      presetConfig: {
+        fragmentMasking: false,
+      },
       schema: {
         [subgraphUrl]: {
           headers: {
