@@ -15,7 +15,7 @@ export type Scalars = {
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
   BigDecimal: { input: string; output: string; }
-  BigInt: { input: string; output: string; }
+  BigInt: { input: bigint; output: bigint; }
   Bytes: { input: string; output: string; }
   /**
    * 8 bytes signed integer
@@ -1858,61 +1858,61 @@ export type BorrowerInfoQueryVariables = Exact<{
 
 export type BorrowerInfoQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', nextOwnerIndexes: Array<number>, troves: number, trovesByCollateral: Array<number> } | null };
 
-export type FullTroveFragmentFragment = { __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, debt: string, deposit: string, interestRate: string, mightBeLeveraged: boolean, stake: string, status: TroveStatus, troveId: string, updatedAt: string, collateral: { __typename?: 'Collateral', id: string, minCollRatio: string, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: string, annualManagementFee: string, batchManager: string } | null };
+export type FullTroveFragmentFragment = { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null };
 
 export type TrovesByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
 }>;
 
 
-export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, debt: string, deposit: string, interestRate: string, mightBeLeveraged: boolean, stake: string, status: TroveStatus, troveId: string, updatedAt: string, collateral: { __typename?: 'Collateral', id: string, minCollRatio: string, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: string, annualManagementFee: string, batchManager: string } | null }> };
+export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null }> };
 
 export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, debt: string, deposit: string, interestRate: string, mightBeLeveraged: boolean, stake: string, status: TroveStatus, troveId: string, updatedAt: string, collateral: { __typename?: 'Collateral', id: string, minCollRatio: string, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: string, annualManagementFee: string, batchManager: string } | null } | null };
+export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null } | null };
 
 export type StabilityPoolsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type StabilityPoolsQuery = { __typename?: 'Query', stabilityPools: Array<{ __typename?: 'StabilityPool', id: string, totalDeposited: string }> };
+export type StabilityPoolsQuery = { __typename?: 'Query', stabilityPools: Array<{ __typename?: 'StabilityPool', id: string, totalDeposited: bigint }> };
 
-export type StabilityPoolDepositFragmentFragment = { __typename?: 'StabilityPoolDeposit', id: string, deposit: string, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: string, P: string, S: string, scale: string } };
+export type StabilityPoolDepositFragmentFragment = { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, scale: bigint } };
 
 export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
 }>;
 
 
-export type StabilityPoolDepositsByAccountQuery = { __typename?: 'Query', stabilityPoolDeposits: Array<{ __typename?: 'StabilityPoolDeposit', id: string, deposit: string, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: string, P: string, S: string, scale: string } }> };
+export type StabilityPoolDepositsByAccountQuery = { __typename?: 'Query', stabilityPoolDeposits: Array<{ __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, scale: bigint } }> };
 
 export type StabilityPoolDepositQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type StabilityPoolDepositQuery = { __typename?: 'Query', stabilityPoolDeposit?: { __typename?: 'StabilityPoolDeposit', id: string, deposit: string, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: string, P: string, S: string, scale: string } } | null };
+export type StabilityPoolDepositQuery = { __typename?: 'Query', stabilityPoolDeposit?: { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, scale: bigint } } | null };
 
 export type StabilityPoolScaleQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type StabilityPoolScaleQuery = { __typename?: 'Query', stabilityPoolScale?: { __typename?: 'StabilityPoolScale', id: string, B: string, S: string } | null };
+export type StabilityPoolScaleQuery = { __typename?: 'Query', stabilityPoolScale?: { __typename?: 'StabilityPoolScale', id: string, B: bigint, S: bigint } | null };
 
 export type InterestBatchQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type InterestBatchQuery = { __typename?: 'Query', interestBatch?: { __typename?: 'InterestBatch', batchManager: string, debt: string, coll: string, annualInterestRate: string, annualManagementFee: string, collateral: { __typename?: 'Collateral', collIndex: number } } | null };
+export type InterestBatchQuery = { __typename?: 'Query', interestBatch?: { __typename?: 'InterestBatch', batchManager: string, debt: bigint, coll: bigint, annualInterestRate: bigint, annualManagementFee: bigint, collateral: { __typename?: 'Collateral', collIndex: number } } | null };
 
 export type AllInterestRateBracketsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AllInterestRateBracketsQuery = { __typename?: 'Query', interestRateBrackets: Array<{ __typename?: 'InterestRateBracket', rate: string, totalDebt: string, collateral: { __typename?: 'Collateral', collIndex: number } }> };
+export type AllInterestRateBracketsQuery = { __typename?: 'Query', interestRateBrackets: Array<{ __typename?: 'InterestRateBracket', rate: bigint, totalDebt: bigint, collateral: { __typename?: 'Collateral', collIndex: number } }> };
 
 export type GovernanceInitiativesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1924,12 +1924,12 @@ export type GovernanceUserQueryVariables = Exact<{
 }>;
 
 
-export type GovernanceUserQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', id: string, allocatedLQTY: string, stakedLQTY: string, stakedOffset: string, allocations: Array<{ __typename?: 'GovernanceAllocation', id: string, atEpoch: string, vetoLQTY: string, voteLQTY: string, initiative: { __typename?: 'GovernanceInitiative', id: string } }> } | null };
+export type GovernanceUserQuery = { __typename?: 'Query', governanceUser?: { __typename?: 'GovernanceUser', id: string, allocatedLQTY: bigint, stakedLQTY: bigint, stakedOffset: bigint, allocations: Array<{ __typename?: 'GovernanceAllocation', id: string, atEpoch: bigint, vetoLQTY: bigint, voteLQTY: bigint, initiative: { __typename?: 'GovernanceInitiative', id: string } }> } | null };
 
 export type GovernanceStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GovernanceStatsQuery = { __typename?: 'Query', governanceStats?: { __typename?: 'GovernanceStats', id: string, totalLQTYStaked: string, totalOffset: string, totalInitiatives: number } | null };
+export type GovernanceStatsQuery = { __typename?: 'Query', governanceStats?: { __typename?: 'GovernanceStats', id: string, totalLQTYStaked: bigint, totalOffset: bigint, totalInitiatives: number } | null };
 
 export type GovernanceUserAllocationsQueryVariables = Exact<{
   id: Scalars['ID']['input'];
