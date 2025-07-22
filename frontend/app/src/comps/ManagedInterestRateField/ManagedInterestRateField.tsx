@@ -720,7 +720,7 @@ export const InterestRateField = memo(
                         ? fmtnum(bracket?.debtInFront, "compact")
                         : "−"}
                     </span>
-                    <span> BOLD</span>
+                    <span> USND</span>
                   </span>
                 </a.div>
               )
@@ -927,7 +927,7 @@ export const InterestRateField = memo(
                           <IconSuggestion size={16} />
                           <span>
                             {savingsAmount 
-                              ? `Save up to ${fmtnum(savingsAmount, 'compact')} BOLD per year with a managed rate!`
+                              ? `Save up to ${fmtnum(savingsAmount, 'compact')} USND per year with a managed rate!`
                               : "You could save with a managed rate!"}
                           </span>
                         </span>
