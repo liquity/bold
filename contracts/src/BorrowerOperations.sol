@@ -323,7 +323,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         // --- Checks ---
 
         vars.troveId = uint256(keccak256(abi.encode(msg.sender, _owner, _ownerIndex)));
-        _requireTroveDoesNotExists(vars.troveManager, vars.troveId);
+        _requireTroveDoesNotExist(vars.troveManager, vars.troveId);
 
         _change.collIncrease = _collAmount;
         _change.debtIncrease = _boldAmount;
@@ -524,7 +524,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireTroveIsActive(troveManagerCached, _troveId);
 
         LatestTroveData memory trove = troveManagerCached.getLatestTroveData(_troveId);
-        _requireValidDelegateAdustment(_troveId, trove.lastInterestRateAdjTime, _newAnnualInterestRate);
+        _requireValidDelegateAdjustment(_troveId, trove.lastInterestRateAdjTime, _newAnnualInterestRate);
         _requireAnnualInterestRateIsNew(trove.annualInterestRate, _newAnnualInterestRate);
 
         uint256 newDebt = trove.entireDebt;
@@ -1329,7 +1329,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireValidDelegateAdustment(
+    function _requireValidDelegateAdjustment(
         uint256 _troveId,
         uint256 _lastInterestRateAdjTime,
         uint256 _annualInterestRate
@@ -1362,7 +1362,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         return batchManager;
     }
 
-    function _requireTroveDoesNotExists(ITroveManager _troveManager, uint256 _troveId) internal view {
+    function _requireTroveDoesNotExist(ITroveManager _troveManager, uint256 _troveId) internal view {
         ITroveManager.Status status = _troveManager.getTroveStatus(_troveId);
         if (status != ITroveManager.Status.nonExistent) {
             revert TroveExists();
