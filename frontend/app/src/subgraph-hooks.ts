@@ -1,6 +1,5 @@
 import type {
   InterestBatchQuery as InterestBatchQueryType,
-  StabilityPoolDepositQuery as StabilityPoolDepositQueryType,
   TrovesByAccountQuery as TrovesByAccountQueryType,
 } from "@/src/graphql/graphql";
 import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
@@ -235,9 +234,18 @@ export function useStabilityPoolDeposits(
     };
   }
 
-  return useQuery<NonNullable<
-    StabilityPoolDepositQueryType["stabilityPoolDeposit"]
-  >[]>({
+  return useQuery<{
+    id: string;
+    collateral: { collIndex: number };
+    deposit: bigint;
+    depositor: string;
+    snapshot: {
+      B: bigint;
+      P: bigint;
+      S: bigint;
+      scale: bigint;
+    };
+  }[]>({
     queryKey: ["StabilityPoolDepositsByAccount", account],
     queryFn,
     ...prepareOptions(options),
@@ -295,9 +303,18 @@ export function useStabilityPoolDeposit(
 
   return useQuery<
     | null
-    | NonNullable<
-      StabilityPoolDepositQueryType["stabilityPoolDeposit"]
-    >
+    | {
+        id: string;
+        collateral: { collIndex: number };
+        deposit: bigint;
+        depositor: string;
+        snapshot: {
+          B: bigint;
+          P: bigint;
+          S: bigint;
+          scale: bigint;
+        };
+      }
   >({
     queryKey: ["StabilityPoolDeposit", account, collIndex],
     queryFn,
