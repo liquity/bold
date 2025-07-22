@@ -258,30 +258,31 @@ export async function getIndexedInitiatives() {
   return governanceInitiatives.map((initiative) => initiative.id as Address);
 }
 
-const AllocationHistoryQuery = graphql(`
-  query AllocationHistory($user: String $initiative: String) {
-    userAllocations: governanceAllocations(
-      where: {
-        initiative: $initiative
-        user: $user
-      }
+const UserAllocationHistoryQuery = graphql(`
+  query UserAllocationHistory($user: String) {
+    governanceAllocations(
+      where: { user: $user }
       orderBy: epoch
       orderDirection: desc
+      first: 1000
     ) {
       epoch
+      initiative { id }
       voteLQTY
       vetoLQTY
       voteOffset
       vetoOffset
     }
+  }
+`);
 
-    totalAllocations: governanceAllocations(
-      where: {
-        initiative: $initiative
-        user: null
-      }
+const TotalAllocationHistoryQuery = graphql(`
+  query TotalAllocationHistory($initiative: String) {
+    governanceAllocations(
+      where: { initiative: $initiative, user: null }
       orderBy: epoch
       orderDirection: desc
+      first: 1000
     ) {
       epoch
       voteLQTY
@@ -292,29 +293,33 @@ const AllocationHistoryQuery = graphql(`
   }
 `);
 
-// A user's allocation history of a single initiative against the total allocations to that initiative,
-// ordered by descending epoch
-export async function getAllocationHistory(user: Address, initiative: Address) {
-  const { userAllocations, totalAllocations } = await graphQuery(AllocationHistoryQuery, {
+// A user's allocation history ordered by descending epoch
+export async function getUserAllocationHistoryFromSubgraph(user: Address) {
+  const { governanceAllocations } = await graphQuery(UserAllocationHistoryQuery, {
     user: user.toLowerCase(),
+  });
+
+  return governanceAllocations.map((allocation) => ({
+    epoch: Number(allocation.epoch),
+    initiative: allocation.initiative.id,
+    voteLQTY: BigInt(allocation.voteLQTY),
+    vetoLQTY: BigInt(allocation.vetoLQTY),
+    voteOffset: BigInt(allocation.voteOffset),
+    vetoOffset: BigInt(allocation.vetoOffset),
+  }));
+}
+
+// An initiative's total allocation history ordered by descending epoch
+export async function getTotalAllocationHistoryFromSubgraph(initiative: Address) {
+  const { governanceAllocations } = await graphQuery(TotalAllocationHistoryQuery, {
     initiative: initiative.toLowerCase(),
   });
 
-  return {
-    userAllocations: userAllocations.map((allocation) => ({
-      epoch: BigInt(allocation.epoch),
-      voteLQTY: BigInt(allocation.voteLQTY),
-      vetoLQTY: BigInt(allocation.vetoLQTY),
-      voteOffset: BigInt(allocation.voteOffset),
-      vetoOffset: BigInt(allocation.vetoOffset),
-    })),
-
-    totalAllocations: totalAllocations.map((allocation) => ({
-      epoch: BigInt(allocation.epoch),
-      voteLQTY: BigInt(allocation.voteLQTY),
-      vetoLQTY: BigInt(allocation.vetoLQTY),
-      voteOffset: BigInt(allocation.voteOffset),
-      vetoOffset: BigInt(allocation.vetoOffset),
-    })),
-  };
+  return governanceAllocations.map((allocation) => ({
+    epoch: Number(allocation.epoch),
+    voteLQTY: BigInt(allocation.voteLQTY),
+    vetoLQTY: BigInt(allocation.vetoLQTY),
+    voteOffset: BigInt(allocation.voteOffset),
+    vetoOffset: BigInt(allocation.vetoOffset),
+  }));
 }
