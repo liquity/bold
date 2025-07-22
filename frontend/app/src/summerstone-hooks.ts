@@ -1,4 +1,4 @@
-import type { Address, BranchId } from "@/src/types";
+import type { Address, CollIndex } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +20,7 @@ function prepareOptions(options?: Options) {
 
 export function useBatchManagers(
   delegateAddresses?: Address[],
-  branchIds?: BranchId[],
+  branchIds?: CollIndex[],
   options?: Options,
 ) {
   let queryFn = async () => {
