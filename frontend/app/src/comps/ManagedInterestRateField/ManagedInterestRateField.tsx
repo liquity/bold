@@ -1137,7 +1137,11 @@ function ManualInterestRateSlider({
         <Slider
           gradient={gradientStops}
           gradientMode="high-to-low"
-          chart={interestChartData.data?.map(({ size }) => size) ?? []}
+          chart={
+            interestChartData.data?.map(({ size }) =>
+              Math.max(0.1, size)
+            ) ?? []
+          }
           onChange={(value) => {
             if (interestChartData.data) {
               const index = Math.min(

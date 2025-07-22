@@ -57,7 +57,7 @@ const config: CodegenConfig = {
         strictScalars: true,
         scalars: {
           BigDecimal: "string",
-          BigInt: "string",
+          BigInt: "bigint",
           Bytes: "string",
           Int8: "number",
           Timestamp: "string",
