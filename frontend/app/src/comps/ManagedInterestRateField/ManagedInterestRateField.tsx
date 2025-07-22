@@ -698,7 +698,7 @@ export const InterestRateField = memo(
                 <div>
                   {boldInterestPerYear && (mode === "manual" || delegate !== null)
                     ? fmtnum(boldInterestPerYear)
-                    : "−"} BOLD / year
+                    : "−"} USND / year
                 </div>
                 <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
               </HFlex>
