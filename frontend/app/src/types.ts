@@ -54,7 +54,6 @@ export type MenuSection = {
 };
 
 export type TroveStatus =
-  | "nonexistent"
   | "active"
   | "closed"
   | "liquidated"

@@ -189,7 +189,6 @@ const VPositionLoanBase = v.object({
     v.literal("closed"),
     v.literal("liquidated"),
     v.literal("redeemed"),
-    v.literal("nonexistent"),
   ]),
 });
 

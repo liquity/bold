@@ -154,15 +154,6 @@ export function getBranch(
   return branch;
 }
 
-function statusFromEnum(status: number): TroveStatus {
-  if (status === 0) return "nonexistent";
-  if (status === 1) return "active";
-  if (status === 2) return "closed";
-  if (status === 3) return "liquidated";
-  if (status === 4) return "redeemed";
-  throw new Error(`Invalid status: ${status}`);
-}
-
 type EarnPool = {
   apr: Dnum | null;
   apr7d: Dnum | null;
@@ -951,18 +942,19 @@ export async function fetchLoanById(
   if (!isPrefixedtroveId(fullId)) return null;
 
   const { branchId, troveId } = parsePrefixedTroveId(fullId);
+  const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
   const TroveManager = getBranchContract(branchId, "TroveManager");
 
   const [
     indexedTrove,
-    [troveTuple, troveData],
+    [batchManager, troveData],
   ] = await Promise.all([
     maybeIndexedTrove ?? getIndexedTroveById(branchId, troveId),
     readContracts(wagmiConfig, {
       allowFailure: false,
       contracts: [{
-        ...TroveManager,
-        functionName: "Troves",
+        ...BorrowerOperations,
+        functionName: "interestBatchManagerOf",
         args: [BigInt(troveId)],
       }, {
         ...TroveManager,
@@ -974,14 +966,14 @@ export async function fetchLoanById(
 
   return !indexedTrove ? null : {
     type: indexedTrove.mightBeLeveraged ? "multiply" : "borrow",
-    batchManager: isAddressEqual(troveTuple[8], zeroAddress) ? null : troveTuple[8],
+    batchManager: isAddressEqual(batchManager, zeroAddress) ? null : batchManager,
     borrowed: dnum18(troveData.entireDebt),
     borrower: indexedTrove.borrower,
     branchId,
     createdAt: indexedTrove.createdAt,
     deposit: dnum18(troveData.entireColl),
     interestRate: dnum18(troveData.annualInterestRate),
-    status: statusFromEnum(troveTuple[3]),
+    status: indexedTrove.status,
     troveId,
   };
 }
