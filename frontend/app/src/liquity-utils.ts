@@ -39,8 +39,8 @@ import {
   getIndexedTroveById,
   getIndexedTrovesByAccount,
   getInterestBatches,
-  getInterestRateBrackets,
   getNextOwnerIndex,
+  type IndexedTrove,
 } from "@/src/subgraph";
 import { isBranchId, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { bigIntAbs, jsonStringifyWithBigInt } from "@/src/utils";
@@ -385,9 +385,21 @@ export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveI
 }
 
 export function useInterestRateBrackets(branchId: BranchId) {
+  const brackets = useAllInterestRateBrackets();
   return useQuery({
     queryKey: ["InterestRateBrackets", branchId],
-    queryFn: () => getInterestRateBrackets(branchId),
+    enabled: brackets.status !== "pending",
+    queryFn: () => {
+      if (brackets.status === "error") {
+        throw brackets.error;
+      }
+
+      if (brackets.status === "pending") {
+        throw new Error(); // should not reach
+      }
+
+      return brackets.data.filter((bracket) => bracket.branchId === branchId);
+    },
   });
 }
 
@@ -934,6 +946,7 @@ export function useTroveRateUpdateCooldown(branchId: BranchId, troveId: TroveId)
 export async function fetchLoanById(
   wagmiConfig: WagmiConfig,
   fullId: null | PrefixedTroveId,
+  maybeIndexedTrove?: IndexedTrove,
 ): Promise<PositionLoanCommitted | null> {
   if (!isPrefixedtroveId(fullId)) return null;
 
@@ -944,7 +957,7 @@ export async function fetchLoanById(
     indexedTrove,
     [troveTuple, troveData],
   ] = await Promise.all([
-    getIndexedTroveById(branchId, troveId),
+    maybeIndexedTrove ?? getIndexedTroveById(branchId, troveId),
     readContracts(wagmiConfig, {
       allowFailure: false,
       contracts: [{
@@ -995,7 +1008,7 @@ export async function fetchLoansByAccount(
     if (!isPrefixedtroveId(trove.id)) {
       throw new Error(`Invalid prefixed trove ID: ${trove.id}`);
     }
-    return fetchLoanById(wagmiConfig, trove.id);
+    return fetchLoanById(wagmiConfig, trove.id, trove);
   }));
 
   return results.filter((result) => result !== null);

@@ -1,23 +1,24 @@
 import type { PositionEarn } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { getCollToken, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
+import { getCollToken, useEarnPool } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, TokenIcon } from "@liquity2/uikit";
 import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows } from "./shared";
 
 export function PositionCardEarn({
-  owner,
   branchId,
+  deposit,
+  rewards,
 }: Pick<
   PositionEarn,
-  | "owner"
   | "branchId"
+  | "deposit"
+  | "rewards"
 >) {
   const token = getCollToken(branchId);
   const earnPool = useEarnPool(branchId);
-  const earnPosition = useEarnPosition(branchId, owner ?? null);
   return (
     <PositionCard
       className="position-card position-card-earn"
@@ -48,7 +49,7 @@ export function PositionCardEarn({
         value: (
           <HFlex gap={8} alignItems="center" justifyContent="flex-start">
             <Amount
-              value={earnPosition.data?.deposit}
+              value={deposit}
               fallback="−"
               format={2}
             />
@@ -152,7 +153,7 @@ export function PositionCardEarn({
                 >
                   <Amount
                     fallback="−"
-                    value={earnPosition.data?.rewards.bold}
+                    value={rewards.bold}
                     format={2}
                   />
                   <TokenIcon size="mini" symbol="BOLD" />
@@ -167,7 +168,7 @@ export function PositionCardEarn({
                 >
                   <Amount
                     fallback="−"
-                    value={earnPosition.data?.rewards.coll}
+                    value={rewards.coll}
                     format={2}
                   />
                   {token && <TokenIcon size="mini" symbol={token.symbol} />}

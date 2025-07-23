@@ -1,18 +1,19 @@
-import type { Address } from "@/src/types";
+import type { PositionSbold } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { useSboldPosition } from "@/src/sbold";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, TokenIcon } from "@liquity2/uikit";
 import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows } from "./shared";
 
 export function PositionCardSbold({
-  owner,
-}: {
-  owner?: Address | null;
-}) {
-  const sboldPosition = useSboldPosition(owner ?? null);
+  bold,
+  sbold,
+}: Pick<
+  PositionSbold,
+  | "bold"
+  | "sbold"
+>) {
   return (
     <PositionCard
       className="position-card position-card-sbold"
@@ -43,7 +44,7 @@ export function PositionCardSbold({
         value: (
           <HFlex gap={8} alignItems="center" justifyContent="flex-start">
             <Amount
-              value={sboldPosition.data?.bold}
+              value={bold}
               fallback="−"
               format={2}
             />
@@ -147,7 +148,7 @@ export function PositionCardSbold({
                 >
                   <Amount
                     fallback="−"
-                    value={sboldPosition.data?.sbold}
+                    value={sbold}
                     format={2}
                   />
                   <TokenIcon size="mini" symbol="SBOLD" />
