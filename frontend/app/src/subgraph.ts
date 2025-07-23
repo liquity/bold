@@ -1,3 +1,5 @@
+import * as dn from "dnum";
+
 import type { TypedDocumentString } from "@/src/graphql/graphql";
 import type { Address, BranchId, TroveId } from "@/src/types";
 
@@ -7,7 +9,7 @@ import { graphql } from "@/src/graphql";
 import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
 
-type IndexedTrove = {
+export type IndexedTrove = {
   id: string;
   borrower: Address;
   closedAt: number | null;
@@ -212,36 +214,15 @@ const AllInterestRateBracketsQuery = graphql(`
   }
 `);
 
-export async function getInterestRateBrackets(branchId: BranchId) {
-  const { interestRateBrackets } = await graphQuery(AllInterestRateBracketsQuery);
-  return interestRateBrackets
-    .filter((bracket) => bracket.collateral.collIndex === branchId)
-    .sort((a, b) => (a.rate > b.rate ? 1 : -1))
-    .map((bracket) => ({
-      rate: dnum18(bracket.rate),
-      totalDebt: dnum18(bracket.totalDebt),
-    }));
-}
-
 export async function getAllInterestRateBrackets() {
   const { interestRateBrackets } = await graphQuery(AllInterestRateBracketsQuery);
-
-  const debtByRate: Map<string, bigint> = new Map();
-  for (const bracket of interestRateBrackets) {
-    const key = String(bracket.rate);
-    debtByRate.set(key, (debtByRate.get(key) ?? 0n) + BigInt(bracket.totalDebt));
-  }
-
   return interestRateBrackets
-    .sort((a, b) => (a.rate > b.rate ? 1 : -1))
-    .map((bracket) => {
-      const totalDebt = debtByRate.get(String(bracket.rate));
-      if (totalDebt === undefined) throw new Error();
-      return {
-        rate: dnum18(bracket.rate),
-        totalDebt: dnum18(totalDebt),
-      };
-    });
+    .map((bracket) => ({
+      branchId: bracket.collateral.collIndex,
+      rate: dnum18(bracket.rate),
+      totalDebt: dnum18(bracket.totalDebt),
+    }))
+    .sort((a, b) => dn.cmp(a.rate, b.rate));
 }
 
 const GovernanceInitiativesQuery = graphql(`
