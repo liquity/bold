@@ -9,7 +9,7 @@ import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/Transact
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { useAccount } from "@/src/services/Arbitrum";
 import { usePrice } from "@/src/services/Prices";
-import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
+import { GovernanceUserAllocations, graphQuery } from "@/src/subgraph-queries";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
@@ -80,7 +80,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         if (!ctx.account) {
           throw new Error("Account address is required");
         }
-        const allocated = await graphQuery(GovernanceUserAllocated, {
+        const allocated = await graphQuery(GovernanceUserAllocations, {
           id: ctx.account.toLowerCase(),
         });
         return ctx.writeContract({
@@ -217,7 +217,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
     const steps: string[] = [];
 
     // check if the user has any allocations
-    const allocated = await graphQuery(GovernanceUserAllocated, {
+    const allocated = await graphQuery(GovernanceUserAllocations, {
       id: ctx.account.toLowerCase(),
     });
     if (

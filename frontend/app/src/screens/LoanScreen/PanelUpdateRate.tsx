@@ -5,7 +5,7 @@ import { ARROW_RIGHT } from "@/src/characters";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
-import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
+import { InterestRateField } from "@/src/comps/ManagedInterestRateField/ManagedInterestRateField";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import content from "@/src/content";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -97,14 +97,14 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoanCommitted }) {
         field={
           <InterestRateField
             inputId='input-interest-rate'
-            collIndex={loan.collIndex}
+            branchId={loan.collIndex}
             debt={debt.parsed}
             delegate={interestRateDelegate}
             interestRate={interestRate}
             mode={interestRateMode}
             onChange={setInterestRate}
             onDelegateChange={setInterestRateDelegate}
-            onModeChange={setInterestRateMode}
+            onModeChange={setInterestRateMode as any}
           />
         }
         footer={{
@@ -201,10 +201,7 @@ export function PanelUpdateRate({ loan }: { loan: PositionLoanCommitted }) {
                 prevLoan: { ...loan },
                 loan: {
                   ...loan,
-                  batchManager:
-                    interestRateMode === "delegate"
-                      ? interestRateDelegate
-                      : null,
+                  batchManager: interestRateDelegate,
                   interestRate,
                 },
               });

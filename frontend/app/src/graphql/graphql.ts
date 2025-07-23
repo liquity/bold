@@ -1858,7 +1858,7 @@ export type BorrowerInfoQueryVariables = Exact<{
 
 export type BorrowerInfoQuery = { __typename?: 'Query', borrowerInfo?: { __typename?: 'BorrowerInfo', nextOwnerIndexes: Array<number>, troves: number, trovesByCollateral: Array<number> } | null };
 
-export type FullTroveFragmentFragment = { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null } & { ' $fragmentName'?: 'FullTroveFragmentFragment' };
+export type FullTroveFragmentFragment = { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null };
 
 export type TrovesByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
@@ -1879,7 +1879,7 @@ export type StabilityPoolsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type StabilityPoolsQuery = { __typename?: 'Query', stabilityPools: Array<{ __typename?: 'StabilityPool', id: string, totalDeposited: bigint }> };
 
-export type StabilityPoolDepositFragmentFragment = { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, scale: bigint } } & { ' $fragmentName'?: 'StabilityPoolDepositFragmentFragment' };
+export type StabilityPoolDepositFragmentFragment = { __typename?: 'StabilityPoolDeposit', id: string, deposit: bigint, depositor: string, collateral: { __typename?: 'Collateral', collIndex: number }, snapshot: { __typename?: 'StabilityPoolDepositSnapshot', B: bigint, P: bigint, S: bigint, scale: bigint } };
 
 export type StabilityPoolDepositsByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];

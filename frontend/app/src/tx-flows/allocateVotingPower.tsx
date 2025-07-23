@@ -8,7 +8,7 @@ import { getUserStates, useInitiatives } from "@/src/liquity-governance";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { useGovernanceUser } from "@/src/subgraph-hooks";
-import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
+import { GovernanceUserAllocations, graphQuery } from "@/src/subgraph-queries";
 import { vVoteAllocations } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { IconDownvote, IconStake, IconUpvote } from "@liquity2/uikit";
@@ -209,7 +209,7 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
         }
 
         const allocated = await graphQuery(
-          GovernanceUserAllocated,
+          GovernanceUserAllocations,
           { id: ctx.account.toLowerCase() },
         );
 

@@ -6,7 +6,7 @@ import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePosi
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
+import { GovernanceUserAllocations, graphQuery } from "@/src/subgraph-queries";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
@@ -69,7 +69,7 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
         }
 
         const allocated = await graphQuery(
-          GovernanceUserAllocated,
+          GovernanceUserAllocations,
           { id: ctx.account.toLowerCase() },
         );
 
@@ -113,7 +113,7 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
 
     // check if the user has any allocations
     const allocated = await graphQuery(
-      GovernanceUserAllocated,
+      GovernanceUserAllocations,
       { id: account.toLowerCase() },
     );
     if (

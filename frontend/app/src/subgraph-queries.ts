@@ -289,11 +289,10 @@ export const GovernanceStats = graphql(`
   }
 `);
 
-export const GovernanceUserAllocated = graphql(`
+export const GovernanceUserAllocations = graphql(`
   query GovernanceUserAllocations($id: ID!) {
     governanceUser(id: $id) {
       allocated
     }
   }
 `);
-
