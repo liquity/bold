@@ -2,12 +2,12 @@ import type {
   InterestBatchQuery as InterestBatchQueryType,
   TrovesByAccountQuery as TrovesByAccountQueryType,
 } from "@/src/graphql/graphql";
-import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
+import type { Address, CollIndex, CombinedTroveData, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
-import { DEMO_MODE, SUBGRAPH_URL } from "@/src/env";
+import { CHAIN_RPC_URL, DEMO_MODE, SUBGRAPH_URL } from "@/src/env";
 import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { sleep } from "@/src/utils";
 import { isAddress, shortenAddress } from "@liquity2/uikit";
@@ -30,6 +30,9 @@ import {
   TroveByIdQuery,
   TrovesByAccountQuery,
 } from "./subgraph-queries";
+import { useWagmiConfig } from "./services/Arbitrum";
+import { getContracts } from "./contracts";
+import { createPublicClient, http } from "viem";
 
 type Options = {
   refetchInterval?: number;
@@ -422,9 +425,36 @@ export function useInterestRateBrackets(
   collIndex: null | CollIndex,
   options?: Options,
 ) {
-  let queryFn = async () => (
-    (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
-  );
+  const { chains } = useWagmiConfig();
+  const { collaterals, MultiTroveGetter } = getContracts();
+
+  let queryFn = async () => {
+    try {
+      return (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
+    } catch (_) {
+      const client = createPublicClient({
+        chain: chains[0],
+        transport: http(CHAIN_RPC_URL),
+      })
+      return (await client.multicall({
+        contracts: collaterals.map(collateral => ({
+          ...MultiTroveGetter,
+          functionName: "getMultipleSortedTroves",
+          args: [collateral.collIndex, 0n, 1_000_000_000n],
+        })),
+      })).flatMap((troveList, index) => {
+        if (troveList.status === "success") {
+          return (troveList.result as unknown as CombinedTroveData[]).map((trove) => ({
+            combinedTroveData: trove,
+            rate: trove.annualInterestRate,
+            totalDebt: trove.entireDebt,
+            collateral: collaterals[index as CollIndex]!,
+          }));
+        }
+        return [];
+      }).filter((trove) => trove.collateral !== undefined);
+    }
+  };
 
   if (DEMO_MODE) {
     queryFn = async () => [];

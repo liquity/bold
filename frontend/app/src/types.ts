@@ -161,3 +161,22 @@ export type Initiative =
 export type Vote = "for" | "against";
 export type VoteAllocation = { vote: Vote | null; value: Dnum };
 export type VoteAllocations = Record<Address, VoteAllocation>;
+
+export interface CombinedTroveData {
+  id: bigint;
+  entireDebt: bigint;
+  entireColl: bigint;
+  redistBoldDebtGain: bigint;
+  redistCollGain: bigint;
+  accruedInterest: bigint;
+  recordedDebt: bigint;
+  annualInterestRate: bigint;
+  accruedBatchManagementFee: bigint;
+  lastInterestRateAdjTime: bigint;
+  stake: bigint;
+  lastDebtUpdateTime: bigint;
+  interestBatchManager: Address;
+  batchDebtShares: bigint;
+  snapshotETH: bigint;
+  snapshotBoldDebt: bigint;
+}
