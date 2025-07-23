@@ -2,13 +2,13 @@ import type {
   InterestBatchQuery as InterestBatchQueryType,
   TrovesByAccountQuery as TrovesByAccountQueryType,
 } from "@/src/graphql/graphql";
-import type { Address, CollIndex, CombinedTroveData, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
+import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId, ReturnTroveReadCallData } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
-import { CHAIN_RPC_URL, DEMO_MODE, SUBGRAPH_URL } from "@/src/env";
-import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
+import { DEMO_MODE, SUBGRAPH_URL } from "@/src/env";
+import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId, TroveStatus } from "@/src/types";
 import { sleep } from "@/src/utils";
 import { isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
@@ -30,9 +30,8 @@ import {
   TroveByIdQuery,
   TrovesByAccountQuery,
 } from "./subgraph-queries";
-import { useWagmiConfig } from "./services/Arbitrum";
 import { getContracts } from "./contracts";
-import { createPublicClient, http } from "viem";
+import { getAllDebtPerInterestRate, getTrovesByAccount } from "./liquity-read-calls";
 
 type Options = {
   refetchInterval?: number;
@@ -87,11 +86,17 @@ export function useLoansByAccount(
 ) {
   let queryFn = async () => {
     if (!account) return null;
-    const { troves } = await graphQuery(
-      TrovesByAccountQuery,
-      { account: account.toLowerCase() },
-    );
-    return troves.map(subgraphTroveToLoan);
+    try {
+      const { troves } = await graphQuery(
+        TrovesByAccountQuery,
+        { account: account.toLowerCase() },
+      );
+      return troves.map(subgraphTroveToLoan);
+    } catch (error) {
+      console.error("Error fetching troves by account from the subgraph, using read calls instead", error);
+      const troves = await getTrovesByAccount(account);
+      return troves.map(readCallTroveToLoan);
+    }
   };
 
   if (DEMO_MODE) {
@@ -425,34 +430,21 @@ export function useInterestRateBrackets(
   collIndex: null | CollIndex,
   options?: Options,
 ) {
-  const { chains } = useWagmiConfig();
-  const { collaterals, MultiTroveGetter } = getContracts();
+  const { collaterals } = getContracts();
 
   let queryFn = async () => {
     try {
       return (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
-    } catch (_) {
-      const client = createPublicClient({
-        chain: chains[0],
-        transport: http(CHAIN_RPC_URL),
-      })
-      return (await client.multicall({
-        contracts: collaterals.map(collateral => ({
-          ...MultiTroveGetter,
-          functionName: "getMultipleSortedTroves",
-          args: [collateral.collIndex, 0n, 1_000_000_000n],
-        })),
-      })).flatMap((troveList, index) => {
-        if (troveList.status === "success") {
-          return (troveList.result as unknown as CombinedTroveData[]).map((trove) => ({
-            combinedTroveData: trove,
-            rate: trove.annualInterestRate,
-            totalDebt: trove.entireDebt,
-            collateral: collaterals[index as CollIndex]!,
-          }));
-        }
-        return [];
-      }).filter((trove) => trove.collateral !== undefined);
+    } catch (error) {
+      console.error("Error fetching interest rate brackets from the subgraph, using read calls instead", error);
+      const debtPerInterestRate = await getAllDebtPerInterestRate();
+      return Object.entries(debtPerInterestRate).flatMap(([collIndex, list]) => {
+        return list.map((data) => ({
+          rate: data.interestRate,
+          totalDebt: data.debt,
+          collateral: collaterals[Number(collIndex) as CollIndex]!,
+        }));
+      });
     }
   };
 
@@ -637,6 +629,58 @@ function subgraphTroveToLoan(
     updatedAt: Number(trove.updatedAt) * 1000,
     status: trove.status,
   };
+}
+
+function readCallTroveToLoan(
+  trove: ReturnTroveReadCallData,
+): PositionLoanCommitted {
+  if (!isTroveId(trove.troveId)) {
+    throw new Error(`Invalid trove ID: ${trove.id} / ${trove.troveId}`);
+  }
+
+  const collIndex = trove.collateral.collIndex;
+  if (!isCollIndex(collIndex)) {
+    throw new Error(`Invalid collateral index: ${collIndex}`);
+  }
+
+  if (!isAddress(trove.borrower)) {
+    throw new Error(`Invalid borrower: ${trove.borrower}`);
+  }
+
+  return {
+    // type: trove.mightBeLeveraged ? "multiply" : "borrow",
+    type: "borrow", // TODO: replace with real value
+    batchManager: isAddress(trove.interestBatch?.batchManager)
+      ? trove.interestBatch.batchManager
+      : null,
+    borrowed: dnum18(trove.debt),
+    borrower: trove.borrower,
+    collIndex,
+    // createdAt: Number(trove.createdAt) * 1000,
+    createdAt: 0, // TODO: replace with real value
+    deposit: dnum18(trove.deposit),
+    interestRate: dnum18(trove.interestBatch?.annualInterestRate ?? trove.interestRate),
+    troveId: trove.troveId,
+    // updatedAt: Number(trove.updatedAt) * 1000,
+    updatedAt: 0, // TODO: replace with real value
+    // status: trove.status,
+    status: enumToLoanStatus(trove.status),
+  };
+}
+
+export function enumToLoanStatus(status: TroveStatus): "active" | "closed" | "liquidated" | "redeemed" {
+  switch (status) {
+    case TroveStatus.active:
+      return "active";
+    case TroveStatus.closedByOwner:
+      return "closed";
+    case TroveStatus.closedByLiquidation:
+      return "liquidated";
+    case TroveStatus.zombie:
+      return "redeemed";
+    default:
+      return "closed"; // loan is non-existent so we'll pretend it's closed
+  }
 }
 
 // function subgraphStabilityPoolDepositToEarnPosition(
