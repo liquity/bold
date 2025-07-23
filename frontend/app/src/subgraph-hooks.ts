@@ -2,7 +2,7 @@ import type {
   InterestBatchQuery as InterestBatchQueryType,
   TrovesByAccountQuery as TrovesByAccountQueryType,
 } from "@/src/graphql/graphql";
-import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId, ReturnTroveReadCallData } from "@/src/types";
+import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId, ReturnCombinedTroveReadCallData, ReturnTroveReadCallData } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
@@ -31,7 +31,7 @@ import {
   TrovesByAccountQuery,
 } from "./subgraph-queries";
 import { getContracts } from "./contracts";
-import { getAllDebtPerInterestRate, getTrovesByAccount } from "./liquity-read-calls";
+import { getAllDebtPerInterestRate, getTroveById, getTrovesByAccount } from "./liquity-read-calls";
 
 type Options = {
   refetchInterval?: number;
@@ -93,7 +93,7 @@ export function useLoansByAccount(
       );
       return troves.map(subgraphTroveToLoan);
     } catch (error) {
-      console.error("Error fetching troves by account from the subgraph, using read calls instead", error);
+      console.error("Error fetching troves by account from the subgraph, using read calls instead\n\n", error);
       const troves = await getTrovesByAccount(account);
       return troves.map(readCallTroveToLoan);
     }
@@ -172,8 +172,14 @@ export function useLoanById(
 ) {
   let queryFn = async () => {
     if (!isPrefixedtroveId(id)) return null;
-    const { trove } = await graphQuery(TroveByIdQuery, { id });
-    return trove ? subgraphTroveToLoan(trove) : null;
+    try {
+      const { trove } = await graphQuery(TroveByIdQuery, { id });
+      return trove ? subgraphTroveToLoan(trove) : null;
+    } catch (error) {
+      console.error("Error fetching trove by id from the subgraph, using read calls instead\n\n", error);
+      const trove = await getTroveById(id);
+      return trove ? readCallTroveToLoan(trove) : null;
+    }
   };
 
   if (DEMO_MODE) {
@@ -436,7 +442,7 @@ export function useInterestRateBrackets(
     try {
       return (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
     } catch (error) {
-      console.error("Error fetching interest rate brackets from the subgraph, using read calls instead", error);
+      console.error("Error fetching interest rate brackets from the subgraph, using read calls instead\n\n", error);
       const debtPerInterestRate = await getAllDebtPerInterestRate();
       return Object.entries(debtPerInterestRate).flatMap(([collIndex, list]) => {
         return list.map((data) => ({
@@ -632,7 +638,7 @@ function subgraphTroveToLoan(
 }
 
 function readCallTroveToLoan(
-  trove: ReturnTroveReadCallData,
+  trove: ReturnCombinedTroveReadCallData | ReturnTroveReadCallData,
 ): PositionLoanCommitted {
   if (!isTroveId(trove.troveId)) {
     throw new Error(`Invalid trove ID: ${trove.id} / ${trove.troveId}`);

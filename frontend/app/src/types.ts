@@ -181,7 +181,7 @@ export interface CombinedTroveData {
   snapshotBoldDebt: bigint;
 }
 
-export interface ReturnTroveReadCallData {
+export interface ReturnCombinedTroveReadCallData {
   id: string;
   troveId: string;
   borrower: Address;
@@ -244,4 +244,25 @@ export interface Trove {
   annualInterestRate: bigint;
   interestBatchManager: Address;
   batchDebtShares: bigint;
+}
+
+export interface ReturnTroveReadCallData extends Trove {
+  id: string;
+  troveId: string;
+  borrower: Address;
+  deposit: bigint;
+  interestRate: bigint;
+  collateral: {
+    id: string;
+    token: {
+      symbol: string;
+      name: string;
+    };
+    minCollRatio: number;
+    collIndex: number;
+  }
+  interestBatch: {
+    annualInterestRate: bigint;
+    batchManager: Address;
+  }
 }
