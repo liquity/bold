@@ -8,8 +8,14 @@ const SquidWidget = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex justify-center items-center h-32 w-full">
-        <div className="text-lg">Loading widget...</div>
+      <div className="flex flex-col justify-center items-center w-full gap-3 mt-1">
+        <div className="w-[480px] h-[660px] bg-gray-100 rounded-[2rem] animate-pulse" style={{ boxShadow: "0px 2px 4px 0px rgba(0, 0, 0, 0.20), 0px 5px 50px -1px rgba(0, 0, 0, 0.33)" }}>
+          <div className="flex justify-center items-center h-full w-full">
+            <div className="relative h-8 w-8 flex items-center justify-center mt-8">
+              <div className="absolute inset-0 rounded-full border-3 border-gray-300 border-t-transparent animate-spin"></div>
+            </div>
+          </div>
+        </div>
       </div>
     ),
   }
@@ -62,7 +68,7 @@ export function SquidRouterWidget() {
           "grey-200": "#EDEFF3",
           "grey-300": "#2f4225",
           "grey-400": "#A7ABBE",
-          "grey-500": "#cfcfdb",
+          "grey-500": "#2f4225",
           "grey-600": "#676B7E",
           "grey-700": "#4C515D",
           "grey-800": "#f3eee2",
@@ -72,8 +78,8 @@ export function SquidRouterWidget() {
           "royal-500": "#2f4225",
           "royal-600": "#8353C5",
           "royal-700": "#6B45A1",
-          "status-positive": "#f3c2a5",
-          "status-negative": "#cfcfdb",
+          "status-positive": "#8bb2b7",
+          "status-negative": "#f3c2a5",
           "status-partial": "#676B7E",
           "highlight-700": "#E4FE53",
           "animation-bg": "#2f4225",

@@ -151,21 +151,25 @@ export function useLandingPageStats() {
   const stats = useLiquityStats();
   const stabilityPoolAPR = useStabilityPoolAPR();
   // const defiLlamaTVL = useDefiLlamaTVL();
-  const vaultCount = useVaultCount();
+  // const vaultCount = useVaultCount();
   const goSlowNFTCount = useGoSlowNFTCount();
 
   // In demo mode, ignore certain errors since we use mock data
   const relevantError = DEMO_MODE 
     ? null // Ignore all errors in demo mode since we have fallback data
-    : (stabilityPoolAPR.error || vaultCount.error || goSlowNFTCount.error);
+    : (
+      stabilityPoolAPR.error || 
+      // vaultCount.error || 
+      goSlowNFTCount.error
+    );
 
   return {
     stabilityPoolAPR: stabilityPoolAPR.data,
     // tvl: defiLlamaTVL.data?.tvl,
     tvl: stats.data?.totalValueLocked,
-    vaultCount: vaultCount.data,
+    // vaultCount: vaultCount.data,
     goSlowNFTCount: goSlowNFTCount.data,
-    isLoading: stabilityPoolAPR.isLoading || vaultCount.isLoading || goSlowNFTCount.isLoading,
+    isLoading: stabilityPoolAPR.isLoading || goSlowNFTCount.isLoading,
     error: relevantError,
   };
 }

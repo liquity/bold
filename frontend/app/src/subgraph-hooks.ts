@@ -2,13 +2,13 @@ import type {
   InterestBatchQuery as InterestBatchQueryType,
   TrovesByAccountQuery as TrovesByAccountQueryType,
 } from "@/src/graphql/graphql";
-import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId } from "@/src/types";
+import type { Address, CollIndex, Delegate, PositionEarn, PositionLoanCommitted, PrefixedTroveId, ReturnCombinedTroveReadCallData, ReturnTroveReadCallData } from "@/src/types";
 
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { dnum18 } from "@/src/dnum-utils";
 import { DEMO_MODE, SUBGRAPH_URL } from "@/src/env";
-import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId } from "@/src/types";
+import { isCollIndex, isPositionLoanCommitted, isPrefixedtroveId, isTroveId, TroveStatus } from "@/src/types";
 import { sleep } from "@/src/utils";
 import { isAddress, shortenAddress } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
@@ -30,6 +30,9 @@ import {
   TroveByIdQuery,
   TrovesByAccountQuery,
 } from "./subgraph-queries";
+import { getContracts } from "./contracts";
+import { getAllDebtPerInterestRate, getTroveById, getTrovesByAccount } from "./liquity-read-calls";
+import { useSubgraphStatus } from "./services/SubgraphStatus";
 
 type Options = {
   refetchInterval?: number;
@@ -82,13 +85,22 @@ export function useLoansByAccount(
   account?: Address | null,
   options?: Options,
 ) {
+  const { setError, clearError } = useSubgraphStatus();
   let queryFn = async () => {
     if (!account) return null;
-    const { troves } = await graphQuery(
-      TrovesByAccountQuery,
-      { account: account.toLowerCase() },
-    );
-    return troves.map(subgraphTroveToLoan);
+    try {
+      const { troves } = await graphQuery(
+        TrovesByAccountQuery,
+        { account: account.toLowerCase() },
+      );
+      clearError("trovesByAccount");
+      return troves.map(subgraphTroveToLoan);
+    } catch (error) {
+      setError("trovesByAccount", error as Error);
+      console.error("Error fetching troves by account from the subgraph, using read calls instead\n\n", error);
+      const troves = await getTrovesByAccount(account);
+      return troves.map(readCallTroveToLoan);
+    }
   };
 
   if (DEMO_MODE) {
@@ -162,10 +174,19 @@ export function useLoanById(
   id?: null | PrefixedTroveId,
   options?: Options,
 ) {
+  const { setError, clearError } = useSubgraphStatus();
   let queryFn = async () => {
     if (!isPrefixedtroveId(id)) return null;
-    const { trove } = await graphQuery(TroveByIdQuery, { id });
-    return trove ? subgraphTroveToLoan(trove) : null;
+    try {
+      const { trove } = await graphQuery(TroveByIdQuery, { id });
+      clearError("troveById");
+      return trove ? subgraphTroveToLoan(trove) : null;
+    } catch (error) {
+      setError("troveById", error as Error);
+      console.error("Error fetching trove by id from the subgraph, using read calls instead\n\n", error);
+      const trove = await getTroveById(id);
+      return trove ? readCallTroveToLoan(trove) : null;
+    }
   };
 
   if (DEMO_MODE) {
@@ -422,9 +443,27 @@ export function useInterestRateBrackets(
   collIndex: null | CollIndex,
   options?: Options,
 ) {
-  let queryFn = async () => (
-    (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
-  );
+  const { setError, clearError } = useSubgraphStatus();
+  const { collaterals } = getContracts();
+
+  let queryFn = async () => {
+    try {
+      const brackets = (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
+      clearError("allInterestRateBrackets");
+      return brackets;
+    } catch (error) {
+      setError("allInterestRateBrackets", error as Error);
+      console.error("Error fetching interest rate brackets from the subgraph, using read calls instead\n\n", error);
+      const debtPerInterestRate = await getAllDebtPerInterestRate();
+      return Object.entries(debtPerInterestRate).flatMap(([collIndex, list]) => {
+        return list.map((data) => ({
+          rate: data.interestRate,
+          totalDebt: data.debt,
+          collateral: collaterals[Number(collIndex) as CollIndex]!,
+        }));
+      });
+    }
+  };
 
   if (DEMO_MODE) {
     queryFn = async () => [];
@@ -607,6 +646,58 @@ function subgraphTroveToLoan(
     updatedAt: Number(trove.updatedAt) * 1000,
     status: trove.status,
   };
+}
+
+function readCallTroveToLoan(
+  trove: ReturnCombinedTroveReadCallData | ReturnTroveReadCallData,
+): PositionLoanCommitted {
+  if (!isTroveId(trove.troveId)) {
+    throw new Error(`Invalid trove ID: ${trove.id} / ${trove.troveId}`);
+  }
+
+  const collIndex = trove.collateral.collIndex;
+  if (!isCollIndex(collIndex)) {
+    throw new Error(`Invalid collateral index: ${collIndex}`);
+  }
+
+  if (!isAddress(trove.borrower)) {
+    throw new Error(`Invalid borrower: ${trove.borrower}`);
+  }
+
+  return {
+    // type: trove.mightBeLeveraged ? "multiply" : "borrow",
+    type: "borrow", // TODO: replace with real value
+    batchManager: isAddress(trove.interestBatch?.batchManager)
+      ? trove.interestBatch.batchManager
+      : null,
+    borrowed: dnum18(trove.debt),
+    borrower: trove.borrower,
+    collIndex,
+    // createdAt: Number(trove.createdAt) * 1000,
+    createdAt: 0, // TODO: replace with real value
+    deposit: dnum18(trove.deposit),
+    interestRate: dnum18(trove.interestBatch?.annualInterestRate ?? trove.interestRate),
+    troveId: trove.troveId,
+    // updatedAt: Number(trove.updatedAt) * 1000,
+    updatedAt: 0, // TODO: replace with real value
+    // status: trove.status,
+    status: enumToLoanStatus(trove.status),
+  };
+}
+
+export function enumToLoanStatus(status: TroveStatus): "active" | "closed" | "liquidated" | "redeemed" {
+  switch (status) {
+    case TroveStatus.active:
+      return "active";
+    case TroveStatus.closedByOwner:
+      return "closed";
+    case TroveStatus.closedByLiquidation:
+      return "liquidated";
+    case TroveStatus.zombie:
+      return "redeemed";
+    default:
+      return "closed"; // loan is non-existent so we'll pretend it's closed
+  }
 }
 
 // function subgraphStabilityPoolDepositToEarnPosition(

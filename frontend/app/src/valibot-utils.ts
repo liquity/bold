@@ -38,8 +38,6 @@ export function vCollIndex() {
     v.literal(5),
     v.literal(6),
     v.literal(7),
-    v.literal(8),
-    v.literal(9),
   ]);
 }
 
