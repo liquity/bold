@@ -14,7 +14,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "LQTY" | "NERI" | "USND" | "LUSD" | CollateralSymbol;
+type PriceToken = "LQTY" | "NERI" | "USND" | "LUSD" | "yUSND" | CollateralSymbol;
 
 // TODO: Fix type errors in useReadContract here.
 // Our PriceFeed contract has a fetchPrice function that returns a tuple of

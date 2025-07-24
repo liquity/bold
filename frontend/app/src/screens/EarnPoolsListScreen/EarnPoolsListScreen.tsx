@@ -3,6 +3,7 @@
 import type { CollIndex } from "@/src/types";
 
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
+import { YusndPositionSummary } from "@/src/comps/EarnPositionSummary/YusndPositionSummary";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
@@ -11,12 +12,21 @@ import { useAccount } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
+import { isYusndEnabled, useYusndPosition } from "@/src/sbold";
+
+type PoolId = CollIndex | "yusnd";
 
 export function EarnPoolsListScreen() {
   const { collaterals } = getContracts();
 
+  let pools: PoolId[] = collaterals.map((c) => c.collIndex);
+
+  if (isYusndEnabled()) {
+    pools = ["yusnd", ...pools];
+  }
+
   const poolsTransition = useTransition(
-    collaterals.map((c) => c.collIndex),
+    pools,
     {
       from: { opacity: 0, transform: "scale(1.1) translateY(64px)" },
       enter: { opacity: 1, transform: "scale(1) translateY(0px)" },
@@ -60,9 +70,11 @@ export function EarnPoolsListScreen() {
       width={67 * 8}
       gap={16}
     >
-      {poolsTransition((style, collIndex) => (
+      {poolsTransition((style, poolId) => (
         <a.div style={style}>
-          <EarnPool collIndex={collIndex} />
+          {poolId === "yusnd"
+              ? <YusndPool />
+              : <EarnPool collIndex={poolId} />}
         </a.div>
       ))}
     </Screen>
@@ -77,6 +89,17 @@ function EarnPool({ collIndex }: { collIndex: CollIndex }) {
       collIndex={collIndex}
       earnPosition={earnPosition.data}
       linkToScreen
+    />
+  );
+}
+
+function YusndPool() {
+  const account = useAccount();
+  const yusndPosition = useYusndPosition(account.address ?? null);
+  return (
+    <YusndPositionSummary
+      linkToScreen
+      yusndPosition={yusndPosition.data ?? null}
     />
   );
 }

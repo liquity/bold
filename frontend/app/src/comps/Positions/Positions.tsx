@@ -21,6 +21,7 @@ import { PositionCard } from "./PositionCard";
 import { PositionCardEarn } from "./PositionCardEarn";
 import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardStake } from "./PositionCardStake";
+import { PositionCardYusnd } from "./PositionCardSbold";
 
 type Mode = "positions" | "loading" | "actions";
 
@@ -142,6 +143,10 @@ function PositionsGroup({
             .with({ type: "stake" }, (p) => [
               index,
               <PositionCardStake key={index} {...p} />,
+            ])
+            .with({ type: "yusnd" }, (p) => [
+              index,
+              <PositionCardYusnd key={index} {...p} />,
             ])
             .exhaustive()
         ) ?? []

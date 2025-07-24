@@ -1,6 +1,6 @@
 import type { Token } from "./types";
 
-import tokenNeri from "./token-icons/neri.svg"; // Clone of USND SVG (MUST REPLACE)
+import tokenNeri from "./token-icons/neri.svg"; // TODO: Clone of USND SVG (MUST REPLACE)
 import tokenUsnd from "./token-icons/usnd.svg";
 import tokenArb from "./token-icons/arb.svg";
 import tokenComp from "./token-icons/comp.svg";
@@ -13,6 +13,7 @@ import tokenSteth from "./token-icons/wsteth.svg";
 import tokenTbtc from "./token-icons/tbtc.svg";
 import tokenWeth from "./token-icons/weth.svg";
 import tokenWeeth from "./token-icons/weeth.svg";
+import tokenYusnd from "./token-icons/usnd.svg"; // TODO: replace with yUSND SVG
 
 export type CollateralSymbol = 
   | "ETH" 
@@ -68,6 +69,12 @@ export const LUSD: Token = {
   icon: tokenLusd,
   name: "LUSD",
   symbol: "LUSD" as const,
+} as const;
+
+export const YUSND: Token = {
+  icon: tokenYusnd,
+  name: "yUSND",
+  symbol: "YUSND" as const,
 } as const;
 
 // Collaterals
@@ -152,6 +159,7 @@ export const TOKENS_BY_SYMBOL = {
   USND,
   LQTY,
   LUSD,
+  YUSND,
   ETH,
   WETH,
   WSTETH,
