@@ -1,7 +1,7 @@
 import * as dn from "dnum";
 
 import type { TypedDocumentString } from "@/src/graphql/graphql";
-import type { Address, BranchId, TroveId } from "@/src/types";
+import type { Address, BranchId, TroveId, TroveStatus } from "@/src/types";
 
 import { dnum18 } from "@/src/dnum-utils";
 import { SUBGRAPH_URL } from "@/src/env";
@@ -15,7 +15,7 @@ export type IndexedTrove = {
   closedAt: number | null;
   createdAt: number;
   mightBeLeveraged: boolean;
-  status: string;
+  status: TroveStatus;
 };
 
 async function tryFetch(...args: Parameters<typeof fetch>) {
