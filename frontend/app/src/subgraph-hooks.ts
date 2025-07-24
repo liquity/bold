@@ -32,6 +32,7 @@ import {
 } from "./subgraph-queries";
 import { getContracts } from "./contracts";
 import { getAllDebtPerInterestRate, getTroveById, getTrovesByAccount } from "./liquity-read-calls";
+import { useSubgraphStatus } from "./services/SubgraphStatus";
 
 type Options = {
   refetchInterval?: number;
@@ -84,6 +85,7 @@ export function useLoansByAccount(
   account?: Address | null,
   options?: Options,
 ) {
+  const { setError, clearError } = useSubgraphStatus();
   let queryFn = async () => {
     if (!account) return null;
     try {
@@ -91,8 +93,10 @@ export function useLoansByAccount(
         TrovesByAccountQuery,
         { account: account.toLowerCase() },
       );
+      clearError("trovesByAccount");
       return troves.map(subgraphTroveToLoan);
     } catch (error) {
+      setError("trovesByAccount", error as Error);
       console.error("Error fetching troves by account from the subgraph, using read calls instead\n\n", error);
       const troves = await getTrovesByAccount(account);
       return troves.map(readCallTroveToLoan);
@@ -170,12 +174,15 @@ export function useLoanById(
   id?: null | PrefixedTroveId,
   options?: Options,
 ) {
+  const { setError, clearError } = useSubgraphStatus();
   let queryFn = async () => {
     if (!isPrefixedtroveId(id)) return null;
     try {
       const { trove } = await graphQuery(TroveByIdQuery, { id });
+      clearError("troveById");
       return trove ? subgraphTroveToLoan(trove) : null;
     } catch (error) {
+      setError("troveById", error as Error);
       console.error("Error fetching trove by id from the subgraph, using read calls instead\n\n", error);
       const trove = await getTroveById(id);
       return trove ? readCallTroveToLoan(trove) : null;
@@ -436,12 +443,16 @@ export function useInterestRateBrackets(
   collIndex: null | CollIndex,
   options?: Options,
 ) {
+  const { setError, clearError } = useSubgraphStatus();
   const { collaterals } = getContracts();
 
   let queryFn = async () => {
     try {
-      return (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
+      const brackets = (await graphQuery(AllInterestRateBracketsQuery)).interestRateBrackets
+      clearError("allInterestRateBrackets");
+      return brackets;
     } catch (error) {
+      setError("allInterestRateBrackets", error as Error);
       console.error("Error fetching interest rate brackets from the subgraph, using read calls instead\n\n", error);
       const debtPerInterestRate = await getAllDebtPerInterestRate();
       return Object.entries(debtPerInterestRate).flatMap(([collIndex, list]) => {

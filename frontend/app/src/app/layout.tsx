@@ -16,6 +16,7 @@ import { TransactionFlow } from "@/src/services/TransactionFlow";
 import { UiKit } from "@liquity2/uikit";
 import { Analytics } from "@vercel/analytics/react";
 import { GeistSans } from "geist/font/sans";
+import { SubgraphStatus } from "../services/SubgraphStatus";
 
 export const metadata: Metadata = {
   title: content.appName,
@@ -31,11 +32,13 @@ export default function Layout({ children }: { children: ReactNode }) {
             <StoredState>
               <DemoMode>
                 <Arbitrum>
-                  <Blocking>
-                    <TransactionFlow>
-                      <AppLayout>{children}</AppLayout>
-                    </TransactionFlow>
-                  </Blocking>
+                  <SubgraphStatus>
+                    <Blocking>
+                      <TransactionFlow>
+                        <AppLayout>{children}</AppLayout>
+                      </TransactionFlow>
+                    </Blocking>
+                  </SubgraphStatus>
                 </Arbitrum>
               </DemoMode>
             </StoredState>

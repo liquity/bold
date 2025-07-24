@@ -180,13 +180,13 @@ export async function getAllDebtPerInterestRate(): Promise<Record<CollIndex, Deb
     contracts: collaterals.map(collateral => ({
       ...MultiTroveGetter,
       functionName: "getDebtPerInterestRateAscending",
-      args: [collateral.collIndex, 0n, 1_000_000_000n],
+      args: [collateral.collIndex, 0n, 10n],
     })),
   })
 
   output.forEach((list, index) => {
     if (list.status === "success") {
-      debtPerInterestRate[index as CollIndex] = list.result as unknown as DebtPerInterestRate[];
+      debtPerInterestRate[index as CollIndex] = (list.result as unknown as [DebtPerInterestRate[], bigint])[0];
     }
   })
 
