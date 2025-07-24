@@ -12,7 +12,6 @@ import type {
   Token,
   TokenSymbol,
   TroveId,
-  TroveStatus,
 } from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
 import type { UseQueryResult } from "@tanstack/react-query";
@@ -803,46 +802,16 @@ export function useLatestTroveData(branchId: BranchId, troveId: TroveId) {
   });
 }
 
-export function useLoanLiveDebt(branchId: BranchId, troveId: TroveId) {
-  const latestTroveData = useLatestTroveData(branchId, troveId);
-  return {
-    ...latestTroveData,
-    data: latestTroveData.data?.entireDebt ?? null,
-  };
-}
-
 export function useLoan(branchId: BranchId, troveId: TroveId): UseQueryResult<PositionLoanCommitted | null> {
-  const liveDebt = useLoanLiveDebt(branchId, troveId);
-  const loan = useLoanById(getPrefixedTroveId(branchId, troveId));
+  const id = getPrefixedTroveId(branchId, troveId);
+  const wagmiConfig = useWagmiConfig();
 
-  if (liveDebt.status === "pending" || loan.status === "pending") {
-    return {
-      ...loan,
-      data: undefined,
-      error: null,
-      isError: false,
-      isFetching: true,
-      isLoading: true,
-      isLoadingError: false,
-      isPlaceholderData: false,
-      isPending: true,
-      isRefetchError: false,
-      isSuccess: false,
-      status: "pending",
-    };
-  }
-
-  if (!loan.data) {
-    return loan;
-  }
-
-  return {
-    ...loan,
-    data: {
-      ...loan.data,
-      borrowed: liveDebt.data ? dnum18(liveDebt.data) : loan.data.borrowed,
-    },
-  };
+  return useQuery<PositionLoanCommitted | null>({
+    queryKey: ["TroveById", id],
+    queryFn: () => (
+      id ? fetchLoanById(wagmiConfig, id) : null
+    ),
+  });
 }
 
 export function useInterestBatchDelegate(
@@ -976,16 +945,6 @@ export async function fetchLoanById(
     status: indexedTrove.status,
     troveId,
   };
-}
-
-export function useLoanById(id?: null | PrefixedTroveId) {
-  const wagmiConfig = useWagmiConfig();
-  return useQuery<PositionLoanCommitted | null>({
-    queryKey: ["TroveById", id],
-    queryFn: () => (
-      id ? fetchLoanById(wagmiConfig, id) : null
-    ),
-  });
 }
 
 export async function fetchLoansByAccount(
