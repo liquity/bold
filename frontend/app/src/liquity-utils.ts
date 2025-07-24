@@ -43,7 +43,7 @@ import {
 } from "@/src/subgraph";
 import { isBranchId, isPrefixedtroveId, isTroveId } from "@/src/types";
 import { bigIntAbs, jsonStringifyWithBigInt } from "@/src/utils";
-import { vAddress, vPrefixedTroveId, vTokenSymbol } from "@/src/valibot-utils";
+import { vAddress, vPrefixedTroveId } from "@/src/valibot-utils";
 import { addressesEqual, COLLATERALS, isAddress, shortenAddress, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
@@ -658,9 +658,14 @@ const StatsSchema = v.pipe(
     total_value_locked: v.string(),
     max_sp_apy: v.string(),
     prices: v.record(
-      vTokenSymbol(),
+      v.string(),
       v.string(),
     ),
+    // TODO: phase out in the future, once all frontends update to the "safe" (losely-typed) `prices` schema
+    otherPrices: v.optional(v.record(
+      v.string(),
+      v.string(),
+    )),
     branch: v.record(
       v.string(),
       v.object({
@@ -709,11 +714,15 @@ const StatsSchema = v.pipe(
       }),
     ),
     prices: Object.fromEntries(
-      Object.entries(value.prices).map(([symbol, price]) => [
+      [
+        ...Object.entries(value.prices),
+        // TODO: phase out in the future, once all frontends update to the "safe" (losely-typed) `prices` schema
+        ...Object.entries(value.otherPrices ?? {}),
+      ].map(([symbol, price]) => [
         symbol,
         dnumOrNull(price, 18),
       ]),
-    ) as Record<TokenSymbol, Dnum | null>,
+    ),
   })),
 );
 
