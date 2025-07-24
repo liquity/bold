@@ -84,6 +84,8 @@ const arbitrumChain: Chain = {
   },
 };
 
+export const CHAIN = arbitrumChain;
+
 export function Arbitrum({ children }: { children: ReactNode }) {
   const wagmiConfig = useWagmiConfig();
   const rainbowKitProps = useRainbowKitProps();
