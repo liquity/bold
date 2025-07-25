@@ -3,7 +3,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { fmtnum } from "@/src/formatting";
-import { getBranch, getCollToken, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
+import { getBranch, getCollToken, getTroveOperationHints, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -242,6 +242,76 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
       },
     },
 
+    // update both collateral and debt on a zombie Trove (needs hints)
+    adjustZombieTrove: {
+      name: ({ request }) => {
+        const collChange = getCollChange(request.loan, request.prevLoan);
+        const debtChange = getDebtChange(request.loan, request.prevLoan);
+
+        if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) return "Update Position";
+        if (dn.gt(collChange, 0)) return "Deposit Collateral";
+        if (dn.lt(collChange, 0)) return "Withdraw Collateral";
+        if (dn.gt(debtChange, 0)) return "Borrow BOLD";
+        if (dn.lt(debtChange, 0)) return "Repay BOLD";
+
+        throw new Error("Invalid request");
+      },
+
+      Status: TransactionStatus,
+
+      async commit(ctx) {
+        const { loan, maxUpfrontFee } = ctx.request;
+        const collChange = getCollChange(loan, ctx.request.prevLoan);
+        const debtChange = getDebtChange(loan, ctx.request.prevLoan);
+
+        const branch = getBranch(loan.branchId);
+
+        const { upperHint, lowerHint } = await getTroveOperationHints({
+          wagmiConfig: ctx.wagmiConfig,
+          contracts: ctx.contracts,
+          branchId: loan.branchId,
+          interestRate: loan.interestRate[0],
+        });
+
+        if (branch.symbol === "ETH") {
+          return ctx.writeContract({
+            ...branch.contracts.LeverageWETHZapper,
+            functionName: "adjustZombieTroveWithRawETH",
+            args: [
+              BigInt(loan.troveId),
+              dn.abs(collChange)[0],
+              dn.gt(collChange, 0n),
+              dn.abs(debtChange)[0],
+              dn.gt(debtChange, 0n),
+              upperHint,
+              lowerHint,
+              maxUpfrontFee[0],
+            ],
+            value: dn.gt(collChange, 0n) ? collChange[0] : 0n,
+          });
+        }
+
+        return ctx.writeContract({
+          ...branch.contracts.LeverageLSTZapper,
+          functionName: "adjustZombieTrove",
+          args: [
+            BigInt(loan.troveId),
+            dn.abs(collChange)[0],
+            dn.gt(collChange, 0n),
+            dn.abs(debtChange)[0],
+            dn.gt(debtChange, 0n),
+            upperHint,
+            lowerHint,
+            maxUpfrontFee[0],
+          ],
+        });
+      },
+
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
+      },
+    },
+
     depositBold: {
       name: () => "Repay BOLD",
       Status: TransactionStatus,
@@ -424,7 +494,9 @@ function getCollChange(
 
 function getFinalStep(
   request: UpdateBorrowPositionRequest,
-): "adjustTrove" | "depositBold" | "depositColl" | "withdrawBold" | "withdrawColl" {
+): "adjustTrove" | "adjustZombieTrove" | "depositBold" | "depositColl" | "withdrawBold" | "withdrawColl" {
+  if (request.loan.isZombie) return "adjustZombieTrove";
+
   const collChange = getCollChange(request.loan, request.prevLoan);
   const debtChange = getDebtChange(request.loan, request.prevLoan);
 
