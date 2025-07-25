@@ -177,15 +177,15 @@ export function useYusndStats() {
       select: ([
         totalSupply_, 
         // [totalBold_], 
-        totalBold_,
+        totalUsnd_,
         // ...sps
       ]) => {
         const totalSupply = dnum18(totalSupply_ as bigint);
-        const totalBold = dnum18(totalBold_ as bigint);
+        const totalUsnd = dnum18(totalUsnd_ as bigint);
 
         const yusndRate = totalSupply_ === 0n
           ? DNUM_0
-          : dn.div(totalBold, totalSupply);
+          : dn.div(totalUsnd, totalSupply);
 
         const spAprs = weights.data?.map((weight: Dnum, index: number) => {
           if (!isCollIndex(index)) {
@@ -204,7 +204,7 @@ export function useYusndStats() {
           apr: calculateYusndApr(spAprs?.map((sp) => [sp.apr, sp.weight]) ?? []),
           apr7d: calculateYusndApr(spAprs?.map((sp) => [sp.apr7d, sp.weight]) ?? []),
           yusndRate,
-          totalBold,
+          totalUsnd,
           weights: spAprs?.map((sp) => sp.weight) ?? [],
         };
       },

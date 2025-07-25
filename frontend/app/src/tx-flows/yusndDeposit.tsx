@@ -2,7 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { YusndPositionSummary } from "@/src/comps/EarnPositionSummary/YusndPositionSummary";
-import { YusndContract } from "@/src/sbold";
+import { YusndContract } from "@/src/yusnd";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { vDnum, vPositionYusnd } from "@/src/valibot-utils";
@@ -14,41 +14,41 @@ import { maxUint256 } from "viem";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
-  "sboldDeposit",
+  "yusndDeposit",
   {
     depositFee: vDnum(),
-    prevSboldPosition: vPositionYusnd(),
-    sboldPosition: vPositionYusnd(),
+    prevYusndPosition: vPositionYusnd(),
+    yusndPosition: vPositionYusnd(),
   },
 );
 
-export type SboldDepositRequest = v.InferOutput<typeof RequestSchema>;
+export type YusndDepositRequest = v.InferOutput<typeof RequestSchema>;
 
-export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
+export const yusndDeposit: FlowDeclaration<YusndDepositRequest> = {
   title: "Review & Send Transaction",
 
   Summary({ request }) {
-    const { prevSboldPosition, sboldPosition } = request;
+    const { prevYusndPosition, yusndPosition } = request;
     return (
       <YusndPositionSummary
-        prevYusndPosition={prevSboldPosition}
-        yusndPosition={sboldPosition}
+        prevYusndPosition={prevYusndPosition}
+        yusndPosition={yusndPosition}
         txPreviewMode
       />
     );
   },
 
   Details({ request }) {
-    const { sboldPosition, prevSboldPosition, depositFee } = request;
+    const { yusndPosition, prevYusndPosition, depositFee } = request;
     const depositChange = dn.sub(
-      sboldPosition.usnd,
-      prevSboldPosition.usnd,
+      yusndPosition.usnd,
+      prevYusndPosition.usnd,
     );
 
-    const sboldPosition_ = { ...sboldPosition };
+    const sboldPosition_ = { ...yusndPosition };
     if (dn.lt(depositFee, 0.0001)) {
       sboldPosition_.usnd = dn.add(
-        sboldPosition.usnd,
+        yusndPosition.usnd,
         depositFee,
       );
     }
@@ -97,7 +97,7 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
               key="start"
               prefix="~"
               suffix=" sBOLD"
-              value={dn.abs(dn.sub(sboldPosition.yusnd, prevSboldPosition.yusnd))}
+              value={dn.abs(dn.sub(yusndPosition.yusnd, prevYusndPosition.yusnd))}
             />,
             <div
               key="end"
@@ -131,8 +131,8 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
       ),
       async commit(ctx) {
         const depositChange = dn.sub(
-          ctx.request.sboldPosition.usnd,
-          ctx.request.prevSboldPosition.usnd,
+          ctx.request.yusndPosition.usnd,
+          ctx.request.prevYusndPosition.usnd,
         );
         return ctx.writeContract({
           ...ctx.contracts.BoldToken,
@@ -153,8 +153,8 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
       name: () => "Deposit",
       Status: TransactionStatus,
       async commit({ request, writeContract, account }) {
-        const { sboldPosition, prevSboldPosition } = request;
-        const boldChange = sboldPosition.usnd[0] - prevSboldPosition.usnd[0];
+        const { yusndPosition, prevYusndPosition } = request;
+        const boldChange = yusndPosition.usnd[0] - prevYusndPosition.usnd[0];
         return writeContract({
           ...YusndContract,
           functionName: "deposit",
@@ -168,9 +168,9 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
   },
 
   async getSteps(ctx) {
-    const { prevSboldPosition, sboldPosition } = ctx.request;
+    const { prevYusndPosition, yusndPosition } = ctx.request;
 
-    const depositChange = sboldPosition.usnd[0] - prevSboldPosition.usnd[0];
+    const depositChange = yusndPosition.usnd[0] - prevYusndPosition.usnd[0];
 
     const allowance = await ctx.readContract({
       ...ctx.contracts.BoldToken,

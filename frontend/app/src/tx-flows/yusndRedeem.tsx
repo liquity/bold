@@ -2,7 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { YusndPositionSummary } from "@/src/comps/EarnPositionSummary/YusndPositionSummary";
-import { YusndContract } from "@/src/sbold";
+import { YusndContract } from "@/src/yusnd";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { vPositionYusnd } from "@/src/valibot-utils";
@@ -11,33 +11,33 @@ import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
-  "sboldRedeem",
+  "yusndRedeem",
   {
-    prevSboldPosition: vPositionYusnd(),
-    sboldPosition: vPositionYusnd(),
+    prevYusndPosition: vPositionYusnd(),
+    yusndPosition: vPositionYusnd(),
   },
 );
 
-export type SboldRedeemRequest = v.InferOutput<typeof RequestSchema>;
+export type YusndRedeemRequest = v.InferOutput<typeof RequestSchema>;
 
-export const sboldRedeem: FlowDeclaration<SboldRedeemRequest> = {
+export const yusndRedeem: FlowDeclaration<YusndRedeemRequest> = {
   title: "Review & Send Transaction",
 
   Summary({ request }) {
-    const { prevSboldPosition, sboldPosition } = request;
+    const { prevYusndPosition, yusndPosition } = request;
     return (
       <YusndPositionSummary
-        prevYusndPosition={prevSboldPosition}
-        yusndPosition={sboldPosition}
+        prevYusndPosition={prevYusndPosition}
+        yusndPosition={yusndPosition}
         txPreviewMode
       />
     );
   },
 
   Details({ request }) {
-    const { sboldPosition, prevSboldPosition } = request;
-    const redeemAmount = dn.sub(sboldPosition.yusnd, prevSboldPosition.yusnd);
-    const boldAmount = dn.sub(sboldPosition.usnd, prevSboldPosition.usnd);
+    const { yusndPosition, prevYusndPosition } = request;
+    const redeemAmount = dn.sub(yusndPosition.yusnd, prevYusndPosition.yusnd);
+    const usndAmount = dn.sub(yusndPosition.usnd, prevYusndPosition.usnd);
     return (
       <>
         <TransactionDetailsRow
@@ -56,7 +56,7 @@ export const sboldRedeem: FlowDeclaration<SboldRedeemRequest> = {
             <Amount
               key="end"
               suffix=" USND"
-              value={dn.abs(boldAmount)}
+              value={dn.abs(usndAmount)}
             />,
           ]}
         />
@@ -69,8 +69,8 @@ export const sboldRedeem: FlowDeclaration<SboldRedeemRequest> = {
       name: () => "Redeem",
       Status: TransactionStatus,
       async commit({ account, request, writeContract }) {
-        const { sboldPosition, prevSboldPosition } = request;
-        const redeemAmount = (sboldPosition.yusnd[0] - prevSboldPosition.yusnd[0]) * -1n;
+        const { yusndPosition, prevYusndPosition } = request;
+        const redeemAmount = (yusndPosition.yusnd[0] - prevYusndPosition.yusnd[0]) * -1n;
         if (redeemAmount <= 0n) {
           throw new Error("Invalid redeem amount");
         }

@@ -12,7 +12,7 @@ import { useAccount } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
-import { isYusndEnabled, useYusndPosition } from "@/src/sbold";
+import { isYusndEnabled, useYusndPosition } from "@/src/yusnd";
 
 type PoolId = CollIndex | "yusnd";
 

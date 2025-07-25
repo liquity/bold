@@ -13,7 +13,7 @@ import tokenSteth from "./token-icons/wsteth.svg";
 import tokenTbtc from "./token-icons/tbtc.svg";
 import tokenWeth from "./token-icons/weth.svg";
 import tokenWeeth from "./token-icons/weeth.svg";
-import tokenYusnd from "./token-icons/usnd.svg"; // TODO: replace with yUSND SVG
+import tokenYusnd from "./token-icons/yusnd.svg";
 
 export type CollateralSymbol = 
   | "ETH" 

@@ -21,7 +21,7 @@ import { PositionCard } from "./PositionCard";
 import { PositionCardEarn } from "./PositionCardEarn";
 import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardStake } from "./PositionCardStake";
-import { PositionCardYusnd } from "./PositionCardSbold";
+import { PositionCardYusnd } from "./PositionCardYusnd";
 
 type Mode = "positions" | "loading" | "actions";
 

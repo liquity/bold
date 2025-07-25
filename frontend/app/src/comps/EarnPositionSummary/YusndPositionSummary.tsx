@@ -4,7 +4,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
 import { getBranch } from "@/src/liquity-utils";
-import { useYusndStats } from "@/src/sbold";
+import { useYusndStats } from "@/src/yusnd";
 import { isCollIndex } from "@/src/types";
 import { css } from "@/styled-system/css";
 import { InfoTooltip, TokenIcon } from "@liquity2/uikit";
@@ -25,7 +25,7 @@ export function YusndPositionSummary({
   txPreviewMode?: boolean;
 }) {
   const stats = useYusndStats();
-  const tvl_ = tvl ?? stats.data?.totalBold ?? null;
+  const tvl_ = tvl ?? stats.data?.totalUsnd ?? null;
 
   const active = Boolean(
     txPreviewMode || (yusndPosition && dn.gt(yusndPosition.yusnd, 0)),

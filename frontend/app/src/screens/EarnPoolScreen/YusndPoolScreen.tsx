@@ -17,7 +17,7 @@ import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { useWait } from "@/src/react-utils";
-import { isYusndEnabled, usePreviewDeposit, usePreviewRedeem, useYusndPosition, useYusndStats } from "@/src/sbold";
+import { isYusndEnabled, usePreviewDeposit, usePreviewRedeem, useYusndPosition, useYusndStats } from "@/src/yusnd";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -61,7 +61,7 @@ export function YusndPoolScreen() {
     },
   });
 
-  const boldBalance = useBalance(account.address, "USND");
+  const usndBalance = useBalance(account.address, "USND");
 
   return (
     <Screen
@@ -83,7 +83,7 @@ export function YusndPoolScreen() {
             ? (
               <YusndPositionSummary
                 yusndPosition={yusndPosition.data ?? null}
-                tvl={yusndStats.data?.totalBold}
+                tvl={yusndStats.data?.totalUsnd}
               />
             )
             : (
@@ -127,7 +127,7 @@ export function YusndPoolScreen() {
             }}
           >
             <PanelUpdate
-              boldBalance={boldBalance.data ?? DNUM_0}
+              usndBalance={usndBalance.data ?? DNUM_0}
               yusndPosition={yusndPosition.data ?? null}
               yusndStats={yusndStats}
             />
@@ -141,11 +141,11 @@ export function YusndPoolScreen() {
 type ValueUpdateMode = "deposit" | "redeem";
 
 export function PanelUpdate({
-  boldBalance,
+  usndBalance,
   yusndPosition,
   yusndStats,
 }: {
-  boldBalance: Dnum;
+  usndBalance: Dnum;
   yusndPosition: PositionYusnd | null;
   yusndStats: ReturnType<typeof useYusndStats>;
 }) {
@@ -173,7 +173,7 @@ export function PanelUpdate({
   );
 
   const totalDepositedBoldUpdated = dn.add(
-    yusndStats.data?.totalBold ?? DNUM_0,
+    yusndStats.data?.totalUsnd ?? DNUM_0,
     depositDifference,
   );
 
@@ -183,7 +183,7 @@ export function PanelUpdate({
 
   const insufficientBalance = mode === "deposit"
     && parsedValue
-    && dn.lt(boldBalance, parsedValue);
+    && dn.lt(usndBalance, parsedValue);
 
   const withdrawAboveDeposit = mode === "redeem"
     && parsedValue
@@ -231,7 +231,7 @@ export function PanelUpdate({
               drawer={insufficientBalance
                 ? {
                   mode: "error",
-                  message: `Insufficient balance. You have ${fmtnum(boldBalance)} USND.`,
+                  message: `Insufficient balance. You have ${fmtnum(usndBalance)} USND.`,
                 }
                 : withdrawAboveDeposit
                 ? {
@@ -294,11 +294,11 @@ export function PanelUpdate({
                 ),
                 end: mode === "deposit"
                   ? (
-                    dn.gt(boldBalance, 0) && (
+                    dn.gt(usndBalance, 0) && (
                       <TextButton
-                        label={`Max ${fmtnum(boldBalance, 2)} USND`}
+                        label={`Max ${fmtnum(usndBalance, 2)} USND`}
                         onClick={() => {
-                          setValue(dn.toString(boldBalance));
+                          setValue(dn.toString(usndBalance));
                         }}
                       />
                     )
@@ -391,23 +391,23 @@ export function PanelUpdate({
 
             if (mode === "redeem") {
               return {
-                flowId: "sboldRedeem",
+                flowId: "yusndRedeem",
                 backLink: ["/earn/yusnd", "Back to editing"],
                 successLink: ["/earn/yusnd", "Go to the yUSND Pool"],
                 successMessage: "The yUSND has been redeemed successfully.",
-                sboldPosition: newYusndPosition,
-                prevSboldPosition: prevYusndPosition,
+                yusndPosition: newYusndPosition,
+                prevYusndPosition: prevYusndPosition,
               };
             }
 
             return {
-              flowId: "sboldDeposit",
+              flowId: "yusndDeposit",
               backLink: ["/earn/yusnd", "Back to editing"],
               successLink: ["/earn/yusnd", "Go to the yUSND Pool"],
               successMessage: "The deposit has been processed successfully.",
               depositFee,
-              sboldPosition: newYusndPosition,
-              prevSboldPosition: prevYusndPosition,
+              yusndPosition: newYusndPosition,
+              prevYusndPosition: prevYusndPosition,
             };
           }}
         />
