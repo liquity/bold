@@ -25,6 +25,7 @@ import {
 import Link from "next/link";
 import { HomeTable } from "./HomeTable";
 import Image from "next/image";
+import { MAX_DEBT_LIMITS } from "@/src/constants";
 
 export function HomeScreen() {
   const account = useAccount();
@@ -104,6 +105,7 @@ function BorrowingRow({ symbol }: { symbol: CollateralSymbol }) {
   const avgInterestRate = useAverageInterestRate(collIndex);
   const { totalDebt, totalCollateralInUsd } = useTotalDebtCollateralPositions(collIndex);
 
+  const debtLimit = MAX_DEBT_LIMITS[symbol];
   // const maxLtv =
   //   collateral?.collateralRatio && dn.gt(collateral.collateralRatio, 0)
   //     ? dn.div(DNUM_1, collateral.collateralRatio)
@@ -135,12 +137,28 @@ function BorrowingRow({ symbol }: { symbol: CollateralSymbol }) {
           value={totalCollateralInUsd}
         />
       </td>
-      <td>
+      <td className={css({
+        display: "flex",
+        gap: 4,
+        alignItems: "center",
+        justifyContent: "end",
+      })}>
         <Amount
           fallback='…'
           format='compact'
           prefix='$'
           value={totalDebt}
+        />
+        <span className={css({
+          color: "text.secondary",
+        })}>
+          /
+        </span>
+        <Amount
+          fallback='…'
+          format='compact'
+          prefix='$'
+          value={debtLimit}
         />
       </td>
       <td>
