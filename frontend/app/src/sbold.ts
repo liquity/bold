@@ -2,14 +2,15 @@ import type { Address, Dnum, PositionYusnd } from "@/src/types";
 
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { CONTRACT_YUSND } from "@/src/env";
-import { getBranch, getCollateralCount, useLiquityStats } from "@/src/liquity-utils";
+import { getBranch, useLiquityStats } from "@/src/liquity-utils";
 import { isCollIndex } from "@/src/types";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
-import { erc20Abi, parseAbi, zeroAddress } from "viem";
+import { erc20Abi, zeroAddress } from "viem";
 import { useConfig as useWagmiConfig, useReadContracts } from "wagmi";
 import { readContract } from "wagmi/actions";
-// import { YearnV3Vault } from "./abi/YearnV3Vault";
+import { YearnV3Vault } from "./abi/YearnV3Vault";
+import { useStabilityPoolWeights } from "./services/LandingPageStats";
 
 // if the fee is below this % of the deposit, we consider it negligible
 const NEGLIGIBLE_FEE_THRESHOLD = 0.0001; // 0.01%
@@ -18,20 +19,20 @@ const NEGLIGIBLE_FEE_THRESHOLD = 0.0001; // 0.01%
 export const YusndContract = {
   abi: [
     ...erc20Abi,
-    // ...YearnV3Vault,
-    ...parseAbi([
-      "function calcFragments() view returns (uint256, uint256, uint256, uint256)",
-      "function convertToAssets(uint256 shares) view returns (uint256)",
-      "function deposit(uint256 assets, address receiver) returns (uint256)",
-      "function getSBoldRate() view returns (uint256)",
-      "function maxWithdraw(address owner) view returns (uint256)",
-      "function previewDeposit(uint256 assets) view returns (uint256)",
-      "function previewRedeem(uint256 shares) view returns (uint256)",
-      "function previewWithdraw(uint256 assets) view returns (uint256)",
-      "function redeem(uint256 shares, address receiver, address owner) returns (uint256)",
-      "function sps(uint256 index) view returns (address sp, uint256 weight)",
-      "function withdraw(uint256 assets, address receiver, address owner) returns (uint256)",
-    ]),
+    ...YearnV3Vault,
+    // ...parseAbi([
+    //   "function calcFragments() view returns (uint256, uint256, uint256, uint256)",
+    //   "function convertToAssets(uint256 shares) view returns (uint256)",
+    //   "function deposit(uint256 assets, address receiver) returns (uint256)",
+    //   "function getSBoldRate() view returns (uint256)",
+    //   "function maxWithdraw(address owner) view returns (uint256)",
+    //   "function previewDeposit(uint256 assets) view returns (uint256)",
+    //   "function previewRedeem(uint256 shares) view returns (uint256)",
+    //   "function previewWithdraw(uint256 assets) view returns (uint256)",
+    //   "function redeem(uint256 shares, address receiver, address owner) returns (uint256)",
+    //   "function sps(uint256 index) view returns (address sp, uint256 weight)",
+    //   "function withdraw(uint256 assets, address receiver, address owner) returns (uint256)",
+    // ]),
   ] as const,
   address: CONTRACT_YUSND ?? zeroAddress,
 };
@@ -59,9 +60,9 @@ export function useYusndPosition(address: Address | null) {
         }
         return {
           type: "yusnd",
-          usnd: dnum18(maxWithdraw),
+          usnd: dnum18(maxWithdraw as bigint),
           owner: address,
-          yusnd: dnum18(balance),
+          yusnd: dnum18(balance as bigint),
         };
       },
       initialData: [0n, 0n],
@@ -85,13 +86,13 @@ export function usePreviewDeposit(bold: Dnum | null) {
         ...YusndContract,
         functionName: "previewDeposit",
         args: [bold_],
-      });
+      }) as bigint;
 
       const boldMinusFee = await readContract(config, {
         ...YusndContract,
         functionName: "convertToAssets",
         args: [yusndFromDeposit],
-      });
+      }) as bigint;
 
       const boldFee = dnum18(bold_ - boldMinusFee);
       const yusnd = dnum18(yusndFromDeposit);
@@ -118,7 +119,7 @@ export function usePreviewRedeem(yusnd: Dnum | null) {
           ...YusndContract,
           functionName: "previewRedeem",
           args: [yusnd[0]],
-        }),
+        }) as bigint,
       );
     },
   });
@@ -139,47 +140,54 @@ function calculateYusndApr(spData: Array<[apr: Dnum | null, weight: Dnum]>) {
 
 export function useYusndStats() {
   const liquityStats = useLiquityStats();
+  const weights = useStabilityPoolWeights();
 
-  type SpsCall = typeof YusndContract & {
-    functionName: "sps";
-    args: [bigint];
-  };
+  // type SpsCall = typeof YusndContract & {
+  //   functionName: "sps";
+  //   args: [bigint];
+  // };
 
   // max is 9 branches so this should be fine
-  type SpsCalls = [
-    SpsCall,
-    SpsCall,
-    SpsCall,
-    SpsCall,
-    SpsCall,
-    SpsCall,
-    SpsCall,
-    SpsCall,
-    SpsCall,
-  ];
+  // type SpsCalls = [
+  //   SpsCall,
+  //   SpsCall,
+  //   SpsCall,
+  //   SpsCall,
+  //   SpsCall,
+  //   SpsCall,
+  //   SpsCall,
+  //   SpsCall,
+  //   SpsCall,
+  // ];
 
   return useReadContracts({
     contracts: [
       { ...YusndContract, functionName: "totalSupply" },
-      { ...YusndContract, functionName: "calcFragments" },
-      ...(Array.from({ length: getCollateralCount() }, (_, index) => ({
-        ...YusndContract,
-        functionName: "sps",
-        args: [BigInt(index)],
-      })) as SpsCalls),
+      // { ...YusndContract, functionName: "calcFragments" },
+      { ...YusndContract, functionName: "totalDebt" },
+      // ...(Array.from({ length: getCollateralCount() }, (_, index) => ({
+      //   ...YusndContract,
+      //   functionName: "sps",
+      //   args: [BigInt(index)],
+      // })) as SpsCalls),
     ],
     allowFailure: false,
     query: {
       enabled: isYusndEnabled() && liquityStats.isSuccess,
-      select: ([totalSupply_, [totalBold_], ...sps]) => {
-        const totalSupply = dnum18(totalSupply_);
-        const totalBold = dnum18(totalBold_);
+      select: ([
+        totalSupply_, 
+        // [totalBold_], 
+        totalBold_,
+        // ...sps
+      ]) => {
+        const totalSupply = dnum18(totalSupply_ as bigint);
+        const totalBold = dnum18(totalBold_ as bigint);
 
         const yusndRate = totalSupply_ === 0n
           ? DNUM_0
           : dn.div(totalBold, totalSupply);
 
-        const spAprs = sps.map(([_, weight], index) => {
+        const spAprs = weights.data?.map((weight: Dnum, index: number) => {
           if (!isCollIndex(index)) {
             throw new Error(`Invalid branch index: ${index}`);
           }
@@ -188,15 +196,16 @@ export function useYusndStats() {
           return {
             apr: statsBranch?.spApyAvg1d ?? null,
             apr7d: statsBranch?.spApyAvg7d ?? null,
-            weight: dn.div(dn.from(weight, 18), 100_00), // from basis points
+            // weight: dn.div(dn.from(weight, 18), 100_00), // from basis points
+            weight: dn.div(weight, 100_00),
           };
         });
         return {
-          apr: calculateYusndApr(spAprs.map((sp) => [sp.apr, sp.weight])),
-          apr7d: calculateYusndApr(spAprs.map((sp) => [sp.apr7d, sp.weight])),
+          apr: calculateYusndApr(spAprs?.map((sp) => [sp.apr, sp.weight]) ?? []),
+          apr7d: calculateYusndApr(spAprs?.map((sp) => [sp.apr7d, sp.weight]) ?? []),
           yusndRate,
           totalBold,
-          weights: spAprs.map((sp) => sp.weight),
+          weights: spAprs?.map((sp) => sp.weight) ?? [],
         };
       },
     },
