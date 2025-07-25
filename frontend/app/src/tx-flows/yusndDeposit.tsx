@@ -2,7 +2,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { YusndPositionSummary } from "@/src/comps/EarnPositionSummary/YusndPositionSummary";
-import { YusndContract } from "@/src/yusnd";
+import { NEGLIGIBLE_FEE_THRESHOLD, YusndContract } from "@/src/yusnd";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { vDnum, vPositionYusnd } from "@/src/valibot-utils";
@@ -45,9 +45,9 @@ export const yusndDeposit: FlowDeclaration<YusndDepositRequest> = {
       prevYusndPosition.usnd,
     );
 
-    const sboldPosition_ = { ...yusndPosition };
-    if (dn.lt(depositFee, 0.0001)) {
-      sboldPosition_.usnd = dn.add(
+    const yusndPosition_ = { ...yusndPosition };
+    if (dn.lt(depositFee, NEGLIGIBLE_FEE_THRESHOLD)) {
+      yusndPosition_.usnd = dn.add(
         yusndPosition.usnd,
         depositFee,
       );
@@ -96,7 +96,7 @@ export const yusndDeposit: FlowDeclaration<YusndDepositRequest> = {
             <Amount
               key="start"
               prefix="~"
-              suffix=" sBOLD"
+              suffix=" yUSND"
               value={dn.abs(dn.sub(yusndPosition.yusnd, prevYusndPosition.yusnd))}
             />,
             <div
@@ -154,11 +154,11 @@ export const yusndDeposit: FlowDeclaration<YusndDepositRequest> = {
       Status: TransactionStatus,
       async commit({ request, writeContract, account }) {
         const { yusndPosition, prevYusndPosition } = request;
-        const boldChange = yusndPosition.usnd[0] - prevYusndPosition.usnd[0];
+        const usndChange = yusndPosition.usnd[0] - prevYusndPosition.usnd[0];
         return writeContract({
           ...YusndContract,
           functionName: "deposit",
-          args: [boldChange, account],
+          args: [usndChange, account],
         });
       },
       async verify(ctx, hash) {
