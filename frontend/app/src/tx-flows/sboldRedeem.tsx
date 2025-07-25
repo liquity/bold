@@ -45,7 +45,7 @@ export const sboldRedeem: FlowDeclaration<SboldRedeemRequest> = {
           value={[
             <Amount
               key="start"
-              suffix=" sBOLD"
+              suffix=" yUSND"
               value={dn.abs(redeemAmount)}
             />,
           ]}
@@ -55,7 +55,7 @@ export const sboldRedeem: FlowDeclaration<SboldRedeemRequest> = {
           value={[
             <Amount
               key="end"
-              suffix=" BOLD"
+              suffix=" USND"
               value={dn.abs(boldAmount)}
             />,
           ]}

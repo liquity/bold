@@ -60,7 +60,7 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
           value={[
             <Amount
               key="start"
-              suffix=" BOLD"
+              suffix=" USND"
               value={depositChange}
             />,
             dn.gt(depositFee, 0) && (
@@ -77,13 +77,13 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
                   fallback="…"
                   title={{
                     prefix: "Accounting for ",
-                    suffix: " BOLD (Entry Fee)",
+                    suffix: " USND (Entry Fee)",
                   }}
                   value={depositFee}
-                  suffix=" BOLD Entry Fee"
+                  suffix=" USND Entry Fee"
                 />
-                <InfoTooltip heading="sBOLD Entry Fee">
-                  This fee is charged when you deposit BOLD for sBOLD shares, and has been deducted from the deposit
+                <InfoTooltip heading="yUSND Entry Fee">
+                  This fee is charged when you deposit USND for yUSND shares, and has been deducted from the deposit
                   amount.
                 </InfoTooltip>
               </div>
@@ -109,8 +109,8 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
               })}
             >
               Will be slightly less due to yield accrual
-              <InfoTooltip heading="Final sBOLD Amount">
-                The final amount of sBOLD you receive will be slightly less than this, due to the yield that keeps
+              <InfoTooltip heading="Final yUSND Amount">
+                The final amount of yUSND you receive will be slightly less than this, due to the yield that keeps
                 accruing until the transaction is confirmed.
               </InfoTooltip>
             </div>,
@@ -122,7 +122,7 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
 
   steps: {
     approveBold: {
-      name: () => "Approve BOLD",
+      name: () => "Approve USND",
       Status: (props) => (
         <TransactionStatus
           {...props}

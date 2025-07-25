@@ -9,13 +9,16 @@ import * as dn from "dnum";
 import { erc20Abi, parseAbi, zeroAddress } from "viem";
 import { useConfig as useWagmiConfig, useReadContracts } from "wagmi";
 import { readContract } from "wagmi/actions";
+// import { YearnV3Vault } from "./abi/YearnV3Vault";
 
 // if the fee is below this % of the deposit, we consider it negligible
 const NEGLIGIBLE_FEE_THRESHOLD = 0.0001; // 0.01%
 
+// TODO: Replace with YearnV3Vault ABI
 export const YusndContract = {
   abi: [
     ...erc20Abi,
+    // ...YearnV3Vault,
     ...parseAbi([
       "function calcFragments() view returns (uint256, uint256, uint256, uint256)",
       "function convertToAssets(uint256 shares) view returns (uint256)",
