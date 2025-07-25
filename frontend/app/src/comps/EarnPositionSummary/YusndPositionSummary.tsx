@@ -69,7 +69,7 @@ export function YusndPositionSummary({
                 body: <>The annualized rate yUSND deposits earned over the last 24 hours.</>,
                 footerLink: {
                   label: "Check Dune for more details",
-                  href: "https://dune.com/liquity/liquity-v2",
+                  href: "https://dune.com/niftyteam/nerite",
                 },
               }}
             />
@@ -101,7 +101,7 @@ export function YusndPositionSummary({
                 body: <>The annualized rate yUSND deposits earned over the last 7 days.</>,
                 footerLink: {
                   label: "Check Dune for more details",
-                  href: "https://dune.com/liquity/liquity-v2",
+                  href: "https://dune.com/niftyteam/nerite",
                 },
               }}
             />
@@ -131,37 +131,44 @@ export function YusndPositionSummary({
               <div
                 className={css({
                   display: "flex",
-                  gap: 8,
+                  flexDirection: "column",
+                  gap: 4,
                   whiteSpace: "nowrap",
                 })}
               >
                 <div>Pools weight:</div>
-                {stats.data?.weights.map((weight, index) => {
-                  if (!isCollIndex(index)) {
-                    return null;
-                  }
-                  const branch = getBranch(index);
-                  return (
-                    <div
-                      key={index}
-                      className={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                      })}
-                    >
-                      <TokenIcon
-                        symbol={branch.symbol}
-                        size="mini"
-                      />
-                      <Amount
-                        percentage
-                        format="pctfull"
-                        value={weight}
-                      />
-                    </div>
-                  );
-                })}
+                <div className={css({
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: 8,
+                })}>
+                  {stats.data?.weights.map((weight, index) => {
+                    if (!isCollIndex(index)) {
+                      return null;
+                    }
+                    const branch = getBranch(index);
+                    return (
+                      <div
+                        key={index}
+                        className={css({
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                        })}
+                      >
+                        <TokenIcon
+                          symbol={branch.symbol}
+                          size="mini"
+                        />
+                        <Amount
+                          percentage
+                          format="pct2z"
+                          value={weight}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </InfoTooltip>
