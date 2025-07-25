@@ -208,7 +208,19 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         const branch = getBranch(loan.branchId);
 
         if (branch.symbol === "ETH") {
-          throw new Error("ETH collateral not supported for adjustTrove");
+          return ctx.writeContract({
+            ...branch.contracts.LeverageWETHZapper,
+            functionName: "adjustTroveWithRawETH",
+            args: [
+              BigInt(loan.troveId),
+              dn.abs(collChange)[0],
+              dn.gt(collChange, 0n),
+              dn.abs(debtChange)[0],
+              dn.gt(debtChange, 0n),
+              maxUpfrontFee[0],
+            ],
+            value: dn.gt(collChange, 0n) ? collChange[0] : 0n,
+          });
         }
 
         return ctx.writeContract({
@@ -217,9 +229,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
           args: [
             BigInt(loan.troveId),
             dn.abs(collChange)[0],
-            !dn.lt(collChange, 0n),
+            dn.gt(collChange, 0n),
             dn.abs(debtChange)[0],
-            !dn.lt(debtChange, 0n),
+            dn.gt(debtChange, 0n),
             maxUpfrontFee[0],
           ],
         });
@@ -386,8 +398,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
     if (!isBoldApproved) steps.push("approveBold");
     if (!isCollApproved) steps.push("approveColl");
+    steps.push(getFinalStep(ctx.request));
 
-    return steps.concat(getFinalSteps(ctx.request, branch.symbol));
+    return steps;
   },
 
   parseRequest(request) {
@@ -409,34 +422,26 @@ function getCollChange(
   return dn.sub(loan.deposit, prevLoan.deposit);
 }
 
-function getFinalSteps(
+function getFinalStep(
   request: UpdateBorrowPositionRequest,
-  collSymbol: string,
-): ("adjustTrove" | "depositBold" | "depositColl" | "withdrawBold" | "withdrawColl")[] {
+): "adjustTrove" | "depositBold" | "depositColl" | "withdrawBold" | "withdrawColl" {
   const collChange = getCollChange(request.loan, request.prevLoan);
   const debtChange = getDebtChange(request.loan, request.prevLoan);
 
   // both coll and debt change => adjust trove
-  if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) {
-    if (collSymbol === "ETH") {
-      return dn.gt(collChange, 0)
-        ? ["depositColl", dn.gt(debtChange, 0) ? "withdrawBold" : "depositBold"]
-        : [dn.gt(debtChange, 0) ? "withdrawBold" : "depositBold", "withdrawColl"];
-    }
-    return ["adjustTrove"];
-  }
+  if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) return "adjustTrove";
 
   // coll increases => deposit
-  if (dn.gt(collChange, 0)) return ["depositColl"];
+  if (dn.gt(collChange, 0)) return "depositColl";
 
   // coll decreases => withdraw
-  if (dn.lt(collChange, 0)) return ["withdrawColl"];
+  if (dn.lt(collChange, 0)) return "withdrawColl";
 
   // debt increases => withdraw BOLD (borrow)
-  if (dn.gt(debtChange, 0)) return ["withdrawBold"];
+  if (dn.gt(debtChange, 0)) return "withdrawBold";
 
   // debt decreases => deposit BOLD (repay)
-  if (dn.lt(debtChange, 0)) return ["depositBold"];
+  if (dn.lt(debtChange, 0)) return "depositBold";
 
   throw new Error("Invalid request");
 }
