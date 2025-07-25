@@ -198,6 +198,7 @@ export function vPositionLoanCommited() {
     v.object({
       troveId: vTroveId(),
       createdAt: v.number(),
+      isZombie: v.boolean(),
     }),
   ]);
 }

@@ -27,6 +27,7 @@ import {
   INTEREST_RATE_INCREMENT_PRECISE,
   INTEREST_RATE_PRECISE_UNTIL,
   INTEREST_RATE_START,
+  TROVE_STATUS_ZOMBIE,
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
@@ -925,7 +926,7 @@ export async function fetchLoanById(
 
   const [
     indexedTrove,
-    [batchManager, troveData],
+    [batchManager, troveData, troveStatus],
   ] = await Promise.all([
     maybeIndexedTrove ?? getIndexedTroveById(branchId, troveId),
     readContracts(wagmiConfig, {
@@ -937,6 +938,10 @@ export async function fetchLoanById(
       }, {
         ...TroveManager,
         functionName: "getLatestTroveData",
+        args: [BigInt(troveId)],
+      }, {
+        ...TroveManager,
+        functionName: "getTroveStatus",
         args: [BigInt(troveId)],
       }],
     }),
@@ -953,6 +958,7 @@ export async function fetchLoanById(
     interestRate: dnum18(troveData.annualInterestRate),
     status: indexedTrove.status,
     troveId,
+    isZombie: troveStatus === TROVE_STATUS_ZOMBIE,
   };
 }
 
