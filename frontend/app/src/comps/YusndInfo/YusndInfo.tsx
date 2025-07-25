@@ -11,7 +11,7 @@ const infoItems = [{
   text: "yUSND is an ERC-20 token",
 }, {
   icon: "managed",
-  text: "Managed by K3 Capital",
+  text: "Managed by Yearn V3",
 }, {
   icon: "compounding",
   text: "Auto-compounding",
