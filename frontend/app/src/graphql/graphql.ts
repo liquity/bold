@@ -1061,14 +1061,14 @@ export type TrovesByAccountQueryVariables = Exact<{
 }>;
 
 
-export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: string | null, createdAt: string, mightBeLeveraged: boolean, status: TroveStatus }> };
+export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: string | null, createdAt: string, mightBeLeveraged: boolean, status: TroveStatus, debt: string }> };
 
 export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, mightBeLeveraged: boolean, previousOwner: string, status: TroveStatus } | null };
+export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, mightBeLeveraged: boolean, previousOwner: string, status: TroveStatus, debt: string } | null };
 
 export type InterestBatchesQueryVariables = Exact<{
   ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -1148,6 +1148,7 @@ export const TrovesByAccountDocument = new TypedDocumentString(`
     createdAt
     mightBeLeveraged
     status
+    debt
   }
 }
     `) as unknown as TypedDocumentString<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
@@ -1161,6 +1162,7 @@ export const TroveByIdDocument = new TypedDocumentString(`
     mightBeLeveraged
     previousOwner
     status
+    debt
   }
 }
     `) as unknown as TypedDocumentString<TroveByIdQuery, TroveByIdQueryVariables>;

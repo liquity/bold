@@ -1,4 +1,4 @@
-import type { Address, BranchId, Delegate } from "@/src/types";
+import type { Address, BranchId, Delegate, PositionLoanCommitted } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { useAppear } from "@/src/anim-utils";
@@ -49,6 +49,7 @@ export const InterestRateField = memo(
     onChange,
     onDelegateChange,
     onModeChange = noop,
+    loan,
   }: {
     branchId: BranchId;
     debt: Dnum | null;
@@ -60,6 +61,7 @@ export const InterestRateField = memo(
     onChange: (interestRate: Dnum) => void;
     onDelegateChange: (delegate: Address | null) => void;
     onModeChange?: (mode: DelegateMode) => void;
+    loan?: PositionLoanCommitted;
   }) {
     const [delegatePicker, setDelegatePicker] = useState<
       "strategy" | "delegate" | null
@@ -132,7 +134,7 @@ export const InterestRateField = memo(
       },
     });
 
-    const interestChartData = useInterestRateChartData(branchId);
+    const interestChartData = useInterestRateChartData(branchId, loan);
     const interestRateRounded = interestRate && dn.div(dn.round(dn.mul(interestRate, 1000)), 1000);
 
     const bracket = interestRateRounded && interestChartData.data?.find(
