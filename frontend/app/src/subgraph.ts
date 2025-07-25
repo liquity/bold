@@ -1,7 +1,7 @@
 import * as dn from "dnum";
 
 import type { TypedDocumentString } from "@/src/graphql/graphql";
-import type { Address, BranchId, TroveId, TroveStatus } from "@/src/types";
+import type { Address, BranchId, Dnum, TroveId, TroveStatus } from "@/src/types";
 
 import { dnum18 } from "@/src/dnum-utils";
 import { SUBGRAPH_URL } from "@/src/env";
@@ -16,6 +16,7 @@ export type IndexedTrove = {
   createdAt: number;
   mightBeLeveraged: boolean;
   status: TroveStatus;
+  debt: Dnum;
 };
 
 async function tryFetch(...args: Parameters<typeof fetch>) {
@@ -112,6 +113,7 @@ const TrovesByAccountQuery = graphql(`
       createdAt
       mightBeLeveraged
       status
+      debt
     }
   }
 `);
@@ -129,6 +131,7 @@ export async function getIndexedTrovesByAccount(account: Address): Promise<Index
     createdAt: Number(trove.createdAt) * 1000,
     mightBeLeveraged: trove.mightBeLeveraged,
     status: trove.status,
+    debt: dnum18(trove.debt),
   }));
 }
 
@@ -142,6 +145,7 @@ const TroveByIdQuery = graphql(`
       mightBeLeveraged
       previousOwner
       status
+      debt
     }
   }
 `);
@@ -163,6 +167,7 @@ export async function getIndexedTroveById(
     createdAt: Number(trove.createdAt) * 1000,
     mightBeLeveraged: trove.mightBeLeveraged,
     status: trove.status,
+    debt: dnum18(trove.debt),
   };
 }
 

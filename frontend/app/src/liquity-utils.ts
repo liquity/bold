@@ -954,6 +954,7 @@ export async function fetchLoanById(
     borrower: indexedTrove.borrower,
     branchId,
     createdAt: indexedTrove.createdAt,
+    indexedDebt: indexedTrove.debt,
     deposit: dnum18(troveData.entireColl),
     interestRate: dnum18(troveData.annualInterestRate),
     status: indexedTrove.status,
