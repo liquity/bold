@@ -582,6 +582,15 @@ async function getTotalAllocationHistory(initiative: Address) {
   }
 }
 
+async function getLatestCompletedEpoch(currentEpoch: bigint) {
+  if (LIQUITY_GOVERNANCE_URL) {
+    const response = await fetch(`${LIQUITY_GOVERNANCE_URL}/latest_completed_epoch.json`);
+    return v.parse(v.number(), await response.json());
+  } else {
+    return Number(currentEpoch) - 1;
+  }
+}
+
 // limit checks to the last 52 epochs
 const BRIBING_CHECK_EPOCH_LIMIT = 52;
 
@@ -617,7 +626,8 @@ export function useBribingClaim(
         };
       }
 
-      const [userAllocations, bribeChecks] = await Promise.all([
+      const [completedEpochs, userAllocations, bribeChecks] = await Promise.all([
+        getLatestCompletedEpoch(currentEpoch),
         getUserAllocationHistory(account),
         readContracts(wagmiConfig, {
           contracts: initiativesToCheck.map((initiative) => ({
@@ -662,8 +672,6 @@ export function useBribingClaim(
 
       const bribeDetailsPerInitiative = await Promise.all(
         bribeInitiatives.map(async ({ address, bribeToken }) => {
-          const completedEpochs = Number(currentEpoch) - 1; // exclude current epoch
-
           // no completed epochs yet
           if (completedEpochs < 1) {
             return null;
