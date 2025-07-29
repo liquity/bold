@@ -431,10 +431,10 @@ export function useAverageInterestRate(branchId: BranchId) {
   };
 }
 
-export function useInterestRateChartData(branchId: BranchId, loan?: PositionLoanCommitted) {
+export function useInterestRateChartData(branchId: BranchId, excludedLoan?: PositionLoanCommitted) {
   const brackets = useInterestRateBrackets(branchId);
   return useQuery({
-    queryKey: ["useInterestRateChartData", jsonStringifyWithDnum(brackets.data), loan?.troveId],
+    queryKey: ["useInterestRateChartData", jsonStringifyWithDnum(brackets.data), excludedLoan?.troveId],
     queryFn: () => {
       if (!brackets.isSuccess) {
         throw new Error(); // should never happen (see enabled)
@@ -479,7 +479,9 @@ export function useInterestRateChartData(branchId: BranchId, loan?: PositionLoan
             dn.sub(
               debtByRate.get(dn.toJSON(stepRate)) ?? DNUM_0,
               // exclude own debt from debt-in front calculation
-              loan?.interestRate && dn.eq(loan.interestRate, stepRate) ? loan.indexedDebt : DNUM_0,
+              excludedLoan?.interestRate && dn.eq(excludedLoan.interestRate, stepRate)
+                ? excludedLoan.indexedDebt
+                : DNUM_0,
             ),
           );
           stepRate = dn.add(stepRate, INTEREST_RATE_INCREMENT_PRECISE);
