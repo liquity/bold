@@ -440,28 +440,16 @@ export function useInterestRateChartData(branchId: BranchId, excludedLoan?: Posi
         throw new Error(); // should never happen (see enabled)
       }
 
-      const debtByRate = new Map<string, Dnum>();
-      let totalDebt = DNUM_0;
-      let highestDebt = DNUM_0;
-
-      for (const bracket of brackets.data) {
-        if (
-          dn.lt(bracket.rate, INTEREST_RATE_START)
-          || dn.gt(bracket.rate, INTEREST_RATE_END)
-        ) {
-          continue;
-        }
-
-        debtByRate.set(dn.toJSON(bracket.rate), bracket.totalDebt);
-        totalDebt = dn.add(totalDebt, bracket.totalDebt);
-        if (dn.gt(bracket.totalDebt, highestDebt)) {
-          highestDebt = bracket.totalDebt;
-        }
-      }
+      const debtByRate = new Map<string, Dnum>(
+        brackets.data
+          .filter(({ rate }) => dn.gte(rate, INTEREST_RATE_START) && dn.lte(rate, INTEREST_RATE_END))
+          .map((bracket) => [dn.toJSON(bracket.rate), bracket.totalDebt]),
+      );
 
       const chartData = [];
       let currentRate = dn.from(INTEREST_RATE_START, 18);
-      let runningDebtTotal = DNUM_0;
+      let debtInFront = DNUM_0;
+      let highestDebt = DNUM_0;
 
       while (dn.lte(currentRate, INTEREST_RATE_END)) {
         const nextRate = dn.add(
@@ -476,28 +464,38 @@ export function useInterestRateChartData(branchId: BranchId, excludedLoan?: Posi
         while (dn.lt(stepRate, nextRate)) {
           aggregatedDebt = dn.add(
             aggregatedDebt,
-            dn.sub(
-              debtByRate.get(dn.toJSON(stepRate)) ?? DNUM_0,
-              // exclude own debt from debt-in front calculation
-              excludedLoan?.interestRate && dn.eq(excludedLoan.interestRate, stepRate)
-                ? excludedLoan.indexedDebt
-                : DNUM_0,
-            ),
+            debtByRate.get(dn.toJSON(stepRate)) ?? DNUM_0,
           );
           stepRate = dn.add(stepRate, INTEREST_RATE_INCREMENT_PRECISE);
         }
 
+        // exclude own debt from debt-in front calculation
+        if (
+          excludedLoan
+          && dn.gte(excludedLoan.interestRate, currentRate)
+          && dn.lt(excludedLoan.interestRate, nextRate)
+        ) {
+          aggregatedDebt = dn.sub(aggregatedDebt, excludedLoan.indexedDebt);
+        }
+
         chartData.push({
           debt: aggregatedDebt,
-          debtInFront: dn.from(runningDebtTotal),
+          debtInFront,
           rate: currentRate,
-          size: totalDebt[0] === 0n
-            ? 0
-            : dn.toNumber(dn.div(aggregatedDebt, highestDebt)),
+          size: dn.toNumber(aggregatedDebt),
         });
 
-        runningDebtTotal = dn.add(runningDebtTotal, aggregatedDebt);
+        debtInFront = dn.add(debtInFront, aggregatedDebt);
         currentRate = nextRate;
+        if (dn.gt(aggregatedDebt, highestDebt)) highestDebt = aggregatedDebt;
+      }
+
+      // normalize size between 0 and 1
+      if (highestDebt[0] !== 0n) {
+        const divisor = dn.toNumber(highestDebt);
+        for (const datum of chartData) {
+          datum.size /= divisor;
+        }
       }
 
       return chartData;
