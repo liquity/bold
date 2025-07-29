@@ -1,6 +1,6 @@
 "use client";
 
-import type { CollateralSymbol, TokenSymbol } from "@/src/types";
+import type { CollateralSymbol } from "@/src/types";
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { Dnum } from "dnum";
 
@@ -33,10 +33,10 @@ async function fetchCollateralPrice(
   return dnum18(price);
 }
 
-export function usePrice(symbol: TokenSymbol): UseQueryResult<Dnum>;
+export function usePrice(symbol: string): UseQueryResult<Dnum>;
 export function usePrice(symbol: null): UseQueryResult<null>;
-export function usePrice(symbol: TokenSymbol | null): UseQueryResult<Dnum | null>;
-export function usePrice(symbol: TokenSymbol | null): UseQueryResult<Dnum | null> {
+export function usePrice(symbol: string | null): UseQueryResult<Dnum | null>;
+export function usePrice(symbol: string | null): UseQueryResult<Dnum | null> {
   const stats = useLiquityStats();
   const config = useWagmiConfig();
   const statsPrices = stats.data?.prices;
