@@ -113,6 +113,7 @@ export function PanelInterestRate({
             onChange={setInterestRate}
             onDelegateChange={setInterestRateDelegate}
             onModeChange={setInterestRateMode}
+            loan={loan}
           />
         }
         footer={{
