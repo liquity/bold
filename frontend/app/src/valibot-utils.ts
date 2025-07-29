@@ -199,6 +199,7 @@ export function vPositionLoanCommited() {
       troveId: vTroveId(),
       createdAt: v.number(),
       isZombie: v.boolean(),
+      indexedDebt: vDnum(),
     }),
   ]);
 }
