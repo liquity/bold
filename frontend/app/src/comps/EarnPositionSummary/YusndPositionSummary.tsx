@@ -3,9 +3,9 @@ import type { Dnum, PositionYusnd } from "@/src/types";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
-import { getBranch } from "@/src/liquity-utils";
+// import { getBranch } from "@/src/liquity-utils";
 import { useYusndStats } from "@/src/yusnd";
-import { isCollIndex } from "@/src/types";
+// import { isCollIndex } from "@/src/types";
 import { css } from "@/styled-system/css";
 import { InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -128,7 +128,7 @@ export function YusndPositionSummary({
               })}
             >
               <div>Total amount of USND deposited in the yUSND pool.</div>
-              <div
+              {/* <div
                 className={css({
                   display: "flex",
                   flexDirection: "column",
@@ -169,7 +169,7 @@ export function YusndPositionSummary({
                     );
                   })}
                 </div>
-              </div>
+              </div> */}
             </div>
           </InfoTooltip>
         </>
