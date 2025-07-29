@@ -51,6 +51,29 @@ export function useStabilityPoolAPR() {
   };
 }
 
+// Stability Pool APR calculation
+export function useStabilityPoolWeights() {
+  const stats = useLiquityStats();
+  
+  if (!stats.data?.branch) {
+    return {
+      data: null,
+      isLoading: stats.isLoading,
+      error: stats.error,
+    };
+  }
+
+  const weights = Object.values(stats.data.branch).map((branch) => {
+    return dn.mul(dn.div(branch.spDeposits ?? 0, branch.valueLocked ?? 0), 100_00);
+  });
+
+  return {
+    data: weights,
+    isLoading: stats.isLoading,
+    error: stats.error,
+  };
+}
+
 // DefiLlama TVL data
 export function useDefiLlamaTVL() {
   return useQuery({

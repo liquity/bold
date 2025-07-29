@@ -71,6 +71,32 @@ export function getPrefixedTroveId(collIndex: CollIndex, troveId: TroveId): Pref
   return `${collIndex}:${troveId}`;
 }
 
+export function getBranch(idOrSymbol: null): null;
+export function getBranch(idOrSymbol: CollateralSymbol | CollIndex): CollateralToken;
+export function getBranch(
+  idOrSymbol: CollateralSymbol | CollIndex | null,
+): CollateralToken | null {
+  if (idOrSymbol === null) {
+    return null;
+  }
+
+  const branch = COLLATERALS.find((b, index) => (
+    typeof idOrSymbol === "string"
+      ? b.symbol === idOrSymbol
+      : index === idOrSymbol
+  ));
+
+  if (!branch) {
+    throw new Error("Invalid collateral index or symbol: " + idOrSymbol);
+  }
+
+  return branch;
+}
+
+export function getCollateralCount(): number {
+  return COLLATERALS.length;
+}
+
 export function getCollToken(collIndex: CollIndex | null): CollateralToken | null {
   const { collaterals } = getContracts();
   if (collIndex === null) {

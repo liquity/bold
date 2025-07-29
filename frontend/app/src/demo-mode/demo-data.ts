@@ -28,6 +28,7 @@ export const ACCOUNT_BALANCES = {
   TETH: dn.from(1_200, 18),
   WETH: dn.from(1_200, 18),
   WEETH: dn.from(1_200, 18),
+  YUSND: dn.from(1_200, 18),
 } as const;
 
 const DEMO_ACCOUNT = `0x${"0".repeat(39)}1` as const;

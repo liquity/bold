@@ -4,6 +4,7 @@ import "@liquity2/uikit/index.css";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { BreakpointName } from "@/src/breakpoints";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Blocking } from "@/src/comps/Blocking/Blocking";
 import content from "@/src/content";
@@ -30,17 +31,19 @@ export default function Layout({ children }: { children: ReactNode }) {
         <UiKit>
           <ReactQuery>
             <StoredState>
-              <DemoMode>
-                <Arbitrum>
-                  <SubgraphStatus>
-                    <Blocking>
-                      <TransactionFlow>
-                        <AppLayout>{children}</AppLayout>
-                      </TransactionFlow>
-                    </Blocking>
-                  </SubgraphStatus>
-                </Arbitrum>
-              </DemoMode>
+              <BreakpointName>
+                <DemoMode>
+                  <Arbitrum>
+                    <SubgraphStatus>
+                      <Blocking>
+                        <TransactionFlow>
+                          <AppLayout>{children}</AppLayout>
+                        </TransactionFlow>
+                      </Blocking>
+                    </SubgraphStatus>
+                  </Arbitrum>
+                </DemoMode>
+              </BreakpointName>
             </StoredState>
           </ReactQuery>
         </UiKit>

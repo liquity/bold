@@ -15,7 +15,8 @@ export type TokenSymbol =
   | "RSETH"
   | "TBTC"
   | "WETH"
-  | "WEETH";
+  | "WEETH"
+  | "YUSND";
 
 export type Token = {
   icon: string;

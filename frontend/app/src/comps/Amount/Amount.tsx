@@ -5,20 +5,29 @@ import { css } from "@/styled-system/css";
 import { a, useTransition } from "@react-spring/web";
 
 export function Amount({
+  animate = true,
+  dust = true,
   fallback = "",
+  fixed = false, // fixed numbers width
   format,
   percentage = false,
   prefix = "",
   suffix = "",
-  title: titleProp,
+  title: titleParam,
   value,
 }: {
+  animate?: boolean;
+  dust?: boolean;
   fallback?: string;
+  fixed?: boolean;
   format?: FmtnumPresetName | number;
   percentage?: boolean;
   prefix?: string;
   suffix?: string;
-  title?: string | null;
+  title?: string | null | {
+    prefix?: string;
+    suffix?: string;
+  };
   value: Parameters<typeof fmtnum>[0];
 }) {
   const scale = percentage ? 100 : 1;
@@ -36,7 +45,7 @@ export function Amount({
 
   const showFallback = value === null || value === undefined;
 
-  const fmtOptions: FmtnumOptions = { prefix, scale, suffix };
+  const fmtOptions: FmtnumOptions = { dust, prefix, scale, suffix };
   if (typeof format === "number") {
     fmtOptions.digits = format;
   } else if (typeof format === "string") {
@@ -46,48 +55,58 @@ export function Amount({
   const content = showFallback ? fallback : fmtnum(value, fmtOptions);
 
   const title = showFallback ? undefined : (
-    titleProp === undefined
+    titleParam === undefined
       ? fmtnum(value, { prefix, preset: "full", scale }) + suffix
-      : titleProp
+      : typeof titleParam === "string"
+      ? titleParam
+      : titleParam === null
+      ? undefined
+      : fmtnum(value, {
+        prefix: titleParam.prefix,
+        preset: "full",
+        scale,
+        suffix: titleParam.suffix,
+      })
   );
 
-  const fallbackTransition = useTransition([{ content, title, showFallback }], {
-    keys: (item) => String(item.showFallback),
-    initial: {
-      transform: "scale(1)",
-    },
-    from: {
-      transform: "scale(0.9)",
-    },
-    enter: {
-      transform: "scale(1)",
-    },
-    leave: {
-      display: "none",
-      immediate: true,
-    },
-    config: {
-      mass: 1,
-      tension: 2000,
-      friction: 80,
-    },
+  const appear = useTransition({
+    showFallback,
+    content,
+  }, {
+    keys: (val) => String(val.showFallback),
+    from: { opacity: 0, transform: "scale(0.9)" },
+    enter: { opacity: 1, transform: "scale(1)" },
+    config: { mass: 1, tension: 2000, friction: 80 },
+    immediate: !animate,
   });
 
-  return fallbackTransition((style, { content, title }) => (
-    <a.div
+  return (
+    <span
       title={title ?? undefined}
       className={css({
-        display: "inline-flex",
-        width: "fit-content",
+        display: "inline",
+        textDecoration: "inherit",
         whiteSpace: "nowrap",
         overflow: "hidden",
         textOverflow: "ellipsis",
         transformOrigin: "50% 50%",
-        textDecoration: "inherit",
       })}
-      style={style}
+      style={{
+        fontVariantNumeric: fixed ? "tabular-nums" : undefined,
+      }}
     >
-      {content}
-    </a.div>
-  ));
+      {appear((style, { showFallback, content }) => (
+        showFallback ? content : (
+          <a.span
+            style={{
+              display: "inline",
+              transform: style.transform,
+            }}
+          >
+            {content}
+          </a.span>
+        )
+      ))}
+    </span>
+  );
 }
