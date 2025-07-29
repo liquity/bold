@@ -19,6 +19,7 @@ import {
   useInitiativesVoteTotals,
   useNamedInitiatives,
 } from "@/src/liquity-governance";
+import { usePrice } from "@/src/services/Prices";
 import { tokenIconUrl } from "@/src/utils";
 import { jsonStringifyWithBigInt } from "@/src/utils";
 import { useAccount } from "@/src/wagmi-utils";
@@ -741,6 +742,8 @@ function InitiativeRow({
   const inputRef = useRef<HTMLInputElement>(null);
   const [editIntent, setEditIntent] = useState(false);
   const editMode = (editIntent || !voteAllocation?.vote) && !disabled;
+  const boldPrice = usePrice(bribe ? "BOLD" : null);
+  const bribeTokenPrice = usePrice(bribe ? bribe.tokenSymbol : null);
 
   return (
     <tr>
@@ -855,16 +858,25 @@ function InitiativeRow({
                       gap: 4,
                     })}
                   >
-                    <Amount
-                      format="compact"
-                      title={null}
-                      value={bribe.boldAmount}
-                    />
                     <TokenIcon
                       symbol="BOLD"
                       size={12}
                       title={null}
                     />
+                    <Amount
+                      format="compact"
+                      title={null}
+                      value={bribe.boldAmount}
+                    />
+                    {boldPrice.data && (
+                      <Amount
+                        format="compact"
+                        title={null}
+                        prefix="($"
+                        value={dn.mul(bribe.boldAmount, boldPrice.data)}
+                        suffix=")"
+                      />
+                    )}
                   </div>
                 )}
                 {dn.gt(bribe.tokenAmount, 0) && (
@@ -876,11 +888,6 @@ function InitiativeRow({
                       gap: 4,
                     })}
                   >
-                    <Amount
-                      format="compact"
-                      title={null}
-                      value={bribe.tokenAmount}
-                    />
                     <TokenIcon
                       size={12}
                       title={null}
@@ -890,6 +897,20 @@ function InitiativeRow({
                         symbol: bribe.tokenSymbol,
                       }}
                     />
+                    <Amount
+                      format="compact"
+                      title={null}
+                      value={bribe.tokenAmount}
+                    />
+                    {bribeTokenPrice.data && (
+                      <Amount
+                        format="compact"
+                        title={null}
+                        prefix="($"
+                        value={dn.mul(bribe.tokenAmount, bribeTokenPrice.data)}
+                        suffix=")"
+                      />
+                    )}
                   </div>
                 )}
               </div>
