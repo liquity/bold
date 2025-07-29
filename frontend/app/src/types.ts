@@ -106,7 +106,14 @@ export type PositionStake = {
   };
 };
 
-export type Position = PositionLoan | PositionEarn | PositionStake;
+export type PositionYusnd = {
+  type: "yusnd";
+  usnd: Dnum;
+  owner: Address;
+  yusnd: Dnum;
+};
+
+export type Position = PositionLoan | PositionEarn | PositionStake | PositionYusnd;
 
 export type Delegate = {
   address: Address;
