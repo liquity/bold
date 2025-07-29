@@ -240,7 +240,11 @@ export const InterestBatchQuery = graphql(`
 
 export const AllInterestRateBracketsQuery = graphql(`
   query AllInterestRateBrackets {
-    interestRateBrackets(orderBy: rate) {
+    interestRateBrackets(
+      first: 1000
+      where: { totalDebt_gt: 0 }
+      orderBy: rate
+    ) {
       collateral {
         collIndex
       }
