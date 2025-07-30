@@ -42,7 +42,7 @@ export function PanelClaimRewards({
     );
 
   const gasFeeUsd =
-    ethPriceUsd.data && dn.multiply(dn.from(0.001, 18), ethPriceUsd.data);
+    ethPriceUsd.data && dn.multiply(dn.from(0.00001, 18), ethPriceUsd.data);
 
   const allowSubmit =
     account.isConnected && totalRewards && dn.gt(totalRewards, 0);
