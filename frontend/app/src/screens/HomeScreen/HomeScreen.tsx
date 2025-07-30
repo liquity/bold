@@ -95,7 +95,7 @@ export function HomeScreen() {
               null,
             ] as const
           }
-          rows={[...collSymbols, "YUSND" as const].map((symbol) => (
+          rows={["YUSND" as const, ...collSymbols].map((symbol) => (
             <EarnRewardsRow key={symbol} symbol={symbol} />
           ))}
         />
