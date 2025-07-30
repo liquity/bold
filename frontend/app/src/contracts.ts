@@ -91,7 +91,7 @@ type Contract<T extends ContractName> = {
   address: Address;
 };
 
-type CollateralContracts = {
+export type CollateralContracts = {
   [K in CollateralContractName]: Contract<K>;
 };
 

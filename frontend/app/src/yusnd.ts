@@ -1,16 +1,16 @@
 import type { Address, Dnum, PositionYusnd } from "@/src/types";
 
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
-import { CONTRACT_YUSND } from "@/src/env";
-import { getBranch, useLiquityStats } from "@/src/liquity-utils";
-import { isCollIndex } from "@/src/types";
+import { COLLATERAL_CONTRACTS, CONTRACT_YUSND, YUSND_STATS_URL } from "@/src/env";
+import { useLiquityStats } from "@/src/liquity-utils";
+// import { isCollIndex } from "@/src/types";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
-import { erc20Abi, zeroAddress } from "viem";
-import { useConfig as useWagmiConfig, useReadContracts } from "wagmi";
+import { erc20Abi, isAddressEqual, zeroAddress } from "viem";
+import { useConfig as useWagmiConfig, useReadContracts, usePublicClient } from "wagmi";
 import { readContract } from "wagmi/actions";
 import { YearnV3Vault } from "./abi/YearnV3Vault";
-import { useStabilityPoolWeights } from "./services/LandingPageStats";
+// import { useStabilityPoolWeights } from "./services/LandingPageStats";
 
 // if the fee is below this % of the deposit, we consider it negligible
 export const NEGLIGIBLE_FEE_THRESHOLD = 0.0001; // 0.01%
@@ -138,9 +138,18 @@ function calculateYusndApr(spData: Array<[apr: Dnum | null, weight: Dnum]>) {
     : dn.div(weightedAprSum, totalWeight);
 }
 
+export async function getYusndStats() {
+  if (!YUSND_STATS_URL) {
+    return null;
+  }
+  const data = await fetch(YUSND_STATS_URL)
+  return data.json();
+}
+
 export function useYusndStats() {
   const liquityStats = useLiquityStats();
-  const weights = useStabilityPoolWeights();
+  // const weights = useStabilityPoolWeights();
+  const client = usePublicClient();
 
   // type SpsCall = typeof YusndContract & {
   //   functionName: "sps";
@@ -160,54 +169,105 @@ export function useYusndStats() {
   //   SpsCall,
   // ];
 
-  return useReadContracts({
-    contracts: [
-      { ...YusndContract, functionName: "totalSupply" },
-      // { ...YusndContract, functionName: "calcFragments" },
-      { ...YusndContract, functionName: "totalDebt" },
-      // ...(Array.from({ length: getCollateralCount() }, (_, index) => ({
-      //   ...YusndContract,
-      //   functionName: "sps",
-      //   args: [BigInt(index)],
-      // })) as SpsCalls),
-    ],
-    allowFailure: false,
-    query: {
-      enabled: isYusndEnabled() && liquityStats.isSuccess,
-      select: ([
-        totalSupply_, 
-        // [totalBold_], 
-        totalUsnd_,
-        // ...sps
-      ]) => {
-        const totalSupply = dnum18(totalSupply_ as bigint);
-        const totalUsnd = dnum18(totalUsnd_ as bigint);
+  return useQuery({
+    queryKey: ["yusnd-stats"],
+    enabled: isYusndEnabled() && liquityStats.isSuccess && !!YUSND_STATS_URL && !!client,
+    queryFn: async () => {
+      const data = await getYusndStats();
+      if (!data) {
+        return null;
+      }
+      const { strategies } = data as { strategies: { address: Address, sp: Address, deposit: string }[] }
 
-        const yusndRate = totalSupply_ === 0n
-          ? DNUM_0
-          : dn.div(totalUsnd, totalSupply);
-
-        const spAprs = weights.data?.map((weight: Dnum, index: number) => {
-          if (!isCollIndex(index)) {
-            throw new Error(`Invalid branch index: ${index}`);
-          }
-          const branch = getBranch(index);
-          const statsBranch = liquityStats.data?.branch[branch.symbol];
-          return {
-            apr: statsBranch?.spApyAvg1d ?? null,
-            apr7d: statsBranch?.spApyAvg7d ?? null,
-            // weight: dn.div(dn.from(weight, 18), 100_00), // from basis points
-            weight: dn.div(weight, 100_00),
-          };
-        });
+      const totalDeposited = strategies.reduce((acc, strategy) => {
+        return acc + BigInt(strategy.deposit);
+      }, 0n);
+      const spAprs = strategies.map((strategy) => {
+        const sp = COLLATERAL_CONTRACTS.find((c) => isAddressEqual(c.contracts.STABILITY_POOL, strategy.sp));
+        if (!sp) {
+          throw new Error(`Strategy ${strategy.sp} not found`);
+        }
+        const statsBranch = liquityStats.data?.branch[sp.symbol];
         return {
-          apr: calculateYusndApr(spAprs?.map((sp) => [sp.apr, sp.weight]) ?? []),
-          apr7d: calculateYusndApr(spAprs?.map((sp) => [sp.apr7d, sp.weight]) ?? []),
-          yusndRate,
-          totalUsnd,
-          weights: spAprs?.map((sp) => sp.weight) ?? [],
-        };
-      },
-    },
-  });
+          weight: dn.div(dnum18(BigInt(strategy.deposit)), dnum18(totalDeposited)),
+          apr: statsBranch?.spApyAvg1d ?? null,
+          apr7d: statsBranch?.spApyAvg7d ?? null,
+        }
+      })
+
+      const [totalSupply_, totalUsnd_] = (await client!.multicall({
+        contracts: [
+          { ...YusndContract, functionName: "totalSupply" },
+          { ...YusndContract, functionName: "totalDebt" },
+        ],
+        allowFailure: false,
+      })) as [bigint, bigint];
+
+      const totalSupply = dnum18(totalSupply_ as bigint);
+      const totalUsnd = dnum18(totalUsnd_ as bigint);
+
+      const yusndRate = totalSupply_ === 0n
+        ? DNUM_0
+        : dn.div(totalUsnd, totalSupply);
+
+      return {
+        apr: calculateYusndApr(spAprs?.map((sp) => [sp.apr, sp.weight]) ?? []),
+        apr7d: calculateYusndApr(spAprs?.map((sp) => [sp.apr7d, sp.weight]) ?? []),
+        yusndRate,
+        totalUsnd,
+        weights: spAprs?.map((sp) => sp.weight) ?? [],
+      }
+    }
+  })
+
+  // return useReadContracts({
+  //   contracts: [
+  //     { ...YusndContract, functionName: "totalSupply" },
+  //     // { ...YusndContract, functionName: "calcFragments" },
+  //     { ...YusndContract, functionName: "totalDebt" },
+  //     // ...(Array.from({ length: getCollateralCount() }, (_, index) => ({
+  //     //   ...YusndContract,
+  //     //   functionName: "sps",
+  //     //   args: [BigInt(index)],
+  //     // })) as SpsCalls),
+  //   ],
+  //   allowFailure: false,
+  //   query: {
+  //     enabled: isYusndEnabled() && liquityStats.isSuccess,
+  //     select: ([
+  //       totalSupply_, 
+  //       // [totalBold_], 
+  //       totalUsnd_,
+  //       // ...sps
+  //     ]) => {
+  //       const totalSupply = dnum18(totalSupply_ as bigint);
+  //       const totalUsnd = dnum18(totalUsnd_ as bigint);
+
+  //       const yusndRate = totalSupply_ === 0n
+  //         ? DNUM_0
+  //         : dn.div(totalUsnd, totalSupply);
+
+  //       const spAprs = weights.data?.map((weight: Dnum, index: number) => {
+  //         if (!isCollIndex(index)) {
+  //           throw new Error(`Invalid branch index: ${index}`);
+  //         }
+  //         const branch = getBranch(index);
+  //         const statsBranch = liquityStats.data?.branch[branch.symbol];
+  //         return {
+  //           apr: statsBranch?.spApyAvg1d ?? null,
+  //           apr7d: statsBranch?.spApyAvg7d ?? null,
+  //           // weight: dn.div(dn.from(weight, 18), 100_00), // from basis points
+  //           weight: dn.div(weight, 100_00),
+  //         };
+  //       });
+  //       return {
+  //         apr: calculateYusndApr(spAprs?.map((sp) => [sp.apr, sp.weight]) ?? []),
+  //         apr7d: calculateYusndApr(spAprs?.map((sp) => [sp.apr7d, sp.weight]) ?? []),
+  //         yusndRate,
+  //         totalUsnd,
+  //         weights: spAprs?.map((sp) => sp.weight) ?? [],
+  //       };
+  //     },
+  //   },
+  // });
 }
