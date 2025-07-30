@@ -1,4 +1,5 @@
-import type { Address, CollateralSymbol, Token, TokenSymbol } from "@liquity2/uikit";
+import type { Address, CollateralSymbol, CollateralToken, Token, TokenSymbol } from "@liquity2/uikit";
+import type { CollateralContracts } from "@/src/contracts";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
@@ -9,6 +10,11 @@ export type RiskLevel = "low" | "medium" | "high";
 export type CollIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type TroveId = `0x${string}`;
 export type PrefixedTroveId = `${CollIndex}:${TroveId}`;
+
+export type Branch = CollateralToken & {
+  id: CollIndex;
+  contracts: CollateralContracts;
+};
 
 export function isCollIndex(value: unknown): value is CollIndex {
   return typeof value === "number" && value >= 0 && value <= 7;

@@ -10,12 +10,12 @@ import type {
   TroveId,
 } from "@/src/types";
 import * as dn from "dnum";
-import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
+import type { Address, CollateralSymbol, CollateralToken, Token, TokenSymbol } from "@liquity2/uikit";
 import type { UseQueryResult } from "@tanstack/react-query";
 import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
-import { getCollateralContract, getContracts, getProtocolContract } from "@/src/contracts";
+import { getCollateralContract, getCollateralContracts, getContracts, getProtocolContract } from "@/src/contracts";
 import { dnum18, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, COLLATERAL_CONTRACTS, LIQUITY_STATS_URL } from "@/src/env";
 // import { getCollGainFromSnapshots, useContinuousBoldGains } from "@/src/liquity-stability-pool";
@@ -29,8 +29,8 @@ import {
   // useStabilityPoolScale,
   // useStabilityPoolEpochScale,
 } from "@/src/subgraph-hooks";
-import { isCollIndex, isTroveId } from "@/src/types";
-import { COLLATERALS, isAddress } from "@liquity2/uikit";
+import { Branch, isCollIndex, isTroveId } from "@/src/types";
+import { COLLATERALS, isAddress, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import * as v from "valibot";
@@ -72,25 +72,42 @@ export function getPrefixedTroveId(collIndex: CollIndex, troveId: TroveId): Pref
 }
 
 export function getBranch(idOrSymbol: null): null;
-export function getBranch(idOrSymbol: CollateralSymbol | CollIndex): CollateralToken;
+export function getBranch(idOrSymbol: CollateralSymbol | CollIndex): Branch;
 export function getBranch(
   idOrSymbol: CollateralSymbol | CollIndex | null,
-): CollateralToken | null {
+): Branch | null {
   if (idOrSymbol === null) {
     return null;
   }
 
   const branch = COLLATERALS.find((b, index) => (
     typeof idOrSymbol === "string"
-      ? b.symbol === idOrSymbol
+      ? b.symbol === idOrSymbol.toUpperCase()
       : index === idOrSymbol
   ));
 
+  
   if (!branch) {
-    throw new Error("Invalid collateral index or symbol: " + idOrSymbol);
+    return null;
+  }
+  
+  const collIndex = typeof idOrSymbol === "string" ? getCollIndexFromSymbol(idOrSymbol) : idOrSymbol;
+
+  if (!isCollIndex(collIndex)) {
+    return null;
   }
 
-  return branch;
+  const contracts = getCollateralContracts(collIndex);
+
+  if (!contracts) {
+    return null;
+  }
+
+  return {
+    ...branch,
+    id: collIndex,
+    contracts,
+  };
 }
 
 export function getCollateralCount(): number {
@@ -109,6 +126,16 @@ export function getCollToken(collIndex: CollIndex | null): CollateralToken | nul
     }
     return collateral;
   })[collIndex] ?? null;
+}
+
+export function getToken(symbol: CollateralSymbol): CollateralToken;
+export function getToken(symbol: TokenSymbol): Token;
+export function getToken(symbol: TokenSymbol): Token {
+  const token = TOKENS_BY_SYMBOL[symbol];
+  if (!token) {
+    throw new Error(`Unknown token symbol: ${symbol}`);
+  }
+  return token;
 }
 
 export function getCollIndexFromSymbol(symbol: CollateralSymbol | null): CollIndex | null {
