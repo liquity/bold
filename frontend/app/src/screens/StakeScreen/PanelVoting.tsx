@@ -959,7 +959,6 @@ function InitiativeRow({
                   totalStaked,
                 )}
                 vote={voteAllocation?.vote ?? null}
-                voteTotals={voteTotals}
               />
             )
             : (
@@ -984,13 +983,11 @@ function Vote({
   disabled,
   share,
   vote,
-  voteTotals,
 }: {
   onEdit?: () => void;
   disabled: boolean;
   share: Dnum;
   vote: Vote;
-  voteTotals?: { totalVotes: Dnum; totalVetos: Dnum };
 }) {
   return (
     <div
@@ -1030,13 +1027,7 @@ function Vote({
           <div
             title={`${fmtnum(share, "pct2")}% of your voting power has been allocated to ${
               vote === "for" ? "upvote" : "downvote"
-            } this initiative${
-              voteTotals
-                ? ` (${fmtnum(vote === "for" ? voteTotals.totalVotes : voteTotals.totalVetos)} total ${
-                  vote === "for" ? "votes" : "vetos"
-                })`
-                : ""
-            }`}
+            } this initiative`}
             className={css({
               width: 30,
             })}
