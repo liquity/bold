@@ -1,4 +1,4 @@
-import type { InitiativeStatus } from "@/src/liquity-governance";
+import type { InitiativeStatus, VoteTotals } from "@/src/liquity-governance";
 import type { Address, Dnum, Entries, Initiative, Vote, VoteAllocation, VoteAllocations } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -8,7 +8,8 @@ import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { Tag } from "@/src/comps/Tag/Tag";
 import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
 import content from "@/src/content";
-import { DNUM_0 } from "@/src/dnum-utils";
+import { getProtocolContract } from "@/src/contracts";
+import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, CHAIN_ID } from "@/src/env";
 import { fmtnum, formatDate } from "@/src/formatting";
 import {
@@ -18,11 +19,12 @@ import {
   useInitiativesStates,
   useInitiativesVoteTotals,
   useNamedInitiatives,
+  votingPower,
 } from "@/src/liquity-governance";
 import { usePrice } from "@/src/services/Prices";
 import { tokenIconUrl } from "@/src/utils";
 import { jsonStringifyWithBigInt } from "@/src/utils";
-import { useAccount } from "@/src/wagmi-utils";
+import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { Button, IconDownvote, IconEdit, IconExternal, IconUpvote, shortenAddress, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -709,6 +711,29 @@ export function PanelVoting() {
   );
 }
 
+function calculateShare(
+  governanceState?: { countedVoteLQTY: bigint; countedVoteOffset: bigint; epochEnd: bigint },
+  initiativeState?: VoteTotals,
+) {
+  if (!governanceState || !initiativeState) return null;
+
+  const totalVotingPower = votingPower(
+    governanceState.countedVoteLQTY,
+    governanceState.countedVoteOffset,
+    governanceState.epochEnd,
+  );
+
+  if (totalVotingPower === 0n) return DNUM_0;
+
+  const initiativeVotingPower = votingPower(
+    initiativeState.voteLQTY,
+    initiativeState.voteOffset,
+    governanceState.epochEnd,
+  );
+
+  return dn.div(dnum18(initiativeVotingPower), dnum18(totalVotingPower));
+}
+
 function InitiativeRow({
   bribe,
   disableFor,
@@ -737,13 +762,18 @@ function InitiativeRow({
   onVoteInputChange: (initiative: Address, value: Dnum) => void;
   totalStaked: Dnum;
   voteAllocation?: VoteAllocation;
-  voteTotals?: { totalVotes: Dnum; totalVetos: Dnum };
+  voteTotals?: VoteTotals;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [editIntent, setEditIntent] = useState(false);
   const editMode = (editIntent || !voteAllocation?.vote) && !disabled;
   const boldPrice = usePrice(bribe ? "BOLD" : null);
   const bribeTokenPrice = usePrice(bribe ? bribe.tokenSymbol : null);
+  const governanceState = useGovernanceState();
+  const share = calculateShare(governanceState.data, voteTotals);
+  const Governance = getProtocolContract("Governance");
+  const governanceBalance = useBalance(Governance.address, "BOLD");
+  const incentiveBold = share && governanceBalance.data ? dn.mul(governanceBalance.data, share) : null;
 
   return (
     <tr>
@@ -830,6 +860,60 @@ function InitiativeRow({
               })}
             />
           </div>
+
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 12,
+            })}
+            title="Share of incentives the initiative would receive according to the current votes"
+          >
+            <span>Share:</span>
+            <Amount title={null} value={share} percentage />
+          </div>
+
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              fontSize: 12,
+            })}
+            title="Amount of BOLD the initiative would receive according to the current votes"
+          >
+            <span>Incentive:</span>
+            <div
+              title={`${fmtnum(incentiveBold)} BOLD`}
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              })}
+            >
+              <TokenIcon
+                symbol="BOLD"
+                size={12}
+                title={null}
+              />
+              <Amount
+                format="compact"
+                title={null}
+                value={incentiveBold}
+              />
+              {boldPrice.data && (
+                <Amount
+                  format="compact"
+                  title={null}
+                  prefix="($"
+                  value={incentiveBold && dn.mul(incentiveBold, boldPrice.data)}
+                  suffix=")"
+                />
+              )}
+            </div>
+          </div>
+
           {bribe && (dn.gt(bribe.boldAmount, 0) || dn.gt(bribe.tokenAmount, 0)) && (
             <div
               className={css({
