@@ -185,7 +185,14 @@ export function formatPercentage(
   }%`;
 }
 
-export function formatDate(date: Date, format: "full" | "iso" = "full") {
+export function formatDate(date: Date, format: "short" | "full" | "iso" = "full") {
+  if (format === "short") {
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
   if (format === "full") {
     return date.toLocaleDateString("en-US", {
       year: "numeric",

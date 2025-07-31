@@ -198,8 +198,12 @@ export function vPositionLoanCommited() {
     v.object({
       troveId: vTroveId(),
       createdAt: v.number(),
+      lastUserActionAt: v.number(),
       isZombie: v.boolean(),
       indexedDebt: vDnum(),
+      redemptionCount: v.number(),
+      redeemedColl: vDnum(),
+      redeemedDebt: vDnum(),
     }),
   ]);
 }
