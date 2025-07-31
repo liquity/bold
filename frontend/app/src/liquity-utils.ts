@@ -958,12 +958,16 @@ export async function fetchLoanById(
     borrower: indexedTrove.borrower,
     branchId,
     createdAt: indexedTrove.createdAt,
+    lastUserActionAt: indexedTrove.lastUserActionAt,
     indexedDebt: indexedTrove.debt,
     deposit: dnum18(troveData.entireColl),
     interestRate: dnum18(troveData.annualInterestRate),
     status: indexedTrove.status,
     troveId,
     isZombie: troveStatus === TROVE_STATUS_ZOMBIE,
+    redemptionCount: indexedTrove.redemptionCount,
+    redeemedColl: indexedTrove.redeemedColl,
+    redeemedDebt: indexedTrove.redeemedDebt,
   };
 }
 
