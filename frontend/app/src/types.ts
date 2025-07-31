@@ -76,8 +76,12 @@ export type PositionLoanBase = {
 export type PositionLoanCommitted = PositionLoanBase & {
   troveId: TroveId;
   createdAt: number;
+  lastUserActionAt: number;
   isZombie: boolean;
   indexedDebt: Dnum;
+  redemptionCount: number;
+  redeemedColl: Dnum;
+  redeemedDebt: Dnum;
 };
 
 export type PositionLoanUncommitted = PositionLoanBase & {
