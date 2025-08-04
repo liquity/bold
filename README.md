@@ -1952,3 +1952,166 @@ Thus, Borrowers should not consider Troves at identical interest rates to be par
 
 ### Issues identified in audits requiring no fix
 A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/issues?q=label%3Awontfix+).
+
+# Considerations for v2 forks
+
+The following section outlines some considerations that licensed forks of Liquity v2 should be aware of. 
+
+Modifying the original v2 design and code can potentially create technical, economic and UX impacts. All changes should be thoroughly considered from those perspectives. 
+
+## High level trust assumptions
+
+In general, Liquity v2 assumes:
+
+- Economically and technically sound collateral
+- Robust price oracles
+
+A major problem with any single collateral or oracle could in turn cause a major issue in the relevant collateral branch. The system does its best to “contain” damage via branch shutdown, but in the worst case, a single oracle or collateral failure could lead to de-peg of the stablecoin and systemic failure.
+
+Thus, fork collateral and oracles should be evaluated and chosen very carefully.
+
+## Collateral choices
+
+In the original v2, LST collateral was selected conservatively. STETH and RETH were chosen for their track records of security and liquidity, and newer, less liquid LSTs were rejected.
+
+The following dimensions should be considered:
+
+### Number of collaterals
+
+The greater the number of collaterals the less efficient redemptions are, since gas costs increase with the number of branches.
+
+Thus a larger number of collateral branches implies a higher effective redemption fee, which in turn implies a looser stablecoin peg. It’s recommended to analyse redemption profitability based on your chosen collaterals and the gas costs on your chosen chain / L2.
+
+### Liquidity considerations
+
+How liquid is the market for the collateral? How much sell volume would it take to significantly move the collateral price? Historically, how volatile has the collateral price been?
+
+For a given branch, how much sell volume would it take to suddenly drop the price such that Troves at or close to the MCR become immediately undercollateralized?
+
+For a given branch size and TCR, how much sell volume would it take to drop the price such that the system crosses the CCR or SCR threshold?
+
+A large enough sudden collateral price drop could cause the branch to shut down and potentially leave it with significant bad debt. An extreme crash could even cause the stablecoin to become underbacked, if the given collateral constitutes a large fraction of the total. Thus, collateral with a history of reasonable liquidity and volatility should be chosen.
+
+Liquidity is also potentially important for oracle manipulation (see the oracle considerations section below).
+
+### Technical risk
+
+What is the technical track record of the collateral? For how long has it been live without problems? Did the team behind it invest thoroughly in security? Is it immutable or can it be upgraded - if so, which aspects do the team/DAO control?
+
+### Collateral token decimals and conversion
+
+All collateral tokens in Liquity v2 as well as BOLD and LQTY use 18 decimal digits.
+
+If you plan to use a collateral token with a different number of decimal digits, be sure to convert to/from the decimals used in your system in all the right places - for example, when calculating the price of the collateral in USD.
+
+It is recommended to wrap such tokens in an intermediate one with 18 decimal digits, and then use the wrapped token for all internal system operations. Collateral should be wrapped at inflow and unwrapped just prior to outflow. This reduces room for conversion error and helps ensure that all system operations are scaled correctly.
+
+## Immutable vs upgradeable forks
+
+Liquity v2 is immutable, which added development constraints: in particular, collateral and oracle price sources/calculations had to be chosen carefully, and all security work was front-loaded since no changes could be made post launch.
+
+If your system is upgradeable you may be tempted to take more risk in certain areas - for example, collateral choice or system risk parameters.
+
+However, upgradeability should not be seen as a reason to underinvest in security or economic modelling. Upgradeability is also an attack surface in itself.
+
+Branch risk parameters - SCR, CCR and MCR
+
+In general, we suggest `SCR <= MCR < CCR`.  While Liquity v2 sets `MCR = SCR`, a larger MCR is viable.
+
+The more risky the collateral - i.e. the greater the chance of a large, sudden price drop - the larger the values these risk parameters should take.
+
+Ideally:
+
+Most liquidations should occur at CR > 100%, to ensure profitability for SP depositors.  
+Branch shutdown should clear most branch debt (via liquidations, urgent redemptions and borrowers closing Troves) before the branch becomes undercollateralized, i.e. before the TCR drops below 100%
+Economic modelling should be performed based on your assumptions about collateral volatility to select these risk parameters.
+ 
+## Redemption floor fee
+
+The greater the redemption floor fee the looser the peg, and vice versa. A non-zero floor fee is recommended, as it imposes a minimum cost on system griefing and/or some kinds of economic manipulation.
+
+The redemption floor fee should also be considered in tandem with oracle update thresholds (see oracle considerations below).
+
+
+## Bootstrapping, seeding liquidity and early growth
+
+The smaller the system, the lower the absolute cost to redeem a given fraction `x%` of total stablecoin supply. Additionally, the smaller the system, the lower cost of deliberately emptying the SP by opening and self-liquidating a Trove.
+
+Such actions may be done in order to set up economic manipulations or to simply grief the system.
+
+In general, it is recommended to support early system growth by seeding liquidity in Troves and SPs or coordinating with early users who will do so. The bigger the system grows early on, the higher the absolute costs of deliberate redemption/self-liquidation.
+
+See also this section on [deployment backrunning](https://github.com/liquity/bold?tab=readme-ov-file#21---deployment-backrunning)
+
+
+## Oracle considerations
+
+Liquity v2 uses a combination of Chainlink push-based market oracles and LST exchange rates to price collateral.  
+
+### Type of oracle used
+
+If your fork uses a different type of oracle, then care should be taken to ensure that the oracle logic in your PriceFeed contracts is appropriate for the oracle used.
+
+For example, if switching to a push-based price feed such as Pyth or Redstone, the original v2 staleness threshold logic may no longer be relevant, and the fork team may need to ensure they are running bots/infra to push oracle prices frequently enough.
+
+
+If DEX pools are used as oracles, then price manipulation protection should be considered (e.g. TWAP), and a contingency should be in place for the scenario where liquidity dries up and price manipulation suddenly becomes cheaper.
+
+### Liquidity and price sources
+
+The fact that a reputable market oracle exists for an asset (Chainlink, Pyth, Redstone, etc) is no guarantee that the asset pricing is robust and unmanipulable.
+
+If the asset has thin liquidity and/or liquidity concentrated on a small set of price sources, it may be relatively cheap to manipulate.  
+
+
+Fork teams should ask themselves: how much total liquidity exists for this asset? Where is it concentrated? Is it spread across a variety of on and off-chainexchanges, or concentrated on a couple of DEX pools?
+
+Ultimately, market oracles source prices from wherever the liquidity and volume is, and if an asset is priced based on thin liquidity sitting in 1-2 DEX pools then it may not be robust enough for use as collateral in a v2 fork.
+
+###  Price manipulation protection
+
+Liquity v2 protects against upwards price manipulation on LST branches by taking the _minimum_ of two price sources for borrowing ops and liquidations, and the _maximum_ of two price sources for redemptions. The full logic is [here](https://github.com/liquity/bold?tab=readme-ov-file#oracles-in-liquity-v2)
+
+In general, the systemic risks from oracle manipulation in terms of impact from lowest to highest are:
+
+- Excess stablecoin minting. Potentially suddenly catastrophic for the peg
+- Excess liquidations. Could cause major loss for borrowers
+- Unprofitable redemptions when the stablecoin is under peg. May lead to a long-term de-peg if they persist
+- Excess redemptions. Could shrink the system when the stablecoin is at peg
+
+See the [oracles](https://github.com/liquity/bold?tab=readme-ov-file#oracles-in-liquity-v2) and [LST oracle risk section](https://github.com/liquity/bold?tab=readme-ov-file#8---lst-oracle-risks) for analysis specific to v2.
+
+If your fork uses new types of oracles or oracle logic, the impact of manipulation on stablecoin minting, liquidations and redemptions should be analysed with these priorities in mind.
+
+### Oracle decimals 
+
+Liquity v2 expects 8 decimal digit precision for the ETH-USD Chainlink price source and scales it to 18 digits before using it in internal operations. Take care to note the decimal precision of all your oracles and scale them accordingly before using them in system ops.
+
+### Staleness thresholds
+
+When using market oracles which are Chainlink push-based or equivalent, the staleness thresholds should be larger than the oracle’s heartbeat by a healthy buffer.
+
+This ensures that short delays in oracle updates do not trigger an unnecessary branch shutdown.
+
+For example, in Liquity v2 the oracle heartbeats and staleness thresholds are as such:
+
+| Market oracle | Heartbeat | Staleness threshold |
+|---------------|-----------|-------------------|
+| ETH-USD | 1 hour | 24 hours |
+| STETH-USD | 1 hour | 24 hours |
+| RETH-ETH | 24 hours | 48 hours |
+
+
+### Redemption floor fee and oracle update thresholds
+
+When using market oracles which are Chainlink push-based or equivalent, the redemption floor fee `x` should be equal or greater than the oracle price update deviation threshold `y`. This is to ensure that a market price movement in range `(x, y)` does not lead to adverse redemptions: in this range, a price movement makes redemption profitable when the stablecoin is trading at $1, but does not trigger an oracle update and redeemers can extract value from the system. Thus, the floor fee `x` should be equal to or greater than oracle threshold `y` to eliminate redemption profits in this range.
+
+Liquity v2 actually mitigates this a different way for the LST branches, taking the “worst” price from two sources. For the WETH branch, it sets `x = y`. Systems using purely push-based market oracles to price collateral should set a sufficiently high redemption fee floor.
+
+## Security and audits
+
+It is advisable to perform one or more security audits for any changes made to the core system contracts or parameters. Even seemingly tiny or trivial changes can have outsized and unintended impacts on system security and economic resilience.
+
+## Code diff with Liquity v2
+
+It’s advisable to publicly showcase the diff between your code and the original Liquity v2 code in your repo, so that all code changes to original smart contracts are surfaced and readily visible. 
