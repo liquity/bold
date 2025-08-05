@@ -285,18 +285,23 @@ function EarnRewardsRow({ symbol }: { symbol: CollateralSymbol | "YUSND" }) {
                 })}
               >
                 Earn
-                <TokenIcon.Group size='mini'>
-                  <TokenIcon symbol='USND' />
-                  {symbol === "YUSND"
-                    ? (
-                      <div
-                        className={css({
-                          width: 16,
-                        })}
-                      />
-                    )
-                    : <TokenIcon symbol={symbol} />}
-                </TokenIcon.Group>
+                {symbol === "YUSND" ? (
+                  <TokenIcon.Group size='mini'>
+                    <TokenIcon symbol='USND' />
+                    <TokenIcon symbol='SUP' />
+                    <div
+                      className={css({
+                        width: 16,
+                      })}
+                    />
+                  </TokenIcon.Group>
+                ) : (
+                  <TokenIcon.Group size='mini'>
+                    <TokenIcon symbol='USND' />
+                    <TokenIcon symbol={symbol} />
+                    <TokenIcon symbol='SUP' />
+                  </TokenIcon.Group>
+                )}
               </div>
             }
             title={`Earn USND with ${token?.name}`}
