@@ -98,9 +98,9 @@ export function PanelVoting() {
       const { voteLQTY, vetoLQTY } = allocation;
 
       const voteAllocation: VoteAllocation | null = voteLQTY > 0n
-        ? { vote: "for", value: [voteLQTY, 18] }
+        ? { vote: "for", value: dn.eq(stakedLQTY, 0) ? DNUM_0 : dn.div([voteLQTY, 18], stakedLQTY) }
         : vetoLQTY > 0n
-        ? { vote: "against", value: [vetoLQTY, 18] }
+        ? { vote: "against", value: dn.eq(stakedLQTY, 0) ? DNUM_0 : dn.div([vetoLQTY, 18], stakedLQTY) }
         : null;
 
       if (voteAllocation) {
@@ -137,8 +137,8 @@ export function PanelVoting() {
       ];
 
       allocations[allocation.initiative] = {
-        value: dn.eq(stakedLQTY, 0) ? DNUM_0 : dn.div(qty, stakedLQTY),
         vote,
+        value: dn.eq(stakedLQTY, 0) ? DNUM_0 : dn.div(qty, stakedLQTY),
       };
     }
 
@@ -540,7 +540,6 @@ export function PanelVoting() {
                   inputVoteAllocation={inputVoteAllocations[initiative.address]}
                   onVote={handleVote}
                   onVoteInputChange={handleVoteInputChange}
-                  totalStaked={stakedLQTY}
                   voteAllocation={voteAllocations[initiative.address]}
                   voteTotals={voteTotals.data?.[initiative.address]}
                 />
@@ -742,7 +741,6 @@ function InitiativeRow({
   inputVoteAllocation,
   onVote,
   onVoteInputChange,
-  totalStaked,
   voteAllocation,
   voteTotals,
 }: {
@@ -759,7 +757,6 @@ function InitiativeRow({
   inputVoteAllocation?: VoteAllocations[Address];
   onVote: (initiative: Address, vote: Vote) => void;
   onVoteInputChange: (initiative: Address, value: Dnum) => void;
-  totalStaked: Dnum;
   voteAllocation?: VoteAllocation;
   voteTotals?: VoteTotals;
 }) {
@@ -994,11 +991,8 @@ function InitiativeRow({
                   }, 0);
                 }}
                 disabled={disabled}
-                share={dn.eq(totalStaked, 0) ? DNUM_0 : dn.div(
-                  voteAllocation?.value ?? DNUM_0,
-                  totalStaked,
-                )}
-                vote={voteAllocation?.vote ?? null}
+                share={voteAllocation.value}
+                vote={voteAllocation.vote}
               />
             )
             : (
