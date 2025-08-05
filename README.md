@@ -111,11 +111,13 @@
   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
 - [Considerations for v2 forks](#considerations-for-v2-forks)
   - [High level trust assumptions](#high-level-trust-assumptions)
+  - [Known issues in Liquity v2](#known-issues-in-liquity-v2)
   - [Collateral choices](#collateral-choices)
   - [Immutable vs upgradeable forks](#immutable-vs-upgradeable-forks)
   - [Redemption floor fee](#redemption-floor-fee)
   - [Bootstrapping, seeding liquidity and early growth](#bootstrapping-seeding-liquidity-and-early-growth)
   - [Oracle considerations](#oracle-considerations)
+  - [Closing the last Trove in the system](#closing-the-last-trove-in-the-system)
   - [Security and audits](#security-and-audits)
   - [Code diff with Liquity v2](#code-diff-with-liquity-v2)
 
@@ -1180,7 +1182,7 @@ The following operations are still allowed after shut down:
 
 Ordinarily, on active branches, the last Trove in the system can not be closed. This is to ensure there is always a final recipient active Trove available to receive redistributions. The owner of the last Trove is free to repay debt down to the minimum level, and the Trove can still be redeemed down to 0 debt (and thus become a zombie Trove), as usual.
 
-On shutdown branches, the last Trove _ca_ be closed by its owner - since the priority on a shutdown branch is to clear all debt and remove collateral ASAP.
+On shutdown branches, the last Trove _can_ be closed by its owner - since the priority on a shutdown branch is to clear all debt and remove collateral ASAP.
 
  ### Urgent redemptions 
 
@@ -1967,6 +1969,10 @@ The following section outlines some considerations that licensed forks of Liquit
 
 Modifying the original v2 design and code can potentially create technical, economic and UX impacts. All changes should be thoroughly considered from those perspectives. 
 
+## Known issues in Liquity v2
+
+Fork teams should familiarise themselves with the [known issues](https://github.com/liquity/bold?tab=readme-ov-file#known-issues-and-mitigations) of Liquity v2. Some are deliberate design choices with trade-offs, others are simply quirks of the system.
+
 ## High level trust assumptions
 
 In general, Liquity v2 assumes:
@@ -2115,6 +2121,10 @@ For example, in Liquity v2 the oracle heartbeats and staleness thresholds are as
 When using market oracles which are Chainlink push-based or equivalent, the redemption floor fee `x` should be equal or greater than the oracle price update deviation threshold `y`. This is to ensure that a market price movement in range `(x, y)` does not lead to adverse redemptions: in this range, a price movement makes redemption profitable when the stablecoin is trading at $1, but does not trigger an oracle update and redeemers can extract value from the system. Thus, the floor fee `x` should be equal to or greater than oracle threshold `y` to eliminate redemption profits in this range.
 
 Liquity v2 actually mitigates this a different way for the LST branches, taking the “worst” price from two sources. For the WETH branch, it sets `x = y`. Systems using purely push-based market oracles to price collateral should set a sufficiently high redemption fee floor.
+
+## Closing the last Trove in the system
+
+As [explained here](https://github.com/liquity/bold?tab=readme-ov-file#closing-the-last-trove-in-the-system), the last Trove in a branch can not be closed unless that branch has been shut down. 
 
 ## Security and audits
 
