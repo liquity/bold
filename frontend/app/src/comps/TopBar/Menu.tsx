@@ -12,6 +12,7 @@ export type MenuItemType =
   | 'multiply'
   | 'earn'
   | 'buy'
+  | 'stream'
   // | 'stake';
 
 export type HrefTarget = '_self' | '_blank';

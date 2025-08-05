@@ -357,6 +357,7 @@ export function EarnPositionSummary({
                     <TokenIcon.Group size='mini'>
                       <TokenIcon symbol='USND' />
                       <TokenIcon symbol={collToken.symbol} />
+                      <TokenIcon symbol='SUP' />
                     </TokenIcon.Group>
                   )}
                 </div>

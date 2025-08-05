@@ -14,6 +14,7 @@ import tokenTbtc from "./token-icons/tbtc.svg";
 import tokenWeth from "./token-icons/weth.svg";
 import tokenWeeth from "./token-icons/weeth.svg";
 import tokenYusnd from "./token-icons/yusnd.svg";
+import tokenSup from "./token-icons/sup.svg";
 
 export type CollateralSymbol = 
   | "ETH" 
@@ -75,6 +76,12 @@ export const YUSND: Token = {
   icon: tokenYusnd,
   name: "yUSND",
   symbol: "YUSND" as const,
+} as const;
+
+export const SUP: Token = {
+  icon: tokenSup,
+  name: "SUP",
+  symbol: "SUP" as const,
 } as const;
 
 // Collaterals
@@ -160,6 +167,7 @@ export const TOKENS_BY_SYMBOL = {
   LQTY,
   LUSD,
   YUSND,
+  SUP,
   ETH,
   WETH,
   WSTETH,
