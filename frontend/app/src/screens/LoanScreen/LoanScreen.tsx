@@ -5,6 +5,7 @@ import type { Dnum, PositionLoanCommitted } from "@/src/types";
 import { useBreakpoint } from "@/src/breakpoints";
 import { InlineTokenAmount } from "@/src/comps/Amount/InlineTokenAmount";
 import { Field } from "@/src/comps/Field/Field";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { getBranchContract } from "@/src/contracts";
@@ -17,7 +18,7 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { isPrefixedtroveId } from "@/src/types";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, Button, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
+import { addressesEqual, Button, IconExternal, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
@@ -272,6 +273,17 @@ export function LoanScreen() {
                                       />{" "}
                                       of collateral.
                                     </p>
+
+                                    <LinkTextButton
+                                      label={
+                                        <>
+                                          See Loan History on DeFi Explore
+                                          <IconExternal size={16} />
+                                        </>
+                                      }
+                                      href={`https://liquityv2.defiexplore.com/trove/${collToken?.name}/${troveId}`}
+                                      external
+                                    />
                                   </>
                                 )
                                 : null}
