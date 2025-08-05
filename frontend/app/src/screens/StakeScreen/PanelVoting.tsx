@@ -540,6 +540,7 @@ export function PanelVoting() {
                   inputVoteAllocation={inputVoteAllocations[initiative.address]}
                   onVote={handleVote}
                   onVoteInputChange={handleVoteInputChange}
+                  totalStaked={stakedLQTY}
                   voteAllocation={voteAllocations[initiative.address]}
                   voteTotals={voteTotals.data?.[initiative.address]}
                 />
@@ -709,7 +710,7 @@ export function PanelVoting() {
   );
 }
 
-function calculateShare(
+function calculateVotesPct(
   governanceState?: { countedVoteLQTY: bigint; countedVoteOffset: bigint; epochEnd: bigint },
   initiativeState?: VoteTotals,
 ) {
@@ -741,6 +742,7 @@ function InitiativeRow({
   inputVoteAllocation,
   onVote,
   onVoteInputChange,
+  totalStaked,
   voteAllocation,
   voteTotals,
 }: {
@@ -757,6 +759,7 @@ function InitiativeRow({
   inputVoteAllocation?: VoteAllocations[Address];
   onVote: (initiative: Address, vote: Vote) => void;
   onVoteInputChange: (initiative: Address, value: Dnum) => void;
+  totalStaked: Dnum;
   voteAllocation?: VoteAllocation;
   voteTotals?: VoteTotals;
 }) {
@@ -766,7 +769,7 @@ function InitiativeRow({
   const boldPrice = usePrice(bribe ? "BOLD" : null);
   const bribeTokenPrice = usePrice(bribe ? bribe.tokenSymbol : null);
   const governanceState = useGovernanceState();
-  const share = calculateShare(governanceState.data, voteTotals);
+  const votesPct = calculateVotesPct(governanceState.data, voteTotals);
 
   return (
     <tr>
@@ -864,7 +867,7 @@ function InitiativeRow({
             title="Percentage of incentives the initiative would receive according to the current votes"
           >
             <span>Votes:</span>
-            <Amount title={null} value={share} percentage />
+            <Amount title={null} value={votesPct} percentage />
           </div>
 
           {bribe && (dn.gt(bribe.boldAmount, 0) || dn.gt(bribe.tokenAmount, 0)) && (
