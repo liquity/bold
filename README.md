@@ -2079,13 +2079,13 @@ The fact that a reputable market oracle exists for an asset (Chainlink, Pyth, Re
 If the asset has thin liquidity and/or liquidity concentrated on a small set of price sources, it may be relatively cheap to manipulate.  
 
 
-Fork teams should ask themselves: how much total liquidity exists for this asset? Where is it concentrated? Is it spread across a variety of on and off-chainexchanges, or concentrated on a couple of DEX pools?
+Fork teams should ask themselves: how much total liquidity exists for this asset? Where is it concentrated? Is it spread across a variety of on and off-chain exchanges, or concentrated on a couple of DEX pools?
 
 Ultimately, market oracles source prices from wherever the liquidity and volume is, and if an asset is priced based on thin liquidity sitting in 1-2 DEX pools then it may not be robust enough for use as collateral in a v2 fork.
 
 ###  Price manipulation protection
 
-Liquity v2 protects against upwards price manipulation on LST branches by taking the _minimum_ of two price sources for borrowing ops and liquidations, and the _maximum_ of two price sources for redemptions. The full logic is [here](https://github.com/liquity/bold?tab=readme-ov-file#oracles-in-liquity-v2)
+Liquity v2 protects against upwards price manipulation on LST branches by taking the _minimum_ of two price sources for borrowing ops and liquidations, and the _maximum_ of two price sources for redemptions. The full logic is [here.](https://github.com/liquity/bold?tab=readme-ov-file#oracles-in-liquity-v2)
 
 In general, the systemic risks from oracle manipulation in terms of impact from lowest to highest are:
 
