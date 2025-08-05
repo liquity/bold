@@ -7,7 +7,7 @@ import { fmtnum } from "@/src/formatting";
 import { useYusndStats } from "@/src/yusnd";
 // import { isCollIndex } from "@/src/types";
 import { css } from "@/styled-system/css";
-import { InfoTooltip, TokenIcon } from "@liquity2/uikit";
+import { HFlex, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { EarnPositionSummaryBase } from "./EarnPositionSummaryBase";
 
@@ -215,7 +215,7 @@ export function YusndPositionSummary({
           ),
         },
         {
-          label: "USND Deposit",
+          label: "Deposit", // prev: USND Deposit
           content: (
             <>
               <div
@@ -251,6 +251,24 @@ export function YusndPositionSummary({
                 </div>
               )}
             </>
+          ),
+        },
+        // Prev: did not exist
+        txPreviewMode ? null : {
+          label: "Rewards",
+          content: (
+            <HFlex gap={4}>
+              <div>
+                Earn
+              </div>
+              <TokenIcon.Group size="mini">
+                <TokenIcon symbol="USND" />
+                <TokenIcon symbol="SUP" />
+              </TokenIcon.Group>
+              <div>
+                in rewards
+              </div>
+            </HFlex>
           ),
         },
       ].filter((item) => item !== null)}

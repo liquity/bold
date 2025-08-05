@@ -14,7 +14,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { useReadContract } from "wagmi";
 
-type PriceToken = "LQTY" | "NERI" | "USND" | "LUSD" | "yUSND" | CollateralSymbol;
+type PriceToken = "LQTY" | "NERI" | "USND" | "LUSD" | "yUSND" | "SUP" | CollateralSymbol;
 
 // TODO: Fix type errors in useReadContract here.
 // Our PriceFeed contract has a fetchPrice function that returns a tuple of
@@ -45,12 +45,13 @@ function useCollateralPrice(
   });
 }
 
-type CoinGeckoSymbol = TokenSymbol & ("LQTY" | "LUSD");
+type CoinGeckoSymbol = TokenSymbol & ("LQTY" | "LUSD" | "SUP");
 const coinGeckoTokenIds: {
   [key in CoinGeckoSymbol]: string;
 } = {
   LQTY: "liquity",
   LUSD: "liquity-usd",
+  SUP: "superfluid",
 };
 
 function useCoinGeckoPrice(
@@ -120,7 +121,7 @@ function useCoinGeckoPrice(
 export function usePrice<PT extends PriceToken>(
   symbol: PT | null
 ): UseQueryResult<Dnum> {
-  const fromCoinGecko = symbol === "LQTY" || symbol === "LUSD";
+  const fromCoinGecko = symbol === "LQTY" || symbol === "LUSD" || symbol === "SUP";
   const fromPriceFeed =
     !fromCoinGecko && symbol !== null && isCollateralSymbol(symbol);
 

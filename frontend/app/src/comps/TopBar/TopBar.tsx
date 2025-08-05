@@ -14,6 +14,7 @@ import {
   IconBorrow,
   IconDashboard,
   IconEarn,
+  IconStake as IconStream,
   // IconLeverage,
   // IconStake,
 } from "@liquity2/uikit";
@@ -29,6 +30,7 @@ const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
   [content.menu.borrow, "/borrow", IconBorrow, "borrow", "_self"],
   // [content.menu.multiply, "/multiply", IconLeverage, "multiply"],
   [content.menu.earn, "/earn", IconEarn, "earn", "_self"],
+  [content.menu.stream, "https://app.superfluid.org/", IconStream, "stream", "_blank"],
   // [content.menu.stake, "/stake", IconStake, "stake"],
   // [content.menu.buy, buyPageUrl, IconStake, "buy", buyPageTarget],
 ];

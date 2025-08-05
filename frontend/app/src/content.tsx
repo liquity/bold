@@ -15,6 +15,7 @@ export default {
     earn: "Earn",
     stake: "Stake",
     buy: "Buy USND",
+    stream: "Stream",
   },
 
   accountButton: {
