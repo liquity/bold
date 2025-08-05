@@ -114,6 +114,7 @@
   - [Known issues in Liquity v2](#known-issues-in-liquity-v2)
   - [Collateral choices](#collateral-choices)
   - [Immutable vs upgradeable forks](#immutable-vs-upgradeable-forks)
+  - [Branch risk parameters](#branch-risk-parameters)
   - [Redemption floor fee](#redemption-floor-fee)
   - [Bootstrapping, seeding liquidity and early growth](#bootstrapping-seeding-liquidity-and-early-growth)
   - [Oracle considerations](#oracle-considerations)
@@ -2028,7 +2029,7 @@ If your system is upgradeable you may be tempted to take more risk in certain ar
 
 However, upgradeability should not be seen as a reason to underinvest in security or economic modelling. Upgradeability is also an attack surface in itself.
 
-Branch risk parameters - SCR, CCR and MCR
+## Branch risk parameters
 
 In general, we suggest `SCR <= MCR < CCR`.  While Liquity v2 sets `MCR = SCR`, a larger MCR is viable.
 
@@ -2036,9 +2037,9 @@ The more risky the collateral - i.e. the greater the chance of a large, sudden p
 
 Ideally:
 
-Most liquidations should occur at CR > 100%, to ensure profitability for SP depositors.  
-Branch shutdown should clear most branch debt (via liquidations, urgent redemptions and borrowers closing Troves) before the branch becomes undercollateralized, i.e. before the TCR drops below 100%
-Economic modelling should be performed based on your assumptions about collateral volatility to select these risk parameters.
+- Most liquidations should occur at CR > 100%, to ensure profitability for SP depositors.  
+- Branch shutdown should clear most branch debt (via liquidations, urgent redemptions and borrowers closing Troves) before the branch becomes undercollateralized, i.e. before the TCR drops below 100%
+- Economic modelling should be performed based on your assumptions about collateral volatility to select these risk parameters.
  
 ## Redemption floor fee
 
