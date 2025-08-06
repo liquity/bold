@@ -54,7 +54,7 @@ export function useGovernanceState() {
       functionName: "epochStart",
     }, {
       ...Governance,
-      functionName: "getTotalVotesAndState",
+      functionName: "globalState",
     }, {
       ...Governance,
       functionName: "secondsWithinEpoch",
@@ -69,7 +69,7 @@ export function useGovernanceState() {
       select: ([
         epoch_,
         epochStart_,
-        totalVotesAndState,
+        globalState,
         secondsWithinEpoch,
         GOVERNANCE_EPOCH_DURATION,
         GOVERNANCE_EPOCH_VOTING_CUTOFF,
@@ -89,8 +89,8 @@ export function useGovernanceState() {
         const daysLeftRounded = Math.ceil(daysLeft);
 
         return {
-          countedVoteLQTY: totalVotesAndState.result?.[1].countedVoteLQTY,
-          countedVoteOffset: totalVotesAndState.result?.[1].countedVoteOffset,
+          countedVoteLQTY: globalState.result?.[0] ?? 0n,
+          countedVoteOffset: globalState.result?.[1] ?? 0n,
           cutoffStart,
           daysLeft,
           daysLeftRounded,
@@ -99,36 +99,6 @@ export function useGovernanceState() {
           epochStart,
           period,
           secondsWithinEpoch: secondsWithinEpoch.result,
-          totalVotes: totalVotesAndState.result?.[0],
-        };
-      },
-    },
-  });
-}
-
-export function useInitiativeState(initiativeAddress: Address | null) {
-  const Governance = getProtocolContract("Governance");
-
-  return useReadContracts({
-    contracts: [{
-      ...Governance,
-      functionName: "getInitiativeState",
-      args: [initiativeAddress ?? "0x"],
-    }, {
-      ...Governance,
-      functionName: "getInitiativeSnapshotAndState",
-      args: [initiativeAddress ?? "0x"],
-    }],
-    query: {
-      enabled: initiativeAddress !== null,
-      select: ([initiativeState, snapshotAndState]) => {
-        return {
-          status: initiativeStatusFromNumber(initiativeState.result?.[0] ?? 0),
-          lastEpochClaim: initiativeState.result?.[1],
-          claimableAmount: initiativeState.result?.[2],
-          snapshot: snapshotAndState.result?.[0],
-          state: snapshotAndState.result?.[1],
-          shouldUpdate: snapshotAndState.result?.[2],
         };
       },
     },
@@ -229,6 +199,13 @@ export function useInitiativesStates(initiatives: Address[]) {
   });
 }
 
+export type VoteTotals = {
+  voteLQTY: bigint;
+  voteOffset: bigint;
+  vetoLQTY: bigint;
+  vetoOffset: bigint;
+};
+
 export function useInitiativesVoteTotals(initiatives: Address[]) {
   const wagmiConfig = useWagmiConfig();
   const Governance = getProtocolContract("Governance");
@@ -236,25 +213,24 @@ export function useInitiativesVoteTotals(initiatives: Address[]) {
   return useQuery({
     queryKey: ["initiativesVoteTotals", initiatives.join("")],
     queryFn: async () => {
-      const voteTotals: Record<Address, {
-        totalVotes: Dnum;
-        totalVetos: Dnum;
-      }> = {};
+      const voteTotals: Record<Address, VoteTotals> = {};
 
       const results = await readContracts(wagmiConfig, {
         contracts: initiatives.map((address) => ({
           ...Governance,
-          functionName: "getInitiativeSnapshotAndState",
+          functionName: "initiativeStates",
           args: [address],
         } as const)),
       });
 
       for (const [i, { result }] of results.entries()) {
         if (result && initiatives[i]) {
-          const [{ votes, vetos }] = result;
+          const [voteLQTY, voteOffset, vetoLQTY, vetoOffset] = result;
           voteTotals[initiatives[i]] = {
-            totalVotes: dnum18(votes),
-            totalVetos: dnum18(vetos),
+            voteLQTY,
+            voteOffset,
+            vetoLQTY,
+            vetoOffset,
           };
         }
       }
