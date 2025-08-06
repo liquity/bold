@@ -739,6 +739,20 @@ At deployment, the `baseRate` is set to `INITIAL_REDEMPTION_RATE`, which is some
 
 The intention is to discourage early redemptions in the early days when the total system debt is small, and give it time to grow.
 
+### Redemption impact on borrowers
+
+When a borrower’s Trove is redeemed from, both their collateral and debt reduces. Their BOLD funds held are not affected. Thus, they lose part of their exposure to the collateral token.
+
+For every 1 BOLD redeemed, $1 USD worth of collateral is redeemed from their Trove, sans redemption fees. The fees are split between the borrowers hit by the redemption.
+
+If BOLD were trading at $1, the redemption would result in no net loss for the borrower - in fact it would result in a net gain due to the redemption fees received.
+
+However in practice, BOLD is typically redeemed by arbitrageurs when it is trading at <$1, and the redemption typically helps restore the BOLD price toward $1 by reducing the BOLD supply.
+
+Thus, a redemption may technically cause slight short-term loss for the borrower, since the increase in the value of the borrower’s _debt_ from peg restoration may be greater than the redemption fee paid to their Trove.
+
+The full PnL picture for the borrower depends on the price of BOLD when they borrowed. If they borrow BOLD at $1 and it drops to $0.99 and a redemption restores it to $1, then both the redeemer and the borrower make a net gain overall: redemption fees for the borrower and arb profits for the redeemer. In this case, the loss is borne by the other parties who bought/borrowed at $1 and sold at $0.99.
+
 ## Redemption warning
 
 As explained above, redemptions are an economic mechanism intended to keep BOLD peg floor. It is expected that professional bots perform them (usually through private mempools). A redemption is a complex operation and is not meant for regular end users. That’s why the protection against attacks like frontrunning, implemented in the smart contracts redemption function, is relatively simple. We expect that bots integrate those functions into their smart contracts that perform the whole arbitrage loop, and make sure the operation is profitable (and, of course, revert otherwise). If users want to redeem BOLD they should be aware of these dangers. Some examples of the attacks they may suffer:
