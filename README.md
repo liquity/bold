@@ -122,6 +122,7 @@
   - [Oracle considerations](#oracle-considerations)
   - [Redemption impact on borrowers](#redemption-impact-on-borrowers)
   - [Closing the last Trove in the system](#closing-the-last-trove-in-the-system)
+  - [Redemptions should be left to bots](#redemptions-should-be-left-to-bots)
   - [Security and audits](#security-and-audits)
   - [Code diff with Liquity v2](#code-diff-with-liquity-v2)
 
@@ -2143,6 +2144,10 @@ Liquity v2 actually mitigates this a different way for the LST branches, taking 
 ## Redemption impact on borrowers
 
 Fork teams should be aware that redemptions technically may cause a slight short-term loss for borrowers, even though redemption fees are paid to the borrower.  See the [explanation here](https://github.com/liquity/bold?tab=readme-ov-file#redemption-impact-on-borrowers).
+
+## Redemptions should be left to bots
+
+Though redemptions are permissionless, they are complicated and MEV-competitive. They are generally performed by sophisticated bots / savvy aribtrageurs. Fork teams should make ordinary users aware they if they manually redeem e.g. through front ends or Etherscan, they risk losing their funds  - see [here for more detail](https://github.com/liquity/bold?tab=readme-ov-file#redemption-warning).
 
 
 ## Closing the last Trove in the system
