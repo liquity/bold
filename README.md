@@ -38,6 +38,8 @@
   - [Rationale for fee schedule](#rationale-for-fee-schedule)
   - [Fee Schedule](#fee-schedule)
   - [Redemption fee during bootstrapping period](#redemption-fee-during-bootstrapping-period)
+  - [Redemption impact on borrowers](https://github.com/liquity/bold?tab=readme-ov-file#redemption-impact-on-borrowers)
+- [Redemption warning](https://github.com/liquity/bold?tab=readme-ov-file#redemption-warning)
 - [Zombie Troves](#zombie-troves)
   - [Full Zombie Troves logic](#full-zombie-troves-logic)
 - [Stability Pool implementation](#stability-pool-implementation)
@@ -118,6 +120,7 @@
   - [Redemption floor fee](#redemption-floor-fee)
   - [Bootstrapping, seeding liquidity and early growth](#bootstrapping-seeding-liquidity-and-early-growth)
   - [Oracle considerations](#oracle-considerations)
+  - [Redemption impact on borrowers](#redemption-impact-on-borrowers)
   - [Closing the last Trove in the system](#closing-the-last-trove-in-the-system)
   - [Security and audits](#security-and-audits)
   - [Code diff with Liquity v2](#code-diff-with-liquity-v2)
@@ -2136,6 +2139,11 @@ For example, in Liquity v2 the oracle heartbeats and staleness thresholds are as
 When using market oracles which are Chainlink push-based or equivalent, the redemption floor fee `x` should be equal or greater than the oracle price update deviation threshold `y`. This is to ensure that a market price movement in range `(x, y)` does not lead to adverse redemptions: in this range, a price movement makes redemption profitable when the stablecoin is trading at $1, but does not trigger an oracle update and redeemers can extract value from the system. Thus, the floor fee `x` should be equal to or greater than oracle threshold `y` to eliminate redemption profits in this range.
 
 Liquity v2 actually mitigates this a different way for the LST branches, taking the “worst” price from two sources. For the WETH branch, it sets `x = y`. Systems using purely push-based market oracles to price collateral should set a sufficiently high redemption fee floor.
+
+## Redemption impact on borrowers
+
+Fork teams should be aware that redemptions technically may cause a slight short-term loss for borrowers, even though redemption fees are paid to the borrower.  See the [explanation here](https://github.com/liquity/bold?tab=readme-ov-file#redemption-impact-on-borrowers).
+
 
 ## Closing the last Trove in the system
 
