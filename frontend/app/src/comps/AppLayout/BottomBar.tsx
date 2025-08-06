@@ -15,6 +15,7 @@ import Image from "next/image";
 import { AboutButton } from "./AboutButton";
 
 const DISPLAYED_PRICES = ["LQTY", "BOLD", "ETH"] as const;
+const ENABLE_REDEEM = false;
 
 export function BottomBar() {
   const account = useAccount();
@@ -136,28 +137,30 @@ export function BottomBar() {
                 )}
               </span>
             </div>
-            <LinkTextButton
-              id="footer-redeem-button"
-              href="/redeem"
-              label={
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    whiteSpace: "nowrap",
-                  })}
-                >
-                  Redeem BOLD
-                </div>
-              }
-              className={css({
-                color: "content",
-                borderRadius: 4,
-                _focusVisible: { outline: "2px solid token(colors.focused)" },
-                _active: { translate: "0 1px" },
-              })}
-            />
+            {ENABLE_REDEEM && (
+              <LinkTextButton
+                id="footer-redeem-button"
+                href="/redeem"
+                label={
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      whiteSpace: "nowrap",
+                    })}
+                  >
+                    Redeem BOLD
+                  </div>
+                }
+                className={css({
+                  color: "content",
+                  borderRadius: 4,
+                  _focusVisible: { outline: "2px solid token(colors.focused)" },
+                  _active: { translate: "0 1px" },
+                })}
+              />
+            )}
           </div>
           <div
             className={css({
