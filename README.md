@@ -1,3 +1,15 @@
+# Must Finance
+https://must.finance
+
+Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals and security features.
+
+## Changes between Must Finance and Liquity:
+1. New collateral types and pricefeeds: FBTC, tBTC, SAGA, WETH, rETH.
+2. Ability to add and remove collateral branches via new admin funtions in the Collateral Registry.
+3. Governoring of more protocol parameters, such as fees, LTV requirements, minimum debt, minimum interest rate, and more.
+4. Removal of Liquity Governance in favor of a more manual incentive direction system.
+5. Liquity v2 is made for Cancun EVM and Saga uses an older EVM version.
+
 <img width="830" alt="Liquity V2" src="https://github.com/user-attachments/assets/d9eb5b2a-d437-4472-94d6-07fa537e689a" />
 
 [![Coverage Status](https://coveralls.io/repos/github/liquity/bold/badge.svg?branch=main&t=yZSfc8)](https://coveralls.io/github/liquity/bold?branch=main)
