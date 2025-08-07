@@ -9,6 +9,7 @@ Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals 
 3. Governoring of more protocol parameters, such as fees, LTV requirements, minimum debt, minimum interest rate, and more.
 4. Removal of Liquity Governance in favor of a more manual incentive direction system.
 5. Liquity v2 is made for Cancun EVM and Saga uses an older EVM version.
+6. Ability to unpause branches after oracle shutdowns.
 
 <img width="830" alt="Liquity V2" src="https://github.com/user-attachments/assets/d9eb5b2a-d437-4472-94d6-07fa537e689a" />
 
