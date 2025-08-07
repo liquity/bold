@@ -129,3 +129,5 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
         require(stabilityPoolAddresses[msg.sender], "BoldToken: Caller is not the StabilityPool");
     }
 }
+
+
