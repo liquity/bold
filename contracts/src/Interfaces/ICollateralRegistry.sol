@@ -7,6 +7,13 @@ import "./IBoldToken.sol";
 import "./ITroveManager.sol";
 
 interface ICollateralRegistry {
+
+    event CollateralAdded(address _token, address _troveManager, uint256 _index);
+    event CollateralRemoved(uint256 _index, address _token, address _troveManager);
+
+    function addCollateral(IERC20Metadata _token, ITroveManager _troveManager, uint256 _index) external;
+    function removeCollateral(uint256 _index) external;
+
     function baseRate() external view returns (uint256);
     function lastFeeOperationTime() external view returns (uint256);
 

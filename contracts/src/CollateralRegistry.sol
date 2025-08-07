@@ -13,29 +13,13 @@ import "./Interfaces/ICollateralRegistry.sol";
 
 contract CollateralRegistry is ICollateralRegistry {
     // See: https://github.com/ethereum/solidity/issues/12587
-    uint256 public immutable totalCollaterals;
+    uint256 public immutable totalCollaterals; // 10
 
-    IERC20Metadata internal immutable token0;
-    IERC20Metadata internal immutable token1;
-    IERC20Metadata internal immutable token2;
-    IERC20Metadata internal immutable token3;
-    IERC20Metadata internal immutable token4;
-    IERC20Metadata internal immutable token5;
-    IERC20Metadata internal immutable token6;
-    IERC20Metadata internal immutable token7;
-    IERC20Metadata internal immutable token8;
-    IERC20Metadata internal immutable token9;
+    address governor;
 
-    ITroveManager internal immutable troveManager0;
-    ITroveManager internal immutable troveManager1;
-    ITroveManager internal immutable troveManager2;
-    ITroveManager internal immutable troveManager3;
-    ITroveManager internal immutable troveManager4;
-    ITroveManager internal immutable troveManager5;
-    ITroveManager internal immutable troveManager6;
-    ITroveManager internal immutable troveManager7;
-    ITroveManager internal immutable troveManager8;
-    ITroveManager internal immutable troveManager9;
+    IERC20Metadata[] public collateralTokensList;
+
+    ITroveManager[] public troveManagersList;
 
     IBoldToken public immutable boldToken;
 
@@ -47,35 +31,18 @@ contract CollateralRegistry is ICollateralRegistry {
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
 
-    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers) {
+    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers, address _governor) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens <= 10, "Collateral list too long");
         totalCollaterals = numTokens;
 
         boldToken = _boldToken;
+        governor = _governor;
 
-        token0 = _tokens[0];
-        token1 = numTokens > 1 ? _tokens[1] : IERC20Metadata(address(0));
-        token2 = numTokens > 2 ? _tokens[2] : IERC20Metadata(address(0));
-        token3 = numTokens > 3 ? _tokens[3] : IERC20Metadata(address(0));
-        token4 = numTokens > 4 ? _tokens[4] : IERC20Metadata(address(0));
-        token5 = numTokens > 5 ? _tokens[5] : IERC20Metadata(address(0));
-        token6 = numTokens > 6 ? _tokens[6] : IERC20Metadata(address(0));
-        token7 = numTokens > 7 ? _tokens[7] : IERC20Metadata(address(0));
-        token8 = numTokens > 8 ? _tokens[8] : IERC20Metadata(address(0));
-        token9 = numTokens > 9 ? _tokens[9] : IERC20Metadata(address(0));
+        collateralTokensList = _tokens;
 
-        troveManager0 = _troveManagers[0];
-        troveManager1 = numTokens > 1 ? _troveManagers[1] : ITroveManager(address(0));
-        troveManager2 = numTokens > 2 ? _troveManagers[2] : ITroveManager(address(0));
-        troveManager3 = numTokens > 3 ? _troveManagers[3] : ITroveManager(address(0));
-        troveManager4 = numTokens > 4 ? _troveManagers[4] : ITroveManager(address(0));
-        troveManager5 = numTokens > 5 ? _troveManagers[5] : ITroveManager(address(0));
-        troveManager6 = numTokens > 6 ? _troveManagers[6] : ITroveManager(address(0));
-        troveManager7 = numTokens > 7 ? _troveManagers[7] : ITroveManager(address(0));
-        troveManager8 = numTokens > 8 ? _troveManagers[8] : ITroveManager(address(0));
-        troveManager9 = numTokens > 9 ? _troveManagers[9] : ITroveManager(address(0));
+        troveManagersList = _troveManagers;
 
         // Initialize the baseRate state variable
         baseRate = INITIAL_BASE_RATE;
@@ -274,31 +241,19 @@ contract CollateralRegistry is ICollateralRegistry {
     // getters
 
     function getToken(uint256 _index) external view returns (IERC20Metadata) {
-        if (_index == 0) return token0;
-        else if (_index == 1) return token1;
-        else if (_index == 2) return token2;
-        else if (_index == 3) return token3;
-        else if (_index == 4) return token4;
-        else if (_index == 5) return token5;
-        else if (_index == 6) return token6;
-        else if (_index == 7) return token7;
-        else if (_index == 8) return token8;
-        else if (_index == 9) return token9;
-        else revert("Invalid index");
+        if (_index >= totalCollaterals) {
+            revert("Invalid index");
+        }else{
+            return collateralTokensList[_index];
+        }
     }
 
     function getTroveManager(uint256 _index) public view returns (ITroveManager) {
-        if (_index == 0) return troveManager0;
-        else if (_index == 1) return troveManager1;
-        else if (_index == 2) return troveManager2;
-        else if (_index == 3) return troveManager3;
-        else if (_index == 4) return troveManager4;
-        else if (_index == 5) return troveManager5;
-        else if (_index == 6) return troveManager6;
-        else if (_index == 7) return troveManager7;
-        else if (_index == 8) return troveManager8;
-        else if (_index == 9) return troveManager9;
-        else revert("Invalid index");
+        if (_index >= totalCollaterals) {
+            revert("Invalid index");
+        }else{
+            return troveManagersList[_index];
+        }
     }
 
     // require functions
@@ -312,5 +267,34 @@ contract CollateralRegistry is ICollateralRegistry {
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
         require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
+    }
+
+    // ==== Add a new collateral ==== 
+    function addCollateral(IERC20Metadata _token, ITroveManager _troveManager, uint256 _index) external {
+        require(msg.sender == governor, "CollateralRegistry: Only governor can add collateral");
+        require(_index >= 0 && _index < totalCollaterals, "CollateralRegistry: Invalid index"); // 0-9
+
+        //validate input
+        require(address(_token) != address(0), "CollateralRegistry: Token cannot be address(0)");
+        require(address(_troveManager) != address(0), "CollateralRegistry: TroveManager cannot be address(0)");
+
+        //validate existing collateral
+        require(address(collateralTokensList[_index]) == address(0), "CollateralRegistry: Collateral already exists. Cannot overwrite.");
+        require(address(troveManagersList[_index]) == address(0), "CollateralRegistry: TroveManager already exists. Cannot overwrite.");
+
+        //add collateral
+        collateralTokensList[_index] = _token;
+        troveManagersList[_index] = _troveManager;
+
+        //emit event
+        emit CollateralAdded(address(_token), address(_troveManager), _index);
+    }
+
+    // ==== Remove a collateral ==== 
+    //When removing a collateral, we need to:
+    //1. Remove the collateral from the CollateralRegistry
+    //2. allow users to pay back their debt, but not take out new debt, while maintaining existing BCR.
+
+    function removeCollateral(uint256 _index) external {
     }
 }
