@@ -195,16 +195,24 @@ export function useYusndStats() {
         }
       })
 
-      const [totalSupply_, totalUsnd_] = (await client!.multicall({
+      const [totalSupply_, totalUsnd_, totalAssets_, totalIdle_] = (await client!.multicall({
         contracts: [
           { ...YusndContract, functionName: "totalSupply" },
           { ...YusndContract, functionName: "totalDebt" },
+          { ...YusndContract, functionName: "totalAssets" },
+          { ...YusndContract, functionName: "totalIdle" },
         ],
         allowFailure: false,
-      })) as [bigint, bigint];
+      })) as [bigint, bigint, bigint, bigint];
+
+      console.log("totalSupply_", totalSupply_);
+      console.log("totalUsnd_", totalUsnd_);
+      console.log("totalAssets_", totalAssets_);
+      console.log("totalIdle_", totalIdle_);
 
       const totalSupply = dnum18(totalSupply_ as bigint);
-      const totalUsnd = dnum18(totalUsnd_ as bigint);
+      // const totalUsnd = dnum18(totalUsnd_ as bigint);
+      const totalUsnd = dnum18(totalAssets_ as bigint);
 
       const yusndRate = totalSupply_ === 0n
         ? DNUM_0
