@@ -3,6 +3,8 @@
 pragma solidity 0.8.24;
 
 import "./TestContracts/DevTestSetup.sol";
+import "./TestContracts/ERC20Faucet.sol";
+import "./TestContracts/CollateralRegistryTester.sol";
 
 contract BasicOps is DevTestSetup {
     function testOpenTroveFailsWithoutAllowance() public {
@@ -207,5 +209,23 @@ contract BasicOps is DevTestSetup {
         assertGt(boldToken.balanceOf(A), 1999e18, "Wrong bold balance");
         assertLt(boldToken.balanceOf(A), 2000e18, "Wrong bold balance");
         assertEq(stabilityPool.getCompoundedBoldDeposit(A), 1e18, "Wrong SP deposit");
+    }
+
+
+    function testAddCollateral() public {
+
+        IERC20Metadata[] memory tokens = new IERC20Metadata[](1);
+        tokens[0] = IERC20Metadata(address(0x0000000000000000000000000000000000000000));
+        ITroveManager[] memory troveManagers = new ITroveManager[](1);
+        troveManagers[0] = ITroveManager(address(0x0000000000000000000000000000000000000000));
+
+        // Deploy a new collateral registry
+        CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(boldToken, tokens, troveManagers, address(0x123));
+        
+        vm.startPrank(address(0x123));
+        IERC20Metadata collToken = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        ITroveManager troveManager = new TroveManager(addressesRegistry);
+        myCollateralRegistry.addCollateral(collToken, troveManager, 0);
+        vm.stopPrank();
     }
 }

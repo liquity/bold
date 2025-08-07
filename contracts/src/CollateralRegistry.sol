@@ -35,6 +35,7 @@ contract CollateralRegistry is ICollateralRegistry {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens <= 10, "Collateral list too long");
+        require(numTokens == _troveManagers.length, "Collateral list and trove manager list must have the same length");
         totalCollaterals = numTokens;
 
         boldToken = _boldToken;

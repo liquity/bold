@@ -46,6 +46,7 @@ import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
 
 import "forge-std/console2.sol";
+import "forge-std/Test.sol";
 
 uint256 constant _24_HOURS = 86400;
 uint256 constant _48_HOURS = 172800;
@@ -330,7 +331,7 @@ contract TestDeployer is MetadataDeployment {
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, address(0));
+        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, address(0x123));
         hintHelpers = new HintHelpers(collateralRegistry);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
@@ -554,8 +555,11 @@ contract TestDeployer is MetadataDeployment {
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[2]);
         vars.troveManagers[2] = ITroveManager(troveManagerAddress);
 
+        vars.collaterals[3] = IERC20Metadata(0x0000000000000000000000000000000000000000);
+        vars.troveManagers[3] = ITroveManager(address(0x0000000000000000000000000000000000000000));
+
         // Deploy registry and register the TMs
-        result.collateralRegistry = new CollateralRegistryTester(result.boldToken, vars.collaterals, vars.troveManagers);
+        result.collateralRegistry = new CollateralRegistryTester(result.boldToken, vars.collaterals, vars.troveManagers, address(0x123));
 
         result.hintHelpers = new HintHelpers(result.collateralRegistry);
         result.multiTroveGetter = new MultiTroveGetter(result.collateralRegistry);
