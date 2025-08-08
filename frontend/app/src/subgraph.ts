@@ -230,18 +230,34 @@ export async function getAllInterestRateBrackets() {
     .sort((a, b) => dn.cmp(a.rate, b.rate));
 }
 
-const GovernanceInitiativesQuery = graphql(`
-  query GovernanceInitiatives {
+const GovernanceGlobalDataQuery = graphql(`
+  query GovernanceGlobalData {
     governanceInitiatives {
       id
+    }
+
+    governanceVotingPower(id: "total") {
+      allocatedLQTY
+      allocatedOffset
+      unallocatedLQTY
+      unallocatedOffset
     }
   }
 `);
 
-// get all the registered initiatives
-export async function getIndexedInitiatives() {
-  const { governanceInitiatives } = await graphQuery(GovernanceInitiativesQuery);
-  return governanceInitiatives.map((initiative) => initiative.id as Address);
+// get all the registered initiatives and total voting power
+export async function getGovernanceGlobalData() {
+  const { governanceInitiatives, governanceVotingPower } = await graphQuery(GovernanceGlobalDataQuery);
+  return {
+    registeredInitiatives: governanceInitiatives.map((initiative) => initiative.id as Address),
+
+    totalVotingPower: {
+      allocatedLQTY: BigInt(governanceVotingPower?.allocatedLQTY ?? 0),
+      allocatedOffset: BigInt(governanceVotingPower?.allocatedOffset ?? 0),
+      unallocatedLQTY: BigInt(governanceVotingPower?.unallocatedLQTY ?? 0),
+      unallocatedOffset: BigInt(governanceVotingPower?.unallocatedOffset ?? 0),
+    },
+  };
 }
 
 const UserAllocationHistoryQuery = graphql(`

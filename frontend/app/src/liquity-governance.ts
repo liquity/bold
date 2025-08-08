@@ -7,7 +7,7 @@ import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { KNOWN_INITIATIVES_URL, LIQUITY_GOVERNANCE_URL } from "@/src/env";
 import {
-  getIndexedInitiatives,
+  getGovernanceGlobalData,
   getTotalAllocationHistoryFromSubgraph,
   getUserAllocationHistoryFromSubgraph,
 } from "@/src/subgraph";
@@ -18,7 +18,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { erc20Abi } from "viem";
-import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
+import { useConfig as useWagmiConfig, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
 export type InitiativeStatus =
@@ -123,31 +123,44 @@ const KnownInitiativesSchema = v.record(
   ),
 );
 
-export async function getKnownInitiatives(knownInitiativesUrl: string): Promise<
-  | v.InferOutput<typeof KnownInitiativesSchema>
-  | null
-> {
-  try {
-    const response = await fetch(knownInitiativesUrl);
-    const data = await response.json();
-    return v.parse(KnownInitiativesSchema, data);
-  } catch (_) {
-    return null;
-  }
+function useKnownInitiatives() {
+  return useQuery({
+    queryKey: ["knownInitiatives"],
+    queryFn: async () => {
+      if (!KNOWN_INITIATIVES_URL) return null;
+
+      const response = await fetch(KNOWN_INITIATIVES_URL);
+      const data = await response.json();
+      return v.parse(KnownInitiativesSchema, data);
+    },
+  });
+}
+
+function useGovernanceGlobalData() {
+  return useQuery({
+    queryKey: ["governanceGlobalData"],
+    queryFn: getGovernanceGlobalData,
+  });
 }
 
 export function useNamedInitiatives() {
+  const knownInitiatives = useKnownInitiatives();
+  const governanceGlobal = useGovernanceGlobalData();
+
   return useQuery({
-    queryKey: ["useNamedInitiatives"],
-    queryFn: async () => {
-      const [initiatives, knownInitiatives] = await Promise.all([
-        getIndexedInitiatives(),
-        KNOWN_INITIATIVES_URL
-          ? getKnownInitiatives(KNOWN_INITIATIVES_URL)
-          : null,
-      ]);
-      return initiatives.map((address): Initiative => {
-        const ki = knownInitiatives?.[address];
+    queryKey: ["namedInitiatives"],
+    enabled: (
+      knownInitiatives.isSuccess && governanceGlobal.isSuccess
+      || knownInitiatives.isError
+      || governanceGlobal.isError
+    ),
+    queryFn: () => {
+      if (knownInitiatives.isError) throw knownInitiatives.error;
+      if (governanceGlobal.isError) throw governanceGlobal.error;
+      if (knownInitiatives.isPending || governanceGlobal.isPending) throw new Error("should not happen"); // see enabled
+
+      return governanceGlobal.data.registeredInitiatives.map((address): Initiative => {
+        const ki = knownInitiatives.data?.[address];
         return {
           address,
           name: ki?.name ?? null,
@@ -246,7 +259,7 @@ export async function getUserAllocations(
   initiatives?: Address[],
 ) {
   if (!initiatives) {
-    initiatives = await getIndexedInitiatives();
+    initiatives = (await getGovernanceGlobalData()).registeredInitiatives;
   }
 
   const Governance = getProtocolContract("Governance");
@@ -391,14 +404,25 @@ export function useVotingPower(
 }
 
 export function useGovernanceStats() {
-  return useReadContract({
-    ...getProtocolContract("Governance"),
-    functionName: "globalState",
-    query: {
-      select: ([countedVoteLQTY, countedVoteOffset]) => ({
-        totalLQTYStaked: countedVoteLQTY,
-        totalOffset: countedVoteOffset,
-      }),
+  const governanceGlobal = useGovernanceGlobalData();
+
+  return useQuery({
+    queryKey: ["governanceStats"],
+    enabled: !governanceGlobal.isPending,
+    queryFn: () => {
+      if (governanceGlobal.isError) throw governanceGlobal.error;
+      if (governanceGlobal.isPending) throw new Error("should not happen"); // see enabled
+
+      return {
+        totalLQTYStaked: (
+          governanceGlobal.data.totalVotingPower.allocatedLQTY
+          + governanceGlobal.data.totalVotingPower.unallocatedLQTY
+        ),
+        totalOffset: (
+          governanceGlobal.data.totalVotingPower.allocatedOffset
+          + governanceGlobal.data.totalVotingPower.unallocatedOffset
+        ),
+      };
     },
   });
 }
