@@ -366,24 +366,20 @@ export function useVotingPower(
   const govUser = useGovernanceUser(account);
 
   useRaf(() => {
-    const { totalLQTYStaked, totalOffset } = govStats.data ?? {};
-    const { allocatedLQTY, allocatedOffset } = govUser.data ?? {};
-
-    if (
-      allocatedLQTY === undefined
-      || allocatedOffset === undefined
-      || totalLQTYStaked === undefined
-      || totalOffset === undefined
-    ) {
+    if (!govStats.data || !govUser.data) {
       callback(null);
       return;
     }
 
+    const { totalLQTYStaked, totalOffset } = govStats.data;
+    const userLQTYStaked = govUser.data.allocatedLQTY + govUser.data.unallocatedLQTY;
+    const userOffset = govUser.data.allocatedOffset + govUser.data.unallocatedOffset;
+
     const now = Date.now();
     const nowInSeconds = BigInt(Math.floor(now / 1000));
 
-    const userVp = votingPower(allocatedLQTY, allocatedOffset, nowInSeconds);
-    const userVpNext = votingPower(allocatedLQTY, allocatedOffset, nowInSeconds + 1n);
+    const userVp = votingPower(userLQTYStaked, userOffset, nowInSeconds);
+    const userVpNext = votingPower(userLQTYStaked, userOffset, nowInSeconds + 1n);
     const totalVP = votingPower(totalLQTYStaked, totalOffset, nowInSeconds);
     const totalVPNext = votingPower(totalLQTYStaked, totalOffset, nowInSeconds + 1n);
 
