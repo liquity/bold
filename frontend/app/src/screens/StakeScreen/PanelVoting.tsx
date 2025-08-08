@@ -91,59 +91,52 @@ export function PanelVoting() {
   const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
 
   // current vote allocations
-  const voteAllocations = useMemo(() => {
-    const allocations: VoteAllocations = {};
-
-    for (const allocation of governanceUser.data?.allocations ?? []) {
-      const { voteLQTY, vetoLQTY } = allocation;
-
-      const voteAllocation: VoteAllocation | null = voteLQTY > 0n
-        ? { vote: "for", value: dn.eq(stakedLQTY, 0) ? DNUM_0 : dn.div([voteLQTY, 18], stakedLQTY) }
-        : vetoLQTY > 0n
-        ? { vote: "against", value: dn.eq(stakedLQTY, 0) ? DNUM_0 : dn.div([vetoLQTY, 18], stakedLQTY) }
-        : null;
-
-      if (voteAllocation) {
-        allocations[allocation.initiative] = voteAllocation;
-      }
-    }
-
-    return allocations;
-  }, [governanceUser.data?.allocations]);
+  const [voteAllocations, setVoteAllocations] = useState<VoteAllocations>({});
 
   // vote allocations from user input
   const [inputVoteAllocations, setInputVoteAllocations] = useState<VoteAllocations>({});
 
   // fill input vote allocations from user data
   useEffect(() => {
+    if (!governanceState.data || !governanceUser.data) return;
+
+    const stakedVotingPower = votingPower(
+      governanceUser.data.stakedLQTY,
+      governanceUser.data.stakedOffset,
+      governanceState.data.epochEnd,
+    );
+
+    if (stakedVotingPower === 0n) return;
+
     const allocations: VoteAllocations = {};
-    const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
-    for (const allocation of governanceUser.data?.allocations ?? []) {
+
+    for (const allocation of governanceUser.data.allocations) {
       const vote = allocation.voteLQTY > 0n
         ? "for" as const
         : allocation.vetoLQTY > 0n
         ? "against" as const
         : null;
 
-      if (vote === null) {
-        continue;
-      }
+      if (vote === null) continue;
 
-      const qty: Dnum = [
-        vote === "for"
-          ? allocation.voteLQTY
-          : allocation.vetoLQTY,
-        18,
-      ];
+      // rounded to 4 decimals
+      const value = (
+        BigInt(1e4) * (
+            vote === "for"
+              ? votingPower(allocation.voteLQTY, allocation.voteOffset, governanceState.data.epochEnd)
+              : votingPower(allocation.vetoLQTY, allocation.vetoOffset, governanceState.data.epochEnd)
+          ) + stakedVotingPower / 2n
+      ) / stakedVotingPower;
 
       allocations[allocation.initiative] = {
         vote,
-        value: dn.eq(stakedLQTY, 0) ? DNUM_0 : dn.div(qty, stakedLQTY),
+        value: [value, 4],
       };
     }
 
+    setVoteAllocations(allocations);
     setInputVoteAllocations(allocations);
-  }, [governanceUser.status]);
+  }, [governanceState.status, governanceUser.status]);
 
   const hasAnyAllocationChange = useMemo(() => {
     if (!governanceUser.data || !initiativesStates.data) {
