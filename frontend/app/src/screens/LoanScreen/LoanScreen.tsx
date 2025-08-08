@@ -3,12 +3,14 @@
 import type { Dnum, PositionLoanCommitted } from "@/src/types";
 
 import { useBreakpoint } from "@/src/breakpoints";
+import { InlineTokenAmount } from "@/src/comps/Amount/InlineTokenAmount";
 import { Field } from "@/src/comps/Field/Field";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
-import { fmtnum } from "@/src/formatting";
+import { fmtnum, formatDate } from "@/src/formatting";
 import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId, useLoan } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useStoredState } from "@/src/services/StoredState";
@@ -16,7 +18,7 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { isPrefixedtroveId } from "@/src/types";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, Button, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
+import { addressesEqual, Button, IconExternal, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
@@ -211,25 +213,89 @@ export function LoanScreen() {
                             <div
                               className={css({
                                 display: "flex",
-                                alignItems: "center",
-                                height: 64,
+                                flexDirection: "column",
                                 padding: 16,
+                                gap: 8,
                                 background: "infoSurface",
                                 border: "1px solid token(colors.infoSurfaceBorder)",
                                 borderRadius: 8,
                               })}
                             >
-                              <div
+                              <p
                                 className={css({
                                   display: "flex",
                                   gap: 8,
                                 })}
                               >
                                 {fullyRedeemed
-                                  ? "This loan has been fully redeemed."
-                                  : "This loan has been partially redeemed."}
+                                  ? <>This loan has been fully redeemed.</>
+                                  : <>This loan has been partially redeemed.</>}
                                 <InfoTooltip content={content.generalInfotooltips.redeemedLoan} />
-                              </div>
+                              </p>
+
+                              {loan.data.redemptionCount === 1
+                                ? (
+                                  <p>
+                                    There has been one redemption affecting this loan since the last user action on{" "}
+                                    <time
+                                      dateTime={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
+                                      title={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
+                                    >
+                                      {formatDate(new Date(loan.data.lastUserActionAt))}
+                                    </time>.
+                                  </p>
+                                )
+                                : loan.data.redemptionCount >= 2
+                                ? (
+                                  <>
+                                    <p>
+                                      There have been {loan.data.redemptionCount}{" "}
+                                      redemptions affecting this loan since the last user action on{" "}
+                                      <time
+                                        dateTime={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
+                                        title={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
+                                      >
+                                        {formatDate(new Date(loan.data.lastUserActionAt), "short")}
+                                      </time>.
+                                    </p>
+                                    <p>
+                                      A total of{" "}
+                                      <InlineTokenAmount
+                                        symbol="BOLD"
+                                        value={loan.data.redeemedDebt}
+                                        suffix=" BOLD"
+                                      />{" "}
+                                      was repaid in exchange for{" "}
+                                      <InlineTokenAmount
+                                        symbol={collToken?.symbol}
+                                        value={loan.data.redeemedColl}
+                                        suffix={` ${collToken?.name}`}
+                                      />{" "}
+                                      of collateral.
+                                    </p>
+
+                                    <p>
+                                      See Loan History on{" "}
+                                      <LinkTextButton
+                                        label={<>DeFi Explore</>}
+                                        href={`https://liquityv2.defiexplore.com/trove/${collToken?.name}/${troveId}`}
+                                        external
+                                      />{" "}
+                                      or{" "}
+                                      <LinkTextButton
+                                        label={
+                                          <>
+                                            Rails
+                                            <IconExternal size={16} />
+                                          </>
+                                        }
+                                        href={`https://liquityv2.defiexplore.com/trove/${collToken?.name}/${troveId}`}
+                                        external
+                                      />
+                                    </p>
+                                  </>
+                                )
+                                : null}
                             </div>
                           )}
                           <Tabs
