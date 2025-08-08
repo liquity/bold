@@ -1056,7 +1056,7 @@ function Vote({
               vote === "for" ? "upvote" : "downvote"
             } this initiative`}
             className={css({
-              width: 30,
+              width: 46,
             })}
             style={{
               textDecoration: disabled ? "line-through" : undefined,
