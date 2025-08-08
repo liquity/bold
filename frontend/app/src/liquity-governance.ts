@@ -5,7 +5,7 @@ import type { Config as WagmiConfig } from "wagmi";
 import { BribeInitiative } from "@/src/abi/BribeInitiative";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { KNOWN_INITIATIVES_URL, LIQUITY_GOVERNANCE_URL } from "@/src/env";
+import { CHAIN_CONTRACT_MULTICALL, KNOWN_INITIATIVES_URL, LIQUITY_GOVERNANCE_URL } from "@/src/env";
 import {
   getGovernanceGlobalData,
   getTotalAllocationHistoryFromSubgraph,
@@ -16,9 +16,10 @@ import { vAddress } from "@/src/valibot-utils";
 import { useRaf } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
+import { useMemo } from "react";
 import * as v from "valibot";
-import { erc20Abi } from "viem";
-import { useConfig as useWagmiConfig, useReadContracts } from "wagmi";
+import { erc20Abi, parseAbi } from "viem";
+import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
 export type InitiativeStatus =
@@ -349,6 +350,15 @@ export function useGovernanceUser(account: Address | null) {
   });
 }
 
+function useLatestBlockTimestampInMilliseconds() {
+  return useReadContract({
+    address: CHAIN_CONTRACT_MULTICALL,
+    abi: parseAbi(["function getCurrentBlockTimestamp() view returns (uint256)"]),
+    functionName: "getCurrentBlockTimestamp",
+    query: { select: (blockTimestamp) => blockTimestamp * 1000n },
+  });
+}
+
 // votingPower(t) = lqty * t - offset
 export function votingPower(
   stakedLQTY: bigint,
@@ -358,6 +368,14 @@ export function votingPower(
   return stakedLQTY * timestampInSeconds - offset;
 }
 
+function votingPowerMs(
+  stakedLQTY: bigint,
+  offset: bigint,
+  timestampInMilliseconds: bigint,
+) {
+  return (stakedLQTY * timestampInMilliseconds - offset * 1000n) / 1000n;
+}
+
 export function useVotingPower(
   account: Address | null,
   callback: (share: Dnum | null) => void,
@@ -365,9 +383,11 @@ export function useVotingPower(
 ) {
   const govStats = useGovernanceStats();
   const govUser = useGovernanceUser(account);
+  const blockTimestamp = useLatestBlockTimestampInMilliseconds();
+  const startTime = useMemo(() => BigInt(Date.now()), []);
 
   useRaf(() => {
-    if (!govStats.data || !govUser.data) {
+    if (!govStats.data || !govUser.data || !blockTimestamp.data) {
       callback(null);
       return;
     }
@@ -376,25 +396,17 @@ export function useVotingPower(
     const userLQTYStaked = govUser.data.allocatedLQTY + govUser.data.unallocatedLQTY;
     const userOffset = govUser.data.allocatedOffset + govUser.data.unallocatedOffset;
 
-    const now = Date.now();
-    const nowInSeconds = BigInt(Math.floor(now / 1000));
-
-    const userVp = votingPower(userLQTYStaked, userOffset, nowInSeconds);
-    const userVpNext = votingPower(userLQTYStaked, userOffset, nowInSeconds + 1n);
-    const totalVP = votingPower(totalLQTYStaked, totalOffset, nowInSeconds);
-    const totalVPNext = votingPower(totalLQTYStaked, totalOffset, nowInSeconds + 1n);
-
-    // progress of current second, scaled to 1000
-    const progressScaled = BigInt(Math.floor(((now % 1000) / 1000) * 1000));
-
-    const userVpLive = userVp + (userVpNext - userVp) * progressScaled / 1000n;
-    const totalVpLive = totalVP + (totalVPNext - totalVP) * progressScaled / 1000n;
+    const timeElapsed = BigInt(Date.now()) - startTime;
+    const correctedStartTime = startTime > blockTimestamp.data ? startTime : blockTimestamp.data;
+    const timestamp = correctedStartTime + timeElapsed;
+    const userVp = votingPowerMs(userLQTYStaked, userOffset, timestamp);
+    const totalVP = votingPowerMs(totalLQTYStaked, totalOffset, timestamp);
 
     // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
     callback(
-      totalVpLive === 0n ? DNUM_0 : dn.div(
-        dnum18(userVpLive),
-        dnum18(totalVpLive),
+      totalVP === 0n ? DNUM_0 : dn.div(
+        dnum18(userVp),
+        dnum18(totalVP),
       ),
     );
   }, updatesPerSecond);

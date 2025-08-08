@@ -424,7 +424,7 @@ export function StakePositionSummary({
                               <p>
                                 {content.stakeScreen.infoTooltips.votingPower}
                               </p>
-                              {account.address && (govUser.data?.allocatedLQTY ?? 0n) > 0n && (
+                              {account.address && (govUser.data?.stakedLQTY ?? 0n) > 0n && (
                                 <div
                                   className={css({
                                     display: "flex",
