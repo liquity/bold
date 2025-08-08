@@ -51,6 +51,12 @@ dataSources:
         - name: Governance
           file: ../contracts/out/Governance.sol/Governance.json
       eventHandlers:
+        - event: DepositLQTY(indexed
+            address,address,uint256,uint256,uint256,uint256,uint256)
+          handler: handleDepositLQTY
+        - event: WithdrawLQTY(indexed
+            address,address,uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleWithdrawLQTY
         - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,uint8)
           handler: handleAllocateLQTY
         - event: RegisterInitiative(address,address,uint256,uint8)
