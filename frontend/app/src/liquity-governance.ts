@@ -276,8 +276,8 @@ export async function getUserAllocations(
   return allocationsByInitiative.map((allocation, index) => {
     const initiative = initiatives[index];
     if (!initiative) throw new Error(); // should never happen
-    const [voteLQTY, _, vetoLQTY] = allocation;
-    return { vetoLQTY, voteLQTY, initiative };
+    const [voteLQTY, voteOffset, vetoLQTY, vetoOffset] = allocation;
+    return { voteLQTY, voteOffset, vetoLQTY, vetoOffset, initiative };
   });
 }
 
@@ -314,6 +314,7 @@ export async function getUserStates(
     allocatedLQTY,
     allocatedOffset,
     stakedLQTY: allocatedLQTY + unallocatedLQTY,
+    stakedOffset: allocatedOffset + unallocatedOffset,
     unallocatedLQTY,
     unallocatedOffset,
   };
