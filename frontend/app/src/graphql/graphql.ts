@@ -294,6 +294,107 @@ export type GovernanceAllocation = {
   voteOffset: Scalars['BigInt']['output'];
 };
 
+export type GovernanceAllocationIndex = {
+  __typename?: 'GovernanceAllocationIndex';
+  id: Scalars['ID']['output'];
+  initiative: GovernanceInitiative;
+  latestAllocation: GovernanceAllocation;
+  user?: Maybe<Scalars['String']['output']>;
+};
+
+export type GovernanceAllocationIndex_Filter = {
+  /** Filter for the block changed event. */
+  _change_block?: InputMaybe<BlockChangedFilter>;
+  and?: InputMaybe<Array<InputMaybe<GovernanceAllocationIndex_Filter>>>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  id_gt?: InputMaybe<Scalars['ID']['input']>;
+  id_gte?: InputMaybe<Scalars['ID']['input']>;
+  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
+  id_lt?: InputMaybe<Scalars['ID']['input']>;
+  id_lte?: InputMaybe<Scalars['ID']['input']>;
+  id_not?: InputMaybe<Scalars['ID']['input']>;
+  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
+  initiative?: InputMaybe<Scalars['String']['input']>;
+  initiative_?: InputMaybe<GovernanceInitiative_Filter>;
+  initiative_contains?: InputMaybe<Scalars['String']['input']>;
+  initiative_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  initiative_ends_with?: InputMaybe<Scalars['String']['input']>;
+  initiative_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  initiative_gt?: InputMaybe<Scalars['String']['input']>;
+  initiative_gte?: InputMaybe<Scalars['String']['input']>;
+  initiative_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  initiative_lt?: InputMaybe<Scalars['String']['input']>;
+  initiative_lte?: InputMaybe<Scalars['String']['input']>;
+  initiative_not?: InputMaybe<Scalars['String']['input']>;
+  initiative_not_contains?: InputMaybe<Scalars['String']['input']>;
+  initiative_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  initiative_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  initiative_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  initiative_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  initiative_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  initiative_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  initiative_starts_with?: InputMaybe<Scalars['String']['input']>;
+  initiative_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_?: InputMaybe<GovernanceAllocation_Filter>;
+  latestAllocation_contains?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_ends_with?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_gt?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_gte?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  latestAllocation_lt?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_lte?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_not?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_not_contains?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  latestAllocation_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_starts_with?: InputMaybe<Scalars['String']['input']>;
+  latestAllocation_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  or?: InputMaybe<Array<InputMaybe<GovernanceAllocationIndex_Filter>>>;
+  user?: InputMaybe<Scalars['String']['input']>;
+  user_contains?: InputMaybe<Scalars['String']['input']>;
+  user_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  user_ends_with?: InputMaybe<Scalars['String']['input']>;
+  user_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  user_gt?: InputMaybe<Scalars['String']['input']>;
+  user_gte?: InputMaybe<Scalars['String']['input']>;
+  user_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  user_lt?: InputMaybe<Scalars['String']['input']>;
+  user_lte?: InputMaybe<Scalars['String']['input']>;
+  user_not?: InputMaybe<Scalars['String']['input']>;
+  user_not_contains?: InputMaybe<Scalars['String']['input']>;
+  user_not_contains_nocase?: InputMaybe<Scalars['String']['input']>;
+  user_not_ends_with?: InputMaybe<Scalars['String']['input']>;
+  user_not_ends_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  user_not_in?: InputMaybe<Array<Scalars['String']['input']>>;
+  user_not_starts_with?: InputMaybe<Scalars['String']['input']>;
+  user_not_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+  user_starts_with?: InputMaybe<Scalars['String']['input']>;
+  user_starts_with_nocase?: InputMaybe<Scalars['String']['input']>;
+};
+
+export enum GovernanceAllocationIndex_OrderBy {
+  Id = 'id',
+  Initiative = 'initiative',
+  InitiativeId = 'initiative__id',
+  InitiativeRegistered = 'initiative__registered',
+  LatestAllocation = 'latestAllocation',
+  LatestAllocationEpoch = 'latestAllocation__epoch',
+  LatestAllocationId = 'latestAllocation__id',
+  LatestAllocationUser = 'latestAllocation__user',
+  LatestAllocationVetoLqty = 'latestAllocation__vetoLQTY',
+  LatestAllocationVetoOffset = 'latestAllocation__vetoOffset',
+  LatestAllocationVoteLqty = 'latestAllocation__voteLQTY',
+  LatestAllocationVoteOffset = 'latestAllocation__voteOffset',
+  User = 'user'
+}
+
 export type GovernanceAllocation_Filter = {
   /** Filter for the block changed event. */
   _change_block?: InputMaybe<BlockChangedFilter>;
@@ -431,6 +532,70 @@ export type GovernanceInitiative_Filter = {
 export enum GovernanceInitiative_OrderBy {
   Id = 'id',
   Registered = 'registered'
+}
+
+export type GovernanceVotingPower = {
+  __typename?: 'GovernanceVotingPower';
+  allocatedLQTY: Scalars['BigInt']['output'];
+  allocatedOffset: Scalars['BigInt']['output'];
+  id: Scalars['ID']['output'];
+  unallocatedLQTY: Scalars['BigInt']['output'];
+  unallocatedOffset: Scalars['BigInt']['output'];
+};
+
+export type GovernanceVotingPower_Filter = {
+  /** Filter for the block changed event. */
+  _change_block?: InputMaybe<BlockChangedFilter>;
+  allocatedLQTY?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedLQTY_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedLQTY_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedLQTY_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  allocatedLQTY_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedLQTY_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedLQTY_not?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedLQTY_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  allocatedOffset?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedOffset_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedOffset_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedOffset_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  allocatedOffset_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedOffset_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedOffset_not?: InputMaybe<Scalars['BigInt']['input']>;
+  allocatedOffset_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  and?: InputMaybe<Array<InputMaybe<GovernanceVotingPower_Filter>>>;
+  id?: InputMaybe<Scalars['ID']['input']>;
+  id_gt?: InputMaybe<Scalars['ID']['input']>;
+  id_gte?: InputMaybe<Scalars['ID']['input']>;
+  id_in?: InputMaybe<Array<Scalars['ID']['input']>>;
+  id_lt?: InputMaybe<Scalars['ID']['input']>;
+  id_lte?: InputMaybe<Scalars['ID']['input']>;
+  id_not?: InputMaybe<Scalars['ID']['input']>;
+  id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
+  or?: InputMaybe<Array<InputMaybe<GovernanceVotingPower_Filter>>>;
+  unallocatedLQTY?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedLQTY_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedLQTY_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedLQTY_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  unallocatedLQTY_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedLQTY_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedLQTY_not?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedLQTY_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  unallocatedOffset?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedOffset_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedOffset_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedOffset_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  unallocatedOffset_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedOffset_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedOffset_not?: InputMaybe<Scalars['BigInt']['input']>;
+  unallocatedOffset_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+};
+
+export enum GovernanceVotingPower_OrderBy {
+  AllocatedLqty = 'allocatedLQTY',
+  AllocatedOffset = 'allocatedOffset',
+  Id = 'id',
+  UnallocatedLqty = 'unallocatedLQTY',
+  UnallocatedOffset = 'unallocatedOffset'
 }
 
 export type InterestBatch = {
@@ -634,9 +799,13 @@ export type Query = {
   collateralAddresses_collection: Array<CollateralAddresses>;
   collaterals: Array<Collateral>;
   governanceAllocation?: Maybe<GovernanceAllocation>;
+  governanceAllocationIndex?: Maybe<GovernanceAllocationIndex>;
+  governanceAllocationIndexes: Array<GovernanceAllocationIndex>;
   governanceAllocations: Array<GovernanceAllocation>;
   governanceInitiative?: Maybe<GovernanceInitiative>;
   governanceInitiatives: Array<GovernanceInitiative>;
+  governanceVotingPower?: Maybe<GovernanceVotingPower>;
+  governanceVotingPowers: Array<GovernanceVotingPower>;
   interestBatch?: Maybe<InterestBatch>;
   interestBatches: Array<InterestBatch>;
   interestRateBracket?: Maybe<InterestRateBracket>;
@@ -712,6 +881,24 @@ export type QueryGovernanceAllocationArgs = {
 };
 
 
+export type QueryGovernanceAllocationIndexArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID']['input'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryGovernanceAllocationIndexesArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<GovernanceAllocationIndex_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<GovernanceAllocationIndex_Filter>;
+};
+
+
 export type QueryGovernanceAllocationsArgs = {
   block?: InputMaybe<Block_Height>;
   first?: InputMaybe<Scalars['Int']['input']>;
@@ -738,6 +925,24 @@ export type QueryGovernanceInitiativesArgs = {
   skip?: InputMaybe<Scalars['Int']['input']>;
   subgraphError?: _SubgraphErrorPolicy_;
   where?: InputMaybe<GovernanceInitiative_Filter>;
+};
+
+
+export type QueryGovernanceVotingPowerArgs = {
+  block?: InputMaybe<Block_Height>;
+  id: Scalars['ID']['input'];
+  subgraphError?: _SubgraphErrorPolicy_;
+};
+
+
+export type QueryGovernanceVotingPowersArgs = {
+  block?: InputMaybe<Block_Height>;
+  first?: InputMaybe<Scalars['Int']['input']>;
+  orderBy?: InputMaybe<GovernanceVotingPower_OrderBy>;
+  orderDirection?: InputMaybe<OrderDirection>;
+  skip?: InputMaybe<Scalars['Int']['input']>;
+  subgraphError?: _SubgraphErrorPolicy_;
+  where?: InputMaybe<GovernanceVotingPower_Filter>;
 };
 
 
@@ -805,8 +1010,12 @@ export type Trove = {
   id: Scalars['ID']['output'];
   interestBatch?: Maybe<InterestBatch>;
   interestRate: Scalars['BigInt']['output'];
+  lastUserActionAt: Scalars['BigInt']['output'];
   mightBeLeveraged: Scalars['Boolean']['output'];
   previousOwner: Scalars['Bytes']['output'];
+  redeemedColl: Scalars['BigInt']['output'];
+  redeemedDebt: Scalars['BigInt']['output'];
+  redemptionCount: Scalars['Int']['output'];
   stake: Scalars['BigInt']['output'];
   status: TroveStatus;
   troveId: Scalars['String']['output'];
@@ -924,6 +1133,14 @@ export type Trove_Filter = {
   interestRate_lte?: InputMaybe<Scalars['BigInt']['input']>;
   interestRate_not?: InputMaybe<Scalars['BigInt']['input']>;
   interestRate_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  lastUserActionAt?: InputMaybe<Scalars['BigInt']['input']>;
+  lastUserActionAt_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  lastUserActionAt_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  lastUserActionAt_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  lastUserActionAt_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  lastUserActionAt_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  lastUserActionAt_not?: InputMaybe<Scalars['BigInt']['input']>;
+  lastUserActionAt_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   mightBeLeveraged?: InputMaybe<Scalars['Boolean']['input']>;
   mightBeLeveraged_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
   mightBeLeveraged_not?: InputMaybe<Scalars['Boolean']['input']>;
@@ -939,6 +1156,30 @@ export type Trove_Filter = {
   previousOwner_not?: InputMaybe<Scalars['Bytes']['input']>;
   previousOwner_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
   previousOwner_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  redeemedColl?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedColl_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedColl_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedColl_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  redeemedColl_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedColl_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedColl_not?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedColl_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  redeemedDebt?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedDebt_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedDebt_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedDebt_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  redeemedDebt_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedDebt_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedDebt_not?: InputMaybe<Scalars['BigInt']['input']>;
+  redeemedDebt_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  redemptionCount?: InputMaybe<Scalars['Int']['input']>;
+  redemptionCount_gt?: InputMaybe<Scalars['Int']['input']>;
+  redemptionCount_gte?: InputMaybe<Scalars['Int']['input']>;
+  redemptionCount_in?: InputMaybe<Array<Scalars['Int']['input']>>;
+  redemptionCount_lt?: InputMaybe<Scalars['Int']['input']>;
+  redemptionCount_lte?: InputMaybe<Scalars['Int']['input']>;
+  redemptionCount_not?: InputMaybe<Scalars['Int']['input']>;
+  redemptionCount_not_in?: InputMaybe<Array<Scalars['Int']['input']>>;
   stake?: InputMaybe<Scalars['BigInt']['input']>;
   stake_gt?: InputMaybe<Scalars['BigInt']['input']>;
   stake_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -1000,8 +1241,12 @@ export enum Trove_OrderBy {
   InterestBatchDebt = 'interestBatch__debt',
   InterestBatchId = 'interestBatch__id',
   InterestRate = 'interestRate',
+  LastUserActionAt = 'lastUserActionAt',
   MightBeLeveraged = 'mightBeLeveraged',
   PreviousOwner = 'previousOwner',
+  RedeemedColl = 'redeemedColl',
+  RedeemedDebt = 'redeemedDebt',
+  RedemptionCount = 'redemptionCount',
   Stake = 'stake',
   Status = 'status',
   TroveId = 'troveId',
