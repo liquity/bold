@@ -234,6 +234,14 @@ export default {
         },
       },
     },
+    yieldTable: {
+      title: "Top 3 external yield opportunities",
+      hint: {
+        title: "All yield source on Dune",
+        url: "https://dune.com/liquity/liquity-v2-yields",
+        label: "Learn more",
+      }
+    },
     statsBar: {
       label: "Protocol stats",
     },
