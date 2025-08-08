@@ -1327,10 +1327,10 @@ export type AllInterestRateBracketsQueryVariables = Exact<{ [key: string]: never
 
 export type AllInterestRateBracketsQuery = { __typename?: 'Query', interestRateBrackets: Array<{ __typename?: 'InterestRateBracket', rate: string, totalDebt: string, collateral: { __typename?: 'Collateral', collIndex: number } }> };
 
-export type GovernanceInitiativesQueryVariables = Exact<{ [key: string]: never; }>;
+export type GovernanceGlobalDataQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GovernanceInitiativesQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string }> };
+export type GovernanceGlobalDataQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string }>, governanceVotingPower?: { __typename?: 'GovernanceVotingPower', allocatedLQTY: string, allocatedOffset: string, unallocatedLQTY: string, unallocatedOffset: string } | null };
 
 export type UserAllocationHistoryQueryVariables = Exact<{
   user?: InputMaybe<Scalars['String']['input']>;
@@ -1436,13 +1436,19 @@ export const AllInterestRateBracketsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AllInterestRateBracketsQuery, AllInterestRateBracketsQueryVariables>;
-export const GovernanceInitiativesDocument = new TypedDocumentString(`
-    query GovernanceInitiatives {
+export const GovernanceGlobalDataDocument = new TypedDocumentString(`
+    query GovernanceGlobalData {
   governanceInitiatives {
     id
   }
+  governanceVotingPower(id: "total") {
+    allocatedLQTY
+    allocatedOffset
+    unallocatedLQTY
+    unallocatedOffset
+  }
 }
-    `) as unknown as TypedDocumentString<GovernanceInitiativesQuery, GovernanceInitiativesQueryVariables>;
+    `) as unknown as TypedDocumentString<GovernanceGlobalDataQuery, GovernanceGlobalDataQueryVariables>;
 export const UserAllocationHistoryDocument = new TypedDocumentString(`
     query UserAllocationHistory($user: String) {
   governanceAllocations(
