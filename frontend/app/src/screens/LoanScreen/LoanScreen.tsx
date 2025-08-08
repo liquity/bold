@@ -274,16 +274,25 @@ export function LoanScreen() {
                                       of collateral.
                                     </p>
 
-                                    <LinkTextButton
-                                      label={
-                                        <>
-                                          See Loan History on DeFi Explore
-                                          <IconExternal size={16} />
-                                        </>
-                                      }
-                                      href={`https://liquityv2.defiexplore.com/trove/${collToken?.name}/${troveId}`}
-                                      external
-                                    />
+                                    <p>
+                                      See Loan History on{" "}
+                                      <LinkTextButton
+                                        label={<>DeFi Explore</>}
+                                        href={`https://liquityv2.defiexplore.com/trove/${collToken?.name}/${troveId}`}
+                                        external
+                                      />{" "}
+                                      or{" "}
+                                      <LinkTextButton
+                                        label={
+                                          <>
+                                            Rails
+                                            <IconExternal size={16} />
+                                          </>
+                                        }
+                                        href={`https://liquityv2.defiexplore.com/trove/${collToken?.name}/${troveId}`}
+                                        external
+                                      />
+                                    </p>
                                   </>
                                 )
                                 : null}
