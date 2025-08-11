@@ -1,3 +1,5 @@
+import * as dn from "dnum";
+
 import type { PositionLoanCommitted } from "@/src/types";
 
 import { LoanStatusTag } from "@/src/comps/Tag/LoanStatusTag";
@@ -17,6 +19,7 @@ export function PositionCardLoan(
     | "interestRate"
     | "status"
     | "troveId"
+    | "indexedDebt"
   >,
 ) {
   const storedState = useStoredState();
@@ -38,7 +41,13 @@ export function PositionCardLoan(
       statusTag={props.status === "liquidated"
         ? <LoanStatusTag status="liquidated" />
         : props.status === "redeemed"
-        ? <LoanStatusTag status="redeemed" />
+        ? (
+          <LoanStatusTag
+            status={dn.eq(props.indexedDebt, 0)
+              ? "fully-redeemed"
+              : "partially-redeemed"}
+          />
+        )
         : null}
     />
   );

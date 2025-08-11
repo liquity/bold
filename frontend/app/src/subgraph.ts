@@ -14,9 +14,13 @@ export type IndexedTrove = {
   borrower: Address;
   closedAt: number | null;
   createdAt: number;
+  lastUserActionAt: number;
   mightBeLeveraged: boolean;
   status: TroveStatus;
   debt: Dnum;
+  redemptionCount: number;
+  redeemedColl: Dnum;
+  redeemedDebt: Dnum;
 };
 
 async function tryFetch(...args: Parameters<typeof fetch>) {
@@ -111,9 +115,13 @@ const TrovesByAccountQuery = graphql(`
       id
       closedAt
       createdAt
+      lastUserActionAt
       mightBeLeveraged
       status
       debt
+      redemptionCount
+      redeemedColl
+      redeemedDebt
     }
   }
 `);
@@ -129,9 +137,13 @@ export async function getIndexedTrovesByAccount(account: Address): Promise<Index
       ? null
       : Number(trove.closedAt) * 1000,
     createdAt: Number(trove.createdAt) * 1000,
+    lastUserActionAt: Number(trove.lastUserActionAt) * 1000,
     mightBeLeveraged: trove.mightBeLeveraged,
     status: trove.status,
     debt: dnum18(trove.debt),
+    redemptionCount: trove.redemptionCount,
+    redeemedColl: dnum18(trove.redeemedColl),
+    redeemedDebt: dnum18(trove.redeemedDebt),
   }));
 }
 
@@ -142,10 +154,14 @@ const TroveByIdQuery = graphql(`
       borrower
       closedAt
       createdAt
+      lastUserActionAt
       mightBeLeveraged
       previousOwner
       status
       debt
+      redemptionCount
+      redeemedColl
+      redeemedDebt
     }
   }
 `);
@@ -165,9 +181,13 @@ export async function getIndexedTroveById(
       ? null
       : Number(trove.closedAt) * 1000,
     createdAt: Number(trove.createdAt) * 1000,
+    lastUserActionAt: Number(trove.lastUserActionAt) * 1000,
     mightBeLeveraged: trove.mightBeLeveraged,
     status: trove.status,
     debt: dnum18(trove.debt),
+    redemptionCount: trove.redemptionCount,
+    redeemedColl: dnum18(trove.redeemedColl),
+    redeemedDebt: dnum18(trove.redeemedDebt),
   };
 }
 

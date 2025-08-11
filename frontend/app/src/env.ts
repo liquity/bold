@@ -76,6 +76,23 @@ function vBranchEnvVars(branchId: BranchId) {
   });
 }
 
+const vTroveExplorer = v.pipe(
+  v.string(),
+  v.transform((x) => x.split("|")),
+  v.transform(([name, url]) => ({
+    name: v.parse(v.string(), name),
+    url: v.parse(
+      v.pipe(
+        v.string(),
+        v.url(),
+        v.includes("{branch}", "Trove explorer URL must contain {branch}"),
+        v.includes("{troveId}", "Trove explorer URL must contain {troveId}"),
+      ),
+      url,
+    ),
+  })),
+);
+
 export const EnvSchema = v.pipe(
   v.object({
     ACCOUNT_SCREEN: v.optional(vEnvFlag(), "false"),
@@ -171,6 +188,8 @@ export const EnvSchema = v.pipe(
         "WALLET_CONNECT_PROJECT_ID must be set",
       ),
     ),
+    TROVE_EXPLORER_0: v.optional(vTroveExplorer),
+    TROVE_EXPLORER_1: v.optional(vTroveExplorer),
 
     CONTRACT_BOLD_TOKEN: vAddress(),
     CONTRACT_COLLATERAL_REGISTRY: vAddress(),
@@ -325,6 +344,8 @@ const parsedEnv = v.safeParse(EnvSchema, {
   SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
   VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
+  TROVE_EXPLORER_0: process.env.NEXT_PUBLIC_TROVE_EXPLORER_0,
+  TROVE_EXPLORER_1: process.env.NEXT_PUBLIC_TROVE_EXPLORER_1,
 
   CONTRACT_BOLD_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY: process.env.NEXT_PUBLIC_CONTRACT_COLLATERAL_REGISTRY,
@@ -435,4 +456,6 @@ export const {
   SUBGRAPH_URL,
   VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,
+  TROVE_EXPLORER_0,
+  TROVE_EXPLORER_1,
 } = parsedEnv.output;
