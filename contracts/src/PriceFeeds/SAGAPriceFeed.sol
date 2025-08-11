@@ -5,9 +5,9 @@ pragma solidity 0.8.24;
 
 import "./TokenPriceFeedBase.sol";
 
-contract RETHPriceFeed is TokenPriceFeedBase {
-   constructor(address _owner, address _rethUsdOracleAddress, uint256 _rethUsdStalenessThreshold)
-        TokenPriceFeedBase(_owner, _rethUsdOracleAddress, _rethUsdStalenessThreshold)
+contract SAGAPriceFeed is TokenPriceFeedBase {
+   constructor(address _owner, address _arbUsdOracleAddress, uint256 _arbUsdStalenessThreshold)
+        TokenPriceFeedBase(_owner, _arbUsdOracleAddress, _arbUsdStalenessThreshold)
     {
         _fetchPricePrimary();
 
@@ -25,7 +25,7 @@ contract RETHPriceFeed is TokenPriceFeedBase {
     }
 
     function fetchRedemptionPrice() external returns (uint256, bool) {
-        // Use same price for redemption as all other ops in reth branch
+        // Use same price for redemption as all other ops in ARB branch
         return fetchPrice();
     }
 
@@ -40,7 +40,7 @@ contract RETHPriceFeed is TokenPriceFeedBase {
         assert(priceSource == PriceSource.primary);
         (uint256 tokenUsdPrice, bool tokenUsdOracleDown) = _getOracleAnswer(tokenUsdOracle);
 
-        // If the RETH-USD Chainlink response was invalid in this transaction, return the last good RETH-USD price calculated
+        // If the ARB-USD Chainlink response was invalid in this transaction, return the last good ARB-USD price calculated
         if (tokenUsdOracleDown) return (_shutDownAndSwitchToLastGoodPrice(address(tokenUsdOracle.aggregator)), true);
 
         lastGoodPrice = tokenUsdPrice;

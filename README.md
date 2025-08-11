@@ -11,6 +11,15 @@ Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals 
 5. Liquity v2 is made for Cancun EVM and Saga uses an older EVM version.
 6. Ability to unpause branches after oracle shutdowns.
 
+## PriceFeeds
+1. WETH
+2. rETH
+3. tBTC
+4. FBTC
+5. SAGA
+
+1. 
+
 <img width="830" alt="Liquity V2" src="https://github.com/user-attachments/assets/d9eb5b2a-d437-4472-94d6-07fa537e689a" />
 
 [![Coverage Status](https://coveralls.io/repos/github/liquity/bold/badge.svg?branch=main&t=yZSfc8)](https://coveralls.io/github/liquity/bold?branch=main)
