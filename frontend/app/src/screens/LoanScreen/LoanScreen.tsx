@@ -10,6 +10,7 @@ import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
+import { TROVE_EXPLORER_0, TROVE_EXPLORER_1 } from "@/src/env";
 import { fmtnum, formatDate } from "@/src/formatting";
 import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId, useLoan } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
@@ -31,6 +32,30 @@ import { PanelClosePosition } from "./PanelClosePosition";
 import { PanelInterestRate } from "./PanelInterestRate";
 import { PanelUpdateBorrowPosition } from "./PanelUpdateBorrowPosition";
 import { PanelUpdateLeveragePosition } from "./PanelUpdateLeveragePosition";
+
+const troveExplorers = [
+  ...(TROVE_EXPLORER_0 ? [TROVE_EXPLORER_0] : []),
+  ...(TROVE_EXPLORER_1 ? [TROVE_EXPLORER_1] : []),
+];
+
+function TroveExplorerLink(props: {
+  troveExplorer: { name: string; url: string };
+  collTokenName: string;
+  troveId: bigint;
+  last?: boolean;
+}) {
+  const href = props.troveExplorer.url
+    .replace("{branch}", props.collTokenName)
+    .replace("{troveId}", props.troveId.toString());
+
+  return (
+    <LinkTextButton
+      label={<>{props.troveExplorer.name} {props.last && <IconExternal size={16} />}</>}
+      href={href}
+      external
+    />
+  );
+}
 
 const TABS = [
   {
@@ -81,7 +106,7 @@ export function LoanScreen() {
 
   const fullyRedeemed = loan.data
     && loan.data.status === "redeemed"
-    && dn.eq(loan.data.borrowed, 0);
+    && dn.eq(loan.data.indexedDebt, 0);
 
   const isLiquidated = loan.data?.status === "liquidated";
   const account = useAccount();
@@ -228,74 +253,64 @@ export function LoanScreen() {
                                 })}
                               >
                                 {fullyRedeemed
-                                  ? <>This loan has been fully redeemed.</>
-                                  : <>This loan has been partially redeemed.</>}
+                                  ? <>Loan fully redeemed.</>
+                                  : <>Loan partially redeemed.</>}
                                 <InfoTooltip content={content.generalInfotooltips.redeemedLoan} />
                               </p>
 
-                              {loan.data.redemptionCount === 1
-                                ? (
-                                  <p>
-                                    There has been one redemption affecting this loan since the last user action on{" "}
-                                    <time
-                                      dateTime={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
-                                      title={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
-                                    >
-                                      {formatDate(new Date(loan.data.lastUserActionAt))}
-                                    </time>.
-                                  </p>
-                                )
-                                : loan.data.redemptionCount >= 2
-                                ? (
-                                  <>
-                                    <p>
-                                      There have been {loan.data.redemptionCount}{" "}
-                                      redemptions affecting this loan since the last user action on{" "}
-                                      <time
-                                        dateTime={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
-                                        title={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
-                                      >
-                                        {formatDate(new Date(loan.data.lastUserActionAt), "short")}
-                                      </time>.
-                                    </p>
-                                    <p>
-                                      A total of{" "}
-                                      <InlineTokenAmount
-                                        symbol="BOLD"
-                                        value={loan.data.redeemedDebt}
-                                        suffix=" BOLD"
-                                      />{" "}
-                                      was repaid in exchange for{" "}
-                                      <InlineTokenAmount
-                                        symbol={collToken?.symbol}
-                                        value={loan.data.redeemedColl}
-                                        suffix={` ${collToken?.name}`}
-                                      />{" "}
-                                      of collateral.
-                                    </p>
+                              <p>
+                                {loan.data.redemptionCount}{" "}
+                                {loan.data.redemptionCount === 1 ? <>redemption</> : <>redemptions</>}{" "}
+                                since last user action on{" "}
+                                <time
+                                  dateTime={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
+                                  title={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
+                                >
+                                  {formatDate(new Date(loan.data.lastUserActionAt), "short")}
+                                </time>.
+                                <br />
+                                <InlineTokenAmount
+                                  symbol="BOLD"
+                                  value={loan.data.redeemedDebt}
+                                  suffix=" BOLD"
+                                />{" "}
+                                repaid in exchange for{" "}
+                                <InlineTokenAmount
+                                  symbol={collToken?.symbol}
+                                  value={loan.data.redeemedColl}
+                                  suffix={` ${collToken?.name}`}
+                                />.
+                              </p>
 
-                                    <p>
-                                      See Loan History on{" "}
-                                      <LinkTextButton
-                                        label={<>DeFi Explore</>}
-                                        href={`https://liquityv2.defiexplore.com/trove/${collToken?.name}/${troveId}`}
-                                        external
-                                      />{" "}
-                                      or{" "}
-                                      <LinkTextButton
-                                        label={
-                                          <>
-                                            Rails
-                                            <IconExternal size={16} />
-                                          </>
-                                        }
-                                        href={`https://liquityv2.defiexplore.com/trove/${collToken?.name}/${troveId}`}
-                                        external
+                              {collToken && troveExplorers.length > 0 && (
+                                <p>
+                                  See Loan History on {troveExplorers[0] && troveExplorers[1]
+                                    ? (
+                                      <>
+                                        <TroveExplorerLink
+                                          troveExplorer={troveExplorers[0]}
+                                          collTokenName={collToken.name}
+                                          troveId={BigInt(troveId)}
+                                        />{" "}
+                                        or{" "}
+                                        <TroveExplorerLink
+                                          troveExplorer={troveExplorers[1]}
+                                          collTokenName={collToken.name}
+                                          troveId={BigInt(troveId)}
+                                          last
+                                        />
+                                      </>
+                                    )
+                                    : troveExplorers[0] && (
+                                      <TroveExplorerLink
+                                        troveExplorer={troveExplorers[0]}
+                                        collTokenName={collToken.name}
+                                        troveId={BigInt(troveId)}
+                                        last
                                       />
-                                    </p>
-                                  </>
-                                )
-                                : null}
+                                    )}
+                                </p>
+                              )}
                             </div>
                           )}
                           <Tabs
