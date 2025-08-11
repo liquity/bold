@@ -448,8 +448,14 @@ function LoanCard(props: {
                     titleFull={`${title}: ${troveId}`}
                     statusTag={loan.status === "liquidated"
                       ? <LoanStatusTag status="liquidated" />
-                      : loan.status === "redeemed"
-                      ? <LoanStatusTag status="redeemed" />
+                      : loan.status === "redeemed" && "indexedDebt" in loan
+                      ? (
+                        <LoanStatusTag
+                          status={dn.eq(loan.indexedDebt, 0)
+                            ? "fully-redeemed"
+                            : "partially-redeemed"}
+                        />
+                      )
                       : null}
                   />
                   <div
