@@ -249,6 +249,15 @@ URL for fetching Liquity protocol statistics.
 NEXT_PUBLIC_LIQUITY_STATS_URL=https://api.liquity.org/v2/testnet/sepolia.json
 ```
 
+### `NEXT_PUBLIC_LIQUITY_GOVERNANCE_URL`
+
+Base URL for fetching Liquity governance allocation snapshots (optional). If omitted, the data will be fetched from the subgraph.
+
+```dosini
+# Example
+NEXT_PUBLIC_LIQUITY_GOVERNANCE_URL=https://api.liquity.org/v2/governance
+```
+
 ### `NEXT_PUBLIC_SAFE_API_URL`
 
 URL for the Safe transaction service API.
@@ -279,6 +288,18 @@ NEXT_PUBLIC_VERCEL_ANALYTICS=false
 ### `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`
 
 A WalletConnect project ID which can be obtained by [creating a WalletConnect project](https://cloud.walletconnect.com/app).
+
+### `NEXT_PUBLIC_TROVE_EXPLORER_<N>`
+
+An optional set of names and URLs (of the form `<name>|<url>`) of external apps capable of showing a Trove's history. May include the parameters `{branch}` and `{troveId}`, which will be replaced by the name of the Trove's collateral type (`ETH`, `wstETH` or `rETH`) and its numeric ID (the NFT's token ID), respectively.
+
+Currently, only the indices `_0` and `_1` are supported.
+
+```dosini
+# Example
+NEXT_PUBLIC_TROVE_EXPLORER_0=DeFi Explore|https://liquityv2.defiexplore.com/trove/{branch}/{troveId}
+NEXT_PUBLIC_TROVE_EXPLORER_1=Rails|https://rails.finance/explorer/trove/{troveId}/{branch}
+```
 
 ### `NEXT_PUBLIC_CONTRACT_…`
 
