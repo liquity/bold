@@ -51,6 +51,16 @@ const actionAttributes = {
   //   path: BUY_PAGE_URL?.startsWith("http") ? BUY_PAGE_URL : "/buy",
   //   title: "Buy",
   // },
+  stream: {
+    colors: {
+      background: token("colors.brandGreen"),
+      foreground: token("colors.brandGreenContent"),
+      foregroundAlt: token("colors.brandGreenContentAlt"),
+    },
+    description: contentActions.stream.description,
+    path: "https://app.superfluid.org/",
+    title: "Stream",
+  },
 } as const;
 
 const RESET_DELAY = 500;
@@ -78,36 +88,36 @@ export function NewPositionCard() {
     from: {
       hovered0: 0,
       hovered1: 0,
-      // hovered2: 0,
+      hovered2: 0,
       // hovered3: 0,
 
       compressed0: 0,
       compressed1: 0,
-      // compressed2: 0,
+      compressed2: 0,
       // compressed3: 0,
 
       // gridTemplateColumns: "25% 25% 25% 25%",
-      // gridTemplateColumns: "33.33% 33.33% 33.33%",
-      gridTemplateColumns: "50% 50%",
+      gridTemplateColumns: "33.33% 33.33% 33.33%",
+      // gridTemplateColumns: "50% 50%",
     },
     to: {
       hovered0: hovered === 0 ? 1 : 0,
       hovered1: hovered === 1 ? 1 : 0,
-      // hovered2: hovered === 2 ? 1 : 0,
+      hovered2: hovered === 2 ? 1 : 0,
       // hovered3: hovered === 3 ? 1 : 0,
 
       compressed0: hovered !== -1 && hovered !== 0 ? 1 : 0,
       compressed1: hovered !== -1 && hovered !== 1 ? 1 : 0,
-      // compressed2: hovered !== -1 && hovered !== 2 ? 1 : 0,
+      compressed2: hovered !== -1 && hovered !== 2 ? 1 : 0,
       // compressed3: hovered !== -1 && hovered !== 3 ? 1 : 0,
 
-      gridTemplateColumns: Array.from({ length: 2 })
+      gridTemplateColumns: Array.from({ length: 3 })
         .map((_, index) =>
           hovered === -1
-            ? "50%"
+            ? "33.33%"
             : `${
                 (hovered === index
-                  ? (348 - COMPRESSED_WIDTH * 1) / 348
+                  ? (348 - COMPRESSED_WIDTH * 2) / 348
                   : COMPRESSED_WIDTH / 348) * 100
               }%`
         )
@@ -139,11 +149,11 @@ export function NewPositionCard() {
           ([type, { description, path, title, colors }], index) => {
             const hprogress = spring[
               `hovered${index}` as keyof typeof spring
-            ] as (typeof spring)[`hovered${0 | 1}`];
+            ] as (typeof spring)[`hovered${0 | 1 | 2}`];
 
             const cprogress = spring[
               `compressed${index}` as keyof typeof spring
-            ] as (typeof spring)[`compressed${0 | 1}`];
+            ] as (typeof spring)[`compressed${0 | 1 | 2}`];
 
             const content = (
               <section
@@ -228,7 +238,7 @@ export function NewPositionCard() {
               background: colors.background,
               color: colors.foreground,
               borderRadius:
-                index === 0 ? "8px 0 0 8px" : index === 1 ? "0 8px 8px 0" : 0,
+                index === 0 ? "8px 0 0 8px" : index === 2 ? "0 8px 8px 0" : 0,
             };
 
             return (
@@ -241,6 +251,7 @@ export function NewPositionCard() {
                 onBlur={() => setHovered(-1)}
                 className={className}
                 style={style}
+                target={path.startsWith("http") ? "_blank" : undefined}
               >
                 {content}
               </Link>
