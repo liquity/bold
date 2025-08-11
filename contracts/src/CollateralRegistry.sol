@@ -17,9 +17,19 @@ contract CollateralRegistry is ICollateralRegistry {
 
     address governor;
 
+    uint256 public masterIndex; // includes index of current and removed collateral tokens and trove managers
+
+    mapping(uint256 index => IERC20Metadata collateralToken) public allCollateralTokenAddresses;
+    
+    mapping(uint256 index => ITroveManager troveManager) public allTroveManagerAddresses;
+
     IERC20Metadata[] public collateralTokensList;
 
     ITroveManager[] public troveManagersList;
+
+    IERC20Metadata[] public removedCollateralTokensList;
+
+    ITroveManager[] public removedTroveManagersList;
 
     IBoldToken public immutable boldToken;
 
@@ -287,6 +297,10 @@ contract CollateralRegistry is ICollateralRegistry {
         collateralTokensList[_index] = _token;
         troveManagersList[_index] = _troveManager;
 
+        allCollateralTokenAddresses[masterIndex] = _token;
+        allTroveManagerAddresses[masterIndex] = _troveManager;
+        masterIndex++;
+
         //emit event
         emit CollateralAdded(address(_token), address(_troveManager), _index);
     }
@@ -297,5 +311,36 @@ contract CollateralRegistry is ICollateralRegistry {
     //2. allow users to pay back their debt, but not take out new debt, while maintaining existing BCR.
 
     function removeCollateral(uint256 _index) external {
+        require(msg.sender == governor, "CollateralRegistry: Only governor can remove collateral");
+        require(_index >= 0 && _index < totalCollaterals, "CollateralRegistry: Invalid index"); // 0-9
+
+        IERC20Metadata collateralToken = allCollateralTokenAddresses[_index];
+        ITroveManager troveManager = allTroveManagerAddresses[_index];
+
+        //validate existing collateral
+        require(address(collateralToken) != address(0), "CollateralRegistry: Collateral does not exist.");
+        require(address(troveManager) != address(0), "CollateralRegistry: TroveManager does not exist.");
+
+        //remove collateral
+        collateralTokensList[_index] = IERC20Metadata(address(0));
+        troveManagersList[_index] = ITroveManager(address(0));
+
+        //add to removed collateral tokens and trove managers lists
+        uint256 removedIndex = removedCollateralTokensList.length;
+        removedCollateralTokensList[removedIndex] = collateralToken;
+        removedTroveManagersList[removedIndex] = troveManager;
+
+        //emit event
+        emit CollateralRemoved(_index, address(collateralToken), address(troveManager));
+    }
+
+    // Once all troves are closed/redeemed/liquidated, we can permanently delete the collateral from the removed collateral tokens and trove managers lists
+    function _permanentlyDeleteFromRemovedCollaterals(uint256 _index) internal {
+        uint256 length = removedCollateralTokensList.length;
+        removedCollateralTokensList[_index] = removedCollateralTokensList[length - 1];
+        removedTroveManagersList[_index] = removedTroveManagersList[length - 1];
+
+        removedCollateralTokensList.pop();
+        removedTroveManagersList.pop();
     }
 }
