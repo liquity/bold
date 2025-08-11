@@ -15,7 +15,7 @@ const actionAttributes = {
     colors: {
       background: token("colors.brandDarkBlue"),
       foreground: token("colors.brandDarkBlueContent"),
-      foregroundAlt: token("colors.strongSurfaceContentAlt"),
+      foregroundAlt: token("colors.brandDarkBlueContentAlt"),
     },
     description: contentActions.borrow.description,
     path: "/borrow",
@@ -54,8 +54,8 @@ const actionAttributes = {
   stream: {
     colors: {
       background: token("colors.brandGreen"),
-      foreground: token("colors.brandGreenContent"),
-      foregroundAlt: token("colors.brandGreenContentAlt"),
+      foreground: token("colors.brandBlueContent"),
+      foregroundAlt: token("colors.brandBlueContentAlt"),
     },
     description: contentActions.stream.description,
     path: "https://app.superfluid.org/",

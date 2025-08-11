@@ -76,8 +76,8 @@ export function ActionCard({
     .with("stream", () => ({
       colors: {
         background: token("colors.brandGreen"),
-        foreground: token("colors.brandGreenContent"),
-        foregroundAlt: token("colors.brandGreenContentAlt"),
+        foreground: token("colors.brandBlueContent"),
+        foregroundAlt: token("colors.brandBlueContentAlt"),
       },
       description: ac.stream.description,
       path: "https://app.superfluid.org/",
