@@ -226,18 +226,18 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // --- Getters ---
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    function CCR() public returns (uint256) { // BUG: Won't compile as view function
+    function CCR() public view returns (uint256) { // BUG: Won't compile as view function
         return addressesRegistry.CCR();
     }
 
     // Minimum collateral ratio for individual troves
-    function MCR() public returns (uint256) { // BUG: Won't compile as view function
+    function MCR() public view returns (uint256) { // BUG: Won't compile as view function
         return addressesRegistry.MCR();
     }
 
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    function SCR() public returns (uint256) { // BUG: Won't compile as view function
+    function SCR() public view returns (uint256) { // BUG: Won't compile as view function
         return addressesRegistry.SCR();
     }
 
