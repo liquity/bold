@@ -692,7 +692,7 @@ export const StatsSchema = v.pipe(
       v.string(),
       v.string(),
     ),
-    boldYield: v.optional(v.array(BoldYieldItem)),
+    boldYield: v.optional(v.nullable(v.array(BoldYieldItem))),
     // TODO: phase out in the future, once all frontends update to the "safe" (losely-typed) `prices` schema
     otherPrices: v.optional(v.record(
       v.string(),
