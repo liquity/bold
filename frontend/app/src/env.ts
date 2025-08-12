@@ -76,21 +76,24 @@ function vBranchEnvVars(branchId: BranchId) {
   });
 }
 
-const vTroveExplorer = v.pipe(
-  v.string(),
-  v.transform((x) => x.split("|")),
-  v.transform(([name, url]) => ({
-    name: v.parse(v.string(), name),
-    url: v.parse(
-      v.pipe(
-        v.string(),
-        v.url(),
-        v.includes("{branch}", "Trove explorer URL must contain {branch}"),
-        v.includes("{troveId}", "Trove explorer URL must contain {troveId}"),
+const vOptionalTroveExplorer = v.pipe(
+  v.optional(v.string()),
+  v.transform((x) => {
+    if (!x) return null;
+    const [name, url] = x.split("|");
+    return {
+      name: v.parse(v.string(), name),
+      url: v.parse(
+        v.pipe(
+          v.string(),
+          v.url(),
+          v.includes("{branch}", "Trove explorer URL must contain {branch}"),
+          v.includes("{troveId}", "Trove explorer URL must contain {troveId}"),
+        ),
+        url,
       ),
-      url,
-    ),
-  })),
+    };
+  }),
 );
 
 export const EnvSchema = v.pipe(
@@ -188,8 +191,8 @@ export const EnvSchema = v.pipe(
         "WALLET_CONNECT_PROJECT_ID must be set",
       ),
     ),
-    TROVE_EXPLORER_0: v.optional(vTroveExplorer),
-    TROVE_EXPLORER_1: v.optional(vTroveExplorer),
+    TROVE_EXPLORER_0: vOptionalTroveExplorer,
+    TROVE_EXPLORER_1: vOptionalTroveExplorer,
 
     CONTRACT_BOLD_TOKEN: vAddress(),
     CONTRACT_COLLATERAL_REGISTRY: vAddress(),
