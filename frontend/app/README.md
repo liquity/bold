@@ -251,7 +251,7 @@ NEXT_PUBLIC_LIQUITY_STATS_URL=https://api.liquity.org/v2/testnet/sepolia.json
 
 ### `NEXT_PUBLIC_LIQUITY_GOVERNANCE_URL`
 
-Base URL for fetching Liquity governance allocation snapshots (optional). If omitted, the data will be fetched from the subgraph.
+Base URL for fetching Liquity governance allocation snapshots (optional). Defaults to `https://api.liquity.org/v2/governance` when undefined. When set to an empty string, the data will be fetched from the subgraph.
 
 ```dosini
 # Example
@@ -295,11 +295,13 @@ An optional set of names and URLs (of the form `<name>|<url>`) of external apps 
 
 Currently, only the indices `_0` and `_1` are supported.
 
+Defaults to the following values:
 ```dosini
-# Example
 NEXT_PUBLIC_TROVE_EXPLORER_0=DeFi Explore|https://liquityv2.defiexplore.com/trove/{branch}/{troveId}
 NEXT_PUBLIC_TROVE_EXPLORER_1=Rails|https://rails.finance/explorer/trove/{troveId}/{branch}
 ```
+
+To disable a Trove explorer, set the corresponding variable to an empty string in `.env.local`.
 
 ### `NEXT_PUBLIC_CONTRACT_…`
 
