@@ -5,11 +5,11 @@ import { Fragment } from "react";
 
 type HomeTableProps<Cols extends readonly ReactNode[]> = {
   columns: Cols;
-  icon: ReactNode;
+  icon?: ReactNode;
   loading?: ReactNode;
   placeholder?: ReactNode;
   rows: Array<ReactNode | { [K in keyof Cols]: ReactNode }>;
-  subtitle: ReactNode;
+  subtitle?: ReactNode;
   title: ReactNode;
 };
 
@@ -62,7 +62,7 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
           >
             {title}
           </span>
-          <span
+          {icon && <span
             className={css({
               transformOrigin: "50% 50%",
               transform: {
@@ -72,9 +72,9 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
             })}
           >
             {icon}
-          </span>
+          </span>}
         </h1>
-        <div
+        {subtitle && <div
           className={css({
             color: "contentAlt",
             fontSize: 14,
@@ -82,7 +82,7 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
           })}
         >
           {subtitle}
-        </div>
+        </div>}
       </header>
       {loading
         ? (
