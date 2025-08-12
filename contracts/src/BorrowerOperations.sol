@@ -336,6 +336,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireUserAcceptsUpfrontFee(_change.upfrontFee, _maxUpfrontFee);
 
         vars.entireDebt = _change.debtIncrease + _change.upfrontFee;
+        require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt() + vars.entireDebt, "BorrowerOperations: Debt limit exceeded.");
         _requireAtLeastMinDebt(vars.entireDebt);
 
         vars.ICR = LiquityMath._computeCR(_collAmount, vars.entireDebt, vars.price);
@@ -1280,6 +1281,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         IActivePool _activePool
     ) internal {
         if (_troveChange.debtIncrease > 0) {
+            require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt(), "BorrowerOperations: Debt limit exceeded.");
             _boldToken.mint(withdrawalReceiver, _troveChange.debtIncrease);
         } else if (_troveChange.debtDecrease > 0) {
             _boldToken.burn(msg.sender, _troveChange.debtDecrease);

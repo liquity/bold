@@ -280,6 +280,19 @@ contract CollateralRegistry is ICollateralRegistry {
         require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
     }
 
+    function updateDebtLimit(uint256 _indexTroveManager, uint256 _newDebtLimit) external onlyGovernor {
+        //limited to increasing by 2x at a time, maximum. Decrease by any amount.
+        uint256 currentDebtLimit = getTroveManager(_indexTroveManager).getDebtLimit();
+        if (_newDebtLimit > currentDebtLimit) {
+            require(_newDebtLimit <= currentDebtLimit * 2 || _newDebtLimit <= getTroveManager(_indexTroveManager).getInitalDebtLimit(), "CollateralRegistry: Debt limit increase by more than 2x is not allowed");
+        }
+        getTroveManager(_indexTroveManager).setDebtLimit(_newDebtLimit);
+    }
+
+    function getDebtLimit(uint256 _indexTroveManager) external view returns (uint256) {
+        return getTroveManager(_indexTroveManager).getDebtLimit();
+    }
+
     // ==== Add a new collateral ==== 
     function addCollateral(IERC20Metadata _token, ITroveManager _troveManager, uint256 _index) external {
         require(msg.sender == governor, "CollateralRegistry: Only governor can add collateral");
