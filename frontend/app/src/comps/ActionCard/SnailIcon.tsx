@@ -36,6 +36,10 @@ export function StakeIcon({ size = 30 }: { size?: number }) {
   return <Image src='/cute-snails/red.png' alt='Stake' width={size} height={size} />;
 }
 
+export function StreamIcon({ size = 30 }: { size?: number }) {
+  return <Image src='/cute-snails/green.png' alt='Stream' width={size} height={size} />;
+}
+
 export function ActionIcon({
   colors,
   iconType,
@@ -45,7 +49,7 @@ export function ActionIcon({
     background: string;
     foreground: string;
   };
-  iconType: "borrow" | "multiply" | "earn" | "buy";
+  iconType: "borrow" | "multiply" | "earn" | "buy" | "stream";
   state: IconProps["state"];
 }) {
   const Icon = match(iconType)
@@ -53,6 +57,7 @@ export function ActionIcon({
     .with("multiply", () => ActionIconLeverage)
     .with("earn", () => ActionIconEarn)
     .with("buy", () => ActionIconBuy)
+    .with("stream", () => ActionIconStream)
     .exhaustive();
 
   return (
@@ -108,6 +113,12 @@ export function ActionIconEarn(_: IconProps) {
   // });
   return (
     <EarnIcon size={30} />
+  );
+}
+
+export function ActionIconStream(_: IconProps) {
+  return (
+    <StreamIcon size={30} />
   );
 }
 

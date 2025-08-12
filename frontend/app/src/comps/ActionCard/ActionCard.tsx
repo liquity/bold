@@ -7,11 +7,12 @@ import { useState } from "react";
 import { match } from "ts-pattern";
 // import { ActionIcon } from "./ActionIcon";
 import { ActionIcon } from "./SnailIcon";
+import { BUY_PAGE_URL } from "@/src/env";
 
 export function ActionCard({
   type,
 }: {
-  type: "borrow" | "multiply" | "earn" | "buy";
+  type: "borrow" | "multiply" | "earn" | "buy" | "stream";
 }) {
   const [hint, setHint] = useState(false);
   const [active, setActive] = useState(false);
@@ -69,8 +70,18 @@ export function ActionCard({
         foregroundAlt: token("colors.brandGoldenContentAlt"),
       },
       description: ac.buy.description,
-      path: "/buy",
+      path: BUY_PAGE_URL ?? "/buy",
       title: ac.buy.title,
+    }))
+    .with("stream", () => ({
+      colors: {
+        background: token("colors.brandGreen"),
+        foreground: token("colors.brandBlueContent"),
+        foregroundAlt: token("colors.brandBlueContentAlt"),
+      },
+      description: ac.stream.description,
+      path: "https://app.superfluid.org/",
+      title: ac.stream.title,
     }))
     .exhaustive();
 
@@ -92,6 +103,7 @@ export function ActionCard({
           userSelect: "none",
         })
       )}
+      target={path.startsWith("http") ? "_blank" : undefined}
     >
       <a.section
         className={css({
