@@ -27,15 +27,15 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     IWETH public WETH;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    uint256 public immutable CCR;
+    uint256 public CCR;
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    uint256 public immutable SCR;
+    uint256 public SCR;
 
     // Minimum collateral ratio for individual troves
-    uint256 public immutable MCR;
+    uint256 public MCR;
     // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
-    uint256 public immutable BCR;
+    uint256 public BCR;
     // Debt limit for the system
     uint256 public immutable debtLimit;
     // Liquidation penalty for troves offset to the SP
@@ -70,6 +70,10 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
     event WETHAddressChanged(address _wethAddress);
+    event CCRUpdated(uint256 _newCCR);
+    event MCRUpdated(uint256 _newMCR);
+    event BCRUpdated(uint256 _newBCR);
+    event SCRUpdated(uint256 _newSCR);
 
     constructor(
         address _owner,
@@ -82,7 +86,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         uint256 _liquidationPenaltyRedistribution
     ) Ownable(_owner) {
         if (_ccr <= 1e18 || _ccr >= 2e18) revert InvalidCCR();
-        if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR();
+        if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR(); // Can we allow this to be over 2e18??
         if (_bcr < 5e16 || _bcr >= 50e16) revert InvalidBCR();
         if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();
         if (_debtLimit <= 0) revert InvalidDebtLimit();
@@ -139,5 +143,33 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         emit WETHAddressChanged(address(_vars.WETH));
 
         _renounceOwnership();
+    }
+
+    function updateCCR(uint256 _newCCR) external {
+        require(msg.sender == address(collateralRegistry), "AddressesRegistry: Only collateral registry can call this function");
+        if (_newCCR <= 1e18 || _newCCR >= 2e18) revert InvalidCCR();
+        CCR = _newCCR;
+        emit CCRUpdated(_newCCR);
+    }
+
+    function updateMCR(uint256 _newMCR) external {
+        require(msg.sender == address(collateralRegistry), "AddressesRegistry: Only collateral registry can call this function");
+        if (_newMCR <= 1e18 || _newMCR >= 2e18) revert InvalidMCR();
+        MCR = _newMCR;
+        emit MCRUpdated(_newMCR);
+    }
+
+    function updateBCR(uint256 _newBCR) external {
+        require(msg.sender == address(collateralRegistry), "AddressesRegistry: Only collateral registry can call this function");
+        if (_newBCR < 5e16 || _newBCR >= 50e16) revert InvalidBCR();
+        BCR = _newBCR;
+        emit BCRUpdated(_newBCR);
+    }
+
+    function updateSCR(uint256 _newSCR) external {
+        require(msg.sender == address(collateralRegistry), "AddressesRegistry: Only collateral registry can call this function");
+        if (_newSCR <= 1e18 || _newSCR >= 2e18) revert InvalidSCR();
+        SCR = _newSCR;
+        emit SCRUpdated(_newSCR);
     }
 }

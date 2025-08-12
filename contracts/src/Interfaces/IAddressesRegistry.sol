@@ -68,4 +68,9 @@ interface IAddressesRegistry {
     function WETH() external returns (IWETH);
 
     function setAddresses(AddressVars memory _vars) external;
+
+    function updateCCR(uint256 _newCCR) external;
+    function updateMCR(uint256 _newMCR) external;
+    function updateBCR(uint256 _newBCR) external;
+    function updateSCR(uint256 _newSCR) external;
 }

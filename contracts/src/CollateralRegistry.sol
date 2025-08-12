@@ -285,6 +285,10 @@ contract CollateralRegistry is ICollateralRegistry {
         require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
     }
 
+    function getDebtLimit(uint256 _indexTroveManager) external view returns (uint256) {
+        return getTroveManager(_indexTroveManager).getDebtLimit();
+    }
+
     function updateDebtLimit(uint256 _indexTroveManager, uint256 _newDebtLimit) external onlyGovernor {
         //limited to increasing by 2x at a time, maximum. Decrease by any amount.
         uint256 currentDebtLimit = getTroveManager(_indexTroveManager).getDebtLimit();
@@ -294,13 +298,24 @@ contract CollateralRegistry is ICollateralRegistry {
         getTroveManager(_indexTroveManager).setDebtLimit(_newDebtLimit);
     }
 
-    function getDebtLimit(uint256 _indexTroveManager) external view returns (uint256) {
-        return getTroveManager(_indexTroveManager).getDebtLimit();
+    function updateCCR(uint256 _collIndex, uint256 _newCCR) external onlyGovernor {
+        getTroveManager(_collIndex).addressesRegistry().updateCCR(_newCCR);
+    }
+
+    function updateMCR(uint256 _collIndex, uint256 _newMCR) external onlyGovernor {
+        getTroveManager(_collIndex).addressesRegistry().updateMCR(_newMCR);
+    }
+
+    function updateBCR(uint256 _collIndex, uint256 _newBCR) external onlyGovernor {
+        getTroveManager(_collIndex).addressesRegistry().updateBCR(_newBCR);
+    }
+
+    function updateSCR(uint256 _collIndex, uint256 _newSCR) external onlyGovernor {
+        getTroveManager(_collIndex).addressesRegistry().updateSCR(_newSCR);
     }
 
     // ==== Add a new collateral ==== 
-    function addCollateral(IERC20Metadata _token, ITroveManager _troveManager, uint256 _index) external {
-        require(msg.sender == governor, "CollateralRegistry: Only governor can add collateral");
+    function addCollateral(IERC20Metadata _token, ITroveManager _troveManager, uint256 _index) external onlyGovernor {
         require(_index >= 0 && _index < totalCollaterals, "CollateralRegistry: Invalid index"); // 0-9
 
         //validate input
@@ -328,8 +343,7 @@ contract CollateralRegistry is ICollateralRegistry {
     //1. Remove the collateral from the CollateralRegistry
     //2. allow users to pay back their debt, but not take out new debt, while maintaining existing BCR.
 
-    function removeCollateral(uint256 _index) external {
-        require(msg.sender == governor, "CollateralRegistry: Only governor can remove collateral");
+    function removeCollateral(uint256 _index) external onlyGovernor {
         require(_index >= 0 && _index < totalCollaterals, "CollateralRegistry: Invalid index"); // 0-9
 
         IERC20Metadata collateralToken = allCollateralTokenAddresses[_index];
