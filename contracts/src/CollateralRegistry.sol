@@ -41,6 +41,11 @@ contract CollateralRegistry is ICollateralRegistry {
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
 
+    modifier onlyGovernor() {
+        require(msg.sender == governor, "CollateralRegistry: Only governor can call this function");
+        _;
+    }
+
     constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers, address _governor) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
@@ -284,7 +289,7 @@ contract CollateralRegistry is ICollateralRegistry {
         //limited to increasing by 2x at a time, maximum. Decrease by any amount.
         uint256 currentDebtLimit = getTroveManager(_indexTroveManager).getDebtLimit();
         if (_newDebtLimit > currentDebtLimit) {
-            require(_newDebtLimit <= currentDebtLimit * 2 || _newDebtLimit <= getTroveManager(_indexTroveManager).getInitalDebtLimit(), "CollateralRegistry: Debt limit increase by more than 2x is not allowed");
+            require(_newDebtLimit <= currentDebtLimit * 2 || _newDebtLimit <= getTroveManager(_indexTroveManager).getInitialDebtLimit(), "CollateralRegistry: Debt limit increase by more than 2x is not allowed");
         }
         getTroveManager(_indexTroveManager).setDebtLimit(_newDebtLimit);
     }

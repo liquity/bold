@@ -25,7 +25,7 @@ import "src/MultiTroveGetter.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
-import "src/PriceFeeds/WSTETHPriceFeed.sol";
+// import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/CollateralRegistry.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
@@ -778,16 +778,16 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // ETH
             if (_collTokenAddress == address(WETH)) {
                 return new WETHPriceFeed(ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD, _borroweOperationsAddress);
-            } else if (_collTokenAddress == WSTETH_ADDRESS) {
-                // wstETH
-                return new WSTETHPriceFeed(
-                    ETH_ORACLE_ADDRESS,
-                    STETH_ORACLE_ADDRESS,
-                    WSTETH_ADDRESS,
-                    ETH_USD_STALENESS_THRESHOLD,
-                    STETH_USD_STALENESS_THRESHOLD,
-                    _borroweOperationsAddress
-                );
+            // } else if (_collTokenAddress == WSTETH_ADDRESS) {
+            //     // wstETH
+            //     return new WSTETHPriceFeed(
+            //         ETH_ORACLE_ADDRESS,
+            //         STETH_ORACLE_ADDRESS,
+            //         WSTETH_ADDRESS,
+            //         ETH_USD_STALENESS_THRESHOLD,
+            //         STETH_USD_STALENESS_THRESHOLD,
+            //         _borroweOperationsAddress
+            //     );
             }
             // RETH
             assert(_collTokenAddress == RETH_ADDRESS);

@@ -2015,8 +2015,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         return debtLimit;
     }
 
-    function getInitalDebtLimit() external view returns (uint256) {
-        return initalDebtLimit;
+    function getInitialDebtLimit() external view returns (uint256) {
+        return initialDebtLimit;
     }
 
     function setDebtLimit(uint256 _newDebtLimit) external {

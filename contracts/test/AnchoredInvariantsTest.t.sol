@@ -20,10 +20,10 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         super.setUp();
 
         TestDeployer.TroveManagerParams[] memory p = new TestDeployer.TroveManagerParams[](4);
-        p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 0.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
-        p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 0.1 ether, 1.01 ether, 0.05 ether, 0.1 ether);
+        p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 0.1 ether, 1.01 ether, 10_000_000e18, 0.05 ether, 0.1 ether);
+        p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.01 ether, 10_000_000e18, 0.05 ether, 0.1 ether);
+        p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.01 ether, 10_000_000e18, 0.05 ether, 0.1 ether);
+        p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 0.1 ether, 1.01 ether, 10_000_000e18, 0.05 ether, 0.1 ether);
         TestDeployer deployer = new TestDeployer();
         Contracts memory contracts;
         (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth,)

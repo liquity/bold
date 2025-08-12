@@ -227,7 +227,7 @@ contract TestDeployer is MetadataDeployment {
             Zappers memory zappers
         )
     {
-        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16));
+        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 10e16, 110e16, 10_000_000e18, 5e16, 10e16));
     }
 
     function deployAndConnectContracts(TroveManagerParams memory troveManagerParams)
@@ -747,13 +747,22 @@ contract TestDeployer is MetadataDeployment {
             );
         }
 
-        // wstETH
-        return new WSTETHPriceFeed(
+        // // wstETH
+        // return new WSTETHPriceFeed(
+        //     _externalAddresses.ETHOracle,
+        //     _externalAddresses.STETHOracle,
+        //     _externalAddresses.WSTETHToken,
+        //     _oracleParams.ethUsdStalenessThreshold,
+        //     _oracleParams.stEthUsdStalenessThreshold,
+        //     _borrowerOperationsAddress
+        // );
+
+        return new RETHPriceFeed(
             _externalAddresses.ETHOracle,
-            _externalAddresses.STETHOracle,
-            _externalAddresses.WSTETHToken,
+            _externalAddresses.RETHOracle,
+            _externalAddresses.RETHToken,
             _oracleParams.ethUsdStalenessThreshold,
-            _oracleParams.stEthUsdStalenessThreshold,
+            _oracleParams.rEthEthStalenessThreshold,
             _borrowerOperationsAddress
         );
     }

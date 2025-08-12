@@ -470,7 +470,7 @@ contract SortedTrovesTest is Test {
     function setUp() public {
         bytes32 SALT = keccak256("LiquityV2");
         AddressesRegistry addressesRegistry =
-            new AddressesRegistry(address(this), 150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
+            new AddressesRegistry(address(this), 150e16, 110e16, 10e16, 110e16, 10_000_000e18, 5e16, 10e16);
         bytes32 hash = keccak256(
             abi.encodePacked(
                 bytes1(0xff),
