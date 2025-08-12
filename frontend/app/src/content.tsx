@@ -230,6 +230,10 @@ export default {
         title: "USND",
         description: "Buy USND",
       },
+      stream: {
+        title: "Stream USND with Superfluid",
+        description: "Send USND continuously by the millisecond. Perfect for subscriptions, payroll, etc.",
+      },
     },
     statsBar: {
       label: "Protocol stats",

@@ -24,7 +24,7 @@ export function ActionIcon({
     background: string;
     foreground: string;
   };
-  iconType: "borrow" | "multiply" | "earn" | "buy";
+  iconType: "borrow" | "multiply" | "earn" | "buy" | "stream";
   state: IconProps["state"];
 }) {
   const Icon = match(iconType)
@@ -32,6 +32,7 @@ export function ActionIcon({
     .with("multiply", () => ActionIconLeverage)
     .with("earn", () => ActionIconEarn)
     .with("buy", () => ActionIconStake)
+    .with("stream", () => ActionIconLeverage)
     .exhaustive();
 
   return (
