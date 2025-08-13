@@ -16,7 +16,7 @@ import "./Dependencies/LiquityBase.sol";
 
 contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // --- Connected contract declarations ---
-
+    uint256 public branchId;
     ITroveNFT public troveNFT;
     IBorrowerOperations public borrowerOperations;
     IStabilityPool public stabilityPool;
@@ -193,7 +193,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
-    constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry, uint256 _branchId) LiquityBase(_addressesRegistry) {
         // CCR = _addressesRegistry.CCR();
         // MCR = _addressesRegistry.MCR();
         // SCR = _addressesRegistry.SCR();
@@ -212,6 +212,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         WETH = _addressesRegistry.WETH();
         collateralRegistry = _addressesRegistry.collateralRegistry();
         addressesRegistry = _addressesRegistry;
+        branchId = _branchId;
 
         emit TroveNFTAddressChanged(address(troveNFT));
         emit BorrowerOperationsAddressChanged(address(borrowerOperations));
@@ -226,18 +227,18 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // --- Getters ---
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    function CCR() public view returns (uint256) { // BUG: Won't compile as view function
+    function CCR() public view returns (uint256) {
         return addressesRegistry.CCR();
     }
 
     // Minimum collateral ratio for individual troves
-    function MCR() public view returns (uint256) { // BUG: Won't compile as view function
+    function MCR() public view returns (uint256) {
         return addressesRegistry.MCR();
     }
 
     // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
     // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    function SCR() public view returns (uint256) { // BUG: Won't compile as view function
+    function SCR() public view returns (uint256) {
         return addressesRegistry.SCR();
     }
 
@@ -1238,6 +1239,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         }
     }
 
+    function _requireActiveCollateral() internal view {
+        require(collateralRegistry.isActiveCollateral(collIndex), "TroveManager: Collateral is not active");
+    }
+
     // --- Trove property getters ---
 
     function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool) {
@@ -1259,6 +1264,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         external
     {
         _requireCallerIsBorrowerOperations();
+        _requireActiveCollateral();
 
         uint256 newStake = _computeNewStake(_troveChange.collIncrease);
 
@@ -1315,6 +1321,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     ) external {
         _requireCallerIsBorrowerOperations();
         // assert(batchIds[batches[_batchAddress].arrayIndex] == _batchAddress);
+        _requireActiveCollateral();
 
         uint256 newStake = _computeNewStake(_troveChange.collIncrease);
 
