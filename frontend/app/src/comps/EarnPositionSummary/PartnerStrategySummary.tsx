@@ -1,22 +1,118 @@
-import type { TokenSymbol } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
-import { IconArrowRight, IconPlus, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import { StrategyIcon, STRATEGIES_BY_ID, StrategyId, IconExternal } from "@liquity2/uikit";
 import Link from "next/link";
 
-export function EarnPositionSummaryBase({
+export function PartnerStrategySummary({
+  strategy,
+}: {
+  strategy: StrategyId;
+}) {
+  const strategyContent: Record<StrategyId, {
+    title: string;
+    subtitle: string;
+    href: string;
+    infoItems: Array<{
+      label: string;
+      content: ReactNode;
+    }>;
+  }> = {
+    bunni: {
+      title: "Bunni",
+      subtitle: "Rehypothecation DEX built on Uniswap v4 with USND liquidity",
+      href: `https://bunni.xyz/explore/pools/arbitrum/0x75c55eda2c37c47eaf1db8b500171f72f23dc5b16404e904866a6ad1b3a3e537`,
+      infoItems: [],
+    },
+    camelot: {
+      title: "Camelot",
+      subtitle: "The Arbitrum native DEX with ETH/USND liquidity",
+      href: `https://app.camelot.exchange/pools/0xA20723963Fb33297a3F5491831742f9B63EFe4f2`,
+      infoItems: [],
+    },
+    spectra: {
+      title: "Spectra",
+      subtitle: "Lock in fixed rates on USND and trade yield tokens for yUSND",
+      href: `https://app.spectra.finance/pools/arb:0xdbfdad05d2d280195331582516813358f41d1cc4`,
+      infoItems: [],
+    },
+    teller: {
+      title: "Teller",
+      subtitle: "Lending/borrowing protocol with USND to lend and earn yield",
+      href: `https://app.teller.org/arbitrum-one/lend?assetCategory=0x4ecf61a6c2fab8a047ceb3b3b263b401763e9d49&assetTab=pools`,
+      infoItems: [],
+    },
+  };
+
+  return (
+    <PartnerStrategySummaryBase
+      action={{
+        label: "Deposit to the pool",
+        href: strategyContent[strategy].href,
+        target: "_blank",
+      }}
+      active={false}
+      strategyId={strategy}
+      title={strategyContent[strategy].title}
+      subtitle={strategyContent[strategy].subtitle}
+      infoItems={[
+        // {
+        //   label: "Deposit",
+        //   content: (
+        //     <>
+        //       <div
+        //         title={active
+        //           ? `${fmtnum(yusndPosition?.yusnd, "full")} yUSND`
+        //           : undefined}
+        //         className={css({
+        //           display: "flex",
+        //           justifyContent: "flex-start",
+        //           alignItems: "center",
+        //           gap: 4,
+        //           height: 24,
+        //         })}
+        //       >
+        //         {active && fmtnum(yusndPosition?.yusnd)}
+        //         <TokenIcon symbol="USND" size="mini" title={null} />
+        //       </div>
+        //       {prevYusndPosition && (
+        //         <div
+        //           title={`${fmtnum(prevYusndPosition.yusnd, "full")} yUSND`}
+        //           className={css({
+        //             display: "flex",
+        //             justifyContent: "flex-start",
+        //             alignItems: "center",
+        //             gap: 4,
+        //             height: 24,
+        //             color: "contentAlt",
+        //             textDecoration: "line-through",
+        //           })}
+        //         >
+        //           {fmtnum(prevYusndPosition.usnd)}
+        //           <TokenIcon symbol="USND" size="mini" title={null} />
+        //         </div>
+        //       )}
+        //     </>
+        //   ),
+        // },
+      ].filter((item) => item !== null)}
+    />
+  );
+}
+
+export function PartnerStrategySummaryBase({
   action,
   active,
   infoItems = [],
   poolInfo,
-  poolToken,
+  strategyId,
   subtitle,
   title,
 }: {
   action?: null | {
     label: string;
-    path: `/${string}`;
+    href: string;
+    target: "_blank" | "_self" | "_parent" | "_top";
   };
   active: boolean;
   infoItems?: Array<{
@@ -24,11 +120,11 @@ export function EarnPositionSummaryBase({
     label: ReactNode;
   }>;
   poolInfo?: ReactNode;
-  poolToken: TokenSymbol;
+  strategyId: StrategyId;
   subtitle?: ReactNode;
   title?: ReactNode;
 }) {
-  const token = TOKENS_BY_SYMBOL[poolToken];
+  const strategy = STRATEGIES_BY_ID[strategyId];
 
   return (
     <div
@@ -64,7 +160,7 @@ export function EarnPositionSummaryBase({
       <div
         className={css({
           display: "flex",
-          alignItems: "center",
+          alignItems: "start",
           gap: 16,
           paddingBottom: 12,
         })}
@@ -79,8 +175,8 @@ export function EarnPositionSummaryBase({
             display: "flex",
           })}
         >
-          <TokenIcon
-            symbol={token.symbol}
+          <StrategyIcon
+            id={strategy.id}
             size={34}
           />
         </div>
@@ -130,10 +226,11 @@ export function EarnPositionSummaryBase({
           alignItems: "center",
           justifyContent: "space-between",
           paddingTop: 12,
-          height: {
-            base: "auto",
-            large: 56,
-          },
+          // height: {
+          //   base: "auto",
+          //   large: 56,
+          // },
+          height: 56,
           fontSize: 14,
         })}
       >
@@ -173,7 +270,8 @@ export function EarnPositionSummaryBase({
         {action && (
           <OpenLink
             active={active}
-            path={action.path}
+            href={action.href}
+            target={action.target}
             title={action.label}
           />
         )}
@@ -184,17 +282,20 @@ export function EarnPositionSummaryBase({
 
 function OpenLink({
   active,
-  path,
+  href,
+  target,
   title,
 }: {
   active: boolean;
-  path: string;
+  href: string;
+  target: "_blank" | "_self" | "_parent" | "_top";
   title: string;
 }) {
   return (
     <Link
       title={title}
-      href={path}
+      href={href}
+      target={target}
       className={css({
         position: "absolute",
         inset: "0 -16px -12px auto",
@@ -239,8 +340,8 @@ function OpenLink({
         })}
       >
         {active
-          ? <IconArrowRight size={24} />
-          : <IconPlus size={24} />}
+          ? <IconExternal size={24} />
+          : <IconExternal size={24} />}
       </div>
     </Link>
   );
