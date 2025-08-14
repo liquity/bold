@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.24;
 
-import "src/PriceFeeds/WSTETHPriceFeed.sol";
+// import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/MainnetPriceFeedBase.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
@@ -109,7 +109,7 @@ contract OraclesMainnet is TestAccounts {
 
         vars.numCollaterals = 3;
         TestDeployer.TroveManagerParams memory tmParams =
-            TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
+            TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 10_000_000e18, 5e16, 10e16);
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](vars.numCollaterals);
         for (uint256 i = 0; i < troveManagerParamsArray.length; i++) {

@@ -170,5 +170,9 @@ interface ITroveManager is ILiquityBase {
         uint256 _newAnnualInterestRate
     ) external;
 
+    function setDebtLimit(uint256 _newDebtLimit) external;
+    function getDebtLimit() external view returns (uint256);
+    function getInitialDebtLimit() external view returns (uint256);
+
     // -- end of permissioned functions --
 }

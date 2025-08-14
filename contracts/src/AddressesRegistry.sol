@@ -36,6 +36,8 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     uint256 public immutable MCR;
     // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
     uint256 public immutable BCR;
+    // Debt limit for the system
+    uint256 public immutable debtLimit;
     // Liquidation penalty for troves offset to the SP
     uint256 public immutable LIQUIDATION_PENALTY_SP;
     // Liquidation penalty for troves redistributed
@@ -45,6 +47,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     error InvalidMCR();
     error InvalidBCR();
     error InvalidSCR();
+    error InvalidDebtLimit();
     error SPPenaltyTooLow();
     error SPPenaltyGtRedist();
     error RedistPenaltyTooHigh();
@@ -74,6 +77,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         uint256 _mcr,
         uint256 _bcr,
         uint256 _scr,
+        uint256 _debtLimit,
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution
     ) Ownable(_owner) {
@@ -89,6 +93,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         SCR = _scr;
         MCR = _mcr;
         BCR = _bcr;
+        debtLimit = _debtLimit;
         LIQUIDATION_PENALTY_SP = _liquidationPenaltySP;
         LIQUIDATION_PENALTY_REDISTRIBUTION = _liquidationPenaltyRedistribution;
     }
