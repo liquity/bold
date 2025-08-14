@@ -343,6 +343,19 @@ export default {
         <>Total USND covering {collateral}-backed position liquidations</>,
       ],
     },
+    strategySection: {
+      headline: (strategyIcons: N) => (
+        <>
+          Strategies {strategyIcons}
+        </>
+      ),
+      subheading: (
+        <>
+          Partnered Protocols with other USND Strategies. 
+          Earn additional yield or find other opportunities from these third party protocols.
+        </>
+      )
+    }
   },
 
   // Earn screen
