@@ -383,7 +383,7 @@ contract CollateralRegistry is ICollateralRegistry {
         branches++;
 
         //emit event
-        emit CollateralAdded(address(_token), address(_troveManager), branchId);
+        emit CollateralAdded(branchId, address(_token), address(_troveManager));
     }
 
     // ==== Remove a collateral ==== 
@@ -424,5 +424,34 @@ contract CollateralRegistry is ICollateralRegistry {
     function _permanentlyDeleteFromRemovedCollaterals(uint256 _index) internal {
         removedBranchIds[_index] = removedBranchIds[removedBranchIds.length - 1];
         removedBranchIds.pop();
+    }
+
+    // Only trove manager can call this function
+    // This is called in _closeTrove() in TroveManager.sol only once last trove is closed
+    function deleteFromRemovedCollaterals(uint256 _branchId) external {
+        // NOTE: 
+        // There might be a more gas efficient way to do this
+        // by having a mapping(branchId => index in removedBranchIds)
+        // that's updated in removeCollateral()
+        // and then we can just get the index from the mapping.
+        ITroveManager troveManager;
+        uint256 index;
+        for (uint256 i; i < removedBranchIds.length; i++) {
+            if (removedBranchIds[i] == _branchId) {
+                troveManager = getRemovedTroveManager(i);
+                index = i;
+                break;
+            }
+        }
+        require(msg.sender == address(troveManager), "CollateralRegistry: Only trove manager can call this function");
+        // An extra check to ensure that the trove manager has no troves left
+        // This may prove to be redundant and can be removed in the future
+        require(troveManager.getTroveIdsCount() == 0, "CollateralRegistry: Trove manager has troves");
+
+        // remove collateral from removed collateral tokens and trove managers lists
+        _permanentlyDeleteFromRemovedCollaterals(index);
+
+        // emit event
+        emit CollateralDeleted(_branchId);
     }
 }

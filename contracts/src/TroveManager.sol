@@ -242,6 +242,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         return addressesRegistry.SCR();
     }
 
+    function isActive() public view returns (bool) {
+        return collateralRegistry.isActiveCollateral(branchId);
+    }
+
     function getTroveIdsCount() external view override returns (uint256) {
         return TroveIds.length;
     }
@@ -1240,7 +1244,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     function _requireActiveCollateral() internal view {
-        require(collateralRegistry.isActiveCollateral(branchId), "TroveManager: Collateral is not active");
+        require(isActive(), "TroveManager: Collateral is not active");
     }
 
     // --- Trove property getters ---
@@ -1532,10 +1536,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // assert(closedStatus == Status.closedByLiquidation || closedStatus == Status.closedByOwner);
 
         uint256 TroveIdsArrayLength = TroveIds.length;
+        bool isActiveStatus = isActive();
         // If branch has not been shut down, or it's a liquidation,
         // require at least 1 trove in the system
+        // ** NEW: **
         // TODO: Add check if branch has been removed, do we still require at least 1 trove in the system?
-        if (shutdownTime == 0 || closedStatus == Status.closedByLiquidation) {
+        if (isActiveStatus && (shutdownTime == 0 || closedStatus == Status.closedByLiquidation)) {
             _requireMoreThanOneTroveInSystem(TroveIdsArrayLength);
         }
 
@@ -1580,6 +1586,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
         // burn ERC721
         troveNFT.burn(_troveId);
+
+        // ** NEW: **
+        // If branch has been removed and there is no troves left in the system,
+        // permanently delete branch in CollateralRegistry
+        if (!isActiveStatus && TroveIdsArrayLength == 1) {
+            collateralRegistry.deleteFromRemovedCollaterals(branchId);
+        }
     }
 
     function onAdjustTroveInsideBatch(
