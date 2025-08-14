@@ -81,13 +81,19 @@ contract CollateralRegistry is ICollateralRegistry {
 
         RedemptionTotals memory totals;
 
-        totals.numCollaterals = activeBranchIds.length;
+        totals.numCollaterals = activeBranchIds.length + removedBranchIds.length;
         uint256[] memory unbackedPortions = new uint256[](totals.numCollaterals);
         uint256[] memory prices = new uint256[](totals.numCollaterals);
 
         // Gather and accumulate unbacked portions
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
-            ITroveManager troveManager = getTroveManager(index); // TODO: Get the trove manager by branchId, NOT by index of array
+            // ITroveManager troveManager = getTroveManager(index);
+            ITroveManager troveManager;
+            if (index < removedBranchIds.length) {
+                troveManager = getRemovedTroveManager(index);
+            } else {
+                troveManager = getTroveManager(index - removedBranchIds.length);
+            }
             (uint256 unbackedPortion, uint256 price, bool redeemable) =
                 troveManager.getUnbackedPortionPriceAndRedeemability();
             prices[index] = price;
@@ -102,7 +108,13 @@ contract CollateralRegistry is ICollateralRegistry {
         if (totals.unbacked == 0) {
             unbackedPortions = new uint256[](totals.numCollaterals);
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
-                ITroveManager troveManager = getTroveManager(index);
+                // ITroveManager troveManager = getTroveManager(index);
+                ITroveManager troveManager;
+                if (index < removedBranchIds.length) {
+                    troveManager = getRemovedTroveManager(index);
+                } else {
+                    troveManager = getTroveManager(index - removedBranchIds.length);
+                }
                 (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
                 if (redeemable) {
                     uint256 unbackedPortion = troveManager.getEntireBranchDebt();
@@ -137,7 +149,13 @@ contract CollateralRegistry is ICollateralRegistry {
             if (unbackedPortions[index] > 0) {
                 uint256 redeemAmount = _boldAmount * unbackedPortions[index] / totals.unbacked;
                 if (redeemAmount > 0) {
-                    ITroveManager troveManager = getTroveManager(index);
+                    // ITroveManager troveManager = getTroveManager(index);
+                    ITroveManager troveManager;
+                    if (index < removedBranchIds.length) {
+                        troveManager = getRemovedTroveManager(index);
+                    } else {
+                        troveManager = getTroveManager(index - removedBranchIds.length);
+                    }
                     uint256 redeemedAmount = troveManager.redeemCollateral(
                         msg.sender, redeemAmount, prices[index], redemptionRate, _maxIterationsPerCollateral
                     );
@@ -264,8 +282,7 @@ contract CollateralRegistry is ICollateralRegistry {
     function getToken(uint256 _index) external view returns (IERC20Metadata) {
         if (_index >= activeBranchIds.length) {
             revert("Invalid index");
-        }else{
-            // return collateralTokensList[_index];
+        } else {
             uint256 branchId = activeBranchIds[_index];
             return allCollateralTokenAddresses[branchId];
         }
@@ -274,9 +291,26 @@ contract CollateralRegistry is ICollateralRegistry {
     function getTroveManager(uint256 _index) public view returns (ITroveManager) {
         if (_index >= activeBranchIds.length) {
             revert("Invalid index");
-        }else{
-            // return troveManagersList[_index];
+        } else {
             uint256 branchId = activeBranchIds[_index];
+            return allTroveManagerAddresses[branchId];
+        }
+    }
+
+    function getRemovedToken(uint256 _index) external view returns (IERC20Metadata) {
+        if (_index >= removedBranchIds.length) {
+            revert("Invalid index");
+        } else {
+            uint256 branchId = removedBranchIds[_index];
+            return allCollateralTokenAddresses[branchId];
+        }
+    }
+
+    function getRemovedTroveManager(uint256 _index) public view returns (ITroveManager) {
+        if (_index >= removedBranchIds.length) {
+            revert("Invalid index");
+        } else {
+            uint256 branchId = removedBranchIds[_index];
             return allTroveManagerAddresses[branchId];
         }
     }

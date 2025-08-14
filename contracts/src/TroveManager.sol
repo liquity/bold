@@ -1534,6 +1534,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 TroveIdsArrayLength = TroveIds.length;
         // If branch has not been shut down, or it's a liquidation,
         // require at least 1 trove in the system
+        // TODO: Add check if branch has been removed, do we still require at least 1 trove in the system?
         if (shutdownTime == 0 || closedStatus == Status.closedByLiquidation) {
             _requireMoreThanOneTroveInSystem(TroveIdsArrayLength);
         }
