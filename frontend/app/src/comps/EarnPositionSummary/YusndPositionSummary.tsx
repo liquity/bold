@@ -265,9 +265,6 @@ export function YusndPositionSummary({
                 <TokenIcon symbol="USND" />
                 <TokenIcon symbol="SUP" />
               </TokenIcon.Group>
-              <div>
-                in rewards
-              </div>
             </HFlex>
           ),
         },

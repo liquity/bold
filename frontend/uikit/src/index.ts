@@ -3,6 +3,7 @@
 export type { DropdownItem } from "./Dropdown/Dropdown";
 export type { ThemeColorName, ThemeDescriptor } from "./Theme/Theme";
 export type * from "./tokens";
+export type * from "./strategies";
 export type * from "./types";
 
 export * from "./eth-utils";
@@ -10,6 +11,7 @@ export * from "./icons";
 export * from "./math-utils";
 export * from "./react-utils";
 export * from "./tokens";
+export * from "./strategies";
 
 export { AddressField } from "./AddressField/AddressField";
 export { AnchorButton } from "./Button/AnchorButton";
@@ -34,6 +36,7 @@ export { AnchorTextButton } from "./TextButton/AnchorTextButton";
 export { TextButton } from "./TextButton/TextButton";
 export { colors, lightTheme, Theme, themeColor, useTheme } from "./Theme/Theme";
 export { TokenIcon, TokenIconGroup } from "./TokenIcon/TokenIcon";
+export { StrategyIcon, StrategyIconGroup } from "./StrategyIcon/StrategyIcon";
 export { InfoTooltip } from "./Tooltip/InfoTooltip";
 export { Tooltip } from "./Tooltip/Tooltip";
 export { UiKit } from "./UiKit/UiKit";

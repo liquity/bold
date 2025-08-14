@@ -25,4 +25,12 @@ export type Token = {
   symbol: TokenSymbol;
 };
 
+export type StrategyId = "bunni" | "camelot" | "spectra" | "teller";
+
+export type Strategy = {
+  id: StrategyId;
+  icon: string;
+  name: string;
+};
+
 export type StatusMode = "positive" | "warning" | "negative" | "neutral";
