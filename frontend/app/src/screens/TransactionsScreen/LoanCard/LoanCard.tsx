@@ -9,7 +9,7 @@ import { LoadingCard } from "@/src/screens/TransactionsScreen/LoanCard/component
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen.tsx";
 import type { PositionLoan } from "@/src/types";
 
-const LOAN_CARD_HEIGHT = 306 - 16;
+const LOAN_CARD_HEIGHT = 290;
 const LOAN_CARD_HEIGHT_REDUCED = 176;
 
 export function LoanCard({
@@ -98,7 +98,7 @@ export function LoanCard({
           loan={loan}
           prevLoan={prevLoan}
           prevLoanDetails={prevLoanDetails}
-          leverageMode={true}
+          leverageMode={leverageMode}
           collToken={collToken}
           loanDetails={loanDetails}
         />
