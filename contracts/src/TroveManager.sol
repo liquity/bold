@@ -1240,7 +1240,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     function _requireActiveCollateral() internal view {
-        require(collateralRegistry.isActiveCollateral(collIndex), "TroveManager: Collateral is not active");
+        require(collateralRegistry.isActiveCollateral(branchId), "TroveManager: Collateral is not active");
     }
 
     // --- Trove property getters ---
