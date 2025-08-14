@@ -2,12 +2,11 @@ import { Address, dataSource } from "@graphprotocol/graph-ts";
 import { Trove } from "../generated/schema";
 import { Transfer as TransferEvent } from "../generated/templates/TroveNFT/TroveNFT";
 import { BorrowerTrovesCountUpdate, updateBorrowerTrovesCount } from "./shared";
+import { createTrove } from "./TroveManager.mapping";
 
 export function handleTransfer(event: TransferEvent): void {
-  // Minting doesn’t need to be handled as we are already
-  // handling OP_OPEN_TROVE & OP_OPEN_TROVE_AND_JOIN_BATCH
-  // in TroveManager.mapping.ts.
   if (event.params.from.equals(Address.zero())) {
+    createTrove(event.params.tokenId, event.params.to, event.block.timestamp);
     return;
   }
 
