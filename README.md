@@ -9,7 +9,6 @@ Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals 
 3. Governoring of more protocol parameters, such as fees, LTV requirements, minimum debt, minimum interest rate, and more.
 4. Removal of Liquity Governance in favor of a more manual incentive direction system.
 5. Liquity v2 is made for Cancun EVM and Saga uses an older EVM version.
-6. Ability to unpause branches after oracle shutdowns.
 
 ## PriceFeeds
 1. WETH
@@ -18,7 +17,17 @@ Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals 
 4. FBTC
 5. SAGA
 
-1. 
+## Branch Creation and Deletion
+1. Only governor is able to create and remove branches
+2. When a branch is removed, it is removed from collateral list and appended to removed collateral list.
+3. Collaterals in removed collateral list still are redeemed and liquidated until there are no more troves in its branch. Then, it is removed from removed collateral list and permanently deleted. Check troves in branch in removed collateral list during redemptions and liquidations for this.
+4. Users can still pay back there debt in active troves but cannot create new debt once branch is in the removed collateral list. User must pay back above minimum repayment amount.
+
+*Question: Should users be allowed to change their interest rate in a removed branch?*
+
+5. Adding a new branch in collateral list creates a new unique index in all collaterals mapping and appends that index in the collateral list (the active collaterals).
+6. BoldToken checks if minting is coming from an active branch or removed branch (as a failsafe. Branch also checks and disables issuing new debt if in removed collateral list). Mints if active. Does NOT mint if branch is removed.
+
 
 <img width="830" alt="Liquity V2" src="https://github.com/user-attachments/assets/d9eb5b2a-d437-4472-94d6-07fa537e689a" />
 
