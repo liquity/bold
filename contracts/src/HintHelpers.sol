@@ -6,6 +6,12 @@ import "./Interfaces/ICollateralRegistry.sol";
 import "./Dependencies/LiquityMath.sol";
 import "./Dependencies/Constants.sol";
 import "./Interfaces/IHintHelpers.sol";
+import "./Interfaces/IActivePool.sol";
+import "./Interfaces/ISortedTroves.sol";
+import "./Interfaces/ITroveManager.sol";
+import "./Types/LatestTroveData.sol";
+import "./Types/LatestBatchData.sol";
+import "./Types/TroveChange.sol";
 
 contract HintHelpers is IHintHelpers {
     string public constant NAME = "HintHelpers";

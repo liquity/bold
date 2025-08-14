@@ -16,7 +16,7 @@ import "./Dependencies/LiquityBase.sol";
 
 contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // --- Connected contract declarations ---
-
+    uint256 public branchId;
     ITroveNFT public troveNFT;
     IBorrowerOperations public borrowerOperations;
     IStabilityPool public stabilityPool;
@@ -26,17 +26,19 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // A doubly linked list of Troves, sorted by their interest rate
     ISortedTroves public sortedTroves;
     ICollateralRegistry internal collateralRegistry;
+    IAddressesRegistry public addressesRegistry;
+
     // Wrapped ETH for liquidation reserve (gas compensation)
     IWETH internal immutable WETH;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    uint256 public immutable CCR;
+    // uint256 public immutable CCR;
 
-    // Minimum collateral ratio for individual troves
-    uint256 internal immutable MCR;
-    // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
-    // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    uint256 internal immutable SCR;
+    // // Minimum collateral ratio for individual troves
+    // uint256 internal immutable MCR;
+    // // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
+    // // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
+    // uint256 internal immutable SCR;
 
     // Liquidation penalty for troves offset to the SP
     uint256 internal immutable LIQUIDATION_PENALTY_SP;
@@ -191,10 +193,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
-    constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
-        CCR = _addressesRegistry.CCR();
-        MCR = _addressesRegistry.MCR();
-        SCR = _addressesRegistry.SCR();
+    constructor(IAddressesRegistry _addressesRegistry, uint256 _branchId) LiquityBase(_addressesRegistry) {
+        // CCR = _addressesRegistry.CCR();
+        // MCR = _addressesRegistry.MCR();
+        // SCR = _addressesRegistry.SCR();
         debtLimit = _addressesRegistry.debtLimit();
         initialDebtLimit = debtLimit;
         LIQUIDATION_PENALTY_SP = _addressesRegistry.LIQUIDATION_PENALTY_SP();
@@ -209,6 +211,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         sortedTroves = _addressesRegistry.sortedTroves();
         WETH = _addressesRegistry.WETH();
         collateralRegistry = _addressesRegistry.collateralRegistry();
+        addressesRegistry = _addressesRegistry;
+        branchId = _branchId;
 
         emit TroveNFTAddressChanged(address(troveNFT));
         emit BorrowerOperationsAddressChanged(address(borrowerOperations));
@@ -221,6 +225,22 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     // --- Getters ---
+
+    // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
+    function CCR() public view returns (uint256) {
+        return addressesRegistry.CCR();
+    }
+
+    // Minimum collateral ratio for individual troves
+    function MCR() public view returns (uint256) {
+        return addressesRegistry.MCR();
+    }
+
+    // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
+    // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
+    function SCR() public view returns (uint256) {
+        return addressesRegistry.SCR();
+    }
 
     function getTroveIdsCount() external view override returns (uint256) {
         return TroveIds.length;
@@ -504,7 +524,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
             uint256 ICR = getCurrentICR(troveId, _price);
 
-            if (ICR < MCR) {
+            if (ICR < MCR()) {
                 LiquidationValues memory singleLiquidation;
                 LatestTroveData memory trove;
 
@@ -1219,6 +1239,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         }
     }
 
+    function _requireActiveCollateral() internal view {
+        require(collateralRegistry.isActiveCollateral(branchId), "TroveManager: Collateral is not active");
+    }
+
     // --- Trove property getters ---
 
     function getUnbackedPortionPriceAndRedeemability() external returns (uint256, uint256, bool) {
@@ -1229,7 +1253,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         (uint256 price,) = priceFeed.fetchPrice();
         // It's redeemable if the TCR is above the shutdown threshold, and branch has not been shut down.
         // Use the normal price for the TCR check.
-        bool redeemable = _getTCR(price) >= SCR && shutdownTime == 0;
+        bool redeemable = _getTCR(price) >= SCR() && shutdownTime == 0;
 
         return (unbackedPortion, price, redeemable);
     }
@@ -1240,6 +1264,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         external
     {
         _requireCallerIsBorrowerOperations();
+        _requireActiveCollateral();
 
         uint256 newStake = _computeNewStake(_troveChange.collIncrease);
 
@@ -1296,6 +1321,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     ) external {
         _requireCallerIsBorrowerOperations();
         // assert(batchIds[batches[_batchAddress].arrayIndex] == _batchAddress);
+        _requireActiveCollateral();
 
         uint256 newStake = _computeNewStake(_troveChange.collIncrease);
 
@@ -1508,6 +1534,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 TroveIdsArrayLength = TroveIds.length;
         // If branch has not been shut down, or it's a liquidation,
         // require at least 1 trove in the system
+        // TODO: Add check if branch has been removed, do we still require at least 1 trove in the system?
         if (shutdownTime == 0 || closedStatus == Status.closedByLiquidation) {
             _requireMoreThanOneTroveInSystem(TroveIdsArrayLength);
         }

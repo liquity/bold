@@ -30,6 +30,13 @@ uint256 constant SCR_SETH = 120 * _1pct;
 // On top of MCR to join a batch, or adjust inside a batch
 uint256 constant BCR_ALL = 10 * _1pct;
 
+// Debt limit for each branch of initial collateral types
+uint256 constant WETH_DEBT_LIMIT = 100_000_000e18;
+uint256 constant RETH_DEBT_LIMIT = 25_000_000e18;
+uint256 constant TBTC_DEBT_LIMIT = 100_000_000e18;
+uint256 constant FBTC_DEBT_LIMIT = 100_000_000e18;
+uint256 constant SAGA_DEBT_LIMIT = 5_000_000e18;
+
 uint256 constant LIQUIDATION_PENALTY_SP_WETH = 5 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_SP_SETH = 5 * _1pct;
 

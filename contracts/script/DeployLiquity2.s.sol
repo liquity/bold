@@ -69,15 +69,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     uint256 constant NUM_BRANCHES = 3;
 
-    address WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address WETH_ADDRESS = 0xeb41D53F14Cb9a67907f2b8b5DBc223944158cCb;
+    address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // TODO: Change this
 
     // used for gas compensation and as collateral of the first branch
     // tapping disallowed
     IWETH WETH;
     IERC20Metadata USDC;
-    address WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    // address WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address RETH_ADDRESS = 0xae78736Cd615f374D3085123A210448E74Fc6393;
+    address TBTC_ADDRESS = 0x8dAEBADE922dF735c38C80C7eBD708Af50815fAa;
+    address FBTC_ADDRESS = 0xC96dE26018A54D51c097160568752c4E3BD6C364;
+    address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE;
     address ETH_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     address RETH_ORACLE_ADDRESS = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
     address STETH_ORACLE_ADDRESS = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
@@ -191,6 +194,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         uint256 MCR;
         uint256 SCR;
         uint256 BCR;
+        uint256 debtLimit;
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
     }
@@ -330,29 +334,67 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             MCR: MCR_WETH,
             SCR: SCR_WETH,
             BCR: BCR_ALL,
+            debtLimit: WETH_DEBT_LIMIT,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_WETH,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_WETH
         });
 
-        // wstETH
+        // rETH
         troveManagerParamsArray[1] = TroveManagerParams({
             CCR: CCR_SETH,
             MCR: MCR_SETH,
             SCR: SCR_SETH,
             BCR: BCR_ALL,
+            debtLimit: RETH_DEBT_LIMIT,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
         });
 
-        // rETH (same as wstETH)
-        troveManagerParamsArray[2] = troveManagerParamsArray[1];
+        // tBTC
+        troveManagerParamsArray[2] = TroveManagerParams({
+            CCR: CCR_SETH,
+            MCR: MCR_SETH,
+            SCR: SCR_SETH,
+            BCR: BCR_ALL,
+            debtLimit: TBTC_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+        });
 
-        string[] memory collNames = new string[](2);
-        string[] memory collSymbols = new string[](2);
-        collNames[0] = "Wrapped liquid staked Ether 2.0";
-        collSymbols[0] = "wstETH";
+        // FBTC
+        troveManagerParamsArray[3] = TroveManagerParams({
+            CCR: CCR_SETH,
+            MCR: MCR_SETH,
+            SCR: SCR_SETH,
+            BCR: BCR_ALL,
+            debtLimit: FBTC_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+        });
+        
+        // SAGA
+        troveManagerParamsArray[4] = TroveManagerParams({
+            CCR: CCR_SETH,
+            MCR: MCR_SETH,
+            SCR: SCR_SETH,
+            BCR: BCR_ALL,
+            debtLimit: SAGA_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+        });
+
+        string[] memory collNames = new string[](5);
+        string[] memory collSymbols = new string[](5);
+        collNames[0] = "Wrapped Ether";
+        collSymbols[0] = "WETH";
         collNames[1] = "Rocket Pool ETH";
         collSymbols[1] = "rETH";
+        collNames[2] = "Threshold BTC";
+        collSymbols[2] = "tBTC";
+        collNames[3] = "Function BTC";
+        collSymbols[3] = "FBTC";
+        collNames[4] = "Saga";
+        collSymbols[4] = "SAGA";
 
         DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
             epochStart: epochStart,
@@ -577,11 +619,17 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // ETH
             vars.collaterals[0] = IERC20Metadata(WETH);
 
-            // wstETH
-            vars.collaterals[1] = IERC20Metadata(WSTETH_ADDRESS);
+            // rETH
+            vars.collaterals[1] = IERC20Metadata(RETH_ADDRESS);
 
-            // RETH
-            vars.collaterals[2] = IERC20Metadata(RETH_ADDRESS);
+            // tBTC
+            vars.collaterals[2] = IERC20Metadata(TBTC_ADDRESS);
+
+            // FBTC
+            vars.collaterals[3] = IERC20Metadata(FBTC_ADDRESS);
+
+            // SAGA
+            vars.collaterals[4] = IERC20Metadata(SAGA_ADDRESS);
         } else {
             // Sepolia
             // Use WETH as collateral for the first branch
@@ -601,12 +649,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         // Deploy AddressesRegistries and get TroveManager addresses
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
-                _deployAddressesRegistry(troveManagerParamsArray[vars.i]);
+                _deployAddressesRegistry(troveManagerParamsArray[vars.i], vars.i);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, address(0));
+        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, address(0)); // TODO: Replace null address with governor address
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
 
@@ -641,7 +689,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
     }
 
-    function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)
+    function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams, uint256 _collIndex)
         internal
         returns (IAddressesRegistry, address)
     {
@@ -651,11 +699,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _troveManagerParams.MCR,
             _troveManagerParams.BCR,
             _troveManagerParams.SCR,
+            _troveManagerParams.debtLimit,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
         address troveManagerAddress = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(TroveManager).creationCode, address(addressesRegistry)))
+            SALT, keccak256(getBytecode(type(TroveManager).creationCode, address(addressesRegistry), _collIndex))
         );
 
         return (addressesRegistry, troveManagerAddress);

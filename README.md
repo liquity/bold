@@ -27,6 +27,10 @@ Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals 
 
 5. Adding a new branch in collateral list creates a new unique index in all collaterals mapping and appends that index in the collateral list (the active collaterals).
 6. BoldToken checks if minting is coming from an active branch or removed branch (as a failsafe. Branch also checks and disables issuing new debt if in removed collateral list). Mints if active. Does NOT mint if branch is removed.
+7. Deposits into the Stability Pool of removed collateral types are still allowed. This is to ensure liquidations can still process if more deposits are required to do so.
+
+## Collateral Registry
+Each collateral branch has a unique `uint branchId` that is used to get correct collateral branch in the `CollateralRegistry`. The `TroveManager` and collateral token of each branch is stored in the mappings `allCollateralTokenAddresses` and `allTroveManagerAddresses` by their respective `branchId`. 
 
 
 <img width="830" alt="Liquity V2" src="https://github.com/user-attachments/assets/d9eb5b2a-d437-4472-94d6-07fa537e689a" />

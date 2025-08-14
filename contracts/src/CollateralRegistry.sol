@@ -13,23 +13,21 @@ import "./Interfaces/ICollateralRegistry.sol";
 
 contract CollateralRegistry is ICollateralRegistry {
     // See: https://github.com/ethereum/solidity/issues/12587
-    uint256 public immutable totalCollaterals; // 10
+    // uint256 public totalCollaterals; // 10
 
     address governor;
 
-    uint256 public masterIndex; // includes index of current and removed collateral tokens and trove managers
+    uint256 public branches; // Total number of branches ever added. This value only increments up.
 
-    mapping(uint256 index => IERC20Metadata collateralToken) public allCollateralTokenAddresses;
+    mapping(uint256 branchId => IERC20Metadata collateralToken) public allCollateralTokenAddresses;
     
-    mapping(uint256 index => ITroveManager troveManager) public allTroveManagerAddresses;
+    mapping(uint256 branchId => ITroveManager troveManager) public allTroveManagerAddresses;
 
-    IERC20Metadata[] public collateralTokensList;
+    mapping(uint256 branchId => bool isActive) public isActiveCollateral;
 
-    ITroveManager[] public troveManagersList;
+    uint256[] public activeBranchIds;
 
-    IERC20Metadata[] public removedCollateralTokensList;
-
-    ITroveManager[] public removedTroveManagersList;
+    uint256[] public removedBranchIds;
 
     IBoldToken public immutable boldToken;
 
@@ -51,14 +49,17 @@ contract CollateralRegistry is ICollateralRegistry {
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens <= 10, "Collateral list too long");
         require(numTokens == _troveManagers.length, "Collateral list and trove manager list must have the same length");
-        totalCollaterals = numTokens;
+        // totalCollaterals = numTokens;
 
         boldToken = _boldToken;
         governor = _governor;
 
-        collateralTokensList = _tokens;
-
-        troveManagersList = _troveManagers;
+        for (uint256 i; i < numTokens; i++) {
+            allCollateralTokenAddresses[i] = _tokens[i];
+            allTroveManagerAddresses[i] = _troveManagers[i];
+            isActiveCollateral[i] = true;
+            activeBranchIds.push(i);
+        }
 
         // Initialize the baseRate state variable
         baseRate = INITIAL_BASE_RATE;
@@ -80,13 +81,19 @@ contract CollateralRegistry is ICollateralRegistry {
 
         RedemptionTotals memory totals;
 
-        totals.numCollaterals = totalCollaterals;
+        totals.numCollaterals = activeBranchIds.length + removedBranchIds.length;
         uint256[] memory unbackedPortions = new uint256[](totals.numCollaterals);
         uint256[] memory prices = new uint256[](totals.numCollaterals);
 
         // Gather and accumulate unbacked portions
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
-            ITroveManager troveManager = getTroveManager(index);
+            // ITroveManager troveManager = getTroveManager(index);
+            ITroveManager troveManager;
+            if (index < removedBranchIds.length) {
+                troveManager = getRemovedTroveManager(index);
+            } else {
+                troveManager = getTroveManager(index - removedBranchIds.length);
+            }
             (uint256 unbackedPortion, uint256 price, bool redeemable) =
                 troveManager.getUnbackedPortionPriceAndRedeemability();
             prices[index] = price;
@@ -101,7 +108,13 @@ contract CollateralRegistry is ICollateralRegistry {
         if (totals.unbacked == 0) {
             unbackedPortions = new uint256[](totals.numCollaterals);
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
-                ITroveManager troveManager = getTroveManager(index);
+                // ITroveManager troveManager = getTroveManager(index);
+                ITroveManager troveManager;
+                if (index < removedBranchIds.length) {
+                    troveManager = getRemovedTroveManager(index);
+                } else {
+                    troveManager = getTroveManager(index - removedBranchIds.length);
+                }
                 (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
                 if (redeemable) {
                     uint256 unbackedPortion = troveManager.getEntireBranchDebt();
@@ -136,7 +149,13 @@ contract CollateralRegistry is ICollateralRegistry {
             if (unbackedPortions[index] > 0) {
                 uint256 redeemAmount = _boldAmount * unbackedPortions[index] / totals.unbacked;
                 if (redeemAmount > 0) {
-                    ITroveManager troveManager = getTroveManager(index);
+                    // ITroveManager troveManager = getTroveManager(index);
+                    ITroveManager troveManager;
+                    if (index < removedBranchIds.length) {
+                        troveManager = getRemovedTroveManager(index);
+                    } else {
+                        troveManager = getTroveManager(index - removedBranchIds.length);
+                    }
                     uint256 redeemedAmount = troveManager.redeemCollateral(
                         msg.sender, redeemAmount, prices[index], redemptionRate, _maxIterationsPerCollateral
                     );
@@ -256,19 +275,43 @@ contract CollateralRegistry is ICollateralRegistry {
 
     // getters
 
+    function totalCollaterals() external view returns (uint256) {
+        return activeBranchIds.length;
+    }
+
     function getToken(uint256 _index) external view returns (IERC20Metadata) {
-        if (_index >= totalCollaterals) {
+        if (_index >= activeBranchIds.length) {
             revert("Invalid index");
-        }else{
-            return collateralTokensList[_index];
+        } else {
+            uint256 branchId = activeBranchIds[_index];
+            return allCollateralTokenAddresses[branchId];
         }
     }
 
     function getTroveManager(uint256 _index) public view returns (ITroveManager) {
-        if (_index >= totalCollaterals) {
+        if (_index >= activeBranchIds.length) {
             revert("Invalid index");
-        }else{
-            return troveManagersList[_index];
+        } else {
+            uint256 branchId = activeBranchIds[_index];
+            return allTroveManagerAddresses[branchId];
+        }
+    }
+
+    function getRemovedToken(uint256 _index) external view returns (IERC20Metadata) {
+        if (_index >= removedBranchIds.length) {
+            revert("Invalid index");
+        } else {
+            uint256 branchId = removedBranchIds[_index];
+            return allCollateralTokenAddresses[branchId];
+        }
+    }
+
+    function getRemovedTroveManager(uint256 _index) public view returns (ITroveManager) {
+        if (_index >= removedBranchIds.length) {
+            revert("Invalid index");
+        } else {
+            uint256 branchId = removedBranchIds[_index];
+            return allTroveManagerAddresses[branchId];
         }
     }
 
@@ -285,6 +328,10 @@ contract CollateralRegistry is ICollateralRegistry {
         require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
     }
 
+    function getDebtLimit(uint256 _indexTroveManager) external view returns (uint256) {
+        return getTroveManager(_indexTroveManager).getDebtLimit();
+    }
+
     function updateDebtLimit(uint256 _indexTroveManager, uint256 _newDebtLimit) external onlyGovernor {
         //limited to increasing by 2x at a time, maximum. Decrease by any amount.
         uint256 currentDebtLimit = getTroveManager(_indexTroveManager).getDebtLimit();
@@ -294,33 +341,49 @@ contract CollateralRegistry is ICollateralRegistry {
         getTroveManager(_indexTroveManager).setDebtLimit(_newDebtLimit);
     }
 
-    function getDebtLimit(uint256 _indexTroveManager) external view returns (uint256) {
-        return getTroveManager(_indexTroveManager).getDebtLimit();
+    function updateCCR(uint256 _collIndex, uint256 _newCCR) external onlyGovernor {
+        getTroveManager(_collIndex).addressesRegistry().updateCCR(_newCCR);
+    }
+
+    function updateMCR(uint256 _collIndex, uint256 _newMCR) external onlyGovernor {
+        getTroveManager(_collIndex).addressesRegistry().updateMCR(_newMCR);
+    }
+
+    function updateBCR(uint256 _collIndex, uint256 _newBCR) external onlyGovernor {
+        getTroveManager(_collIndex).addressesRegistry().updateBCR(_newBCR);
+    }
+
+    function updateSCR(uint256 _collIndex, uint256 _newSCR) external onlyGovernor {
+        getTroveManager(_collIndex).addressesRegistry().updateSCR(_newSCR);
     }
 
     // ==== Add a new collateral ==== 
-    function addCollateral(IERC20Metadata _token, ITroveManager _troveManager, uint256 _index) external {
-        require(msg.sender == governor, "CollateralRegistry: Only governor can add collateral");
-        require(_index >= 0 && _index < totalCollaterals, "CollateralRegistry: Invalid index"); // 0-9
-
+    /**
+     * @dev This function adds new collateral branch at the end of the collateral list.
+     * The collateral branch will have a unique index in mapping of all collateral branches that differs from the index of the collateral branch in the collateral list.
+     * The unique index is used to get the collateral branch during redemptions and such. The index in the collateral list does not matter.
+     * @param _token token address of collateral
+     * @param _troveManager trove manager address of collateral
+     */
+    function addCollateral(IERC20Metadata _token, ITroveManager _troveManager) external onlyGovernor {
         //validate input
         require(address(_token) != address(0), "CollateralRegistry: Token cannot be address(0)");
         require(address(_troveManager) != address(0), "CollateralRegistry: TroveManager cannot be address(0)");
 
-        //validate existing collateral
-        require(address(collateralTokensList[_index]) == address(0), "CollateralRegistry: Collateral already exists. Cannot overwrite.");
-        require(address(troveManagersList[_index]) == address(0), "CollateralRegistry: TroveManager already exists. Cannot overwrite.");
+        uint256 branchId = _troveManager.branchId();
+        require(branchId == branches, "CollateralRegistry: TroveManager branchId does not match master index");
+        require(address(allCollateralTokenAddresses[branchId]) == address(0), "CollateralRegistry: Collateral already exists.");
+        require(address(allTroveManagerAddresses[branchId]) == address(0), "CollateralRegistry: TroveManager already exists.");
 
         //add collateral
-        collateralTokensList[_index] = _token;
-        troveManagersList[_index] = _troveManager;
-
-        allCollateralTokenAddresses[masterIndex] = _token;
-        allTroveManagerAddresses[masterIndex] = _troveManager;
-        masterIndex++;
+        allCollateralTokenAddresses[branchId] = _token;
+        allTroveManagerAddresses[branchId] = _troveManager;
+        activeBranchIds.push(branchId);
+        isActiveCollateral[branchId] = true;
+        branches++;
 
         //emit event
-        emit CollateralAdded(address(_token), address(_troveManager), _index);
+        emit CollateralAdded(address(_token), address(_troveManager), branchId);
     }
 
     // ==== Remove a collateral ==== 
@@ -328,37 +391,38 @@ contract CollateralRegistry is ICollateralRegistry {
     //1. Remove the collateral from the CollateralRegistry
     //2. allow users to pay back their debt, but not take out new debt, while maintaining existing BCR.
 
-    function removeCollateral(uint256 _index) external {
-        require(msg.sender == governor, "CollateralRegistry: Only governor can remove collateral");
-        require(_index >= 0 && _index < totalCollaterals, "CollateralRegistry: Invalid index"); // 0-9
+    /**
+     * 
+     * @param _index The index of collateral in the collateral list. Not the master index.
+     */
+    function removeCollateral(uint256 _index) external onlyGovernor {
+        require(_index >= 0 && _index < activeBranchIds.length, "CollateralRegistry: Invalid index"); // 0-9
 
-        IERC20Metadata collateralToken = allCollateralTokenAddresses[_index];
-        ITroveManager troveManager = allTroveManagerAddresses[_index];
+        uint256 branchId = activeBranchIds[_index];
+
+        IERC20Metadata collateralToken = allCollateralTokenAddresses[branchId];
+        ITroveManager troveManager = allTroveManagerAddresses[branchId];
 
         //validate existing collateral
         require(address(collateralToken) != address(0), "CollateralRegistry: Collateral does not exist.");
         require(address(troveManager) != address(0), "CollateralRegistry: TroveManager does not exist.");
+        require(branchId == troveManager.branchId(), "CollateralRegistry: Wrong branchId");
 
-        //remove collateral
-        collateralTokensList[_index] = IERC20Metadata(address(0));
-        troveManagersList[_index] = ITroveManager(address(0));
+        // remove collateral from active collateral list
+        isActiveCollateral[branchId] = false;
+        activeBranchIds[_index] = activeBranchIds[activeBranchIds.length - 1];
+        activeBranchIds.pop();
 
-        //add to removed collateral tokens and trove managers lists
-        uint256 removedIndex = removedCollateralTokensList.length;
-        removedCollateralTokensList[removedIndex] = collateralToken;
-        removedTroveManagersList[removedIndex] = troveManager;
+        // add to removed collateral tokens and trove managers lists
+        removedBranchIds.push(branchId);
 
-        //emit event
-        emit CollateralRemoved(_index, address(collateralToken), address(troveManager));
+        // emit event
+        emit CollateralRemoved(branchId, address(collateralToken), address(troveManager));
     }
 
     // Once all troves are closed/redeemed/liquidated, we can permanently delete the collateral from the removed collateral tokens and trove managers lists
     function _permanentlyDeleteFromRemovedCollaterals(uint256 _index) internal {
-        uint256 length = removedCollateralTokensList.length;
-        removedCollateralTokensList[_index] = removedCollateralTokensList[length - 1];
-        removedTroveManagersList[_index] = removedTroveManagersList[length - 1];
-
-        removedCollateralTokensList.pop();
-        removedTroveManagersList.pop();
+        removedBranchIds[_index] = removedBranchIds[removedBranchIds.length - 1];
+        removedBranchIds.pop();
     }
 }
