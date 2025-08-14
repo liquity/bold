@@ -30,7 +30,7 @@ Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals 
 7. Deposits into the Stability Pool of removed collateral types are still allowed. This is to ensure liquidations can still process if more deposits are required to do so.
 
 ## Collateral Registry
-Each collateral branch has a unique `uint branchId` that is used to get correct collateral branch in the `CollateralRegistry`. The `TroveManager` and collateral token of each branch is stored in the mappings `allCollaterTokenAddresses` and `allTroveManagerAddresses` by their respective `branchId`. 
+Each collateral branch has a unique `uint branchId` that is used to get correct collateral branch in the `CollateralRegistry`. The `TroveManager` and collateral token of each branch is stored in the mappings `allCollateralTokenAddresses` and `allTroveManagerAddresses` by their respective `branchId`. 
 
 
 <img width="830" alt="Liquity V2" src="https://github.com/user-attachments/assets/d9eb5b2a-d437-4472-94d6-07fa537e689a" />
