@@ -13,8 +13,6 @@ import {
   GovernanceVotingPower,
 } from "../generated/schema";
 
-const ZERO = BigInt.fromI32(0);
-
 export function handleRegisterInitiative(event: RegisterInitiativeEvent): void {
   let initiative = new GovernanceInitiative(event.params.initiative.toHex());
   initiative.registered = true;
@@ -35,10 +33,10 @@ function getVotingPower(id: string): GovernanceVotingPower {
 
   if (votingPower === null) {
     votingPower = new GovernanceVotingPower(id);
-    votingPower.allocatedLQTY = ZERO;
-    votingPower.allocatedOffset = ZERO;
-    votingPower.unallocatedLQTY = ZERO;
-    votingPower.unallocatedOffset = ZERO;
+    votingPower.allocatedLQTY = BigInt.zero();
+    votingPower.allocatedOffset = BigInt.zero();
+    votingPower.unallocatedLQTY = BigInt.zero();
+    votingPower.unallocatedOffset = BigInt.zero();
   }
 
   return votingPower;
@@ -62,11 +60,11 @@ export function handleWithdrawLQTY(event: WithdrawLQTYEvent): void {
   let userVotingPower = getVotingPower(event.params.user.toHex());
   let toteVotingPower = getVotingPower("total");
 
-  let offsetDecrease = userVotingPower.unallocatedLQTY.notEqual(ZERO)
+  let offsetDecrease = userVotingPower.unallocatedLQTY.notEqual(BigInt.zero())
     ? userVotingPower.unallocatedOffset
       .times(event.params.lqtyReceived)
       .div(userVotingPower.unallocatedLQTY)
-    : ZERO;
+    : BigInt.zero();
 
   userVotingPower.unallocatedLQTY = userVotingPower.unallocatedLQTY.minus(event.params.lqtyReceived);
   toteVotingPower.unallocatedLQTY = toteVotingPower.unallocatedLQTY.minus(event.params.lqtyReceived);
@@ -117,10 +115,10 @@ function getAllocation(
       allocationIndex.user = userId;
       allocationIndex.initiative = initiativeId;
 
-      allocation.voteLQTY = ZERO;
-      allocation.vetoLQTY = ZERO;
-      allocation.voteOffset = ZERO;
-      allocation.vetoOffset = ZERO;
+      allocation.voteLQTY = BigInt.zero();
+      allocation.vetoLQTY = BigInt.zero();
+      allocation.voteOffset = BigInt.zero();
+      allocation.vetoOffset = BigInt.zero();
     } else {
       let prevAllocation = GovernanceAllocation.load(allocationIndex.latestAllocation);
       if (prevAllocation === null) {
@@ -149,21 +147,21 @@ export function handleAllocateLQTY(event: AllocateLQTYEvent): void {
   let user = getAllocation(userId, initiativeId, event.params.atEpoch);
   let tote = getAllocation(null, initiativeId, event.params.atEpoch);
 
-  let deltaVoteOffset = event.params.deltaVoteLQTY.gt(ZERO)
-    ? (userVotingPower.unallocatedLQTY.notEqual(ZERO)
+  let deltaVoteOffset = event.params.deltaVoteLQTY.gt(BigInt.zero())
+    ? (userVotingPower.unallocatedLQTY.notEqual(BigInt.zero())
       ? userVotingPower.unallocatedOffset.times(event.params.deltaVoteLQTY).div(userVotingPower.unallocatedLQTY)
-      : ZERO)
-    : (user.allocation.voteLQTY.notEqual(ZERO)
+      : BigInt.zero())
+    : (user.allocation.voteLQTY.notEqual(BigInt.zero())
       ? user.allocation.voteOffset.times(event.params.deltaVoteLQTY).div(user.allocation.voteLQTY)
-      : ZERO);
+      : BigInt.zero());
 
-  let deltaVetoOffset = event.params.deltaVetoLQTY.gt(ZERO)
-    ? (userVotingPower.unallocatedLQTY.notEqual(ZERO)
+  let deltaVetoOffset = event.params.deltaVetoLQTY.gt(BigInt.zero())
+    ? (userVotingPower.unallocatedLQTY.notEqual(BigInt.zero())
       ? userVotingPower.unallocatedOffset.times(event.params.deltaVetoLQTY).div(userVotingPower.unallocatedLQTY)
-      : ZERO)
-    : (user.allocation.vetoLQTY.notEqual(ZERO)
+      : BigInt.zero())
+    : (user.allocation.vetoLQTY.notEqual(BigInt.zero())
       ? user.allocation.vetoOffset.times(event.params.deltaVetoLQTY).div(user.allocation.vetoLQTY)
-      : ZERO);
+      : BigInt.zero());
 
   user.allocation.voteLQTY = user.allocation.voteLQTY.plus(event.params.deltaVoteLQTY);
   tote.allocation.voteLQTY = tote.allocation.voteLQTY.plus(event.params.deltaVoteLQTY);
