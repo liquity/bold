@@ -29,6 +29,11 @@ contract CollateralRegistry is ICollateralRegistry {
 
     uint256[] public removedBranchIds;
 
+    // NOTE: 
+    // Used to get the index of a branch in the removedBranchIds array
+    // in a more gas efficient way than iterating through the array.
+    mapping(uint256 branchId => uint256 indexInRemovedBranchIds) internal _removedBranchIdsIndex;
+
     IBoldToken public immutable boldToken;
 
     uint256 public baseRate;
@@ -414,7 +419,9 @@ contract CollateralRegistry is ICollateralRegistry {
         activeBranchIds.pop();
 
         // add to removed collateral tokens and trove managers lists
+        uint256 index = removedBranchIds.length;
         removedBranchIds.push(branchId);
+        _removedBranchIdsIndex[branchId] = index;
 
         // emit event
         emit CollateralRemoved(branchId, address(collateralToken), address(troveManager));
@@ -422,30 +429,25 @@ contract CollateralRegistry is ICollateralRegistry {
 
     // Once all troves are closed/redeemed/liquidated, we can permanently delete the collateral from the removed collateral tokens and trove managers lists
     function _permanentlyDeleteFromRemovedCollaterals(uint256 _index) internal {
-        removedBranchIds[_index] = removedBranchIds[removedBranchIds.length - 1];
+        uint256 branchId = removedBranchIds[_index];
+        uint256 lastBranchId = removedBranchIds[removedBranchIds.length - 1];
+        removedBranchIds[_index] = lastBranchId;
         removedBranchIds.pop();
+        
+        _removedBranchIdsIndex[lastBranchId] = _index;
+        delete _removedBranchIdsIndex[branchId];
     }
 
     // Only trove manager can call this function
     // This is called in _closeTrove() in TroveManager.sol only once last trove is closed
     function deleteFromRemovedCollaterals(uint256 _branchId) external {
-        // NOTE: 
-        // There might be a more gas efficient way to do this
-        // by having a mapping(branchId => index in removedBranchIds)
-        // that's updated in removeCollateral()
-        // and then we can just get the index from the mapping.
-        ITroveManager troveManager;
-        uint256 index;
-        for (uint256 i; i < removedBranchIds.length; i++) {
-            if (removedBranchIds[i] == _branchId) {
-                troveManager = getRemovedTroveManager(i);
-                index = i;
-                break;
-            }
-        }
+        uint256 index = _removedBranchIdsIndex[_branchId];
+        ITroveManager troveManager = getRemovedTroveManager(index);
+
+        require(_branchId == removedBranchIds[index], "CollateralRegistry: Wrong branchId");
         require(msg.sender == address(troveManager), "CollateralRegistry: Only trove manager can call this function");
-        // An extra check to ensure that the trove manager has no troves left
-        // This may prove to be redundant and can be removed in the future
+        // An extra check to ensure that the trove manager has no troves left.
+        // This may prove to be redundant and can be removed in the future.
         require(troveManager.getTroveIdsCount() == 0, "CollateralRegistry: Trove manager has troves");
 
         // remove collateral from removed collateral tokens and trove managers lists
