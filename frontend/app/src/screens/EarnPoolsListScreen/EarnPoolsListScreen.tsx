@@ -16,6 +16,7 @@ import { isYusndEnabled, useYusndPosition } from "@/src/yusnd";
 import { BREAKPOINTS, useBreakpointName } from "@/src/breakpoints";
 import { PartnerStrategySummary } from "@/src/comps/EarnPositionSummary/PartnerStrategySummary";
 import { SubScreen } from "@/src/comps/Screen/SubScreen";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 
 type PoolId = CollIndex | "yusnd";
 
@@ -144,6 +145,17 @@ export function EarnPoolsListScreen() {
               <PartnerStrategySummary strategy={strategyId} />
             </a.div>
           ))}
+        </div>
+        <div className={css({
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          color: "content",
+          gap: 8,
+        })}>
+          <p>
+            Want to partner with us? Reach out on <LinkTextButton href="https://discord.gg/5h3avBYxcn" target="_blank" rel="noopener noreferrer" label="Discord" />.
+          </p>
         </div>
       </SubScreen>
     </Screen>
