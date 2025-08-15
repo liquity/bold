@@ -213,7 +213,6 @@ contract BasicOps is DevTestSetup {
 
 
     function testAddCollateral() public {
-
         IERC20Metadata[] memory tokens = new IERC20Metadata[](1);
         tokens[0] = IERC20Metadata(address(0x0000000000000000000000000000000000000000));
         ITroveManager[] memory troveManagers = new ITroveManager[](1);
@@ -221,11 +220,30 @@ contract BasicOps is DevTestSetup {
 
         // Deploy a new collateral registry
         CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(boldToken, tokens, troveManagers, address(0x123));
-        
+        uint256 branchId = myCollateralRegistry.branches();
+
         vm.startPrank(address(0x123));
         IERC20Metadata collToken = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
-        ITroveManager troveManager = new TroveManager(addressesRegistry);
-        myCollateralRegistry.addCollateral(collToken, troveManager, 0);
+        ITroveManager troveManager = new TroveManager(addressesRegistry, branchId);
+        myCollateralRegistry.addCollateral(collToken, troveManager);
         vm.stopPrank();
+    }
+
+    function testRemoveCollateral() public {
+        IERC20Metadata[] memory tokens = new IERC20Metadata[](2);
+        tokens[0] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        tokens[1] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        ITroveManager[] memory troveManagers = new ITroveManager[](2);
+        troveManagers[0] = new TroveManager(addressesRegistry, 0);
+        troveManagers[1] = new TroveManager(addressesRegistry, 1);
+
+        // Deploy a new collateral registry
+        CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(boldToken, tokens, troveManagers, address(0x123));
+
+        vm.startPrank(address(0x123));
+        myCollateralRegistry.removeCollateral(1);
+        vm.stopPrank();
+
+        assertEq(myCollateralRegistry.removedBranchIds(0), 1);
     }
 }

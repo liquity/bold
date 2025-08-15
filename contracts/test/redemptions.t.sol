@@ -1083,4 +1083,24 @@ contract Redemptions is DevTestSetup {
 
     // TODO: tests borrower for combined adjustments - debt changes and coll add/withdrawals.
     // Borrower should only be able to close OR leave Trove at >= min net debt.
+
+
+    function testRedemptionAfterCollateralRemoved() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        // Remove collateral branch
+        vm.prank(governor);
+        collateralRegistry.removeCollateral(0);
+
+        uint256 debt_A = troveManager.getTroveEntireDebt(troveIDs.A);
+        uint256 debt_B = troveManager.getTroveEntireDebt(troveIDs.B);
+
+        // E redeems enough to fully redeem A and B
+        uint256 redeemAmount_1 = debt_A + debt_B;
+        redeem(E, redeemAmount_1);
+
+        // Check A and B's Trove debt equals zero
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.A), 0);
+        assertEq(troveManager.getTroveEntireDebt(troveIDs.B), 0);
+    }
 }

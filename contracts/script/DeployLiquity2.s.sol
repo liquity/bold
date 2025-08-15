@@ -592,6 +592,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
 
+    function getBytecode(bytes memory _creationCode, address _addressesRegistry, uint256 _branchId) public pure returns (bytes memory) {
+        return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _branchId));
+    }
+
     function _deployAndConnectContracts(
         TroveManagerParams[] memory troveManagerParamsArray,
         string[] memory _collNames,
@@ -669,7 +673,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 address(vars.troveManagers[vars.i]),
                 r.hintHelpers,
                 r.multiTroveGetter,
-                computeGovernanceAddress(_deployGovernanceParams)
+                computeGovernanceAddress(_deployGovernanceParams),
+                vars.i
             );
             r.contractsArray[vars.i] = vars.contracts;
         }
@@ -689,7 +694,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
     }
 
-    function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams, uint256 _collIndex)
+    function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams, uint256 _branchId)
         internal
         returns (IAddressesRegistry, address)
     {
@@ -704,7 +709,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
         address troveManagerAddress = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(TroveManager).creationCode, address(addressesRegistry), _collIndex))
+            SALT, keccak256(getBytecode(type(TroveManager).creationCode, address(addressesRegistry), _branchId))
         );
 
         return (addressesRegistry, troveManagerAddress);
@@ -719,7 +724,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         address _troveManagerAddress,
         IHintHelpers _hintHelpers,
         IMultiTroveGetter _multiTroveGetter,
-        address _governance
+        address _governance,
+        uint256 _branchId
     ) internal returns (LiquityContracts memory contracts) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _collToken;
@@ -786,7 +792,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         contracts.addressesRegistry.setAddresses(addressVars);
 
         contracts.borrowerOperations = new BorrowerOperations{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry, _branchId);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
@@ -840,14 +846,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             }
             // RETH
             assert(_collTokenAddress == RETH_ADDRESS);
-            return new RETHPriceFeed(
-                ETH_ORACLE_ADDRESS,
+            return IPriceFeed(address(new RETHPriceFeed(
+                deployer,
                 RETH_ORACLE_ADDRESS,
-                RETH_ADDRESS,
-                ETH_USD_STALENESS_THRESHOLD,
-                RETH_ETH_STALENESS_THRESHOLD,
-                _borroweOperationsAddress
-            );
+                RETH_ETH_STALENESS_THRESHOLD
+            )));
         }
 
         // Sepolia

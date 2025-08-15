@@ -69,6 +69,7 @@ contract DevTestSetup is BaseTest {
         gasCompZapper = zappers.gasCompZapper;
         leverageZapperCurve = zappers.leverageZapperCurve;
         leverageZapperUniV3 = zappers.leverageZapperUniV3;
+        governor = deployer.GOVERNOR();
 
         // Give some Coll to test accounts, and approve it to BorrowerOperations
         uint256 initialCollAmount = 10_000_000_000e18;
