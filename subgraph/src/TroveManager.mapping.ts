@@ -141,9 +141,11 @@ export function handleBatchedTroveUpdated(batchedTroveUpdatedEvent: BatchedTrove
     BigInt.zero(), // batched debt handled at batch level
   );
 
-  trove.debt = batchUpdatedEvent.params._debt
-    .times(batchedTroveUpdatedEvent.params._batchDebtShares)
-    .div(batchUpdatedEvent.params._totalDebtShares);
+  trove.debt = batchUpdatedEvent.params._totalDebtShares.notEqual(BigInt.zero())
+    ? batchUpdatedEvent.params._debt
+      .times(batchedTroveUpdatedEvent.params._batchDebtShares)
+      .div(batchUpdatedEvent.params._totalDebtShares)
+    : BigInt.zero();
   trove.deposit = batchedTroveUpdatedEvent.params._coll;
   trove.stake = batchedTroveUpdatedEvent.params._stake;
   trove.interestRate = BigInt.zero();
