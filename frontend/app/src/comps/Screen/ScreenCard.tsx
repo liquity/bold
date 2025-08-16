@@ -55,10 +55,12 @@ export function ScreenCard({
           display: "flex",
           justifyContent: "center",
           flexDirection: "column",
+          maxWidth: {
+            medium: FINAL_CARD_WIDTH
+          },
         }),
       )}
       style={{
-        width: FINAL_CARD_WIDTH,
         height: spring.containerHeight,
       }}
     >
