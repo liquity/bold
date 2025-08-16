@@ -1,6 +1,6 @@
 {
   "framework": "nextjs",
+  "installCommand": "printenv | grep '^NEXT_PUBLIC_' > ./frontend/app/.env.local && pnpm -w i --frozen-lockfile",
   "buildCommand": "pnpm -w --filter @liquity2/app build",
-  "installCommand": "pnpm -w i --frozen-lockfile",
   "outputDirectory": ".next"
 }
