@@ -1,8 +1,6 @@
 {
-  "framework": null,
-  "buildCommand": "",
-  "public": false,
-  "github": {
-    "enabled": false
-  }
+  "framework": "nextjs",
+  "buildCommand": "pnpm -w --filter @liquity2/app build",
+  "installCommand": "pnpm -w i --frozen-lockfile",
+  "outputDirectory": ".next"
 }
