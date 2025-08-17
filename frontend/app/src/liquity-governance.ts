@@ -176,31 +176,40 @@ export function useNamedInitiatives() {
   });
 }
 
+export type InitiativeState = Record<Address, {
+  status: InitiativeStatus;
+  lastEpochClaim: bigint;
+  claimableAmount: bigint;
+}>
+
 export function useInitiativesStates(initiatives: Address[]) {
   const wagmiConfig = useWagmiConfig();
 
   const Governance = getProtocolContract("Governance");
 
+  // stabilize the order of addresses (cache improvement and predictable)
+  const sortedAddress = useMemo(
+    () => [...initiatives].filter(Boolean).sort((a, b) => a.localeCompare(b)),
+    [initiatives]
+  );
+
   return useQuery({
-    queryKey: ["initiativesStates", initiatives.join("")],
+    enabled: sortedAddress.length > 0,
+    queryKey: ["initiativesStates", sortedAddress.join("")],
     queryFn: async () => {
       const results = await readContracts(wagmiConfig, {
-        contracts: initiatives.map((address) => ({
+        contracts: sortedAddress.map((address) => ({
           ...Governance,
           functionName: "getInitiativeState",
           args: [address],
         } as const)),
       });
 
-      const initiativesStates: Record<Address, {
-        status: InitiativeStatus;
-        lastEpochClaim: bigint;
-        claimableAmount: bigint;
-      }> = {};
+      const initiativesStates: InitiativeState = {};
 
       for (const [i, { result }] of results.entries()) {
-        if (result && initiatives[i]) {
-          initiativesStates[initiatives[i]] = {
+        if (result && sortedAddress[i]) {
+          initiativesStates[sortedAddress[i]] = {
             status: initiativeStatusFromNumber(result[0]),
             lastEpochClaim: result[1],
             claimableAmount: result[2],

@@ -28,14 +28,116 @@ import { css } from "@/styled-system/css";
 import { Button, IconDownvote, IconEdit, IconExternal, IconUpvote, shortenAddress, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { FC, PropsWithChildren } from "react";
+import { isInitiativeStatusActive } from '@/src/screens/StakeScreen/utils';
 
-function isInitiativeStatusActive(
-  status: InitiativeStatus,
-): status is Exclude<InitiativeStatus, "disabled" | "nonexistent" | "unregisterable" | "warm up"> {
-  return status !== "disabled"
-    && status !== "nonexistent"
-    && status !== "unregisterable"
-    && status !== "warm up";
+// TODO: remove this component after merging Loan Card PR with CrossedText
+interface CrossedTextProps extends PropsWithChildren {
+  title?: string;
+}
+
+export const CrossedText: FC<CrossedTextProps> = ({ children, title }) => (
+  <div
+    title={title}
+    className={css({
+      color: "contentAlt",
+      textDecoration: "line-through",
+    })}
+  >
+    {children}
+  </div>
+);
+
+interface UseProjectedUpvoteSharesArgs {
+  initiativesAddresses: Address[];
+  voteAllocations: VoteAllocations; // current user allocation
+  inputVoteAllocations: VoteAllocations; // allocations from user input
+  voteTotalsData?: Record<Address, VoteTotals>;
+  initiativesStatesData?: Record<Address, { status: InitiativeStatus }>;
+  // TODO: refactor governanceStateData, governanceUserData should be required
+  governanceStateData?: {
+    countedVoteLQTY: bigint;
+    countedVoteOffset: bigint;
+    epochEnd: bigint;
+  };
+  governanceUserData?: { stakedLQTY: bigint; stakedOffset: bigint; epochEnd: bigint } | null;
+}
+
+export function useProjectedUpvoteShares(params: UseProjectedUpvoteSharesArgs) {
+  const {
+    initiativesAddresses,
+    governanceStateData: gs,
+    governanceUserData: gu,
+    voteTotalsData,
+    voteAllocations,
+    inputVoteAllocations,
+    initiativesStatesData,
+  } = params;
+
+  return useMemo(() => {
+    if (!gs || !gu || !voteTotalsData) return {} as Record<Address, Dnum>;
+
+    const vp_counted = votingPower(
+      gs.countedVoteLQTY,
+      gs.countedVoteOffset,
+      gs.epochEnd,
+    );
+
+    const vp_user = votingPower(gu.stakedLQTY, gu.stakedOffset, gs.epochEnd);
+
+    // pct_user_i current user upvote
+    const pct_curr: Record<Address, Dnum> = {};
+    for (const addr of initiativesAddresses) {
+      const a = voteAllocations[addr];
+      pct_curr[addr] = a?.vote === "for" ? a.value : DNUM_0;
+    }
+
+    // only for active initiatives
+    let sumDelta = DNUM_0;
+    const deltaByAddr: Record<Address, Dnum> = {};
+
+    for (const addr of initiativesAddresses) {
+      const next =
+        inputVoteAllocations[addr]?.vote === "for"
+          ? (inputVoteAllocations[addr]?.value ?? DNUM_0)
+          : DNUM_0;
+      const delta = dn.sub(next, pct_curr[addr] ?? DNUM_0);
+
+      if (isInitiativeStatusActive(initiativesStatesData?.[addr]?.status || "nonexistent")) {
+        deltaByAddr[addr] = delta;
+        sumDelta = dn.add(sumDelta, delta);
+      } else {
+        deltaByAddr[addr] = DNUM_0;
+      }
+    }
+
+    // sum of all initiatives
+    const den = dn.add(dnum18(vp_counted), dn.mul(dnum18(vp_user), sumDelta));
+    const projected: Record<Address, Dnum> = {};
+
+    for (const addr of initiativesAddresses) {
+      const vt = voteTotalsData[addr];
+      if (!vt) continue;
+
+      const vp_i = votingPower(vt.voteLQTY, vt.voteOffset, gs.epochEnd);
+      const num = dn.add(
+        dnum18(vp_i),
+        dn.mul(dnum18(vp_user), deltaByAddr[addr] ?? DNUM_0),
+      );
+
+      projected[addr] = dn.eq(den, 0) ? DNUM_0 : dn.div(num, den); // 0..1
+    }
+
+    return projected;
+  }, [
+    initiativesAddresses,
+    gs,
+    gu,
+    voteTotalsData,
+    voteAllocations,
+    inputVoteAllocations,
+    initiativesStatesData,
+  ]);
 }
 
 function initiativeStatusLabel(status: InitiativeStatus) {
@@ -84,6 +186,7 @@ export function PanelVoting() {
   const initiatives = useNamedInitiatives();
 
   const initiativesAddresses = initiatives.data?.map((i) => i.address) ?? [];
+  // TODO: refactor {data: initiativesStates}
   const initiativesStates = useInitiativesStates(initiativesAddresses);
   const currentBribes = useCurrentEpochBribes(initiativesAddresses);
   const voteTotals = useInitiativesVoteTotals(initiativesAddresses);
@@ -94,12 +197,25 @@ export function PanelVoting() {
   const [voteAllocations, setVoteAllocations] = useState<VoteAllocations>({});
 
   // vote allocations from user input
-  const [inputVoteAllocations, setInputVoteAllocations] = useState<VoteAllocations>({});
+  const [inputVoteAllocations, setInputVoteAllocations] =
+    useState<VoteAllocations>({});
+
+  const projectedShares = useProjectedUpvoteShares({
+    initiativesAddresses,
+    governanceStateData: governanceState.data,
+    // TODO: add type for governanceUserData
+    governanceUserData: governanceUser.data,
+    voteTotalsData: voteTotals.data,
+    voteAllocations,
+    inputVoteAllocations,
+    initiativesStatesData: initiativesStates.data,
+  });
 
   // fill input vote allocations from user data
   useEffect(() => {
     if (!governanceState.data || !governanceUser.data) return;
 
+    // vp_user — the user's staked voting power
     const stakedVotingPower = votingPower(
       governanceUser.data.stakedLQTY,
       governanceUser.data.stakedOffset,
@@ -258,6 +374,8 @@ export function PanelVoting() {
     Number(governanceState.data.epochEnd) * 1000,
   );
 
+  // TODO: refactor create array of statuses and check them [].every
+  // TODO: some times we got infinity loading
   if (
     governanceState.status !== "success"
     || initiatives.status !== "success"
@@ -535,6 +653,7 @@ export function PanelVoting() {
                   onVoteInputChange={handleVoteInputChange}
                   voteAllocation={voteAllocations[initiative.address]}
                   voteTotals={voteTotals.data?.[initiative.address]}
+                  initiativeNewPct={projectedShares[initiative.address]}
                 />
               );
             })}
@@ -702,6 +821,7 @@ export function PanelVoting() {
   );
 }
 
+// vp_counted - the current "counted" voting power, in other words the total voting power allocated to upvotes:
 function calculateVotesPct(
   governanceState?: { countedVoteLQTY: bigint; countedVoteOffset: bigint; epochEnd: bigint },
   initiativeState?: VoteTotals,
@@ -736,20 +856,22 @@ function InitiativeRow({
   onVoteInputChange,
   voteAllocation,
   voteTotals,
+  initiativeNewPct,
 }: {
+  disableFor: boolean;
+  disabled: boolean;
+  initiative: Initiative;
+  inputVoteAllocation?: VoteAllocations[Address];
+  onVote: (initiative: Address, vote: Vote) => void;
+  onVoteInputChange: (initiative: Address, value: Dnum) => void;
   bribe?: {
     boldAmount: Dnum;
     tokenAmount: Dnum;
     tokenAddress: Address;
     tokenSymbol: string;
   };
-  disableFor: boolean;
-  disabled: boolean;
-  initiative: Initiative;
   initiativesStatus?: InitiativeStatus;
-  inputVoteAllocation?: VoteAllocations[Address];
-  onVote: (initiative: Address, vote: Vote) => void;
-  onVoteInputChange: (initiative: Address, value: Dnum) => void;
+  initiativeNewPct?: Dnum;
   voteAllocation?: VoteAllocation;
   voteTotals?: VoteTotals;
 }) {
@@ -759,6 +881,7 @@ function InitiativeRow({
   const boldPrice = usePrice(bribe ? "BOLD" : null);
   const bribeTokenPrice = usePrice(bribe ? bribe.tokenSymbol : null);
   const governanceState = useGovernanceState();
+  // vp_counted — the current "counted" voting power, in other words the total voting power allocated to upvotes:
   const votesPct = calculateVotesPct(governanceState.data, voteTotals);
 
   return (
@@ -857,7 +980,15 @@ function InitiativeRow({
             title="Percentage of incentives the initiative would receive according to the current votes"
           >
             <span>Votes:</span>
-            <Amount title={null} value={votesPct} percentage />
+
+            {initiativeNewPct && votesPct && !dn.eq(initiativeNewPct, votesPct) ? (
+              <>
+                <Amount title={null} value={initiativeNewPct} percentage />
+                <CrossedText>
+                  <Amount title={null} value={votesPct} percentage />
+                </CrossedText>
+              </>
+            ) : <Amount title={null} value={votesPct} percentage />}
           </div>
 
           {bribe && (dn.gt(bribe.boldAmount, 0) || dn.gt(bribe.tokenAmount, 0)) && (
