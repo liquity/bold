@@ -1243,7 +1243,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         }
     }
 
-    function _requireActiveCollateral() internal view {
+    function _requireIsActiveBranch() internal view {
         require(isActive(), "TroveManager: Collateral is not active");
     }
 
@@ -1268,7 +1268,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         external
     {
         _requireCallerIsBorrowerOperations();
-        _requireActiveCollateral();
+        _requireIsActiveBranch();
 
         uint256 newStake = _computeNewStake(_troveChange.collIncrease);
 
@@ -1325,7 +1325,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     ) external {
         _requireCallerIsBorrowerOperations();
         // assert(batchIds[batches[_batchAddress].arrayIndex] == _batchAddress);
-        _requireActiveCollateral();
+        _requireIsActiveBranch();
 
         uint256 newStake = _computeNewStake(_troveChange.collIncrease);
 

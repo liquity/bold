@@ -5,10 +5,11 @@ pragma solidity 0.8.24;
 import "../Dependencies/Ownable.sol";
 import "../Dependencies/AggregatorV3Interface.sol";
 import "../BorrowerOperations.sol";
+import "../Interfaces/IPriceFeed.sol";
 
 // import "forge-std/console2.sol";
 
-abstract contract TokenPriceFeedBase is Ownable {
+abstract contract TokenPriceFeedBase is Ownable, IPriceFeed {
     // Determines where the PriceFeed sources data from. Possible states:
     // - primary: Uses the primary price calcuation, which depends on the specific feed
     // - lastGoodPrice: the last good price recorded by this PriceFeed.
