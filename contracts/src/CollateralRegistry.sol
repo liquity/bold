@@ -458,7 +458,7 @@ contract CollateralRegistry is ICollateralRegistry {
     // }
 
     // A replacement to `deleteFromRemovedCollaterals` function.
-    // Anyone can call this function which deletes any dead branches from removed collaterals list.
+    // Anyone can call this function which deletes first dead branch found in removed collaterals list.
     function cleanRemovedCollaterals() external {
         for (uint256 i; i < removedBranchIds.length; i++) {
             uint256 branchId = removedBranchIds[i];
@@ -466,6 +466,7 @@ contract CollateralRegistry is ICollateralRegistry {
             if (troveManager.getTroveIdsCount() == 0) {
                 _permanentlyDeleteFromRemovedCollaterals(i);
                 emit CollateralDeleted(branchId);
+                break;
             }
         }
     }
