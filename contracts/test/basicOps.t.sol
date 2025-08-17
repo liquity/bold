@@ -227,6 +227,10 @@ contract BasicOps is DevTestSetup {
         ITroveManager troveManager = new TroveManager(addressesRegistry, branchId);
         myCollateralRegistry.addCollateral(collToken, troveManager);
         vm.stopPrank();
+
+        uint256[] memory activeBranchIds = myCollateralRegistry.activeBranchIds();
+        assertEq(activeBranchIds.length, 2);
+        assertEq(activeBranchIds[1], branchId);
     }
 
     function testRemoveCollateral() public {
@@ -240,10 +244,39 @@ contract BasicOps is DevTestSetup {
         // Deploy a new collateral registry
         CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(boldToken, tokens, troveManagers, address(0x123));
 
-        vm.startPrank(address(0x123));
+        vm.prank(address(0x123));
         myCollateralRegistry.removeCollateral(1);
+
+        uint256[] memory removedBranchIds = myCollateralRegistry.removedBranchIds();
+        assertEq(removedBranchIds.length, 1);
+        assertEq(removedBranchIds[0], 1);
+    }
+
+    function testCleanRemovedCollaterals() public {
+        IERC20Metadata[] memory tokens = new IERC20Metadata[](2);
+        tokens[0] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        tokens[1] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        ITroveManager[] memory troveManagers = new ITroveManager[](2);
+        troveManagers[0] = new TroveManager(addressesRegistry, 0);
+        troveManagers[1] = new TroveManager(addressesRegistry, 1);
+
+        // Deploy a new collateral registry
+        CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(boldToken, tokens, troveManagers, address(0x123));
+
+        vm.startPrank(address(0x123));
+        myCollateralRegistry.removeCollateral(0);
+        myCollateralRegistry.removeCollateral(0);
         vm.stopPrank();
 
-        assertEq(myCollateralRegistry.removedBranchIds(0), 1);
+        uint256[] memory removedBranchIds = myCollateralRegistry.removedBranchIds();
+        assertEq(removedBranchIds.length, 2);
+        assertEq(removedBranchIds[0], 0);
+        assertEq(removedBranchIds[1], 1);
+
+        myCollateralRegistry.cleanRemovedCollaterals();
+
+        removedBranchIds = myCollateralRegistry.removedBranchIds();
+        assertEq(removedBranchIds.length, 1);
+        assertEq(removedBranchIds[0], 1);
     }
 }
