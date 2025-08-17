@@ -15,7 +15,8 @@ interface ICollateralRegistry {
     function isActiveCollateral(uint256 _branchId) external view returns (bool);
     function addCollateral(IERC20Metadata _token, ITroveManager _troveManager) external;
     function removeCollateral(uint256 _index) external;
-    function deleteFromRemovedCollaterals(uint256 _branchId) external;
+    // function deleteFromRemovedCollaterals(uint256 _branchId) external;
+    function cleanRemovedCollaterals() external;
 
     function baseRate() external view returns (uint256);
     function lastFeeOperationTime() external view returns (uint256);

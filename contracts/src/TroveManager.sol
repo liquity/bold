@@ -1541,7 +1541,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // require at least 1 trove in the system
         // ** NEW: **
         // TODO: Add check if branch has been removed, do we still require at least 1 trove in the system?
-        if (isActiveStatus && (shutdownTime == 0 || closedStatus == Status.closedByLiquidation)) {
+        if ((isActiveStatus && shutdownTime == 0) || closedStatus == Status.closedByLiquidation) {
             _requireMoreThanOneTroveInSystem(TroveIdsArrayLength);
         }
 
@@ -1590,9 +1590,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // ** NEW: **
         // If branch has been removed and there is no troves left in the system,
         // permanently delete branch in CollateralRegistry
-        if (!isActiveStatus && TroveIdsArrayLength == 1) {
-            collateralRegistry.deleteFromRemovedCollaterals(branchId);
-        }
+        // if (!isActiveStatus && TroveIdsArrayLength == 1) {
+        //     collateralRegistry.deleteFromRemovedCollaterals(branchId);
+        // }
     }
 
     function onAdjustTroveInsideBatch(
