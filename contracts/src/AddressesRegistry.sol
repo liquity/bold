@@ -86,7 +86,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         uint256 _liquidationPenaltyRedistribution
     ) Ownable(_owner) {
         if (_ccr <= 1e18 || _ccr >= 2e18) revert InvalidCCR();
-        if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR(); // Can we allow this to be over 2e18??
+        if (_mcr <= 1e18 || _mcr >= 5e18) revert InvalidMCR();
         if (_bcr < 5e16 || _bcr >= 50e16) revert InvalidBCR();
         if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();
         if (_liquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) revert SPPenaltyTooLow();
@@ -153,7 +153,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
 
     function updateMCR(uint256 _newMCR) external {
         require(msg.sender == address(collateralRegistry), "AddressesRegistry: Only collateral registry can call this function");
-        if (_newMCR <= 1e18 || _newMCR >= 2e18) revert InvalidMCR();
+        if (_newMCR <= 1e18 || _newMCR >= 5e18) revert InvalidMCR();
         MCR = _newMCR;
         emit MCRUpdated(_newMCR);
     }
