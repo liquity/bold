@@ -159,7 +159,7 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
         <TransactionDetailsRow
           label="Allocation reset"
           value={[
-            "All your votes will be dealocated.",
+            "All your votes will be deallocated.",
           ]}
         />
       );
@@ -197,7 +197,7 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
         };
 
         let remainingLQTY = stakedLQTY;
-        let [remainingVotes] = Object.values(voteAllocations)
+        let [remainingVotePct] = Object.values(voteAllocations)
           .map((x) => x?.value)
           .filter((x) => x !== undefined)
           .reduce((a, b) => dn.add(a, b), [0n, 18]);
@@ -208,9 +208,10 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
             throw new Error("Vote not found");
           }
 
-          let qty = remainingLQTY * vote.value[0] / remainingVotes;
+          const votePct = dn.from(vote.value, 18)[0];
+          const qty = remainingLQTY * votePct / remainingVotePct;
           remainingLQTY -= qty;
-          remainingVotes -= vote.value[0];
+          remainingVotePct -= votePct;
 
           if (vote?.vote === "for") {
             allocationArgs.votes[index] = qty;
