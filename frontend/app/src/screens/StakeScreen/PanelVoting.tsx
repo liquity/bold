@@ -106,7 +106,11 @@ export function PanelVoting() {
       governanceState.data.epochEnd,
     );
 
-    if (stakedVotingPower === 0n) return;
+    if (stakedVotingPower === 0n) {
+      setVoteAllocations({});
+      setInputVoteAllocations({});
+      return;
+    }
 
     const allocations: VoteAllocations = {};
 
@@ -136,7 +140,7 @@ export function PanelVoting() {
 
     setVoteAllocations(allocations);
     setInputVoteAllocations(allocations);
-  }, [governanceState.status, governanceUser.status]);
+  }, [governanceState.data, governanceUser.data]);
 
   const hasAnyAllocationChange = useMemo(() => {
     if (!governanceUser.data || !initiativesStates.data) {
