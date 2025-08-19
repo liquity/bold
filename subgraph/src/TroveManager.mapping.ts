@@ -245,58 +245,56 @@ function updateRateBracketDebt(
   prevTime: BigInt,
   newTime: BigInt,
 ): void {
-  let prevRateBracket: InterestRateBracket | null = null;
-  let newRateBracket: InterestRateBracket | null = null;
+  let rateBracket: InterestRateBracket | null = null;
 
   // remove debt from prev bracket
   if (prevRate.notEqual(BigInt.zero())) {
-    let prevRateFloored = getRateFloored(prevRate);
-    let prevRateBracketId = collId + ":" + prevRateFloored.toString();
+    let rateFloored = getRateFloored(prevRate);
+    let rateBracketId = collId + ":" + rateFloored.toString();
 
-    if (!(prevRateBracket = InterestRateBracket.load(prevRateBracketId))) {
-      throw new Error("InterestRateBracket not found: " + prevRateBracketId);
+    if (!(rateBracket = InterestRateBracket.load(rateBracketId))) {
+      throw new Error("InterestRateBracket not found: " + rateBracketId);
     }
 
-    prevRateBracket.totalDebt = prevRateBracket.totalDebt
+    rateBracket.totalDebt = rateBracket.totalDebt
       .minus(prevDebt);
-    prevRateBracket.pendingDebtTimesOneYearD36 = prevRateBracket.pendingDebtTimesOneYearD36
-      .plus(newTime.minus(prevRateBracket.updatedAt).times(prevRateBracket.sumDebtTimesRateD36))
+    rateBracket.pendingDebtTimesOneYearD36 = rateBracket.pendingDebtTimesOneYearD36
+      .plus(newTime.minus(rateBracket.updatedAt).times(rateBracket.sumDebtTimesRateD36))
       .minus(newTime.minus(prevTime).times(prevDebt).times(prevRate));
-    prevRateBracket.sumDebtTimesRateD36 = prevRateBracket.sumDebtTimesRateD36
+    rateBracket.sumDebtTimesRateD36 = rateBracket.sumDebtTimesRateD36
       .minus(prevDebt.times(prevRate));
-    prevRateBracket.updatedAt = newTime;
+    rateBracket.updatedAt = newTime;
   }
 
   // add debt to new bracket
   if (newRate.notEqual(BigInt.zero())) {
-    let newRateFloored = getRateFloored(newRate);
-    let newRateBracketId = collId + ":" + newRateFloored.toString();
+    let rateFloored = getRateFloored(newRate);
+    let rateBracketId = collId + ":" + rateFloored.toString();
 
-    newRateBracket = prevRateBracket && newRateBracketId === prevRateBracket.id
-      ? prevRateBracket
-      : InterestRateBracket.load(newRateBracketId);
+    if (!rateBracket || rateBracket.id !== rateBracketId) {
+      if (rateBracket) rateBracket.save();
 
-    if (!newRateBracket) {
-      newRateBracket = new InterestRateBracket(newRateBracketId);
-      newRateBracket.collateral = collId;
-      newRateBracket.rate = newRateFloored;
-      newRateBracket.totalDebt = BigInt.zero();
-      newRateBracket.sumDebtTimesRateD36 = BigInt.zero();
-      newRateBracket.pendingDebtTimesOneYearD36 = BigInt.zero();
-      newRateBracket.updatedAt = newTime;
+      if (!(rateBracket = InterestRateBracket.load(rateBracketId))) {
+        rateBracket = new InterestRateBracket(rateBracketId);
+        rateBracket.collateral = collId;
+        rateBracket.rate = rateFloored;
+        rateBracket.totalDebt = BigInt.zero();
+        rateBracket.sumDebtTimesRateD36 = BigInt.zero();
+        rateBracket.pendingDebtTimesOneYearD36 = BigInt.zero();
+        rateBracket.updatedAt = newTime;
+      }
     }
 
-    newRateBracket.totalDebt = newRateBracket.totalDebt
+    rateBracket.totalDebt = rateBracket.totalDebt
       .plus(newDebt);
-    newRateBracket.pendingDebtTimesOneYearD36 = newRateBracket.pendingDebtTimesOneYearD36
-      .plus(newTime.minus(newRateBracket.updatedAt).times(newRateBracket.sumDebtTimesRateD36));
-    newRateBracket.sumDebtTimesRateD36 = newRateBracket.sumDebtTimesRateD36
+    rateBracket.pendingDebtTimesOneYearD36 = rateBracket.pendingDebtTimesOneYearD36
+      .plus(newTime.minus(rateBracket.updatedAt).times(rateBracket.sumDebtTimesRateD36));
+    rateBracket.sumDebtTimesRateD36 = rateBracket.sumDebtTimesRateD36
       .plus(newDebt.times(newRate));
-    newRateBracket.updatedAt = newTime;
+    rateBracket.updatedAt = newTime;
   }
 
-  if (prevRateBracket) prevRateBracket.save();
-  if (newRateBracket && newRateBracket !== prevRateBracket) newRateBracket.save();
+  if (rateBracket) rateBracket.save();
 }
 
 export function handleBatchUpdated(event: BatchUpdatedEvent): void {
