@@ -6,8 +6,8 @@ pragma solidity 0.8.24;
 import "./TokenPriceFeedBase.sol";
 
 contract SAGAPriceFeed is TokenPriceFeedBase {
-   constructor(address _owner, address _arbUsdOracleAddress, uint256 _arbUsdStalenessThreshold)
-        TokenPriceFeedBase(_owner, _arbUsdOracleAddress, _arbUsdStalenessThreshold)
+   constructor(address _owner, address _sagaUsdOracleAddress, uint256 _sagaUsdStalenessThreshold)
+        TokenPriceFeedBase(_owner, _sagaUsdOracleAddress, _sagaUsdStalenessThreshold)
     {
         _fetchPricePrimary();
 

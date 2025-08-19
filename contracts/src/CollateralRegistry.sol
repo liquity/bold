@@ -25,9 +25,14 @@ contract CollateralRegistry is ICollateralRegistry {
 
     mapping(uint256 branchId => bool isActive) public isActiveCollateral;
 
-    uint256[] public activeBranchIds;
+    uint256[] internal _activeBranchIds;
 
-    uint256[] public removedBranchIds;
+    uint256[] internal _removedBranchIds;
+
+    // NOTE: 
+    // Used to get the index of a branch in the removedBranchIds array
+    // in a more gas efficient way than iterating through the array.
+    mapping(uint256 branchId => uint256 indexInRemovedBranchIds) internal _removedBranchIdsIndex;
 
     IBoldToken public immutable boldToken;
 
@@ -58,7 +63,7 @@ contract CollateralRegistry is ICollateralRegistry {
             allCollateralTokenAddresses[i] = _tokens[i];
             allTroveManagerAddresses[i] = _troveManagers[i];
             isActiveCollateral[i] = true;
-            activeBranchIds.push(i);
+            _activeBranchIds.push(i);
         }
 
         // Initialize the baseRate state variable
@@ -81,7 +86,7 @@ contract CollateralRegistry is ICollateralRegistry {
 
         RedemptionTotals memory totals;
 
-        totals.numCollaterals = activeBranchIds.length + removedBranchIds.length;
+        totals.numCollaterals = _activeBranchIds.length + _removedBranchIds.length;
         uint256[] memory unbackedPortions = new uint256[](totals.numCollaterals);
         uint256[] memory prices = new uint256[](totals.numCollaterals);
 
@@ -89,10 +94,10 @@ contract CollateralRegistry is ICollateralRegistry {
         for (uint256 index = 0; index < totals.numCollaterals; index++) {
             // ITroveManager troveManager = getTroveManager(index);
             ITroveManager troveManager;
-            if (index < removedBranchIds.length) {
+            if (index < _removedBranchIds.length) {
                 troveManager = getRemovedTroveManager(index);
             } else {
-                troveManager = getTroveManager(index - removedBranchIds.length);
+                troveManager = getTroveManager(index - _removedBranchIds.length);
             }
             (uint256 unbackedPortion, uint256 price, bool redeemable) =
                 troveManager.getUnbackedPortionPriceAndRedeemability();
@@ -110,10 +115,10 @@ contract CollateralRegistry is ICollateralRegistry {
             for (uint256 index = 0; index < totals.numCollaterals; index++) {
                 // ITroveManager troveManager = getTroveManager(index);
                 ITroveManager troveManager;
-                if (index < removedBranchIds.length) {
+                if (index < _removedBranchIds.length) {
                     troveManager = getRemovedTroveManager(index);
                 } else {
-                    troveManager = getTroveManager(index - removedBranchIds.length);
+                    troveManager = getTroveManager(index - _removedBranchIds.length);
                 }
                 (,, bool redeemable) = troveManager.getUnbackedPortionPriceAndRedeemability();
                 if (redeemable) {
@@ -151,10 +156,10 @@ contract CollateralRegistry is ICollateralRegistry {
                 if (redeemAmount > 0) {
                     // ITroveManager troveManager = getTroveManager(index);
                     ITroveManager troveManager;
-                    if (index < removedBranchIds.length) {
+                    if (index < _removedBranchIds.length) {
                         troveManager = getRemovedTroveManager(index);
                     } else {
-                        troveManager = getTroveManager(index - removedBranchIds.length);
+                        troveManager = getTroveManager(index - _removedBranchIds.length);
                     }
                     uint256 redeemedAmount = troveManager.redeemCollateral(
                         msg.sender, redeemAmount, prices[index], redemptionRate, _maxIterationsPerCollateral
@@ -276,41 +281,49 @@ contract CollateralRegistry is ICollateralRegistry {
     // getters
 
     function totalCollaterals() external view returns (uint256) {
-        return activeBranchIds.length;
+        return _activeBranchIds.length;
+    }
+
+    function activeBranchIds() external view returns (uint256[] memory) {
+        return _activeBranchIds;
+    }
+
+    function removedBranchIds() external view returns (uint256[] memory) {
+        return _removedBranchIds;
     }
 
     function getToken(uint256 _index) external view returns (IERC20Metadata) {
-        if (_index >= activeBranchIds.length) {
+        if (_index >= _activeBranchIds.length) {
             revert("Invalid index");
         } else {
-            uint256 branchId = activeBranchIds[_index];
+            uint256 branchId = _activeBranchIds[_index];
             return allCollateralTokenAddresses[branchId];
         }
     }
 
     function getTroveManager(uint256 _index) public view returns (ITroveManager) {
-        if (_index >= activeBranchIds.length) {
+        if (_index >= _activeBranchIds.length) {
             revert("Invalid index");
         } else {
-            uint256 branchId = activeBranchIds[_index];
+            uint256 branchId = _activeBranchIds[_index];
             return allTroveManagerAddresses[branchId];
         }
     }
 
     function getRemovedToken(uint256 _index) external view returns (IERC20Metadata) {
-        if (_index >= removedBranchIds.length) {
+        if (_index >= _removedBranchIds.length) {
             revert("Invalid index");
         } else {
-            uint256 branchId = removedBranchIds[_index];
+            uint256 branchId = _removedBranchIds[_index];
             return allCollateralTokenAddresses[branchId];
         }
     }
 
     function getRemovedTroveManager(uint256 _index) public view returns (ITroveManager) {
-        if (_index >= removedBranchIds.length) {
+        if (_index >= _removedBranchIds.length) {
             revert("Invalid index");
         } else {
-            uint256 branchId = removedBranchIds[_index];
+            uint256 branchId = _removedBranchIds[_index];
             return allTroveManagerAddresses[branchId];
         }
     }
@@ -378,12 +391,12 @@ contract CollateralRegistry is ICollateralRegistry {
         //add collateral
         allCollateralTokenAddresses[branchId] = _token;
         allTroveManagerAddresses[branchId] = _troveManager;
-        activeBranchIds.push(branchId);
+        _activeBranchIds.push(branchId);
         isActiveCollateral[branchId] = true;
         branches++;
 
         //emit event
-        emit CollateralAdded(address(_token), address(_troveManager), branchId);
+        emit CollateralAdded(branchId, address(_token), address(_troveManager));
     }
 
     // ==== Remove a collateral ==== 
@@ -396,9 +409,9 @@ contract CollateralRegistry is ICollateralRegistry {
      * @param _index The index of collateral in the collateral list. Not the master index.
      */
     function removeCollateral(uint256 _index) external onlyGovernor {
-        require(_index >= 0 && _index < activeBranchIds.length, "CollateralRegistry: Invalid index"); // 0-9
+        require(_index >= 0 && _index < _activeBranchIds.length, "CollateralRegistry: Invalid index"); // 0-9
 
-        uint256 branchId = activeBranchIds[_index];
+        uint256 branchId = _activeBranchIds[_index];
 
         IERC20Metadata collateralToken = allCollateralTokenAddresses[branchId];
         ITroveManager troveManager = allTroveManagerAddresses[branchId];
@@ -410,11 +423,13 @@ contract CollateralRegistry is ICollateralRegistry {
 
         // remove collateral from active collateral list
         isActiveCollateral[branchId] = false;
-        activeBranchIds[_index] = activeBranchIds[activeBranchIds.length - 1];
-        activeBranchIds.pop();
+        _activeBranchIds[_index] = _activeBranchIds[_activeBranchIds.length - 1];
+        _activeBranchIds.pop();
 
         // add to removed collateral tokens and trove managers lists
-        removedBranchIds.push(branchId);
+        uint256 index = _removedBranchIds.length;
+        _removedBranchIds.push(branchId);
+        _removedBranchIdsIndex[branchId] = index;
 
         // emit event
         emit CollateralRemoved(branchId, address(collateralToken), address(troveManager));
@@ -422,7 +437,46 @@ contract CollateralRegistry is ICollateralRegistry {
 
     // Once all troves are closed/redeemed/liquidated, we can permanently delete the collateral from the removed collateral tokens and trove managers lists
     function _permanentlyDeleteFromRemovedCollaterals(uint256 _index) internal {
-        removedBranchIds[_index] = removedBranchIds[removedBranchIds.length - 1];
-        removedBranchIds.pop();
+        uint256 branchId = _removedBranchIds[_index];
+        uint256 lastBranchId = _removedBranchIds[_removedBranchIds.length - 1];
+        _removedBranchIds[_index] = lastBranchId;
+        _removedBranchIds.pop();
+        
+        _removedBranchIdsIndex[lastBranchId] = _index;
+        delete _removedBranchIdsIndex[branchId];
+    }
+
+    // Only trove manager can call this function
+    // This is called in _closeTrove() in TroveManager.sol only once last trove is closed
+    // function deleteFromRemovedCollaterals(uint256 _branchId) external {
+    //     uint256 index = _removedBranchIdsIndex[_branchId];
+    //     ITroveManager troveManager = getRemovedTroveManager(index);
+
+    //     require(_branchId == _removedBranchIds[index], "CollateralRegistry: Wrong branchId");
+    //     require(msg.sender == address(troveManager), "CollateralRegistry: Only trove manager can call this function");
+    //     // An extra check to ensure that the trove manager has no troves left.
+    //     // This may prove to be redundant and can be removed in the future.
+    //     require(troveManager.getTroveIdsCount() == 0, "CollateralRegistry: Trove manager has troves");
+
+    //     // remove collateral from removed collateral tokens and trove managers lists
+    //     _permanentlyDeleteFromRemovedCollaterals(index);
+
+    //     // emit event
+    //     emit CollateralDeleted(_branchId);
+    // }
+
+    // A replacement to `deleteFromRemovedCollaterals` function.
+    // Anyone can call this function which deletes first dead branch found in removed collaterals list.
+    function cleanRemovedCollaterals() external {
+        require(_removedBranchIds.length > 0, "CollateralRegistry: No removed collaterals exist");
+        for (uint256 i; i < _removedBranchIds.length; i++) {
+            uint256 branchId = _removedBranchIds[i];
+            ITroveManager troveManager = getRemovedTroveManager(i);
+            if (troveManager.getTroveIdsCount() == 0) {
+                _permanentlyDeleteFromRemovedCollaterals(i);
+                emit CollateralDeleted(branchId);
+                break;
+            }
+        }
     }
 }

@@ -36,6 +36,9 @@ contract BaseTest is TestAccounts, Logging, TroveId {
     uint256 LIQUIDATION_PENALTY_SP;
     uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
 
+    // Addresses
+    address governor;
+
     // Core contracts
     IAddressesRegistry addressesRegistry;
     IActivePool activePool;

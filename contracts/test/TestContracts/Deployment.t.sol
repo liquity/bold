@@ -53,6 +53,7 @@ uint256 constant _48_HOURS = 172800;
 
 // TODO: Split dev and mainnet
 contract TestDeployer is MetadataDeployment {
+    address public constant GOVERNOR = address(0x123);
     IERC20 constant USDC = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
     IWETH constant WETH_MAINNET = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
@@ -141,6 +142,7 @@ contract TestDeployer is MetadataDeployment {
         uint256 debtLimit;
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
+        uint256 branchId;
     }
 
     struct DeploymentVarsDev {
@@ -208,6 +210,10 @@ contract TestDeployer is MetadataDeployment {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
 
+    function getBytecode(bytes memory _creationCode, address _addressesRegistry, uint256 _branchId) public pure returns (bytes memory) {
+        return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _branchId));
+    }
+
     function getAddress(address _deployer, bytes memory _bytecode, bytes32 _salt) public pure returns (address) {
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), _deployer, _salt, keccak256(_bytecode)));
 
@@ -227,7 +233,7 @@ contract TestDeployer is MetadataDeployment {
             Zappers memory zappers
         )
     {
-        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 10e16, 110e16, 10_000_000e18, 5e16, 10e16));
+        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 10e16, 110e16, 10_000_000e18, 5e16, 10e16, 0));
     }
 
     function deployAndConnectContracts(TroveManagerParams memory troveManagerParams)
@@ -332,7 +338,7 @@ contract TestDeployer is MetadataDeployment {
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, address(0x123));
+        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, GOVERNOR);
         hintHelpers = new HintHelpers(collateralRegistry);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
@@ -379,7 +385,7 @@ contract TestDeployer is MetadataDeployment {
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
         address troveManagerAddress = getAddress(
-            address(this), getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry)), SALT
+            address(this), getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry), _troveManagerParams.branchId), SALT
         );
 
         return (addressesRegistry, troveManagerAddress);
@@ -463,7 +469,7 @@ contract TestDeployer is MetadataDeployment {
         contracts.addressesRegistry.setAddresses(addressVars);
 
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry, 0);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
@@ -561,7 +567,7 @@ contract TestDeployer is MetadataDeployment {
         vars.troveManagers[3] = ITroveManager(address(0x0000000000000000000000000000000000000000));
 
         // Deploy registry and register the TMs
-        result.collateralRegistry = new CollateralRegistryTester(result.boldToken, vars.collaterals, vars.troveManagers, address(0x123));
+        result.collateralRegistry = new CollateralRegistryTester(result.boldToken, vars.collaterals, vars.troveManagers, GOVERNOR);
 
         result.hintHelpers = new HintHelpers(result.collateralRegistry);
         result.multiTroveGetter = new MultiTroveGetter(result.collateralRegistry);
@@ -682,7 +688,7 @@ contract TestDeployer is MetadataDeployment {
         contracts.addressesRegistry.setAddresses(addressVars);
 
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry, 0);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
@@ -737,14 +743,11 @@ contract TestDeployer is MetadataDeployment {
             );
         } else if (_branch == 1) {
             // RETH
-            return new RETHPriceFeed(
-                _externalAddresses.ETHOracle,
+            return IPriceFeed(address(new RETHPriceFeed(
+                address(0x123),
                 _externalAddresses.RETHOracle,
-                _externalAddresses.RETHToken,
-                _oracleParams.ethUsdStalenessThreshold,
-                _oracleParams.rEthEthStalenessThreshold,
-                _borrowerOperationsAddress
-            );
+                _oracleParams.rEthEthStalenessThreshold
+            )));
         }
 
         // // wstETH
@@ -757,14 +760,11 @@ contract TestDeployer is MetadataDeployment {
         //     _borrowerOperationsAddress
         // );
 
-        return new RETHPriceFeed(
-            _externalAddresses.ETHOracle,
+        return IPriceFeed(address(new RETHPriceFeed(
+            address(0x123),
             _externalAddresses.RETHOracle,
-            _externalAddresses.RETHToken,
-            _oracleParams.ethUsdStalenessThreshold,
-            _oracleParams.rEthEthStalenessThreshold,
-            _borrowerOperationsAddress
-        );
+            _oracleParams.rEthEthStalenessThreshold
+        )));
     }
 
     function _deployZappers(

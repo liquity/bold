@@ -25,6 +25,7 @@ interface ITroveManager is ILiquityBase {
     function shutdownTime() external view returns (uint256);
 
     function branchId() external view returns (uint256);
+    function isActive() external view returns (bool);
 
     function troveNFT() external view returns (ITroveNFT);
     function stabilityPool() external view returns (IStabilityPool);

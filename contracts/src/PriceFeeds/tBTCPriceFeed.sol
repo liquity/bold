@@ -6,7 +6,7 @@ pragma solidity 0.8.24;
 import "./TokenPriceFeedBase.sol";
 import "../Dependencies/Constants.sol";
 
-contract tBTCPriceFeed is TokenPriceFeedBase {
+contract TBTCPriceFeed is TokenPriceFeedBase {
     Oracle public btcUsdOracle;
     Oracle public tBTCUsdOracle;
 

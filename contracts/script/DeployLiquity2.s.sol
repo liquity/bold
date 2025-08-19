@@ -27,6 +27,9 @@ import "src/StabilityPool.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
 // import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
+import "src/PriceFeeds/TBTCPriceFeed.sol";
+import "src/PriceFeeds/FBTCPriceFeed.sol";
+import "src/PriceFeeds/SAGAPriceFeed.sol";
 import "src/CollateralRegistry.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "test/TestContracts/MetadataDeployment.sol";
@@ -83,10 +86,21 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE;
     address ETH_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     address RETH_ORACLE_ADDRESS = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
-    address STETH_ORACLE_ADDRESS = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
+    // address STETH_ORACLE_ADDRESS = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
+    // TODO: Change these values
+    address TBTC_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address FBTC_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address BTC_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address SAGA_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    ///////////////////////////////
     uint256 ETH_USD_STALENESS_THRESHOLD = 24 hours;
-    uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
+    // uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
     uint256 RETH_ETH_STALENESS_THRESHOLD = 48 hours;
+    // TODO: Change these values
+    uint256 TBTC_ETH_STALENESS_THRESHOLD = 24 hours;
+    uint256 FBTC_ETH_STALENESS_THRESHOLD = 24 hours;
+    uint256 BTC_USD_STALENESS_THRESHOLD = 24 hours;
+    uint256 SAGA_USD_STALENESS_THRESHOLD = 24 hours;
 
     // V1
     address LQTY_ADDRESS = 0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D;
@@ -592,6 +606,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
 
+    function getBytecode(bytes memory _creationCode, address _addressesRegistry, uint256 _branchId) public pure returns (bytes memory) {
+        return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _branchId));
+    }
+
     function _deployAndConnectContracts(
         TroveManagerParams[] memory troveManagerParamsArray,
         string[] memory _collNames,
@@ -669,7 +687,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 address(vars.troveManagers[vars.i]),
                 r.hintHelpers,
                 r.multiTroveGetter,
-                computeGovernanceAddress(_deployGovernanceParams)
+                computeGovernanceAddress(_deployGovernanceParams),
+                vars.i
             );
             r.contractsArray[vars.i] = vars.contracts;
         }
@@ -689,7 +708,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
     }
 
-    function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams, uint256 _collIndex)
+    function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams, uint256 _branchId)
         internal
         returns (IAddressesRegistry, address)
     {
@@ -704,7 +723,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
         address troveManagerAddress = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(TroveManager).creationCode, address(addressesRegistry), _collIndex))
+            SALT, keccak256(getBytecode(type(TroveManager).creationCode, address(addressesRegistry), _branchId))
         );
 
         return (addressesRegistry, troveManagerAddress);
@@ -719,7 +738,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         address _troveManagerAddress,
         IHintHelpers _hintHelpers,
         IMultiTroveGetter _multiTroveGetter,
-        address _governance
+        address _governance,
+        uint256 _branchId
     ) internal returns (LiquityContracts memory contracts) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _collToken;
@@ -786,7 +806,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         contracts.addressesRegistry.setAddresses(addressVars);
 
         contracts.borrowerOperations = new BorrowerOperations{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry, _branchId);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
@@ -822,32 +842,46 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         internal
         returns (IPriceFeed)
     {
-        if (block.chainid == 1 && !useTestnetPriceFeeds) {
-            // mainnet
+        if (block.chainid == 5464 && !useTestnetPriceFeeds) {
+            // Saga
             // ETH
             if (_collTokenAddress == address(WETH)) {
                 return new WETHPriceFeed(ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD, _borroweOperationsAddress);
-            // } else if (_collTokenAddress == WSTETH_ADDRESS) {
-            //     // wstETH
-            //     return new WSTETHPriceFeed(
-            //         ETH_ORACLE_ADDRESS,
-            //         STETH_ORACLE_ADDRESS,
-            //         WSTETH_ADDRESS,
-            //         ETH_USD_STALENESS_THRESHOLD,
-            //         STETH_USD_STALENESS_THRESHOLD,
-            //         _borroweOperationsAddress
-            //     );
+            } else if (_collTokenAddress == RETH_ADDRESS) {
+                // rETH
+                return new RETHPriceFeed(
+                    deployer,
+                    RETH_ORACLE_ADDRESS,
+                    RETH_ETH_STALENESS_THRESHOLD
+                );
+            } else if (_collTokenAddress == TBTC_ADDRESS) {
+                // tBTC
+                return new TBTCPriceFeed(
+                    deployer,
+                    TBTC_ORACLE_ADDRESS,
+                    TBTC_ETH_STALENESS_THRESHOLD,
+                    BTC_ORACLE_ADDRESS,
+                    BTC_USD_STALENESS_THRESHOLD
+                );
+            } else if (_collTokenAddress == FBTC_ADDRESS) {
+                // FBTC
+                return new FBTCPriceFeed(
+                    deployer,
+                    FBTC_ORACLE_ADDRESS,
+                    FBTC_ETH_STALENESS_THRESHOLD,
+                    BTC_ORACLE_ADDRESS,
+                    BTC_USD_STALENESS_THRESHOLD
+                );
+            } else if (_collTokenAddress == SAGA_ADDRESS) {
+                // SAGA
+                return new SAGAPriceFeed(
+                    deployer,
+                    SAGA_ORACLE_ADDRESS,
+                    SAGA_USD_STALENESS_THRESHOLD
+                );
+            } else {
+                revert("Invalid collateral token");
             }
-            // RETH
-            assert(_collTokenAddress == RETH_ADDRESS);
-            return new RETHPriceFeed(
-                ETH_ORACLE_ADDRESS,
-                RETH_ORACLE_ADDRESS,
-                RETH_ADDRESS,
-                ETH_USD_STALENESS_THRESHOLD,
-                RETH_ETH_STALENESS_THRESHOLD,
-                _borroweOperationsAddress
-            );
         }
 
         // Sepolia
