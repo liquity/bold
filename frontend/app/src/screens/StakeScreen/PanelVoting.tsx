@@ -186,7 +186,6 @@ export function PanelVoting() {
   const initiatives = useNamedInitiatives();
 
   const initiativesAddresses = initiatives.data?.map((i) => i.address) ?? [];
-  // TODO: refactor {data: initiativesStates}
   const initiativesStates = useInitiativesStates(initiativesAddresses);
   const currentBribes = useCurrentEpochBribes(initiativesAddresses);
   const voteTotals = useInitiativesVoteTotals(initiativesAddresses);

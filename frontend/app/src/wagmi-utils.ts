@@ -10,7 +10,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useModal as useConnectKitModal } from "connectkit";
 import { match } from "ts-pattern";
 import { erc20Abi } from "viem";
-import { useAccount as useWagmiAccount, useBalance as useWagmiBalance, useEnsName, useReadContracts } from "wagmi";
+import { useAccount as useWagmiAccount, useBalance as useWagmiBalance, useEnsName, useReadContracts } from 'wagmi';
+
+import type { Config, UseAccountReturnType } from 'wagmi';
+import type { SafeStatus } from '@/src/safe-utils';
 
 export function useBalance(
   address: Address | undefined,
@@ -96,14 +99,13 @@ export function useBalances(
   >);
 }
 
-export function useAccount():
-  & Omit<ReturnType<typeof useWagmiAccount>, "connector">
-  & {
-    connect: () => void;
-    ensName: string | undefined;
-    safeStatus: Awaited<ReturnType<typeof getSafeStatus>> | null;
-  }
-{
+export type Account = UseAccountReturnType<Config> & {
+  connect: () => void;
+  ensName?: string;
+  safeStatus: SafeStatus | null;
+}
+
+export function useAccount(): Account {
   const account = useWagmiAccount();
   const ensName = useEnsName({ address: account?.address });
 

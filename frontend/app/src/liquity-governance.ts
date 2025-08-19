@@ -21,6 +21,7 @@ import * as v from "valibot";
 import { erc20Abi, parseAbi } from "viem";
 import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
+import { InferOutput } from 'valibot';
 
 export type InitiativeStatus =
   | "nonexistent"
@@ -44,8 +45,22 @@ export function initiativeStatusFromNumber(status: number): InitiativeStatus {
   return statuses[status] || "nonexistent";
 }
 
+export interface GovernanceState {
+  countedVoteLQTY: bigint;
+  countedVoteOffset: bigint;
+  cutoffStart: bigint;
+  daysLeft: number;
+  daysLeftRounded: number;
+  epoch: bigint;
+  epochEnd: bigint;
+  epochStart: bigint;
+  period: "cutoff" | "voting";
+  secondsWithinEpoch: bigint | undefined;
+}
+
 export function useGovernanceState() {
   const Governance = getProtocolContract("Governance");
+
   return useReadContracts({
     contracts: [{
       ...Governance,
@@ -74,7 +89,7 @@ export function useGovernanceState() {
         secondsWithinEpoch,
         GOVERNANCE_EPOCH_DURATION,
         GOVERNANCE_EPOCH_VOTING_CUTOFF,
-      ]) => {
+      ]): GovernanceState => {
         const epoch = epoch_.result ?? 0n;
         const epochStart = epochStart_.result ?? 0n;
         const epochDuration = GOVERNANCE_EPOCH_DURATION.result ?? 0n;
@@ -89,7 +104,7 @@ export function useGovernanceState() {
         const daysLeft = (Number(epochDuration) - seconds) / (24 * 60 * 60);
         const daysLeftRounded = Math.ceil(daysLeft);
 
-        return {
+        const data: GovernanceState = {
           countedVoteLQTY: globalState.result?.[0] ?? 0n,
           countedVoteOffset: globalState.result?.[1] ?? 0n,
           cutoffStart,
@@ -101,6 +116,8 @@ export function useGovernanceState() {
           period,
           secondsWithinEpoch: secondsWithinEpoch.result,
         };
+
+        return data;
       },
     },
   });
@@ -124,7 +141,9 @@ const KnownInitiativesSchema = v.record(
   ),
 );
 
-function useKnownInitiatives() {
+export type KnownInitiatives = InferOutput<typeof KnownInitiativesSchema>;
+
+function useKnownInitiatives(): UseQueryResult<KnownInitiatives | null> {
   return useQuery({
     queryKey: ["knownInitiatives"],
     queryFn: async () => {
@@ -233,13 +252,19 @@ export function useInitiativesVoteTotals(initiatives: Address[]) {
   const wagmiConfig = useWagmiConfig();
   const Governance = getProtocolContract("Governance");
 
+  // stabilize the order of addresses (cache improvement and predictable)
+  const sortedAddress = useMemo(
+    () => [...initiatives].filter(Boolean).sort((a, b) => a.localeCompare(b)),
+    [initiatives]
+  );
+
   return useQuery({
-    queryKey: ["initiativesVoteTotals", initiatives.join("")],
+    queryKey: ["initiativesVoteTotals", sortedAddress.join("")],
     queryFn: async () => {
       const voteTotals: Record<Address, VoteTotals> = {};
 
       const results = await readContracts(wagmiConfig, {
-        contracts: initiatives.map((address) => ({
+        contracts: sortedAddress.map((address) => ({
           ...Governance,
           functionName: "initiativeStates",
           args: [address],
@@ -247,9 +272,9 @@ export function useInitiativesVoteTotals(initiatives: Address[]) {
       });
 
       for (const [i, { result }] of results.entries()) {
-        if (result && initiatives[i]) {
+        if (result && sortedAddress[i]) {
           const [voteLQTY, voteOffset, vetoLQTY, vetoOffset] = result;
-          voteTotals[initiatives[i]] = {
+          voteTotals[sortedAddress[i]] = {
             voteLQTY,
             voteOffset,
             vetoLQTY,
@@ -263,11 +288,19 @@ export function useInitiativesVoteTotals(initiatives: Address[]) {
   });
 }
 
+export interface UserAllocation {
+  voteLQTY: bigint;
+  voteOffset: bigint;
+  vetoLQTY: bigint;
+  vetoOffset: bigint;
+  initiative: Address;
+}
+
 export async function getUserAllocations(
   wagmiConfig: WagmiConfig,
   account: Address,
   initiatives?: Address[],
-) {
+): Promise<UserAllocation[]> {
   if (!initiatives) {
     initiatives = (await getGovernanceGlobalData()).registeredInitiatives;
   }
@@ -302,10 +335,19 @@ export async function getUserAllocatedInitiatives(
     .map(({ initiative }) => initiative);
 }
 
+export interface UserState {
+  unallocatedLQTY: bigint;
+  unallocatedOffset: bigint;
+  allocatedLQTY: bigint;
+  allocatedOffset: bigint;
+  stakedLQTY: bigint;
+  stakedOffset: bigint;
+}
+
 export async function getUserStates(
   wagmiConfig: WagmiConfig,
   account: Address,
-) {
+): Promise<UserState> {
   const Governance = getProtocolContract("Governance");
   const result = await readContract(wagmiConfig, {
     ...Governance,
@@ -330,7 +372,11 @@ export async function getUserStates(
   };
 }
 
-export function useGovernanceUser(account: Address | null) {
+export interface GovernanceUserState extends UserState {
+  allocations: UserAllocation[];
+}
+
+export function useGovernanceUser(account: Address | null): UseQueryResult<GovernanceUserState | null> {
   const initiatives = useNamedInitiatives();
   const wagmiConfig = useWagmiConfig();
 
@@ -476,25 +522,33 @@ type InitiativeBribe = {
   tokenSymbol: string;
 };
 
+export type InitiativeBribeResult = Record<Address, InitiativeBribe>;
+
 export function useCurrentEpochBribes(
   initiatives: Address[],
-): UseQueryResult<Record<Address, InitiativeBribe>> {
+): UseQueryResult<InitiativeBribeResult> {
   const wagmiConfig = useWagmiConfig();
   const govState = useGovernanceState();
+
+  // stabilize the order of addresses (cache improvement and predictable)
+  const sortedAddress = useMemo(
+    () => [...initiatives].filter(Boolean).sort((a, b) => a.localeCompare(b)),
+    [initiatives]
+  );
 
   return useQuery({
     queryKey: [
       "currentEpochBribes",
-      initiatives.join(""),
+      sortedAddress.join(""),
       String(govState.data?.epoch),
     ],
     queryFn: async () => {
-      if (!govState.data || initiatives.length === 0) {
+      if (!govState.data || sortedAddress.length === 0) {
         return {};
       }
 
       const bribeTokens = await readContracts(wagmiConfig, {
-        contracts: initiatives.map((initiative) => ({
+        contracts: sortedAddress.map((initiative) => ({
           abi: BribeInitiative,
           address: initiative,
           functionName: "bribeToken",
@@ -510,9 +564,9 @@ export function useCurrentEpochBribes(
       }> = [];
 
       for (const [index, bribeTokenResult] of bribeTokens.entries()) {
-        if (bribeTokenResult.result && initiatives[index]) {
+        if (bribeTokenResult.result && sortedAddress[index]) {
           bribeInitiatives.push({
-            initiative: initiatives[index],
+            initiative: sortedAddress[index],
             bribeToken: bribeTokenResult.result,
           });
         }

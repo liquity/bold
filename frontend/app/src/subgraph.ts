@@ -265,8 +265,18 @@ const GovernanceGlobalDataQuery = graphql(`
   }
 `);
 
+export interface GovernanceGlobalData {
+  registeredInitiatives: Address[];
+  totalVotingPower: {
+    allocatedLQTY: bigint;
+    allocatedOffset: bigint;
+    unallocatedLQTY: bigint;
+    unallocatedOffset: bigint;
+  };
+}
+
 // get all the registered initiatives and total voting power
-export async function getGovernanceGlobalData() {
+export async function getGovernanceGlobalData(): Promise<GovernanceGlobalData> {
   const { governanceInitiatives, governanceVotingPower } = await graphQuery(GovernanceGlobalDataQuery);
   return {
     registeredInitiatives: governanceInitiatives.map((initiative) => initiative.id as Address),
