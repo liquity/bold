@@ -351,7 +351,7 @@ export default {
       ),
       subheading: (
         <>
-          Partnered Protocols with other USND Strategies. 
+          Partnered Protocols with other USND strategies. 
           Earn additional yield or find other opportunities from these third party protocols.
         </>
       )
