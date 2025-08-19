@@ -111,6 +111,8 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
     event.params._annualInterestRate,
     trove.debt,
     event.params._debt,
+    trove.updatedAt,
+    event.block.timestamp,
   );
 
   trove.debt = event.params._debt;
@@ -139,6 +141,8 @@ export function handleBatchedTroveUpdated(batchedTroveUpdatedEvent: BatchedTrove
     BigInt.zero(),
     trove.debt,
     BigInt.zero(), // batched debt handled at batch level
+    trove.updatedAt,
+    batchedTroveUpdatedEvent.block.timestamp,
   );
 
   trove.debt = batchUpdatedEvent.params._totalDebtShares.notEqual(BigInt.zero())
@@ -238,37 +242,59 @@ function updateRateBracketDebt(
   newRate: BigInt,
   prevDebt: BigInt,
   newDebt: BigInt,
+  prevTime: BigInt,
+  newTime: BigInt,
 ): void {
+  let rateBracket: InterestRateBracket | null = null;
+
   // remove debt from prev bracket
   if (prevRate.notEqual(BigInt.zero())) {
-    let prevRateFloored = getRateFloored(prevRate);
-    let prevRateBracketId = collId + ":" + prevRateFloored.toString();
-    let prevRateBracket = InterestRateBracket.load(prevRateBracketId);
+    let rateFloored = getRateFloored(prevRate);
+    let rateBracketId = collId + ":" + rateFloored.toString();
 
-    if (!prevRateBracket) {
-      throw new Error("InterestRateBracket not found: " + prevRateBracketId);
+    if (!(rateBracket = InterestRateBracket.load(rateBracketId))) {
+      throw new Error("InterestRateBracket not found: " + rateBracketId);
     }
 
-    prevRateBracket.totalDebt = prevRateBracket.totalDebt.minus(prevDebt);
-    prevRateBracket.save();
+    rateBracket.totalDebt = rateBracket.totalDebt
+      .minus(prevDebt);
+    rateBracket.pendingDebtTimesOneYearD36 = rateBracket.pendingDebtTimesOneYearD36
+      .plus(newTime.minus(rateBracket.updatedAt).times(rateBracket.sumDebtTimesRateD36))
+      .minus(newTime.minus(prevTime).times(prevDebt).times(prevRate));
+    rateBracket.sumDebtTimesRateD36 = rateBracket.sumDebtTimesRateD36
+      .minus(prevDebt.times(prevRate));
+    rateBracket.updatedAt = newTime;
   }
 
   // add debt to new bracket
   if (newRate.notEqual(BigInt.zero())) {
-    let newRateFloored = getRateFloored(newRate);
-    let newRateBracketId = collId + ":" + newRateFloored.toString();
-    let newRateBracket = InterestRateBracket.load(newRateBracketId);
+    let rateFloored = getRateFloored(newRate);
+    let rateBracketId = collId + ":" + rateFloored.toString();
 
-    if (!newRateBracket) {
-      newRateBracket = new InterestRateBracket(newRateBracketId);
-      newRateBracket.collateral = collId;
-      newRateBracket.rate = newRateFloored;
-      newRateBracket.totalDebt = BigInt.zero();
+    if (!rateBracket || rateBracket.id !== rateBracketId) {
+      if (rateBracket) rateBracket.save();
+
+      if (!(rateBracket = InterestRateBracket.load(rateBracketId))) {
+        rateBracket = new InterestRateBracket(rateBracketId);
+        rateBracket.collateral = collId;
+        rateBracket.rate = rateFloored;
+        rateBracket.totalDebt = BigInt.zero();
+        rateBracket.sumDebtTimesRateD36 = BigInt.zero();
+        rateBracket.pendingDebtTimesOneYearD36 = BigInt.zero();
+        rateBracket.updatedAt = newTime;
+      }
     }
 
-    newRateBracket.totalDebt = newRateBracket.totalDebt.plus(newDebt);
-    newRateBracket.save();
+    rateBracket.totalDebt = rateBracket.totalDebt
+      .plus(newDebt);
+    rateBracket.pendingDebtTimesOneYearD36 = rateBracket.pendingDebtTimesOneYearD36
+      .plus(newTime.minus(rateBracket.updatedAt).times(rateBracket.sumDebtTimesRateD36));
+    rateBracket.sumDebtTimesRateD36 = rateBracket.sumDebtTimesRateD36
+      .plus(newDebt.times(newRate));
+    rateBracket.updatedAt = newTime;
   }
+
+  if (rateBracket) rateBracket.save();
 }
 
 export function handleBatchUpdated(event: BatchUpdatedEvent): void {
@@ -276,25 +302,29 @@ export function handleBatchUpdated(event: BatchUpdatedEvent): void {
   let batchId = collId + ":" + event.params._interestBatchManager.toHexString();
   let batch = InterestBatch.load(batchId);
 
-  updateRateBracketDebt(
-    collId,
-    batch ? batch.annualInterestRate : BigInt.zero(),
-    event.params._annualInterestRate,
-    batch ? batch.debt : BigInt.zero(),
-    event.params._debt,
-  );
-
   if (!batch) {
     batch = new InterestBatch(batchId);
     batch.collateral = collId;
     batch.batchManager = event.params._interestBatchManager;
+    batch.annualInterestRate = BigInt.zero();
+    batch.debt = BigInt.zero();
+    batch.updatedAt = event.block.timestamp;
   }
 
-  batch.collateral = collId;
-  batch.batchManager = event.params._interestBatchManager;
+  updateRateBracketDebt(
+    collId,
+    batch.annualInterestRate,
+    event.params._annualInterestRate,
+    batch.debt,
+    event.params._debt,
+    batch.updatedAt,
+    event.block.timestamp,
+  );
+
   batch.debt = event.params._debt;
   batch.coll = event.params._coll;
   batch.annualInterestRate = event.params._annualInterestRate;
   batch.annualManagementFee = event.params._annualManagementFee;
+  batch.updatedAt = event.block.timestamp;
   batch.save();
 }

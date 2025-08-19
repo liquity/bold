@@ -22,6 +22,9 @@ type InterestRateBracket @entity(immutable: false) {
   collateral: Collateral!
   rate: BigInt!
   totalDebt: BigInt!
+  sumDebtTimesRateD36: BigInt!
+  pendingDebtTimesOneYearD36: BigInt!
+  updatedAt: BigInt!
 }
 
 enum TroveStatus {
@@ -68,6 +71,7 @@ type InterestBatch @entity(immutable: false) {
   coll: BigInt!
   annualInterestRate: BigInt!
   annualManagementFee: BigInt!
+  updatedAt: BigInt!
   troves: [Trove!]! @derivedFrom(field: "interestBatch")
 }
 
