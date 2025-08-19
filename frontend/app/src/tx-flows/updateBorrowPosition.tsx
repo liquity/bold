@@ -131,7 +131,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
                       fallback='…'
                       prefix='Incl. '
                       value={upfrontFeeData.data.upfrontFee}
-                      suffix=' USND interest rate adjustment fee'
+                      suffix=' USND upfront interest fee'
                     />
                   ),
               ]}
