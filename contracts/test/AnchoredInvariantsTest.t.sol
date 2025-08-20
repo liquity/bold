@@ -26,12 +26,10 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.01 ether, MAX_INT/2, 0.05 ether, 0.1 ether, 1);
         p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.01 ether, MAX_INT/2, 0.05 ether, 0.1 ether, 2);
         p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 0.1 ether, 1.01 ether, MAX_INT/2, 0.05 ether, 0.1 ether, 3);
-        console.log("Deploying contracts");
         TestDeployer deployer = new TestDeployer();
         Contracts memory contracts;
         (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth,)
         = deployer.deployAndConnectContractsMultiColl(p);
-        console.log("Deployed contracts");
         setupContracts(contracts);
 
         handler = new InvariantsTestHandler({contracts: contracts, assumeNoExpectedFailures: true});
