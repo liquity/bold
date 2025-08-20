@@ -88,7 +88,10 @@ export function PanelVoting() {
   const currentBribes = useCurrentEpochBribes(initiativesAddresses);
   const voteTotals = useInitiativesVoteTotals(initiativesAddresses);
 
-  const stakedLQTY: Dnum = [governanceUser.data?.stakedLQTY ?? 0n, 18];
+  const stakedLQTY = governanceUser.data?.stakedLQTY;
+  const stakedOffset = governanceUser.data?.stakedOffset;
+  const epochEnd = governanceState.data?.epochEnd;
+  const absoluteAllocations = governanceUser.data?.allocations;
 
   // current vote allocations
   const [voteAllocations, setVoteAllocations] = useState<VoteAllocations>({});
@@ -98,12 +101,12 @@ export function PanelVoting() {
 
   // fill input vote allocations from user data
   useEffect(() => {
-    if (!governanceState.data || !governanceUser.data) return;
+    if (!stakedLQTY || !stakedOffset || !epochEnd || !absoluteAllocations) return;
 
     const stakedVotingPower = votingPower(
-      governanceUser.data.stakedLQTY,
-      governanceUser.data.stakedOffset,
-      governanceState.data.epochEnd,
+      stakedLQTY,
+      stakedOffset,
+      epochEnd,
     );
 
     if (stakedVotingPower === 0n) {
@@ -114,7 +117,7 @@ export function PanelVoting() {
 
     const allocations: VoteAllocations = {};
 
-    for (const allocation of governanceUser.data.allocations) {
+    for (const allocation of absoluteAllocations) {
       const vote = allocation.voteLQTY > 0n
         ? "for" as const
         : allocation.vetoLQTY > 0n
@@ -127,8 +130,8 @@ export function PanelVoting() {
       const value = (
         BigInt(1e4) * (
             vote === "for"
-              ? votingPower(allocation.voteLQTY, allocation.voteOffset, governanceState.data.epochEnd)
-              : votingPower(allocation.vetoLQTY, allocation.vetoOffset, governanceState.data.epochEnd)
+              ? votingPower(allocation.voteLQTY, allocation.voteOffset, epochEnd)
+              : votingPower(allocation.vetoLQTY, allocation.vetoOffset, epochEnd)
           ) + stakedVotingPower / 2n
       ) / stakedVotingPower;
 
@@ -140,7 +143,7 @@ export function PanelVoting() {
 
     setVoteAllocations(allocations);
     setInputVoteAllocations(allocations);
-  }, [governanceState.data, governanceUser.data]);
+  }, [stakedLQTY, stakedOffset, epochEnd, jsonStringifyWithBigInt(absoluteAllocations)]);
 
   const hasAnyAllocationChange = useMemo(() => {
     if (!governanceUser.data || !initiativesStates.data) {
@@ -247,7 +250,7 @@ export function PanelVoting() {
     }));
   };
 
-  const allowSubmit = hasAnyAllocationChange && dn.gt(stakedLQTY, 0) && (
+  const allowSubmit = hasAnyAllocationChange && stakedLQTY && (
     (
       dn.eq(remainingVotingPower, 0) && hasAnyAllocations
     ) || (
@@ -683,7 +686,7 @@ export function PanelVoting() {
 
       <FlowButton
         disabled={!allowSubmit}
-        footnote={!allowSubmit && dn.eq(stakedLQTY, 0)
+        footnote={!allowSubmit && !stakedLQTY
           ? "You have no voting power to allocate. Please stake LQTY before voting."
           : !allowSubmit && hasAnyAllocations
           ? "You can reset your votes by allocating 0% to all initiatives."
