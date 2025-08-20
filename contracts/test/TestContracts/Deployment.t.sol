@@ -48,6 +48,7 @@ import "src/PriceFeeds/RETHPriceFeed.sol";
 import "forge-std/console2.sol";
 import "forge-std/Test.sol";
 
+uint256 constant MAX_INT = type(uint256).max;
 uint256 constant _24_HOURS = 86400;
 uint256 constant _48_HOURS = 172800;
 
@@ -233,7 +234,7 @@ contract TestDeployer is MetadataDeployment {
             Zappers memory zappers
         )
     {
-        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 10e16, 110e16, 10_000_000e18, 5e16, 10e16, 0));
+        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 10e16, 110e16, MAX_INT, 5e16, 10e16, 0));
     }
 
     function deployAndConnectContracts(TroveManagerParams memory troveManagerParams)
