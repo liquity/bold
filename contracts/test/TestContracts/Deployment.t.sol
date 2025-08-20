@@ -344,6 +344,7 @@ contract TestDeployer is MetadataDeployment {
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
         (contractsArray[0], zappersArray[0]) = _deployAndConnectCollateralContractsDev(
+            0,
             _WETH,
             boldToken,
             collateralRegistry,
@@ -357,6 +358,7 @@ contract TestDeployer is MetadataDeployment {
         // Deploy the remaining branches with LST collateral
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
             (contractsArray[vars.i], zappersArray[vars.i]) = _deployAndConnectCollateralContractsDev(
+                vars.i,
                 vars.collaterals[vars.i],
                 boldToken,
                 collateralRegistry,
@@ -393,6 +395,7 @@ contract TestDeployer is MetadataDeployment {
     }
 
     function _deployAndConnectCollateralContractsDev(
+        uint256 _branchId,
         IERC20Metadata _collToken,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
@@ -470,7 +473,7 @@ contract TestDeployer is MetadataDeployment {
         contracts.addressesRegistry.setAddresses(addressVars);
 
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry, 0);
+        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry, _branchId);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
