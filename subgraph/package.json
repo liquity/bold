@@ -4,10 +4,13 @@
   "license": "MIT",
   "version": "1.0.0",
   "scripts": {
-    "codegen": "pnpm graph codegen"
+    "codegen": "pnpm graph codegen",
+    "build": "pnpm graph build",
+    "deploy": "goldsky subgraph deploy --path build"
   },
   "devDependencies": {
-    "@graphprotocol/graph-cli": "^0.97.0"
+    "@graphprotocol/graph-cli": "^0.97.0",
+    "@goldskycom/cli": "^13.0.0"
   },
   "dependencies": {
     "@graphprotocol/graph-ts": "^0.38.0",
