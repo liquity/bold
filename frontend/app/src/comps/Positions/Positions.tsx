@@ -22,6 +22,7 @@ import { PositionCardEarn } from "./PositionCardEarn";
 import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardStake } from "./PositionCardStake";
 import { PositionCardYusnd } from "./PositionCardYusnd";
+import { Dropdown } from "@liquity2/uikit";
 
 type Mode = "positions" | "loading" | "actions";
 
@@ -45,6 +46,8 @@ export function Positions({
   const earnPositions = useEarnPositionsByAccount(address);
   // const stakePosition = useStakePosition(address);
 
+  const [sortBy, setSortBy] = useState<"collIndex" | "amount-asc" | "amount-desc">("collIndex");
+
   const isPositionsPending = Boolean(
     address &&
       (
@@ -59,11 +62,31 @@ export function Positions({
     : DEMO_MODE
     ? ACCOUNT_POSITIONS
     : [
-        ...(loans.data ?? []),
-        ...(earnPositions.data?.filter(pos => pos.collIndex !== null).map(pos => ({
-          ...pos,
-          collIndex: pos.collIndex!
-        })) ?? []),
+        ...(loans.data ?? []).sort((a, b) => {
+          switch (sortBy) {
+            case "collIndex":
+              return Number(a.collIndex - b.collIndex);
+            case "amount-asc":
+              return Number(a.borrowed[0] - b.borrowed[0]);
+            case "amount-desc":
+              return Number(b.borrowed[0] - a.borrowed[0]);
+          }
+        }),
+        ...(earnPositions.data?.filter(pos => pos.collIndex !== null)
+          .map(pos => ({
+            ...pos,
+            collIndex: pos.collIndex!
+          })) ?? [])
+          .sort((a, b) => {
+            switch (sortBy) {
+              case "collIndex":
+                return Number((a.collIndex ?? 0) - (b.collIndex ?? 0));
+              case "amount-asc":
+                return Number(a.deposit[0] - b.deposit[0]);
+              case "amount-desc":
+                return Number(b.deposit[0] - a.deposit[0]);
+            }
+          }),
         // ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0)
         //   ? [stakePosition.data]
         //   : []),
@@ -97,6 +120,7 @@ export function Positions({
       positions={positions ?? []}
       showNewPositionCard={showNewPositionCard}
       title={title}
+      setSortBy={setSortBy}
     />
   );
 }
@@ -109,6 +133,7 @@ function PositionsGroup({
   positions,
   title,
   showNewPositionCard,
+  setSortBy,
 }: {
   columns?: number;
   mode: Mode;
@@ -116,8 +141,30 @@ function PositionsGroup({
   positions: Exclude<Position, PositionLoanUncommitted>[];
   title: (mode: Mode) => ReactNode;
   showNewPositionCard: boolean;
+  setSortBy: (sortBy: "collIndex" | "amount-asc" | "amount-desc") => void;
 }) {
   const title_ = title(mode);
+  
+  const sortingCategories = [
+    { label: "Collateral", value: "" },
+    { label: "Highest to lowest", value: "" },
+    { label: "Lowest to highest", value: "" },
+  ];
+  const [sortIndex, setSortIndex] = useState(0);
+
+  useEffect(() => {
+    switch (sortIndex) {
+      case 0:
+        setSortBy("collIndex");
+        break;
+      case 1:
+        setSortBy("amount-desc");
+        break;
+      case 2:
+        setSortBy("amount-asc");
+        break;
+    }
+  }, [sortIndex]);
 
   const cards = match(mode)
     .returnType<Array<[number, ReactNode]>>()
@@ -230,19 +277,41 @@ function PositionsGroup({
   return (
     <div>
       {title_ && (
-        <h1
-          className={css({
-            fontSize: 32,
-            color: "content",
-            userSelect: "none",
-          })}
-          style={{
-            paddingBottom: 32,
-          }}
-          onClick={onTitleClick}
-        >
-          {title_}
-        </h1>
+        <div className={css({
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingBottom: 32,
+        })}>
+          <h1
+            className={css({
+              fontSize: 32,
+              color: "content",
+              userSelect: "none",
+            })}
+            onClick={onTitleClick}
+          >
+            {title_}
+          </h1>
+          {positions.length > 0 && (  
+            <Dropdown
+              items={sortingCategories}
+              buttonDisplay={() => ({
+                label: (
+                  <span
+                    className={css({
+                      fontSize: 16,
+                    })}
+                  >
+                    {sortingCategories[sortIndex]!.label}
+                  </span>
+                )
+              })}
+              selected={sortIndex}
+              onSelect={(index) => setSortIndex(index)}
+            />
+          )}
+        </div>
       )}
       <a.div
         className={css({
