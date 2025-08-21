@@ -6,6 +6,7 @@ import {IBoldToken} from "src/Interfaces/IBoldToken.sol";
 import {ICollateralRegistry} from "src/Interfaces/ICollateralRegistry.sol";
 import {IWETH} from "src/Interfaces/IWETH.sol";
 import {HintHelpers} from "src/HintHelpers.sol";
+import {MultiTroveGetter} from "src/MultiTroveGetter.sol";
 import {TestDeployer} from "./Deployment.t.sol";
 
 contract BaseMultiCollateralTest {
@@ -14,6 +15,7 @@ contract BaseMultiCollateralTest {
         ICollateralRegistry collateralRegistry;
         IBoldToken boldToken;
         HintHelpers hintHelpers;
+        MultiTroveGetter multiTroveGetter;
         TestDeployer.LiquityContractsDev[] branches;
     }
 

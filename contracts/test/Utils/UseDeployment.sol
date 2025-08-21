@@ -8,8 +8,6 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {IUserProxy} from "V2-gov/src/interfaces/IUserProxy.sol";
 import {CurveV2GaugeRewards} from "V2-gov/src/CurveV2GaugeRewards.sol";
 import {Governance} from "V2-gov/src/Governance.sol";
-import {ILeverageZapper} from "src/Zappers/Interfaces/ILeverageZapper.sol";
-import {IZapper} from "src/Zappers/Interfaces/IZapper.sol";
 import {IActivePool} from "src/Interfaces/IActivePool.sol";
 import {IAddressesRegistry} from "src/Interfaces/IAddressesRegistry.sol";
 import {IBoldToken} from "src/Interfaces/IBoldToken.sol";
@@ -47,8 +45,6 @@ contract UseDeployment is CommonBase {
         IActivePool activePool;
         IDefaultPool defaultPool;
         IStabilityPool stabilityPool;
-        ILeverageZapper leverageZapper;
-        IZapper zapper;
     }
 
     address WETH;
@@ -128,14 +124,7 @@ contract UseDeployment is CommonBase {
                 sortedTroves: ISortedTroves(json.readAddress(string.concat(branch, ".sortedTroves"))),
                 activePool: IActivePool(json.readAddress(string.concat(branch, ".activePool"))),
                 defaultPool: IDefaultPool(json.readAddress(string.concat(branch, ".defaultPool"))),
-                stabilityPool: IStabilityPool(json.readAddress(string.concat(branch, ".stabilityPool"))),
-                leverageZapper: ILeverageZapper(json.readAddress(string.concat(branch, ".leverageZapper"))),
-                zapper: IZapper(
-                    coalesce(
-                        json.readAddress(string.concat(branch, ".wethZapper")),
-                        json.readAddress(string.concat(branch, ".gasCompZapper"))
-                    )
-                )
+                stabilityPool: IStabilityPool(json.readAddress(string.concat(branch, ".stabilityPool")))
             });
 
             vm.label(address(branches[i].priceFeed), "PriceFeed");
@@ -146,8 +135,6 @@ contract UseDeployment is CommonBase {
             vm.label(address(branches[i].activePool), "ActivePool");
             vm.label(address(branches[i].defaultPool), "DefaultPool");
             vm.label(address(branches[i].stabilityPool), "StabilityPool");
-            vm.label(address(branches[i].leverageZapper), "LeverageZapper");
-            vm.label(address(branches[i].zapper), "Zapper");
 
             string memory collSymbol = branches[i].collToken.symbol();
             if (collSymbol.eq("WETH")) {

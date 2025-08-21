@@ -3,9 +3,14 @@
 pragma solidity 0.8.24;
 
 import "./Interfaces/ICollateralRegistry.sol";
+import "./Interfaces/IActivePool.sol";
+import "./Interfaces/ISortedTroves.sol";
 import "./Dependencies/LiquityMath.sol";
 import "./Dependencies/Constants.sol";
 import "./Interfaces/IHintHelpers.sol";
+import "./Types/LatestTroveData.sol";
+import "./Types/TroveChange.sol";
+import "./Types/LatestBatchData.sol";
 
 contract HintHelpers is IHintHelpers {
     string public constant NAME = "HintHelpers";

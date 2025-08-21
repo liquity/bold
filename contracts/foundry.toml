@@ -37,3 +37,7 @@ broadcast = 'broadcast-e2e'
 no_storage_caching = true
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+
+[lint]
+# Excludes info/notes from 'forge build' and 'forge lint' output per default as it's quite noisy
+severity = ["high", "med", "low"]

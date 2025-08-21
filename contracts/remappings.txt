@@ -1,1 +1,2 @@
 openzeppelin/=lib/V2-gov/lib/openzeppelin-contracts/
+openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/

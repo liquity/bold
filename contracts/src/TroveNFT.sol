@@ -7,6 +7,8 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 
 import "./Interfaces/ITroveNFT.sol";
 import "./Interfaces/IAddressesRegistry.sol";
+import "./Interfaces/IBoldToken.sol";
+import "./Types/LatestTroveData.sol";
 
 import {IMetadataNFT} from "./NFTMetadata/MetadataNFT.sol";
 import {ITroveManager} from "./Interfaces/ITroveManager.sol";

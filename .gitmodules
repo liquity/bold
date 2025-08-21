@@ -7,6 +7,9 @@
 [submodule "contracts/lib/Solady"]
 	path = contracts/lib/Solady
 	url = https://github.com/Vectorized/Solady
+[submodule "contracts/lib/openzeppelin-contracts-upgradeable"]
+	path = contracts/lib/openzeppelin-contracts-upgradeable
+	url = https://github.com/openzeppelin/openzeppelin-contracts-upgradeable
 [submodule "contracts/lib/V2-gov"]
 	path = contracts/lib/V2-gov
 	url = https://github.com/liquity/V2-gov

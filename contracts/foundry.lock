@@ -1,0 +1,17 @@
+{
+  "lib/forge-std": {
+    "rev": "726a6ee5fc8427a0013d6f624e486c9130c0e336"
+  },
+  "lib/Solady": {
+    "rev": "362b2efd20f38aea7252b391e5e016633ff79641"
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "rev": "58fa0f81c4036f1a3b616fdffad2fd27e5d5ce21"
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "bd325d56b4c62c9c5c1aff048c37c6bb18ac0290"
+  },
+  "lib/V2-gov": {
+    "rev": "e7ed5341f2f54fb9bf89497a7be294c61f21ebe3"
+  }
+}
