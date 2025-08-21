@@ -293,7 +293,7 @@ function PositionsGroup({
           >
             {title_}
           </h1>
-          {(
+          {positions.length > 0 && (
             <HFlex gap={4} alignItems="center">
               <p className={css({
                 fontSize: 14,
