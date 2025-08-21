@@ -28,7 +28,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     // A doubly linked list of Troves, sorted by their collateral ratios
     ISortedTroves internal sortedTroves;
     // Wrapped ETH for liquidation reserve (gas compensation)
-    IWETH internal immutable WETH;
+    IERC20Metadata internal immutable gasToken;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
     uint256 public immutable CCR;
@@ -173,7 +173,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         collToken = _addressesRegistry.collToken();
 
-        WETH = _addressesRegistry.WETH();
+        gasToken = _addressesRegistry.gasToken();
 
         CCR = _addressesRegistry.CCR();
         SCR = _addressesRegistry.SCR();
@@ -373,7 +373,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         // Mint the requested _boldAmount to the borrower and mint the gas comp to the GasPool
         vars.boldToken.mint(msg.sender, _boldAmount);
-        WETH.transferFrom(msg.sender, gasPoolAddress, ETH_GAS_COMPENSATION);
+        gasToken.transferFrom(msg.sender, gasPoolAddress, ETH_GAS_COMPENSATION);
 
         return vars.troveId;
     }
@@ -738,7 +738,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         activePoolCached.mintAggInterestAndAccountForTroveChange(troveChange, batchManager);
 
         // Return ETH gas compensation
-        WETH.transferFrom(gasPoolAddress, receiver, ETH_GAS_COMPENSATION);
+        gasToken.transferFrom(gasPoolAddress, receiver, ETH_GAS_COMPENSATION);
         // Burn the remainder of the Trove's entire debt from the user
         boldTokenCached.burn(msg.sender, trove.entireDebt);
 

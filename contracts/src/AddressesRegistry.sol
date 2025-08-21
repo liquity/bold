@@ -24,7 +24,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     IMultiTroveGetter public multiTroveGetter;
     ICollateralRegistry public collateralRegistry;
     IBoldToken public boldToken;
-    IWETH public WETH;
+    IERC20Metadata public gasToken;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
     uint256 public immutable CCR;
@@ -66,7 +66,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     event MultiTroveGetterAddressChanged(address _multiTroveGetterAddress);
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
-    event WETHAddressChanged(address _wethAddress);
+    event GasTokenAddressChanged(address _gasTokenAddress);
 
     constructor(
         address _owner,
@@ -111,7 +111,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         multiTroveGetter = _vars.multiTroveGetter;
         collateralRegistry = _vars.collateralRegistry;
         boldToken = _vars.boldToken;
-        WETH = _vars.WETH;
+        gasToken = _vars.gasToken;
 
         emit CollTokenAddressChanged(address(_vars.collToken));
         emit BorrowerOperationsAddressChanged(address(_vars.borrowerOperations));
@@ -130,7 +130,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         emit MultiTroveGetterAddressChanged(address(_vars.multiTroveGetter));
         emit CollateralRegistryAddressChanged(address(_vars.collateralRegistry));
         emit BoldTokenAddressChanged(address(_vars.boldToken));
-        emit WETHAddressChanged(address(_vars.WETH));
+        emit GasTokenAddressChanged(address(_vars.gasToken));
 
         _renounceOwnership();
     }

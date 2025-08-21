@@ -37,7 +37,7 @@ interface IAddressesRegistry {
         IMultiTroveGetter multiTroveGetter;
         ICollateralRegistry collateralRegistry;
         IBoldToken boldToken;
-        IWETH WETH;
+        IERC20Metadata gasToken;
     }
 
     function CCR() external returns (uint256);
@@ -64,7 +64,7 @@ interface IAddressesRegistry {
     function multiTroveGetter() external view returns (IMultiTroveGetter);
     function collateralRegistry() external view returns (ICollateralRegistry);
     function boldToken() external view returns (IBoldToken);
-    function WETH() external returns (IWETH);
+    function gasToken() external view returns (IERC20Metadata);
 
     function setAddresses(AddressVars memory _vars) external;
 }
