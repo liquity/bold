@@ -22,7 +22,7 @@ import { PositionCardEarn } from "./PositionCardEarn";
 import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardStake } from "./PositionCardStake";
 import { PositionCardYusnd } from "./PositionCardYusnd";
-import { Dropdown } from "@liquity2/uikit";
+import { Dropdown, HFlex } from "@liquity2/uikit";
 
 type Mode = "positions" | "loading" | "actions";
 
@@ -146,7 +146,7 @@ function PositionsGroup({
   const title_ = title(mode);
   
   const sortingCategories = [
-    { label: "Collateral", value: "" },
+    { label: "Default", value: "" },
     { label: "Highest to lowest", value: "" },
     { label: "Lowest to highest", value: "" },
   ];
@@ -293,23 +293,28 @@ function PositionsGroup({
           >
             {title_}
           </h1>
-          {positions.length > 0 && (  
-            <Dropdown
-              items={sortingCategories}
-              buttonDisplay={() => ({
-                label: (
-                  <span
-                    className={css({
-                      fontSize: 16,
-                    })}
-                  >
-                    {sortingCategories[sortIndex]!.label}
-                  </span>
-                )
-              })}
-              selected={sortIndex}
-              onSelect={(index) => setSortIndex(index)}
-            />
+          {(
+            <HFlex gap={4} alignItems="center">
+              <p className={css({
+                fontSize: 14,
+              })}>Sort by</p>
+              <Dropdown
+                items={sortingCategories}
+                buttonDisplay={() => ({
+                  label: (
+                    <span
+                      className={css({
+                        fontSize: 16,
+                      })}
+                    >
+                      {sortingCategories[sortIndex]!.label}
+                    </span>
+                  )
+                })}
+                selected={sortIndex}
+                onSelect={(index) => setSortIndex(index)}
+              />
+            </HFlex>
           )}
         </div>
       )}
