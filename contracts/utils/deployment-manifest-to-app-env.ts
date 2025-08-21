@@ -38,6 +38,7 @@ const ZDeploymentManifest = z.object({
   boldToken: ZAddress,
   hintHelpers: ZAddress,
   multiTroveGetter: ZAddress,
+  debtInFrontHelper: ZAddress,
   exchangeHelpers: ZAddress,
 
   governance: z.object({
@@ -183,6 +184,8 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_HINT_HELPERS`;
     case "multiTroveGetter":
       return `${prefix}_MULTI_TROVE_GETTER`;
+    case "debtInFrontHelper":
+      return `${prefix}_DEBT_IN_FRONT_HELPER`;
     case "exchangeHelpers":
       return `${prefix}_EXCHANGE_HELPERS`;
 
