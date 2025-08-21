@@ -9,7 +9,7 @@ import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IStabilityPoolEvents.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
-import "./Dependencies/LiquityBase.sol";
+import "./Dependencies/LiquityBaseInit.sol";
 
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
@@ -115,14 +115,14 @@ import "./Dependencies/LiquityBase.sol";
  *
  *
  */
-contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
+contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabilityPoolEvents {
     using SafeERC20 for IERC20;
 
     string public constant NAME = "StabilityPool";
 
-    IERC20 public immutable collToken;
-    ITroveManager public immutable troveManager;
-    IBoldToken public immutable boldToken;
+    IERC20 public collToken;
+    ITroveManager public troveManager;
+    IBoldToken public boldToken;
 
     uint256 internal collBalance; // deposited coll tracker
 
@@ -189,7 +189,20 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event BoldTokenAddressChanged(address _newBoldTokenAddress);
 
-    constructor(IAddressesRegistry _addressesRegistry) LiquityBase(_addressesRegistry) {
+    /**
+     * @dev Should be called with disable=true in deployments when it's accessed through a Proxy.
+     * Call this with disable=false during testing, when used without a proxy.
+     */
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor(bool disable) {
+        if (disable) {
+            _disableInitializers();
+        }
+    }
+
+    function initialize(IAddressesRegistry _addressesRegistry) external initializer {
+        __LiquityBase_init(_addressesRegistry);
+
         collToken = _addressesRegistry.collToken();
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();
