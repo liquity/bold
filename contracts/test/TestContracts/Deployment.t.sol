@@ -48,6 +48,7 @@ import "src/PriceFeeds/RETHPriceFeed.sol";
 import "forge-std/console2.sol";
 import "forge-std/Test.sol";
 
+uint256 constant MAX_INT = type(uint256).max;
 uint256 constant _24_HOURS = 86400;
 uint256 constant _48_HOURS = 172800;
 
@@ -233,7 +234,7 @@ contract TestDeployer is MetadataDeployment {
             Zappers memory zappers
         )
     {
-        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 10e16, 110e16, 10_000_000e18, 5e16, 10e16, 0));
+        return deployAndConnectContracts(TroveManagerParams(150e16, 110e16, 10e16, 110e16, MAX_INT, 5e16, 10e16, 0));
     }
 
     function deployAndConnectContracts(TroveManagerParams memory troveManagerParams)
@@ -343,6 +344,7 @@ contract TestDeployer is MetadataDeployment {
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
         (contractsArray[0], zappersArray[0]) = _deployAndConnectCollateralContractsDev(
+            0,
             _WETH,
             boldToken,
             collateralRegistry,
@@ -356,6 +358,7 @@ contract TestDeployer is MetadataDeployment {
         // Deploy the remaining branches with LST collateral
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
             (contractsArray[vars.i], zappersArray[vars.i]) = _deployAndConnectCollateralContractsDev(
+                vars.i,
                 vars.collaterals[vars.i],
                 boldToken,
                 collateralRegistry,
@@ -392,6 +395,7 @@ contract TestDeployer is MetadataDeployment {
     }
 
     function _deployAndConnectCollateralContractsDev(
+        uint256 _branchId,
         IERC20Metadata _collToken,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
@@ -469,7 +473,7 @@ contract TestDeployer is MetadataDeployment {
         contracts.addressesRegistry.setAddresses(addressVars);
 
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry, 0);
+        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry, _branchId);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);

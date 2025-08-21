@@ -10,6 +10,8 @@ import {AdjustedTroveProperties, InvariantsTestHandler} from "./TestContracts/In
 import {Logging} from "./Utils/Logging.sol";
 import {TroveId} from "./Utils/TroveId.sol";
 
+uint256 constant MAX_INT = type(uint256).max;
+
 contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollateralTest, TroveId {
     using Strings for uint256;
     using StringFormatting for uint256;
@@ -20,10 +22,10 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         super.setUp();
 
         TestDeployer.TroveManagerParams[] memory p = new TestDeployer.TroveManagerParams[](4);
-        p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 0.1 ether, 1.01 ether, 10_000_000e18, 0.05 ether, 0.1 ether, 0);
-        p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.01 ether, 10_000_000e18, 0.05 ether, 0.1 ether, 1);
-        p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.01 ether, 10_000_000e18, 0.05 ether, 0.1 ether, 2);
-        p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 0.1 ether, 1.01 ether, 10_000_000e18, 0.05 ether, 0.1 ether, 3);
+        p[0] = TestDeployer.TroveManagerParams(1.5 ether, 1.1 ether, 0.1 ether, 1.01 ether, MAX_INT, 0.05 ether, 0.1 ether, 0);
+        p[1] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.01 ether, MAX_INT/2, 0.05 ether, 0.1 ether, 1);
+        p[2] = TestDeployer.TroveManagerParams(1.6 ether, 1.2 ether, 0.1 ether, 1.01 ether, MAX_INT/2, 0.05 ether, 0.1 ether, 2);
+        p[3] = TestDeployer.TroveManagerParams(1.6 ether, 1.25 ether, 0.1 ether, 1.01 ether, MAX_INT/2, 0.05 ether, 0.1 ether, 3);
         TestDeployer deployer = new TestDeployer();
         Contracts memory contracts;
         (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth,)

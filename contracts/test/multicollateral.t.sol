@@ -70,10 +70,10 @@ contract MulticollateralTest is DevTestSetup {
 
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 10_000_000e18, 5e16, 10e16, 0);
-        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 10_000_000e18, 5e16, 10e16, 1);
-        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 10_000_000e18, 5e16, 10e16, 2);
-        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 10e16, 125e16, 10_000_000e18, 5e16, 10e16, 3);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 10_000_000_000e18, 5e16, 10e16, 0);
+        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 10_000_000_000e18, 5e16, 10e16, 1);
+        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 10_000_000_000e18, 5e16, 10e16, 2);
+        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 10e16, 125e16, 10_000_000_000e18, 5e16, 10e16, 3);
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _contractsArray;
@@ -121,8 +121,12 @@ contract MulticollateralTest is DevTestSetup {
             assertNotEq(address(collateralRegistry.getTroveManager(c)), ZERO_ADDRESS, "Missing TroveManager");
         }
         for (uint256 c = NUM_COLLATERALS; c < 10; c++) {
-            assertEq(address(collateralRegistry.getToken(c)), ZERO_ADDRESS, "Extra collateral token");
-            assertEq(address(collateralRegistry.getTroveManager(c)), ZERO_ADDRESS, "Extra TroveManager");
+            vm.expectRevert("Invalid index");
+            collateralRegistry.getToken(c);
+            vm.expectRevert("Invalid index");
+            collateralRegistry.getTroveManager(c);
+            // assertEq(address(collateralRegistry.getToken(c)), ZERO_ADDRESS, "Extra collateral token");
+            // assertEq(address(collateralRegistry.getTroveManager(c)), ZERO_ADDRESS, "Extra TroveManager");
         }
         // reverts for invalid index
         vm.expectRevert("Invalid index");
@@ -796,7 +800,16 @@ contract CsBold013 is TestAccounts {
         });
 
         // rETH (same as wstETH)
-        params[2] = params[1];
+        params[2] = TestDeployer.TroveManagerParams({
+            CCR: CCR_SETH,
+            MCR: MCR_SETH,
+            SCR: SCR_SETH,
+            BCR: BCR_ALL,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH,
+            debtLimit: MAX_INT/2,
+            branchId: 2
+        });
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _branches;
