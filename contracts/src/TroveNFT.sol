@@ -76,6 +76,7 @@ contract TroveNFT is ERC721, ITroveNFT {
 
     function updateGovernor(address _governor) external {
         require(msg.sender == governor, "TroveNFT: Caller is not the governor");
+        require(_governor != address(0), "TroveNFT: Governor cannot be the zero address");
         governor = _governor;
     }
 
