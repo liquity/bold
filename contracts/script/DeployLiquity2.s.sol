@@ -77,17 +77,16 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     uint256 constant NUM_BRANCHES = 5;
 
     address WETH_ADDRESS = 0xeb41D53F14Cb9a67907f2b8b5DBc223944158cCb;
-    address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // TODO: Change this
 
     // used for gas compensation and as collateral of the first branch
     // tapping disallowed
     IWETH WETH;
-    IERC20Metadata USDC;
+    // IERC20Metadata USDC;
     // address WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-    address RETH_ADDRESS = 0xae78736Cd615f374D3085123A210448E74Fc6393;
-    address TBTC_ADDRESS = 0x8dAEBADE922dF735c38C80C7eBD708Af50815fAa;
-    address FBTC_ADDRESS = 0xC96dE26018A54D51c097160568752c4E3BD6C364;
-    address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE;
+    address RETH_ADDRESS = 0x679121f168488185eca6Aaa3871687FF6d38Edb6; // TODO: Change to CORRECT ADDRESS
+    address TBTC_ADDRESS = 0xa740E6758e309840ffFfe58f749F018386A3b70b; // TODO: Change to CORRECT ADDRESS
+    address FBTC_ADDRESS = 0xDA54014Ea6B6b56e3e26c6c82aeC1718B4a85099; // TODO: Change to CORRECT ADDRESS
+    address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE; // TODO: This is 6 decimals, not 18 decimals. Either delete or get 18 decimals wrapped token of SAGA.
     address ETH_ORACLE_ADDRESS = address(0);
     address RETH_ORACLE_ADDRESS = address(0);
     // address STETH_ORACLE_ADDRESS = address(0);
@@ -214,10 +213,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             string.concat("Bad deployment mode: ", deploymentMode)
         );
 
-        uint256 epochStart = vm.envOr(
-            "EPOCH_START",
-            (block.chainid == 1 ? _latestUTCMidnightBetweenWednesdayAndThursday() : block.timestamp) - EPOCH_DURATION
-        );
+        // uint256 epochStart = vm.envOr(
+        //     "EPOCH_START",
+        //     (block.chainid == 5464 ? _latestUTCMidnightBetweenWednesdayAndThursday() : block.timestamp) - EPOCH_DURATION
+        // );
 
         useTestnetPriceFeeds = vm.envOr("USE_TESTNET_PRICEFEEDS", false);
 
@@ -225,7 +224,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         _log("Deployer balance:       ", deployer.balance.decimal());
         _log("Deployment mode:        ", deploymentMode);
         _log("CREATE2 salt:           ", 'keccak256(bytes("', saltStr, '")) = ', uint256(SALT).toHexString());
-        _log("Governance epoch start: ", epochStart.toString());
+        // _log("Governance epoch start: ", epochStart.toString());
         _log("Use testnet PriceFeeds: ", useTestnetPriceFeeds ? "yes" : "no");
 
         // Deploy Bold or pick up existing deployment
@@ -254,7 +253,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         if (block.chainid == 5464) {
             // mainnet
             WETH = IWETH(WETH_ADDRESS);
-            USDC = IERC20Metadata(USDC_ADDRESS);
+            // USDC = IERC20Metadata(USDC_ADDRESS);
         } else {
             // sepolia, local
             if (block.chainid == 31337) {
@@ -264,7 +263,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 // sepolia
                 WETH = new WETHTester({_tapAmount: 0, _tapPeriod: type(uint256).max});
             }
-            USDC = new ERC20Faucet("USDC", "USDC", 0, type(uint256).max);
+            // USDC = new ERC20Faucet("USDC", "USDC", 0, type(uint256).max);
         }
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](NUM_BRANCHES);
@@ -365,7 +364,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         // );
         // address computedGovernanceAddress = computeGovernanceAddress(deployGovernanceParams);
         // assert(governanceAddress == computedGovernanceAddress);
-        address governanceAddress = GOVERNANCE_ADDRESS;
         string memory governanceManifest = GOVERNANCE_MANIFEST;
 
         vm.stopBroadcast();
@@ -515,7 +513,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
         // Collaterals
-        if (block.chainid == 1 && !useTestnetPriceFeeds) {
+        if (block.chainid == 5464 && !useTestnetPriceFeeds) {
             // mainnet
             // ETH
             vars.collaterals[0] = IERC20Metadata(WETH);
@@ -776,8 +774,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     function _deployZappers(
         IAddressesRegistry _addressesRegistry,
         IERC20 _collToken,
-        IBoldToken _boldToken,
-        ICurveStableswapNGPool _usdcCurvePool
+        // IBoldToken _boldToken,
+        IBoldToken,
+        // ICurveStableswapNGPool _usdcCurvePool
+        ICurveStableswapNGPool
     ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper) {
         // IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
 
