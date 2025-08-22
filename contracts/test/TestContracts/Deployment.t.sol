@@ -562,6 +562,7 @@ contract TestDeployer is MetadataDeployment {
         assert(address(metadataNFT) == addresses.metadataNFT);
 
         // Pre-calc addresses
+        bytes32 stabilityPoolSalt = keccak256(abi.encodePacked(address(contracts.addressesRegistry)));
         addresses.borrowerOperations = getAddress(
             address(this),
             getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
@@ -571,7 +572,8 @@ contract TestDeployer is MetadataDeployment {
         addresses.troveNFT = getAddress(
             address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
         );
-        addresses.stabilityPool = getAddress(address(this), getBytecode(type(StabilityPool).creationCode, false), SALT);
+        addresses.stabilityPool =
+            getAddress(address(this), getBytecode(type(StabilityPool).creationCode, false), stabilityPoolSalt);
         addresses.activePool = getAddress(
             address(this), getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry)), SALT
         );
@@ -617,7 +619,7 @@ contract TestDeployer is MetadataDeployment {
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
-        contracts.stabilityPool = new StabilityPool{salt: SALT}(false);
+        contracts.stabilityPool = new StabilityPool{salt: stabilityPoolSalt}(false);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
         contracts.gasPool = new GasPool{salt: SALT}(contracts.addressesRegistry);
@@ -633,6 +635,8 @@ contract TestDeployer is MetadataDeployment {
         assert(address(contracts.gasPool) == addresses.gasPool);
         assert(address(contracts.collSurplusPool) == addresses.collSurplusPool);
         assert(address(contracts.sortedTroves) == addresses.sortedTroves);
+
+        contracts.stabilityPool.initialize(contracts.addressesRegistry);
 
         // Connect contracts
         _params.boldToken.setBranchAddresses(
