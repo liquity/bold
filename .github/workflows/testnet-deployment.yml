@@ -5,17 +5,17 @@ name: Testnet Deployment
 # - Deploys the app to Vercel (main branch only, not PRs)
 # - Deploys the gallery to Vercel (main branch only, not PRs)
 
-on:
-  push:
-    branches: [main, dev]
-    paths:
-      - ".github/workflows/testnet-deployment.yml"
-      - "contracts/**"
-      - "frontend/**"
-  pull_request:
-    paths:
-      - ".github/workflows/testnet-deployment.yml"
-      - "contracts/**"
+# on:
+#   push:
+#     branches: [main, dev]
+#     paths:
+#       - ".github/workflows/testnet-deployment.yml"
+#       - "contracts/**"
+#       - "frontend/**"
+#   pull_request:
+#     paths:
+#       - ".github/workflows/testnet-deployment.yml"
+#       - "contracts/**"
 
 env:
   CI: true
