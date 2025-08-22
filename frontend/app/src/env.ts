@@ -179,8 +179,8 @@ export const EnvSchema = v.pipe(
     LEGACY_CHECK: v.optional(vEnvLegacyCheck(), "true"),
     LIQUITY_STATS_URL: v.optional(v.pipe(v.string(), v.url())),
     LIQUITY_GOVERNANCE_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
-    SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
-    SBOLD: v.optional(v.union([vAddress(), v.null()]), null),
+    SAFE_API_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
+    SBOLD: v.optional(v.union([vAddress(), v.literal("")])),
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.pipe(
