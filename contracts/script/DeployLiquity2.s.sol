@@ -22,6 +22,7 @@ import "src/DefaultPool.sol";
 import "src/GasPool.sol";
 import "src/HintHelpers.sol";
 import "src/MultiTroveGetter.sol";
+import {DebtInFrontHelper, IDebtInFrontHelper} from "src/DebtInFrontHelper.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
@@ -222,6 +223,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ICurveStableswapNGPool usdcCurvePool;
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
+        IDebtInFrontHelper debtInFrontHelper;
         IExchangeHelpers exchangeHelpers;
     }
 
@@ -609,6 +611,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers);
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
+        r.debtInFrontHelper = new DebtInFrontHelper(r.collateralRegistry, r.hintHelpers);
 
         // Deploy per-branch contracts for each branch
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
@@ -1159,6 +1162,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 string.concat('"boldToken":"', address(deployed.boldToken).toHexString(), '",'),
                 string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",'),
                 string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
+                string.concat('"debtInFrontHelper":"', address(deployed.debtInFrontHelper).toHexString(), '",'),
                 string.concat('"exchangeHelpers":"', address(deployed.exchangeHelpers).toHexString(), '",'),
                 string.concat('"branches":[', branches.join(","), "],"),
                 string.concat('"governance":', _governanceManifest, "") // no comma

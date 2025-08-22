@@ -15,6 +15,7 @@ const ABIS = [
   ["CollateralRegistry"],
   ["HintHelpers"],
   ["MultiTroveGetter"],
+  ["DebtInFrontHelper"],
 
   // Governance (V2-gov lib)
   ["Governance"],
