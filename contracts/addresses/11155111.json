@@ -12,6 +12,7 @@
   "boldToken": "0x181dff47198bf3f3ed65877332e8395eb6817c4c",
   "hintHelpers": "0x10fe36cc9a830c86f8117c74e85ce6c58705ef21",
   "multiTroveGetter": "0x19303bc4d3518039d0780a55e9950b222b178467",
+  "debtInFrontHelper": "0xaeeafadd6d39e1e7c82977fe3fa274fa32a98da8",
   "exchangeHelpers": "0x2b50462f3026446fa9f6e618f3f08a67aae96317",
   "branches": [
     {

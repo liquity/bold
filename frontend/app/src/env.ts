@@ -179,8 +179,8 @@ export const EnvSchema = v.pipe(
     LEGACY_CHECK: v.optional(vEnvLegacyCheck(), "true"),
     LIQUITY_STATS_URL: v.optional(v.pipe(v.string(), v.url())),
     LIQUITY_GOVERNANCE_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
-    SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
-    SBOLD: v.optional(v.union([vAddress(), v.null()]), null),
+    SAFE_API_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
+    SBOLD: v.optional(v.union([vAddress(), v.literal("")])),
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.pipe(
@@ -196,6 +196,7 @@ export const EnvSchema = v.pipe(
 
     CONTRACT_BOLD_TOKEN: vAddress(),
     CONTRACT_COLLATERAL_REGISTRY: vAddress(),
+    CONTRACT_DEBT_IN_FRONT_HELPER: vAddress(),
     CONTRACT_EXCHANGE_HELPERS: vAddress(),
     CONTRACT_GOVERNANCE: vAddress(),
     CONTRACT_HINT_HELPERS: vAddress(),
@@ -352,6 +353,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
 
   CONTRACT_BOLD_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY: process.env.NEXT_PUBLIC_CONTRACT_COLLATERAL_REGISTRY,
+  CONTRACT_DEBT_IN_FRONT_HELPER: process.env.NEXT_PUBLIC_CONTRACT_DEBT_IN_FRONT_HELPER,
   CONTRACT_EXCHANGE_HELPERS: process.env.NEXT_PUBLIC_CONTRACT_EXCHANGE_HELPERS,
   CONTRACT_GOVERNANCE: process.env.NEXT_PUBLIC_CONTRACT_GOVERNANCE,
   CONTRACT_HINT_HELPERS: process.env.NEXT_PUBLIC_CONTRACT_HINT_HELPERS,
@@ -441,6 +443,7 @@ export const {
   CONTRACTS_COMMIT_URL,
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
+  CONTRACT_DEBT_IN_FRONT_HELPER,
   CONTRACT_EXCHANGE_HELPERS,
   CONTRACT_GOVERNANCE,
   CONTRACT_HINT_HELPERS,
