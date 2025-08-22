@@ -273,7 +273,7 @@ contract BasicOps is DevTestSetup {
         assertEq(removedBranchIds[0], 0);
         assertEq(removedBranchIds[1], 1);
 
-        myCollateralRegistry.cleanRemovedCollaterals();
+        myCollateralRegistry.cleanRemovedCollaterals(0);
 
         removedBranchIds = myCollateralRegistry.removedBranchIds();
         assertEq(removedBranchIds.length, 1);
