@@ -7,6 +7,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 
 import "./Interfaces/ITroveNFT.sol";
 import "./Interfaces/IAddressesRegistry.sol";
+import "./Interfaces/IExternalURIgetter.sol";
 
 import {IMetadataNFT} from "./NFTMetadata/MetadataNFT.sol";
 import {ITroveManager} from "./Interfaces/ITroveManager.sol";
@@ -20,7 +21,13 @@ contract TroveNFT is ERC721, ITroveNFT {
 
     IMetadataNFT public immutable metadataNFT;
 
-    constructor(IAddressesRegistry _addressesRegistry)
+    address public governor;
+    bool public uriUpdated = false;
+    address public externalURIgetter;
+
+
+
+    constructor(IAddressesRegistry _addressesRegistry, address governor)
         ERC721(
             string.concat("Liquity V2 - ", _addressesRegistry.collToken().name()),
             string.concat("LV2_", _addressesRegistry.collToken().symbol())
@@ -33,6 +40,10 @@ contract TroveNFT is ERC721, ITroveNFT {
     }
 
     function tokenURI(uint256 _tokenId) public view override(ERC721, IERC721Metadata) returns (string memory) {
+        if (uriUpdated) {
+            return IExternalURIgetter(externalURIgetter).tokenURI(_tokenId);
+        }
+
         LatestTroveData memory latestTroveData = troveManager.getLatestTroveData(_tokenId);
 
         IMetadataNFT.TroveData memory troveData = IMetadataNFT.TroveData({
@@ -61,5 +72,16 @@ contract TroveNFT is ERC721, ITroveNFT {
 
     function _requireCallerIsTroveManager() internal view {
         require(msg.sender == address(troveManager), "TroveNFT: Caller is not the TroveManager contract");
+    }
+
+    function updateGovernor(address _governor) external {
+        require(msg.sender == governor, "TroveNFT: Caller is not the governor");
+        governor = _governor;
+    }
+
+    function updateUri(address _externalURIgetter) external {
+        require(msg.sender == governor, "TroveNFT: Caller is not the governor");
+        uriUpdated = true;
+        externalURIgetter = _externalURIgetter;
     }
 }
