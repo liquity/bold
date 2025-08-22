@@ -27,12 +27,13 @@ contract TroveNFT is ERC721, ITroveNFT {
 
 
 
-    constructor(IAddressesRegistry _addressesRegistry, address governor)
+    constructor(IAddressesRegistry _addressesRegistry, address _governor)
         ERC721(
             string.concat("Liquity V2 - ", _addressesRegistry.collToken().name()),
             string.concat("LV2_", _addressesRegistry.collToken().symbol())
         )
     {
+        governor = _governor;
         troveManager = _addressesRegistry.troveManager();
         collToken = _addressesRegistry.collToken();
         metadataNFT = _addressesRegistry.metadataNFT();
