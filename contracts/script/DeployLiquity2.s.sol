@@ -66,11 +66,15 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     using StringFormatting for *;
     using StringEquality for string;
 
+    // TODO: Change these values
+    address GOVERNANCE_ADDRESS = 0x0000000000000000000000000000000000000000;
+    string GOVERNANCE_MANIFEST = "";
+
     string constant DEPLOYMENT_MODE_COMPLETE = "complete";
     string constant DEPLOYMENT_MODE_BOLD_ONLY = "bold-only";
     string constant DEPLOYMENT_MODE_USE_EXISTING_BOLD = "use-existing-bold";
 
-    uint256 constant NUM_BRANCHES = 3;
+    uint256 constant NUM_BRANCHES = 5;
 
     address WETH_ADDRESS = 0xeb41D53F14Cb9a67907f2b8b5DBc223944158cCb;
     address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; // TODO: Change this
@@ -84,78 +88,23 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address TBTC_ADDRESS = 0x8dAEBADE922dF735c38C80C7eBD708Af50815fAa;
     address FBTC_ADDRESS = 0xC96dE26018A54D51c097160568752c4E3BD6C364;
     address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE;
-    address ETH_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-    address RETH_ORACLE_ADDRESS = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
-    // address STETH_ORACLE_ADDRESS = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
+    address ETH_ORACLE_ADDRESS = address(0);
+    address RETH_ORACLE_ADDRESS = address(0);
+    // address STETH_ORACLE_ADDRESS = address(0);
     // TODO: Change these values
-    address TBTC_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-    address FBTC_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-    address BTC_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-    address SAGA_ORACLE_ADDRESS = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+    address TBTC_ORACLE_ADDRESS = address(0);
+    address FBTC_ORACLE_ADDRESS = address(0);
+    address BTC_ORACLE_ADDRESS = address(0);
+    address SAGA_ORACLE_ADDRESS = address(0);
     ///////////////////////////////
-    uint256 ETH_USD_STALENESS_THRESHOLD = 24 hours;
+    uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
     // uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
-    uint256 RETH_ETH_STALENESS_THRESHOLD = 48 hours;
+    uint256 RETH_ETH_STALENESS_THRESHOLD = 25 hours;
     // TODO: Change these values
-    uint256 TBTC_ETH_STALENESS_THRESHOLD = 24 hours;
-    uint256 FBTC_ETH_STALENESS_THRESHOLD = 24 hours;
-    uint256 BTC_USD_STALENESS_THRESHOLD = 24 hours;
-    uint256 SAGA_USD_STALENESS_THRESHOLD = 24 hours;
-
-    // V1
-    address LQTY_ADDRESS = 0x6DEA81C8171D0bA574754EF6F8b412F2Ed88c54D;
-    address LQTY_STAKING_ADDRESS = 0x4f9Fbb3f1E99B56e0Fe2892e623Ed36A76Fc605d;
-    address LUSD_ADDRESS = 0x5f98805A4E8be255a32880FDeC7F6728C6568bA0;
-
-    address internal lqty;
-    address internal stakingV1;
-    address internal lusd;
-
-    // Curve
-    ICurveStableswapNGFactory curveStableswapFactory;
-    // https://docs.curve.fi/deployments/amm/#stableswap-ng
-    // Sepolia
-    ICurveStableswapNGFactory constant curveStableswapFactorySepolia =
-        ICurveStableswapNGFactory(0xfb37b8D939FFa77114005e61CFc2e543d6F49A81);
-    // Mainnet
-    ICurveStableswapNGFactory constant curveStableswapFactoryMainnet =
-        ICurveStableswapNGFactory(0x6A8cbed756804B16E05E741eDaBd5cB544AE21bf);
-    uint128 constant BOLD_TOKEN_INDEX = 0;
-    uint128 constant OTHER_TOKEN_INDEX = 1;
-
-    // Uni V3
-    uint24 constant UNIV3_FEE = 0.3e4;
-    uint24 constant UNIV3_FEE_USDC_WETH = 500; // 0.05%
-    uint24 constant UNIV3_FEE_WETH_COLL = 100; // 0.01%
-    ISwapRouter uniV3Router;
-    IQuoterV2 uniV3Quoter;
-    IUniswapV3Factory uniswapV3Factory;
-    INonfungiblePositionManager uniV3PositionManager;
-    // https://docs.uniswap.org/contracts/v3/reference/deployments/ethereum-deployments
-    // Sepolia
-    ISwapRouter constant uniV3RouterSepolia = ISwapRouter(0x65669fE35312947050C450Bd5d36e6361F85eC12);
-    IQuoterV2 constant uniV3QuoterSepolia = IQuoterV2(0xEd1f6473345F45b75F8179591dd5bA1888cf2FB3);
-    IUniswapV3Factory constant uniswapV3FactorySepolia = IUniswapV3Factory(0x0227628f3F023bb0B980b67D528571c95c6DaC1c);
-    INonfungiblePositionManager constant uniV3PositionManagerSepolia =
-        INonfungiblePositionManager(0x1238536071E1c677A632429e3655c799b22cDA52);
-    // Mainnet
-    ISwapRouter constant uniV3RouterMainnet = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
-    IQuoterV2 constant uniV3QuoterMainnet = IQuoterV2(0x61fFE014bA17989E743c5F6cB21bF9697530B21e);
-    IUniswapV3Factory constant uniswapV3FactoryMainnet = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
-    INonfungiblePositionManager constant uniV3PositionManagerMainnet =
-        INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
-
-    // Balancer
-    IVault constant balancerVault = IVault(0xBA12222222228d8Ba445958a75a0704d566BF2C8);
-    IWeightedPoolFactory balancerFactory;
-    // Sepolia
-    // https://docs.balancer.fi/reference/contracts/deployment-addresses/sepolia.html
-    IWeightedPoolFactory constant balancerFactorySepolia =
-        IWeightedPoolFactory(0x7920BFa1b2041911b354747CA7A6cDD2dfC50Cfd);
-    // Mainnet
-    // https://docs.balancer.fi/reference/contracts/deployment-addresses/mainnet.html
-    IWeightedPoolFactory constant balancerFactoryMainnet =
-        IWeightedPoolFactory(0x897888115Ada5773E02aA29F775430BFB5F34c51);
+    uint256 TBTC_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 FBTC_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 BTC_USD_STALENESS_THRESHOLD = 25 hours;
+    uint256 SAGA_USD_STALENESS_THRESHOLD = 25 hours;
 
     bytes32 SALT;
     address deployer;
@@ -302,19 +251,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             return;
         }
 
-        if (block.chainid == 1) {
+        if (block.chainid == 5464) {
             // mainnet
             WETH = IWETH(WETH_ADDRESS);
             USDC = IERC20Metadata(USDC_ADDRESS);
-            curveStableswapFactory = curveStableswapFactoryMainnet;
-            uniV3Router = uniV3RouterMainnet;
-            uniV3Quoter = uniV3QuoterMainnet;
-            uniswapV3Factory = uniswapV3FactoryMainnet;
-            uniV3PositionManager = uniV3PositionManagerMainnet;
-            balancerFactory = balancerFactoryMainnet;
-            lqty = LQTY_ADDRESS;
-            stakingV1 = LQTY_STAKING_ADDRESS;
-            lusd = LUSD_ADDRESS;
         } else {
             // sepolia, local
             if (block.chainid == 31337) {
@@ -325,19 +265,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 WETH = new WETHTester({_tapAmount: 0, _tapPeriod: type(uint256).max});
             }
             USDC = new ERC20Faucet("USDC", "USDC", 0, type(uint256).max);
-            curveStableswapFactory = curveStableswapFactorySepolia;
-            uniV3Router = uniV3RouterSepolia;
-            uniV3Quoter = uniV3QuoterSepolia;
-            uniswapV3Factory = uniswapV3FactorySepolia;
-            uniV3PositionManager = uniV3PositionManagerSepolia;
-            balancerFactory = balancerFactorySepolia;
-            // Needed for Governance (they will be constants for mainnet)
-            lqty = address(new ERC20Faucet("Liquity", "LQTY", 100 ether, 1 days));
-            lusd = address(new ERC20Faucet("Liquity USD", "LUSD", 100 ether, 1 days));
-            stakingV1 = address(new MockStakingV1(IERC20_GOV(lqty), IERC20_GOV(lusd)));
-
-            // Let stakingV1 spend anyone's LQTY without approval, like in the real LQTYStaking
-            ERC20Faucet(lqty).mock_setWildcardSpender(address(stakingV1), true);
         }
 
         TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](NUM_BRANCHES);
@@ -410,82 +337,36 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collNames[4] = "Saga";
         collSymbols[4] = "SAGA";
 
-        DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
-            epochStart: epochStart,
-            deployer: deployer,
-            salt: SALT,
-            stakingV1: stakingV1,
-            lqty: lqty,
-            lusd: lusd,
-            bold: boldAddress
-        });
+        // DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
+        //     epochStart: epochStart,
+        //     deployer: deployer,
+        //     salt: SALT,
+        //     stakingV1: stakingV1,
+        //     lqty: lqty,
+        //     lusd: lusd,
+        //     bold: boldAddress
+        // });
 
         DeploymentResult memory deployed =
-            _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols, deployGovernanceParams);
+            // _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols, deployGovernanceParams);
+            _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols, boldAddress, GOVERNANCE_ADDRESS);
 
-        if (block.chainid == 11155111) {
-            // Provide liquidity for zaps if we're on Sepolia
-            ERC20Faucet monkeyBalls = new ERC20Faucet("MonkeyBalls", "MB", 0, type(uint256).max);
-            for (uint256 i = 0; i < deployed.contractsArray.length; ++i) {
-                PriceFeedTestnet(address(deployed.contractsArray[i].priceFeed)).setPrice(2_000 ether);
-                _provideFlashloanLiquidity(ERC20Faucet(address(deployed.contractsArray[i].collToken)), monkeyBalls);
-                if (i == 0) {
-                    // WETH, we do USDC-WETH
-                    (uint256 price,) = deployed.contractsArray[0].priceFeed.fetchPrice();
-                    uint256 token1Amount = 1_000_000 ether;
-                    _provideUniV3Liquidity(
-                        ERC20Faucet(address(USDC)), ERC20Faucet(address(WETH)), token1Amount, price, UNIV3_FEE_USDC_WETH
-                    );
-                } else {
-                    // LSTs, we do WETH-LST
-                    uint256 token1Amount = 1_000 ether;
-                    _provideUniV3Liquidity(
-                        ERC20Faucet(address(WETH)),
-                        ERC20Faucet(address(deployed.contractsArray[i].collToken)),
-                        token1Amount,
-                        1 ether,
-                        UNIV3_FEE_WETH_COLL
-                    );
-                }
-            }
-
-            _provideCurveLiquidity(deployed.boldToken, deployed.contractsArray[0]);
-
-            // deployed.contractsArray[1].collToken.mint(deployer, 1 ether);
-            // deployed.contractsArray[1].collToken.approve(address(deployed.contractsArray[1].leverageZapper), 1 ether);
-            // deployed.contractsArray[1].leverageZapper.openLeveragedTroveWithRawETH{value: ETH_GAS_COMPENSATION}(
-            //     ILeverageZapper.OpenLeveragedTroveParams({
-            //         owner: deployer,
-            //         ownerIndex: 1,
-            //         collAmount: 1 ether,
-            //         flashLoanAmount: 1 ether,
-            //         boldAmount: 2_000 ether,
-            //         upperHint: 0,
-            //         lowerHint: 0,
-            //         annualInterestRate: MIN_ANNUAL_INTEREST_RATE,
-            //         batchManager: address(0),
-            //         maxUpfrontFee: type(uint256).max,
-            //         addManager: address(0),
-            //         removeManager: address(0),
-            //         receiver: address(0)
-            //     })
-            // );
-        }
-
-        ICurveStableswapNGPool lusdCurvePool;
-        if (block.chainid == 1) {
-            lusdCurvePool = _deployCurvePool(deployed.boldToken, IERC20Metadata(LUSD_ADDRESS));
-        }
+        // ICurveStableswapNGPool lusdCurvePool;
+        // if (block.chainid == 1) {
+        //     lusdCurvePool = _deployCurvePool(deployed.boldToken, IERC20Metadata(LUSD_ADDRESS));
+        // }
 
         // Governance
-        (address governanceAddress, string memory governanceManifest) = deployGovernance(
-            deployGovernanceParams,
-            address(curveStableswapFactory),
-            address(deployed.usdcCurvePool),
-            address(lusdCurvePool)
-        );
-        address computedGovernanceAddress = computeGovernanceAddress(deployGovernanceParams);
-        assert(governanceAddress == computedGovernanceAddress);
+        // (address governanceAddress, string memory governanceManifest) = deployGovernance(
+        //     deployGovernanceParams,
+        //     address(curveStableswapFactory),
+        //     address(deployed.usdcCurvePool),
+        //     address(lusdCurvePool)
+        // );
+        // address computedGovernanceAddress = computeGovernanceAddress(deployGovernanceParams);
+        // assert(governanceAddress == computedGovernanceAddress);
+        address governanceAddress = GOVERNANCE_ADDRESS;
+        string memory governanceManifest = GOVERNANCE_MANIFEST;
 
         vm.stopBroadcast();
 
@@ -614,17 +495,19 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         TroveManagerParams[] memory troveManagerParamsArray,
         string[] memory _collNames,
         string[] memory _collSymbols,
-        DeployGovernanceParams memory _deployGovernanceParams
+        // DeployGovernanceParams memory _deployGovernanceParams
+        address _boldToken,
+        address _governanceAddress
     ) internal returns (DeploymentResult memory r) {
         assert(_collNames.length == troveManagerParamsArray.length - 1);
         assert(_collSymbols.length == troveManagerParamsArray.length - 1);
 
         DeploymentVars memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
-        r.boldToken = BoldToken(_deployGovernanceParams.bold);
+        r.boldToken = BoldToken(_boldToken);
 
         // USDC and USDC-BOLD pool
-        r.usdcCurvePool = _deployCurvePool(r.boldToken, USDC);
+        // r.usdcCurvePool = _deployCurvePool(r.boldToken, USDC);
 
         r.contractsArray = new LiquityContracts[](vars.numCollaterals);
         vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
@@ -682,12 +565,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 vars.collaterals[vars.i],
                 r.boldToken,
                 r.collateralRegistry,
-                r.usdcCurvePool,
+                // r.usdcCurvePool,
+                ICurveStableswapNGPool(address(0)),
                 vars.addressesRegistries[vars.i],
                 address(vars.troveManagers[vars.i]),
                 r.hintHelpers,
                 r.multiTroveGetter,
-                computeGovernanceAddress(_deployGovernanceParams),
+                _governanceAddress,
                 vars.i
             );
             r.contractsArray[vars.i] = vars.contracts;
@@ -696,16 +580,17 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         r.boldToken.setCollateralRegistry(address(r.collateralRegistry));
 
         // exchange helpers
-        r.exchangeHelpers = new HybridCurveUniV3ExchangeHelpers(
-            USDC,
-            WETH,
-            r.usdcCurvePool,
-            OTHER_TOKEN_INDEX, // USDC Curve pool index
-            BOLD_TOKEN_INDEX, // BOLD Curve pool index
-            UNIV3_FEE_USDC_WETH,
-            UNIV3_FEE_WETH_COLL,
-            uniV3Quoter
-        );
+        // r.exchangeHelpers = new HybridCurveUniV3ExchangeHelpers(
+        //     USDC,
+        //     WETH,
+        //     r.usdcCurvePool,
+        //     OTHER_TOKEN_INDEX, // USDC Curve pool index
+        //     BOLD_TOKEN_INDEX, // BOLD Curve pool index
+        //     UNIV3_FEE_USDC_WETH,
+        //     UNIV3_FEE_WETH_COLL,
+        //     uniV3Quoter
+        // );
+        r.exchangeHelpers = IExchangeHelpers(address(0));
     }
 
     function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams, uint256 _branchId)
@@ -894,20 +779,22 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IBoldToken _boldToken,
         ICurveStableswapNGPool _usdcCurvePool
     ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper) {
-        IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
+        // IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
 
-        IExchange hybridExchange = new HybridCurveUniV3Exchange(
-            _collToken,
-            _boldToken,
-            USDC,
-            WETH,
-            _usdcCurvePool,
-            OTHER_TOKEN_INDEX, // USDC Curve pool index
-            BOLD_TOKEN_INDEX, // BOLD Curve pool index
-            UNIV3_FEE_USDC_WETH,
-            UNIV3_FEE_WETH_COLL,
-            uniV3Router
-        );
+        // IExchange hybridExchange = new HybridCurveUniV3Exchange(
+        //     _collToken,
+        //     _boldToken,
+        //     USDC,
+        //     WETH,
+        //     _usdcCurvePool,
+        //     OTHER_TOKEN_INDEX, // USDC Curve pool index
+        //     BOLD_TOKEN_INDEX, // BOLD Curve pool index
+        //     UNIV3_FEE_USDC_WETH,
+        //     UNIV3_FEE_WETH_COLL,
+        //     uniV3Router
+        // );
+        IFlashLoanProvider flashLoanProvider = IFlashLoanProvider(address(0));
+        IExchange hybridExchange = IExchange(address(0));
 
         bool lst = _collToken != WETH;
         if (lst) {
@@ -932,83 +819,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         }
 
         return leverageZapperHybrid;
-    }
-
-    function _deployCurvePool(IBoldToken _boldToken, IERC20Metadata _otherToken)
-        internal
-        returns (ICurveStableswapNGPool)
-    {
-        if (block.chainid == 31337) {
-            // local
-            return ICurveStableswapNGPool(address(0));
-        }
-
-        // deploy Curve StableswapNG pool
-        address[] memory coins = new address[](2);
-        coins[BOLD_TOKEN_INDEX] = address(_boldToken);
-        coins[OTHER_TOKEN_INDEX] = address(_otherToken);
-        uint8[] memory assetTypes = new uint8[](2); // 0: standard
-        bytes4[] memory methodIds = new bytes4[](2);
-        address[] memory oracles = new address[](2);
-
-        ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool({
-            name: string.concat("BOLD/", _otherToken.symbol(), " Pool"),
-            symbol: string.concat("BOLD", _otherToken.symbol()),
-            coins: coins,
-            A: 100,
-            fee: 4000000,
-            offpeg_fee_multiplier: 20000000000,
-            ma_exp_time: 866,
-            implementation_id: 0,
-            asset_types: assetTypes,
-            method_ids: methodIds,
-            oracles: oracles
-        });
-
-        return curvePool;
-    }
-
-    function _provideFlashloanLiquidity(ERC20Faucet _collToken, ERC20Faucet _monkeyBalls) internal {
-        uint256[] memory amountsIn = new uint256[](2);
-        amountsIn[0] = 1_000_000 ether;
-        amountsIn[1] = 1_000_000 ether;
-
-        _collToken.mint(deployer, amountsIn[0]);
-        _monkeyBalls.mint(deployer, amountsIn[1]);
-
-        IERC20[] memory tokens = new IERC20[](2);
-        (tokens[0], tokens[1]) =
-            address(_collToken) < address(_monkeyBalls) ? (_collToken, _monkeyBalls) : (_monkeyBalls, _collToken);
-
-        uint256[] memory normalizedWeights = new uint256[](2);
-        normalizedWeights[0] = 0.5 ether;
-        normalizedWeights[1] = 0.5 ether;
-
-        IWeightedPool pool = balancerFactorySepolia.create({
-            name: string.concat(_collToken.name(), "-", _monkeyBalls.name()),
-            symbol: string.concat("bpt", _collToken.symbol(), _monkeyBalls.symbol()),
-            tokens: tokens,
-            normalizedWeights: normalizedWeights,
-            rateProviders: new IRateProvider[](2), // all zeroes
-            swapFeePercentage: 0.000001 ether, // 0.0001%, which is the minimum allowed
-            owner: deployer,
-            salt: bytes32("NaCl")
-        });
-
-        _collToken.approve(address(balancerVault), amountsIn[0]);
-        _monkeyBalls.approve(address(balancerVault), amountsIn[1]);
-
-        balancerVault.joinPool(
-            pool.getPoolId(),
-            deployer,
-            deployer,
-            IVault.JoinPoolRequest({
-                assets: tokens,
-                maxAmountsIn: amountsIn,
-                userData: abi.encode(IWeightedPool.JoinKind.INIT, amountsIn),
-                fromInternalBalance: false
-            })
-        );
     }
 
     function _mintBold(uint256 _boldAmount, uint256 _price, LiquityContracts memory _contracts) internal {
@@ -1039,118 +849,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         });
     }
 
-    struct ProvideUniV3LiquidityVars {
-        uint256 token2Amount;
-        address[2] tokens;
-        uint256[2] amounts;
-        uint256 price;
-        int24 tickLower;
-        int24 tickUpper;
-    }
-
-    // _price should be _token1 / _token2
-    function _provideUniV3Liquidity(
-        ERC20Faucet _token1,
-        ERC20Faucet _token2,
-        uint256 _token1Amount,
-        uint256 _price,
-        uint24 _fee
-    ) internal {
-        ProvideUniV3LiquidityVars memory vars;
-        // tokens and amounts
-        vars.token2Amount = _token1Amount * DECIMAL_PRECISION / _price;
-
-        if (address(_token1) < address(_token2)) {
-            vars.tokens[0] = address(_token1);
-            vars.tokens[1] = address(_token2);
-            vars.amounts[0] = _token1Amount;
-            vars.amounts[1] = vars.token2Amount;
-            // inverse price if token1 goes first
-            vars.price = DECIMAL_PRECISION * DECIMAL_PRECISION / _price;
-        } else {
-            vars.tokens[0] = address(_token2);
-            vars.tokens[1] = address(_token1);
-            vars.amounts[0] = vars.token2Amount;
-            vars.amounts[1] = _token1Amount;
-            vars.price = _price;
-        }
-
-        //console2.log(priceToSqrtPriceX96(vars.price), "_priceToSqrtPrice(price)");
-        uniV3PositionManagerSepolia.createAndInitializePoolIfNecessary(
-            vars.tokens[0], vars.tokens[1], _fee, priceToSqrtPriceX96(vars.price)
-        );
-
-        // mint and approve
-        _token1.mint(deployer, _token1Amount);
-        _token2.mint(deployer, vars.token2Amount);
-        _token1.approve(address(uniV3PositionManagerSepolia), _token1Amount);
-        _token2.approve(address(uniV3PositionManagerSepolia), vars.token2Amount);
-
-        // mint new position
-        address uniV3PoolAddress = uniswapV3FactorySepolia.getPool(vars.tokens[0], vars.tokens[1], _fee);
-        int24 TICK_SPACING = IUniswapV3Pool(uniV3PoolAddress).tickSpacing();
-        ( /* uint256 finalSqrtPriceX96 */ , int24 tick,,,,,) = IUniswapV3Pool(uniV3PoolAddress).slot0();
-        //console2.log(finalSqrtPriceX96, "finalSqrtPriceX96");
-        vars.tickLower = (tick - 60) / TICK_SPACING * TICK_SPACING;
-        vars.tickUpper = (tick + 60) / TICK_SPACING * TICK_SPACING;
-
-        INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
-            token0: vars.tokens[0],
-            token1: vars.tokens[1],
-            fee: _fee,
-            tickLower: vars.tickLower,
-            tickUpper: vars.tickUpper,
-            amount0Desired: vars.amounts[0],
-            amount1Desired: vars.amounts[1],
-            amount0Min: 0,
-            amount1Min: 0,
-            recipient: deployer,
-            deadline: block.timestamp + 600 minutes
-        });
-
-        uniV3PositionManagerSepolia.mint(params);
-        //(finalSqrtPriceX96, tick,,,,,) = IUniswapV3Pool(uniV3PoolAddress).slot0();
-        //console2.log(finalSqrtPriceX96, "finalSqrtPriceX96");
-
-        /*
-        console2.log("--");
-        console2.log(_token1.name());
-        console2.log(address(_token1), "address(_token1)");
-        console2.log(_token1Amount, "_token1Amount");
-        console2.log(_token1.balanceOf(uniV3PoolAddress), "token1.balanceOf(pool)");
-        console2.log(_token2.name());
-        console2.log(address(_token2), "address(_token2)");
-        console2.log(vars.token2Amount, "token2Amount");
-        console2.log(_token2.balanceOf(uniV3PoolAddress), "token2.balanceOf(pool)");
-        */
-    }
-
     function _priceToSqrtPrice(uint256 _price) public pure returns (uint160) {
         return uint160(Math.sqrt((_price << 192) / DECIMAL_PRECISION));
-    }
-
-    function _provideCurveLiquidity(IBoldToken _boldToken, LiquityContracts memory _contracts) internal {
-        ICurveStableswapNGPool usdcCurvePool =
-            HybridCurveUniV3Exchange(address(_contracts.leverageZapper.exchange())).curvePool();
-        // Add liquidity to USDC-BOLD
-        //uint256 usdcAmount = 1e15; // 1B with 6 decimals
-        //boldAmount = usdcAmount * 1e12; // from 6 to 18 decimals
-        uint256 usdcAmount = 1e27;
-        uint256 boldAmount = usdcAmount;
-
-        // mint
-        ERC20Faucet(address(USDC)).mint(deployer, usdcAmount);
-        (uint256 price,) = _contracts.priceFeed.fetchPrice();
-        _mintBold(boldAmount, price, _contracts);
-        // approve
-        USDC.approve(address(usdcCurvePool), usdcAmount);
-        _boldToken.approve(address(usdcCurvePool), boldAmount);
-
-        uint256[] memory amountsDynamic = new uint256[](2);
-        amountsDynamic[0] = boldAmount;
-        amountsDynamic[1] = usdcAmount;
-        // add liquidity
-        usdcCurvePool.add_liquidity(amountsDynamic, 0);
     }
 
     function formatAmount(uint256 amount, uint256 decimals, uint256 digits) internal pure returns (string memory) {
