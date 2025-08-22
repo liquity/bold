@@ -446,37 +446,15 @@ contract CollateralRegistry is ICollateralRegistry {
         delete _removedBranchIdsIndex[branchId];
     }
 
-    // Only trove manager can call this function
-    // This is called in _closeTrove() in TroveManager.sol only once last trove is closed
-    // function deleteFromRemovedCollaterals(uint256 _branchId) external {
-    //     uint256 index = _removedBranchIdsIndex[_branchId];
-    //     ITroveManager troveManager = getRemovedTroveManager(index);
-
-    //     require(_branchId == _removedBranchIds[index], "CollateralRegistry: Wrong branchId");
-    //     require(msg.sender == address(troveManager), "CollateralRegistry: Only trove manager can call this function");
-    //     // An extra check to ensure that the trove manager has no troves left.
-    //     // This may prove to be redundant and can be removed in the future.
-    //     require(troveManager.getTroveIdsCount() == 0, "CollateralRegistry: Trove manager has troves");
-
-    //     // remove collateral from removed collateral tokens and trove managers lists
-    //     _permanentlyDeleteFromRemovedCollaterals(index);
-
-    //     // emit event
-    //     emit CollateralDeleted(_branchId);
-    // }
-
-    // A replacement to `deleteFromRemovedCollaterals` function.
     // Anyone can call this function which deletes first dead branch found in removed collaterals list.
-    function cleanRemovedCollaterals() external {
+    function cleanRemovedCollaterals(uint256 _index) external {
         require(_removedBranchIds.length > 0, "CollateralRegistry: No removed collaterals exist");
-        for (uint256 i; i < _removedBranchIds.length; i++) {
-            uint256 branchId = _removedBranchIds[i];
-            ITroveManager troveManager = getRemovedTroveManager(i);
-            if (troveManager.getTroveIdsCount() == 0) {
-                _permanentlyDeleteFromRemovedCollaterals(i);
-                emit CollateralDeleted(branchId);
-                break;
-            }
-        }
+        require(_index >= 0 && _index < _removedBranchIds.length, "CollateralRegistry: Invalid index");
+
+        ITroveManager troveManager = getRemovedTroveManager(_index);
+        require(troveManager.getTroveIdsCount() == 0, "CollateralRegistry: Trove manager has troves");
+
+        _permanentlyDeleteFromRemovedCollaterals(_index);
+        emit CollateralDeletedForever(_index);
     }
 }
