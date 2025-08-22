@@ -8,7 +8,7 @@ import {IERC20 as IERC20_GOV} from "openzeppelin-contracts/contracts/token/ERC20
 import {ProxyAdmin} from "openzeppelin-contracts/contracts/proxy/transparent/ProxyAdmin.sol";
 import {TransparentUpgradeableProxy} from
     "openzeppelin-contracts/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {IFPMMFactory} from "src/interfaces/IFPMMFactory.sol";
+import {IFPMMFactory} from "src/Interfaces/IFPMMFactory.sol";
 
 import {ETH_GAS_COMPENSATION} from "src/Dependencies/Constants.sol";
 import {IBorrowerOperations} from "src/Interfaces/IBorrowerOperations.sol";
@@ -32,7 +32,7 @@ import "src/StabilityPool.sol";
 
 import "src/CollateralRegistry.sol";
 import "src/tokens/StableTokenV3.sol";
-import "src/interfaces/IStableTokenV3.sol";
+import "src/Interfaces/IStableTokenV3.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "test/TestContracts/MetadataDeployment.sol";
 import "test/Utils/Logging.sol";
