@@ -43,9 +43,9 @@ export const SafeStatusSchema = v.object({
   version: v.string(),
 });
 
-export async function getSafeStatus(safeAddress: Address): Promise<
-  v.InferOutput<typeof SafeStatusSchema> | null
-> {
+export type SafeStatus = v.InferOutput<typeof SafeStatusSchema>;
+
+export async function getSafeStatus(safeAddress: Address): Promise<SafeStatus | null> {
   const response = await safeApiCall(`/safes/${safeAddress}`);
 
   if (response.status === 404) {

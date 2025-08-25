@@ -1,15 +1,15 @@
-import { getCollToken } from "@/src/liquity-utils.ts";
+import { getCollToken } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
-import { fmtnum } from "@/src/formatting.ts";
-import { Value } from "@/src/comps/Value/Value.tsx";
-import { INFINITY } from "@/src/characters.ts";
-import { roundToDecimal } from "@/src/utils.ts";
-import { getLoanDetails } from "@/src/liquity-math.ts";
+import { fmtnum } from "@/src/formatting";
+import { Value } from "@/src/comps/Value/Value";
+import { INFINITY } from "@/src/characters";
+import { roundToDecimal } from "@/src/utils";
+import { getLoanDetails } from "@/src/liquity-math";
 import { TokenIcon } from "@liquity2/uikit";
-import { CrossedText } from '@/src/screens/TransactionsScreen/LoanCard/components/components/CrossedText';
+import { CrossedText } from '@/src/comps/CrossedText';
 
 import type { FC } from "react";
-import type { PositionLoan } from "@/src/types.ts";
+import type { PositionLoan } from "@/src/types";
 
 interface LeveragedExposureProps {
   loan: PositionLoan;

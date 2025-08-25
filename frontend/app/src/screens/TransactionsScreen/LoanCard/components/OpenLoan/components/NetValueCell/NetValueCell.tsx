@@ -1,11 +1,11 @@
-import { Value } from "@/src/comps/Value/Value.tsx";
+import { Value } from "@/src/comps/Value/Value";
 import * as dn from "dnum";
-import { fmtnum } from "@/src/formatting.ts";
+import { fmtnum } from "@/src/formatting";
 import { GridItemWrapper } from "@/src/screens/TransactionsScreen/LoanCard/components/components/GridItemWrapper";
-import { CrossedText } from "@/src/screens/TransactionsScreen/LoanCard/components/components/CrossedText";
+import { CrossedText } from "@/src/comps/CrossedText";
 
 import type { Dnum } from "dnum";
-import type { LoanDetails } from "@/src/types.ts";
+import type { LoanDetails } from "@/src/types";
 import type { FC } from "react";
 
 interface NetValueCellProps {
