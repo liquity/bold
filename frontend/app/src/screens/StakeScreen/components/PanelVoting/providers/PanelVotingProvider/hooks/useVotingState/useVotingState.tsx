@@ -1,4 +1,8 @@
-import { useGetVotingState, useGetInitiativesSummary } from "./hooks";
+import {
+  useGetVotingState,
+  useGetInitiativesSummary,
+  useGetVoteAllocations,
+} from "./hooks";
 
 export const useVotingState = () => {
   const {
@@ -14,8 +18,13 @@ export const useVotingState = () => {
     currentBribesData,
     isLoading: isLoadingInitiativesSummary,
   } = useGetInitiativesSummary();
+  const { voteAllocations, inputVoteAllocations, setInputVoteAllocations } =
+    useGetVoteAllocations({ governanceStateData, governanceUserData });
 
   return {
+    voteAllocations,
+    inputVoteAllocations,
+    setInputVoteAllocations,
     governanceStateData,
     governanceUserData,
     initiativesStatesData,
@@ -23,6 +32,6 @@ export const useVotingState = () => {
     voteTotalsData,
     currentBribesData,
     initiativesAddresses,
-    isLoading: isLoadingVotingState || isLoadingInitiativesSummary
-  }
+    isLoading: isLoadingVotingState || isLoadingInitiativesSummary,
+  };
 };

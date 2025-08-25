@@ -1,6 +1,6 @@
 import { GridItemWrapper } from "@/src/screens/TransactionsScreen/LoanCard/components/components/GridItemWrapper";
-import { CrossedText } from '@/src/screens/TransactionsScreen/LoanCard/components/components/CrossedText';
-import { fmtnum } from "@/src/formatting.ts";
+import { CrossedText } from '@/src/comps/CrossedText';
+import { fmtnum } from "@/src/formatting";
 import * as dn from "dnum";
 
 import type { Dnum } from "dnum";

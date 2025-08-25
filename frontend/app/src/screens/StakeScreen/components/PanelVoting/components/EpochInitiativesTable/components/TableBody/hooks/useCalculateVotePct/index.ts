@@ -1,0 +1,1 @@
+export { useCalculateVotePct } from './useCalculateVotePct';
