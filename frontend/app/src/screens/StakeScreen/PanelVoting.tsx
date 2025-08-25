@@ -28,25 +28,8 @@ import { css } from "@/styled-system/css";
 import { Button, IconDownvote, IconEdit, IconExternal, IconUpvote, shortenAddress, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { FC, PropsWithChildren } from "react";
 import { isInitiativeStatusActive } from '@/src/screens/StakeScreen/utils';
-
-// TODO: remove this component after merging Loan Card PR with CrossedText
-interface CrossedTextProps extends PropsWithChildren {
-  title?: string;
-}
-
-export const CrossedText: FC<CrossedTextProps> = ({ children, title }) => (
-  <div
-    title={title}
-    className={css({
-      color: "contentAlt",
-      textDecoration: "line-through",
-    })}
-  >
-    {children}
-  </div>
-);
+import { CrossedText } from '@/src/comps/CrossedText';
 
 interface UseProjectedUpvoteSharesArgs {
   initiativesAddresses: Address[];

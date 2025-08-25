@@ -13,9 +13,9 @@ import { useMemo } from "react";
 import { NetValueCell } from "@/src/screens/TransactionsScreen/LoanCard/components/OpenLoan/components/NetValueCell";
 import { CollateralCell } from "@/src/screens/TransactionsScreen/LoanCard/components/OpenLoan/components/CollateralCell";
 import { GridItemWrapper } from "@/src/screens/TransactionsScreen/LoanCard/components/components/GridItemWrapper";
-import { CrossedText } from "@/src/screens/TransactionsScreen/LoanCard/components/components/CrossedText";
+import { CrossedText } from "@/src/comps/CrossedText";
 
-import type { LoanDetails, PositionLoan } from "@/src/types.ts";
+import type { LoanDetails, PositionLoan } from "@/src/types";
 import type { CollateralToken } from "@liquity2/uikit";
 import type { FC } from "react";
 

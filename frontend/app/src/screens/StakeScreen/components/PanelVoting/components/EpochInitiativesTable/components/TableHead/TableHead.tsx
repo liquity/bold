@@ -1,10 +1,10 @@
-import type { FC } from "react";
 import { css } from "@/styled-system/css";
-import { useVotingStateContext } from "@/src/screens/StakeScreen/components/PanelVoting/providers/PanelVotingProvider/hooks";
+import { useHasAllocations } from '@/src/screens/StakeScreen/components/PanelVoting/hooks';
+
+import type { FC } from "react";
 
 export const TableHead: FC = () => {
-  const { governanceUserData } = useVotingStateContext();
-  const hasAnyAllocations = (governanceUserData?.allocations ?? []).length > 0;
+  const hasAnyAllocations = useHasAllocations()
 
   return (
     <thead
