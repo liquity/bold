@@ -4,9 +4,9 @@ import { LinkTextButton } from "../LinkTextButton/LinkTextButton";
 import { useAccount } from "@/src/services/Arbitrum";
 import { Address, parseEther } from "viem";
 // import { useBalance } from "@/src/wagmi-utils";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
-import { subtract, add, gt, format, multiply } from "dnum";
+import { subtract, add, gt, format, multiply, eq } from "dnum";
 import { Dnum } from "@/src/types";
 import { a, useSpring } from "@react-spring/web";
 
@@ -46,6 +46,7 @@ function ShellpointsBalanceLinkButton({balance}: {balance: Dnum}) {
 
 function ShellpointsAnimatedBalance({address}: {address: Address}) {
   const animationRef = useRef<NodeJS.Timeout>();
+  const lastProcessedBalance = useRef<Dnum | null>(null);
   const [animatedBalance, setAnimatedBalance] = useState<Dnum>(DNUM_0);
   const [animatedDiff, setAnimatedDiff] = useState<Dnum>(DNUM_0);
 
@@ -56,10 +57,12 @@ function ShellpointsAnimatedBalance({address}: {address: Address}) {
     config: { tension: 300, friction: 30 },
   });
 
-  const localBalance = getShellpointsBalance(address);
+  const localBalance = useMemo(() => {
+    return getShellpointsBalance(address);
+  }, [address]);
 
   // const { data: newBalance } = useBalance(address, "SHELL");
-  const newBalance = dnum18(parseEther("6969"));
+  const newBalance: Dnum = [parseEther("1369"), 18]; // TODO: Remove this and replace with useBalance (line above)
 
   const animateValues = useCallback((startBalance: Dnum, totalDiff: Dnum) => {
     const animationDuration = 2000; // 2 seconds
@@ -103,10 +106,16 @@ function ShellpointsAnimatedBalance({address}: {address: Address}) {
 
   useEffect(() => {
     if (newBalance && localBalance) {
+      // Check if we've already processed this balance to prevent infinite loops
+      if (lastProcessedBalance.current && eq(newBalance, lastProcessedBalance.current)) {
+        return;
+      }
+      
       const calculatedDiff = subtract(newBalance, localBalance);
       
       // Start animation if there's a positive diff
       if (gt(calculatedDiff, DNUM_0)) {
+        lastProcessedBalance.current = newBalance;
         setAnimatedDiff(calculatedDiff);
         animateValues(localBalance, calculatedDiff);
       }
@@ -114,11 +123,14 @@ function ShellpointsAnimatedBalance({address}: {address: Address}) {
   }, [newBalance, localBalance, animateValues]);
 
   useEffect(() => {
-    if (newBalance) {
-      localStorage.setItem(
-        `shellpoints-balance-${address.toLowerCase()}`,
-        newBalance.toString(),
-      );
+    if (newBalance && gt(newBalance, DNUM_0)) {
+      const currentStoredBalance = getShellpointsBalance(address);
+      if (!currentStoredBalance || gt(newBalance, currentStoredBalance)) {
+        localStorage.setItem(
+          `shellpoints-balance-${address.toLowerCase()}`,
+          newBalance[0].toString(),
+        );
+      }
     }
   }, [newBalance, address]);
 
@@ -129,7 +141,7 @@ function ShellpointsAnimatedBalance({address}: {address: Address}) {
         clearInterval(animationRef.current);
       }
     };
-    }, []);
+  }, []);
 
   return (
     <div className={css({ position: "relative" })}>
