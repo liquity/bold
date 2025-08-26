@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { AccountButton } from "./AccountButton";
 import { Menu } from "./Menu";
+import { ShellpointsButton } from "./ShellpointsButton";
 
 // const buyPageUrl = BUY_PAGE_URL ?? "/buy";
 // const buyPageTarget = BUY_PAGE_URL ? "_blank" : "_self";
@@ -117,7 +118,21 @@ export function TopBar() {
           </div>
         </Link>
         <Menu menuItems={menuItems} />
-        <AccountButton />
+        <div className={css({
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 16,
+        })}>
+          <div className={css({
+            position: "fixed",
+            top: 60
+            // right: 170,
+          })}>
+            <ShellpointsButton />
+          </div>
+          <AccountButton />
+        </div>
       </div>
     </div>
   );
