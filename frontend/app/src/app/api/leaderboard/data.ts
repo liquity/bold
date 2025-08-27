@@ -1,8 +1,8 @@
 import { getAllUsers } from "@/src/shellpoints/lib";
 import { formatUnits, type Address } from "viem";
 import type { LeaderboardEntry, LeaderboardActivity, LeaderboardData } from "@/src/shellpoints/leaderboard";
-import { getPublicClient } from "@/src/shellpoints/utils/client";
-import { getEnsName } from "viem/ens";
+// import { getMainnetPublicClient } from "@/src/shellpoints/utils/client";
+// import { getEnsName } from "viem/ens";
 import { NULL_ADDRESS } from "@/src/shellpoints/utils/constants";
 
 export function getLeaderboardActivityName(activity: LeaderboardActivity): string {
@@ -29,8 +29,11 @@ export function getLeaderboardActivityName(activity: LeaderboardActivity): strin
 }
 
 export async function getLeaderboardData(): Promise<LeaderboardData> {
+  console.log("Getting leaderboard data");
   const users = await getAllUsers();
-  const client = getPublicClient();
+  console.log("Retrieved users");
+  // const client = getMainnetPublicClient();
+  console.log("Retrieved client");
 
   let lastMintBlock = 0n;
 
@@ -42,11 +45,12 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
     }
     return {
       address: user.holder,
-      ensName: await getEnsName(client, { address: user.holder }),
+      // ensName: await getEnsName(client, { address: user.holder }),
+      ensName: null,
       shellpoints: {
-        total: parseInt(formatUnits(user.balance, 18)),
+        total: Number(formatUnits(user.balance, 18)),
         mostRecent: mostRecent ? {
-          amount: parseInt(formatUnits(mostRecent.amount, 18)),
+          amount: Number(formatUnits(mostRecent.amount, 18)),
           blockNumber: Number(mostRecent.blockNumber),
           // blockTimestamp: Number((await client.getBlock({ blockNumber: mostRecent.blockNumber })).timestamp)
         } : null,
@@ -54,6 +58,7 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
       activities: getLeaderboardActivities(users, user.holder).map(activity => getLeaderboardActivityName(activity)),
     }
   }));
+  console.log("Retrieved shellpoints");
 
   return {
     entries: shellpoints
@@ -64,7 +69,8 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
       })),
     lastMintBlock: {
       blockNumber: Number(lastMintBlock),
-      blockTimestamp: Number((await client.getBlock({ blockNumber: lastMintBlock })).timestamp)
+      // blockTimestamp: Number((await client.getBlock({ blockNumber: lastMintBlock })).timestamp)
+      blockTimestamp: 0,
     }
   }
 }

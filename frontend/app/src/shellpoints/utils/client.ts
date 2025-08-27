@@ -9,6 +9,13 @@ export function getPublicClient() {
   })
 }
 
+export function getMainnetPublicClient() {
+  return createPublicClient({
+    chain: CHAIN,
+    transport: http("https://ethereum-rpc.publicnode.com"),
+  })
+}
+
 /**
  * Gets the block number closest to a given timestamp using binary search
  * @param timestamp Unix timestamp in seconds

@@ -17,8 +17,12 @@ export async function getTokenHolders({
   toBlock = toBlock ?? 'latest'
 
   const client = getPublicClient();
+  console.log("Retrieved client");
+
+  console.log({ tokenAddresses })
 
   const recipients = await getAssetRecipients({ tokenAddresses, fromBlock, toBlock });
+  console.log("Retrieved recipients");
 
   const holders = Object.entries(recipients).map(([contractAddress, toAddresses]) => {
     return toAddresses.map(toAddress => ({
@@ -61,6 +65,8 @@ export async function getAssetRecipients({
     network: Network.ARB_MAINNET,
   })
 
+  console.log({ fromBlock, toBlock })
+  
   const response = await alchemy.core.getAssetTransfers({
     fromBlock: toHex(fromBlock),
     toBlock: toBlock.toString(),
@@ -68,19 +74,22 @@ export async function getAssetRecipients({
     category: [AssetTransfersCategory.ERC20],
   })
 
+  console.log({ response })
+
   return response.transfers.reduce((acc, transferInfo) => {
     const contractAddress = getAddress(transferInfo.rawContract.address!)
     const to = getAddress(transferInfo.to!)
     const from = getAddress(transferInfo.from!)
-    const amount = BigInt(transferInfo.value ?? 0)
+    const amount = BigInt(transferInfo.rawContract.value ?? 0)
+    const decimals = Number(BigInt(transferInfo.rawContract.decimal ?? 18))
     const blockNumber = BigInt(transferInfo.blockNum ?? 0)
     const existing = acc[contractAddress] ?? []
     const existingIndex = existing.findIndex(item => item.to === to)
     if (existingIndex !== -1) {
-      existing[existingIndex]!.values.push({ from, amount, blockNumber })
+      existing[existingIndex]!.values.push({ from, amount, blockNumber, decimals })
     } else {
-      acc[contractAddress] = Array.from(new Set((acc[contractAddress] ?? []).concat({ to, values: [{ from, amount, blockNumber }] })))
+      acc[contractAddress] = Array.from(new Set((acc[contractAddress] ?? []).concat({ to, values: [{ from, amount, blockNumber, decimals }] })))
     }
     return acc
-  }, {} as Record<Address, { to: Address, values: { from: Address, amount: bigint, blockNumber: bigint }[] }[]>)
+  }, {} as Record<Address, { to: Address, values: { from: Address, amount: bigint, blockNumber: bigint, decimals: number }[] }[]>)
 }

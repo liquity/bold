@@ -31,7 +31,8 @@ import {
   CONTRACT_LUSD_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
-  CONTRACT_YUSND
+  CONTRACT_YUSND,
+  CONTRACT_SHELL_TOKEN
 } from "@/src/env";
 import { erc20Abi, zeroAddress } from "viem";
 import { YearnV3Vault } from "./abi/YearnV3Vault";
@@ -48,6 +49,7 @@ const protocolAbis = {
   MultiTroveGetter,
   WETH: erc20Abi,
   YUSND: YearnV3Vault,
+  ShellToken: erc20Abi,
 } as const;
 
 const BorrowerOperationsErrorsAbi = BorrowerOperations.filter((f) => f.type === "error");
@@ -120,6 +122,7 @@ const CONTRACTS: Contracts = {
   MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
   WETH: { abi: abis.WETH, address: CONTRACT_WETH },
   YUSND: { abi: abis.YUSND, address: CONTRACT_YUSND },
+  ShellToken: { abi: abis.ShellToken, address: CONTRACT_SHELL_TOKEN },
 
   collaterals: COLLATERAL_CONTRACTS.map(({ collIndex, symbol, contracts }) => ({
     collIndex,
@@ -159,6 +162,7 @@ export const CONTRACT_ADDRESSES = {
   MultiTroveGetter: CONTRACT_MULTI_TROVE_GETTER,
   WETH: CONTRACT_WETH,
   YUSND: CONTRACT_YUSND,
+  ShellToken: CONTRACT_SHELL_TOKEN,
   GoSlowNft: "0x6da3c02293c96dfa5747b1739ebb492619222a8a",
 
   strategies: {
