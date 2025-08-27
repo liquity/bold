@@ -9,6 +9,7 @@ import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { subtract, add, gt, format, multiply, eq } from "dnum";
 import { Dnum } from "@/src/types";
 import { a, useSpring } from "@react-spring/web";
+import "./ShellpointsButton.css";
 
 export function ShellpointsButton() {
   const {address} = useAccount();
@@ -32,7 +33,63 @@ function ShellpointsBalanceLinkButton({balance}: {balance: Dnum}) {
     <LinkTextButton
       href='/shellpoints'
       label={(
-        <HFlex>
+        <HFlex className={css({
+          // Base shiny button styles
+          width: "fit-content",
+          position: "relative",
+          margin: "0 1rem",
+          gap: 8,
+          color: "secondaryContent",
+          fontWeight: "bold",
+          fontSize: 18,
+          border: "3px solid transparent",
+          borderRadius: 50,
+          backgroundColor: "primary",
+          backgroundImage: "linear-gradient(to bottom right, token(colors.secondary), token(colors.secondary)), linear-gradient(135deg, transparent 45%, rgba(255, 255, 255, 0.5) 50%, transparent 55%)",
+          backgroundOrigin: "border-box",
+          backgroundClip: "padding-box, border-box",
+          backgroundSize: "100%, 300%",
+          backgroundPosition: "0 0, -300px",
+          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.4)",
+          textShadow: "0 0 5px rgba(255, 255, 255, 0.2)",
+          transition: "all 0.3s ease",
+          overflow: "hidden",
+          
+          // Custom animations
+          animation: "border-glint 5s linear infinite",
+          animationDelay: "1s",
+          
+          // Hover effects
+          _hover: {
+            cursor: "pointer"
+          },
+          
+          // Pseudo-element for glint effect
+          _after: {
+            content: '""',
+            position: "absolute",
+            top: "-50%",
+            left: "-120%",
+            width: "200%",
+            height: "200%",
+            backgroundImage: "linear-gradient(130deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 60%)",
+            animation: "glint 5s linear infinite",
+            animationDelay: "-3s",
+            pointerEvents: "none",
+          },
+          
+          display: "flex",
+          alignItems: "center",
+          whiteSpace: "nowrap",
+          padding: "0 16px",
+          
+          _active: {
+            translate: "0 1px",
+          },
+          _focusVisible: {
+            outline: "2px solid token(colors.focused)",
+          },
+        })}>
           <span className={css({
             fontSize: 16,
             fontWeight: 500,
@@ -62,7 +119,7 @@ function ShellpointsAnimatedBalance({address}: {address: Address}) {
   }, [address]);
 
   // const { data: newBalance } = useBalance(address, "SHELL");
-  const newBalance: Dnum = [parseEther("1369"), 18]; // TODO: Remove this and replace with useBalance (line above)
+  const newBalance: Dnum = [parseEther("6000"), 18]; // TODO: Remove this and replace with useBalance (line above)
 
   const animateValues = useCallback((startBalance: Dnum, totalDiff: Dnum) => {
     const animationDuration = 2000; // 2 seconds

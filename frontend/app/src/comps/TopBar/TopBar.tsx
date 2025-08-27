@@ -125,9 +125,9 @@ export function TopBar() {
           gap: 16,
         })}>
           <div className={css({
-            position: "fixed",
-            top: 60
-            // right: 170,
+            position: "absolute",
+            top: 72,
+            right: 0,
           })}>
             <ShellpointsButton />
           </div>
