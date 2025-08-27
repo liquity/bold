@@ -18,7 +18,11 @@ export const CastVotes: FC = () => {
   const isAllocationChanged = useIsAllocationChanged();
   const hasAnyAllocations = useHasAllocations();
   const remainingVotingPower = useRemainingVotingPower();
-  const stakedLQTY: Dnum = [governanceUserData?.stakedLQTY ?? 0n, 18];
+
+  const stakedLQTY: Dnum = useMemo(
+    () => [governanceUserData?.stakedLQTY ?? 0n, 18],
+    [governanceUserData?.stakedLQTY]
+  );
 
   const allowSubmit = useMemo(() => {
     if (!isAllocationChanged) return false;
@@ -37,7 +41,6 @@ export const CastVotes: FC = () => {
     isAllocationChanged,
     hasAnyAllocations,
     remainingVotingPower,
-    governanceUserData,
   ]);
 
   const filteredVoteAllocation = useMemo(() => {

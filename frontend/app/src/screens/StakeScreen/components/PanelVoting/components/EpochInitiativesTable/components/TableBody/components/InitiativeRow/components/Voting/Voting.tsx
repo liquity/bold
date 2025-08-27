@@ -102,6 +102,7 @@ export const Voting: FC<VotingProps> = ({ initiativeAddress, disabled }) => {
       />
     );
   }, [
+    onEdit,
     editMode,
     isPeriodCutoff,
     disabled,

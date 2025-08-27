@@ -37,5 +37,5 @@ export const useActiveInitiatives = () => {
 
         return 0;
       });
-  }, [initiativesData, initiativesStatesData]);
+  }, [initiativesData, initiativesStatesData, voteAllocations]);
 };

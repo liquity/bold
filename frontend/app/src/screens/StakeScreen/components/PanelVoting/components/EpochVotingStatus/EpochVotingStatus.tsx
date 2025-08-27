@@ -10,21 +10,24 @@ export const EpochVotingStatus: FC = () => {
   const { governanceStateData } = useVotingStateContext();
   const isPeriodCutoff = useIsPeriodCutoff();
 
-  if (!governanceStateData) return null;
-
-  const { epochEnd, cutoffStart, daysLeft } = governanceStateData;
-
-  const cutoffStartDate = new Date(Number(cutoffStart) * 1000);
-  const epochEndDate = new Date(Number(epochEnd) * 1000);
-
   const remaining = useMemo(() => {
+    if(!governanceStateData?.daysLeft) return "";
+    const { daysLeft } = governanceStateData;
+
     const rtf = new Intl.RelativeTimeFormat("en", { style: "long" });
 
     if (daysLeft > 1) return rtf.format(Math.ceil(daysLeft), "day");
     if (daysLeft > 1 / 24) return rtf.format(Math.ceil(daysLeft * 24), "hour");
 
     return rtf.format(Math.ceil(daysLeft * 24 * 60), "minute");
-  }, []);
+  }, [governanceStateData]);
+
+  if (!governanceStateData) return null;
+
+  const { epochEnd, cutoffStart } = governanceStateData;
+
+  const cutoffStartDate = new Date(Number(cutoffStart) * 1000);
+  const epochEndDate = new Date(Number(epochEnd) * 1000);
 
   return (
     <div
