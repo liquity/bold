@@ -206,6 +206,12 @@ export function BorrowScreen() {
     return '';
   }
 
+  const ltv =
+    deposit.parsed &&
+    debt.parsed &&
+    collPrice.data &&
+    getLtv(deposit.parsed, debt.parsed, collPrice.data);
+
   const allowSubmit =
     account.isConnected &&
     deposit.parsed &&
@@ -215,7 +221,9 @@ export function BorrowScreen() {
     interestRate &&
     dn.gt(interestRate, 0) &&
     !isBelowMinDebt &&
-    !isAboveMaxDebtLimit;
+    !isAboveMaxDebtLimit &&
+    ltv &&
+    dn.lte(ltv, loanDetails.maxLtv);
 
   return (
     <Screen
