@@ -20,7 +20,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useMemo } from "react";
 import { PanelRewards } from "./PanelRewards";
 import { PanelStaking } from "./PanelStaking";
-import { PanelVoting } from "./PanelVoting";
+import { PanelVoting } from "./components/PanelVoting";
 
 const TABS = [
   { label: content.stakeScreen.tabs.deposit, id: "deposit" },

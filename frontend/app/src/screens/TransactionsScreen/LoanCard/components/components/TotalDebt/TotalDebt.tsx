@@ -1,11 +1,11 @@
 import { css } from "@/styled-system/css";
-import { fmtnum } from "@/src/formatting.ts";
+import { fmtnum } from "@/src/formatting";
 import * as dn from "dnum";
 import { TokenIcon } from "@liquity2/uikit";
-import { CrossedText } from "@/src/screens/TransactionsScreen/LoanCard/components/components/CrossedText";
+import { CrossedText } from "@/src/comps/CrossedText";
 
 import type { FC } from "react";
-import type { PositionLoan } from "@/src/types.ts";
+import type { PositionLoan } from "@/src/types";
 
 interface TotalDebtProps {
   positive?: boolean;
