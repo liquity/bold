@@ -1,30 +1,34 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { css } from "@/styled-system/css";
-import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
+import { VoteAction } from "./components/VoteAction/";
 import { Vote } from "./components/Vote";
 import { useVotingStateContext } from "@/src/screens/StakeScreen/components/PanelVoting/providers/PanelVotingProvider/hooks";
 import { useIsPeriodCutoff } from "@/src/screens/StakeScreen/components/PanelVoting/hooks";
-import { div, from } from "dnum";
+import { div, from } from 'dnum';
+import { useValidateVoteInput } from '@/src/screens/StakeScreen/components/PanelVoting/hooks/useValidateVoteInput';
 
 import type { Address, Dnum, Vote as VoteType } from "@/src/types";
 import type { FC } from "react";
 
 interface VotingProps {
   initiativeAddress: Address;
-  disabled: boolean;
+  activeVoting: boolean;
 }
 
-export const Voting: FC<VotingProps> = ({ initiativeAddress, disabled }) => {
-  const { voteAllocations, inputVoteAllocations, setInputVoteAllocations } =
+export const Voting: FC<VotingProps> = ({ initiativeAddress, activeVoting }) => {
+  const { voteAllocations, inputVoteAllocations, setInputVoteAllocations, votingInputError } =
     useVotingStateContext();
+  //TODO: move to Voting action
   const isPeriodCutoff = useIsPeriodCutoff();
+  useValidateVoteInput(initiativeAddress)
 
-  const inputRef = useRef<HTMLInputElement>(null);
   const [editIntent, setEditIntent] = useState(false);
 
   const currentInputVoteAllocation = inputVoteAllocations[initiativeAddress];
   const currentVoteAllocation = voteAllocations[initiativeAddress];
-  const editMode = (editIntent || !currentVoteAllocation?.vote) && !disabled;
+  const hasError = votingInputError?.[initiativeAddress]
+  const editMode = (editIntent || !currentVoteAllocation?.vote) && activeVoting;
+  const isAgainstDisabled = !activeVoting || (isPeriodCutoff && currentInputVoteAllocation?.vote === 'for')
 
   const onVoteInputChange = useCallback(
     (value: Dnum) => {
@@ -56,25 +60,18 @@ export const Voting: FC<VotingProps> = ({ initiativeAddress, disabled }) => {
     setEditIntent(true);
   }, []);
 
-  useEffect(() => {
-    const isElementActive = inputRef.current && document.activeElement === inputRef.current;
-
-    if(editIntent && !isElementActive) {
-      inputRef.current?.focus();
-    }
-  }, [editIntent]);
-
   const renderVoteSection = useMemo(() => {
+    // TODO: find approach how to use one VoteAction maybe merge VoteAction with Vote?
     if (editMode) {
       return (
-        <VoteInput
-          ref={inputRef}
+        <VoteAction
           forDisabled={isPeriodCutoff}
-          againstDisabled={disabled}
+          againstDisabled={isAgainstDisabled}
           onChange={onVoteInputChange}
           onVote={onVote}
           value={currentInputVoteAllocation?.value ?? null}
           vote={currentInputVoteAllocation?.vote ?? null}
+          hasError={!!hasError}
         />
       );
     }
@@ -83,7 +80,7 @@ export const Voting: FC<VotingProps> = ({ initiativeAddress, disabled }) => {
       return (
         <Vote
           onEdit={onEdit}
-          disabled={disabled}
+          disabled={!activeVoting}
           share={currentVoteAllocation.value}
           vote={currentVoteAllocation.vote}
         />
@@ -91,8 +88,7 @@ export const Voting: FC<VotingProps> = ({ initiativeAddress, disabled }) => {
     }
 
     return (
-      <VoteInput
-        ref={inputRef}
+      <VoteAction
         forDisabled={true}
         againstDisabled={true}
         onChange={() => {}}
@@ -102,10 +98,12 @@ export const Voting: FC<VotingProps> = ({ initiativeAddress, disabled }) => {
       />
     );
   }, [
+    hasError,
     onEdit,
     editMode,
     isPeriodCutoff,
-    disabled,
+    activeVoting,
+    isAgainstDisabled,
     onVoteInputChange,
     onVote,
     currentInputVoteAllocation?.value,

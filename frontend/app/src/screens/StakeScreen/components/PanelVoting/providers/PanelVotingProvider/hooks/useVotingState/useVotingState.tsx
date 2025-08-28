@@ -3,8 +3,13 @@ import {
   useGetInitiativesSummary,
   useGetVoteAllocations,
 } from "./hooks";
+import { useState } from 'react';
+
+import type { Address } from "@liquity2/uikit";
 
 export const useVotingState = () => {
+  const [votingInputError, setVotingInputError] = useState<Record<Address, string> | null>(null);
+
   const {
     governanceStateData,
     governanceUserData,
@@ -22,6 +27,8 @@ export const useVotingState = () => {
     useGetVoteAllocations({ governanceStateData, governanceUserData });
 
   return {
+    votingInputError,
+    setVotingInputError,
     voteAllocations,
     inputVoteAllocations,
     setInputVoteAllocations,
