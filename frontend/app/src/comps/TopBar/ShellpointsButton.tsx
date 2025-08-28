@@ -2,14 +2,15 @@ import { css } from "@/styled-system/css";
 import { HFlex, ShellpointIcon } from "@liquity2/uikit";
 import { LinkTextButton } from "../LinkTextButton/LinkTextButton";
 import { useAccount } from "@/src/services/Arbitrum";
-import { Address, parseEther } from "viem";
+import { Address } from "viem";
 // import { useBalance } from "@/src/wagmi-utils";
 import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
-import { subtract, add, gt, format, multiply, eq } from "dnum";
+import { subtract, add, gt, format, multiply, eq, lt } from "dnum";
 import { Dnum } from "@/src/types";
 import { a, useSpring } from "@react-spring/web";
 import "./ShellpointsButton.css";
+import { useBalance } from "@/src/wagmi-utils";
 
 export function ShellpointsButton() {
   const {address} = useAccount();
@@ -118,8 +119,8 @@ function ShellpointsAnimatedBalance({address}: {address: Address}) {
     return getShellpointsBalance(address);
   }, [address]);
 
-  // const { data: newBalance } = useBalance(address, "SHELL");
-  const newBalance: Dnum = [parseEther("6000"), 18]; // TODO: Remove this and replace with useBalance (line above)
+  const { data: newBalance } = useBalance(address, "SHELL");
+  // const newBalance: Dnum = [parseEther("6000"), 18]; // TODO: Remove this and replace with useBalance (line above)
 
   const animateValues = useCallback((startBalance: Dnum, totalDiff: Dnum) => {
     const animationDuration = 2000; // 2 seconds
@@ -163,6 +164,9 @@ function ShellpointsAnimatedBalance({address}: {address: Address}) {
 
   useEffect(() => {
     if (newBalance && localBalance) {
+      if (lt(newBalance, localBalance)) {
+        setAnimatedBalance(newBalance);
+      }
       // Check if we've already processed this balance to prevent infinite loops
       if (lastProcessedBalance.current && eq(newBalance, lastProcessedBalance.current)) {
         return;

@@ -1,4 +1,4 @@
-import { getAllUsers } from "@/src/shellpoints/lib";
+import { queryShellpointsAndActivity } from "@/src/shellpoints/lib";
 import { formatUnits, type Address } from "viem";
 import type { LeaderboardEntry, LeaderboardActivity, LeaderboardData } from "@/src/shellpoints/leaderboard";
 import { ALCHEMY_API_KEY, GRAPH_TOKEN_API_TOKEN } from "@/src/shellpoints/utils/env";
@@ -38,11 +38,7 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
     throw new Error("GRAPH_TOKEN_API_TOKEN is not set");
   }
   
-  console.log("Getting leaderboard data");
-  const users = await getAllUsers();
-  console.log("Retrieved users");
-  // const client = getMainnetPublicClient();
-  console.log("Retrieved client");
+  const users = await queryShellpointsAndActivity();
 
   let lastMintBlock = 0n;
 
@@ -68,7 +64,6 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
     //   activities: getLeaderboardActivities(users, user.address).map(activity => getLeaderboardActivityName(activity)),
     // }
   }));
-  console.log("Retrieved shellpoints");
 
   return {
     entries: shellpoints
@@ -85,16 +80,16 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
   }
 }
 
-function getLeaderboardActivities(users: Awaited<ReturnType<typeof getAllUsers>>, address: Address): LeaderboardActivity[] {
+function getLeaderboardActivities(users: Awaited<ReturnType<typeof queryShellpointsAndActivity>>, address: Address): LeaderboardActivity[] {
   const activities: LeaderboardActivity[] = [];
   
-  if (users.yusnd.some(user => user.address === address)) activities.push("yusnd");
-  if (users.camelot.some(user => user.address === address)) activities.push("camelot");
-  if (users.bunni.some(user => user.address === address)) activities.push("bunni");
-  if (users.spectra.some(user => user.address === address)) activities.push("spectra");
-  if (users.goSlowNft.some(user => user.holder === address)) activities.push("goSlowNft");
-  if (users.troves.some(trove => trove.borrower === address)) activities.push("trove");
-  // if (users.stabilityPoolDepositors.includes(address)) activities.push("stabilityPool");
+  if (users.activities.yusnd.some(user => user.address === address)) activities.push("yusnd");
+  if (users.activities.camelot.some(user => user.address === address)) activities.push("camelot");
+  if (users.activities.bunni.some(user => user.address === address)) activities.push("bunni");
+  if (users.activities.spectra.some(user => user.address === address)) activities.push("spectra");
+  if (users.activities.goSlowNft.some(user => user.holder === address)) activities.push("goSlowNft");
+  if (users.activities.troves.some(trove => trove.borrower === address)) activities.push("trove");
+  if (Object.keys(users.activities.stabilityPoolDeposits).some(depositor => depositor === address)) activities.push("stabilityPool");
   
   return activities;
 }
