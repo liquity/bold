@@ -48,7 +48,7 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
       // ensName: await getEnsName(client, { address: user.holder }),
       ensName: null,
       shellpoints: {
-        total: Number(formatUnits(user.balance, 18)),
+        total: Number(formatUnits(user.balance!, 18)),
         mostRecent: null,
       },
       activities: getLeaderboardActivities(users, user.holder).map(activity => getLeaderboardActivityName(activity)),

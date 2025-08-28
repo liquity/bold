@@ -88,10 +88,10 @@ export async function getAssetRecipients({
 }
 
 export function getStabilityPoolDepositsFromAssetTransfers(transfers: AssetTransfersResult[]) {
-  const deposits = transfers.filter(transfer => CONTRACT_ADDRESSES.collaterals.find(coll => isAddressEqual(coll.contracts.StabilityPool, getAddress(transfer.to))))
+  const deposits = transfers.filter(transfer => transfer.to && CONTRACT_ADDRESSES.collaterals.find(coll => isAddressEqual(coll.contracts.StabilityPool, getAddress(transfer.to!))))
   return deposits.reduce((acc, deposit) => {
     const from = getAddress(deposit.from)
-    const to = getAddress(deposit.to)
+    const to = getAddress(deposit.to!)
     const amount = BigInt(deposit.rawContract.value ?? 0)
     const decimals = Number(BigInt(deposit.rawContract.decimal ?? 18))
     const blockNumber = BigInt(deposit.blockNum)

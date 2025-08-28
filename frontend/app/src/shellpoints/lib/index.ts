@@ -160,8 +160,8 @@ function isValidHolder(address: Address, amount?: bigint | string | number) {
     && (amount ? BigInt(amount) > 0 : true)
 }
 
-function isNotPool(holder: { address: Address; amount: string }) {
-  return Number(holder.amount) > 0 
+function isNotPool(holder: { address: Address; amount?: bigint | string | number }) {
+  return (holder.amount ? BigInt(holder.amount) : 0n) > 0n 
     && !isAddressEqual(holder.address, addresses.camelot) 
     && !isAddressEqual(holder.address, addresses.spectra)
     && !isAddressEqual(holder.address, addresses.bunni)

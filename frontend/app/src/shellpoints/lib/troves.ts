@@ -16,7 +16,7 @@ import { graphQuery, TrovesQuery } from "@/src/subgraph-queries";
 
 
 export async function queryTroves(params?: {fromTimestamp?: number, toTimestamp?: number}) {
-  const { troves } = await graphQuery(TrovesQuery, undefined);
+  const { troves } = await graphQuery(TrovesQuery);
   if (!params) return troves;
   return troves.filter((trove) => {
     const { createdAt, closedAt } = trove
