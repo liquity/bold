@@ -36,7 +36,6 @@ export interface ShellpointAllocation {
 }
 
 export type LeaderboardActivity = 
-  | "shellpoints" 
   | "yusnd" 
   | "camelot" 
   | "bunni" 

@@ -5,53 +5,20 @@ import type { LeaderboardResponse } from '@/src/shellpoints/leaderboard';
 import { getSnailIcon } from '@/src/comps/SnailIcons/snail-icons';
 import { css, cx } from '@/styled-system/css';
 import { useQuery } from '@tanstack/react-query';
-import { getLeaderboardData } from '../api/leaderboard/data';
 
 function useLeaderboardData() {
   return useQuery({
     queryKey: ['leaderboard'],
     queryFn: async () => {
-      const leaderboardData = await getLeaderboardData()
-      return {
-        success: true,
-        data: leaderboardData,
-        lastUpdated: new Date(leaderboardData.lastMintBlock.blockTimestamp * 1000).toISOString()
-      } as LeaderboardResponse
+      return await fetch('/api/leaderboard').then(res => res.json()) as LeaderboardResponse
     },
   })
 }
 
 export default function Home() {
-  // const [leaderboardData, setLeaderboardData] = useState<LeaderboardResponse | null>(null);
-  // const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // useEffect(() => {
-  //   fetchLeaderboardData();
-  // }, []);
-
   const { data: leaderboardData, isLoading: loading, error, refetch } = useLeaderboardData();
-
-  // const fetchLeaderboardData = async () => {
-  //   try {
-  //     setLoading(true);
-  //     const response = await fetch('/api/leaderboard');
-  //     const data = await response.json() as LeaderboardResponse;
-      
-  //     if (data.success) {
-  //       setLeaderboardData(data);
-  //       setError(null);
-  //     } else {
-  //       setError(data.error || 'Failed to fetch data');
-  //     }
-  //   } catch (err) {
-  //     setError('Network error');
-  //     console.error('Error fetching leaderboard:', err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -183,7 +150,7 @@ export default function Home() {
           })}>
             Top performers ranked by their total shellpoints earned
           </p>
-          {leaderboardData && (
+          {/* {leaderboardData && (
             <p className={css({
               fontSize: '0.875rem',
               color: 'token(colors.gray:500)',
@@ -191,7 +158,7 @@ export default function Home() {
             })}>
               Last updated: {new Date(leaderboardData.lastUpdated).toLocaleString()}
             </p>
-          )}
+          )} */}
           
           {/* Search Bar */}
           <div className={css({

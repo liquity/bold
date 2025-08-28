@@ -1,7 +1,7 @@
 import { getPublicClient } from "@/src/shellpoints/utils/client"
 import { ORIGIN_BLOCK } from "@/src/shellpoints/utils/constants"
 import { ALCHEMY_API_KEY } from "@/src/shellpoints/utils/env"
-import { Alchemy, AssetTransfersCategory, Network } from "alchemy-sdk"
+import { AssetTransfersCategory, AssetTransfersResult, Network } from "alchemy-sdk"
 import { Address, BlockTag, getAddress, parseAbi, toHex } from "viem"
 
 export async function getTokenHolders({
@@ -60,23 +60,43 @@ export async function getAssetRecipients({
   fromBlock = fromBlock ?? ORIGIN_BLOCK
   toBlock = toBlock ?? 'latest'
 
-  const alchemy = new Alchemy({
-    apiKey: ALCHEMY_API_KEY,
-    network: Network.ARB_MAINNET,
-  })
+  // const alchemy = new Alchemy({
+  //   apiKey: ALCHEMY_API_KEY,
+  //   network: Network.ARB_MAINNET,
+  // })
+
+  const response = await (await fetch(`https://${Network.ARB_MAINNET}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 42,
+      method: 'alchemy_getAssetTransfers',
+      params: [
+        {
+          fromBlock: toHex(fromBlock),
+          toBlock: toBlock.toString(),
+          contractAddresses: tokenAddresses,
+          category: [AssetTransfersCategory.ERC20],
+        }
+      ]
+    })
+  })).json() as { jsonrpc: string, id: number, result: { transfers: AssetTransfersResult[] } }
 
   console.log({ fromBlock, toBlock })
   
-  const response = await alchemy.core.getAssetTransfers({
-    fromBlock: toHex(fromBlock),
-    toBlock: toBlock.toString(),
-    contractAddresses: tokenAddresses,
-    category: [AssetTransfersCategory.ERC20],
-  })
+  // const response = await alchemy.core.getAssetTransfers({
+  //   fromBlock: toHex(fromBlock),
+  //   toBlock: toBlock.toString(),
+  //   contractAddresses: tokenAddresses,
+  //   category: [AssetTransfersCategory.ERC20],
+  // })
 
-  console.log({ response })
+  console.log({ response, transfers: response.result.transfers })
 
-  return response.transfers.reduce((acc, transferInfo) => {
+  return response.result.transfers.reduce((acc, transferInfo) => {
     const contractAddress = getAddress(transferInfo.rawContract.address!)
     const to = getAddress(transferInfo.to!)
     const from = getAddress(transferInfo.from!)
