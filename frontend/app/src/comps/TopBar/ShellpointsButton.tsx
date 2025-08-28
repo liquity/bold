@@ -32,7 +32,7 @@ function getShellpointsBalance(address: Address) {
 function ShellpointsBalanceLinkButton({balance}: {balance: Dnum}) {
   return (
     <LinkTextButton
-      href='/leaderboard'
+      href='/shells'
       label={(
         <HFlex className={css({
           // Base shiny button styles
