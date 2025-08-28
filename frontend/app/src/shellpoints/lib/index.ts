@@ -6,6 +6,7 @@ import { getGoSlowNftHolders } from "./go-slow-nft"
 // import { getAllHistoricalStabilityPoolDepositors } from "./stability-pool"
 import { getTokenHolders } from "./tokenholders"
 import { GRAPH_TOKEN_API_TOKEN } from "../utils/env"
+import { queryTroves } from "./troves"
 
 const addresses = {
   shellPoints: getAddress(CONTRACT_ADDRESSES.ShellToken),
@@ -17,11 +18,11 @@ const addresses = {
 
 export async function getAllUsers() {
   const holders = await getHolders();
-  // const protocolUsers = await getProtocolUsers();
+  const protocolUsers = await getProtocolUsers();
 
   return {
     ...holders,
-    // ...protocolUsers,
+    ...protocolUsers,
   }
 }
 
@@ -98,18 +99,20 @@ export async function getHolders() {
   }
 }
 
-// export async function getProtocolUsers() {
-//   console.log("Getting protocol users");
-//   const troves = await getTrovesAndOwners();
-//   console.log("Retrieved troves");
-//   const stabilityPoolDepositors = await getAllHistoricalStabilityPoolDepositors();
-//   console.log("Retrieved stability pool depositors");
+export async function getProtocolUsers() {
+  const troves = await queryTroves();
+  console.log("Retrieved troves:", troves.length);
+  // console.log("Getting protocol users");
+  // const troves = await getTrovesAndOwners();
+  // console.log("Retrieved troves");
+  // const stabilityPoolDepositors = await getAllHistoricalStabilityPoolDepositors();
+  // console.log("Retrieved stability pool depositors");
   
-//   return {
-//     troves,
-//     stabilityPoolDepositors,
-//   }
-// }
+  return {
+    troves,
+    // stabilityPoolDepositors,
+  }
+}
 
 function isNotPool(holder: { address: Address; amount: string }) {
   return Number(holder.amount) > 0 

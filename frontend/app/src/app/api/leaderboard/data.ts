@@ -93,7 +93,7 @@ function getLeaderboardActivities(users: Awaited<ReturnType<typeof getAllUsers>>
   if (users.bunni.some(user => user.address === address)) activities.push("bunni");
   if (users.spectra.some(user => user.address === address)) activities.push("spectra");
   if (users.goSlowNft.some(user => user.holder === address)) activities.push("goSlowNft");
-  // if (users.troves.some(trove => trove.borrower === address)) activities.push("trove");
+  if (users.troves.some(trove => trove.borrower === address)) activities.push("trove");
   // if (users.stabilityPoolDepositors.includes(address)) activities.push("stabilityPool");
   
   return activities;

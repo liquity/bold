@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
+import type { DocumentTypeDecoration } from '@graphql-typed-document-node/core';
 export type Maybe<T> = T | null;
 export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
@@ -1860,6 +1860,8 @@ export type BorrowerInfoQuery = { __typename?: 'Query', borrowerInfo?: { __typen
 
 export type FullTroveFragmentFragment = { __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null };
 
+export type TrovesQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, borrower: string, closedAt?: bigint | null, createdAt: bigint, debt: bigint, deposit: bigint, interestRate: bigint, mightBeLeveraged: boolean, stake: bigint, status: TroveStatus, troveId: string, updatedAt: bigint, collateral: { __typename?: 'Collateral', id: string, minCollRatio: bigint, collIndex: number, token: { __typename?: 'Token', symbol: string, name: string } }, interestBatch?: { __typename?: 'InterestBatch', id: string, annualInterestRate: bigint, annualManagementFee: bigint, batchManager: string } | null }> };
+
 export type TrovesByAccountQueryVariables = Exact<{
   account: Scalars['Bytes']['input'];
 }>;
@@ -2008,6 +2010,42 @@ export const BorrowerInfoDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<BorrowerInfoQuery, BorrowerInfoQueryVariables>;
+export const TrovesDocument = new TypedDocumentString(`
+  query Troves {
+    troves(
+      orderBy: updatedAt
+      orderDirection: desc
+    ) {
+      id
+      borrower
+      closedAt
+      createdAt
+      debt
+      deposit
+      interestRate
+      mightBeLeveraged
+      stake
+      status
+      troveId
+      updatedAt
+      collateral {
+        id
+        token {
+          symbol
+          name
+        }
+        minCollRatio
+        collIndex
+      }
+      interestBatch {
+        id
+        annualInterestRate
+        annualManagementFee
+        batchManager
+      }
+    }
+  }
+      `) as unknown as TypedDocumentString<TrovesQuery, unknown>;
 export const TrovesByAccountDocument = new TypedDocumentString(`
     query TrovesByAccount($account: Bytes!) {
   troves(
