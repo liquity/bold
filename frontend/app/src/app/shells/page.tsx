@@ -51,7 +51,6 @@ export default function Home() {
     return (
       <div className={css({
         minHeight: '100vh',
-        background: 'token(colors.gray:50)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -123,14 +122,7 @@ export default function Home() {
       <div className={css({
         maxWidth: '80rem',
         marginX: 'auto',
-        paddingX: 16,
         paddingY: 32,
-        '@media (min-width: 640px)': {
-          paddingX: 24
-        },
-        '@media (min-width: 1024px)': {
-          paddingX: 32
-        }
       })}>
         {/* Header */}
         <div className={css({
