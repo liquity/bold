@@ -16,11 +16,8 @@ const addresses = {
 }
 
 export async function getAllUsers() {
-  console.log("Getting all users");
   const holders = await getHolders();
-  console.log("Retrieved holders");
   // const protocolUsers = await getProtocolUsers();
-  console.log("Retrieved protocol users");
 
   return {
     ...holders,
@@ -58,7 +55,6 @@ export async function getTokenHoldersViaTokenAPI(params: {
       const data = await response.json()
       return data.data as TokenHolder[]
     }))
-    console.log("Token API responses:", responses)
     return responses.map((response, index) => response.map(holder => ({
       token: params.token[index],
       ...holder
@@ -73,7 +69,6 @@ export async function getTokenHoldersViaTokenAPI(params: {
 }
 
 export async function getHolders() {
-  console.log("Getting holders");
   const shellPointsHolders = await getTokenHolders({
     tokenAddresses: [addresses.shellPoints],
   })
@@ -90,9 +85,7 @@ export async function getHolders() {
   const holders = await getTokenHoldersViaTokenAPI({
     token: Object.values(addresses).filter(address => address !== addresses.shellPoints),
   })
-  console.log("Retrieved holders");
   const goSlowNftHolders = await getGoSlowNftHolders()
-  console.log("Retrieved go slow nft holders");
   
   return {
     // shellPoints: holders.filter((lp: Holder) => isAddressEqual(lp.token, addresses.shellPoints) && isNotPool(lp)),

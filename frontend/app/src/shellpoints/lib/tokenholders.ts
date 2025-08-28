@@ -17,12 +17,8 @@ export async function getTokenHolders({
   toBlock = toBlock ?? 'latest'
 
   const client = getPublicClient();
-  console.log("Retrieved client");
-
-  console.log({ tokenAddresses })
 
   const recipients = await getAssetRecipients({ tokenAddresses, fromBlock, toBlock });
-  console.log("Retrieved recipients");
 
   const holders = Object.entries(recipients).map(([contractAddress, toAddresses]) => {
     return toAddresses.map(toAddress => ({
@@ -60,11 +56,6 @@ export async function getAssetRecipients({
   fromBlock = fromBlock ?? ORIGIN_BLOCK
   toBlock = toBlock ?? 'latest'
 
-  // const alchemy = new Alchemy({
-  //   apiKey: ALCHEMY_API_KEY,
-  //   network: Network.ARB_MAINNET,
-  // })
-
   const response = await (await fetch(`https://${Network.ARB_MAINNET}.g.alchemy.com/v2/${ALCHEMY_API_KEY}`, {
     method: 'POST',
     headers: {
@@ -84,17 +75,6 @@ export async function getAssetRecipients({
       ]
     })
   })).json() as { jsonrpc: string, id: number, result: { transfers: AssetTransfersResult[] } }
-
-  console.log({ fromBlock, toBlock })
-  
-  // const response = await alchemy.core.getAssetTransfers({
-  //   fromBlock: toHex(fromBlock),
-  //   toBlock: toBlock.toString(),
-  //   contractAddresses: tokenAddresses,
-  //   category: [AssetTransfersCategory.ERC20],
-  // })
-
-  console.log({ response, transfers: response.result.transfers })
 
   return response.result.transfers.reduce((acc, transferInfo) => {
     const contractAddress = getAddress(transferInfo.rawContract.address!)
