@@ -1,13 +1,13 @@
-import { useMemo } from "react";
 import { getLoanDetails } from "@/src/liquity-math";
 import { getCollToken } from "@/src/liquity-utils";
-import { usePrice } from "@/src/services/Prices";
 import { ClosedLoan } from "@/src/screens/TransactionsScreen/LoanCard/components/ClosedLoan";
-import { OpenLoan } from "@/src/screens/TransactionsScreen/LoanCard/components/OpenLoan";
 import { LoadingCard } from "@/src/screens/TransactionsScreen/LoanCard/components/LoadingCard";
+import { OpenLoan } from "@/src/screens/TransactionsScreen/LoanCard/components/OpenLoan";
+import { usePrice } from "@/src/services/Prices";
+import { useMemo } from "react";
 
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen.tsx";
-import type { PositionLoan } from "@/src/types";
+import type { PositionLoan, PositionLoanCommitted } from "@/src/types";
 
 const LOAN_CARD_HEIGHT = 290;
 const LOAN_CARD_HEIGHT_REDUCED = 176;
@@ -24,7 +24,7 @@ export function LoanCard({
   loadingState: LoadingState;
   loan: PositionLoan | null;
   onRetry: () => void;
-  prevLoan?: PositionLoan | null;
+  prevLoan?: PositionLoanCommitted | null;
   txPreviewMode?: boolean;
 }) {
   const branchId = loan?.branchId ?? prevLoan?.branchId ?? null;
@@ -38,9 +38,8 @@ export function LoanCard({
 
   const isLoanClosing = prevLoan && !loan;
 
-  const loanDetails =
-    loan &&
-    getLoanDetails(
+  const loanDetails = loan
+    && getLoanDetails(
       loan.deposit,
       loan.borrowed,
       loan.interestRate,
@@ -48,9 +47,8 @@ export function LoanCard({
       collPriceUsd.data ?? null,
     );
 
-  const prevLoanDetails =
-    prevLoan &&
-    getLoanDetails(
+  const prevLoanDetails = prevLoan
+    && getLoanDetails(
       prevLoan.deposit,
       prevLoan.borrowed,
       prevLoan.interestRate,
@@ -66,10 +64,10 @@ export function LoanCard({
   } = loanDetails || {};
 
   const loanDetailsFilled = Boolean(
-    typeof leverageFactor === "number" &&
-      depositPreLeverage &&
-      liquidationRisk &&
-      liquidationPrice,
+    typeof leverageFactor === "number"
+      && depositPreLeverage
+      && liquidationRisk
+      && liquidationPrice,
   );
 
   const loadingStatus = useMemo(() => {
@@ -78,8 +76,8 @@ export function LoanCard({
     }
 
     if (
-      collPriceUsd.status === "pending" ||
-      (!isLoanClosing && !loanDetailsFilled)
+      collPriceUsd.status === "pending"
+      || (!isLoanClosing && !loanDetailsFilled)
     ) {
       return "loading";
     }

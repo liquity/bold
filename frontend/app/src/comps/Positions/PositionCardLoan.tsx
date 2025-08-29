@@ -19,7 +19,8 @@ export function PositionCardLoan(
     | "interestRate"
     | "status"
     | "troveId"
-    | "indexedDebt"
+    | "recordedDebt"
+    | "isZombie"
   >,
 ) {
   const storedState = useStoredState();
@@ -43,7 +44,7 @@ export function PositionCardLoan(
         : props.status === "redeemed"
         ? (
           <LoanStatusTag
-            status={dn.eq(props.indexedDebt, 0)
+            status={dn.eq(props.recordedDebt, 0)
               ? "fully-redeemed"
               : "partially-redeemed"}
           />

@@ -3,7 +3,8 @@ import * as dn from "dnum";
 import type { TypedDocumentString } from "@/src/graphql/graphql";
 import type { Address, BranchId, Dnum, TroveId, TroveStatus } from "@/src/types";
 
-import { dnum18 } from "@/src/dnum-utils";
+import { ONE_YEAR_D18 } from "@/src/constants";
+import { dnum18, dnum36 } from "@/src/dnum-utils";
 import { SUBGRAPH_URL } from "@/src/env";
 import { graphql } from "@/src/graphql";
 import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
@@ -15,6 +16,7 @@ export type IndexedTrove = {
   closedAt: number | null;
   createdAt: number;
   lastUserActionAt: number;
+  updatedAt: number;
   mightBeLeveraged: boolean;
   status: TroveStatus;
   debt: Dnum;
@@ -106,7 +108,7 @@ const TrovesByAccountQuery = graphql(`
       where: {
         or: [
           { previousOwner: $account, status: liquidated },
-          { borrower: $account, status_in: [active,redeemed] }
+          { borrower: $account, status_in: [active, redeemed] }
         ],
       }
       orderBy: updatedAt
@@ -116,6 +118,7 @@ const TrovesByAccountQuery = graphql(`
       closedAt
       createdAt
       lastUserActionAt
+      updatedAt
       mightBeLeveraged
       status
       debt
@@ -133,11 +136,13 @@ export async function getIndexedTrovesByAccount(account: Address): Promise<Index
   return troves.map((trove) => ({
     id: trove.id,
     borrower: account,
+    // TODO: eliminate conversion to milliseconds
     closedAt: trove.closedAt === null || trove.closedAt === undefined
       ? null
       : Number(trove.closedAt) * 1000,
     createdAt: Number(trove.createdAt) * 1000,
     lastUserActionAt: Number(trove.lastUserActionAt) * 1000,
+    updatedAt: Number(trove.updatedAt) * 1000,
     mightBeLeveraged: trove.mightBeLeveraged,
     status: trove.status,
     debt: dnum18(trove.debt),
@@ -155,6 +160,7 @@ const TroveByIdQuery = graphql(`
       closedAt
       createdAt
       lastUserActionAt
+      updatedAt
       mightBeLeveraged
       previousOwner
       status
@@ -182,6 +188,7 @@ export async function getIndexedTroveById(
       : Number(trove.closedAt) * 1000,
     createdAt: Number(trove.createdAt) * 1000,
     lastUserActionAt: Number(trove.lastUserActionAt) * 1000,
+    updatedAt: Number(trove.updatedAt) * 1000,
     mightBeLeveraged: trove.mightBeLeveraged,
     status: trove.status,
     debt: dnum18(trove.debt),
@@ -235,19 +242,52 @@ const AllInterestRateBracketsQuery = graphql(`
       }
       rate
       totalDebt
+      sumDebtTimesRateD36
+      pendingDebtTimesOneYearD36
+      updatedAt
     }
   }
 `);
 
 export async function getAllInterestRateBrackets() {
-  const { interestRateBrackets } = await graphQuery(AllInterestRateBracketsQuery);
-  return interestRateBrackets
+  const result = await graphQuery(AllInterestRateBracketsQuery);
+
+  const brackets = result.interestRateBrackets
     .map((bracket) => ({
       branchId: bracket.collateral.collIndex,
       rate: dnum18(bracket.rate),
-      totalDebt: dnum18(bracket.totalDebt),
+      totalDebt: BigInt(bracket.totalDebt),
+      sumDebtTimesRateD36: BigInt(bracket.sumDebtTimesRateD36),
+      pendingDebtTimesOneYearD36: BigInt(bracket.pendingDebtTimesOneYearD36),
+      updatedAt: BigInt(bracket.updatedAt),
     }))
     .sort((a, b) => dn.cmp(a.rate, b.rate));
+
+  const lastUpdatedAt = brackets
+    .map((bracket) => bracket.updatedAt)
+    .reduce((a, b) => a > b ? a : b);
+
+  return {
+    lastUpdatedAt,
+
+    brackets: brackets.map((bracket) => ({
+      branchId: bracket.branchId,
+      rate: bracket.rate,
+      totalWeightedRate: dnum36(bracket.sumDebtTimesRateD36),
+
+      totalDebt: (timestamp: bigint) => {
+        if (timestamp < lastUpdatedAt) timestamp = lastUpdatedAt;
+
+        return dnum18(
+          bracket.totalDebt
+            + (
+                bracket.pendingDebtTimesOneYearD36
+                + bracket.sumDebtTimesRateD36 * (timestamp - bracket.updatedAt)
+              ) / ONE_YEAR_D18,
+        );
+      },
+    })),
+  };
 }
 
 const GovernanceGlobalDataQuery = graphql(`

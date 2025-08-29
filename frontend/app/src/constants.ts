@@ -22,6 +22,7 @@ export const ONE_SECOND = 1000;
 export const ONE_MINUTE = 60 * ONE_SECOND;
 export const ONE_HOUR = 60 * ONE_MINUTE;
 export const ONE_DAY = 24 * ONE_HOUR;
+export const ONE_YEAR_D18 = 365n * 24n * 60n * 60n * BigInt(1e18);
 
 export const GAS_MIN_HEADROOM = 100_000;
 export const GAS_RELATIVE_HEADROOM = 0.25;
@@ -86,13 +87,13 @@ export const DEBT_SUGGESTIONS = [
 ];
 
 // ltv risk levels, as ratios of the max ltv
-export const LTV_RISK: Record<Exclude<RiskLevel, "low">, number> = {
+export const LTV_RISK: Record<Exclude<RiskLevel, "low" | "not-applicable">, number> = {
   medium: 0.54,
   high: 0.73,
 };
 
 // redemption risk levels, as debt positioning ratios
-export const REDEMPTION_RISK: Record<Exclude<RiskLevel, "high">, number> = {
+export const REDEMPTION_RISK: Record<Exclude<RiskLevel, "high" | "not-applicable">, number> = {
   medium: 0.05, // 5% of total debt in front
   low: 0.60, // 60% of total debt in front
 };

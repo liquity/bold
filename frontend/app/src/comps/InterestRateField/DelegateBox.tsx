@@ -2,8 +2,7 @@ import type { BranchId, Delegate } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { fmtnum, formatDuration, formatRedemptionRisk } from "@/src/formatting";
-import { getRedemptionRisk } from "@/src/liquity-math";
-import { useDebtPositioning } from "@/src/liquity-utils";
+import { useRedemptionRiskOfInterestRate } from "@/src/liquity-utils";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { Button, IconCopy, StatusDot, TextButton } from "@liquity2/uikit";
@@ -21,8 +20,10 @@ export function DelegateBox({
   onSelect: (delegate: Delegate) => void;
   selectLabel: string;
 }) {
-  const debtPositioning = useDebtPositioning(branchId, delegate.interestRate);
-  const delegationRisk = getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
+  // TODO further improve risk calculation by getting the bottom Trove within the batch (if any)
+  // and using its risk level with `useRedemptionRiskOfLoan()`
+  const delegationRisk = useRedemptionRiskOfInterestRate(branchId, delegate.interestRate);
+
   return (
     <ShadowBox key={delegate.id}>
       <section
@@ -97,8 +98,8 @@ export function DelegateBox({
                 alignItems: "center",
               })}
             >
-              <StatusDot mode={riskLevelToStatusMode(delegationRisk)} />
-              {formatRedemptionRisk(delegationRisk)}
+              <StatusDot mode={riskLevelToStatusMode(delegationRisk.data)} />
+              {formatRedemptionRisk(delegationRisk.data ?? null)}
             </div>
           </div>
         </div>
