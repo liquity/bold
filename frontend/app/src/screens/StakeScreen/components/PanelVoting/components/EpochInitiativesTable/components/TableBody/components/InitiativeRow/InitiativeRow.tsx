@@ -22,7 +22,6 @@ export const InitiativeRow: FC<InitiativeRowProps> = ({ initiative }) => {
   const isStatusActive = isInitiativeStatusActive(
     initiativesStatus ?? "nonexistent",
   );
-  const disabled = !isStatusActive;
 
   return (
     <tr>
@@ -91,7 +90,7 @@ export const InitiativeRow: FC<InitiativeRowProps> = ({ initiative }) => {
         </div>
       </td>
       <td>
-        <Voting initiativeAddress={initiative.address} disabled={disabled} />
+        <Voting initiativeAddress={initiative.address} activeVoting={isStatusActive} />
       </td>
     </tr>
   );

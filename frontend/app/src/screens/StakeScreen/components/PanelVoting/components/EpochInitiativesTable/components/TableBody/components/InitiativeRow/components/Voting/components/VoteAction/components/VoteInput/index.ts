@@ -1,0 +1,1 @@
+export { VoteInput } from './VoteInput';

@@ -1,0 +1,1 @@
+export { useGetOutlineStyles } from './useGetOutlineStyles';
