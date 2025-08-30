@@ -12,7 +12,13 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRelativeTime } from "@/src/formatting";
 import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { getBranch, getCollToken, useRedemptionRisk, useTroveRateUpdateCooldown } from "@/src/liquity-utils";
+import {
+  getBranch,
+  getCollToken,
+  useRedemptionRiskOfInterestRate,
+  useRedemptionRiskOfLoan,
+  useTroveRateUpdateCooldown,
+} from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { useAccount } from "@/src/wagmi-utils";
@@ -57,8 +63,8 @@ export function PanelInterestRate({
 
   const updateRateCooldown = useUpdateRateCooldown(loan.branchId, loan.troveId);
 
-  const currentRedemptionRisk = useRedemptionRisk(loan.branchId, loan.interestRate);
-  const newRedemptionRisk = useRedemptionRisk(loan.branchId, interestRate);
+  const currentRedemptionRisk = useRedemptionRiskOfLoan(loan);
+  const newRedemptionRisk = useRedemptionRiskOfInterestRate(loan.branchId, interestRate, loan);
 
   const loanDetails = getLoanDetails(
     loan.deposit,

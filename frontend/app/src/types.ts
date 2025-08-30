@@ -5,7 +5,7 @@ import type { BranchContracts } from "./contracts";
 
 export type { Address, CollateralSymbol, Dnum, Token, TokenSymbol };
 
-export type RiskLevel = "low" | "medium" | "high";
+export type RiskLevel = "low" | "medium" | "high" | "not-applicable";
 
 export type ChainId = number;
 
@@ -70,21 +70,23 @@ export type PositionLoanBase = {
   branchId: BranchId;
   deposit: Dnum;
   interestRate: Dnum;
-  status: TroveStatus;
 };
 
 export type PositionLoanCommitted = PositionLoanBase & {
+  status: TroveStatus;
   troveId: TroveId;
   createdAt: number;
   lastUserActionAt: number;
+  updatedAt: number;
   isZombie: boolean;
-  indexedDebt: Dnum;
+  recordedDebt: Dnum;
   redemptionCount: number;
   redeemedColl: Dnum;
   redeemedDebt: Dnum;
 };
 
 export type PositionLoanUncommitted = PositionLoanBase & {
+  status: "active";
   troveId: null;
 };
 

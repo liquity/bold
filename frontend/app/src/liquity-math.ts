@@ -6,11 +6,11 @@ import * as dn from "dnum";
 import { match } from "ts-pattern";
 
 export function getRedemptionRisk(
-  debtInFront: Dnum | null,
-  totalDebt: Dnum | null,
-): null | RiskLevel {
-  if (!debtInFront || !totalDebt || dn.eq(totalDebt, 0)) {
-    return null;
+  debtInFront: Dnum,
+  totalDebt: Dnum,
+): RiskLevel {
+  if (dn.eq(totalDebt, 0)) {
+    return "not-applicable";
   }
 
   const debtInFrontRatio = dn.div(debtInFront, totalDebt);
@@ -27,6 +27,7 @@ export function getLiquidationRisk(ltv: Dnum, maxLtv: Dnum): RiskLevel {
     .returnType<RiskLevel>()
     .when((ltv) => dn.gt(ltv, dn.mul(maxLtv, LTV_RISK.high)), () => "high")
     .when((ltv) => dn.gt(ltv, dn.mul(maxLtv, LTV_RISK.medium)), () => "medium")
+    .when((ltv) => dn.eq(ltv, 0), () => "not-applicable")
     .otherwise(() => "low");
 }
 

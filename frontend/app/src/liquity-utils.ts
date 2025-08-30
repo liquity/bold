@@ -8,7 +8,6 @@ import type {
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
-  RiskLevel,
   Token,
   TokenSymbol,
   TroveId,
@@ -27,6 +26,7 @@ import {
   INTEREST_RATE_INCREMENT_PRECISE,
   INTEREST_RATE_PRECISE_UNTIL,
   INTEREST_RATE_START,
+  ONE_YEAR_D18,
   TROVE_STATUS_ZOMBIE,
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
@@ -394,132 +394,137 @@ export function useTroveNftUrl(branchId: null | BranchId, troveId: null | TroveI
 }
 
 export function useInterestRateBrackets(branchId: BranchId) {
-  const brackets = useAllInterestRateBrackets();
-  return useQuery({
-    queryKey: ["InterestRateBrackets", branchId],
-    enabled: brackets.status !== "pending",
-    queryFn: () => {
-      if (brackets.status === "error") {
-        throw brackets.error;
-      }
+  const { status, data } = useAllInterestRateBrackets();
 
-      if (brackets.status === "pending") {
-        throw new Error(); // should not reach
-      }
+  return useMemo(() => {
+    if (!data) return { status, data };
 
-      return brackets.data.filter((bracket) => bracket.branchId === branchId);
-    },
-  });
+    return {
+      status,
+      data: {
+        lastUpdatedAt: data.lastUpdatedAt,
+        brackets: data.brackets.filter((bracket) => bracket.branchId === branchId),
+      },
+    };
+  }, [branchId, status, data]);
 }
 
-export function useAllInterestRateBrackets() {
+function useAllInterestRateBrackets() {
   return useQuery({
     queryKey: ["AllInterestRateBrackets"],
-    queryFn: () => getAllInterestRateBrackets(),
+    queryFn: getAllInterestRateBrackets,
   });
 }
 
 export function useAverageInterestRate(branchId: BranchId) {
-  const brackets = useInterestRateBrackets(branchId);
+  const { status, data } = useInterestRateBrackets(branchId);
 
-  const data = useMemo(() => {
-    if (!brackets.isSuccess) {
-      return null;
-    }
+  return useMemo(() => {
+    if (!data) return { status, data };
 
     let totalDebt = DNUM_0;
     let totalWeightedRate = DNUM_0;
 
-    for (const bracket of brackets.data) {
-      totalDebt = dn.add(totalDebt, bracket.totalDebt);
-      totalWeightedRate = dn.add(
-        totalWeightedRate,
-        dn.mul(bracket.rate, bracket.totalDebt),
-      );
+    for (const bracket of data.brackets) {
+      totalDebt = dn.add(totalDebt, bracket.totalDebt(BigInt(Math.floor(Date.now() / 1000))));
+      totalWeightedRate = dn.add(totalWeightedRate, bracket.totalWeightedRate);
     }
 
-    return dn.eq(totalDebt, 0)
-      ? DNUM_0
-      : dn.div(totalWeightedRate, totalDebt);
-  }, [brackets.isSuccess, brackets.data]);
-
-  return {
-    ...brackets,
-    data,
-  };
+    return {
+      status,
+      data: dn.eq(totalDebt, 0)
+        ? DNUM_0
+        : dn.div(totalWeightedRate, totalDebt),
+    };
+  }, [status, data]);
 }
 
 export function useInterestRateChartData(branchId: BranchId, excludedLoan?: PositionLoanCommitted) {
-  const brackets = useInterestRateBrackets(branchId);
-  return useQuery({
-    queryKey: ["useInterestRateChartData", jsonStringifyWithDnum(brackets.data), excludedLoan?.troveId],
-    queryFn: () => {
-      if (!brackets.isSuccess) {
-        throw new Error(); // should never happen (see enabled)
-      }
+  const { status, data } = useInterestRateBrackets(branchId);
 
-      const debtByRate = new Map<string, Dnum>(
-        brackets.data
-          .filter(({ rate }) => dn.gte(rate, INTEREST_RATE_START) && dn.lte(rate, INTEREST_RATE_END))
-          .map((bracket) => [dn.toJSON(bracket.rate), bracket.totalDebt]),
+  return useMemo(() => {
+    if (!data) return { status, data };
+
+    // brackets or loan could have been updated in the "future", if client clock is running behind
+    // or the blockchain clock has been fast-forwarded, e.g. in case of Anvil
+    const timestamp = BigInt(
+      Math.floor(
+        Math.max(
+          Date.now(),
+          Number(data.lastUpdatedAt) * 1000,
+          ...(excludedLoan ? [excludedLoan.updatedAt] : []),
+        ) / 1000,
+      ),
+    );
+
+    const debtByRate = new Map<string, Dnum>(
+      data.brackets
+        .filter(({ rate }) => dn.gte(rate, INTEREST_RATE_START) && dn.lte(rate, INTEREST_RATE_END))
+        .map((bracket) => [dn.toJSON(bracket.rate), bracket.totalDebt(timestamp)]),
+    );
+
+    const chartData = [];
+    let currentRate = dn.from(INTEREST_RATE_START, 18);
+    let debtInFront = DNUM_0;
+    let highestDebt = DNUM_0;
+
+    while (dn.lte(currentRate, INTEREST_RATE_END)) {
+      const nextRate = dn.add(
+        currentRate,
+        dn.lt(currentRate, INTEREST_RATE_PRECISE_UNTIL)
+          ? INTEREST_RATE_INCREMENT_PRECISE
+          : INTEREST_RATE_INCREMENT_NORMAL,
       );
 
-      const chartData = [];
-      let currentRate = dn.from(INTEREST_RATE_START, 18);
-      let debtInFront = DNUM_0;
-      let highestDebt = DNUM_0;
-
-      while (dn.lte(currentRate, INTEREST_RATE_END)) {
-        const nextRate = dn.add(
-          currentRate,
-          dn.lt(currentRate, INTEREST_RATE_PRECISE_UNTIL)
-            ? INTEREST_RATE_INCREMENT_PRECISE
-            : INTEREST_RATE_INCREMENT_NORMAL,
+      let aggregatedDebt = DNUM_0; // debt between currentRate and nextRate
+      let stepRate = currentRate;
+      while (dn.lt(stepRate, nextRate)) {
+        aggregatedDebt = dn.add(
+          aggregatedDebt,
+          debtByRate.get(dn.toJSON(stepRate)) ?? DNUM_0,
         );
-
-        let aggregatedDebt = DNUM_0; // debt between currentRate and nextRate
-        let stepRate = currentRate;
-        while (dn.lt(stepRate, nextRate)) {
-          aggregatedDebt = dn.add(
-            aggregatedDebt,
-            debtByRate.get(dn.toJSON(stepRate)) ?? DNUM_0,
-          );
-          stepRate = dn.add(stepRate, INTEREST_RATE_INCREMENT_PRECISE);
-        }
-
-        // exclude own debt from debt-in front calculation
-        if (
-          excludedLoan
-          && dn.gte(excludedLoan.interestRate, currentRate)
-          && dn.lt(excludedLoan.interestRate, nextRate)
-        ) {
-          aggregatedDebt = dn.sub(aggregatedDebt, excludedLoan.indexedDebt);
-        }
-
-        chartData.push({
-          debt: aggregatedDebt,
-          debtInFront,
-          rate: currentRate,
-          size: dn.toNumber(aggregatedDebt),
-        });
-
-        debtInFront = dn.add(debtInFront, aggregatedDebt);
-        currentRate = nextRate;
-        if (dn.gt(aggregatedDebt, highestDebt)) highestDebt = aggregatedDebt;
+        stepRate = dn.add(stepRate, INTEREST_RATE_INCREMENT_PRECISE);
       }
 
-      // normalize size between 0 and 1
-      if (highestDebt[0] !== 0n) {
-        const divisor = dn.toNumber(highestDebt);
-        for (const datum of chartData) {
-          datum.size /= divisor;
-        }
+      // exclude own debt from debt-in front calculation
+      if (
+        excludedLoan
+        && dn.gte(excludedLoan.interestRate, currentRate)
+        && dn.lt(excludedLoan.interestRate, nextRate)
+      ) {
+        const updatedAt = BigInt(excludedLoan.updatedAt / 1000); // should be divisible by 1000
+        const pendingDebt = dnum18(
+          dn.from(excludedLoan.recordedDebt, 18)[0]
+            * dn.from(excludedLoan.interestRate, 18)[0]
+            * (timestamp - updatedAt)
+            / ONE_YEAR_D18,
+        );
+        const excludedDebt = dn.add(excludedLoan.recordedDebt, pendingDebt);
+        aggregatedDebt = dn.sub(aggregatedDebt, excludedDebt);
       }
 
-      return chartData;
-    },
-    enabled: brackets.isSuccess,
-  });
+      chartData.push({
+        debt: aggregatedDebt,
+        debtInFront,
+        rate: currentRate,
+        size: dn.toNumber(aggregatedDebt),
+      });
+
+      debtInFront = dn.add(debtInFront, aggregatedDebt);
+      currentRate = nextRate;
+      if (dn.gt(aggregatedDebt, highestDebt)) highestDebt = aggregatedDebt;
+    }
+
+    // normalize size between 0 and 1
+    if (highestDebt[0] !== 0n) {
+      const divisor = dn.toNumber(highestDebt);
+      for (const datum of chartData) {
+        datum.size /= divisor;
+      }
+    }
+
+    return { status, data: chartData };
+  }, [status, data]);
 }
 
 export function findClosestRateIndex(
@@ -993,7 +998,8 @@ export async function fetchLoanById(
     branchId,
     createdAt: indexedTrove.createdAt,
     lastUserActionAt: indexedTrove.lastUserActionAt,
-    indexedDebt: indexedTrove.debt,
+    updatedAt: indexedTrove.updatedAt,
+    recordedDebt: indexedTrove.debt,
     deposit: dnum18(troveData.entireColl),
     interestRate: dnum18(troveData.annualInterestRate),
     status: indexedTrove.status,
@@ -1257,59 +1263,217 @@ export function useNextOwnerIndex(
   });
 }
 
-export function useDebtPositioning(branchId: BranchId, interestRate: Dnum | null) {
-  const chartData = useInterestRateChartData(branchId);
+const interestRateFloor = (rate: Dnum) =>
+  dn.mul(
+    dn.floor(
+      dn.div(
+        rate,
+        INTEREST_RATE_INCREMENT_PRECISE,
+      ),
+    ),
+    INTEREST_RATE_INCREMENT_PRECISE,
+  );
+
+function useDebtInFrontOfBracket(branchId: BranchId, bracketRate: Dnum) {
+  const { status, data } = useInterestRateBrackets(branchId);
 
   return useMemo(() => {
-    if (!chartData.data || !interestRate) {
-      return { debtInFront: null, totalDebt: null };
-    }
-
-    // find the bracket that contains this interest rate
-    const bracket = chartData.data.find((item) =>
-      dn.lte(item.rate, interestRate)
-      && dn.lt(
-        interestRate,
-        dn.add(
-          item.rate,
-          dn.lt(item.rate, INTEREST_RATE_PRECISE_UNTIL)
-            ? INTEREST_RATE_INCREMENT_PRECISE
-            : INTEREST_RATE_INCREMENT_NORMAL,
-        ),
-      )
-    );
-
-    if (!bracket) {
-      return { debtInFront: null, totalDebt: null };
-    }
-
-    // calculate total debt from all brackets
-    const totalDebt = chartData.data.reduce(
-      (sum, item) => dn.add(sum, item.debt),
-      DNUM_0,
-    );
+    if (!data) return { status, data };
 
     return {
-      debtInFront: bracket.debtInFront,
-      totalDebt,
+      status,
+
+      data: data && ((timestamp: bigint) => {
+        const brackets = data.brackets.map(
+          ({ rate, totalDebt }) => ({
+            rate,
+            totalDebt: totalDebt(timestamp),
+          }),
+        );
+
+        const bracketsInFront = brackets.filter(
+          (bracket) => dn.lt(bracket.rate, bracketRate),
+        );
+
+        return {
+          debtInFront: bracketsInFront.map((bracket) => bracket.totalDebt).reduce((a, b) => dn.add(a, b), DNUM_0),
+          totalDebt: brackets.map((bracket) => bracket.totalDebt).reduce((a, b) => dn.add(a, b), DNUM_0),
+        };
+      }),
     };
-  }, [chartData.data, interestRate]);
+  }, [status, data, bracketRate]);
 }
 
-export function useRedemptionRisk(
-  branchId: BranchId,
-  interestRate: Dnum | null,
-): UseQueryResult<RiskLevel | null> {
-  const debtPositioning = useDebtPositioning(branchId, interestRate);
+type QueryStatus = "success" | "error" | "pending";
 
-  return useQuery({
-    queryKey: ["useRedemptionRisk", branchId, jsonStringifyWithDnum(interestRate)],
-    queryFn: () => {
-      if (!debtPositioning.debtInFront || !debtPositioning.totalDebt) {
-        return null;
-      }
-      return getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
-    },
-    enabled: debtPositioning.debtInFront !== null && debtPositioning.totalDebt !== null,
+// function combineStatus(a: "error", b: QueryStatus): "error";
+// function combineStatus(a: QueryStatus, b: "error"): "error";
+// function combineStatus(a: "pending", b: Exclude<QueryStatus, "error">): "pending";
+// function combineStatus(a: Exclude<QueryStatus, "error">, b: "pending"): "pending";
+// function combineStatus(a: "success", b: "success"): "success";
+// function combineStatus(
+//   a: Exclude<QueryStatus, "pending">,
+//   b: Exclude<QueryStatus, "pending">,
+// ): Exclude<QueryStatus, "pending">;
+// function combineStatus(a: QueryStatus, b: QueryStatus): QueryStatus;
+function combineStatus(a: QueryStatus, b: QueryStatus): QueryStatus {
+  if (a === "error" || b === "error") return "error";
+  if (a === "pending" || b === "pending") return "pending";
+  return "success";
+}
+
+export type UseDebtInFrontOfLoanParams = Readonly<
+  Pick<
+    PositionLoanCommitted,
+    | "branchId"
+    | "troveId"
+    | "interestRate"
+    | "status"
+    | "isZombie"
+  >
+>;
+
+export const EMPTY_LOAN: UseDebtInFrontOfLoanParams = {
+  branchId: 0,
+  troveId: "0x0",
+  interestRate: DNUM_0,
+  status: "closed",
+  isZombie: true,
+};
+
+export function useDebtInFrontOfLoan(loan: UseDebtInFrontOfLoanParams) {
+  const redeemable = (loan.status === "active" || loan.status === "redeemed") && !loan.isZombie;
+  const ownBracket = interestRateFloor(loan.interestRate);
+  const debtInFrontOfOwnBracket = useDebtInFrontOfBracket(loan.branchId, ownBracket);
+  const { contracts: { SortedTroves } } = getBranch(loan.branchId);
+  const numTroves = useReadContract({ ...SortedTroves, functionName: "getSize", query: { enabled: redeemable } });
+  const DebtInFrontHelper = getProtocolContract("DebtInFrontHelper");
+
+  const debtInFrontOfLoanWithinOwnBracket = useReadContract({
+    ...DebtInFrontHelper,
+    query: { enabled: redeemable && numTroves.data !== undefined },
+    functionName: "getDebtBetweenInterestRateAndTrove",
+    args: [
+      BigInt(loan.branchId), // _collIndex
+      dn.from(ownBracket, 18)[0], // _interestRateLo
+      dn.add(ownBracket, INTEREST_RATE_INCREMENT_PRECISE, 18)[0], // _interestRateHi
+      BigInt(loan.troveId), // _troveIdToStopAt
+      0n, // _hintId
+      BigInt(Math.round(Math.sqrt(Number(numTroves.data ?? 0)))), // _numTrials
+    ],
   });
+
+  const status = redeemable
+    ? combineStatus(debtInFrontOfOwnBracket.status, debtInFrontOfLoanWithinOwnBracket.status)
+    : debtInFrontOfOwnBracket.status;
+
+  return useMemo(() => {
+    if (redeemable) {
+      if (!debtInFrontOfOwnBracket.data || !debtInFrontOfLoanWithinOwnBracket.data) {
+        return { status, data: undefined };
+      }
+
+      const timestamp = debtInFrontOfLoanWithinOwnBracket.data[1];
+      const { debtInFront, totalDebt } = debtInFrontOfOwnBracket.data(timestamp);
+
+      return {
+        status,
+        data: {
+          debtInFront: dn.add(debtInFront, dnum18(debtInFrontOfLoanWithinOwnBracket.data[0])),
+          totalDebt,
+        },
+      };
+    } else {
+      if (!debtInFrontOfOwnBracket.data) return { status, data: undefined };
+
+      return {
+        status,
+        data: {
+          debtInFront: null,
+          totalDebt: debtInFrontOfOwnBracket.data(BigInt(Math.floor(Date.now() / 1000))).totalDebt,
+        },
+      };
+    }
+  }, [redeemable, status, debtInFrontOfOwnBracket.data, debtInFrontOfLoanWithinOwnBracket.data]);
+}
+
+export function useDebtInFrontOfInterestRate(
+  branchId: BranchId,
+  interestRate: Dnum,
+  excludedLoan?: PositionLoanCommitted,
+) {
+  const ownBracket = interestRateFloor(interestRate);
+  const debtInFrontOfOwnBracket = useDebtInFrontOfBracket(branchId, ownBracket);
+  const { contracts: { SortedTroves } } = getBranch(branchId);
+  const atBottom = dn.eq(interestRate, ownBracket);
+  const numTroves = useReadContract({ ...SortedTroves, functionName: "getSize", query: { enabled: !atBottom } });
+  const DebtInFrontHelper = getProtocolContract("DebtInFrontHelper");
+
+  const debtInFrontOfLoanWithinOwnBracket = useReadContract({
+    ...DebtInFrontHelper,
+    query: { enabled: !atBottom && numTroves.data !== undefined },
+    functionName: "getDebtBetweenInterestRates",
+    args: [
+      BigInt(branchId), // _collIndex
+      dn.from(ownBracket, 18)[0], // _interestRateLo
+      dn.from(interestRate, 18)[0], // _interestRateHi
+      BigInt(excludedLoan?.troveId ?? 0), // _excludedTroveId
+      0n, // _hintId
+      BigInt(Math.round(Math.sqrt(Number(numTroves.data ?? 0)))), // _numTrials
+    ],
+  });
+
+  const status = atBottom
+    ? debtInFrontOfOwnBracket.status
+    : combineStatus(debtInFrontOfLoanWithinOwnBracket.status, debtInFrontOfOwnBracket.status);
+
+  return useMemo(() => {
+    if (atBottom) {
+      if (!debtInFrontOfOwnBracket.data) return { status, data: undefined };
+
+      return {
+        status,
+        data: debtInFrontOfOwnBracket.data(BigInt(Math.floor(Date.now() / 1000))),
+      };
+    } else {
+      if (!debtInFrontOfOwnBracket.data || !debtInFrontOfLoanWithinOwnBracket.data) {
+        return { status, data: undefined };
+      }
+
+      const timestamp = debtInFrontOfLoanWithinOwnBracket.data[1];
+      const { debtInFront, totalDebt } = debtInFrontOfOwnBracket.data(timestamp);
+
+      return {
+        status,
+        data: {
+          debtInFront: dn.add(debtInFront, dnum18(debtInFrontOfLoanWithinOwnBracket.data[0])),
+          totalDebt,
+        },
+      };
+    }
+  }, [atBottom, status, debtInFrontOfOwnBracket.data, debtInFrontOfLoanWithinOwnBracket.data]);
+}
+
+// TODO add the ability to disable `useDebtInFrontOfLoan()` and disable it Trove is a zombie (return "not-applicable")
+export function useRedemptionRiskOfLoan(loan: UseDebtInFrontOfLoanParams) {
+  const { status, data } = useDebtInFrontOfLoan(loan);
+
+  return useMemo(() => {
+    if (!data) return { status, data };
+    if (data.debtInFront === null) return { status, data: "not-applicable" as const };
+    return { status, data: getRedemptionRisk(data.debtInFront, data.totalDebt) };
+  }, [status, data]);
+}
+
+export function useRedemptionRiskOfInterestRate(
+  branchId: BranchId,
+  interestRate: Dnum,
+  excludedLoan?: PositionLoanCommitted,
+) {
+  const { status, data } = useDebtInFrontOfInterestRate(branchId, interestRate, excludedLoan);
+
+  return useMemo(() => {
+    if (!data) return { status, data };
+    return { status, data: getRedemptionRisk(data.debtInFront, data.totalDebt) };
+  }, [status, data]);
 }

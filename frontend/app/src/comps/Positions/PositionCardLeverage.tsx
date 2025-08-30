@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 
 import { formatRedemptionRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
-import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
-import { getCollToken, useDebtPositioning } from "@/src/liquity-utils";
+import { getLiquidationRisk, getLtv } from "@/src/liquity-math";
+import { getCollToken, useRedemptionRiskOfLoan } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -20,13 +20,17 @@ export function PositionCardLeverage({
   deposit,
   interestRate,
   liquidated = false,
+  status,
   statusTag,
   troveId,
+  isZombie,
 }:
   & Pick<
     PositionLoanCommitted,
     | "branchId"
     | "interestRate"
+    | "isZombie"
+    | "status"
     | "troveId"
   >
   & {
@@ -47,8 +51,7 @@ export function PositionCardLeverage({
   const ltv = debt && deposit && collateralPriceUsd.data
     && getLtv(deposit, debt, collateralPriceUsd.data);
   const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
-  const debtPositioning = useDebtPositioning(branchId, interestRate);
-  const redemptionRisk = getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
+  const redemptionRisk = useRedemptionRiskOfLoan({ branchId, troveId, interestRate, status, isZombie });
 
   return (
     <PositionCard
@@ -195,10 +198,10 @@ export function PositionCardLeverage({
                     color: "positionContent",
                   })}
                 >
-                  {formatRedemptionRisk(redemptionRisk)}
+                  {formatRedemptionRisk(redemptionRisk.data ?? null)}
                 </div>
                 <StatusDot
-                  mode={riskLevelToStatusMode(redemptionRisk)}
+                  mode={riskLevelToStatusMode(redemptionRisk.data)}
                   size={8}
                 />
               </div>

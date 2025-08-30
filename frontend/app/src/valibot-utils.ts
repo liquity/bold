@@ -184,23 +184,24 @@ const VPositionLoanBase = v.object({
   branchId: vBranchId(),
   deposit: vDnum(),
   interestRate: vDnum(),
-  status: v.union([
-    v.literal("active"),
-    v.literal("closed"),
-    v.literal("liquidated"),
-    v.literal("redeemed"),
-  ]),
 });
 
 export function vPositionLoanCommited() {
   return v.intersect([
     VPositionLoanBase,
     v.object({
+      status: v.union([
+        v.literal("active"),
+        v.literal("closed"),
+        v.literal("liquidated"),
+        v.literal("redeemed"),
+      ]),
       troveId: vTroveId(),
       createdAt: v.number(),
       lastUserActionAt: v.number(),
+      updatedAt: v.number(),
       isZombie: v.boolean(),
-      indexedDebt: vDnum(),
+      recordedDebt: vDnum(),
       redemptionCount: v.number(),
       redeemedColl: vDnum(),
       redeemedDebt: vDnum(),
@@ -212,6 +213,7 @@ export function vPositionLoanUncommited() {
   return v.intersect([
     VPositionLoanBase,
     v.object({
+      status: v.literal("active"),
       troveId: v.null(),
     }),
   ]);

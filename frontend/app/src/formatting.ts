@@ -115,6 +115,7 @@ export function formatLiquidationRisk(liquidationRisk: RiskLevel | null) {
     .with("low", () => "Low liquidation risk")
     .with("medium", () => "Medium liquidation risk")
     .with("high", () => "High liquidation risk")
+    .with("not-applicable", () => "Liquidation risk N/A")
     .exhaustive();
 }
 
@@ -124,6 +125,7 @@ export function formatRedemptionRisk(redemptionRisk: RiskLevel | null) {
     .with("low", () => "Low redemption risk")
     .with("medium", () => "Medium redemption risk")
     .with("high", () => "High redemption risk")
+    .with("not-applicable", () => "Redemption risk N/A")
     .exhaustive();
 }
 
@@ -133,6 +135,7 @@ export function formatRisk(risk: RiskLevel | null) {
     .with("low", () => "Low")
     .with("medium", () => "Medium")
     .with("high", () => "High")
+    .with("not-applicable", () => "N/A")
     .exhaustive();
 }
 

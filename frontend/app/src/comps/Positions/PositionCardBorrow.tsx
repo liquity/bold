@@ -3,10 +3,10 @@ import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { formatLiquidationRisk } from "@/src/formatting";
+import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
-import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
-import { getCollToken, shortenTroveId, useDebtPositioning } from "@/src/liquity-utils";
+import { getLiquidationRisk, getLtv } from "@/src/liquity-math";
+import { getCollToken, shortenTroveId, useRedemptionRiskOfLoan } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -17,11 +17,12 @@ import { CardRow, CardRows } from "./shared";
 
 export function PositionCardBorrow({
   batchManager,
-  debt,
   branchId,
+  debt,
   deposit,
   interestRate,
-  liquidated = false,
+  isZombie,
+  status,
   statusTag,
   troveId,
 }:
@@ -30,12 +31,13 @@ export function PositionCardBorrow({
     | "batchManager"
     | "branchId"
     | "interestRate"
+    | "isZombie"
+    | "status"
     | "troveId"
   >
   & {
     debt: null | Dnum;
     deposit: null | Dnum;
-    liquidated?: boolean;
     statusTag?: ReactNode;
   })
 {
@@ -44,8 +46,7 @@ export function PositionCardBorrow({
 
   const ltv = debt && deposit && collateralPriceUsd.data
     && getLtv(deposit, debt, collateralPriceUsd.data);
-  const debtPositioning = useDebtPositioning(branchId, interestRate);
-  const redemptionRisk = getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
+  const redemptionRisk = useRedemptionRiskOfLoan({ branchId, troveId, interestRate, status, isZombie });
 
   const maxLtv = token && dn.from(1 / token.collateralRatio, 18);
   const liquidationRisk = ltv && maxLtv && getLiquidationRisk(ltv, maxLtv);
@@ -134,7 +135,7 @@ export function PositionCardBorrow({
                 >
                   LTV
                 </div>
-                {liquidated
+                {status === "liquidated"
                   ? "N/A"
                   : ltv
                   ? (
@@ -145,11 +146,11 @@ export function PositionCardBorrow({
                         "--status-negative": "token(colors.negative)",
                       })}
                       style={{
-                        color: liquidationRisk === "low"
-                          ? "var(--status-positive)"
+                        color: liquidationRisk === "high"
+                          ? "var(--status-negative)"
                           : liquidationRisk === "medium"
                           ? "var(--status-warning)"
-                          : "var(--status-negative)",
+                          : "var(--status-positive)",
                       }}
                     >
                       {fmtnum(ltv, "pct2")}%
@@ -158,7 +159,7 @@ export function PositionCardBorrow({
                   : "−"}
               </div>
             }
-            end={!liquidated && (
+            end={
               <div
                 className={css({
                   display: "grid",
@@ -173,14 +174,14 @@ export function PositionCardBorrow({
                     color: "positionContent",
                   })}
                 >
-                  {liquidationRisk && formatLiquidationRisk(liquidationRisk)}
+                  {formatLiquidationRisk(liquidationRisk ?? "not-applicable")}
                 </div>
                 <StatusDot
                   mode={riskLevelToStatusMode(liquidationRisk)}
                   size={8}
                 />
               </div>
-            )}
+            }
           />
           <CardRow
             start={
@@ -204,7 +205,7 @@ export function PositionCardBorrow({
                     color: "positionContent",
                   })}
                 >
-                  {liquidated
+                  {status === "liquidated"
                     ? "N/A"
                     : fmtnum(interestRate, { preset: "pct2", suffix: "%" })}
                 </div>
@@ -228,7 +229,7 @@ export function PositionCardBorrow({
                 )}
               </div>
             }
-            end={!liquidated && (
+            end={
               <div
                 className={css({
                   display: "grid",
@@ -247,19 +248,15 @@ export function PositionCardBorrow({
                       color: "positionContent",
                     })}
                   >
-                    {redemptionRisk === "low"
-                      ? "Low"
-                      : redemptionRisk === "medium"
-                      ? "Medium"
-                      : "High"} redemption risk
+                    {formatRedemptionRisk(redemptionRisk.data ?? null)}
                   </div>
                 }
                 <StatusDot
-                  mode={riskLevelToStatusMode(redemptionRisk)}
+                  mode={riskLevelToStatusMode(redemptionRisk.data)}
                   size={8}
                 />
               </div>
-            )}
+            }
           />
         </CardRows>
       }

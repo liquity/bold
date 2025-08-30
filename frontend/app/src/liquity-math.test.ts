@@ -33,10 +33,7 @@ const d = (value: number | bigint): Dnum => (
 test("getRedemptionRisk() works", () => {
   const totalDebt = d(1_000_000); // 1M total debt
 
-  expect(getRedemptionRisk(null, totalDebt)).toBe(null);
-  expect(getRedemptionRisk(d(100_000), null)).toBe(null);
-  expect(getRedemptionRisk(null, null)).toBe(null);
-  expect(getRedemptionRisk(d(100_000), d(0))).toBe(null);
+  expect(getRedemptionRisk(d(0), d(0))).toBe("not-applicable");
 
   // high risk: low debtInFront ratio
   expect(getRedemptionRisk(d(0), totalDebt)).toBe("high");

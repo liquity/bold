@@ -13,7 +13,7 @@ import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS, ETH_MAX_RESERVE, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
 import content from "@/src/content";
-import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
+import { dnum18, DNUM_0, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
@@ -23,7 +23,7 @@ import {
   getCollToken,
   useBranchCollateralRatios,
   useNextOwnerIndex,
-  useRedemptionRisk,
+  useRedemptionRiskOfInterestRate,
 } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
@@ -94,7 +94,7 @@ export function BorrowScreen() {
   }
 
   const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, branch.id);
-  const redemptionRisk = useRedemptionRisk(branch.id, interestRate);
+  const redemptionRisk = useRedemptionRiskOfInterestRate(branch.id, interestRate ?? DNUM_0);
 
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
@@ -308,7 +308,7 @@ export function BorrowScreen() {
                             debt.setValue(dn.toString(s.debt, 0));
                           }
                         }}
-                        warnLevel={s.risk}
+                        warnLevel={s.risk === "not-applicable" ? "low" : s.risk}
                       />
                     )
                   ))}

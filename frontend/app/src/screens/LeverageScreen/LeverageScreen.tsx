@@ -12,12 +12,17 @@ import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { ETH_MAX_RESERVE, LEVERAGE_MAX_SLIPPAGE, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
 import content from "@/src/content";
-import { dnum18, dnumMax } from "@/src/dnum-utils";
+import { dnum18, DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { useCheckLeverageSlippage } from "@/src/liquity-leverage";
-import { getRedemptionRisk } from "@/src/liquity-math";
-import { getBranch, getBranches, getCollToken, useNextOwnerIndex, useDebtPositioning } from "@/src/liquity-utils";
+import {
+  getBranch,
+  getBranches,
+  getCollToken,
+  useNextOwnerIndex,
+  useRedemptionRiskOfInterestRate,
+} from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
@@ -92,8 +97,7 @@ export function LeverageScreen() {
     leverageField.updateLeverageFactor(leverageField.leverageFactorSuggestions[0] ?? 1.1);
   }, [collateral.symbol, leverageField.leverageFactorSuggestions]);
 
-  const debtPositioning = useDebtPositioning(branch.id, interestRate);
-  const redemptionRisk = getRedemptionRisk(debtPositioning.debtInFront, debtPositioning.totalDebt);
+  const redemptionRisk = useRedemptionRiskOfInterestRate(branch.id, interestRate ?? DNUM_0);
   const depositUsd = depositPreLeverage.parsed && collPrice.data && dn.mul(
     depositPreLeverage.parsed,
     collPrice.data,
@@ -306,7 +310,7 @@ export function LeverageScreen() {
           footer={{
             start: (
               <Field.FooterInfoRedemptionRisk
-                riskLevel={redemptionRisk}
+                riskLevel={redemptionRisk.data ?? null}
               />
             ),
             end: (
