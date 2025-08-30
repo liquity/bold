@@ -398,7 +398,7 @@ contract StabilityPool is LiquityBase, IStabilityPool, IStabilityPoolEvents {
         // In other words, there needs to be octillions of BOLD in the SP, which is unlikely to happen in practice.
         require(newP > 0, "P must never decrease to 0");
 
-        // Overflow analyisis of scaling up P:
+        // Overflow analysis of scaling up P:
         // We know that the resulting P is <= 1e36, and it's the result of dividing numerator by totalBoldDeposits.
         // Thus, numerator <= 1e36 * totalBoldDeposits, so unless totalBoldDeposits is septillions of BOLD, it won’t overflow.
         // That holds on every iteration as an upper bound. We multiply numerator by SCALE_FACTOR,

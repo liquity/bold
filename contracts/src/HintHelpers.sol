@@ -22,7 +22,7 @@ contract HintHelpers is IHintHelpers {
     Note: The output id is worst-case O(n) positions away from the correct insert position, however, the function
     is probabilistic. Input can be tuned to guarantee results to a high degree of confidence, e.g:
 
-    Submitting numTrials = k * sqrt(length), with k = 15 makes it very, very likely that the ouput id will
+    Submitting numTrials = k * sqrt(length), with k = 15 makes it very, very likely that the output id will
     be <= sqrt(length) positions away from the correct insert position.
     */
     function getApproxHint(uint256 _collIndex, uint256 _interestRate, uint256 _numTrials, uint256 _inputRandomSeed)

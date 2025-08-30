@@ -10,7 +10,7 @@ import "../BorrowerOperations.sol";
 
 abstract contract MainnetPriceFeedBase is IMainnetPriceFeed {
     // Determines where the PriceFeed sources data from. Possible states:
-    // - primary: Uses the primary price calcuation, which depends on the specific feed
+    // - primary: Uses the primary price calculation, which depends on the specific feed
     // - ETHUSDxCanonical: Uses Chainlink's ETH-USD multiplied by the LST' canonical rate
     // - lastGoodPrice: the last good price recorded by this PriceFeed.
     PriceSource public priceSource;
