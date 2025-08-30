@@ -3,7 +3,9 @@
 manifest=deployment-manifest.json
 
 die() {
-    echo "$@"
+    if [ $# -gt 0 ]; then
+        echo "$@" >&2
+    fi
     exit 1
 }
 
@@ -18,18 +20,23 @@ command -v cast &> /dev/null || die Missing dependency: cast.
 
 governance=$(jq -r .governance.governance "$manifest")
 cutoff=$(jq -r .governance.constants.EPOCH_VOTING_CUTOFF "$manifest")
+seconds_within_epoch=$(call_u256 "$governance" 'secondsWithinEpoch()') || die
 
-seconds_within_epoch=$(call_u256 "$governance" 'secondsWithinEpoch()')
 if [ "$seconds_within_epoch" -gt "$cutoff" ]; then
     echo Nothing to do, already in cutoff period.
     exit 0
 fi
 
-epoch_start=$(call_u256 "$governance" 'epochStart()')
-cast -q rpc evm_setNextBlockTimestamp $((epoch_start + cutoff + 1)) || die Failed to set block timestamp.
-cast -q rpc evm_mine || die Failed to mine block.
+epoch_start=$(call_u256 "$governance" 'epochStart()') || die
 
-seconds_within_epoch=$(call_u256 "$governance" 'secondsWithinEpoch()')
+cast -q rpc evm_setNextBlockTimestamp $((epoch_start + cutoff + 1)) ||
+    die Failed to set block timestamp.
+
+cast -q rpc evm_mine ||
+    die Failed to mine block.
+
+seconds_within_epoch=$(call_u256 "$governance" 'secondsWithinEpoch()') || die
+
 if [ "$seconds_within_epoch" -gt "$cutoff" ]; then
     echo Successfully fast-forwarded to cutoff period.
 else
