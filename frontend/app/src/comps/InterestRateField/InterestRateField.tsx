@@ -8,6 +8,7 @@ import content from "@/src/content";
 import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
+import { getRedemptionRisk } from "@/src/liquity-math";
 import {
   findClosestRateIndex,
   getBranch,
@@ -137,6 +138,8 @@ export const InterestRateField = memo(
 
     const interestChartData = useInterestRateChartData(branchId, loan);
     const debtInFront = useDebtInFrontOfInterestRate(branchId, interestRate ?? DNUM_0, loan);
+    const redemptionRisk = debtInFront.data
+      && getRedemptionRisk(debtInFront.data.debtInFront, debtInFront.data.totalDebt);
     const redeemableTransition = useAppear(debtInFront.data !== undefined);
 
     const handleDelegateSelect = (delegate: Delegate) => {
@@ -168,6 +171,13 @@ export const InterestRateField = memo(
                 interestChartData={interestChartData}
                 interestRate={interestRate}
                 fieldValue={fieldValue}
+                handleColor={redemptionRisk && (
+                  redemptionRisk === "high"
+                    ? 0
+                    : redemptionRisk === "medium"
+                    ? 1
+                    : 2
+                )}
               />
             ))
             .with("strategy", () => (
@@ -430,9 +440,10 @@ export const InterestRateField = memo(
 
 function ManualInterestRateSlider({
   fieldValue,
+  handleColor,
   interestChartData,
   interestRate,
-}: {
+}: Pick<Parameters<typeof Slider>[0], "handleColor"> & {
   fieldValue: ReturnType<typeof useInputFieldValue>;
   interestChartData: ReturnType<typeof useInterestRateChartData>;
   interestRate: Dnum | null;
@@ -526,13 +537,11 @@ function ManualInterestRateSlider({
         <Slider
           gradient={gradientStops}
           gradientMode="high-to-low"
+          handleColor={handleColor}
           chart={interestChartData.data?.map(({ size }) => size) ?? []}
           onChange={(value) => {
             if (interestChartData.data) {
-              const index = Math.min(
-                interestChartData.data.length - 1,
-                Math.round(value * (interestChartData.data.length)),
-              );
+              const index = Math.round(value * (interestChartData.data.length - 1));
               fieldValue.setValue(String(dn.toNumber(dn.mul(
                 interestChartData.data[index]?.rate ?? DNUM_0,
                 100,

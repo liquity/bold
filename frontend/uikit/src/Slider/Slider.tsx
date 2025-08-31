@@ -26,6 +26,7 @@ export function Slider({
   disabled,
   gradient,
   gradientMode = "low-to-high",
+  handleColor,
   keyboardStep,
   onChange,
   onDragEnd,
@@ -35,6 +36,7 @@ export function Slider({
   disabled?: boolean;
   gradient?: [number, number];
   gradientMode?: GradientMode;
+  handleColor?: 0 | 1 | 2;
   chart?: Chart;
   keyboardStep?: (value: number, direction: Direction) => number;
   onChange: (value: number) => void;
@@ -55,7 +57,7 @@ export function Slider({
   const mainElement = useRef<HTMLElement | null>(null);
   const document = useRef<Document | null>(null);
 
-  const getRect = useCallback(() => {
+  const getRect /* LOL */ = useCallback(() => {
     const now = Date.now();
 
     // Cache the rect if the last poll was less than a second ago
@@ -140,11 +142,13 @@ export function Slider({
     to: {
       value,
       handleColor: gradient && chart
-        ? value <= gradient[0]
-          ? gradientColors[0]
-          : value <= gradient[1]
-          ? gradientColors[2]
-          : gradientColors[4]
+        ? handleColor !== undefined
+          ? gradientColors[handleColor * 2]
+          : (value <= gradient[0]
+            ? gradientColors[0]
+            : value <= gradient[1]
+            ? gradientColors[2]
+            : gradientColors[4])
         : token("colors.controlSurface"),
     },
   });
