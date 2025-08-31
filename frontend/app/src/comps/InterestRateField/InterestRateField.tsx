@@ -8,7 +8,14 @@ import content from "@/src/content";
 import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { findClosestRateIndex, getBranch, useAverageInterestRate, useInterestRateChartData } from "@/src/liquity-utils";
+import { getRedemptionRisk } from "@/src/liquity-math";
+import {
+  findClosestRateIndex,
+  getBranch,
+  useAverageInterestRate,
+  useDebtInFrontOfInterestRate,
+  useInterestRateChartData,
+} from "@/src/liquity-utils";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
@@ -130,13 +137,10 @@ export const InterestRateField = memo(
     });
 
     const interestChartData = useInterestRateChartData(branchId, loan);
-    const interestRateRounded = interestRate && dn.div(dn.round(dn.mul(interestRate, 1000)), 1000);
-
-    const bracket = interestRateRounded && interestChartData.data?.find(
-      ({ rate }) => rate[0] === interestRateRounded[0],
-    );
-
-    const redeemableTransition = useAppear(bracket?.debtInFront !== undefined);
+    const debtInFront = useDebtInFrontOfInterestRate(branchId, interestRate ?? DNUM_0, loan);
+    const redemptionRisk = debtInFront.data
+      && getRedemptionRisk(debtInFront.data.debtInFront, debtInFront.data.totalDebt);
+    const redeemableTransition = useAppear(debtInFront.data !== undefined);
 
     const handleDelegateSelect = (delegate: Delegate) => {
       setDelegatePicker(null);
@@ -167,6 +171,13 @@ export const InterestRateField = memo(
                 interestChartData={interestChartData}
                 interestRate={interestRate}
                 fieldValue={fieldValue}
+                handleColor={redemptionRisk && (
+                  redemptionRisk === "high"
+                    ? 0
+                    : redemptionRisk === "medium"
+                    ? 1
+                    : 2
+                )}
               />
             ))
             .with("strategy", () => (
@@ -328,7 +339,7 @@ export const InterestRateField = memo(
                 <a.div
                   title={`Redeemable before you: ${
                     (mode === "manual" || delegate !== null)
-                      ? fmtnum(bracket?.debtInFront, "compact")
+                      ? fmtnum(debtInFront.data?.debtInFront, "compact")
                       : "−"
                   } BOLD`}
                   className={css({
@@ -347,7 +358,7 @@ export const InterestRateField = memo(
                       })}
                     >
                       {(mode === "manual" || delegate !== null)
-                        ? fmtnum(bracket?.debtInFront, "compact")
+                        ? fmtnum(debtInFront.data?.debtInFront, "compact")
                         : "−"}
                     </span>
                     {breakpoint === "large" && <span>{" BOLD"}</span>}
@@ -429,9 +440,10 @@ export const InterestRateField = memo(
 
 function ManualInterestRateSlider({
   fieldValue,
+  handleColor,
   interestChartData,
   interestRate,
-}: {
+}: Pick<Parameters<typeof Slider>[0], "handleColor"> & {
   fieldValue: ReturnType<typeof useInputFieldValue>;
   interestChartData: ReturnType<typeof useInterestRateChartData>;
   interestRate: Dnum | null;
@@ -525,13 +537,11 @@ function ManualInterestRateSlider({
         <Slider
           gradient={gradientStops}
           gradientMode="high-to-low"
+          handleColor={handleColor}
           chart={interestChartData.data?.map(({ size }) => size) ?? []}
           onChange={(value) => {
             if (interestChartData.data) {
-              const index = Math.min(
-                interestChartData.data.length - 1,
-                Math.round(value * (interestChartData.data.length)),
-              );
+              const index = Math.round(value * (interestChartData.data.length - 1));
               fieldValue.setValue(String(dn.toNumber(dn.mul(
                 interestChartData.data[index]?.rate ?? DNUM_0,
                 100,

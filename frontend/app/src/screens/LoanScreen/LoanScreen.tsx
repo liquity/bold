@@ -106,7 +106,7 @@ export function LoanScreen() {
 
   const fullyRedeemed = loan.data
     && loan.data.status === "redeemed"
-    && dn.eq(loan.data.indexedDebt, 0);
+    && dn.eq(loan.data.recordedDebt, 0);
 
   const isLiquidated = loan.data?.status === "liquidated";
   const account = useAccount();
