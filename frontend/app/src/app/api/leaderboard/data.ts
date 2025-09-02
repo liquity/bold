@@ -1,5 +1,5 @@
 import { queryShellpointsAndActivity } from "@/src/shellpoints/lib";
-import { formatUnits, type Address } from "viem";
+import { formatUnits, getAddress, isAddressEqual, type Address } from "viem";
 import type { LeaderboardEntry, LeaderboardActivity, LeaderboardData } from "@/src/shellpoints/leaderboard";
 import { ALCHEMY_API_KEY, GRAPH_TOKEN_API_TOKEN } from "@/src/shellpoints/utils/env";
 // import { getMainnetPublicClient } from "@/src/shellpoints/utils/client";
@@ -70,8 +70,13 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
       .sort((a, b) => b.shellpoints.total - a.shellpoints.total)
       .map((entry, index) => ({
         ...entry,
+        shellpoints: {
+          total: Math.round(entry.shellpoints.total),
+          mostRecent: entry.shellpoints.mostRecent,
+        },
         rank: index + 1
-      })),
+      }))
+      .filter((entry) => entry.shellpoints.total > 0),
     lastMintBlock: {
       blockNumber: Number(lastMintBlock),
       // blockTimestamp: Number((await client.getBlock({ blockNumber: lastMintBlock })).timestamp)
@@ -83,13 +88,15 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
 function getLeaderboardActivities(users: Awaited<ReturnType<typeof queryShellpointsAndActivity>>, address: Address): LeaderboardActivity[] {
   const activities: LeaderboardActivity[] = [];
   
-  if (users.activities.yusnd.some(user => user.address === address)) activities.push("yusnd");
-  if (users.activities.camelot.some(user => user.address === address)) activities.push("camelot");
-  if (users.activities.bunni.some(user => user.address === address)) activities.push("bunni");
-  if (users.activities.spectra.some(user => user.address === address)) activities.push("spectra");
-  if (users.activities.goSlowNft.some(user => user.holder === address)) activities.push("goSlowNft");
-  if (users.activities.troves.some(trove => trove.borrower === address)) activities.push("trove");
-  if (Object.keys(users.activities.stabilityPoolDeposits).some(depositor => depositor === address)) activities.push("stabilityPool");
+  if (users.activities.yusnd.some(user => isAddressEqual(user.address, address))) activities.push("yusnd");
+  if (users.activities.camelot.some(user => isAddressEqual(user.address, address))) activities.push("camelot");
+  if (users.activities.bunni.some(user => isAddressEqual(user.address, address))) activities.push("bunni");
+  if (users.activities.spectra.some(user => isAddressEqual(user.address, address))) activities.push("spectra");
+  if (users.activities.goSlowNft.some(user => isAddressEqual(user.holder, address))) activities.push("goSlowNft");
+  if (users.activities.troves.some(trove => isAddressEqual(getAddress(trove.borrower), address))) activities.push("trove");
+  if (Object.keys(users.activities.stabilityPoolDeposits).some(depositor => isAddressEqual(getAddress(depositor), address))) activities.push("stabilityPool");
   
+  if (activities.length === 0) activities.push("trove"); // Assume they have a trove not included in subgraph query limit if no other activity
+
   return activities;
 }
