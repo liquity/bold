@@ -10,7 +10,7 @@ interface VoteInputProps {
   placeholder?: string;
   disabled?: boolean;
   onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  voteType: Vote;
+  vote: Vote;
 }
 
 export const VoteInput: FC<VoteInputProps> = ({
@@ -18,10 +18,10 @@ export const VoteInput: FC<VoteInputProps> = ({
   onChange: handleOnChange,
   placeholder,
   disabled,
-  voteType,
+  vote,
 }) => {
-  const { inputRef } = useSetInputFocus(voteType);
   const [inputValue, setInputValue] = useState(!!Number(value) ? value : "");
+  const { inputRef } = useSetInputFocus({ vote, setInputValue });
 
   const onChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {

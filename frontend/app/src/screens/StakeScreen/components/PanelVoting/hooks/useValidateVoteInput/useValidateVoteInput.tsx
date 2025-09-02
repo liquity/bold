@@ -1,17 +1,11 @@
 import type { Address } from "@liquity2/uikit";
-import {
-  useVotingStateContext
-} from '@/src/screens/StakeScreen/components/PanelVoting/providers/PanelVotingProvider/hooks';
-import { useEffect } from 'react';
-import { gt } from 'dnum';
+import { useVotingStateContext } from "@/src/screens/StakeScreen/components/PanelVoting/providers/PanelVotingProvider/hooks";
+import { useEffect } from "react";
+import { gt } from "dnum";
 
-//TODO: refactor
 export const useValidateVoteInput = (initiativeAddress: Address) => {
-  const {
-    voteAllocations,
-    inputVoteAllocations,
-    setVotingInputError,
-  } = useVotingStateContext();
+  const { voteAllocations, inputVoteAllocations, setVotingInputError } =
+    useVotingStateContext();
   const input = inputVoteAllocations[initiativeAddress];
   const current = voteAllocations[initiativeAddress];
 
@@ -26,19 +20,23 @@ export const useValidateVoteInput = (initiativeAddress: Address) => {
       return;
     }
 
-    const isIncreased = gt(input.value, current.value);
+    const isIncreased =
+      gt(input.value, current.value) && current.vote === input.vote;
 
     if (isIncreased) {
       setVotingInputError((prev) => ({
         ...prev,
-        [initiativeAddress]: "Upvote increase not allowed during cutoff.",
+        [initiativeAddress]:
+          "Increases in upvotes are not permitted during the last 24 hours of the voting period. Currently, only downvotes or decreases in upvotes are possible.",
       }));
-    } else {
-      setVotingInputError((prev) => {
-        if (!prev) return null;
-        const { [initiativeAddress]: _, ...rest } = prev;
-        return Object.keys(rest).length > 0 ? rest : null;
-      });
+
+      return;
     }
+
+    setVotingInputError((prev) => {
+      if (!prev) return null;
+      const { [initiativeAddress]: _, ...rest } = prev;
+      return Object.keys(rest).length > 0 ? rest : null;
+    });
   }, [initiativeAddress, input, current, setVotingInputError]);
-}
+};

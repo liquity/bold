@@ -4,37 +4,46 @@ import { css } from "@/styled-system/css";
 import { toString, mul, from } from "dnum";
 import { useCallback, useState } from "react";
 import { VoteButton } from "./components/VoteButton";
-import { DisplayValue } from "./components/DisplayValue";
+import { VoteDisplay } from "./components/VoteDisplay";
 import { VoteInput } from "./components/VoteInput";
 import {
-  useGetOutlineStyles
-} from './hooks';
+  useGetInputErrorByAddress,
+  useGetOutlineStyles,
+  useVoteController,
+} from "./hooks";
 
-import type { Dnum } from "@/src/types";
+import type { Dnum, Vote } from "@/src/types";
 import type { ChangeEvent } from "react";
+import type { VotingProps } from "@/src/screens/StakeScreen/components/PanelVoting/components/EpochInitiativesTable/components/TableBody/components/InitiativeRow/components/Voting/types";
 
-interface VoteInputProps {
-  hasError?: boolean;
-  againstDisabled?: boolean;
-  forDisabled?: boolean;
+interface VoteActionProps extends VotingProps {
   onChange: (value: Dnum) => void;
-  onVote: (vote: "for" | "against") => void;
-  value: Dnum | null;
-  vote: "for" | "against" | null;
+  onVote: (vote: Vote) => void;
 }
 
 export function VoteAction({
-  againstDisabled,
-  forDisabled,
+  initiativeAddress,
+  activeVoting,
   onChange: handleOnChange,
   onVote,
-  value,
-  vote,
-  hasError = false
-}: VoteInputProps) {
-  console.log('VoteAction has', hasError)
+}: VoteActionProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const outlineStyles = useGetOutlineStyles({isFocused, hasError, vote})
+  const {
+    isSelectedUpVoting,
+    isSelectedDownVoting,
+    upVoteButtonDisabled,
+    downVoteButtonDisabled,
+    vote,
+    currentValue,
+  } = useVoteController({ initiativeAddress, activeVoting });
+  const hasError = useGetInputErrorByAddress(initiativeAddress);
+  const outlineStyles = useGetOutlineStyles({
+    isFocused,
+    hasError: !!hasError,
+    vote,
+  });
+
+  const value = toString(mul(currentValue, 100));
 
   const onUpVoteSelect = useCallback(() => {
     onVote("for");
@@ -78,30 +87,31 @@ export function VoteAction({
         outline: "2px solid transparent",
         outlineOffset: -1,
         "--outline-focused": "token(colors.fieldBorderFocused)",
+        "--outline-error": "token(colors.red:500)",
       })}
       style={outlineStyles}
     >
       <VoteButton
-        disabled={forDisabled}
+        disabled={upVoteButtonDisabled}
         onSelect={onUpVoteSelect}
-        selected={vote === "for"}
+        selected={isSelectedUpVoting}
         vote="for"
       />
       <VoteButton
-        disabled={againstDisabled}
+        disabled={downVoteButtonDisabled}
         onSelect={onDownVoteSelect}
-        selected={vote === "against"}
+        selected={isSelectedDownVoting}
         vote="against"
       />
       {vote ? (
         <VoteInput
-          value={toString(mul(value || "", 100))}
+          value={value}
           onChange={onChange}
-          voteType={vote}
+          vote={vote}
           disabled={!vote}
         />
       ) : (
-        <DisplayValue value={toString(mul(value || 0, 100))} />
+        <VoteDisplay value={value} />
       )}
     </div>
   );

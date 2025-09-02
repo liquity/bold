@@ -19,7 +19,6 @@ export const useRemainingVotingPower= () => {
 
     const { stakedLQTY, allocations } = governanceUserData
 
-
     // current allocation from user data
     const baseAllocations = allocations.reduce<Allocations>((acc, { initiative, voteLQTY, vetoLQTY }) => {
       const currentVoteAmount = voteLQTY > 0n ? voteLQTY : vetoLQTY;

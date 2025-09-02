@@ -6,7 +6,7 @@ interface DisplayValueProps {
   value: string;
 }
 
-export const DisplayValue: FC<DisplayValueProps> = ({value}) => {
+export const VoteDisplay: FC<DisplayValueProps> = ({value}) => {
   return <span className={css({
     width: 62,
     fontSize: 14,

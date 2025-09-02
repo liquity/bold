@@ -1,4 +1,4 @@
-import type { Vote } from '@/src/types';
+import type { Vote } from "@/src/types";
 
 interface UseGetOutlineStylesProps {
   hasError: boolean;
@@ -8,22 +8,21 @@ interface UseGetOutlineStylesProps {
 export const useGetOutlineStyles = ({
   hasError,
   isFocused,
-  vote
+  vote,
 }: UseGetOutlineStylesProps) => {
-  if(hasError) {
-    //TODO: add normal color
+  if (hasError) {
     return {
-      outlineColor: 'red',
-    }
+      outlineColor: "var(--outline-error)",
+    };
   }
 
-  if(isFocused && vote) {
+  if (isFocused && vote) {
     return {
       outlineColor: "var(--outline-focused)",
-    }
+    };
   }
 
   return {
     outlineColor: "transparent",
-  }
+  };
 };
