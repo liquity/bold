@@ -8,7 +8,6 @@ import { isInitiativeStatusActive } from '@/src/screens/StakeScreen/utils';
 
 type Allocations = Record<Address, Dnum>;
 
-// TODO: check functional
 export const useRemainingVotingPower= () => {
   const { governanceUserData, inputVoteAllocations, initiativesStatesData } = useVotingStateContext();
 

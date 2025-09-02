@@ -1,4 +1,4 @@
-import type { Dnum, LoanDetails, PositionLoan, TroveId } from "@/src/types";
+import type { Dnum, LoanDetails, PositionLoanCommitted, RiskLevel, TroveId } from "@/src/types";
 import type { CollateralToken } from "@liquity2/uikit";
 import type { ReactNode } from "react";
 import type { LoanLoadingState } from "./LoanScreen";
@@ -12,7 +12,7 @@ import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { formatRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
-import { shortenTroveId, useRedemptionRisk, useTroveNftUrl } from "@/src/liquity-utils";
+import { EMPTY_LOAN, shortenTroveId, useRedemptionRiskOfLoan, useTroveNftUrl } from "@/src/liquity-utils";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { roundToDecimal } from "@/src/utils";
 import { css } from "@/styled-system/css";
@@ -52,7 +52,7 @@ export function LoanScreenCard({
   collateral: CollateralToken | null;
   collPriceUsd: Dnum | null;
   loadingState: LoanLoadingState;
-  loan: PositionLoan | null;
+  loan: PositionLoanCommitted | null;
   mode: LoanMode;
   onLeverageModeChange: (mode: LoanMode) => void;
   onRetry: () => void;
@@ -62,10 +62,8 @@ export function LoanScreenCard({
     loadingState = "loading";
   }
 
-  const redemptionRisk = useRedemptionRisk(
-    loan?.branchId ?? 0,
-    loan?.interestRate ?? null,
-  );
+  // FIXME should not be rendering this component if loan is not loaded yet!
+  const redemptionRisk = useRedemptionRiskOfLoan(loan ?? EMPTY_LOAN);
 
   const loanDetails = loan && collateral && getLoanDetails(
     loan.deposit,
@@ -90,12 +88,9 @@ export function LoanScreenCard({
   const nftUrl = useTroveNftUrl(loan?.branchId ?? null, troveId);
   const title = mode === "multiply" ? "Multiply" : "BOLD loan";
 
-  const fullyRedeemed = loan && loan.status === "redeemed" && dn.eq(loan.borrowed, 0);
-
   return (
     <ScreenCard
       className={`loan-screen-card loan-screen-card-${mode}`}
-      finalHeight={fullyRedeemed ? 200 : undefined}
       mode={match(loadingState)
         .returnType<"ready" | "loading" | "error">()
         .with("loading", () => "loading")
@@ -325,15 +320,15 @@ function GridItem({
 
 function LoanCard(props: {
   mode: LoanMode;
-  loan: PositionLoan;
+  loan: PositionLoanCommitted;
   loanDetails: LoanDetails;
   collateral: CollateralToken;
   leverageFactor: number | null;
   depositPreLeverage: Dnum | null;
   ltv: Dnum | null;
   maxLtv: Dnum;
-  liquidationRisk: "low" | "medium" | "high" | null;
-  redemptionRisk: "low" | "medium" | "high" | null;
+  liquidationRisk: RiskLevel | null;
+  redemptionRisk: RiskLevel | null;
   troveId: TroveId;
   nftUrl: string | null;
   onLeverageModeChange: (mode: LoanMode) => void;
@@ -373,7 +368,6 @@ function LoanCard(props: {
 
   const copyTransition = useFlashTransition();
   const closedOrLiquidated = props.loan.status === "liquidated" || props.loan.status === "closed";
-  const fullyRedeemed = props.loan.status === "redeemed" && dn.eq(props.loan.borrowed, 0);
 
   return (
     <div
@@ -441,10 +435,10 @@ function LoanCard(props: {
                     titleFull={`${title}: ${troveId}`}
                     statusTag={loan.status === "liquidated"
                       ? <LoanStatusTag status="liquidated" />
-                      : loan.status === "redeemed" && "indexedDebt" in loan
+                      : loan.status === "redeemed" && "recordedDebt" in loan
                       ? (
                         <LoanStatusTag
-                          status={dn.eq(loan.indexedDebt, 0)
+                          status={dn.eq(loan.recordedDebt, 0)
                             ? "fully-redeemed"
                             : "partially-redeemed"}
                         />
@@ -666,33 +660,16 @@ function LoanCard(props: {
                   gap: 12,
                 })}
                 style={{
-                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gridTemplateColumns: "repeat(2, 1fr)",
                 }}
               >
-                {fullyRedeemed
-                  ? (
-                    <>
-                      <GridItem label={mode === "multiply" ? "Net value" : "Collateral"}>
-                        {fmtnum(loan.deposit)} {collateral.name}
-                      </GridItem>
-                      <GridItem label="Interest rate">
-                        {fmtnum(loan.interestRate, "pct2")}%
-                      </GridItem>
-                      <GridItem label="Redemption risk">
-                        <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-                          <StatusDot mode="neutral" size={8} />
-                          {formatRisk(redemptionRisk)}
-                        </HFlex>
-                      </GridItem>
-                    </>
-                  )
-                  : closedOrLiquidated
+                {closedOrLiquidated
                   ? (
                     <>
                       <GridItem label={mode === "multiply" ? "Net value" : "Collateral"}>N/A</GridItem>
                       <GridItem label="Liq. price" title="Liquidation price">N/A</GridItem>
-                      <GridItem label="Interest rate">N/A</GridItem>
                       <GridItem label="LTV" title="Loan-to-value ratio">N/A</GridItem>
+                      <GridItem label="Interest rate">N/A</GridItem>
                       <GridItem label="Liquidation risk">
                         <HFlex gap={8} alignItems="center" justifyContent="flex-start">
                           <StatusDot mode="neutral" size={8} />
@@ -729,8 +706,30 @@ function LoanCard(props: {
                         )}
                       <GridItem label="Liq. price" title="Liquidation price">
                         <Value negative={ltv && dn.gt(ltv, maxLtv)}>
-                          {fmtnum(loanDetails.liquidationPrice, { preset: "2z", prefix: "$" })}
+                          {loanDetails.liquidationPrice
+                            ? fmtnum(loanDetails.liquidationPrice, { preset: "2z", prefix: "$" })
+                            : <>N/A</>}
                         </Value>
+                      </GridItem>
+                      <GridItem label="LTV" title="Loan-to-value ratio">
+                        <div
+                          className={css({
+                            "--status-positive": "token(colors.positiveAlt)",
+                            "--status-warning": "token(colors.warning)",
+                            "--status-negative": "token(colors.negative)",
+                          })}
+                          style={liquidationRisk !== "not-applicable"
+                            ? {
+                              color: liquidationRisk === "low"
+                                ? "var(--status-positive)"
+                                : liquidationRisk === "medium"
+                                ? "var(--status-warning)"
+                                : "var(--status-negative)",
+                            }
+                            : undefined}
+                        >
+                          {fmtnum(ltv, "pct2z")}%
+                        </div>
                       </GridItem>
                       <GridItem label="Interest rate">
                         {fmtnum(loan.interestRate, "pct2")}%
@@ -754,24 +753,6 @@ function LoanCard(props: {
                           </div>
                         )}
                       </GridItem>
-                      <GridItem label="LTV" title="Loan-to-value ratio">
-                        <div
-                          className={css({
-                            "--status-positive": "token(colors.positiveAlt)",
-                            "--status-warning": "token(colors.warning)",
-                            "--status-negative": "token(colors.negative)",
-                          })}
-                          style={{
-                            color: liquidationRisk === "low"
-                              ? "var(--status-positive)"
-                              : liquidationRisk === "medium"
-                              ? "var(--status-warning)"
-                              : "var(--status-negative)",
-                          }}
-                        >
-                          {fmtnum(ltv, "pct2z")}%
-                        </div>
-                      </GridItem>
                       <GridItem label="Liquidation risk">
                         <HFlex gap={8} alignItems="center" justifyContent="flex-start">
                           <StatusDot
@@ -784,10 +765,7 @@ function LoanCard(props: {
                       {redemptionRisk && (
                         <GridItem label="Redemption risk">
                           <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-                            <StatusDot
-                              mode={riskLevelToStatusMode(redemptionRisk)}
-                              size={8}
-                            />
+                            <StatusDot mode={riskLevelToStatusMode(redemptionRisk)} size={8} />
                             {formatRisk(redemptionRisk)}
                           </HFlex>
                         </GridItem>

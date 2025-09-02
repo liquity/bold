@@ -1347,14 +1347,14 @@ export type TrovesByAccountQueryVariables = Exact<{
 }>;
 
 
-export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: string | null, createdAt: string, lastUserActionAt: string, mightBeLeveraged: boolean, status: TroveStatus, debt: string, redemptionCount: number, redeemedColl: string, redeemedDebt: string }> };
+export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: string | null, createdAt: string, lastUserActionAt: string, updatedAt: string, mightBeLeveraged: boolean, status: TroveStatus, debt: string, redemptionCount: number, redeemedColl: string, redeemedDebt: string }> };
 
 export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, lastUserActionAt: string, mightBeLeveraged: boolean, previousOwner: string, status: TroveStatus, debt: string, redemptionCount: number, redeemedColl: string, redeemedDebt: string } | null };
+export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, lastUserActionAt: string, updatedAt: string, mightBeLeveraged: boolean, previousOwner: string, status: TroveStatus, debt: string, redemptionCount: number, redeemedColl: string, redeemedDebt: string } | null };
 
 export type InterestBatchesQueryVariables = Exact<{
   ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -1366,7 +1366,7 @@ export type InterestBatchesQuery = { __typename?: 'Query', interestBatches: Arra
 export type AllInterestRateBracketsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AllInterestRateBracketsQuery = { __typename?: 'Query', interestRateBrackets: Array<{ __typename?: 'InterestRateBracket', rate: string, totalDebt: string, collateral: { __typename?: 'Collateral', collIndex: number } }> };
+export type AllInterestRateBracketsQuery = { __typename?: 'Query', interestRateBrackets: Array<{ __typename?: 'InterestRateBracket', rate: string, totalDebt: string, sumDebtTimesRateD36: string, pendingDebtTimesOneYearD36: string, updatedAt: string, collateral: { __typename?: 'Collateral', collIndex: number } }> };
 
 export type GovernanceGlobalDataQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1433,6 +1433,7 @@ export const TrovesByAccountDocument = new TypedDocumentString(`
     closedAt
     createdAt
     lastUserActionAt
+    updatedAt
     mightBeLeveraged
     status
     debt
@@ -1450,6 +1451,7 @@ export const TroveByIdDocument = new TypedDocumentString(`
     closedAt
     createdAt
     lastUserActionAt
+    updatedAt
     mightBeLeveraged
     previousOwner
     status
@@ -1482,6 +1484,9 @@ export const AllInterestRateBracketsDocument = new TypedDocumentString(`
     }
     rate
     totalDebt
+    sumDebtTimesRateD36
+    pendingDebtTimesOneYearD36
+    updatedAt
   }
 }
     `) as unknown as TypedDocumentString<AllInterestRateBracketsQuery, AllInterestRateBracketsQueryVariables>;

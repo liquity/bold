@@ -168,7 +168,7 @@ function FooterInfoWarnLevel({
   title,
 }: {
   label: ReactNode;
-  level?: "low" | "medium" | "high" | null;
+  level?: RiskLevel | null;
   help?: ReactNode;
   title?: string;
 }) {

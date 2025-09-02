@@ -1,21 +1,21 @@
-import { TotalDebt } from "@/src/screens/TransactionsScreen/LoanCard/components/components/TotalDebt";
-import { css } from "@/styled-system/css";
-import { GridItem } from "@/src/screens/TransactionsScreen/LoanCard/components/components/GridItem";
+import { CrossedText } from "@/src/comps/CrossedText";
 import { Value } from "@/src/comps/Value/Value.tsx";
 import { fmtnum, formatRisk } from "@/src/formatting.ts";
-import * as dn from "dnum";
-import { riskLevelToStatusMode } from "@/src/uikit-utils.tsx";
-import { LeveragedExposure } from "./components/LeveragedExposure";
 import { getLoanDetails } from "@/src/liquity-math.ts";
-import { useRedemptionRisk } from "@/src/liquity-utils.ts";
-import { HFlex, StatusDot } from "@liquity2/uikit";
-import { useMemo } from "react";
-import { NetValueCell } from "@/src/screens/TransactionsScreen/LoanCard/components/OpenLoan/components/NetValueCell";
-import { CollateralCell } from "@/src/screens/TransactionsScreen/LoanCard/components/OpenLoan/components/CollateralCell";
+import { EMPTY_LOAN, useRedemptionRiskOfInterestRate, useRedemptionRiskOfLoan } from "@/src/liquity-utils.ts";
+import { GridItem } from "@/src/screens/TransactionsScreen/LoanCard/components/components/GridItem";
 import { GridItemWrapper } from "@/src/screens/TransactionsScreen/LoanCard/components/components/GridItemWrapper";
-import { CrossedText } from "@/src/comps/CrossedText";
+import { TotalDebt } from "@/src/screens/TransactionsScreen/LoanCard/components/components/TotalDebt";
+import { CollateralCell } from "@/src/screens/TransactionsScreen/LoanCard/components/OpenLoan/components/CollateralCell";
+import { NetValueCell } from "@/src/screens/TransactionsScreen/LoanCard/components/OpenLoan/components/NetValueCell";
+import { riskLevelToStatusMode } from "@/src/uikit-utils.tsx";
+import { css } from "@/styled-system/css";
+import { HFlex, StatusDot } from "@liquity2/uikit";
+import * as dn from "dnum";
+import { useMemo } from "react";
+import { LeveragedExposure } from "./components/LeveragedExposure";
 
-import type { LoanDetails, PositionLoan } from "@/src/types";
+import type { LoanDetails, PositionLoan, PositionLoanCommitted } from "@/src/types";
 import type { CollateralToken } from "@liquity2/uikit";
 import type { FC } from "react";
 
@@ -23,7 +23,7 @@ interface OpenLoanProps {
   loan: PositionLoan;
   loanDetails: LoanDetails;
   prevLoanDetails?: ReturnType<typeof getLoanDetails> | null;
-  prevLoan?: PositionLoan | null;
+  prevLoan?: PositionLoanCommitted | null;
   leverageMode: boolean;
   collToken: CollateralToken;
 }
@@ -36,21 +36,18 @@ export const OpenLoan: FC<OpenLoanProps> = ({
   collToken,
   loanDetails,
 }) => {
-  const redemptionRisk = useRedemptionRisk(
-    loan?.branchId ?? 0,
-    loan?.interestRate ?? null,
+  const redemptionRisk = useRedemptionRiskOfInterestRate(
+    loan.branchId,
+    loan.interestRate,
   );
-  const prevRedemptionRisk = useRedemptionRisk(
-    prevLoan?.branchId ?? 0,
-    prevLoan?.interestRate ?? null,
-  );
+
+  const prevRedemptionRisk = useRedemptionRiskOfLoan(prevLoan ?? EMPTY_LOAN);
 
   const maxLtv = useMemo(() => {
     return dn.div(dn.from(1, 18), collToken.collateralRatio);
   }, [collToken.collateralRatio]);
 
-  const { ltv, depositPreLeverage, liquidationRisk, liquidationPrice } =
-    loanDetails;
+  const { ltv, depositPreLeverage, liquidationRisk, liquidationPrice } = loanDetails;
 
   if (!depositPreLeverage) {
     return null;
@@ -58,15 +55,15 @@ export const OpenLoan: FC<OpenLoanProps> = ({
 
   return (
     <>
-      {leverageMode ? (
-        <LeveragedExposure
-          loan={loan}
-          loanDetails={loanDetails}
-          prevLoanDetails={prevLoanDetails ?? null}
-        />
-      ) : (
-        <TotalDebt loan={loan} prevLoan={prevLoan} />
-      )}
+      {leverageMode
+        ? (
+          <LeveragedExposure
+            loan={loan}
+            loanDetails={loanDetails}
+            prevLoanDetails={prevLoanDetails ?? null}
+          />
+        )
+        : <TotalDebt loan={loan} prevLoan={prevLoan} />}
       <div
         className={css({
           display: "grid",
@@ -75,34 +72,57 @@ export const OpenLoan: FC<OpenLoanProps> = ({
           paddingTop: 32,
         })}
       >
-        {leverageMode ? (
-          <NetValueCell
-            depositPreLeverage={depositPreLeverage}
-            prevDepositPreLeverage={prevLoanDetails?.depositPreLeverage}
-            collTokenName={collToken.name}
-            isUnderwater={loanDetails.status === "underwater"}
-          />
-        ) : (
-          <CollateralCell
-            collTokenName={collToken.name}
-            deposit={loan.deposit}
-            prevDeposit={prevLoan?.deposit}
-          />
-        )}
+        {leverageMode
+          ? (
+            <NetValueCell
+              depositPreLeverage={depositPreLeverage}
+              prevDepositPreLeverage={prevLoanDetails?.depositPreLeverage}
+              collTokenName={collToken.name}
+              isUnderwater={loanDetails.status === "underwater"}
+            />
+          )
+          : (
+            <CollateralCell
+              collTokenName={collToken.name}
+              deposit={loan.deposit}
+              prevDeposit={prevLoan?.deposit}
+            />
+          )}
         <GridItemWrapper label="Liq. price" title="Liquidation price">
           <Value negative={ltv && dn.gt(ltv, maxLtv)}>
             {fmtnum(liquidationPrice, { preset: "2z", prefix: "$" })}
           </Value>
-          {liquidationPrice &&
-            prevLoanDetails?.liquidationPrice &&
-            !dn.eq(prevLoanDetails.liquidationPrice, liquidationPrice) && (
-              <CrossedText>
-                {fmtnum(prevLoanDetails.liquidationPrice, {
-                  preset: "2z",
-                  prefix: "$",
-                })}
-              </CrossedText>
-            )}
+          {liquidationPrice
+            && prevLoanDetails?.liquidationPrice
+            && !dn.eq(prevLoanDetails.liquidationPrice, liquidationPrice) && (
+            <CrossedText>
+              {fmtnum(prevLoanDetails.liquidationPrice, {
+                preset: "2z",
+                prefix: "$",
+              })}
+            </CrossedText>
+          )}
+        </GridItemWrapper>
+        <GridItemWrapper label="LTV" title="Loan-to-value ratio">
+          <div
+            className={css({
+              "--status-positive": "token(colors.positiveAlt)",
+              "--status-warning": "token(colors.warning)",
+              "--status-negative": "token(colors.negative)",
+            })}
+            style={{
+              color: liquidationRisk === "low"
+                ? "var(--status-positive)"
+                : liquidationRisk === "medium"
+                ? "var(--status-warning)"
+                : "var(--status-negative)",
+            }}
+          >
+            {fmtnum(ltv, "pct2z")}%
+          </div>
+          {ltv && prevLoanDetails?.ltv && !dn.eq(prevLoanDetails.ltv, ltv) && (
+            <CrossedText>{fmtnum(prevLoanDetails.ltv, "pct2z")}%</CrossedText>
+          )}
         </GridItemWrapper>
         <GridItemWrapper label="Interest rate">
           <div>{fmtnum(loan.interestRate, "pct2z")}%</div>
@@ -129,46 +149,24 @@ export const OpenLoan: FC<OpenLoanProps> = ({
             <CrossedText>{fmtnum(prevLoan.interestRate, "pct2z")}%</CrossedText>
           )}
         </GridItemWrapper>
-        <GridItemWrapper label="LTV" title="Loan-to-value ratio">
-          <div
-            className={css({
-              "--status-positive": "token(colors.positiveAlt)",
-              "--status-warning": "token(colors.warning)",
-              "--status-negative": "token(colors.negative)",
-            })}
-            style={{
-              color:
-                liquidationRisk === "low"
-                  ? "var(--status-positive)"
-                  : liquidationRisk === "medium"
-                    ? "var(--status-warning)"
-                    : "var(--status-negative)",
-            }}
-          >
-            {fmtnum(ltv, "pct2z")}%
-          </div>
-          {ltv && prevLoanDetails?.ltv && !dn.eq(prevLoanDetails.ltv, ltv) && (
-            <CrossedText>{fmtnum(prevLoanDetails.ltv, "pct2z")}%</CrossedText>
-          )}
-        </GridItemWrapper>
         <GridItem label="Liquidation risk">
           <HFlex gap={8} alignItems="center" justifyContent="flex-start">
             <StatusDot mode={riskLevelToStatusMode(liquidationRisk)} size={8} />
             {formatRisk(liquidationRisk)}
-            {prevLoanDetails &&
-              liquidationRisk !== prevLoanDetails.liquidationRisk && (
-                <>
-                  <StatusDot
-                    mode={riskLevelToStatusMode(
-                      prevLoanDetails.liquidationRisk,
-                    )}
-                    size={8}
-                  />
-                  <CrossedText>
-                    {formatRisk(prevLoanDetails.liquidationRisk)}
-                  </CrossedText>
-                </>
-              )}
+            {prevLoanDetails
+              && liquidationRisk !== prevLoanDetails.liquidationRisk && (
+              <>
+                <StatusDot
+                  mode={riskLevelToStatusMode(
+                    prevLoanDetails.liquidationRisk,
+                  )}
+                  size={8}
+                />
+                <CrossedText>
+                  {formatRisk(prevLoanDetails.liquidationRisk)}
+                </CrossedText>
+              </>
+            )}
           </HFlex>
         </GridItem>
         {redemptionRisk.data && (
@@ -179,18 +177,18 @@ export const OpenLoan: FC<OpenLoanProps> = ({
                 size={8}
               />
               {formatRisk(redemptionRisk.data)}
-              {prevRedemptionRisk.data &&
-                redemptionRisk.data !== prevRedemptionRisk.data && (
-                  <>
-                    <StatusDot
-                      mode={riskLevelToStatusMode(prevRedemptionRisk.data)}
-                      size={8}
-                    />
-                    <CrossedText>
-                      {formatRisk(prevRedemptionRisk.data)}
-                    </CrossedText>
-                  </>
-                )}
+              {prevLoan && prevRedemptionRisk.data
+                && redemptionRisk.data !== prevRedemptionRisk.data && (
+                <>
+                  <StatusDot
+                    mode={riskLevelToStatusMode(prevRedemptionRisk.data)}
+                    size={8}
+                  />
+                  <CrossedText>
+                    {formatRisk(prevRedemptionRisk.data)}
+                  </CrossedText>
+                </>
+              )}
             </HFlex>
           </GridItem>
         )}
