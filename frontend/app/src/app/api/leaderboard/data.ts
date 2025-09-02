@@ -2,8 +2,8 @@ import { queryShellpointsAndActivity } from "@/src/shellpoints/lib";
 import { formatUnits, getAddress, isAddressEqual, type Address } from "viem";
 import type { LeaderboardEntry, LeaderboardActivity, LeaderboardData } from "@/src/shellpoints/leaderboard";
 import { ALCHEMY_API_KEY, GRAPH_TOKEN_API_TOKEN } from "@/src/shellpoints/utils/env";
-// import { getMainnetPublicClient } from "@/src/shellpoints/utils/client";
-// import { getEnsName } from "viem/ens";
+import { getMainnetPublicClient } from "@/src/shellpoints/utils/client";
+import { getEnsName } from "viem/ens";
 // import { NULL_ADDRESS } from "@/src/shellpoints/utils/constants";
 
 export function getLeaderboardActivityName(activity: LeaderboardActivity): string {
@@ -41,12 +41,14 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
   const users = await queryShellpointsAndActivity();
 
   let lastMintBlock = 0n;
+  const client = getMainnetPublicClient();
 
   const shellpoints: Omit<LeaderboardEntry, 'rank'>[] = await Promise.all(users.shellPoints.map(async (user) => {
+    const ensName = (await getEnsName(client, { address: user.holder })) ?? null;
     return {
       address: user.holder,
-      // ensName: await getEnsName(client, { address: user.holder }),
-      ensName: null,
+      ensName,
+      // ensName: null,
       shellpoints: {
         total: Number(formatUnits(user.balance!, 18)),
         mostRecent: null,

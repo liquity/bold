@@ -1,6 +1,7 @@
 import { createPublicClient, http, type Block } from "viem";
 import { CHAIN } from "./constants";
 import { CHAIN_RPC_URL } from "./env";
+import { mainnet } from "viem/chains";
 
 export function getPublicClient() {
   return createPublicClient({
@@ -11,7 +12,7 @@ export function getPublicClient() {
 
 export function getMainnetPublicClient() {
   return createPublicClient({
-    chain: CHAIN,
+    chain: mainnet,
     transport: http("https://ethereum-rpc.publicnode.com"),
   })
 }
