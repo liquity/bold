@@ -6,7 +6,6 @@
  * and only changes the import of ERC20Upgradeable to be the local one
  * which is modified in order to keep storage variables consistent
  * with the pervious implementation of StableToken.
- * See ./README.md for more details.
  */
 
 pragma solidity ^0.8.0;

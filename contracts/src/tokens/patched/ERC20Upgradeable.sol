@@ -5,7 +5,6 @@
  * 🔥 MentoLabs: This is a copied file from v4.8.0 of OZ-Upgradable, which only changes
  * the ordering of storage variables to keep it consistent with the existing
  * StableToken, so this can act as a new implementation for the proxy.
- * See ./README.md for more details.
  */
 
 pragma solidity ^0.8.0;
