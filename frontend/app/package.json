@@ -48,6 +48,7 @@
     "@babel/plugin-transform-private-methods": "^7.27.1",
     "@graphql-codegen/cli": "^5.0.7",
     "@graphql-codegen/schema-ast": "^4.1.0",
+    "@next/env": "^15.5.2",
     "@pandacss/dev": "^0.54.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
