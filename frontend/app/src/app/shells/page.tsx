@@ -15,7 +15,7 @@ function getExpiryTime() {
   const utcMonth = now.getUTCMonth();
   const utcDate = now.getUTCDate();
   // 18:00 UTC today
-  const refreshTime = (new Date(Date.UTC(utcYear, utcMonth, utcDate, 18, 0, 0, 0))).getTime();
+  const refreshTime = (new Date(Date.UTC(utcYear, utcMonth, utcDate, 18, 5, 0, 0))).getTime(); // 5 minutes after 18:00 UTC today
   if (refreshTime < now.getTime()) {
     return refreshTime + 1000 * 60 * 60 * 24;
   }
