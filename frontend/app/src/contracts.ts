@@ -31,8 +31,11 @@ import {
   CONTRACT_LUSD_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
+  CONTRACT_YUSND,
+  CONTRACT_SHELL_TOKEN
 } from "@/src/env";
 import { erc20Abi, zeroAddress } from "viem";
+import { YearnV3Vault } from "./abi/YearnV3Vault";
 
 const protocolAbis = {
   BoldToken: erc20Abi,
@@ -45,6 +48,8 @@ const protocolAbis = {
   LusdToken: erc20Abi,
   MultiTroveGetter,
   WETH: erc20Abi,
+  YUSND: YearnV3Vault,
+  ShellToken: erc20Abi,
 } as const;
 
 const BorrowerOperationsErrorsAbi = BorrowerOperations.filter((f) => f.type === "error");
@@ -116,6 +121,8 @@ const CONTRACTS: Contracts = {
   LusdToken: { abi: abis.LusdToken, address: CONTRACT_LUSD_TOKEN },
   MultiTroveGetter: { abi: abis.MultiTroveGetter, address: CONTRACT_MULTI_TROVE_GETTER },
   WETH: { abi: abis.WETH, address: CONTRACT_WETH },
+  YUSND: { abi: abis.YUSND, address: CONTRACT_YUSND },
+  ShellToken: { abi: abis.ShellToken, address: CONTRACT_SHELL_TOKEN },
 
   collaterals: COLLATERAL_CONTRACTS.map(({ collIndex, symbol, contracts }) => ({
     collIndex,
@@ -143,8 +150,53 @@ const CONTRACTS: Contracts = {
   })),
 };
 
+export const CONTRACT_ADDRESSES = {
+  BoldToken: CONTRACT_BOLD_TOKEN,
+  CollateralRegistry: CONTRACT_COLLATERAL_REGISTRY,
+  Governance: CONTRACT_GOVERNANCE,
+  ExchangeHelpers: CONTRACT_EXCHANGE_HELPERS,
+  HintHelpers: CONTRACT_HINT_HELPERS,
+  LqtyStaking: CONTRACT_LQTY_STAKING,
+  LqtyToken: CONTRACT_LQTY_TOKEN,
+  LusdToken: CONTRACT_LUSD_TOKEN,
+  MultiTroveGetter: CONTRACT_MULTI_TROVE_GETTER,
+  WETH: CONTRACT_WETH,
+  YUSND: CONTRACT_YUSND,
+  ShellToken: CONTRACT_SHELL_TOKEN,
+  GoSlowNft: "0x6da3c02293c96dfa5747b1739ebb492619222a8a",
+
+  strategies: {
+    Bunni: "0x7fbd42c058b97d906b2c0e67d8ee288f851935c7",
+    Camelot: "0xA20723963Fb33297a3F5491831742f9B63EFe4f2",
+    Spectra: "0xdbfdad05d2d280195331582516813358f41d1cc4",
+  },
+
+  collaterals: COLLATERAL_CONTRACTS.map(({ collIndex, symbol, contracts }) => ({
+    collIndex,
+    symbol,
+    contracts: {
+      ActivePool: contracts.ACTIVE_POOL,
+      BorrowerOperations: contracts.BORROWER_OPERATIONS,
+      CollSurplusPool: contracts.COLL_SURPLUS_POOL,
+      CollToken: contracts.COLL_TOKEN,
+      DefaultPool: contracts.DEFAULT_POOL,
+      LeverageLSTZapper: symbol === "ETH" ? zeroAddress : contracts.LEVERAGE_ZAPPER,
+      LeverageWETHZapper: symbol === "ETH" ? contracts.LEVERAGE_ZAPPER : zeroAddress,
+      PriceFeed: contracts.PRICE_FEED,
+      SortedTroves: contracts.SORTED_TROVES,
+      StabilityPool: contracts.STABILITY_POOL,
+      TroveManager: contracts.TROVE_MANAGER,
+      TroveNFT: contracts.TROVE_NFT,
+    },
+  })),
+};
+
 export function getContracts(): Contracts {
   return CONTRACTS;
+}
+
+export function getContractAddresses() {
+  return CONTRACT_ADDRESSES;
 }
 
 export function getProtocolContract<CN extends ProtocolContractName>(
