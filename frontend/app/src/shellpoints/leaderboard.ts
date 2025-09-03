@@ -37,8 +37,9 @@ export interface ShellpointAllocation {
 
 export type LeaderboardActivity = 
   | "yusnd" 
-  | "camelot" 
+  | "balancer"
   | "bunni" 
+  | "camelot" 
   | "spectra" 
   | "goSlowNft" 
   | "trove" 
