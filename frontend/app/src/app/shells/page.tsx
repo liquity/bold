@@ -5,6 +5,7 @@ import type { LeaderboardResponse } from '@/src/shellpoints/leaderboard';
 import { getSnailIcon } from '@/src/comps/SnailIcons/snail-icons';
 import { css, cx } from '@/styled-system/css';
 import { useQuery } from '@tanstack/react-query';
+import { LinkTextButton } from '@/src/comps/LinkTextButton/LinkTextButton';
 
 const LOCAL_STORAGE_LEADERBOARD_DATA = 'leaderboard_data';
 const LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY = 'leaderboard_data_expiry';
@@ -163,23 +164,14 @@ export default function ShellsPage() {
             color: 'token(colors.gray:900)',
             marginBottom: 8
           })}>
-            Shellpoints Leaderboard
+            Shell Points Leaderboard
           </h1>
           <p className={css({
             color: 'token(colors.gray:600)',
             marginY: 16
           })}>
-            Top performers ranked by their total shellpoints earned
+            Shells are Nerite's loyalty reward system. Your shells are already in your wallet. <LinkTextButton label="Read all the details here" href="https://www.nerite.org/writing/shells" target="_blank" rel="noopener noreferrer" /> on how to earn more Shells. 
           </p>
-          {/* {leaderboardData && (
-            <p className={css({
-              fontSize: '0.875rem',
-              color: 'token(colors.gray:500)',
-              marginBottom: 16
-            })}>
-              Last updated: {new Date(leaderboardData.lastUpdated).toLocaleString()}
-            </p>
-          )} */}
           
           {/* Search Bar */}
           <div className={css({
