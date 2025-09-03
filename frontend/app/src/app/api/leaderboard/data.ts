@@ -10,10 +10,12 @@ export function getLeaderboardActivityName(activity: LeaderboardActivity): strin
   switch (activity) {
     case "yusnd":
       return "yUSND";
-    case "camelot":
-      return "Camelot";
+    case "balancer":
+      return "Balancer";
     case "bunni":
       return "Bunni";
+    case "camelot":
+      return "Camelot";
     case "spectra":
       return "Spectra";
     case "goSlowNft":
@@ -91,8 +93,9 @@ function getLeaderboardActivities(users: Awaited<ReturnType<typeof queryShellpoi
   const activities: LeaderboardActivity[] = [];
   
   if (users.activities.yusnd.some(user => isAddressEqual(user.address, address))) activities.push("yusnd");
-  if (users.activities.camelot.some(user => isAddressEqual(user.address, address))) activities.push("camelot");
+  if (users.activities.balancer.some(user => isAddressEqual(user.address, address))) activities.push("balancer");
   if (users.activities.bunni.some(user => isAddressEqual(user.address, address))) activities.push("bunni");
+  if (users.activities.camelot.some(user => isAddressEqual(user.address, address))) activities.push("camelot");
   if (users.activities.spectra.some(user => isAddressEqual(user.address, address))) activities.push("spectra");
   if (users.activities.goSlowNft.some(user => isAddressEqual(user.holder, address))) activities.push("goSlowNft");
   if (users.activities.troves.some(trove => isAddressEqual(getAddress(trove.borrower), address))) activities.push("trove");
