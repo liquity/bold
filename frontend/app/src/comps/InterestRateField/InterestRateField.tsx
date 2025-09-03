@@ -10,10 +10,12 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import {
+  EMPTY_LOAN,
   findClosestRateIndex,
   getBranch,
   useAverageInterestRate,
   useDebtInFrontOfInterestRate,
+  useDebtInFrontOfLoan,
   useInterestRateChartData,
 } from "@/src/liquity-utils";
 import { infoTooltipProps } from "@/src/uikit-utils";
@@ -137,10 +139,27 @@ export const InterestRateField = memo(
     });
 
     const interestChartData = useInterestRateChartData(branchId, loan);
-    const debtInFront = useDebtInFrontOfInterestRate(branchId, interestRate ?? DNUM_0, loan);
-    const redemptionRisk = debtInFront.data
-      && getRedemptionRisk(debtInFront.data.debtInFront, debtInFront.data.totalDebt);
-    const redeemableTransition = useAppear(debtInFront.data !== undefined);
+    const debtInFrontOfLoan = useDebtInFrontOfLoan(loan ?? EMPTY_LOAN);
+    const debtInFrontOfInterestRate = useDebtInFrontOfInterestRate(branchId, interestRate ?? DNUM_0, loan);
+
+    // When a loan exists already and the selected interest rate is the same as the existing interest rate
+    // (for example as in the initial state after navigating to the interest rate panel)
+    // show the current precise debt-in-front of the loan.
+    // This is useful for checking how far the loan is from redemption (beyond just checking the risk level).
+    // If the loan is not redeemable, e.g. because it has been fully redeemed, we revert to debt-in-front
+    // based on interest rate (i.e. the debt that would be in front of the position if it were to be made
+    // active again at its current interest rate).
+    const debtInFront = loan && interestRate && dn.eq(loan.interestRate, interestRate)
+      ? debtInFrontOfLoan.data && (
+        debtInFrontOfLoan.data.debtInFront
+          ? debtInFrontOfLoan.data // redeemable (debtInFront not null)
+          : debtInFrontOfInterestRate.data // not redeemable (debtInFront is null)
+      )
+      : debtInFrontOfInterestRate.data;
+
+    const redemptionRisk = debtInFront
+      && getRedemptionRisk(debtInFront.debtInFront, debtInFront.totalDebt);
+    const redeemableTransition = useAppear(debtInFront !== undefined);
 
     const handleDelegateSelect = (delegate: Delegate) => {
       setDelegatePicker(null);
@@ -339,7 +358,7 @@ export const InterestRateField = memo(
                 <a.div
                   title={`Redeemable before you: ${
                     (mode === "manual" || delegate !== null)
-                      ? fmtnum(debtInFront.data?.debtInFront, "compact")
+                      ? fmtnum(debtInFront?.debtInFront, "compact")
                       : "−"
                   } BOLD`}
                   className={css({
@@ -358,7 +377,7 @@ export const InterestRateField = memo(
                       })}
                     >
                       {(mode === "manual" || delegate !== null)
-                        ? fmtnum(debtInFront.data?.debtInFront, "compact")
+                        ? fmtnum(debtInFront?.debtInFront, "compact")
                         : "−"}
                     </span>
                     {breakpoint === "large" && <span>{" BOLD"}</span>}
