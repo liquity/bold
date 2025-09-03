@@ -227,7 +227,6 @@ jobs:
           'test/*'
           'script/*'
           'src/Dependencies/Ownable.sol'
-          'src/Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol'
           'src/NFTMetadata/*'
           'src/MultiTroveGetter.sol'
           'src/HintHelpers.sol'
