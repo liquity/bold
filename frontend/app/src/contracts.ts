@@ -166,6 +166,7 @@ export const CONTRACT_ADDRESSES = {
   GoSlowNft: "0x6da3c02293c96dfa5747b1739ebb492619222a8a",
 
   strategies: {
+    Balancer: "0xc11d4777d0bcc257bba293b90522f5d6bd875228",
     Bunni: "0x7fbd42c058b97d906b2c0e67d8ee288f851935c7",
     Camelot: "0xA20723963Fb33297a3F5491831742f9B63EFe4f2",
     Spectra: "0xdbfdad05d2d280195331582516813358f41d1cc4",
