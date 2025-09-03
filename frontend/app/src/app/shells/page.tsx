@@ -6,16 +6,45 @@ import { getSnailIcon } from '@/src/comps/SnailIcons/snail-icons';
 import { css, cx } from '@/styled-system/css';
 import { useQuery } from '@tanstack/react-query';
 
+const LOCAL_STORAGE_LEADERBOARD_DATA = 'leaderboard_data';
+const LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY = 'leaderboard_data_expiry';
+
+function getExpiryTime() {
+  const now = new Date();
+  const utcYear = now.getUTCFullYear();
+  const utcMonth = now.getUTCMonth();
+  const utcDate = now.getUTCDate();
+  // 18:00 UTC today
+  const refreshTime = (new Date(Date.UTC(utcYear, utcMonth, utcDate, 18, 5, 0, 0))).getTime(); // 5 minutes after 18:00 UTC today
+  if (refreshTime < now.getTime()) {
+    return refreshTime + 1000 * 60 * 60 * 24;
+  }
+  return refreshTime;
+};
+
 function useLeaderboardData() {
   return useQuery({
     queryKey: ['leaderboard'],
     queryFn: async () => {
-      return await fetch('/api/leaderboard').then(res => res.json()) as LeaderboardResponse
+      if (typeof localStorage !== 'undefined') {
+        const leaderboardDataLS = localStorage.getItem(LOCAL_STORAGE_LEADERBOARD_DATA);
+        const leaderboardDataExpiry = localStorage.getItem(LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY);
+        if (leaderboardDataLS && leaderboardDataExpiry && Number(leaderboardDataExpiry) > Date.now()) {
+          return JSON.parse(leaderboardDataLS) as LeaderboardResponse;
+        }
+      }
+      const leaderboardData = await fetch('/api/leaderboard').then(res => res.json()) as LeaderboardResponse
+      if (leaderboardData.success) {
+        localStorage.setItem(LOCAL_STORAGE_LEADERBOARD_DATA, JSON.stringify(leaderboardData));
+        localStorage.setItem(LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY, getExpiryTime().toString());
+      }
+      return leaderboardData;
     },
+    refetchInterval: 30000, // 30 seconds
   })
 }
 
-export default function Home() {
+export default function ShellsPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: leaderboardData, isLoading: loading, error, refetch } = useLeaderboardData();
