@@ -276,6 +276,15 @@ URL for The Graph protocol subgraph queries.
 NEXT_PUBLIC_SUBGRAPH_URL=https://api.studio.thegraph.com/query/…
 ```
 
+### `NEXT_PUBLIC_SUBGRAPH_ORIGIN`
+
+When using a subgraph URL that's restricted to set of domains which are allowed to execute queries, this must be set to one of the allowed domains. When fetching the schema of the subgraph during build, this domain will be sent as HTTP origin. Otherwise, the build will fail.
+
+```dosini
+# Example
+NEXT_PUBLIC_SUBGRAPH_ORIGIN=https://example.com
+```
+
 ### `NEXT_PUBLIC_VERCEL_ANALYTICS`
 
 Enable or disable Vercel Analytics for tracking application metrics.
@@ -296,6 +305,7 @@ An optional set of names and URLs (of the form `<name>|<url>`) of external apps 
 Currently, only the indices `_0` and `_1` are supported.
 
 Defaults to the following values:
+
 ```dosini
 NEXT_PUBLIC_TROVE_EXPLORER_0=DeFi Explore|https://liquityv2.defiexplore.com/trove/{branch}/{troveId}
 NEXT_PUBLIC_TROVE_EXPLORER_1=Rails|https://rails.finance/explorer/trove/{troveId}/{branch}
