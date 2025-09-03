@@ -6,8 +6,6 @@ import "./Interfaces/ICollateralRegistry.sol";
 import "./Interfaces/IMultiTroveGetter.sol";
 import "./Interfaces/ISortedTroves.sol";
 import "./Types/BatchId.sol";
-import "./Types/LatestTroveData.sol";
-import "./Types/LatestBatchData.sol";
 
 /*  Helper contract for grabbing Trove data for the front end. Not part of the core Liquity system. */
 contract MultiTroveGetter is IMultiTroveGetter {
