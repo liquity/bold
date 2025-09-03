@@ -17,8 +17,7 @@ export type TokenSymbol =
   | "WETH"
   | "WEETH"
   | "YUSND"
-  | "SUP"
-  | "SHELL";
+  | "SUP";
 
 export type Token = {
   icon: string;

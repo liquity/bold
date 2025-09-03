@@ -13,7 +13,7 @@ import { match } from "ts-pattern";
 import { getCollIndexFromSymbol } from "./liquity-utils";
 import { getCollateralContract } from "./contracts";
 import { CollIndex, Dnum } from "./types";
-import { CONTRACT_BOLD_TOKEN, CONTRACT_LQTY_TOKEN, CONTRACT_LUSD_TOKEN, CONTRACT_SHELL_TOKEN } from "./env";
+import { CONTRACT_BOLD_TOKEN, CONTRACT_LQTY_TOKEN, CONTRACT_LUSD_TOKEN } from "./env";
 import { dnum18 } from "./dnum-utils";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
 
@@ -74,7 +74,6 @@ export function useBalances(
       .with("LUSD", () => CONTRACT_LUSD_TOKEN)
       .with("USND", () => CONTRACT_BOLD_TOKEN)
       .with("LQTY", () => CONTRACT_LQTY_TOKEN)
-      .with("SHELL", () => CONTRACT_SHELL_TOKEN)
       .otherwise(() => null);
 
     return {

@@ -30,7 +30,6 @@ export const ACCOUNT_BALANCES = {
   WEETH: dn.from(1_200, 18),
   YUSND: dn.from(1_200, 18),
   SUP: dn.from(1_200, 18),
-  SHELL: dn.from(1_200, 18),
 } as const;
 
 const DEMO_ACCOUNT = `0x${"0".repeat(39)}1` as const;

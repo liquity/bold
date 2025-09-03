@@ -196,7 +196,6 @@ export function ProtocolStats() {
 }
 
 function Price({ symbol }: { symbol: TokenSymbol }) {
-  if (symbol === "SHELL") return null;
   const price = usePrice(symbol === "YUSND" ? "USND" : symbol);
   return (
     <HFlex key={symbol} gap={4}>
