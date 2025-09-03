@@ -40,7 +40,7 @@ function useLeaderboardData() {
       }
       return leaderboardData;
     },
-    refetchInterval: 1000 * 60 * 5,
+    refetchInterval: 30000, // 30 seconds
   })
 }
 
