@@ -10,11 +10,9 @@ export const ValidationWarning: FC = () => {
   const { votingInputError } = useVotingStateContext();
 
   const errors = useMemo(() => {
-    if (!votingInputError) {
-      return [];
-    }
+    if (!votingInputError) return [];
 
-    return Object.values(votingInputError);
+    return Array.from(new Set(Object.values(votingInputError)));
   }, [votingInputError]);
 
   if (!isPeriodCutoff || !errors.length) {

@@ -10,13 +10,28 @@ export const useValidateVoteInput = (initiativeAddress: Address) => {
   const current = voteAllocations[initiativeAddress];
 
   useEffect(() => {
+    const clearError = () =>
+      setVotingInputError((prev) => {
+        if (!prev || !(initiativeAddress in prev)) return prev;
+
+        const { [initiativeAddress]: _omit, ...rest } = prev;
+
+        return Object.keys(rest).length ? rest : null;
+      });
+
+    const setError = (msg: string) =>
+      setVotingInputError((prev) => ({
+        ...(prev ?? {}),
+        [initiativeAddress]: msg,
+      }));
+
     if (!input || !input.vote || input.vote !== "for") {
-      setVotingInputError(null);
+      clearError()
       return;
     }
 
     if (!current || !current.value) {
-      setVotingInputError(null);
+      clearError()
       return;
     }
 
@@ -24,11 +39,7 @@ export const useValidateVoteInput = (initiativeAddress: Address) => {
       gt(input.value, current.value) && current.vote === input.vote;
 
     if (isIncreased) {
-      setVotingInputError((prev) => ({
-        ...prev,
-        [initiativeAddress]:
-          "Increases in upvotes are not permitted during the last 24 hours of the voting period. Currently, only downvotes or decreases in upvotes are possible.",
-      }));
+      setError("Increases in upvotes are not permitted during the last 24 hours of the voting period. Currently, only downvotes or decreases in upvotes are possible.")
 
       return;
     }
