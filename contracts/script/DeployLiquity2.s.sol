@@ -49,6 +49,7 @@ import "src/Zappers/Modules/Exchanges/UniswapV3/IUniswapV3Factory.sol";
 import "src/Zappers/Modules/Exchanges/UniswapV3/INonfungiblePositionManager.sol";
 import "src/Zappers/Modules/Exchanges/UniswapV3/UniPriceConverter.sol";
 import "src/Zappers/Modules/Exchanges/HybridCurveUniV3Exchange.sol";
+import "src/ERC20Wrappers/WrappedToken.sol";
 import {WETHTester} from "test/TestContracts/WETHTester.sol";
 import "forge-std/console2.sol";
 import {IRateProvider, IWeightedPool, IWeightedPoolFactory} from "./Interfaces/Balancer/IWeightedPool.sol";
@@ -486,10 +487,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
 
-    function getBytecode(bytes memory _creationCode, address _addressesRegistry, address _governor) public pure returns (bytes memory) {
-        return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _governor));
-    }
-
     function getBytecode(bytes memory _creationCode, address _addressesRegistry, uint256 _branchId) public pure returns (bytes memory) {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _branchId));
     }
@@ -536,10 +533,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vars.collaterals[2] = IERC20Metadata(TBTC_ADDRESS);
 
             // FBTC
-            vars.collaterals[3] = IERC20Metadata(FBTC_ADDRESS);
+            // vars.collaterals[3] = IERC20Metadata(FBTC_ADDRESS);
+            vars.collaterals[3] = new WrappedToken(IERC20Metadata(FBTC_ADDRESS));
 
             // SAGA
-            vars.collaterals[4] = IERC20Metadata(SAGA_ADDRESS);
+            // vars.collaterals[4] = IERC20Metadata(SAGA_ADDRESS);
+            vars.collaterals[4] = new WrappedToken(IERC20Metadata(SAGA_ADDRESS));
         } else {
             // Sepolia
             // Use WETH as collateral for the first branch
