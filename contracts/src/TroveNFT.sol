@@ -33,6 +33,7 @@ contract TroveNFT is ERC721, ITroveNFT {
             string.concat("LV2_", _addressesRegistry.collToken().symbol())
         )
     {
+        require(_governor != address(0), "TroveNFT: Governor cannot be the zero address");
         governor = _governor;
         troveManager = _addressesRegistry.troveManager();
         collToken = _addressesRegistry.collToken();
