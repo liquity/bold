@@ -67,8 +67,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     using StringEquality for string;
 
     // TODO: Change these values
-    address GOVERNANCE_ADDRESS = 0x0000000000000000000000000000000000000000;
+    address GOVERNANCE_ADDRESS = 0x0000000000000000000000000000000000000001;
     string GOVERNANCE_MANIFEST = "";
+    uint256 CHAIN_ID = 5464; // Saga EVM Chain ID: 5464
 
     string constant DEPLOYMENT_MODE_COMPLETE = "complete";
     string constant DEPLOYMENT_MODE_BOLD_ONLY = "bold-only";
@@ -87,14 +88,14 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address TBTC_ADDRESS = 0xa740E6758e309840ffFfe58f749F018386A3b70b; // TODO: Change to CORRECT ADDRESS
     address FBTC_ADDRESS = 0xDA54014Ea6B6b56e3e26c6c82aeC1718B4a85099; // TODO: Change to CORRECT ADDRESS
     address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE; // TODO: This is 6 decimals, not 18 decimals. Either delete or get 18 decimals wrapped token of SAGA.
-    address ETH_ORACLE_ADDRESS = address(0);
-    address RETH_ORACLE_ADDRESS = address(0);
+    address ETH_ORACLE_ADDRESS = address(0x1);
+    address RETH_ORACLE_ADDRESS = address(0x1);
     // address STETH_ORACLE_ADDRESS = address(0);
     // TODO: Change these values
-    address TBTC_ORACLE_ADDRESS = address(0);
-    address FBTC_ORACLE_ADDRESS = address(0);
-    address BTC_ORACLE_ADDRESS = address(0);
-    address SAGA_ORACLE_ADDRESS = address(0);
+    address TBTC_ORACLE_ADDRESS = address(0x1);
+    address FBTC_ORACLE_ADDRESS = address(0x2);
+    address BTC_ORACLE_ADDRESS = address(0x3);
+    address SAGA_ORACLE_ADDRESS = address(0x4);
     ///////////////////////////////
     uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
     // uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
@@ -215,7 +216,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         // uint256 epochStart = vm.envOr(
         //     "EPOCH_START",
-        //     (block.chainid == 5464 ? _latestUTCMidnightBetweenWednesdayAndThursday() : block.timestamp) - EPOCH_DURATION
+        //     (block.chainid == CHAIN_ID ? _latestUTCMidnightBetweenWednesdayAndThursday() : block.timestamp) - EPOCH_DURATION
         // );
 
         useTestnetPriceFeeds = vm.envOr("USE_TESTNET_PRICEFEEDS", false);
@@ -250,7 +251,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             return;
         }
 
-        if (block.chainid == 5464) {
+        if (block.chainid == CHAIN_ID) {
             // mainnet
             WETH = IWETH(WETH_ADDRESS);
             // USDC = IERC20Metadata(USDC_ADDRESS);
@@ -323,18 +324,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
         });
 
-        string[] memory collNames = new string[](5);
-        string[] memory collSymbols = new string[](5);
-        collNames[0] = "Wrapped Ether";
-        collSymbols[0] = "WETH";
-        collNames[1] = "Rocket Pool ETH";
-        collSymbols[1] = "rETH";
-        collNames[2] = "Threshold BTC";
-        collSymbols[2] = "tBTC";
-        collNames[3] = "Function BTC";
-        collSymbols[3] = "FBTC";
-        collNames[4] = "Saga";
-        collSymbols[4] = "SAGA";
+        string[] memory collNames = new string[](NUM_BRANCHES - 1);
+        string[] memory collSymbols = new string[](NUM_BRANCHES - 1);
+        // collNames[0] = "Wrapped Ether";
+        // collSymbols[0] = "WETH";
+        collNames[0] = "Rocket Pool ETH";
+        collSymbols[0] = "rETH";
+        collNames[1] = "Threshold BTC";
+        collSymbols[1] = "tBTC";
+        collNames[2] = "Function BTC";
+        collSymbols[2] = "FBTC";
+        collNames[3] = "Saga";
+        collSymbols[3] = "SAGA";
 
         // DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
         //     epochStart: epochStart,
@@ -485,6 +486,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
 
+    function getBytecode(bytes memory _creationCode, address _addressesRegistry, address _governor) public pure returns (bytes memory) {
+        return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _governor));
+    }
+
     function getBytecode(bytes memory _creationCode, address _addressesRegistry, uint256 _branchId) public pure returns (bytes memory) {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _branchId));
     }
@@ -497,7 +502,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         address _boldToken,
         address _governanceAddress
     ) internal returns (DeploymentResult memory r) {
+        console2.log("DeployLiquity2Script: assert _collNames.length == troveManagerParamsArray.length - 1: %s == %s", _collNames.length, troveManagerParamsArray.length - 1);
         assert(_collNames.length == troveManagerParamsArray.length - 1);
+        console2.log("DeployLiquity2Script: assert _collSymbols.length == troveManagerParamsArray.length - 1: %s == %s", _collSymbols.length, troveManagerParamsArray.length - 1);
         assert(_collSymbols.length == troveManagerParamsArray.length - 1);
 
         DeploymentVars memory vars;
@@ -513,7 +520,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
         // Collaterals
-        if (block.chainid == 5464 && !useTestnetPriceFeeds) {
+        if (block.chainid == CHAIN_ID && !useTestnetPriceFeeds) {
             // mainnet
             // ETH
             vars.collaterals[0] = IERC20Metadata(WETH);
@@ -690,7 +697,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         contracts.borrowerOperations = new BorrowerOperations{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry, _branchId);
-        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
+        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry, GOVERNANCE_ADDRESS);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
@@ -725,7 +732,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         internal
         returns (IPriceFeed)
     {
-        if (block.chainid == 5464 && !useTestnetPriceFeeds) {
+        if (block.chainid == CHAIN_ID && !useTestnetPriceFeeds) {
             // Saga
             // ETH
             if (_collTokenAddress == address(WETH)) {
@@ -802,7 +809,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         } else {
             wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
         }
-        leverageZapper = _deployHybridLeverageZapper(_addressesRegistry, flashLoanProvider, hybridExchange, lst);
+        // leverageZapper = _deployHybridLeverageZapper(_addressesRegistry, flashLoanProvider, hybridExchange, lst);
+        leverageZapper = ILeverageZapper(address(0)); // Not using leverage zapper at the moment
     }
 
     function _deployHybridLeverageZapper(
