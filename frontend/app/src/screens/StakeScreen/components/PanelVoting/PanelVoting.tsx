@@ -9,6 +9,7 @@ import { EpochInitiativesTable } from "./components/EpochInitiativesTable";
 import { BribeMarketsInfo } from "./components/BribeMarketsInfo";
 import { EpochVotingStatus } from "./components/EpochVotingStatus";
 import { CastVotes } from "./components/CastVotes";
+import { ValidationWarning } from './components/ValidationWarning';
 
 import type { FC } from "react";
 
@@ -37,6 +38,7 @@ export const PanelVoting: FC = () => {
         <EpochInitiativesTable />
         <BribeMarketsInfo />
         <EpochVotingStatus />
+        <ValidationWarning />
         <CastVotes />
       </section>
     </PanelVotingProvider>

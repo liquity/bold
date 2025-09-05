@@ -1,30 +1,34 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from "react";
 import { css } from "@/styled-system/css";
-import { VoteInput } from "@/src/comps/VoteInput/VoteInput";
+import { VoteAction } from "./components/VoteAction/";
 import { Vote } from "./components/Vote";
 import { useVotingStateContext } from "@/src/screens/StakeScreen/components/PanelVoting/providers/PanelVotingProvider/hooks";
-import { useIsPeriodCutoff } from "@/src/screens/StakeScreen/components/PanelVoting/hooks";
+import { useValidateVoteInput } from "@/src/screens/StakeScreen/components/PanelVoting/hooks";
 import { div, from } from "dnum";
+import {
+  useGetAllocationsByAddress
+} from './hooks';
 
-import type { Address, Dnum, Vote as VoteType } from "@/src/types";
+import type { Dnum, Vote as VoteType } from "@/src/types";
 import type { FC } from "react";
+import type {
+  VotingProps
+} from './types';
 
-interface VotingProps {
-  initiativeAddress: Address;
-  disabled: boolean;
-}
-
-export const Voting: FC<VotingProps> = ({ initiativeAddress, disabled }) => {
-  const { voteAllocations, inputVoteAllocations, setInputVoteAllocations } =
-    useVotingStateContext();
-  const isPeriodCutoff = useIsPeriodCutoff();
-
-  const inputRef = useRef<HTMLInputElement>(null);
+export const Voting: FC<VotingProps> = ({
+  initiativeAddress,
+  activeVoting,
+}) => {
   const [editIntent, setEditIntent] = useState(false);
 
-  const currentInputVoteAllocation = inputVoteAllocations[initiativeAddress];
-  const currentVoteAllocation = voteAllocations[initiativeAddress];
-  const editMode = (editIntent || !currentVoteAllocation?.vote) && !disabled;
+  const {
+    setInputVoteAllocations,
+  } = useVotingStateContext();
+  const { currentVoteAllocation } =
+    useGetAllocationsByAddress(initiativeAddress);
+  useValidateVoteInput(initiativeAddress);
+
+  const editMode = (editIntent || !currentVoteAllocation?.vote) && activeVoting;
 
   const onVoteInputChange = useCallback(
     (value: Dnum) => {
@@ -56,25 +60,14 @@ export const Voting: FC<VotingProps> = ({ initiativeAddress, disabled }) => {
     setEditIntent(true);
   }, []);
 
-  useEffect(() => {
-    const isElementActive = inputRef.current && document.activeElement === inputRef.current;
-
-    if(editIntent && !isElementActive) {
-      inputRef.current?.focus();
-    }
-  }, [editIntent]);
-
   const renderVoteSection = useMemo(() => {
     if (editMode) {
       return (
-        <VoteInput
-          ref={inputRef}
-          forDisabled={isPeriodCutoff}
-          againstDisabled={disabled}
+        <VoteAction
+          initiativeAddress={initiativeAddress}
+          activeVoting={activeVoting}
           onChange={onVoteInputChange}
           onVote={onVote}
-          value={currentInputVoteAllocation?.value ?? null}
-          vote={currentInputVoteAllocation?.vote ?? null}
         />
       );
     }
@@ -83,7 +76,7 @@ export const Voting: FC<VotingProps> = ({ initiativeAddress, disabled }) => {
       return (
         <Vote
           onEdit={onEdit}
-          disabled={disabled}
+          disabled={!activeVoting}
           share={currentVoteAllocation.value}
           vote={currentVoteAllocation.vote}
         />
@@ -91,25 +84,20 @@ export const Voting: FC<VotingProps> = ({ initiativeAddress, disabled }) => {
     }
 
     return (
-      <VoteInput
-        ref={inputRef}
-        forDisabled={true}
-        againstDisabled={true}
+      <VoteAction
+        initiativeAddress={initiativeAddress}
+        activeVoting={activeVoting}
         onChange={() => {}}
         onVote={() => {}}
-        value={null}
-        vote={null}
       />
     );
   }, [
+    onVote,
     onEdit,
     editMode,
-    isPeriodCutoff,
-    disabled,
+    activeVoting,
     onVoteInputChange,
-    onVote,
-    currentInputVoteAllocation?.value,
-    currentInputVoteAllocation?.vote,
+    initiativeAddress,
     currentVoteAllocation?.vote,
     currentVoteAllocation?.value,
   ]);

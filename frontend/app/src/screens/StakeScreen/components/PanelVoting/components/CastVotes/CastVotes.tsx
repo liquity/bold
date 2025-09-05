@@ -13,15 +13,19 @@ import type { FC } from "react";
 import type { Dnum } from "@/src/types";
 
 export const CastVotes: FC = () => {
-  const { governanceUserData, inputVoteAllocations, initiativesStatesData } =
-    useVotingStateContext();
+  const {
+    governanceUserData,
+    inputVoteAllocations,
+    initiativesStatesData,
+    votingInputError,
+  } = useVotingStateContext();
   const isAllocationChanged = useIsAllocationChanged();
   const hasAnyAllocations = useHasAllocations();
   const remainingVotingPower = useRemainingVotingPower();
 
   const stakedLQTY: Dnum = useMemo(
     () => [governanceUserData?.stakedLQTY ?? 0n, 18],
-    [governanceUserData?.stakedLQTY]
+    [governanceUserData?.stakedLQTY],
   );
 
   const allowSubmit = useMemo(() => {
@@ -72,7 +76,7 @@ export const CastVotes: FC = () => {
 
   return (
     <FlowButton
-      disabled={!allowSubmit}
+      disabled={!allowSubmit || !!votingInputError}
       footnote={footnote}
       label="Cast votes"
       request={{
