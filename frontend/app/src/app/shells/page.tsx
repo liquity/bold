@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import type { LeaderboardResponse } from '@/src/shellpoints/leaderboard';
 import { getSnailIcon } from '@/src/comps/SnailIcons/snail-icons';
 import { css, cx } from '@/styled-system/css';
-import { useQuery } from '@tanstack/react-query';
+// import { useQuery } from '@tanstack/react-query';
 import { LinkTextButton } from '@/src/comps/LinkTextButton/LinkTextButton';
 
 const LOCAL_STORAGE_LEADERBOARD_DATA = 'leaderboard_data';
@@ -39,22 +39,34 @@ async function getLeaderboardData() {
   return leaderboardData;
 }
 
-function useLeaderboardData() {
-  return useQuery({
-    queryKey: ['leaderboard'],
-    queryFn: getLeaderboardData,
-    refetchInterval: 10000, // 10 seconds
-  })
-}
+// function useLeaderboardData() {
+//   return useQuery({
+//     queryKey: ['leaderboard'],
+//     queryFn: getLeaderboardData,
+//     refetchInterval: 10000, // 10 seconds
+//   })
+// }
 
 export default function ShellsPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
-  const { data: leaderboardData, isLoading: loading, error, refetch } = useLeaderboardData();
+  function refetch() {
+    getLeaderboardData()
+      .then((data) => setLeaderboardData(data))
+      .catch((error) => setError(error))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    refetch();
-  }, [refetch]);
+    getLeaderboardData()
+      .then((data) => setLeaderboardData(data))
+      .catch((error) => setError(error))
+      .finally(() => setLoading(false));
+  }, []);
+
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
