@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { LeaderboardResponse } from '@/src/shellpoints/leaderboard';
 import { getSnailIcon } from '@/src/comps/SnailIcons/snail-icons';
 import { css, cx } from '@/styled-system/css';
@@ -23,25 +23,27 @@ function getExpiryTime() {
   return refreshTime;
 };
 
+async function getLeaderboardData() {
+  if (typeof localStorage !== 'undefined') {
+    const leaderboardDataLS = localStorage.getItem(LOCAL_STORAGE_LEADERBOARD_DATA);
+    const leaderboardDataExpiry = localStorage.getItem(LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY);
+    if (leaderboardDataLS && leaderboardDataExpiry && Number(leaderboardDataExpiry) > Date.now()) {
+      return JSON.parse(leaderboardDataLS) as LeaderboardResponse;
+    }
+  }
+  const leaderboardData = await fetch('/api/leaderboard').then(res => res.json()) as LeaderboardResponse
+  if (leaderboardData.success) {
+    localStorage.setItem(LOCAL_STORAGE_LEADERBOARD_DATA, JSON.stringify(leaderboardData));
+    localStorage.setItem(LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY, getExpiryTime().toString());
+  }
+  return leaderboardData;
+}
+
 function useLeaderboardData() {
   return useQuery({
     queryKey: ['leaderboard'],
-    queryFn: async () => {
-      if (typeof localStorage !== 'undefined') {
-        const leaderboardDataLS = localStorage.getItem(LOCAL_STORAGE_LEADERBOARD_DATA);
-        const leaderboardDataExpiry = localStorage.getItem(LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY);
-        if (leaderboardDataLS && leaderboardDataExpiry && Number(leaderboardDataExpiry) > Date.now()) {
-          return JSON.parse(leaderboardDataLS) as LeaderboardResponse;
-        }
-      }
-      const leaderboardData = await fetch('/api/leaderboard').then(res => res.json()) as LeaderboardResponse
-      if (leaderboardData.success) {
-        localStorage.setItem(LOCAL_STORAGE_LEADERBOARD_DATA, JSON.stringify(leaderboardData));
-        localStorage.setItem(LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY, getExpiryTime().toString());
-      }
-      return leaderboardData;
-    },
-    refetchInterval: 30000, // 30 seconds
+    queryFn: getLeaderboardData,
+    refetchInterval: 10000, // 10 seconds
   })
 }
 
@@ -49,6 +51,10 @@ export default function ShellsPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: leaderboardData, isLoading: loading, error, refetch } = useLeaderboardData();
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
