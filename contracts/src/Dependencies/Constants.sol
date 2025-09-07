@@ -67,7 +67,7 @@ uint256 constant MAX_ANNUAL_INTEREST_RATE = 250 * _1pct;
 uint128 constant MAX_ANNUAL_BATCH_MANAGEMENT_FEE = uint128(_100pct / 10); // 10%
 uint128 constant MIN_INTEREST_RATE_CHANGE_PERIOD = 1 hours; // only applies to batch managers / batched Troves
 
-uint256 constant REDEMPTION_FEE_FLOOR = _1pct / 2; // 0.5%
+uint256 constant REDEMPTION_FEE_FLOOR = 55 * _1pct / 100; // 0.55% -> Floor $0.9945
 
 // For the debt / shares ratio to increase by a factor 1e9
 // at a average annual debt increase (compounded interest + fees) of 10%, it would take more than 217 years (log(1e9)/log(1.1))
