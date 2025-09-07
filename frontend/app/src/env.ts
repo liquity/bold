@@ -131,6 +131,7 @@ export const EnvSchema = v.pipe(
     SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
     SQUID_INTEGRATOR_ID: v.optional(v.string(), ""),
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
+    SUBGRAPH_URL_SERVER: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.pipe(
       v.string(),
@@ -141,6 +142,8 @@ export const EnvSchema = v.pipe(
       ),
     ),
     
+    CONTRACT_SHELL_TOKEN: vAddress(),
+
     CONTRACT_YUSND: vAddress(),
     YUSND_STATS_URL: v.optional(v.pipe(v.string(), v.url())),
 
@@ -384,9 +387,11 @@ const parsedEnv = v.safeParse(EnvSchema, {
   LIQUITY_STATS_URL: process.env.NEXT_PUBLIC_LIQUITY_STATS_URL,
   SAFE_API_URL: process.env.NEXT_PUBLIC_SAFE_API_URL,
   SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
+  SUBGRAPH_URL_SERVER: process.env.NEXT_PUBLIC_SUBGRAPH_URL_SERVER,
   VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 
+  CONTRACT_SHELL_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_SHELL_TOKEN,
   CONTRACT_YUSND: process.env.NEXT_PUBLIC_CONTRACT_YUSND,
   YUSND_STATS_URL: process.env.NEXT_PUBLIC_YUSND_STATS_URL,
 
@@ -567,6 +572,7 @@ export const {
   CONTRACT_LQTY_STAKING,
   CONTRACT_LQTY_TOKEN,
   CONTRACT_LUSD_TOKEN,
+  CONTRACT_SHELL_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
   DELEGATE_AUTO,
@@ -577,6 +583,7 @@ export const {
   LIQUITY_STATS_URL,
   SAFE_API_URL,
   SUBGRAPH_URL,
+  SUBGRAPH_URL_SERVER,
   VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,
 } = parsedEnv.output;

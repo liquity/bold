@@ -216,6 +216,20 @@ export function PanelUpdateDeposit({
           width: "100%",
         }}
       >
+        {hasDeposit && mode === "add" && (
+          <div
+            className={css({
+              padding: 16,
+              background: "infoSurface",
+              borderRadius: 8,
+              color: "content",
+              fontSize: 14,
+              lineHeight: 1.5,
+            })}
+          >
+            You are adding more USND to the stability pool. This will also claim all of your existing rewards, and add them to your deposit as well.
+          </div>
+        )}
         {hasDeposit && (
           <HFlex justifyContent='space-between'>
             <div
