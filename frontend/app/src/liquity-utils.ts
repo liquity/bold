@@ -183,6 +183,55 @@ export function useEarnPool(collIndex: CollIndex | null) {
   });
 }
 
+export function useEarnPools(collIndices: (CollIndex | null)[]) {
+  const wagmiConfig = useWagmiConfig();
+  const stats = useLiquityStats();
+
+  return useQuery({
+    queryKey: [
+      "earnPools",
+      collIndices,
+      jsonStringifyWithDnum(stats.data),
+    ],
+    queryFn: async () => {
+      const poolsMap: Record<number, any> = {};
+      
+      await Promise.all(
+        collIndices.map(async (collIndex) => {
+          if (collIndex === null) return;
+          
+          const collateral = getCollToken(collIndex);
+          const { spApyAvg1d = null, spApyAvg7d = null } = (
+            collateral && stats.data?.branch[collateral?.symbol]
+          ) ?? {};
+          
+          const spContract = getCollateralContract(collIndex, "StabilityPool");
+          if (!spContract) return;
+          
+          try {
+            const totalBoldDeposits = await readContract(wagmiConfig, {
+              ...spContract,
+              functionName: "getTotalBoldDeposits",
+            });
+            
+            poolsMap[collIndex] = {
+              apr: spApyAvg1d,
+              apr7d: spApyAvg7d,
+              collateral,
+              totalDeposited: dnum18(totalBoldDeposits),
+            };
+          } catch (error) {
+            console.warn(`Failed to fetch pool data for collIndex ${collIndex}:`, error);
+          }
+        })
+      );
+      
+      return poolsMap;
+    },
+    // enabled: stats.isSuccess,
+  });
+}
+
 export function isEarnPositionActive(position: PositionEarn | null) {
   return Boolean(
     position && (
