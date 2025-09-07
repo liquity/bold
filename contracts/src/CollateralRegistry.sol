@@ -15,7 +15,7 @@ contract CollateralRegistry is ICollateralRegistry {
     // See: https://github.com/ethereum/solidity/issues/12587
     // uint256 public totalCollaterals; // 10
 
-    address governor;
+    address public governor;
 
     uint256 public branches; // Total number of branches ever added. This value only increments up.
 

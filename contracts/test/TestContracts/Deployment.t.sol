@@ -221,10 +221,6 @@ contract TestDeployer is MetadataDeployment {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _branchId));
     }
 
-    function getBytecode(bytes memory _creationCode, address _addressesRegistry, address _governor) public pure returns (bytes memory) {
-        return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _governor));
-    }
-
     function getAddress(address _deployer, bytes memory _bytecode, bytes32 _salt) public pure returns (address) {
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), _deployer, _salt, keccak256(_bytecode)));
 
