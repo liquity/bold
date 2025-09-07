@@ -394,52 +394,54 @@ function PositionsGroup({
                     isActive={sortBy === "default"}
                     onClick={() => handleSortClick("default")}
                   />
-                  {hasEarnPositions && (
-                    <>
-                      <SortButton 
-                        label="APR" 
-                        field="apr"
-                        sortBy={sortBy}
-                        onClick={() => handleSortClick("apr")}
-                      />
-                      <SortButton 
-                        label="7d APR" 
-                        field="apr7d"
-                        sortBy={sortBy}
-                        onClick={() => handleSortClick("apr7d")}
-                      />
-                      <SortButton 
-                        label="Pool size" 
-                        field="poolSize"
-                        sortBy={sortBy}
-                        onClick={() => handleSortClick("poolSize")}
-                      />
-                    </>
-                  )}
-                  {hasLoanPositions && (
-                    <>
-                      <SortButton 
-                        label="Avg rate, p.a." 
-                        field="avgRate"
-                        sortBy={sortBy}
-                        onClick={() => handleSortClick("avgRate")}
-                      />
-                      <SortButton 
-                        label="Debt" 
-                        field="debt"
-                        sortBy={sortBy}
-                        onClick={() => handleSortClick("debt")}
-                      />
-                    </>
-                  )}
-                  {hasDepositPositions && (
-                    <SortButton 
-                      label={hasLoanPositions ? "Deposited/Collateral" : "Deposited"} 
-                      field="deposited"
-                      sortBy={sortBy}
-                      onClick={() => handleSortClick("deposited")}
-                    />
-                  )}
+                  <SortButton 
+                    label="APR" 
+                    field="apr"
+                    sortBy={sortBy}
+                    disabled={!hasEarnPositions}
+                    disabledTooltip={!hasEarnPositions ? "APR sorting is only available when you have earn positions" : undefined}
+                    onClick={() => handleSortClick("apr")}
+                  />
+                  <SortButton 
+                    label="7d APR" 
+                    field="apr7d"
+                    sortBy={sortBy}
+                    disabled={!hasEarnPositions}
+                    disabledTooltip={!hasEarnPositions ? "7d APR sorting is only available when you have earn positions" : undefined}
+                    onClick={() => handleSortClick("apr7d")}
+                  />
+                  <SortButton 
+                    label="Pool size" 
+                    field="poolSize"
+                    sortBy={sortBy}
+                    disabled={!hasEarnPositions}
+                    disabledTooltip={!hasEarnPositions ? "Pool size sorting is only available when you have earn positions" : undefined}
+                    onClick={() => handleSortClick("poolSize")}
+                  />
+                  <SortButton 
+                    label="Avg rate, p.a." 
+                    field="avgRate"
+                    sortBy={sortBy}
+                    disabled={!hasLoanPositions}
+                    disabledTooltip={!hasLoanPositions ? "Average rate sorting is only available when you have loan positions" : undefined}
+                    onClick={() => handleSortClick("avgRate")}
+                  />
+                  <SortButton 
+                    label="Debt" 
+                    field="debt"
+                    sortBy={sortBy}
+                    disabled={!hasLoanPositions}
+                    disabledTooltip={!hasLoanPositions ? "Debt sorting is only available when you have loan positions" : undefined}
+                    onClick={() => handleSortClick("debt")}
+                  />
+                  <SortButton 
+                    label={hasLoanPositions ? "Deposited/Collateral" : "Deposited"} 
+                    field="deposited"
+                    sortBy={sortBy}
+                    disabled={!hasDepositPositions}
+                    disabledTooltip={!hasDepositPositions ? "Deposit sorting is only available when you have positions with deposits" : undefined}
+                    onClick={() => handleSortClick("deposited")}
+                  />
                 </div>
               </HFlex>
             );

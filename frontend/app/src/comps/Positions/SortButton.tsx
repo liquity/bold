@@ -1,5 +1,5 @@
 import { css } from "@/styled-system/css";
-import { IconChevronDown, IconChevronUp } from "@liquity2/uikit";
+import { IconChevronDown, IconChevronUp, Tooltip } from "@liquity2/uikit";
 
 export type SortField = 
   | "default"
@@ -15,21 +15,26 @@ export function SortButton({
   field, 
   sortBy, 
   isActive,
+  disabled = false,
+  disabledTooltip,
   onClick 
 }: { 
   label: string;
   field?: string;
   sortBy?: SortField;
   isActive?: boolean;
+  disabled?: boolean;
+  disabledTooltip?: string;
   onClick: () => void;
 }) {
   const currentField = sortBy?.replace("-asc", "").replace("-desc", "");
   const isFieldActive = field && currentField === field;
   const isAsc = sortBy?.endsWith("-asc");
   
-  return (
+  const button = (
     <button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={css({
         display: "flex",
         alignItems: "center",
@@ -37,25 +42,40 @@ export function SortButton({
         padding: "4px 8px",
         fontSize: 14,
         fontWeight: isActive || isFieldActive ? 600 : 400,
-        color: isActive || isFieldActive ? "content" : "contentAlt",
+        color: disabled ? "contentDisabled" : (isActive || isFieldActive ? "content" : "contentAlt"),
         background: isActive || isFieldActive ? "fieldSurface" : "transparent",
         border: "1px solid",
-        borderColor: isActive || isFieldActive ? "border" : "transparent",
+        borderColor: disabled ? "borderDisabled" : (isActive || isFieldActive ? "border" : "transparent"),
         borderRadius: 8,
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
         transition: "all 0.2s",
-        "&:hover": {
+        "&:hover:not(:disabled)": {
           background: "fieldSurface",
           borderColor: "border",
         },
       })}
     >
       {label}
-      {isFieldActive && (
+      {isFieldActive && !disabled && (
         <span className={css({ display: "flex", alignItems: "center" })}>
           {isAsc ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
         </span>
       )}
     </button>
   );
+
+  return disabled && disabledTooltip ? (
+    <Tooltip
+      opener={({ buttonProps, setReference }) => (
+        <span ref={setReference} {...buttonProps}>
+          {button}
+        </span>
+      )}
+    >
+      <div style={{ padding: "8px", fontSize: 14 }}>
+        {disabledTooltip}
+      </div>
+    </Tooltip>
+  ) : button;
 }
