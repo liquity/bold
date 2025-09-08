@@ -12,7 +12,7 @@ contract BorrowerOperationsTester is BorrowerOperations, IBorrowerOperationsTest
     constructor(IAddressesRegistry _addressesRegistry) BorrowerOperations(_addressesRegistry) {}
 
     function get_CCR() external view returns (uint256) {
-        return CCR;
+        return CCR();
     }
 
     function getCollToken() external view returns (IERC20) {
