@@ -88,14 +88,14 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address TBTC_ADDRESS = 0xa740E6758e309840ffFfe58f749F018386A3b70b; // TODO: Change to CORRECT ADDRESS
     address FBTC_ADDRESS = 0xDA54014Ea6B6b56e3e26c6c82aeC1718B4a85099; // TODO: Change to CORRECT ADDRESS
     address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE; // TODO: This is 6 decimals, not 18 decimals. Either delete or get 18 decimals wrapped token of SAGA.
-    address ETH_ORACLE_ADDRESS = address(0x1);
-    address RETH_ORACLE_ADDRESS = address(0x1);
+    address ETH_ORACLE_ADDRESS = 0x0cD65ca12F6c9b10254FABC0CC62d273ABbb3d84;
+    address RETH_ORACLE_ADDRESS = 0x7B1be2C7B390A1FA29e07504f2a46A8Dc07eD9F4;
     // address STETH_ORACLE_ADDRESS = address(0);
     // TODO: Change these values
-    address TBTC_ORACLE_ADDRESS = address(0x1);
-    address FBTC_ORACLE_ADDRESS = address(0x2);
-    address BTC_ORACLE_ADDRESS = address(0x3);
-    address SAGA_ORACLE_ADDRESS = address(0x4);
+    address TBTC_ORACLE_ADDRESS = 0x9494Ed94280E9A8c5b52B1cDa9Ac9D21f6307135;
+    address FBTC_ORACLE_ADDRESS = 0x9fe237b245466A5f088AfE808b27c1305E3027BC;
+    address BTC_ORACLE_ADDRESS = 0x4a397383fE5FbE9AB33879869153fF40ea68815F;
+    address SAGA_ORACLE_ADDRESS = 0xaA43df021149C34ca3654F387C9aeB9AcABa012a;
     ///////////////////////////////
     uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
     // uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
