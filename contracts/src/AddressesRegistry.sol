@@ -85,10 +85,10 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         uint256 _liquidationPenaltySP,
         uint256 _liquidationPenaltyRedistribution
     ) Ownable(_owner) {
-        if (_ccr <= 1e18 || _ccr >= 2e18) revert InvalidCCR();
+        if (_ccr <= 1e18 || _ccr >= 5e18) revert InvalidCCR();
         if (_mcr <= 1e18 || _mcr >= 5e18) revert InvalidMCR();
         if (_bcr < 5e16 || _bcr >= 50e16) revert InvalidBCR();
-        if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();
+        if (_scr <= 1e18 || _scr >= 5e18) revert InvalidSCR();
         if (_liquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) revert SPPenaltyTooLow();
         if (_liquidationPenaltySP > _liquidationPenaltyRedistribution) revert SPPenaltyGtRedist();
         if (_liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) revert RedistPenaltyTooHigh();
@@ -146,7 +146,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
 
     function updateCCR(uint256 _newCCR) external {
         require(msg.sender == address(collateralRegistry), "AddressesRegistry: Only collateral registry can call this function");
-        if (_newCCR <= 1e18 || _newCCR >= 2e18) revert InvalidCCR();
+        if (_newCCR <= 1e18 || _newCCR >= 5e18) revert InvalidCCR();
         CCR = _newCCR;
         emit CCRUpdated(_newCCR);
     }
@@ -167,7 +167,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
 
     function updateSCR(uint256 _newSCR) external {
         require(msg.sender == address(collateralRegistry), "AddressesRegistry: Only collateral registry can call this function");
-        if (_newSCR <= 1e18 || _newSCR >= 2e18) revert InvalidSCR();
+        if (_newSCR <= 1e18 || _newSCR >= 5e18) revert InvalidSCR();
         SCR = _newSCR;
         emit SCRUpdated(_newSCR);
     }
