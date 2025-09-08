@@ -21,6 +21,7 @@ export const CollateralSymbolSchema = v.union([
 
 export const EnvSchema = v.pipe(
   v.object({
+    DISABLE_TRANSACTIONS: v.optional(vEnvFlag(), "false"),
     SUMMERSTONE_API_URL: v.string(),
     ACCOUNT_SCREEN: v.optional(vEnvFlag(), "false"),
     APP_COMMIT_HASH: v.string(),
@@ -341,6 +342,7 @@ export const EnvSchema = v.pipe(
 export type Env = v.InferOutput<typeof EnvSchema>;
 
 const parsedEnv = v.safeParse(EnvSchema, {
+  DISABLE_TRANSACTIONS: process.env.NEXT_PUBLIC_DISABLE_TRANSACTIONS,
   SUMMERSTONE_API_URL: process.env.NEXT_PUBLIC_SUMMERSTONE_API_URL,
   ACCOUNT_SCREEN: process.env.NEXT_PUBLIC_ACCOUNT_SCREEN,
   APP_VERSION: (
@@ -541,6 +543,7 @@ if (!parsedEnv.success) {
 }
 
 export const {
+  DISABLE_TRANSACTIONS,
   SUMMERSTONE_API_URL,
   ACCOUNT_SCREEN,
   APP_COMMIT_HASH,
