@@ -7,7 +7,8 @@ import { Tag } from "@/src/comps/Tag/Tag";
 import content from "@/src/content";
 import {
   // BUY_PAGE_URL, 
-  DEPLOYMENT_FLAVOR 
+  DEPLOYMENT_FLAVOR,
+  DISABLE_TRANSACTIONS
 } from "@/src/env";
 import { css } from "@/styled-system/css";
 import {
@@ -38,6 +39,8 @@ const menuItems: ComponentProps<typeof Menu>["menuItems"] = [
 
 export function TopBar() {
   return (
+    <>
+    {DISABLE_TRANSACTIONS && (<Banner />)}
     <div
       className={css({
         position: "relative",
@@ -133,6 +136,49 @@ export function TopBar() {
           </div>
           <AccountButton />
         </div>
+      </div>
+    </div>
+    </>
+  );
+}
+
+
+export function Banner() {
+  return (
+    <div
+      className={css({
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        maxWidth: "100%",
+        width: "100%",
+        height: 40,
+        textAlign: "center",
+        color: "#fff",
+        background: "red",
+        padding: 16,
+      })}
+    >
+      <div
+        className={css({
+          width: "100%",
+          maxWidth: 1092,
+          paddingY: 16,
+        })}
+      >
+        Due to concerns of a widespread supply-chain attack, we are taking the extra precation of disabling transactions at the moment. They will be re-enabled tomorrow.
+        {/* Banner content goes here. Here is a{" "} */}
+        {/* <Link
+          href="https://example.com"
+          passHref
+          legacyBehavior
+        >
+          <AnchorTextButton
+            external
+            label="link example"
+            className={css({ color: "inherit" })}
+          />
+        </Link>. */}
       </div>
     </div>
   );
