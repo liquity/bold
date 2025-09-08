@@ -16,5 +16,8 @@
     "@graphprotocol/graph-ts": "^0.35.1",
     "tsx": "^4.19.2",
     "zx": "^8.1.9"
+  },
+  "overrides": {
+    "error-ex": "1.3.2"
   }
 }
