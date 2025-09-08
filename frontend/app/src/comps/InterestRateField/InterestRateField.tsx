@@ -3,7 +3,7 @@ import type { Dnum } from "dnum";
 
 import { useAppear } from "@/src/anim-utils";
 import { useBreakpointName } from "@/src/breakpoints";
-import { INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
+import { INTEREST_RATE_MAX, INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
 import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -66,7 +66,8 @@ export const InterestRateField = memo(
     inputId?: string;
     interestRate: Dnum | null;
     mode: DelegateMode;
-    onAverageInterestRateLoad?: (averageInterestRate: Dnum) => void;
+    // XXX why is average interest rate loaded inside this component and not the parent?
+    onAverageInterestRateLoad?: (averageInterestRate: Dnum, setValue: (value: string) => void) => void;
     onChange: (interestRate: Dnum) => void;
     onDelegateChange: (delegate: Address | null) => void;
     onModeChange?: (mode: DelegateMode) => void;
@@ -96,7 +97,7 @@ export const InterestRateField = memo(
         rateTouchedForBranch.current = branchId;
         setTimeout(() => {
           if (averageInterestRate.data && !cancelled) {
-            onAverageInterestRateLoad(averageInterestRate.data);
+            onAverageInterestRateLoad(averageInterestRate.data, fieldValue.setValue);
           }
         }, 0);
         return () => {
@@ -120,16 +121,15 @@ export const InterestRateField = memo(
     ]);
 
     const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
+      defaultValue: interestRate ? dn.toString(dn.mul(interestRate, 100)) : undefined,
+
       onFocusChange: ({ parsed, focused }) => {
         if (!focused && parsed) {
-          const rounded = dn.div(dn.round(dn.mul(parsed, 10)), 10);
-          fieldValue.setValue(
-            rounded[0] === 0n
-              ? String(INTEREST_RATE_START * 100)
-              : dn.toString(rounded),
-          );
+          if (dn.lt(parsed, INTEREST_RATE_START * 100)) fieldValue.setValue(String(INTEREST_RATE_START * 100));
+          if (dn.gt(parsed, INTEREST_RATE_MAX * 100)) fieldValue.setValue(String(INTEREST_RATE_MAX * 100));
         }
       },
+
       onChange: ({ parsed }) => {
         if (parsed) {
           rateTouchedForBranch.current = branchId;
@@ -163,8 +163,7 @@ export const InterestRateField = memo(
 
     const handleDelegateSelect = (delegate: Delegate) => {
       setDelegatePicker(null);
-      rateTouchedForBranch.current = branchId;
-      onChange(delegate.interestRate);
+      fieldValue.setValue(dn.toString(dn.mul(delegate.interestRate, 100)));
       onDelegateChange(delegate.address ?? null);
     };
 
@@ -282,21 +281,21 @@ export const InterestRateField = memo(
                       size="small"
                       title={`Set average interest rate (${
                         fmtnum(averageInterestRate.data, {
-                          preset: "pct1z",
+                          preset: "pct2z",
                           suffix: "%",
                         })
                       })`}
                       label={`(avg. ${
                         fmtnum(averageInterestRate.data, {
-                          preset: "pct1z",
+                          preset: "pct2z",
                           suffix: "%",
                         })
                       })`}
                       onClick={(event) => {
                         if (averageInterestRate.data) {
                           event.preventDefault();
-                          rateTouchedForBranch.current = branchId;
-                          onChange(averageInterestRate.data);
+                          const rounded = dn.div(dn.round(dn.mul(averageInterestRate.data, 1e4)), 1e4);
+                          fieldValue.setValue(dn.toString(dn.mul(rounded, 100)));
                         }
                       }}
                     />
@@ -414,7 +413,7 @@ export const InterestRateField = memo(
                   >
                     {(mode === "manual" || delegate !== null) && fmtnum(
                       interestRate,
-                      "pct1z",
+                      "pct2z",
                     )}
                   </span>
                   <span
@@ -561,10 +560,7 @@ function ManualInterestRateSlider({
           onChange={(value) => {
             if (interestChartData.data) {
               const index = Math.round(value * (interestChartData.data.length - 1));
-              fieldValue.setValue(String(dn.toNumber(dn.mul(
-                interestChartData.data[index]?.rate ?? DNUM_0,
-                100,
-              ))));
+              fieldValue.setValue(dn.toString(dn.mul(interestChartData.data[index]?.rate ?? DNUM_0, 100)));
             }
           }}
           value={value}

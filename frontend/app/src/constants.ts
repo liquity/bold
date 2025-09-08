@@ -44,6 +44,7 @@ export const INTEREST_RATE_ADJ_COOLDOWN = 7 * 24 * 60 * 60; // 7 days in seconds
 // interest rate field config
 export const INTEREST_RATE_START = 0.005; // 0.5%
 export const INTEREST_RATE_END = 0.25; // 25%
+export const INTEREST_RATE_MAX = 2.5; // 250%
 export const INTEREST_RATE_DEFAULT = 0.1; // 10%
 export const INTEREST_RATE_PRECISE_UNTIL = 0.1; // use precise increments until 10%
 export const INTEREST_RATE_INCREMENT_PRECISE = 0.001; // 0.1% increments (precise)

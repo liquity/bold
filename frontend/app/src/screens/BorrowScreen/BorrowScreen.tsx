@@ -44,7 +44,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { maxUint256 } from "viem";
 
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
@@ -82,6 +82,11 @@ export function BorrowScreen() {
   const [interestRate, setInterestRate] = useState<null | Dnum>(null);
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
   const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(null);
+
+  const setInterestRateRounded = useCallback((averageInterestRate: Dnum, setValue: (value: string) => void) => {
+    const rounded = dn.div(dn.round(dn.mul(averageInterestRate, 1e4)), 1e4);
+    setValue(dn.toString(dn.mul(rounded, 100)));
+  }, [setInterestRate]);
 
   const collPrice = usePrice(collateral.symbol);
 
@@ -352,7 +357,7 @@ export function BorrowScreen() {
             inputId="input-interest-rate"
             interestRate={interestRate}
             mode={interestRateMode}
-            onAverageInterestRateLoad={setInterestRate}
+            onAverageInterestRateLoad={setInterestRateRounded}
             onChange={setInterestRate}
             onDelegateChange={setInterestRateDelegate}
             onModeChange={setInterestRateMode}
