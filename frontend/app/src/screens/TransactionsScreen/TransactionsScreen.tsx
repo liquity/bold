@@ -13,6 +13,7 @@ import { a, useTransition } from "@react-spring/web";
 import Link from "next/link";
 import { Fragment, useState } from "react";
 import { match, P } from "ts-pattern";
+import { DISABLE_TRANSACTIONS } from "../../env";
 
 export type LoadingState =
   | "error"
@@ -205,7 +206,7 @@ export function TransactionsScreen() {
             )
             : (
               <Button
-                disabled={step.status === "awaiting-verify" || step.status === "awaiting-commit"}
+                disabled={step.status === "awaiting-verify" || step.status === "awaiting-commit" || DISABLE_TRANSACTIONS}
                 label={(
                   step.status === "error" ? "Retry: " : ""
                 ) + (
