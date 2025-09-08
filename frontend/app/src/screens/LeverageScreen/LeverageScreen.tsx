@@ -43,7 +43,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export function LeverageScreen() {
   const branches = getBranches();
@@ -85,6 +85,11 @@ export function LeverageScreen() {
   const [interestRate, setInterestRate] = useState<null | Dnum>(null);
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
   const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(null);
+
+  const setInterestRateRounded = useCallback((averageInterestRate: Dnum, setValue: (value: string) => void) => {
+    const rounded = dn.div(dn.round(dn.mul(averageInterestRate, 1e4)), 1e4);
+    setValue(dn.toString(dn.mul(rounded, 100)));
+  }, [setInterestRate]);
 
   const leverageField = useLeverageField({
     depositPreLeverage: depositPreLeverage.parsed,
@@ -301,7 +306,7 @@ export function LeverageScreen() {
               inputId="input-interest-rate"
               interestRate={interestRate}
               mode={interestRateMode}
-              onAverageInterestRateLoad={setInterestRate}
+              onAverageInterestRateLoad={setInterestRateRounded}
               onChange={setInterestRate}
               onDelegateChange={setInterestRateDelegate}
               onModeChange={setInterestRateMode}
