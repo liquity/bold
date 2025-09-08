@@ -163,7 +163,6 @@ export const InterestRateField = memo(
 
     const handleDelegateSelect = (delegate: Delegate) => {
       setDelegatePicker(null);
-      console.log("handleDelegateSelect", dn.toString(dn.mul(delegate.interestRate, 100)));
       fieldValue.setValue(dn.toString(dn.mul(delegate.interestRate, 100)));
       onDelegateChange(delegate.address ?? null);
     };
