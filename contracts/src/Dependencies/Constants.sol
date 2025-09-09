@@ -10,7 +10,8 @@ uint256 constant _100pct = DECIMAL_PRECISION;
 uint256 constant _1pct = DECIMAL_PRECISION / 100;
 
 // Amount of ETH to be locked in gas pool on opening troves
-uint256 constant ETH_GAS_COMPENSATION = 0.0375 ether;
+uint256 constant ETH_GAS_COMPENSATION = 0 ether; // Saga has no gas requirements for sending transactions, so no deposit is needed by user
+//instead of changing the logic and increasing logical complexity, we can just set this to 0
 
 // Liquidation
 uint256 constant MIN_LIQUIDATION_PENALTY_SP = 5e16; // 5%
