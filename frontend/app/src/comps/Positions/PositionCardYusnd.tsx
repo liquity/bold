@@ -2,10 +2,12 @@ import type { PositionYusnd } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { css } from "@/styled-system/css";
-import { HFlex, IconEarn, TokenIcon } from "@liquity2/uikit";
+import { HFlex, TokenIcon } from "@liquity2/uikit";
 import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows } from "./shared";
 import Link from "next/link";
+import { useYusndStats } from "@/src/yusnd";
+import { EarnIcon } from "../ActionCard/SnailIcon";
 
 export function PositionCardYusnd({
   usnd,
@@ -15,6 +17,9 @@ export function PositionCardYusnd({
   | "usnd"
   | "yusnd"
 >) {
+  const stats = useYusndStats();
+  const apr = stats.data?.apr ?? null;
+  const apr7d = stats.data?.apr7d ?? null;
   return (
     <Link href={`/earn/yusnd`} legacyBehavior passHref>
       <PositionCard
@@ -38,7 +43,8 @@ export function PositionCardYusnd({
               color: "positionContent",
             })}
           >
-            <IconEarn size={32} />
+            {/* <IconEarn size={32} /> */}
+            <EarnIcon size={32} />
           </div>
         }
         main={{
@@ -90,7 +96,7 @@ export function PositionCardYusnd({
                       <Amount
                         fallback="−"
                         percentage
-                        value={null}
+                        value={apr}
                       />
                     </div>
                   </div>
@@ -115,7 +121,7 @@ export function PositionCardYusnd({
                       <Amount
                         fallback="−"
                         percentage
-                        value={null}
+                        value={apr7d}
                       />
                     </div>
                   </div>
