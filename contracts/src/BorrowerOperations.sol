@@ -415,7 +415,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external override {
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsActive(troveManagerCached, _troveId);
-
+        require(isBranchActive(), "BorrowerOperations: Branch is not active");
+        
         TroveChange memory troveChange;
         troveChange.debtIncrease = _boldAmount;
         _adjustTrove(troveManagerCached, _troveId, troveChange, _maxUpfrontFee);
@@ -467,6 +468,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ) external override {
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsActive(troveManagerCached, _troveId);
+        require(isBranchActive(), "BorrowerOperations: Branch is not active");
 
         TroveChange memory troveChange;
         _initTroveChange(troveChange, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
@@ -485,6 +487,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ) external override {
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsZombie(troveManagerCached, _troveId);
+        require(isBranchActive(), "BorrowerOperations: Branch is not active");
 
         TroveChange memory troveChange;
         _initTroveChange(troveChange, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
@@ -1614,5 +1617,9 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         totalDebt -= _troveChange.debtDecrease;
 
         newTCR = LiquityMath._computeCR(totalColl, totalDebt, _price);
+    }
+
+    function isBranchActive() public view returns (bool) {
+        return troveManager.isActive();
     }
 }
