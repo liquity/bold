@@ -14,7 +14,10 @@ import * as types from './graphql';
  * Therefore it is highly recommended to use the babel or swc plugin for production.
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
-const documents = {
+type Documents = {
+    "\n  query BatchManagers($collateralIn: [String!], $batchManagerIn: [String!]) {\n    batchManagers(collateralBranchIdIn: $collateralIn, batchManagerIn: $batchManagerIn) {\n      collateralBranchId\n      batchManagerId\n      targetInterestRate\n      currentInterestRate\n      timeSinceLastAdjustment\n      daysToAdjustment\n      status\n      metadata {\n        name\n        description\n        supersededBy\n        riskHint\n        link\n        collateralToken {\n          name\n          symbol\n          decimals\n          address\n        }\n      }\n    }\n  }\n": typeof types.BatchManagersDocument,
+};
+const documents: Documents = {
     "\n  query BatchManagers($collateralIn: [String!], $batchManagerIn: [String!]) {\n    batchManagers(collateralBranchIdIn: $collateralIn, batchManagerIn: $batchManagerIn) {\n      collateralBranchId\n      batchManagerId\n      targetInterestRate\n      currentInterestRate\n      timeSinceLastAdjustment\n      daysToAdjustment\n      status\n      metadata {\n        name\n        description\n        supersededBy\n        riskHint\n        link\n        collateralToken {\n          name\n          symbol\n          decimals\n          address\n        }\n      }\n    }\n  }\n": types.BatchManagersDocument,
 };
 
