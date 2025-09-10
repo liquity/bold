@@ -181,6 +181,47 @@ export const TrovesByAccountQuery = graphql(`
   }
 `);
 
+export const TrovesByAccountsQuery = graphql(`
+  query TrovesByAccounts($accounts: [Bytes!]!) {
+    troves(
+      where: {
+        borrower_in: $accounts,
+        status_in: [active,redeemed,liquidated],
+      }
+      orderBy: updatedAt
+      orderDirection: desc
+    ) {
+      id
+      borrower
+      closedAt
+      createdAt
+      debt
+      deposit
+      interestRate
+      mightBeLeveraged
+      stake
+      status
+      troveId
+      updatedAt
+      collateral {
+        id
+        token {
+          symbol
+          name
+        }
+        minCollRatio
+        collIndex
+      }
+      interestBatch {
+        id
+        annualInterestRate
+        annualManagementFee
+        batchManager
+      }
+    }
+  }
+`);
+
 export const TroveByIdQuery = graphql(`
   query TroveById($id: ID!) {
     trove(id: $id) {

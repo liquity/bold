@@ -108,6 +108,28 @@ export function getStabilityPoolDepositsFromAssetTransfers(transfers: AssetTrans
   }, {} as Record<Address, { branch: CollIndex, amount: bigint, blockNumber: bigint, decimals: number }[]>)
 }
 
+export function getStabilityPoolDepositsFromAssetTransfersStringified(transfers: AssetTransfersResult[]) {
+  const deposits = transfers.filter(transfer => transfer.to && CONTRACT_ADDRESSES.collaterals.find(coll => isAddressEqual(coll.contracts.StabilityPool, getAddress(transfer.to!))))
+  return deposits.reduce((acc, deposit) => {
+    const from = getAddress(deposit.from)
+    const to = getAddress(deposit.to!)
+    const amount = BigInt(deposit.rawContract.value ?? 0)
+    const decimals = Number(BigInt(deposit.rawContract.decimal ?? 18))
+    const blockNumber = deposit.blockNum
+    const branch = CONTRACT_ADDRESSES.collaterals.findIndex(coll => isAddressEqual(coll.contracts.StabilityPool, to))
+    if (branch === -1) return acc
+    const existing = acc[from] ?? []
+    const existingIndex = existing.findIndex(item => item.branch === branch)
+    if (existingIndex !== -1) {
+      const existingAmount = BigInt(existing[existingIndex]!.amount)
+      existing[existingIndex]!.amount = (existingAmount + amount).toString()
+    } else {
+      acc[from] = Array.from(new Set((acc[from] ?? []).concat({ branch: branch as CollIndex, amount: amount.toString(), blockNumber, decimals })))
+    }
+    return acc
+  }, {} as Record<Address, { branch: CollIndex, amount: string, blockNumber: string, decimals: number }[]>)
+}
+
 export function getStabilityPoolDepositsFromAssetRecipients(recipients: { to: Address, values: { from: Address, amount: bigint, blockNumber: bigint, decimals: number }[] }[]) {
   const deposits = 
     recipients

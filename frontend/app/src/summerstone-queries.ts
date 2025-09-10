@@ -41,6 +41,7 @@ export const BatchManagersQuery = graphql(`
       currentInterestRate
       timeSinceLastAdjustment
       daysToAdjustment
+      annualManagementFee
       status
       metadata {
         name

@@ -1,14 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { LeaderboardResponse } from '@/src/shellpoints/leaderboard';
+import { useMemo, useState } from 'react';
 import { getSnailIcon } from '@/src/comps/SnailIcons/snail-icons';
 import { css, cx } from '@/styled-system/css';
-// import { useQuery } from '@tanstack/react-query';
 import { LinkTextButton } from '@/src/comps/LinkTextButton/LinkTextButton';
+import { useShellActivitiesOfHolders, useShellBalances } from '@/src/shell-hooks';
+import { Address, formatUnits, getAddress, isAddressEqual } from 'viem';
+import { CONTRACT_ADDRESSES } from '@/src/contracts';
+import { useQuery } from '@tanstack/react-query';
+import { CollIndex } from '@/src/types';
+import { useLoansByAccounts } from '@/src/subgraph-hooks';
+import { getEnsName } from 'viem/ens';
+import { getMainnetPublicClient } from '@/src/shellpoints/utils/client';
 
-const LOCAL_STORAGE_LEADERBOARD_DATA = 'leaderboard_data';
-const LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY = 'leaderboard_data_expiry';
+const LOCAL_STORAGE_STABILITY_POOL_DEPOSITORS_DATA = 'stability_pool_depositors_data';
+const LOCAL_STORAGE_STABILITY_POOL_DEPOSITORS_DATA_EXPIRY = 'stability_pool_depositors_data_expiry';
 
 function getExpiryTime() {
   const now = new Date();
@@ -23,52 +29,146 @@ function getExpiryTime() {
   return refreshTime;
 };
 
-async function getLeaderboardData(hardRefresh: boolean = false) {
-  if (typeof localStorage !== 'undefined') {
-    const leaderboardDataLS = localStorage.getItem(LOCAL_STORAGE_LEADERBOARD_DATA);
-    const leaderboardDataExpiry = localStorage.getItem(LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY);
-    if (leaderboardDataLS && leaderboardDataExpiry && Number(leaderboardDataExpiry) >= Date.now() && !hardRefresh) {
-      return JSON.parse(leaderboardDataLS) as LeaderboardResponse;
-    }
-  }
-  const leaderboardData = await fetch('/api/leaderboard').then(res => res.json()) as LeaderboardResponse
-  if (leaderboardData.success) {
-    localStorage.setItem(LOCAL_STORAGE_LEADERBOARD_DATA, JSON.stringify(leaderboardData));
-    localStorage.setItem(LOCAL_STORAGE_LEADERBOARD_DATA_EXPIRY, getExpiryTime().toString());
-  } else {
-    throw new Error(leaderboardData.error);
-  }
-  return leaderboardData;
+function useStabilityPoolDepositors(addresses?: Address[]) {
+  return useQuery({
+    queryKey: ['stability-pool-depositors', addresses],
+    queryFn: async () => {
+      if (typeof localStorage !== 'undefined') {
+        const stabilityPoolDepositorsLS = localStorage.getItem(LOCAL_STORAGE_STABILITY_POOL_DEPOSITORS_DATA);
+        const stabilityPoolDepositorsExpiry = localStorage.getItem(LOCAL_STORAGE_STABILITY_POOL_DEPOSITORS_DATA_EXPIRY);
+        if (stabilityPoolDepositorsLS && stabilityPoolDepositorsExpiry && Number(stabilityPoolDepositorsExpiry) >= Date.now()) {
+          return JSON.parse(stabilityPoolDepositorsLS) as Record<`0x${string}`, { branch: CollIndex, amount: string, blockNumber: string, decimals: number }[]>;
+        }
+      }
+      const response = await fetch('/api/stability-pool', {
+        method: 'POST',
+        body: JSON.stringify({ addresses }),
+      });
+      const data = await response.json() as {
+        success: boolean;
+        result: Record<`0x${string}`, {
+          branch: CollIndex;
+          amount: string;
+          blockNumber: string;
+          decimals: number;
+        }[]> | undefined;
+        error: string | undefined;
+      };
+      if (!data.success) {
+        throw new Error(data.error);
+      }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(LOCAL_STORAGE_STABILITY_POOL_DEPOSITORS_DATA, JSON.stringify(data.result));
+        localStorage.setItem(LOCAL_STORAGE_STABILITY_POOL_DEPOSITORS_DATA_EXPIRY, getExpiryTime().toString());
+      }
+      return data.result;
+    },
+    enabled: addresses && addresses.length > 0,
+  })
 }
 
-// function useLeaderboardData() {
-//   return useQuery({
-//     queryKey: ['leaderboard'],
-//     queryFn: getLeaderboardData,
-//     refetchInterval: 10000, // 10 seconds
-//   })
-// }
+function useEnsNames(addresses?: Address[]) {
+  return useQuery({
+    queryKey: ['ens-names', addresses],
+    queryFn: async () => {
+      const client = getMainnetPublicClient();
+      if (!addresses) return [];
+      return (await Promise.all(addresses.map(address => getEnsName(client, { address })))).map((result, index) => ({ address: addresses[index]!, ensName: result }));
+    },
+    enabled: addresses && addresses.length > 0,
+  })
+}
 
 export default function ShellsPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
 
-  function refetch() {
-    getLeaderboardData(true)
-      .then((data) => setLeaderboardData(data))
-      .catch((error) => setError(error))
-      .finally(() => setLoading(false));
-  };
+  const {
+    data: shellBalances,
+    isLoading: isLoadingShellBalances,
+    refetch,
+    error: errorShellBalances
+  } = useShellBalances();
+  const shellHolders = shellBalances?.map((balance) => getAddress(balance.holder));
+  const {
+    data: shellActivitiesOfHolders, 
+    isLoading: isLoadingShellActivitiesOfHolders, 
+    error: errorShellActivitiesOfHolders
+  } = useShellActivitiesOfHolders(shellHolders);
+  const {
+    data: stabilityPoolDepositors, 
+    isLoading: isLoadingStabilityPoolDepositors, 
+    error: errorStabilityPoolDepositors
+  } = useStabilityPoolDepositors(shellHolders);
+  const {
+    data: loansByAccounts,
+    isLoading: isLoadingLoansByAccounts,
+    error: errorLoansByAccounts
+  } = useLoansByAccounts(shellHolders);
+  const { data: ensNames } = useEnsNames(shellHolders);
 
-  useEffect(() => {
-    getLeaderboardData()
-      .then((data) => setLeaderboardData(data))
-      .catch((error) => setError(error))
-      .finally(() => setLoading(false));
-  }, []);
+  function getLeaderboardActivityName(activity: Address): string {
+    switch (activity.toLowerCase()) {
+      case CONTRACT_ADDRESSES.YUSND.toLowerCase():
+        return "yUSND";
+      case CONTRACT_ADDRESSES.strategies.Balancer.toLowerCase():
+        return "Balancer";
+      case CONTRACT_ADDRESSES.strategies.Bunni.toLowerCase():
+        return "Bunni";
+      case CONTRACT_ADDRESSES.strategies.Camelot.toLowerCase():
+        return "Camelot";
+      case CONTRACT_ADDRESSES.strategies.Spectra.toLowerCase():
+        return "Spectra";
+      case CONTRACT_ADDRESSES.GoSlowNft.toLowerCase():
+        return "GoSlow NFT";
+      // case "trove":
+      //   return "Borrowing";
+      // case "stabilityPool":
+      //   return "Stability Pool";
+      default:
+        throw new Error(`Unknown leaderboard activity: ${activity}`);
+    }
+  }
 
+  const users = useMemo(() => {
+    return shellBalances?.map((balance, index) => {
+      const address = getAddress(balance.holder);
+      const activities = [
+        ...(shellActivitiesOfHolders?.filter(
+            (activity) => isAddressEqual(getAddress(activity.holder), address)
+          )
+          .map((activity) => getLeaderboardActivityName(getAddress(activity.token))) ?? []),
+        ...(stabilityPoolDepositors && Object.keys(stabilityPoolDepositors).some(depositor => isAddressEqual(getAddress(depositor), address)) ? ['Stability Pool'] : []),
+        ...(loansByAccounts && loansByAccounts.some(loan => isAddressEqual(getAddress(loan.borrower), address)) ? ['Borrowing'] : []),
+      ];
+      return {
+        address,
+        ensName: ensNames?.find(ensName => isAddressEqual(ensName.address, address))?.ensName ?? null,
+        shellpoints: {
+          total: parseInt(formatUnits(balance.balance, 18)),
+          mostRecent: null,
+        },
+        activities: activities.length > 0 ? activities : ['Stability Pool'],
+        rank: index + 1,
+      }
+    }) ?? [];
+  }, [shellBalances, shellActivitiesOfHolders, stabilityPoolDepositors, loansByAccounts, ensNames]);
+
+  const filteredUsers = useMemo(() => {
+    return users?.filter(user => 
+      user.address.toLowerCase().includes(searchQuery.toLowerCase())
+      || user.ensName?.toLowerCase().includes(searchQuery.toLowerCase())
+    ) ?? [];
+  }, [users, searchQuery]);
+
+  // useEffect(() => {
+  //   console.log("shellBalances", shellBalances);
+  //   console.log("shellActivitiesOfHolders", shellActivitiesOfHolders);
+  //   console.log("stabilityPoolDepositors", Object.keys(stabilityPoolDepositors ?? {}));
+  //   console.log("loansByAccounts", loansByAccounts);
+  // }, [shellBalances, shellActivitiesOfHolders, stabilityPoolDepositors, loansByAccounts]);
+
+  const isLoading = isLoadingShellBalances || isLoadingShellActivitiesOfHolders || isLoadingStabilityPoolDepositors || isLoadingLoansByAccounts;
+  const error = errorShellBalances || errorShellActivitiesOfHolders || errorStabilityPoolDepositors || errorLoansByAccounts;
 
   const formatAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -85,19 +185,7 @@ export default function ShellsPage() {
     return css({ background: 'token(colors.gray:100)', color: 'token(colors.gray:800)', borderColor: 'token(colors.gray:200)' });
   };
 
-  // Filter leaderboard data based on search query
-  const filteredLeaderboardData = leaderboardData ? {
-    ...leaderboardData,
-    data: {
-      entries: leaderboardData.data.entries.filter(entry => 
-        entry.address.toLowerCase().includes(searchQuery.toLowerCase())
-        || entry.ensName?.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-      lastMintBlock: leaderboardData.data.lastMintBlock
-    }
-  } : null;
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className={css({
         minHeight: '100vh',
@@ -284,7 +372,7 @@ export default function ShellsPage() {
             {/* Refresh Button */}
             <button
               onClick={() => {
-                setLoading(true);
+                // setLoading(true);
                 refetch();
               }}
               className={css({
@@ -307,14 +395,14 @@ export default function ShellsPage() {
                 }
               })}
               aria-label="Refresh leaderboard"
-              disabled={loading}
+              disabled={isLoading}
             >
               <svg 
                 className={css({
                   height: 20,
                   width: 20,
-                  color: loading ? 'token(colors.gray:400)' : 'token(colors.gray:600)',
-                  animation: loading ? 'spin 1s linear infinite' : undefined
+                  color: isLoading ? 'token(colors.gray:400)' : 'token(colors.gray:600)',
+                  animation: isLoading ? 'spin 1s linear infinite' : undefined
                 })}
                 fill="none" 
                 stroke="currentColor" 
@@ -328,7 +416,7 @@ export default function ShellsPage() {
         </div>
 
         {/* Leaderboard Table */}
-        {filteredLeaderboardData && (
+        {filteredUsers && (
           <div className={css({
             background: 'white',
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
@@ -347,11 +435,11 @@ export default function ShellsPage() {
                   fontSize: '0.875rem',
                   color: 'token(colors.blue:700)'
                 })}>
-                  {filteredLeaderboardData.data.entries.length === 0 
+                  {filteredUsers.length === 0 
                     ? `No addresses found matching "${searchQuery}"`
-                    : `Found ${filteredLeaderboardData.data.entries.length} address${filteredLeaderboardData.data.entries.length === 1 ? '' : 'es'} matching "${searchQuery}"`
+                    : `Found ${filteredUsers.length} address${filteredUsers.length === 1 ? '' : 'es'} matching "${searchQuery}"`
                   }
-                  {filteredLeaderboardData.data.entries.length > 0 && (
+                  {filteredUsers.length > 0 && (
                     <button
                       onClick={() => setSearchQuery('')}
                       className={css({
@@ -436,7 +524,7 @@ export default function ShellsPage() {
                 <tbody className={css({
                   background: 'white'
                 })}>
-                  {filteredLeaderboardData.data.entries.map((entry) => (
+                  {filteredUsers?.map((entry) => (
                     <tr
                       key={entry.address}
                       className={css({
@@ -506,31 +594,7 @@ export default function ShellsPage() {
                           })}>
                             {formatNumber(entry.shellpoints.total)}
                           </div>
-                          {entry.shellpoints.mostRecent && entry.shellpoints.mostRecent.blockNumber === filteredLeaderboardData.data.lastMintBlock.blockNumber && (
-                            <div className={css({
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              paddingX: 8,
-                              paddingY: 4,
-                              borderRadius: '9999px',
-                              fontSize: '0.75rem',
-                              fontWeight: 'medium',
-                              background: '#e3efd8',
-                              color: '#2f4225',
-                              border: '1px solid #c9e1b5'
-                            })}>
-                              <span className={css({
-                                color: '#4f7b35',
-                                fontWeight: 'semibold'
-                              })}>
-                                +{formatNumber(entry.shellpoints.mostRecent.amount)}
-                              </span>
-                              {/* <span className="mx-1 text-gray-400">•</span>
-                              <span className="text-gray-600">
-                                {formatTimeAgo(entry.shellpoints.mostRecent.blockNumber)}
-                              </span> */}
-                            </div>
-                          )}
+                          
                         </div>
                       </td>
                       <td className={css({
@@ -569,46 +633,6 @@ export default function ShellsPage() {
             </div>
           </div>
         )}
-
-        {/* Stats Cards
-        {filteredLeaderboardData && (
-          <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {searchQuery ? 'Filtered Users' : 'Total Users'}
-              </h3>
-              <p className="text-3xl font-bold text-blue-600">
-                {filteredLeaderboardData.data.length}
-                {searchQuery && leaderboardData && (
-                  <span className="text-sm text-gray-500 ml-2">
-                    of {leaderboardData.data.length}
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {searchQuery ? 'Filtered Total' : 'Total Shellpoints'}
-              </h3>
-              <p className="text-3xl font-bold text-green-600">
-                {formatNumber(
-                  filteredLeaderboardData.data.reduce((sum, entry) => sum + entry.shellpoints.total, 0)
-                )}
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {searchQuery ? 'Top in Results' : 'Top Score'}
-              </h3>
-              <p className="text-3xl font-bold text-purple-600">
-                {filteredLeaderboardData.data.length > 0 
-                  ? formatNumber(filteredLeaderboardData.data[0].shellpoints.total)
-                  : '0'
-                }
-              </p>
-            </div>
-          </div>
-        )} */}
       </div>
     </div>
   );
