@@ -9,6 +9,7 @@ import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IStabilityPoolEvents.sol";
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
+import "./Interfaces/ISystemParams.sol";
 import "./Dependencies/LiquityBaseInit.sol";
 
 /*
@@ -60,7 +61,7 @@ import "./Dependencies/LiquityBaseInit.sol";
  *
  * A series of liquidations that nearly empty the Pool (and thus each multiply P by a very small number in range ]0,1[ ) may push P
  * to its 36 digit decimal limit, and round it to 0, when in fact the Pool hasn't been emptied: this would break deposit tracking.
- * 
+ *
  * P is stored at 36-digit precision as a uint. That is, a value of "1" is represented by a value of 1e36 in the code.
  *
  * So, to track P accurately, we use a scale factor: if a liquidation would cause P to decrease below 1e27,
@@ -173,11 +174,13 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     uint256 public constant SCALE_SPAN = 2;
 
     // The minimum amount of Bold in the SP after a rebalance
-    // Introduced to avoid higher rate of scale changes 
+    // Introduced to avoid higher rate of scale changes
     uint256 public constant MIN_BOLD_AFTER_REBALANCE = 1_000e18;
 
     // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
     uint256 public currentScale;
+
+    uint256 public immutable MIN_BOLD_IN_SP;
 
     address public liquidityStrategy;
 
@@ -206,13 +209,15 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         }
     }
 
-    function initialize(IAddressesRegistry _addressesRegistry) external initializer {
+    function initialize(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) external initializer {
         __LiquityBase_init(_addressesRegistry);
 
         collToken = _addressesRegistry.collToken();
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();
         liquidityStrategy = _addressesRegistry.liquidityStrategy();
+
+        MIN_BOLD_IN_SP = _systemParams.MIN_BOLD_IN_SP();
 
         emit TroveManagerAddressChanged(address(troveManager));
         emit BoldTokenAddressChanged(address(boldToken));
@@ -407,7 +412,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         _updateTrackingVariables(amountStableOut, amountCollIn);
 
         _swapCollateralForStable(amountCollIn, amountStableOut);
-        
+
         require(totalBoldDeposits >= MIN_BOLD_AFTER_REBALANCE, "Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE");
     }
 
@@ -464,7 +469,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
 
         collBalance += _amountCollIn;
         collToken.safeTransferFrom(msg.sender, address(this), _amountCollIn);
-        
+
         emit StabilityPoolCollBalanceUpdated(collBalance);
 
     }

@@ -11,6 +11,7 @@ import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/IInterestRouter.sol";
 import "./Interfaces/IDefaultPool.sol";
+import "./Interfaces/ISystemParams.sol";
 
 /*
  * The Active Pool holds the collateral and Bold debt (but not Bold tokens) for all active troves.
@@ -33,6 +34,8 @@ contract ActivePool is IActivePool {
 
     IInterestRouter public immutable interestRouter;
     IBoldRewardsReceiver public immutable stabilityPool;
+
+    uint256 public immutable SP_YIELD_SPLIT;
 
     uint256 internal collBalance; // deposited coll tracker
 
@@ -71,7 +74,7 @@ contract ActivePool is IActivePool {
     event ActivePoolBoldDebtUpdated(uint256 _recordedDebtSum);
     event ActivePoolCollBalanceUpdated(uint256 _collBalance);
 
-    constructor(IAddressesRegistry _addressesRegistry) {
+    constructor(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) {
         collToken = _addressesRegistry.collToken();
         borrowerOperationsAddress = address(_addressesRegistry.borrowerOperations());
         troveManagerAddress = address(_addressesRegistry.troveManager());
@@ -79,6 +82,8 @@ contract ActivePool is IActivePool {
         defaultPoolAddress = address(_addressesRegistry.defaultPool());
         interestRouter = _addressesRegistry.interestRouter();
         boldToken = _addressesRegistry.boldToken();
+
+        SP_YIELD_SPLIT = _systemParams.SP_YIELD_SPLIT();
 
         emit CollTokenAddressChanged(address(collToken));
         emit BorrowerOperationsAddressChanged(borrowerOperationsAddress);

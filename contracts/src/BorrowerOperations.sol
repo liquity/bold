@@ -10,6 +10,7 @@ import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Interfaces/ICollSurplusPool.sol";
 import "./Interfaces/ISortedTroves.sol";
+import "./Interfaces/ISystemParams.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/AddRemoveManagers.sol";
 import "./Types/LatestTroveData.sol";
@@ -43,6 +44,16 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
     // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
     uint256 public immutable BCR;
+
+    uint256 public immutable ETH_GAS_COMPENSATION;
+    uint256 public immutable MIN_DEBT;
+    uint128 public immutable MAX_ANNUAL_BATCH_MANAGEMENT_FEE;
+    uint128 public immutable MIN_INTEREST_RATE_CHANGE_PERIOD;
+    uint256 public immutable INTEREST_RATE_ADJ_COOLDOWN;
+    uint256 public immutable MAX_BATCH_SHARES_RATIO;
+    uint256 public immutable UPFRONT_INTEREST_PERIOD;
+    uint256 public immutable MIN_ANNUAL_INTEREST_RATE;
+    uint256 public immutable MAX_ANNUAL_INTEREST_RATE;
 
     /*
     * Mapping from TroveId to individual delegate for interest rate setting.
@@ -164,21 +175,30 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
     event ShutDown(uint256 _tcr);
 
-    constructor(IAddressesRegistry _addressesRegistry)
+    constructor(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams)
         AddRemoveManagers(_addressesRegistry)
         LiquityBase(_addressesRegistry)
     {
         // This makes impossible to open a trove with zero withdrawn Bold
-        assert(MIN_DEBT > 0);
+        assert(_systemParams.MIN_DEBT() > 0);
 
         collToken = _addressesRegistry.collToken();
 
         gasToken = _addressesRegistry.gasToken();
 
-        CCR = _addressesRegistry.CCR();
-        SCR = _addressesRegistry.SCR();
-        MCR = _addressesRegistry.MCR();
-        BCR = _addressesRegistry.BCR();
+        CCR = _systemParams.CCR();
+        SCR = _systemParams.SCR();
+        MCR = _systemParams.MCR();
+        BCR = _systemParams.BCR();
+
+        ETH_GAS_COMPENSATION = _systemParams.ETH_GAS_COMPENSATION();
+        MIN_DEBT = _systemParams.MIN_DEBT();
+        MAX_ANNUAL_BATCH_MANAGEMENT_FEE = _systemParams.MAX_ANNUAL_BATCH_MANAGEMENT_FEE();
+        MIN_INTEREST_RATE_CHANGE_PERIOD = _systemParams.MIN_INTEREST_RATE_CHANGE_PERIOD();
+        MAX_BATCH_SHARES_RATIO = _systemParams.MAX_BATCH_SHARES_RATIO();
+        UPFRONT_INTEREST_PERIOD = _systemParams.UPFRONT_INTEREST_PERIOD();
+        MIN_ANNUAL_INTEREST_RATE = _systemParams.MIN_ANNUAL_INTEREST_RATE();
+        MAX_ANNUAL_INTEREST_RATE = _systemParams.MAX_ANNUAL_INTEREST_RATE();
 
         troveManager = _addressesRegistry.troveManager();
         gasPoolAddress = _addressesRegistry.gasPoolAddress();

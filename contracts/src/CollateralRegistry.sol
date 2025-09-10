@@ -6,6 +6,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 
 import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
+import "./Interfaces/ISystemParams.sol";
 import "./Dependencies/Constants.sol";
 import "./Dependencies/LiquityMath.sol";
 
@@ -39,6 +40,10 @@ contract CollateralRegistry is ICollateralRegistry {
 
     IBoldToken public immutable boldToken;
 
+    uint256 public immutable REDEMPTION_BETA;
+    uint256 public immutable REDEMPTION_MINUTE_DECAY_FACTOR;
+    uint256 public immutable REDEMPTION_FEE_FLOOR;
+
     uint256 public baseRate;
 
     // The timestamp of the latest fee operation (redemption or new Bold issuance)
@@ -47,7 +52,7 @@ contract CollateralRegistry is ICollateralRegistry {
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
 
-    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers) {
+    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers, ISystemParams _systemParams) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens <= 10, "Collateral list too long");
@@ -77,9 +82,13 @@ contract CollateralRegistry is ICollateralRegistry {
         troveManager8 = numTokens > 8 ? _troveManagers[8] : ITroveManager(address(0));
         troveManager9 = numTokens > 9 ? _troveManagers[9] : ITroveManager(address(0));
 
+        REDEMPTION_BETA = _systemParams.REDEMPTION_BETA();
+        REDEMPTION_MINUTE_DECAY_FACTOR = _systemParams.REDEMPTION_MINUTE_DECAY_FACTOR();
+        REDEMPTION_FEE_FLOOR = _systemParams.REDEMPTION_FEE_FLOOR();
+
         // Initialize the baseRate state variable
-        baseRate = INITIAL_BASE_RATE;
-        emit BaseRateUpdated(INITIAL_BASE_RATE);
+        baseRate = _systemParams.INITIAL_BASE_RATE();
+        emit BaseRateUpdated(_systemParams.INITIAL_BASE_RATE());
     }
 
     struct RedemptionTotals {
