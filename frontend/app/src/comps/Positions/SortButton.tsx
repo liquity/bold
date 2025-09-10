@@ -44,15 +44,16 @@ export function SortButton({
         fontWeight: isActive || isFieldActive ? 600 : 400,
         color: disabled ? "contentDisabled" : (isActive || isFieldActive ? "content" : "contentAlt"),
         background: isActive || isFieldActive ? "fieldSurface" : "transparent",
-        border: "1px solid",
-        borderColor: disabled ? "borderDisabled" : (isActive || isFieldActive ? "border" : "transparent"),
+        border: "none",
         borderRadius: 8,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
+        textDecoration: !disabled && !isActive && !isFieldActive ? "underline" : "none",
+        textDecorationColor: "contentAlt",
         transition: "all 0.2s",
         "&:hover:not(:disabled)": {
-          background: "fieldSurface",
-          borderColor: "border",
+          background: isActive || isFieldActive ? "fieldSurface" : "transparent",
+          textDecoration: isActive || isFieldActive ? "none" : "underline",
         },
       })}
     >
