@@ -28,6 +28,19 @@ function findSummerstoneApiUrl(envFile: string) {
   return null;
 }
 
+function findShellSubgraphUrl(envFile: string) {
+  const fs = require("fs");
+  const path = require("path");
+  const envPath = path.resolve(process.cwd(), envFile);
+  const envContent = fs.readFileSync(envPath, "utf-8");
+  for (const line of envContent.split("\n")) {
+    if (line.trim().startsWith("NEXT_PUBLIC_SHELL_SUBGRAPH_URL=")) {
+      return line.slice("NEXT_PUBLIC_SHELL_SUBGRAPH_URL=".length);
+    }
+  }
+  return null;
+}
+
 const subgraphUrl = findSubgraphUrl(".env.local") ?? findSubgraphUrl(".env");
 
 if (!subgraphUrl) {
@@ -43,7 +56,16 @@ if (!summerstoneApiUrl) {
   );
 }
 
+const shellSubgraphUrl = findShellSubgraphUrl(".env.local") ?? findShellSubgraphUrl(".env");
+
+if (!shellSubgraphUrl) {
+  throw new Error(
+    "Shell Subgraph URL not found in .env or .env.local. Please set NEXT_PUBLIC_SHELL_SUBGRAPH_URL.",
+  );
+}
+
 console.log(`Using Subgraph URL (with origin ${SUBGRAPH_URL_ORIGIN}):`, subgraphUrl, "\n");
+console.log("Using Shell Subgraph URL:", shellSubgraphUrl, "\n");
 console.log("Using Summerstone API URL:", summerstoneApiUrl, "\n");
 
 const config: CodegenConfig = {
@@ -93,6 +115,25 @@ const config: CodegenConfig = {
         [summerstoneApiUrl]: {},
       },
       documents: "src/**/summerstone*.{ts,tsx}",
+    },
+    "./src/shell-graphql/": {
+      preset: "client",
+      config: {
+        dedupeFragments: true,
+        documentMode: "string",
+        strictScalars: true,
+        scalars: {
+          BigDecimal: "string",
+          BigInt: "bigint",
+          Bytes: "string",
+          Int8: "number",
+          Timestamp: "string",
+        },
+      },
+      schema: {
+        [shellSubgraphUrl]: {},
+      },
+      documents: "src/**/shell*.{ts,tsx}",
     },
   },
 };

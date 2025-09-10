@@ -25,6 +25,8 @@ export type Scalars = {
  */
 export type BatchManager = {
   __typename?: 'BatchManager';
+  /** The annual management fee charged by this batch manager as a raw u64 value from the original U256 */
+  annualManagementFee: Scalars['Int']['output'];
   /** The batch manager's blockchain address in hex string format */
   batchManagerId: Scalars['String']['output'];
   /** The collateral branch identifier */
