@@ -1,20 +1,16 @@
 import { dnumMax, dnumMin } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { css } from "@/styled-system/css";
-import { toString, mul, from } from "dnum";
+import { from, mul, toString } from "dnum";
 import { useCallback, useState } from "react";
 import { VoteButton } from "./components/VoteButton";
 import { VoteDisplay } from "./components/VoteDisplay";
 import { VoteInput } from "./components/VoteInput";
-import {
-  useGetInputErrorByAddress,
-  useGetOutlineStyles,
-  useVoteController,
-} from "./hooks";
+import { useGetOutlineStyles, useHasInputError, useVoteController } from "./hooks";
 
+import type { VotingProps } from "@/src/screens/StakeScreen/components/PanelVoting/components/EpochInitiativesTable/components/TableBody/components/InitiativeRow/components/Voting/types";
 import type { Dnum, Vote } from "@/src/types";
 import type { ChangeEvent } from "react";
-import type { VotingProps } from "@/src/screens/StakeScreen/components/PanelVoting/components/EpochInitiativesTable/components/TableBody/components/InitiativeRow/components/Voting/types";
 
 interface VoteActionProps extends VotingProps {
   onChange: (value: Dnum) => void;
@@ -36,10 +32,10 @@ export function VoteAction({
     vote,
     currentValue,
   } = useVoteController({ initiativeAddress, activeVoting });
-  const hasError = useGetInputErrorByAddress(initiativeAddress);
+  const hasError = useHasInputError(initiativeAddress);
   const outlineStyles = useGetOutlineStyles({
     isFocused,
-    hasError: !!hasError,
+    hasError,
     vote,
   });
 
@@ -65,7 +61,6 @@ export function VoteAction({
     },
     [handleOnChange],
   );
-
 
   return (
     <div
@@ -103,16 +98,16 @@ export function VoteAction({
         selected={isSelectedDownVoting}
         vote="against"
       />
-      {vote ? (
-        <VoteInput
-          value={value}
-          onChange={onChange}
-          vote={vote}
-          disabled={!vote}
-        />
-      ) : (
-        <VoteDisplay value={value} />
-      )}
+      {vote
+        ? (
+          <VoteInput
+            value={value}
+            onChange={onChange}
+            vote={vote}
+            disabled={!vote}
+          />
+        )
+        : <VoteDisplay value={value} />}
     </div>
   );
 }

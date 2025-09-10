@@ -1,3 +1,3 @@
-export { useGetOutlineStyles } from './useGetOutlineStyles';
-export { useGetInputErrorByAddress } from './useGetInputErrorByAddress';
-export { useVoteController } from './useVoteController';
+export { useGetOutlineStyles } from "./useGetOutlineStyles";
+export { useHasInputError } from "./useHasInputError";
+export { useVoteController } from "./useVoteController";
