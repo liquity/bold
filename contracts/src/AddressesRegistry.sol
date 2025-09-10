@@ -3,7 +3,6 @@
 pragma solidity 0.8.24;
 
 import "./Dependencies/Ownable.sol";
-import {MIN_LIQUIDATION_PENALTY_SP, MAX_LIQUIDATION_PENALTY_REDISTRIBUTION} from "./Dependencies/Constants.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 
 contract AddressesRegistry is Ownable, IAddressesRegistry {
@@ -27,29 +26,6 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     IERC20Metadata public gasToken;
     address public liquidityStrategy;
 
-    // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    uint256 public immutable CCR;
-    // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
-    // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    uint256 public immutable SCR;
-
-    // Minimum collateral ratio for individual troves
-    uint256 public immutable MCR;
-    // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
-    uint256 public immutable BCR;
-    // Liquidation penalty for troves offset to the SP
-    uint256 public immutable LIQUIDATION_PENALTY_SP;
-    // Liquidation penalty for troves redistributed
-    uint256 public immutable LIQUIDATION_PENALTY_REDISTRIBUTION;
-
-    error InvalidCCR();
-    error InvalidMCR();
-    error InvalidBCR();
-    error InvalidSCR();
-    error SPPenaltyTooLow();
-    error SPPenaltyGtRedist();
-    error RedistPenaltyTooHigh();
-
     event CollTokenAddressChanged(address _collTokenAddress);
     event BorrowerOperationsAddressChanged(address _borrowerOperationsAddress);
     event TroveManagerAddressChanged(address _troveManagerAddress);
@@ -70,30 +46,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     event GasTokenAddressChanged(address _gasTokenAddress);
     event LiquidityStrategyAddressChanged(address _liquidityStrategyAddress);
 
-    constructor(
-        address _owner,
-        uint256 _ccr,
-        uint256 _mcr,
-        uint256 _bcr,
-        uint256 _scr,
-        uint256 _liquidationPenaltySP,
-        uint256 _liquidationPenaltyRedistribution
-    ) Ownable(_owner) {
-        if (_ccr <= 1e18 || _ccr >= 2e18) revert InvalidCCR();
-        if (_mcr <= 1e18 || _mcr >= 2e18) revert InvalidMCR();
-        if (_bcr < 5e16 || _bcr >= 50e16) revert InvalidBCR();
-        if (_scr <= 1e18 || _scr >= 2e18) revert InvalidSCR();
-        if (_liquidationPenaltySP < MIN_LIQUIDATION_PENALTY_SP) revert SPPenaltyTooLow();
-        if (_liquidationPenaltySP > _liquidationPenaltyRedistribution) revert SPPenaltyGtRedist();
-        if (_liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) revert RedistPenaltyTooHigh();
-
-        CCR = _ccr;
-        SCR = _scr;
-        MCR = _mcr;
-        BCR = _bcr;
-        LIQUIDATION_PENALTY_SP = _liquidationPenaltySP;
-        LIQUIDATION_PENALTY_REDISTRIBUTION = _liquidationPenaltyRedistribution;
-    }
+    constructor(address _owner) Ownable(_owner) {}
 
     function setAddresses(AddressVars memory _vars) external onlyOwner {
         collToken = _vars.collToken;
@@ -117,7 +70,9 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         liquidityStrategy = _vars.liquidityStrategy;
 
         emit CollTokenAddressChanged(address(_vars.collToken));
-        emit BorrowerOperationsAddressChanged(address(_vars.borrowerOperations));
+        emit BorrowerOperationsAddressChanged(
+            address(_vars.borrowerOperations)
+        );
         emit TroveManagerAddressChanged(address(_vars.troveManager));
         emit TroveNFTAddressChanged(address(_vars.troveNFT));
         emit MetadataNFTAddressChanged(address(_vars.metadataNFT));
@@ -131,7 +86,9 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         emit InterestRouterAddressChanged(address(_vars.interestRouter));
         emit HintHelpersAddressChanged(address(_vars.hintHelpers));
         emit MultiTroveGetterAddressChanged(address(_vars.multiTroveGetter));
-        emit CollateralRegistryAddressChanged(address(_vars.collateralRegistry));
+        emit CollateralRegistryAddressChanged(
+            address(_vars.collateralRegistry)
+        );
         emit BoldTokenAddressChanged(address(_vars.boldToken));
         emit GasTokenAddressChanged(address(_vars.gasToken));
         emit LiquidityStrategyAddressChanged(address(_vars.liquidityStrategy));
