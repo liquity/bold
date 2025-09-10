@@ -174,7 +174,7 @@ export type BatchManagersQueryVariables = Exact<{
 }>;
 
 
-export type BatchManagersQuery = { __typename?: 'QueryRoot', batchManagers: Array<{ __typename?: 'BatchManager', collateralBranchId: string, batchManagerId: string, targetInterestRate: number, currentInterestRate: number, timeSinceLastAdjustment: number, daysToAdjustment?: number | null, status: PublicStatus, metadata: { __typename?: 'BatchManagerMetadata', name: string, description: string, supersededBy?: string | null, riskHint?: number | null, link?: string | null, collateralToken: { __typename?: 'TokenMetadata', name: string, symbol: string, decimals: number, address: string } } }> };
+export type BatchManagersQuery = { __typename?: 'QueryRoot', batchManagers: Array<{ __typename?: 'BatchManager', collateralBranchId: string, batchManagerId: string, targetInterestRate: number, currentInterestRate: number, timeSinceLastAdjustment: number, daysToAdjustment?: number | null, annualManagementFee: number, status: PublicStatus, metadata: { __typename?: 'BatchManagerMetadata', name: string, description: string, supersededBy?: string | null, riskHint?: number | null, link?: string | null, collateralToken: { __typename?: 'TokenMetadata', name: string, symbol: string, decimals: number, address: string } } }> };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -207,6 +207,7 @@ export const BatchManagersDocument = new TypedDocumentString(`
     currentInterestRate
     timeSinceLastAdjustment
     daysToAdjustment
+    annualManagementFee
     status
     metadata {
       name
