@@ -22,8 +22,11 @@ import { PositionCardEarn } from "./PositionCardEarn";
 import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardStake } from "./PositionCardStake";
 import { PositionCardYusnd } from "./PositionCardYusnd";
-import { HFlex } from "@liquity2/uikit";
 import { SortButton, type SortField } from "./SortButton";
+import { Dropdown, HFlex } from "@liquity2/uikit";
+import { useYusndPosition } from "@/src/yusnd";
+import * as dn from "dnum";
+
 
 type Mode = "positions" | "loading" | "actions";
 
@@ -45,6 +48,7 @@ export function Positions({
 }) {
   const loans = useLoansByAccount(address);
   const earnPositions = useEarnPositionsByAccount(address);
+  const yusndPosition = useYusndPosition(address);
   // const stakePosition = useStakePosition(address);
 
   const [sortBy, setSortBy] = useState<SortField>("default");
@@ -54,6 +58,7 @@ export function Positions({
       (
         loans.isPending 
         || earnPositions.isPending 
+        || yusndPosition.isPending
         // || stakePosition.isPending
       )
   );
@@ -69,6 +74,7 @@ export function Positions({
             ...pos,
             collIndex: pos.collIndex!
           })) ?? []),
+        ...(yusndPosition.data && dn.gt(yusndPosition.data.yusnd, 0) ? [yusndPosition.data] : []),
         // ...(stakePosition.data && dn.gt(stakePosition.data.deposit, 0)
         //   ? [stakePosition.data]
         //   : []),

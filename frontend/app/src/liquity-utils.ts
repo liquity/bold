@@ -924,6 +924,7 @@ export function useLoan(collIndex: CollIndex, troveId: TroveId): UseQueryResult<
       isRefetchError: false,
       isSuccess: false,
       status: "pending",
+      isPlaceholderData: false,
     };
   }
 
