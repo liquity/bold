@@ -29,6 +29,7 @@ import {
   StabilityPoolsQuery,
   TroveByIdQuery,
   TrovesByAccountQuery,
+  TrovesByAccountsQuery,
 } from "./subgraph-queries";
 import { getContracts } from "./contracts";
 import { getAllDebtPerInterestRate, getTroveById, getTrovesByAccount } from "./liquity-read-calls";
@@ -112,6 +113,26 @@ export function useLoansByAccount(
 
   return useQuery({
     queryKey: ["TrovesByAccount", account],
+    queryFn,
+    ...prepareOptions(options),
+  });
+}
+
+export function useLoansByAccounts(
+  accounts?: Address[],
+  options?: Options,
+) {
+  let queryFn = async () => {
+    if (!accounts || accounts.length === 0) return null;
+    const { troves } = await graphQuery(
+      TrovesByAccountsQuery,
+      { accounts: accounts.map(account => account.toLowerCase()) },
+    );
+    return troves.map(subgraphTroveToLoan);
+  }
+
+  return useQuery({
+    queryKey: ["TrovesByAccounts", accounts],
     queryFn,
     ...prepareOptions(options),
   });
