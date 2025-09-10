@@ -44,7 +44,7 @@ interface ISystemParams {
         uint256 ccr,
         uint256 scr,
         uint256 mcr,
-        uint256 bcr,
+        uint256 bcr
     );
 
     /// @notice Emitted when Interest rate parameters are updated.
@@ -238,7 +238,7 @@ interface ISystemParams {
         uint256 _ccr,
         uint256 _scr,
         uint256 _mcr,
-        uint256 _bcr,
+        uint256 _bcr
     ) external;
 
     /**
