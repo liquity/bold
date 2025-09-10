@@ -195,36 +195,45 @@ export function useEarnPools(collIndices: (CollIndex | null)[]) {
     ],
     queryFn: async () => {
       const poolsMap: Record<number, any> = {};
+      const validIndices = collIndices.filter((index): index is CollIndex => index !== null);
       
-      await Promise.all(
-        collIndices.map(async (collIndex) => {
-          if (collIndex === null) return;
-          
-          const collateral = getCollToken(collIndex);
-          const { spApyAvg1d = null, spApyAvg7d = null } = (
-            collateral && stats.data?.branch[collateral?.symbol]
-          ) ?? {};
-          
-          const spContract = getCollateralContract(collIndex, "StabilityPool");
-          if (!spContract) return;
-          
-          try {
-            const totalBoldDeposits = await readContract(wagmiConfig, {
-              ...spContract,
-              functionName: "getTotalBoldDeposits",
-            });
+      if (validIndices.length === 0) return poolsMap;
+      
+      const contracts = validIndices.map(collIndex => {
+        const spContract = getCollateralContract(collIndex, "StabilityPool");
+        return spContract ? {
+          ...spContract,
+          functionName: "getTotalBoldDeposits" as const,
+        } : null;
+      }).filter(contract => contract !== null);
+      
+      if (contracts.length === 0) return poolsMap;
+      
+      try {
+        const results = await readContracts(wagmiConfig, {
+          contracts,
+          allowFailure: true,
+        });
+        
+        validIndices.forEach((collIndex, index) => {
+          const result = results[index];
+          if (result && result.status === 'success' && result.result !== undefined) {
+            const collateral = getCollToken(collIndex);
+            const { spApyAvg1d = null, spApyAvg7d = null } = (
+              collateral && stats.data?.branch[collateral?.symbol]
+            ) ?? {};
             
             poolsMap[collIndex] = {
               apr: spApyAvg1d,
               apr7d: spApyAvg7d,
               collateral,
-              totalDeposited: dnum18(totalBoldDeposits),
+              totalDeposited: dnum18(result.result),
             };
-          } catch (error) {
-            console.warn(`Failed to fetch pool data for collIndex ${collIndex}:`, error);
           }
-        })
-      );
+        });
+      } catch (error) {
+        console.warn('Failed to fetch pools data via multicall:', error);
+      }
       
       return poolsMap;
     },
