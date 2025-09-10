@@ -1,15 +1,11 @@
-import { useMemo } from "react";
-import { eq, gt } from "dnum";
+import * as dn from "dnum";
+import { type FC, useMemo } from "react";
+
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
-import {
-  useHasAllocations,
-  useIsAllocationChanged,
-} from "@/src/screens/StakeScreen/components/PanelVoting/hooks";
+import { useHasAllocations, useIsAllocationChanged } from "@/src/screens/StakeScreen/components/PanelVoting/hooks";
 import { useRemainingVotingPower } from "@/src/screens/StakeScreen/components/PanelVoting/hooks";
 import { useVotingStateContext } from "@/src/screens/StakeScreen/components/PanelVoting/providers/PanelVotingProvider/hooks";
 import { filterVoteAllocationsForSubmission } from "@/src/screens/StakeScreen/components/PanelVoting/utils";
-
-import type { FC } from "react";
 import type { Dnum } from "@/src/types";
 
 export const CastVotes: FC = () => {
@@ -31,14 +27,14 @@ export const CastVotes: FC = () => {
   const allowSubmit = useMemo(() => {
     if (!isAllocationChanged) return false;
 
-    const hasVotingPower = gt(stakedLQTY, 0);
-    const fullyAllocated = eq(remainingVotingPower, 0) && hasAnyAllocations;
-    const nothingAllocated = eq(remainingVotingPower, 1);
+    const hasVotingPower = dn.gt(stakedLQTY, 0);
+    const fullyAllocated = dn.eq(remainingVotingPower, 0) && hasAnyAllocations;
+    const nothingAllocated = dn.eq(remainingVotingPower, 1);
 
     return (
-      isAllocationChanged &&
-      hasVotingPower &&
-      (fullyAllocated || nothingAllocated)
+      isAllocationChanged
+      && hasVotingPower
+      && (fullyAllocated || nothingAllocated)
     );
   }, [
     stakedLQTY,
@@ -67,7 +63,7 @@ export const CastVotes: FC = () => {
       }
     }
 
-    if (allowSubmit && eq(remainingVotingPower, 1)) {
+    if (allowSubmit && dn.eq(remainingVotingPower, 1)) {
       return "Your votes will be reset to 0% for all initiatives.";
     }
 
@@ -76,7 +72,7 @@ export const CastVotes: FC = () => {
 
   return (
     <FlowButton
-      disabled={!allowSubmit || !!votingInputError}
+      disabled={!allowSubmit || votingInputError.size > 0}
       footnote={footnote}
       label="Cast votes"
       request={{

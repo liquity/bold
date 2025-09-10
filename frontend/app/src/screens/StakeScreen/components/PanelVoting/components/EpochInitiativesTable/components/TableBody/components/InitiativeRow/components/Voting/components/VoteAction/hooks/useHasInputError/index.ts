@@ -1,0 +1,1 @@
+export { useHasInputError } from "./useHasInputError";

@@ -1,12 +1,12 @@
-import type { FC } from "react";
+import { useIsPeriodCutoff } from "@/src/screens/StakeScreen/components/PanelVoting/hooks";
 import { css } from "@/styled-system/css";
-import { useIsPeriodCutoff } from '@/src/screens/StakeScreen/components/PanelVoting/hooks';
+import type { FC } from "react";
 
 export const CutoffWarning: FC = () => {
   const isPeriodCutoff = useIsPeriodCutoff();
 
-  if(!isPeriodCutoff) {
-    return null
+  if (!isPeriodCutoff) {
+    return null;
   }
 
   return (
@@ -36,7 +36,7 @@ export const CutoffWarning: FC = () => {
             />
           </svg>
         </div>
-        <div>Only downvotes are accepted today.</div>
+        <div>Only downvotes and decreases in upvotes are permitted today.</div>
       </div>
     </div>
   );
