@@ -23,7 +23,7 @@ import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardStake } from "./PositionCardStake";
 import { PositionCardYusnd } from "./PositionCardYusnd";
 import { SortButton, type SortField } from "./SortButton";
-import { Dropdown, HFlex } from "@liquity2/uikit";
+import { HFlex } from "@liquity2/uikit";
 import { useYusndPosition } from "@/src/yusnd";
 import * as dn from "dnum";
 
