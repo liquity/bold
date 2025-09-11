@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAssetTransfers, getStabilityPoolDepositsFromAssetTransfersStringified } from '@/src/shellpoints/lib/tokenholders';
+import { getAssetTransfers, getStabilityPoolDepositsFromAssetTransfersStringified, getYUSNDDepositsFromAssetTransfersStringified } from '@/src/shellpoints/lib/tokenholders';
 import { CONTRACT_ADDRESSES } from '@/src/contracts';
 import { Address } from 'viem';
 
@@ -12,11 +12,19 @@ export async function POST(req: NextRequest) {
       toAddresses: CONTRACT_ADDRESSES.collaterals.map(coll => coll.contracts.StabilityPool),
       fromAddresses: addresses,
     })
+    const yusndDeposits = await getAssetTransfers({
+      tokenAddresses: [CONTRACT_ADDRESSES.YUSND],
+      toAddresses: addresses,
+    })
     const depositors = getStabilityPoolDepositsFromAssetTransfersStringified(deposits)
+    const yusndDepositors = getYUSNDDepositsFromAssetTransfersStringified(yusndDeposits)
     
     return NextResponse.json({
       success: true,
-      result: depositors,
+      result: {
+        stabilityPool: depositors,
+        yusnd: yusndDepositors,
+      },
     });
   } catch (error) {
     console.error('Error fetching stability pool depositors:', error);
