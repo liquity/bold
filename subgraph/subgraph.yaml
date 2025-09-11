@@ -38,43 +38,43 @@ dataSources:
           handler: handleCollateralRegistryAddressChanged
       file: ./src/BoldToken.mapping.ts
     network: arbitrum-one
-  - kind: ethereum/contract
-    name: Governance
-    source:
-      abi: Governance
-      address: "0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d"
-      startBlock: 356661350
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.9
-      language: wasm/assemblyscript
-      entities:
-        - GovernanceAllocation
-        - GovernanceInitiative
-        - GovernanceStats
-        - GovernanceUser
-      abis:
-        - name: Governance
-          file: ../contracts/out/Governance.sol/Governance.json
-      eventHandlers:
-        - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,uint8)
-          handler: handleAllocateLQTY
-        - event: ClaimForInitiative(indexed address,uint256,uint256,uint8)
-          handler: handleClaimForInitiative
-        - event: DepositLQTY(indexed
-            address,address,uint256,uint256,uint256,uint256,uint256)
-          handler: handleDepositLQTY
-        - event: RegisterInitiative(address,address,uint256,uint8)
-          handler: handleRegisterInitiative
-        - event: SnapshotVotesForInitiative(indexed address,uint256,uint256,uint256)
-          handler: handleSnapshotVotesForInitiative
-        - event: UnregisterInitiative(address,uint256,uint8)
-          handler: handleUnregisterInitiative
-        - event: WithdrawLQTY(indexed
-            address,address,uint256,uint256,uint256,uint256,uint256,uint256)
-          handler: handleWithdrawLQTY
-      file: ./src/Governance.mapping.ts
-    network: arbitrum-one
+  # - kind: ethereum/contract
+  #   name: Governance
+  #   source:
+  #     abi: Governance
+  #     address: "0x108f48E558078C8eF2eb428E0774d7eCd01F6B1d"
+  #     startBlock: 356661350
+  #   mapping:
+  #     kind: ethereum/events
+  #     apiVersion: 0.0.9
+  #     language: wasm/assemblyscript
+  #     entities:
+  #       - GovernanceAllocation
+  #       - GovernanceInitiative
+  #       - GovernanceStats
+  #       - GovernanceUser
+  #     abis:
+  #       - name: Governance
+  #         file: ../contracts/out/Governance.sol/Governance.json
+  #     eventHandlers:
+  #       - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,uint8)
+  #         handler: handleAllocateLQTY
+  #       - event: ClaimForInitiative(indexed address,uint256,uint256,uint8)
+  #         handler: handleClaimForInitiative
+  #       - event: DepositLQTY(indexed
+  #           address,address,uint256,uint256,uint256,uint256,uint256)
+  #         handler: handleDepositLQTY
+  #       - event: RegisterInitiative(address,address,uint256,uint8)
+  #         handler: handleRegisterInitiative
+  #       - event: SnapshotVotesForInitiative(indexed address,uint256,uint256,uint256)
+  #         handler: handleSnapshotVotesForInitiative
+  #       - event: UnregisterInitiative(address,uint256,uint8)
+  #         handler: handleUnregisterInitiative
+  #       - event: WithdrawLQTY(indexed
+  #           address,address,uint256,uint256,uint256,uint256,uint256,uint256)
+  #         handler: handleWithdrawLQTY
+  #     file: ./src/Governance.mapping.ts
+  #   network: arbitrum-one
 templates:
   - name: TroveManager
     kind: ethereum/contract
@@ -143,6 +143,8 @@ templates:
       entities:
         - StabilityPool
         - StabilityPoolDeposit
+        - StabilityPoolDepositSnapshot
+        - StabilityPoolScale
       abis:
         - name: StabilityPool
           file: ../contracts/out/StabilityPool.sol/StabilityPool.json

@@ -17,11 +17,7 @@ import {
 export function handleDepositUpdated(event: DepositUpdatedEvent): void {
   let collId = dataSource.context().getString("collId");
 
-  let sp = StabilityPool.load(collId);
-  if (!sp) {
-    sp = new StabilityPool(collId);
-    sp.totalDeposited = BigInt.fromI32(0);
-  }
+  let sp = loadOrCreateStabilityPool(collId);
 
   let spDeposit = loadOrCreateStabilityPoolDeposit(event.params._depositor, collId);
   let spDepositSnapshot = loadOrCreateSnapshot(spDeposit.id);
@@ -64,12 +60,8 @@ export function handleDepositOperation(event: DepositOperationEvent): void {
   let depositor = event.params._depositor;
 
   // Load or create the stability pool
-  let sp = StabilityPool.load(collId);
-  if (!sp) {
-    sp = new StabilityPool(collId);
-    sp.totalDeposited = BigInt.fromI32(0);
-    sp.save();
-  }
+  let sp = loadOrCreateStabilityPool(collId);
+  sp.save();
 
   // Load or create the stability pool deposit
   let spDeposit = loadOrCreateStabilityPoolDeposit(depositor, collId);
@@ -99,11 +91,7 @@ export function handleStabilityPoolCollBalanceUpdated(event: StabilityPoolCollBa
   let collId = dataSource.context().getString("collId");
   
   // Load or create the stability pool
-  let sp = StabilityPool.load(collId);
-  if (!sp) {
-    sp = new StabilityPool(collId);
-    sp.totalDeposited = BigInt.fromI32(0);
-  }
+  let sp = loadOrCreateStabilityPool(collId);
 
   sp.collBalance = event.params._newBalance;
   
@@ -119,11 +107,7 @@ export function handleStabilityPoolBoldBalanceUpdated(event: StabilityPoolBoldBa
   let collId = dataSource.context().getString("collId");
   
   // Load or create the stability pool
-  let sp = StabilityPool.load(collId);
-  if (!sp) {
-    sp = new StabilityPool(collId);
-    sp.totalDeposited = BigInt.fromI32(0);
-  }
+  let sp = loadOrCreateStabilityPool(collId);
 
   sp.totalDeposited = event.params._newBalance;
   
@@ -133,6 +117,16 @@ export function handleStabilityPoolBoldBalanceUpdated(event: StabilityPoolBoldBa
   
   // The event is still processed, which means it's tracked in the subgraph
   sp.save();
+}
+
+function loadOrCreateStabilityPool(collId: string): StabilityPool {
+  let sp = StabilityPool.load(collId);
+  if (!sp) {
+    sp = new StabilityPool(collId);
+    sp.totalDeposited = BigInt.fromI32(0);
+    sp.collBalance = BigInt.fromI32(0);
+  }
+  return sp;
 }
 
 function loadOrCreateStabilityPoolScale(

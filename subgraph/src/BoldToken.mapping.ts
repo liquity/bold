@@ -13,7 +13,7 @@ import {
   Token
 } from "../generated/schema";
 import {
-  // StabilityPool as StabilityPoolTemplate,
+  StabilityPool as StabilityPoolTemplate,
   TroveManager as TroveManagerTemplate,
   TroveNFT as TroveNFTTemplate,
 } from "../generated/templates";
@@ -78,7 +78,7 @@ function addCollateral(
 
   TroveManagerTemplate.createWithContext(troveManagerAddress, context);
   TroveNFTTemplate.createWithContext(Address.fromBytes(addresses.troveNft), context);
-  // StabilityPoolTemplate.createWithContext(Address.fromBytes(addresses.stabilityPool), context);
+  StabilityPoolTemplate.createWithContext(Address.fromBytes(addresses.stabilityPool), context);
 }
 
 export function handleCollateralRegistryAddressChanged(event: CollateralRegistryAddressChangedEvent): void {
