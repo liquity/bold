@@ -83,18 +83,18 @@ type StabilityPoolDeposit @entity {
   collateral: Collateral!
   deposit: BigInt!
   depositor: Bytes!
-  snapshot: StabilityPoolDepositSnapshot!
+#   snapshot: StabilityPoolDepositSnapshot!
 }
 
-type StabilityPoolDepositSnapshot @entity {
-  id: ID! # "collIndex:depositor", e.g. "0:0x0000000000000000000000000000000000000000"
-  B: BigInt!
-  P: BigInt!
-  S: BigInt!
-#   epoch: BigInt!
-  scale: BigInt!
-  deposit: StabilityPoolDeposit! @derivedFrom(field: "snapshot")
-}
+# type StabilityPoolDepositSnapshot @entity {
+#   id: ID! # "collIndex:depositor", e.g. "0:0x0000000000000000000000000000000000000000"
+#   B: BigInt!
+#   P: BigInt!
+#   S: BigInt!
+# #   epoch: BigInt!
+#   scale: BigInt!
+#   deposit: StabilityPoolDeposit! @derivedFrom(field: "snapshot")
+# }
 
 # Data (S and B snapshots) related to a given epoch + scale combination.
 # It corresponds to the epochToScaleToS and epochToScaleToB mappings in StabilityPool.sol.

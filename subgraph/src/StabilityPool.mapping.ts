@@ -20,7 +20,7 @@ export function handleDepositUpdated(event: DepositUpdatedEvent): void {
   let sp = loadOrCreateStabilityPool(collId);
 
   let spDeposit = loadOrCreateStabilityPoolDeposit(event.params._depositor, collId);
-  let spDepositSnapshot = loadOrCreateSnapshot(spDeposit.id);
+  // let spDepositSnapshot = loadOrCreateSnapshot(spDeposit.id);
 
   let diff = event.params._newDeposit.minus(spDeposit.deposit);
   sp.totalDeposited = sp.totalDeposited.plus(diff);
@@ -28,12 +28,12 @@ export function handleDepositUpdated(event: DepositUpdatedEvent): void {
 
   spDeposit.deposit = event.params._newDeposit;
 
-  spDepositSnapshot.P = event.params._snapshotP;
-  spDepositSnapshot.S = event.params._snapshotS;
-  spDepositSnapshot.B = event.params._snapshotB;
-  spDepositSnapshot.scale = event.params._snapshotScale;
+  // spDepositSnapshot.P = event.params._snapshotP;
+  // spDepositSnapshot.S = event.params._snapshotS;
+  // spDepositSnapshot.B = event.params._snapshotB;
+  // spDepositSnapshot.scale = event.params._snapshotScale;
 
-  spDepositSnapshot.save();
+  // spDepositSnapshot.save();
   spDeposit.save();
 }
 
@@ -156,7 +156,7 @@ function loadOrCreateStabilityPoolDeposit(depositor: Address, collId: string): S
     spDeposit.collateral = collId;
     spDeposit.deposit = BigInt.fromI32(0);
     spDeposit.depositor = depositor;
-    spDeposit.snapshot = loadOrCreateSnapshot(spId).id;
+    // spDeposit.snapshot = loadOrCreateSnapshot(spId).id;
   }
 
   return spDeposit;

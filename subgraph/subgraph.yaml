@@ -143,8 +143,8 @@ templates:
       entities:
         - StabilityPool
         - StabilityPoolDeposit
-        - StabilityPoolDepositSnapshot
-        - StabilityPoolScale
+        # - StabilityPoolDepositSnapshot
+        # - StabilityPoolScale
       abis:
         - name: StabilityPool
           file: ../contracts/out/StabilityPool.sol/StabilityPool.json
@@ -152,10 +152,10 @@ templates:
         - event: DepositUpdated(indexed
             address,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleDepositUpdated
-        - event: S_Updated(uint256,uint256)
-          handler: handleSUpdated
-        - event: B_Updated(uint256,uint256)
-          handler: handleBUpdated
+        # - event: S_Updated(uint256,uint256)
+        #   handler: handleSUpdated
+        # - event: B_Updated(uint256,uint256)
+        #   handler: handleBUpdated
         - event: DepositOperation(indexed
             address,uint8,uint256,int256,uint256,uint256,uint256,uint256)
           handler: handleDepositOperation
