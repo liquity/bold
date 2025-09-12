@@ -10,6 +10,7 @@ import { DefaultPool } from "@/src/abi/DefaultPool";
 import { ExchangeHelpers } from "@/src/abi/ExchangeHelpers";
 import { Governance } from "@/src/abi/Governance";
 import { HintHelpers } from "@/src/abi/HintHelpers";
+import { IExchangeHelpersV2 } from "@/src/abi/IExchangeHelpersV2";
 import { LeverageLSTZapper } from "@/src/abi/LeverageLSTZapper";
 import { LeverageWETHZapper } from "@/src/abi/LeverageWETHZapper";
 import { LqtyStaking } from "@/src/abi/LqtyStaking";
@@ -25,6 +26,7 @@ import {
   CONTRACT_COLLATERAL_REGISTRY,
   CONTRACT_DEBT_IN_FRONT_HELPER,
   CONTRACT_EXCHANGE_HELPERS,
+  CONTRACT_EXCHANGE_HELPERS_V2,
   CONTRACT_GOVERNANCE,
   CONTRACT_HINT_HELPERS,
   CONTRACT_LQTY_STAKING,
@@ -41,6 +43,7 @@ const protocolAbis = {
   CollateralRegistry,
   DebtInFrontHelper,
   ExchangeHelpers,
+  ExchangeHelpersV2: IExchangeHelpersV2,
   Governance,
   HintHelpers,
   LqtyStaking,
@@ -125,6 +128,10 @@ export const CONTRACTS: Contracts = {
   ExchangeHelpers: {
     abi: abis.ExchangeHelpers,
     address: CONTRACT_EXCHANGE_HELPERS,
+  },
+  ExchangeHelpersV2: {
+    abi: abis.ExchangeHelpersV2,
+    address: CONTRACT_EXCHANGE_HELPERS_V2,
   },
   HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
   LqtyStaking: { abi: abis.LqtyStaking, address: CONTRACT_LQTY_STAKING },
