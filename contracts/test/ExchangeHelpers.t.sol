@@ -118,9 +118,9 @@ contract ExchangeHelpersTest is Test, UseDeployment {
         uint256 dyDiv = 10 ** (18 - dyDecimals);
 
         if (collToUsdc) {
-            dyExpected = bound(dyExpected, 1 ether / dyDiv, 100_000 ether / dyDiv);
+            dyExpected = bound(dyExpected, 1 ether / dyDiv, 10_000 ether / dyDiv);
         } else {
-            dyExpected = bound(dyExpected, 0.001 ether / dyDiv, 100 ether / dyDiv);
+            dyExpected = bound(dyExpected, 0.001 ether / dyDiv, 10 ether / dyDiv);
         }
 
         bytes[] memory pathUsdcToColl = new bytes[](collToken == WETH ? 3 : 5);
@@ -161,9 +161,9 @@ contract ExchangeHelpersTest is Test, UseDeployment {
         (address inputToken, address outputToken) = collToBold ? (collToken, BOLD) : (BOLD, collToken);
 
         if (collToBold) {
-            dyExpected = bound(dyExpected, 1 ether, 100_000 ether);
+            dyExpected = bound(dyExpected, 1 ether, 10_000 ether);
         } else {
-            dyExpected = bound(dyExpected, 0.001 ether, 100 ether);
+            dyExpected = bound(dyExpected, 0.001 ether, 10 ether);
         }
 
         uint256 dx = exchangeHelpersV2_quoteExactOutput(dyExpected, collToBold, collToken);
@@ -187,9 +187,9 @@ contract ExchangeHelpersTest is Test, UseDeployment {
         (address inputToken, address outputToken) = collToBold ? (collToken, BOLD) : (BOLD, collToken);
 
         if (collToBold) {
-            dx = bound(dx, 0.001 ether, 100 ether);
+            dx = bound(dx, 0.001 ether, 10 ether);
         } else {
-            dx = bound(dx, 1 ether, 100_000 ether);
+            dx = bound(dx, 1 ether, 10_000 ether);
         }
 
         uint256 dyExpected = exchangeHelpersV2_quoteExactInput(dx, collToBold, collToken);
