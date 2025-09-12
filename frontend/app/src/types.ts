@@ -1,16 +1,30 @@
 import type { Address, CollateralSymbol, Token, TokenSymbol } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
+import type { BranchContracts } from "./contracts";
 
 export type { Address, CollateralSymbol, Dnum, Token, TokenSymbol };
 
-export type RiskLevel = "low" | "medium" | "high";
+export type RiskLevel = "low" | "medium" | "high" | "not-applicable";
 
-export type CollIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+export type ChainId = number;
+
+export type BranchId = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+
 export type TroveId = `0x${string}`;
-export type PrefixedTroveId = `${CollIndex}:${TroveId}`;
+export type PrefixedTroveId = `${BranchId}:${TroveId}`;
 
-export function isCollIndex(value: unknown): value is CollIndex {
+export type Branch = {
+  id: BranchId;
+  contracts: BranchContracts;
+  branchId: BranchId; // to be removed, use `id` instead
+  symbol: CollateralSymbol;
+  strategies: Array<{ address: Address; name: string }>;
+};
+
+export type EnvBranch = Omit<Branch, "contracts">;
+
+export function isBranchId(value: unknown): value is BranchId {
   return typeof value === "number" && value >= 0 && value <= 9;
 }
 
@@ -39,6 +53,12 @@ export type MenuSection = {
   label: ReactNode;
 };
 
+export type TroveStatus =
+  | "active"
+  | "closed"
+  | "liquidated"
+  | "redeemed";
+
 export type PositionLoanBase = {
   // TODO: rename the type to "loan" and move "borrow" | "multiply" to
   // a "mode" field. The two separate types come from a previous design
@@ -47,23 +67,26 @@ export type PositionLoanBase = {
   batchManager: null | Address;
   borrowed: Dnum;
   borrower: Address;
-  collIndex: CollIndex;
+  branchId: BranchId;
   deposit: Dnum;
   interestRate: Dnum;
-  status:
-    | "active"
-    | "closed"
-    | "liquidated"
-    | "redeemed";
 };
 
 export type PositionLoanCommitted = PositionLoanBase & {
+  status: TroveStatus;
   troveId: TroveId;
-  updatedAt: number;
   createdAt: number;
+  lastUserActionAt: number;
+  updatedAt: number;
+  isZombie: boolean;
+  recordedDebt: Dnum;
+  redemptionCount: number;
+  redeemedColl: Dnum;
+  redeemedDebt: Dnum;
 };
 
 export type PositionLoanUncommitted = PositionLoanBase & {
+  status: "active";
   troveId: null;
 };
 
@@ -86,7 +109,7 @@ export function isPositionLoanUncommitted(
 export type PositionEarn = {
   type: "earn";
   owner: Address;
-  collIndex: CollIndex;
+  branchId: BranchId;
   deposit: Dnum;
   rewards: {
     bold: Dnum;
@@ -98,27 +121,37 @@ export type PositionStake = {
   type: "stake";
   owner: Address;
   deposit: Dnum;
-  share: Dnum;
-  totalStaked: Dnum;
   rewards: {
     lusd: Dnum;
     eth: Dnum;
   };
 };
 
-export type Position = PositionLoan | PositionEarn | PositionStake;
+export type PositionSbold = {
+  type: "sbold";
+  bold: Dnum;
+  owner: Address;
+  sbold: Dnum;
+};
+
+export type Position =
+  | PositionEarn
+  | PositionLoan
+  | PositionSbold
+  | PositionStake;
 
 export type Delegate = {
   address: Address;
   boldAmount: Dnum;
   fee?: Dnum;
-  followers: number;
   id: string;
   interestRate: Dnum;
-  interestRateChange: [Dnum, Dnum];
-  lastDays: number;
+  interestRateChange: {
+    min: Dnum;
+    max: Dnum;
+    period: bigint;
+  };
   name: string;
-  redemptions: Dnum;
 };
 
 export type LoanDetails = {
@@ -137,7 +170,6 @@ export type LoanDetails = {
   maxDebtAllowed: Dnum | null;
   maxLtv: Dnum;
   maxLtvAllowed: Dnum;
-  redemptionRisk: RiskLevel | null;
   status:
     | null
     | "healthy"
@@ -152,6 +184,7 @@ export type Initiative =
     address: Address;
     name: string | null;
     protocol: string | null;
+    url: string | null;
   }
   & (
     | { tvl: Dnum; pairVolume: Dnum; votesDistribution: Dnum }
@@ -161,3 +194,8 @@ export type Initiative =
 export type Vote = "for" | "against";
 export type VoteAllocation = { vote: Vote | null; value: Dnum };
 export type VoteAllocations = Record<Address, VoteAllocation>;
+
+export type IcStrategy = {
+  address: Address;
+  name: string;
+};

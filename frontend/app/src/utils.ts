@@ -1,3 +1,7 @@
+import type { Address, ChainId } from "@/src/types";
+
+import { TOKEN_ICON_URL } from "@/src/constants";
+
 export function noop() {}
 
 export function debounce<T extends unknown[]>(
@@ -34,4 +38,18 @@ export function jsonStringifyWithBigInt(data: unknown) {
   return JSON.stringify(data, (_, value) => (
     typeof value === "bigint" ? String(value) : value
   ));
+}
+
+export function bigIntAbs(value: bigint) {
+  return value < 0n ? -value : value;
+}
+
+export function tokenIconUrl(chainId: ChainId, address: Address) {
+  return TOKEN_ICON_URL
+    .replace(/\{chainId\}/, String(chainId))
+    .replace(/\{tokenAddress\}/, address.toLowerCase());
+}
+
+export function panic<T>(errorMessage: string): T {
+  throw new Error(errorMessage);
 }

@@ -5,21 +5,20 @@ import type { CSSProperties } from "react";
 import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
 import type { Direction } from "../types";
 
-import { a, useSpring, useSprings } from "@react-spring/web";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { a, useSpring } from "@react-spring/web";
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { css } from "../../styled-system/css";
 import { token } from "../../styled-system/tokens";
 
 type GradientMode = "low-to-high" | "high-to-low";
 type Chart = number[];
 
-const PADDING = 4;
-const BAR_HEIGHT = 4;
+const BAR_HEIGHT = 4; // in non-chart mode
 const HANDLE_OUTLINE = 2;
 const HANDLE_SIZE = 26; // with the outline
-const MIN_WIDTH = HANDLE_SIZE * 10;
-const CHART_MAX_HEIGHT = 17;
-const HEIGHT = Math.max(HANDLE_SIZE, BAR_HEIGHT, CHART_MAX_HEIGHT * 2) + PADDING * 2;
+const MIN_WIDTH = HANDLE_SIZE * 2;
+const CHART_MAX_HEIGHT = 30;
+const HEIGHT = 60;
 const GRADIENT_TRANSITION_BLUR = 4;
 
 export function Slider({
@@ -27,6 +26,7 @@ export function Slider({
   disabled,
   gradient,
   gradientMode = "low-to-high",
+  handleColor,
   keyboardStep,
   onChange,
   onDragEnd,
@@ -36,6 +36,7 @@ export function Slider({
   disabled?: boolean;
   gradient?: [number, number];
   gradientMode?: GradientMode;
+  handleColor?: 0 | 1 | 2;
   chart?: Chart;
   keyboardStep?: (value: number, direction: Direction) => number;
   onChange: (value: number) => void;
@@ -56,7 +57,7 @@ export function Slider({
   const mainElement = useRef<HTMLElement | null>(null);
   const document = useRef<Document | null>(null);
 
-  const getRect = useCallback(() => {
+  const getRect /* LOL */ = useCallback(() => {
     const now = Date.now();
 
     // Cache the rect if the last poll was less than a second ago
@@ -129,15 +130,26 @@ export function Slider({
     };
   }, [pressed, updateValueFromClientX]);
 
+  const gradientColors = useMemo(() => getGradientColors(gradientMode), [gradientMode]);
+
   const moveSpring = useSpring({
     config: {
       mass: 1,
       tension: 1800,
       friction: 80,
+      precision: 0.001,
     },
     to: {
-      activeBarTransform: `scaleX(${value})`,
-      handleTransform: `translate3d(${value * 100}%, 0, 0)`,
+      value,
+      handleColor: gradient && chart
+        ? handleColor !== undefined
+          ? gradientColors[handleColor * 2]
+          : (value <= gradient[0]
+            ? gradientColors[0]
+            : value <= gradient[1]
+            ? gradientColors[2]
+            : gradientColors[4])
+        : token("colors.controlSurface"),
     },
   });
 
@@ -167,8 +179,6 @@ export function Slider({
     };
   }, [focused, keyboardStep, onChange, value, disabled]);
 
-  const gradientColors = useMemo(() => getGradientColors(gradientMode), [gradientMode]);
-
   return (
     <div
       tabIndex={disabled ? -1 : 0}
@@ -185,6 +195,7 @@ export function Slider({
       })}
       style={{
         minWidth: `${MIN_WIDTH}px`,
+        width: "100%",
         "--focusRingWidth": focused ? "2px" : "0",
       } as CSSProperties}
     >
@@ -209,11 +220,10 @@ export function Slider({
               })}
             >
               <ChartSvg
-                activeBarTransform={moveSpring.activeBarTransform}
                 chart={chart}
                 gradient={gradient}
                 gradientMode={gradientMode}
-                value={value}
+                value={moveSpring.value}
               />
             </div>
           )
@@ -284,7 +294,7 @@ export function Slider({
                   })}
                   style={{
                     display: gradient || disabled ? "none" : "block",
-                    transform: moveSpring.activeBarTransform,
+                    transform: moveSpring.value.to((value) => `scale(${value}, 1)`),
                     background: `var(${disabled ? "--bgPressed" : "--bgNormal"})`,
                   }}
                 />
@@ -311,30 +321,37 @@ export function Slider({
             })}
             style={{
               width: `calc(100% - ${HANDLE_SIZE}px)`,
-              transform: moveSpring.handleTransform,
+              transform: moveSpring.value.to((value) => `translate(${value * 100}%, 0)`),
             }}
           >
-            <div
+            <a.div
               className={css({
                 position: "absolute",
                 top: "50%",
                 left: 0,
-                transform: "translateY(-50%)",
                 borderWidth: HANDLE_OUTLINE,
                 borderStyle: "solid",
                 borderRadius: "50%",
                 pointerEvents: "auto",
+
+                background: "controlSurface",
+                borderColor: "controlBorderStrong",
+
                 "--borderColor": "token(colors.controlBorderStrong)",
                 "--borderColorDisabled": "token(colors.disabledBorder)",
+
                 "--backgroundColor": "token(colors.controlSurface)",
                 "--backgroundColorDisabled": "token(colors.disabledSurface)",
               })}
               style={{
                 width: HANDLE_SIZE,
                 height: HANDLE_SIZE,
-                translate: pressed ? "0 1px" : "0 0",
-                background: `var(${disabled ? "--backgroundColorDisabled" : "--backgroundColor"})`,
-                borderColor: `var(${disabled ? "--borderColorDisabled" : "--borderColor"})`,
+                background: disabled ? `var(--backgroundColorDisabled)` : moveSpring.handleColor,
+                borderColor: `var(--borderColor${disabled ? "Disabled" : ""})`,
+                transform: `
+                  translateY(-50%)
+                  translateY(${pressed ? "1px" : "0"})
+                `,
               }}
             />
           </a.div>
@@ -346,47 +363,32 @@ export function Slider({
 
 const ChartSvg = memo(
   function ChartSvg({
-    activeBarTransform,
     chart,
     gradient,
     gradientMode,
     value,
   }: {
-    activeBarTransform: SpringValue<string>;
     chart: Chart;
     gradient?: [number, number];
     gradientMode: GradientMode;
-    value: number;
+    value: SpringValue<number>;
   }) {
-    const chartSprings = useSprings(
-      chart.length,
-      chart.map((_, index) => {
-        const show = index / chart.length <= value;
-        return {
-          config: { mass: 2, tension: 1000, friction: 100 },
-          to: { transform: show ? `scaleY(1)` : `scaleY(0)` },
-          immediate: !show,
-        };
-      }),
-    );
+    const id = useId();
 
-    const gradientStops = useMemo(() => {
-      if (!gradient) return null;
+    const gradientColors = useMemo(() => (
+      getGradientColors(gradientMode, 3)
+    ), [gradientMode]);
 
-      const [step2, step3] = gradient;
-      const blur = GRADIENT_TRANSITION_BLUR / 100 / 2;
-
-      const gradientColors = getGradientColors(gradientMode);
-
-      return [
-        { offset: "0%", color: gradientColors[0] },
-        { offset: `${(step2 - blur) * 100}%`, color: gradientColors[1] },
-        { offset: `${(step2 + blur) * 100}%`, color: gradientColors[2] },
-        { offset: `${(step3 - blur) * 100}%`, color: gradientColors[3] },
-        { offset: `${(step3 + blur) * 100}%`, color: gradientColors[4] },
-        { offset: "100%", color: gradientColors[4] },
-      ];
-    }, [gradient, gradientMode]);
+    const gradientGeometry = useMemo(() => {
+      if (!gradient) {
+        return null;
+      }
+      const steps = [0, ...gradient];
+      return steps.map((step, index) => {
+        const next = index === steps.length - 1 ? 1 : steps[index + 1];
+        return { x: step * 100, width: (next - step) * 100, index };
+      });
+    }, [gradient]);
 
     return (
       <svg
@@ -401,76 +403,125 @@ const ChartSvg = memo(
         shapeRendering="optimizeSpeed"
       >
         <defs>
-          {gradientStops && (
-            <linearGradient id="barGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-              {gradientStops.map((stop, index) => (
-                <stop
-                  key={index}
-                  offset={stop.offset}
-                  stopColor={stop.color}
-                />
-              ))}
+          {[
+            token("colors.riskGradientDimmed1"),
+            token("colors.riskGradientDimmed2"),
+            token("colors.riskGradientDimmed3"),
+          ].map((color, index) => (
+            <linearGradient
+              key={index}
+              id={`${id}-gradient-${index + 1}`}
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
+              <stop offset="0%" stopColor={color} stopOpacity="0" />
+              <stop offset="100%" stopColor={color} stopOpacity="1" />
             </linearGradient>
-          )}
-          <mask id="barMask">
-            {chartSprings.map((styles, index) => {
-              const barValue = chart[index];
-              const barWidth = 100 / chart.length;
-              const x = index * barWidth;
-              const y = CHART_MAX_HEIGHT * (1 - barValue);
-              const height = barValue * CHART_MAX_HEIGHT;
-              return (
-                <a.rect
-                  key={index}
-                  x={x}
-                  y={y}
-                  width={barWidth}
-                  height={height}
-                  fill="white"
-                  style={{
-                    transformOrigin: `${x}px ${CHART_MAX_HEIGHT}px`,
-                    transform: styles.transform,
-                  }}
-                />
-              );
-            })}
-          </mask>
+          ))}
+
+          <clipPath id={`${id}-bars`}>
+            <path
+              // clip path using the shape of the bars (used to clip the colors)
+              d={chart.map((barValue, index) => {
+                const barWidth = 100 / chart.length;
+                const x = index * barWidth;
+                const y = CHART_MAX_HEIGHT * (1 - barValue);
+                const height = barValue * CHART_MAX_HEIGHT;
+                return `M${x},${y} h${barWidth} v${height} h-${barWidth} z`;
+              }).join(" ")}
+              fill="white"
+            />
+          </clipPath>
+
+          <clipPath id={`${id}-reveal`}>
+            <a.rect
+              // rectangle used to clip the bars
+              x="0"
+              y="0"
+              width="100"
+              height={CHART_MAX_HEIGHT}
+              fill="white"
+              style={{
+                transform: value.to((value) => `scale(${value}, 1)`),
+                transformOrigin: "0 0",
+              }}
+            />
+          </clipPath>
         </defs>
 
-        {chart.map((barValue, index) => {
-          const barWidth = 100 / chart.length;
-          const x = index * barWidth;
-          const y = CHART_MAX_HEIGHT * (1 - barValue);
-          const height = barValue * CHART_MAX_HEIGHT;
-          return (
-            <a.rect
-              key={index}
-              x={x}
-              y={y}
-              width={barWidth}
-              height={height}
-              fill="#DDE0E8"
-            />
-          );
-        })}
+        {gradientGeometry?.map(({ x, width, index }) => (
+          <rect
+            // gradients used as background
+            key={index}
+            x={`${x}%`}
+            y="0"
+            height={CHART_MAX_HEIGHT}
+            width={`${width}%`}
+            fill={`url(#${id}-gradient-${index + 1})`}
+            clipPath={`url(#${id}-reveal)`}
+          />
+        ))}
+
+        <g
+          // this group gets clipped by the bars
+          clipPath={`url(#${id}-bars)`}
+        >
+          <rect
+            // base color
+            x="0"
+            y="0"
+            width="100"
+            height={CHART_MAX_HEIGHT}
+            fill="#B1B7C8"
+          />
+
+          <g
+            // this group gets revealed by the slider
+            clipPath={`url(#${id}-reveal)`}
+          >
+            {gradientGeometry?.map(({ x, width, index }) => (
+              // gradient colors
+              <rect
+                key={index}
+                x={`${x}%`}
+                y="0"
+                height={CHART_MAX_HEIGHT}
+                width={`${width}%`}
+                fill={gradientColors[index]}
+              />
+            )) ?? (
+              <rect
+                // normal color
+                x="0"
+                y="0"
+                width="100"
+                height={CHART_MAX_HEIGHT}
+                fill="var(--colors-warning)"
+              />
+            )}
+          </g>
+        </g>
 
         <rect
+          // base line
           x="0"
-          y="0"
+          y={CHART_MAX_HEIGHT - 2}
           width="100"
-          height={CHART_MAX_HEIGHT * 2}
-          fill={gradientStops ? "url(#barGradient)" : "var(--colors-warning)"}
-          mask="url(#barMask)"
+          height="2"
+          fill="#B1B7C8"
         />
 
         <a.rect
+          // active line
           x="0"
-          y={CHART_MAX_HEIGHT - 1}
+          y={CHART_MAX_HEIGHT - 2}
           width="100"
-          height="1"
+          height="2"
           fill="currentColor"
           style={{
-            transform: activeBarTransform,
+            transform: value.to((value) => `scale(${value}, 1)`),
             transformOrigin: "0 0",
           }}
         />
@@ -478,8 +529,7 @@ const ChartSvg = memo(
     );
   },
   (prev, next) => (
-    prev.value === next.value
-    && prev.gradientMode === next.gradientMode
+    prev.gradientMode === next.gradientMode
     && JSON.stringify(prev.chart) === JSON.stringify(next.chart)
     && JSON.stringify(prev.gradient) === JSON.stringify(next.gradient)
   ),
@@ -491,15 +541,17 @@ function isTouchEvent(
   return "touches" in event;
 }
 
-function getGradientColors(gradientMode: GradientMode) {
-  const colors = [
-    token("colors.riskGradient1"),
-    token("colors.riskGradient2"),
-    token("colors.riskGradient3"),
-    token("colors.riskGradient4"),
-    token("colors.riskGradient5"),
-  ];
-  return gradientMode === "low-to-high"
-    ? colors
-    : colors.slice().reverse();
+const gradient = [
+  token("colors.riskGradient1"),
+  token("colors.riskGradient2"),
+  token("colors.riskGradient3"),
+  token("colors.riskGradient4"),
+  token("colors.riskGradient5"),
+];
+
+function getGradientColors(gradientMode: GradientMode, totalColors: 3 | 5 = 5) {
+  const colors = totalColors === 3
+    ? [gradient[0], gradient[2], gradient[4]]
+    : gradient;
+  return gradientMode === "low-to-high" ? colors : colors.slice().reverse();
 }

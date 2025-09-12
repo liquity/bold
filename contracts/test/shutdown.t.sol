@@ -27,10 +27,10 @@ contract ShutdownTest is DevTestSetup {
 
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](NUM_COLLATERALS);
-        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
-        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
-        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 120e16, 5e16, 10e16);
-        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 125e16, 5e16, 10e16);
+        troveManagerParamsArray[0] = TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
+        troveManagerParamsArray[1] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16);
+        troveManagerParamsArray[2] = TestDeployer.TroveManagerParams(160e16, 120e16, 10e16, 120e16, 5e16, 10e16);
+        troveManagerParamsArray[3] = TestDeployer.TroveManagerParams(160e16, 125e16, 10e16, 125e16, 5e16, 10e16);
 
         TestDeployer deployer = new TestDeployer();
         TestDeployer.LiquityContractsDev[] memory _contractsArray;
@@ -256,6 +256,30 @@ contract ShutdownTest is DevTestSetup {
 
         // Check trove is closed
         assertEq(uint8(troveManager.getTroveStatus(troveId)), uint8(ITroveManager.Status.closedByOwner));
+    }
+
+    function testCanCloseLastTroveAfterShutdown() public {
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        deal(address(boldToken), A, 20000e18);
+        vm.startPrank(A);
+        borrowerOperations.closeTrove(troveId);
+        vm.stopPrank();
+
+        // Check trove is closed
+        assertEq(uint8(troveManager.getTroveStatus(troveId)), uint8(ITroveManager.Status.closedByOwner));
+    }
+
+    function testCannotLiquidateLastTroveAfterShutdown() public {
+        uint256 troveId = prepareAndShutdownFirstBranch();
+
+        vm.startPrank(B);
+        vm.expectRevert(TroveManager.OnlyOneTroveLeft.selector);
+        troveManager.liquidate(troveId);
+        vm.stopPrank();
+
+        // Check trove is not closed
+        assertEq(uint8(troveManager.getTroveStatus(troveId)), uint8(ITroveManager.Status.active));
     }
 
     function testCannotAdjustInterestAfterShutdown() public {

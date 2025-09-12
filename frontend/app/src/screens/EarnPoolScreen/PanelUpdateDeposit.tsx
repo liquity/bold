@@ -1,36 +1,35 @@
-import type { CollIndex, PositionEarn } from "@/src/types";
+import type { BranchId, PositionEarn } from "@/src/types";
 import type { Dnum } from "dnum";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import content from "@/src/content";
 import { DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getCollToken, isEarnPositionActive } from "@/src/liquity-utils";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
+import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, Checkbox, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
+import { Checkbox, HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useState } from "react";
 
 type ValueUpdateMode = "add" | "remove";
 
 export function PanelUpdateDeposit({
-  deposited,
-  collIndex,
+  poolDeposit,
+  branchId,
   position,
 }: {
-  deposited: Dnum;
-  collIndex: CollIndex;
+  poolDeposit: Dnum;
+  branchId: BranchId;
   position?: PositionEarn;
 }) {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
+  const collateral = getCollToken(branchId);
 
   const [mode, setMode] = useState<ValueUpdateMode>("add");
   const [value, setValue] = useState("");
@@ -41,25 +40,21 @@ export function PanelUpdateDeposit({
   const isActive = isEarnPositionActive(position ?? null);
 
   const parsedValue = parseInputFloat(value);
-
+  const depositDifference = dn.mul(parsedValue ?? DNUM_0, mode === "remove" ? -1 : 1);
   const value_ = (focused || !parsedValue || dn.lte(parsedValue, 0)) ? value : `${fmtnum(parsedValue, "full")}`;
-
-  const depositDifference = mode === "remove" ? dn.mul(parsedValue ?? DNUM_0, -1) : (parsedValue ?? DNUM_0);
-
   const updatedDeposit = dnumMax(
     dn.add(position?.deposit ?? DNUM_0, depositDifference),
     DNUM_0,
   );
 
-  const boldBalance = useBalance(account.address, "BOLD");
-
-  const updatedBoldQty = dn.add(deposited, depositDifference);
+  const updatedPoolDeposit = poolDeposit && dn.add(poolDeposit, depositDifference);
+  const updatedBoldQty = dn.add(poolDeposit, depositDifference);
 
   const updatedPoolShare = depositDifference && dn.gt(updatedBoldQty, 0)
     ? dn.div(updatedDeposit, updatedBoldQty)
     : DNUM_0;
 
-  const collateral = getCollToken(collIndex);
+  const boldBalance = useBalance(account.address, "BOLD");
 
   const insufficientBalance = mode === "add"
     && parsedValue
@@ -156,8 +151,14 @@ export function PanelUpdateDeposit({
               end: mode === "add"
                 ? boldBalance.data && (
                   <TextButton
-                    label={dn.gt(boldBalance.data, 0) ? `Max ${fmtnum(boldBalance.data, 2)} BOLD` : null}
-                    onClick={() => setValue(dn.toString(boldBalance.data))}
+                    label={dn.gt(boldBalance.data, 0)
+                      ? `Max ${fmtnum(boldBalance.data, 2)} BOLD`
+                      : null}
+                    onClick={() => {
+                      if (boldBalance.data) {
+                        setValue(dn.toString(boldBalance.data));
+                      }
+                    }}
                   />
                 )
                 : position?.deposit && dn.gt(position.deposit, 0) && (
@@ -233,43 +234,37 @@ export function PanelUpdateDeposit({
                     BOLD
                   </span>
                 </div>
-                {collateral && (
-                  <div>
-                    <Amount value={position.rewards.coll} />{" "}
-                    <span
-                      className={css({
-                        color: "contentAlt",
-                      })}
-                    >
-                      {collateral.name}
-                    </span>
-                  </div>
-                )}
+                <div>
+                  <Amount value={position.rewards.coll} />{" "}
+                  <span
+                    className={css({
+                      color: "contentAlt",
+                    })}
+                  >
+                    {collateral.name}
+                  </span>
+                </div>
               </div>
             )}
           </HFlex>
         )}
-        <ConnectWarningBox />
-        <Button
+
+        <FlowButton
           disabled={!allowSubmit}
-          label={content.earnScreen.depositPanel.action}
-          mode="primary"
-          size="large"
-          wide
-          onClick={() => {
-            if (!account.address || !collateral || (mode === "remove" && !position)) {
-              return;
+          request={() => {
+            if (!account.address || (mode === "remove" && !position)) {
+              return null;
             }
 
             const prevEarnPosition = position ?? {
               type: "earn" as const,
               owner: account.address,
-              collIndex,
+              branchId,
               deposit: DNUM_0,
               rewards: { bold: DNUM_0, coll: DNUM_0 },
             };
 
-            txFlow.start({
+            return {
               flowId: "earnUpdate",
               backLink: [
                 `/earn/${collateral.name.toLowerCase()}`,
@@ -279,14 +274,17 @@ export function PanelUpdateDeposit({
               successMessage: mode === "remove"
                 ? "The withdrawal has been processed successfully."
                 : "The deposit has been processed successfully.",
-              collIndex,
+
+              branchId,
+              poolDeposit: updatedPoolDeposit,
+              prevPoolDeposit: poolDeposit,
               prevEarnPosition,
               earnPosition: {
                 ...prevEarnPosition,
                 deposit: updatedDeposit,
               },
               claimRewards,
-            });
+            };
           }}
         />
       </div>

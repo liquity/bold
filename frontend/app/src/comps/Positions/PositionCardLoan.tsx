@@ -1,7 +1,9 @@
+import * as dn from "dnum";
+
 import type { PositionLoanCommitted } from "@/src/types";
 
 import { LoanStatusTag } from "@/src/comps/Tag/LoanStatusTag";
-import { getPrefixedTroveId, useLoan } from "@/src/liquity-utils";
+import { getPrefixedTroveId } from "@/src/liquity-utils";
 import { useStoredState } from "@/src/services/StoredState";
 import { PositionCardBorrow } from "./PositionCardBorrow";
 import { PositionCardLeverage } from "./PositionCardLeverage";
@@ -12,18 +14,17 @@ export function PositionCardLoan(
     | "type"
     | "batchManager"
     | "borrowed"
-    | "collIndex"
+    | "branchId"
     | "deposit"
     | "interestRate"
     | "status"
     | "troveId"
+    | "recordedDebt"
+    | "isZombie"
   >,
 ) {
   const storedState = useStoredState();
-
-  const loan = useLoan(props.collIndex, props.troveId);
-
-  const prefixedTroveId = getPrefixedTroveId(props.collIndex, props.troveId);
+  const prefixedTroveId = getPrefixedTroveId(props.branchId, props.troveId);
   const loanMode = storedState.loanModes[prefixedTroveId] ?? props.type;
 
   const Card = loanMode === "multiply" ? PositionCardLeverage : PositionCardBorrow;
@@ -31,11 +32,23 @@ export function PositionCardLoan(
   return (
     <Card
       {...props}
-      debt={loan.data?.borrowed ?? null}
+      debt={!props.borrowed || props.status === "liquidated"
+        ? null
+        : props.borrowed}
+      deposit={!props.deposit || props.status === "liquidated"
+        ? null
+        : props.deposit}
+      liquidated={props.status === "liquidated"}
       statusTag={props.status === "liquidated"
         ? <LoanStatusTag status="liquidated" />
         : props.status === "redeemed"
-        ? <LoanStatusTag status="redeemed" />
+        ? (
+          <LoanStatusTag
+            status={dn.eq(props.recordedDebt, 0)
+              ? "fully-redeemed"
+              : "partially-redeemed"}
+          />
+        )
         : null}
     />
   );

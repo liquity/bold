@@ -2,10 +2,14 @@ import type { LoadingState } from "@/src/screens/TransactionsScreen/Transactions
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { MAX_ANNUAL_INTEREST_RATE, MIN_ANNUAL_INTEREST_RATE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { usePredictAdjustInterestRateUpfrontFee } from "@/src/liquity-utils";
+import {
+  getBranch,
+  getTroveOperationHints,
+  useInterestBatchDelegate,
+  usePredictAdjustInterestRateUpfrontFee,
+} from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
@@ -14,10 +18,10 @@ import { vPositionLoanCommited } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { ADDRESS_ZERO, InfoTooltip } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { match, P } from "ts-pattern";
+import { match } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
-import { createRequestSchema, verifyTroveUpdate } from "./shared";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "updateLoanInterestRate",
@@ -30,12 +34,12 @@ const RequestSchema = createRequestSchema(
 export type UpdateLoanInterestRateRequest = v.InferOutput<typeof RequestSchema>;
 
 export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateRequest> = {
-  title: "Review & Confirm",
+  title: "Review & Send Transaction",
 
   Summary({ request }) {
     const { loan, prevLoan } = request;
     const upfrontFee = usePredictAdjustInterestRateUpfrontFee(
-      loan.collIndex,
+      loan.branchId,
       loan.troveId,
       loan.batchManager ?? loan.interestRate,
       prevLoan.batchManager !== null,
@@ -46,7 +50,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
       .returnType<LoadingState>()
       .with({ status: "error" }, () => "error")
       .with({ status: "pending" }, () => "loading")
-      .with({ data: P.nonNullable }, () => "success")
+      .with({ status: "success" }, () => "success")
       .exhaustive();
 
     return (
@@ -70,13 +74,23 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
     const { loan, prevLoan } = request;
 
     const upfrontFee = usePredictAdjustInterestRateUpfrontFee(
-      loan.collIndex,
+      loan.branchId,
       loan.troveId,
       loan.batchManager ?? loan.interestRate,
       prevLoan.batchManager !== null,
     );
 
-    const yearlyBoldInterest = dn.mul(loan.borrowed, loan.interestRate);
+    const delegate = useInterestBatchDelegate(loan.branchId, loan.batchManager);
+    const yearlyBoldInterest = dn.mul(
+      loan.borrowed,
+      dn.add(loan.interestRate, delegate.data?.fee ?? 0),
+    );
+
+    const prevDelegate = useInterestBatchDelegate(loan.branchId, prevLoan.batchManager);
+    const prevYearlyBoldInterest = dn.mul(
+      prevLoan.borrowed,
+      dn.add(prevLoan.interestRate, prevDelegate.data?.fee ?? 0),
+    );
 
     return loan.batchManager
       ? (
@@ -85,11 +99,32 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
           value={[
             <AccountButton key="start" address={loan.batchManager} />,
             <div key="end">
-              {fmtnum(loan.interestRate, "pctfull")}% ({fmtnum(yearlyBoldInterest, {
-                digits: 4,
-                dust: false,
-                prefix: "~",
-              })} BOLD per year)
+              {delegate.isLoading
+                ? "Loading…"
+                : (
+                  <>
+                    <Amount
+                      value={loan.interestRate}
+                      format="pct2z"
+                      percentage
+                    />{" "}
+                    <Amount
+                      percentage
+                      format="pct2"
+                      prefix="+ "
+                      suffix="% delegate fee"
+                      fallback="…"
+                      value={delegate.data?.fee}
+                    />
+                    <br />
+                    <Amount
+                      format="2z"
+                      prefix="~"
+                      suffix=" BOLD per year"
+                      value={yearlyBoldInterest}
+                    />
+                  </>
+                )}
             </div>,
           ]}
         />
@@ -132,14 +167,26 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                     textDecoration: "line-through",
                   })}
                 >
-                  {fmtnum(prevLoan.interestRate, "pctfull")}% ({fmtnum(
-                    dn.mul(prevLoan.borrowed, prevLoan.interestRate),
-                    {
-                      digits: 4,
-                      dust: false,
-                      prefix: "~",
-                    },
-                  )} BOLD per year)
+                  <Amount
+                    value={prevLoan.interestRate}
+                    format="pct2z"
+                    percentage
+                  />{" "}
+                  <Amount
+                    percentage
+                    format="pct2"
+                    prefix="+ "
+                    suffix="% delegate fee"
+                    fallback="…"
+                    value={prevDelegate.data?.fee}
+                  />
+                  <br />
+                  <Amount
+                    format="2z"
+                    prefix="~"
+                    suffix=" BOLD per year"
+                    value={prevYearlyBoldInterest}
+                  />
                 </div>,
               ]}
             />
@@ -193,28 +240,29 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
       async commit(ctx) {
         const { loan } = ctx.request;
 
-        const collateral = ctx.contracts.collaterals[loan.collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + loan.collIndex);
-        }
+        const { upperHint, lowerHint } = await getTroveOperationHints({
+          wagmiConfig: ctx.wagmiConfig,
+          contracts: ctx.contracts,
+          branchId: loan.branchId,
+          interestRate: loan.interestRate[0],
+        });
 
-        const { BorrowerOperations } = collateral.contracts;
-
+        const { contracts } = getBranch(loan.branchId);
         return ctx.writeContract({
-          ...BorrowerOperations,
+          ...contracts.BorrowerOperations,
           functionName: "adjustTroveInterestRate",
           args: [
             BigInt(loan.troveId),
             loan.interestRate[0],
-            0n,
-            0n,
+            upperHint,
+            lowerHint,
             maxUint256,
           ],
         });
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -224,32 +272,87 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
 
       async commit(ctx) {
         const { loan } = ctx.request;
-        const collateral = ctx.contracts.collaterals[loan.collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + loan.collIndex);
-        }
-
-        const { BorrowerOperations } = collateral.contracts;
 
         if (!loan.batchManager) {
           throw new Error("No batch manager provided");
         }
 
+        const { upperHint, lowerHint } = await getTroveOperationHints({
+          wagmiConfig: ctx.wagmiConfig,
+          contracts: ctx.contracts,
+          branchId: loan.branchId,
+          interestRate: loan.interestRate[0],
+        });
+
+        const { contracts } = getBranch(loan.branchId);
         return ctx.writeContract({
-          ...BorrowerOperations,
+          ...contracts.BorrowerOperations,
           functionName: "setInterestBatchManager",
           args: [
             BigInt(loan.troveId),
             loan.batchManager,
-            MIN_ANNUAL_INTEREST_RATE[0],
-            MAX_ANNUAL_INTEREST_RATE[0],
+            upperHint,
+            lowerHint,
             maxUint256,
           ],
         });
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
+      },
+    },
+
+    switchInterestBatchManager: {
+      name: () => "Set interest rate delegate",
+      Status: TransactionStatus,
+
+      async commit(ctx) {
+        const { loan, prevLoan } = ctx.request;
+
+        if (!loan.batchManager) {
+          throw new Error("No batch manager provided");
+        }
+
+        if (!prevLoan.batchManager) {
+          throw new Error("No previous batch manager provided");
+        }
+
+        const hintsBase = {
+          wagmiConfig: ctx.wagmiConfig,
+          contracts: ctx.contracts,
+          branchId: loan.branchId,
+        };
+
+        const [prevHints, newHints] = await Promise.all([
+          getTroveOperationHints({
+            ...hintsBase,
+            interestRate: prevLoan.interestRate[0],
+          }),
+          getTroveOperationHints({
+            ...hintsBase,
+            interestRate: loan.interestRate[0],
+          }),
+        ]);
+
+        const { contracts } = getBranch(loan.branchId);
+        return ctx.writeContract({
+          ...contracts.BorrowerOperations,
+          functionName: "switchBatchManager",
+          args: [
+            BigInt(loan.troveId),
+            prevHints.upperHint,
+            prevHints.lowerHint,
+            loan.batchManager,
+            newHints.upperHint,
+            newHints.lowerHint,
+            maxUint256,
+          ],
+        });
+      },
+
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -259,46 +362,47 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
 
       async commit(ctx) {
         const { loan } = ctx.request;
-        const collateral = ctx.contracts.collaterals[loan.collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + loan.collIndex);
-        }
 
-        const { BorrowerOperations } = collateral.contracts;
+        const { upperHint, lowerHint } = await getTroveOperationHints({
+          wagmiConfig: ctx.wagmiConfig,
+          contracts: ctx.contracts,
+          branchId: loan.branchId,
+          interestRate: loan.interestRate[0],
+        });
 
+        const { contracts } = getBranch(loan.branchId);
         return ctx.writeContract({
-          ...BorrowerOperations,
+          ...contracts.BorrowerOperations,
           functionName: "removeFromBatch",
           args: [
             BigInt(loan.troveId),
             loan.interestRate[0],
-            0n,
-            0n,
+            upperHint,
+            lowerHint,
             maxUint256,
           ],
         });
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
   },
 
   async getSteps(ctx) {
-    const loan = ctx.request.loan;
-    const collateral = ctx.contracts.collaterals[loan.collIndex];
-    if (!collateral) {
-      throw new Error("Invalid collateral index: " + loan.collIndex);
-    }
+    const { loan, prevLoan } = ctx.request;
 
     if (loan.batchManager) {
-      return ["setInterestBatchManager"];
+      return prevLoan.batchManager
+        ? ["switchInterestBatchManager"]
+        : ["setInterestBatchManager"];
     }
 
+    const { contracts } = getBranch(loan.branchId);
     const isInBatch = (
       await ctx.readContract({
-        ...collateral.contracts.BorrowerOperations,
+        ...contracts.BorrowerOperations,
         functionName: "interestBatchManagerOf",
         args: [BigInt(loan.troveId)],
       })

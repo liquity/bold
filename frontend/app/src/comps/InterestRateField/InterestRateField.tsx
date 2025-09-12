@@ -1,74 +1,77 @@
-import type { Address, CollIndex, Delegate } from "@/src/types";
+import type { Address, BranchId, Delegate, PositionLoanCommitted } from "@/src/types";
 import type { Dnum } from "dnum";
-import type { ReactNode } from "react";
 
-import { Amount } from "@/src/comps/Amount/Amount";
-import { INTEREST_RATE_DEFAULT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
+import { useAppear } from "@/src/anim-utils";
+import { useBreakpointName } from "@/src/breakpoints";
+import { INTEREST_RATE_MAX, INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
-import { IC_STRATEGIES } from "@/src/demo-mode";
-import { jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
-import { fmtnum, formatRedemptionRisk } from "@/src/formatting";
+import { fmtnum } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
-import { useInterestRateChartData } from "@/src/liquity-utils";
-import { useInterestBatchDelegate } from "@/src/subgraph-hooks";
-import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
+import {
+  EMPTY_LOAN,
+  findClosestRateIndex,
+  getBranch,
+  useAverageInterestRate,
+  useDebtInFrontOfInterestRate,
+  useDebtInFrontOfLoan,
+  useInterestRateChartData,
+} from "@/src/liquity-utils";
+import { infoTooltipProps } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import {
-  AddressField,
-  AnchorTextButton,
-  Button,
-  Dropdown,
-  HFlex,
-  IconCopy,
-  InfoTooltip,
-  InputField,
-  lerp,
-  Modal,
-  norm,
-  shortenAddress,
-  Slider,
-  StatusDot,
-  TextButton,
-} from "@liquity2/uikit";
+import { Dropdown, InfoTooltip, InputField, shortenAddress, Slider, TextButton } from "@liquity2/uikit";
+import { a } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
-import { memo, useId, useState } from "react";
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { match } from "ts-pattern";
+import { DelegateModal } from "./DelegateModal";
+import { IcStrategiesModal } from "./IcStrategiesModal";
+import { MiniChart } from "./MiniChart";
 
 import icLogo from "./ic-logo.svg";
 
-export type DelegateMode = "manual" | "strategy" | "delegate";
-
-const DELEGATE_MODES: DelegateMode[] = [
+const DELEGATE_MODES = [
   "manual",
   "delegate",
-  // "strategy",
-];
+  "strategy",
+] as const;
+
+export type DelegateMode = typeof DELEGATE_MODES[number];
+
+const SHOW_AVERAGE_BUTTON_MODES: DelegateMode[] = [
+  "manual",
+] as const;
 
 export const InterestRateField = memo(
   function InterestRateField({
-    collIndex,
+    branchId,
     debt,
     delegate,
     inputId: inputIdFromProps,
     interestRate,
     mode,
+    onAverageInterestRateLoad = noop,
     onChange,
     onDelegateChange,
     onModeChange = noop,
+    loan,
   }: {
-    collIndex: CollIndex;
+    branchId: BranchId;
     debt: Dnum | null;
     delegate: Address | null;
     inputId?: string;
     interestRate: Dnum | null;
     mode: DelegateMode;
+    // XXX why is average interest rate loaded inside this component and not the parent?
+    onAverageInterestRateLoad?: (averageInterestRate: Dnum, setValue: (value: string) => void) => void;
     onChange: (interestRate: Dnum) => void;
     onDelegateChange: (delegate: Address | null) => void;
     onModeChange?: (mode: DelegateMode) => void;
+    loan?: PositionLoanCommitted;
   }) {
     const [delegatePicker, setDelegatePicker] = useState<
       "strategy" | "delegate" | null
@@ -77,30 +80,101 @@ export const InterestRateField = memo(
     const autoInputId = useId();
     const inputId = inputIdFromProps ?? autoInputId;
 
+    const averageInterestRate = useAverageInterestRate(branchId);
+
+    const rateTouchedForBranch = useRef<
+      | null // rate not touched for this branch, average rate should be applied
+      | BranchId // rate touched for this branch, not applying the average rate
+    >(null);
+
+    if (rateTouchedForBranch.current !== branchId) {
+      rateTouchedForBranch.current = null;
+    }
+
+    useEffect(() => {
+      let cancelled = false;
+      if (rateTouchedForBranch.current === null && averageInterestRate.data) {
+        rateTouchedForBranch.current = branchId;
+        setTimeout(() => {
+          if (averageInterestRate.data && !cancelled) {
+            onAverageInterestRateLoad(averageInterestRate.data, fieldValue.setValue);
+          }
+        }, 0);
+        return () => {
+          cancelled = true;
+        };
+      }
+    }, [
+      averageInterestRate.data,
+      branchId,
+      onAverageInterestRateLoad,
+    ]);
+
+    useEffect(() => {
+      setDelegatePicker(null);
+      onDelegateChange(null);
+      onModeChange("manual");
+    }, [
+      branchId,
+      onDelegateChange,
+      onModeChange,
+    ]);
+
     const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
-      defaultValue: interestRate
-        ? dn.toString(dn.mul(interestRate, 100))
-        : String(INTEREST_RATE_DEFAULT),
+      defaultValue: interestRate ? dn.toString(dn.mul(interestRate, 100)) : undefined,
+
+      onFocusChange: ({ parsed, focused }) => {
+        if (!focused && parsed) {
+          if (dn.lt(parsed, INTEREST_RATE_START * 100)) fieldValue.setValue(String(INTEREST_RATE_START * 100));
+          if (dn.gt(parsed, INTEREST_RATE_MAX * 100)) fieldValue.setValue(String(INTEREST_RATE_MAX * 100));
+        }
+      },
+
       onChange: ({ parsed }) => {
         if (parsed) {
+          rateTouchedForBranch.current = branchId;
           onChange(dn.div(parsed, 100));
         }
       },
     });
 
-    const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
+    const interestChartData = useInterestRateChartData(branchId, loan);
+    const debtInFrontOfLoan = useDebtInFrontOfLoan(loan ?? EMPTY_LOAN);
+    const debtInFrontOfInterestRate = useDebtInFrontOfInterestRate(branchId, interestRate ?? DNUM_0, loan);
 
-    const interestChartData = useInterestRateChartData(collIndex);
+    // When a loan exists already and the selected interest rate is the same as the existing interest rate
+    // (for example as in the initial state after navigating to the interest rate panel)
+    // show the current precise debt-in-front of the loan.
+    // This is useful for checking how far the loan is from redemption (beyond just checking the risk level).
+    // If the loan is not redeemable, e.g. because it has been fully redeemed, we revert to debt-in-front
+    // based on interest rate (i.e. the debt that would be in front of the position if it were to be made
+    // active again at its current interest rate).
+    const debtInFront = loan && interestRate && dn.eq(loan.interestRate, interestRate)
+      ? debtInFrontOfLoan.data && (
+        debtInFrontOfLoan.data.debtInFront
+          ? debtInFrontOfLoan.data // redeemable (debtInFront not null)
+          : debtInFrontOfInterestRate.data // not redeemable (debtInFront is null)
+      )
+      : debtInFrontOfInterestRate.data;
 
-    const interestRateNumber = interestRate && dn.toNumber(dn.mul(interestRate, 100));
-    const chartdataPoint = interestChartData.data?.find(({ rate }) => rate === interestRateNumber);
-    const boldRedeemableInFront = chartdataPoint?.debtInFront ?? dn.from(0, 18);
+    const redemptionRisk = debtInFront
+      && getRedemptionRisk(debtInFront.debtInFront, debtInFront.totalDebt);
+    const redeemableTransition = useAppear(debtInFront !== undefined);
 
     const handleDelegateSelect = (delegate: Delegate) => {
       setDelegatePicker(null);
-      onChange(delegate.interestRate);
+      fieldValue.setValue(dn.toString(dn.mul(delegate.interestRate, 100)));
       onDelegateChange(delegate.address ?? null);
     };
+
+    const branch = getBranch(branchId);
+
+    const hasStrategies = branch.strategies.length > 0;
+    const activeDelegateModes = DELEGATE_MODES.filter((mode) => mode !== "strategy" || hasStrategies);
+
+    const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
+
+    const breakpoint = useBreakpointName();
 
     return (
       <>
@@ -111,42 +185,45 @@ export const InterestRateField = memo(
           disabled={mode !== "manual"}
           contextual={match(mode)
             .with("manual", () => (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 300,
-                }}
-              >
-                <Slider
-                  gradient={[1 / 3, 2 / 3]}
-                  gradientMode="high-to-low"
-                  chart={interestChartData.data?.map(({ size }) => Math.max(0.1, size)) ?? []}
-                  onChange={(value) => {
-                    fieldValue.setValue(String(
-                      Math.round(
-                        lerp(
-                          INTEREST_RATE_MIN,
-                          INTEREST_RATE_MAX,
-                          value,
-                        ) * 10,
-                      ) / 10,
-                    ));
-                  }}
-                  value={norm(
-                    interestRate ? dn.toNumber(dn.mul(interestRate, 100)) : 0,
-                    INTEREST_RATE_MIN,
-                    INTEREST_RATE_MAX,
-                  )}
-                />
-              </div>
+              <ManualInterestRateSlider
+                interestChartData={interestChartData}
+                interestRate={interestRate}
+                fieldValue={fieldValue}
+                handleColor={redemptionRisk && (
+                  redemptionRisk === "high"
+                    ? 0
+                    : redemptionRisk === "medium"
+                    ? 1
+                    : 2
+                )}
+              />
             ))
             .with("strategy", () => (
               <TextButton
                 size="large"
                 label={delegate
-                  ? IC_STRATEGIES.find(({ address }) => address === delegate)?.name
+                  ? (
+                    <div
+                      title={delegate}
+                      className={css({
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      })}
+                    >
+                      <Image
+                        alt=""
+                        src={icLogo}
+                        width={24}
+                        height={24}
+                        className={css({
+                          display: "block",
+                          borderRadius: 4,
+                        })}
+                      />
+                      {shortenAddress(delegate, 4).toLowerCase()}
+                    </div>
+                  )
                   : "Choose strategy"}
                 onClick={() => {
                   setDelegatePicker("strategy");
@@ -165,6 +242,7 @@ export const InterestRateField = memo(
                         display: "flex",
                         alignItems: "center",
                         gap: 8,
+                        fontSize: 20,
                       })}
                     >
                       <Image
@@ -188,29 +266,59 @@ export const InterestRateField = memo(
             ))
             .exhaustive()}
           label={{
-            start: "Interest rate",
+            start: (
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                })}
+              >
+                <div>Interest rate</div>
+                {averageInterestRate.data && SHOW_AVERAGE_BUTTON_MODES.includes(mode) && (
+                  <div>
+                    <TextButton
+                      size="small"
+                      title={`Set average interest rate (${
+                        fmtnum(averageInterestRate.data, {
+                          preset: "pct2z",
+                          suffix: "%",
+                        })
+                      })`}
+                      label={`(avg. ${
+                        fmtnum(averageInterestRate.data, {
+                          preset: "pct2z",
+                          suffix: "%",
+                        })
+                      })`}
+                      onClick={(event) => {
+                        if (averageInterestRate.data) {
+                          event.preventDefault();
+                          const rounded = dn.div(dn.round(dn.mul(averageInterestRate.data, 1e4)), 1e4);
+                          fieldValue.setValue(dn.toString(dn.mul(rounded, 100)));
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ),
             end: (
               <div>
                 <Dropdown
-                  items={DELEGATE_MODES.map((mode) => {
-                    const modeContent = content.interestRateField.delegateModes[mode];
-                    return ({
-                      label: modeContent.label,
-                      secondary: modeContent.secondary,
-                      disabled: mode === "strategy",
-                      disabledReason: "Coming soon",
-                    });
-                  })}
+                  items={activeDelegateModes.map(
+                    (mode) => content.interestRateField.delegateModes[mode],
+                  )}
                   menuWidth={300}
                   menuPlacement="end"
                   onSelect={(index) => {
-                    const mode = DELEGATE_MODES[index];
+                    const mode = activeDelegateModes[index];
                     if (mode) {
                       onModeChange(mode);
                     }
                     onDelegateChange(null);
                   }}
-                  selected={DELEGATE_MODES.findIndex((mode_) => mode_ === mode)}
+                  selected={activeDelegateModes.findIndex((mode_) => mode_ === mode)}
                   size="small"
                 />
               </div>
@@ -219,30 +327,63 @@ export const InterestRateField = memo(
           placeholder="0.00"
           secondary={{
             start: (
-              <HFlex gap={4}>
-                <div>
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  minWidth: 120,
+                  userSelect: "none",
+                })}
+              >
+                <div
+                  className={css({
+                    minWidth: 0,
+                    flexShrink: 1,
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                  })}
+                >
                   {boldInterestPerYear && (mode === "manual" || delegate !== null)
-                    ? fmtnum(boldInterestPerYear)
+                    ? fmtnum(boldInterestPerYear, breakpoint === "small" ? "compact" : "2z")
                     : "−"} BOLD / year
                 </div>
                 <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
-              </HFlex>
+              </div>
             ),
-            end: (
-              <span>
-                <span>{"Redeemable before you: "}</span>
-                <span
+            end: redeemableTransition((style, show) => (
+              show && (
+                <a.div
+                  title={`Redeemable before you: ${
+                    (mode === "manual" || delegate !== null)
+                      ? fmtnum(debtInFront?.debtInFront, "compact")
+                      : "−"
+                  } BOLD`}
                   className={css({
-                    fontVariantNumeric: "tabular-nums",
+                    overflow: "hidden",
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                    userSelect: "none",
                   })}
+                  style={style}
                 >
-                  {(mode === "manual" || delegate !== null)
-                    ? fmtnum(boldRedeemableInFront, "compact")
-                    : "−"}
-                </span>
-                <span>{" BOLD"}</span>
-              </span>
-            ),
+                  <span>
+                    {breakpoint === "large" ? "Redeemable before you: " : "Red. before: "}
+                    <span
+                      className={css({
+                        fontVariantNumeric: "tabular-nums",
+                      })}
+                    >
+                      {(mode === "manual" || delegate !== null)
+                        ? fmtnum(debtInFront?.debtInFront, "compact")
+                        : "−"}
+                    </span>
+                    {breakpoint === "large" && <span>{" BOLD"}</span>}
+                  </span>
+                </a.div>
+              )
+            )),
           }}
           {...fieldValue.inputFieldProps}
           value={
@@ -261,10 +402,10 @@ export const InterestRateField = memo(
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 10,
+                    gap: 8,
                   }}
                 >
-                  {delegate !== null && <MiniChart size="medium" />}
+                  {delegate !== null && breakpoint === "large" && <MiniChart size="medium" />}
                   <span
                     style={{
                       fontVariantNumeric: "tabular-nums",
@@ -272,69 +413,41 @@ export const InterestRateField = memo(
                   >
                     {(mode === "manual" || delegate !== null) && fmtnum(
                       interestRate,
-                      "pct1z",
+                      "pct2z",
                     )}
                   </span>
                   <span
-                    style={{
+                    className={css({
                       color: "#878AA4",
-                      fontSize: 24,
-                    }}
+                      fontSize: {
+                        base: 20,
+                        large: 24,
+                      },
+                    })}
                   >
-                    % per year
+                    %{breakpoint === "large" ? " per year" : ""}
                   </span>
                 </span>
               )
               : null
           }
         />
-        <Modal
+        <DelegateModal
+          branchId={branchId}
           onClose={() => {
             setDelegatePicker(null);
           }}
-          title={
-            <div
-              className={css({
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-              })}
-            >
-              <div>
-                {content.interestRateField.icStrategyModal.title}
-              </div>
-              <Image
-                alt=""
-                src={icLogo}
-                width={24}
-                height={24}
-              />
-            </div>
-          }
-          visible={delegatePicker === "strategy"}
-        >
-          <DelegatesModalContent
-            collIndex={collIndex}
-            chooseLabel="Choose"
-            delegates={IC_STRATEGIES}
-            intro={content.interestRateField.icStrategyModal.intro}
-            onSelectDelegate={handleDelegateSelect}
-          />
-        </Modal>
-        <Modal
-          onClose={() => {
-            setDelegatePicker(null);
-          }}
-          title={content.interestRateField.delegatesModal.title}
+          onSelectDelegate={handleDelegateSelect}
           visible={delegatePicker === "delegate"}
-        >
-          <CustomDelegateModalContent
-            collIndex={collIndex}
-            chooseLabel="Set delegate"
-            intro={content.interestRateField.delegatesModal.intro}
-            onSelectDelegate={handleDelegateSelect}
-          />
-        </Modal>
+        />
+        <IcStrategiesModal
+          branchId={branchId}
+          onClose={() => {
+            setDelegatePicker(null);
+          }}
+          onSelectDelegate={handleDelegateSelect}
+          visible={delegatePicker === "strategy"}
+        />
       </>
     );
   },
@@ -343,437 +456,116 @@ export const InterestRateField = memo(
   ),
 );
 
-function CustomDelegateModalContent({
-  collIndex,
-  intro,
-  onSelectDelegate,
-}: {
-  collIndex: CollIndex;
-  chooseLabel: string;
-  intro: ReactNode;
-  onSelectDelegate: (delegate: Delegate) => void;
+function ManualInterestRateSlider({
+  fieldValue,
+  handleColor,
+  interestChartData,
+  interestRate,
+}: Pick<Parameters<typeof Slider>[0], "handleColor"> & {
+  fieldValue: ReturnType<typeof useInputFieldValue>;
+  interestChartData: ReturnType<typeof useInterestRateChartData>;
+  interestRate: Dnum | null;
 }) {
-  const [delegateAddress, setDelegateAddress] = useState<null | Address>(null);
-  const [delegateAddressValue, setDelegateAddressValue] = useState("");
+  const rateToSliderPosition = useCallback((rate: bigint, chartRates: bigint[]) => {
+    if (!rate || !chartRates || chartRates.length === 0) return 0;
 
-  const delegate = useInterestBatchDelegate(collIndex, delegateAddress);
+    const firstRate = chartRates.at(0) ?? 0n;
+    if (rate <= firstRate) return 0;
 
-  return (
-    <>
-      <div
-        className={css({
-          fontSize: 16,
-          color: "contentAlt",
-        })}
+    const lastRate = chartRates.at(-1) ?? 0n;
+    if (rate >= lastRate) return 1;
+
+    return findClosestRateIndex(chartRates, rate) / chartRates.length;
+  }, []);
+
+  const value = useMemo(() => {
+    const rate = interestRate?.[0] ?? 0n;
+    const chartRates = interestChartData.data?.map(({ rate }) => rate[0]);
+    if (!chartRates) return 0;
+
+    return rateToSliderPosition(rate, chartRates);
+  }, [
+    jsonStringifyWithDnum(interestChartData.data),
+    jsonStringifyWithDnum(interestRate),
+    rateToSliderPosition,
+  ]);
+
+  const gradientStops = useMemo((): [
+    medium: number,
+    low: number,
+  ] => {
+    if (!interestChartData.data || interestChartData.data.length === 0) {
+      return [0, 0];
+    }
+
+    const totalDebt = interestChartData.data.reduce(
+      (sum, item) => dn.add(sum, item.debt),
+      DNUM_0,
+    );
+
+    if (dn.eq(totalDebt, 0)) {
+      return [0, 0];
+    }
+
+    // find exact rates where debt positioning crosses thresholds
+    let mediumThresholdRate = null;
+    let lowThresholdRate = null;
+
+    for (const [index, item] of interestChartData.data.entries()) {
+      const prevItem = index > 0 ? interestChartData.data[index - 1] : null;
+      const prevRate = prevItem?.rate[0] ?? null;
+
+      const debtInFrontRatio = dn.div(item.debtInFront, totalDebt);
+
+      // place boundary at the rate before crossing threshold (so slider changes at the right position)
+      if (dn.gt(debtInFrontRatio, REDEMPTION_RISK.medium) && !mediumThresholdRate) {
+        mediumThresholdRate = prevRate;
+      }
+
+      if (dn.gt(debtInFrontRatio, REDEMPTION_RISK.low) && !lowThresholdRate) {
+        lowThresholdRate = prevRate;
+        // low threshold found: no need to continue
+        break;
+      }
+    }
+
+    const chartRates = interestChartData.data.map(({ rate }) => rate[0]);
+    return [
+      mediumThresholdRate ? rateToSliderPosition(mediumThresholdRate, chartRates) : 0,
+      lowThresholdRate ? rateToSliderPosition(lowThresholdRate, chartRates) : 0,
+    ];
+  }, [interestChartData.data, rateToSliderPosition]);
+
+  const transition = useAppear(value !== -1);
+
+  const breakpoint = useBreakpointName();
+
+  return transition((style, show) =>
+    show && (
+      <a.div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: breakpoint === "large" ? 260 : 200,
+          paddingTop: 16,
+          ...style,
+        }}
       >
-        {intro}
-      </div>
-      <div
-        className={css({
-          paddingTop: 40,
-        })}
-      >
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (delegate.data) {
-              onSelectDelegate(delegate.data);
+        <Slider
+          gradient={gradientStops}
+          gradientMode="high-to-low"
+          handleColor={handleColor}
+          chart={interestChartData.data?.map(({ size }) => size) ?? []}
+          onChange={(value) => {
+            if (interestChartData.data) {
+              const index = Math.round(value * (interestChartData.data.length - 1));
+              fieldValue.setValue(dn.toString(dn.mul(interestChartData.data[index]?.rate ?? DNUM_0, 100)));
             }
           }}
-        >
-          <AddressField
-            onAddressChange={setDelegateAddress}
-            onChange={setDelegateAddressValue}
-            placeholder="Enter delegate address"
-            value={delegateAddressValue}
-          />
-        </form>
-      </div>
-
-      <div
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 8,
-          paddingTop: 32,
-          paddingBottom: 24,
-          minHeight: 312,
-        })}
-      >
-        {delegateAddress
-          ? (
-            <div
-              className={css({
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                width: "100%",
-                height: "100%",
-              })}
-            >
-              {delegate.status === "pending"
-                ? (
-                  <div
-                    className={css({
-                      color: "contentAlt",
-                      paddingTop: 40,
-                    })}
-                  >
-                    Loading…
-                  </div>
-                )
-                : delegate.status === "error"
-                ? (
-                  <div
-                    className={css({
-                      color: "contentAlt",
-                      paddingTop: 40,
-                    })}
-                  >
-                    Error: {delegate.error?.name}
-                  </div>
-                )
-                : (
-                  delegate.data
-                    ? (
-                      <DelegateBox
-                        delegate={delegate.data}
-                        selectLabel="Choose"
-                        onSelect={onSelectDelegate}
-                      />
-                    )
-                    : (
-                      <div>
-                        The address is not a valid{" "}
-                        <AnchorTextButton
-                          label="delegate"
-                          href="https://docs.liquity.org/v2-faq/redemptions-and-delegation#what-is-delegation-of-interest-rates"
-                          external
-                        />.
-                      </div>
-                    )
-                )}
-            </div>
-          )
-          : (
-            <>
-              <div>
-                Set a valid{" "}
-                <AnchorTextButton
-                  label="delegate"
-                  href="https://docs.liquity.org/v2-faq/redemptions-and-delegation#what-is-delegation-of-interest-rates"
-                  external
-                />{" "}
-                address.
-              </div>
-
-              <div>
-                Delegate addresses can be found{"  "}
-                <AnchorTextButton
-                  label="here"
-                  href="https://docs.liquity.org/v2-faq/redemptions-and-delegation#docs-internal-guid-441d8c3f-7fff-4efa-6319-4ba00d908597"
-                  external
-                />.
-              </div>
-            </>
-          )}
-      </div>
-    </>
-  );
-}
-
-function DelegatesModalContent({
-  collIndex: _collIndex,
-  delegates = [],
-  chooseLabel: _chooseLabel,
-  intro,
-  onSelectDelegate: _onSelectDelegate,
-}: {
-  collIndex: CollIndex;
-  delegates?: Delegate[];
-  chooseLabel: string;
-  intro: ReactNode;
-  onSelectDelegate: (delegate: Delegate) => void;
-}) {
-  const [displayedDelegates, setDisplayedDelegates] = useState(5);
-  return (
-    <>
-      <div
-        className={css({
-          fontSize: 16,
-          color: "contentAlt",
-        })}
-      >
-        {intro}
-      </div>
-
-      <div
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 8,
-          paddingTop: 32,
-          paddingBottom: 24,
-          minHeight: 312,
-        })}
-      >
-        {delegates.slice(0, displayedDelegates).map((delegate) => {
-          return (
-            <DelegateBox
-              key={delegate.id}
-              delegate={delegate}
-              selectLabel="Choose"
-              onSelect={noop}
-            />
-          );
-        })}
-        {displayedDelegates < delegates.length && (
-          <ShadowBox>
-            <TextButton
-              label="Load more"
-              onClick={() => setDisplayedDelegates(displayedDelegates + 5)}
-              className={css({
-                width: "100%",
-                padding: "24px 0",
-                justifyContent: "center",
-              })}
-            />
-          </ShadowBox>
-        )}
-      </div>
-    </>
-  );
-}
-
-const MiniChart = memo(function MiniChart({
-  size = "small",
-}: {
-  size?: "small" | "medium";
-}) {
-  return (
-    size === "medium"
-      ? (
-        <svg width="45" height="18" fill="none">
-          <path
-            stroke="#9EA2B8"
-            strokeLinecap="round"
-            strokeWidth="1.5"
-            d="m1 10.607 1.66 2.61a2 2 0 0 0 1.688.926H7.31c.29 0 .576.063.84.185l4.684 2.168a2 2 0 0 0 2.142-.296l2.995-2.568a2 2 0 0 0 .662-1.137l1.787-9.191a2 2 0 0 1 .318-.756l.096-.138a2 2 0 0 1 3.303.02l1.421 2.107a2 2 0 0 1 .278.616l1.295 4.996a2 2 0 0 0 .431.815l1.691 1.932c.163.187.29.402.375.635l.731 2.015a2 2 0 0 0 3.029.955l.079-.056a2 2 0 0 0 .744-.99l2.539-7.42 2.477-5.005a2 2 0 0 1 2.924-.762L44 3.536"
-          />
-        </svg>
-      )
-      : (
-        <svg width="28" height="16" fill="none">
-          <path
-            stroke="#9EA2B8"
-            strokeLinecap="round"
-            strokeWidth="1.5"
-            d="m2 8.893.618 1.009a2 2 0 0 0 1.706.955h.83a2 2 0 0 1 .867.198l1.731.832a2 2 0 0 0 2.197-.309l.901-.802a2 2 0 0 0 .636-1.126l.902-4.819c.028-.148.085-.288.169-.414v0a1.119 1.119 0 0 1 1.87.011l.64.986c.113.175.197.368.248.571l.613 2.458a2 2 0 0 0 .411.804l.686.814c.145.172.257.37.332.582l.339.97a1.09 1.09 0 0 0 1.671.522v0a1.09 1.09 0 0 0 .394-.54l1.361-4.13.847-1.778a2 2 0 0 1 2.966-.77l.065.047"
-          />
-        </svg>
-      )
-  );
-});
-
-function ShadowBox({ children }: { children: ReactNode }) {
-  return (
-    <div
-      className={css({
-        width: "100%",
-        background: "background",
-        borderWidth: "1px 1px 0",
-        borderStyle: "solid",
-        borderColor: "gray:50",
-        boxShadow: `
-          0 2px 2px rgba(0, 0, 0, 0.1),
-          0 4px 10px rgba(18, 27, 68, 0.05),
-          inset 0 -1px 4px rgba(0, 0, 0, 0.05)
-        `,
-        borderRadius: 8,
-      })}
-    >
-      {children}
-    </div>
-  );
-}
-
-function DelegateBox({
-  delegate,
-  onSelect,
-  selectLabel = "Select",
-}: {
-  delegate: Delegate;
-  onSelect: (delegate: Delegate) => void;
-  selectLabel: string;
-}) {
-  const delegationRisk = getRedemptionRisk(delegate.interestRate);
-  return (
-    <ShadowBox key={delegate.id}>
-      <section
-        key={delegate.name}
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          padding: "8px 16px",
-        })}
-      >
-        <div
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            width: "100%",
-            paddingBottom: 12,
-            borderBottom: "1px solid token(colors.borderSoft)",
-          })}
-        >
-          <div
-            className={css({
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              width: "100%",
-              fontSize: 20,
-              fontWeight: 500,
-              userSelect: "none",
-            })}
-          >
-            <h1 title={`${delegate.name} (${delegate.address})`}>
-              {delegate.name}
-            </h1>
-            <div
-              className={css({
-                display: "flex",
-                gap: 6,
-                alignItems: "center",
-              })}
-            >
-              <MiniChart />
-              {fmtnum(delegate.interestRate, "pct1z")}%
-            </div>
-          </div>
-          <div
-            className={css({
-              display: "flex",
-              justifyContent: "space-between",
-              width: "100%",
-              fontSize: 14,
-              color: "content",
-            })}
-          >
-            <div
-              className={css({
-                display: "flex",
-                gap: 8,
-                alignItems: "center",
-              })}
-            >
-              <Amount
-                value={delegate.boldAmount}
-                format="compact"
-                suffix=" BOLD"
-              />
-            </div>
-            <div
-              className={css({
-                display: "flex",
-                gap: 8,
-                alignItems: "center",
-              })}
-            >
-              <StatusDot mode={riskLevelToStatusMode(delegationRisk)} />
-              {formatRedemptionRisk(delegationRisk)}
-            </div>
-          </div>
-        </div>
-        <div
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            width: "100%",
-            paddingTop: 12,
-            fontSize: 14,
-            paddingBottom: 12,
-            borderBottom: "1px solid token(colors.borderSoft)",
-          })}
-        >
-          <div
-            className={css({
-              display: "flex",
-              justifyContent: "space-between",
-              width: "100%",
-              fontSize: 14,
-              color: "content",
-            })}
-          >
-            <div>Interest rate range</div>
-            <div>
-              {fmtnum(delegate.interestRateChange[0], "pct2")}
-              <span>-</span>
-              {fmtnum(delegate.interestRateChange[1], "pct2")}%
-            </div>
-          </div>
-          {delegate.fee && (
-            <div
-              className={css({
-                display: "flex",
-                justifyContent: "space-between",
-                width: "100%",
-                fontSize: 14,
-                color: "content",
-              })}
-            >
-              <div>
-                Fees <abbr title="per annum">p.a.</abbr>
-              </div>
-              <div title={`${fmtnum(delegate.fee, "pctfull")}%`}>
-                {fmtnum(delegate.fee, { digits: 4, scale: 100 })}%
-              </div>
-            </div>
-          )}
-        </div>
-        <div
-          className={css({
-            display: "flex",
-            justifyContent: "space-between",
-            width: "100%",
-            paddingTop: 16,
-            paddingBottom: 8,
-            fontSize: 14,
-          })}
-        >
-          <div
-            className={css({
-              display: "flex",
-              gap: 8,
-            })}
-          >
-            <TextButton
-              label={
-                <>
-                  Copy address
-                  <IconCopy size={16} />
-                </>
-              }
-              className={css({
-                fontSize: 14,
-              })}
-            />
-          </div>
-          <div>
-            <Button
-              label={selectLabel}
-              mode="primary"
-              size="small"
-              onClick={() => {
-                onSelect(delegate);
-              }}
-            />
-          </div>
-        </div>
-      </section>
-    </ShadowBox>
+          value={value}
+        />
+      </a.div>
+    )
   );
 }

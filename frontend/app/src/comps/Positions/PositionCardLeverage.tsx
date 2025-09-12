@@ -4,108 +4,113 @@ import type { ReactNode } from "react";
 
 import { formatRedemptionRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
-import { getLiquidationRisk, getLtv, getRedemptionRisk } from "@/src/liquity-math";
-import { getCollToken } from "@/src/liquity-utils";
+import { getLiquidationRisk, getLtv } from "@/src/liquity-math";
+import { getCollToken, useRedemptionRiskOfLoan } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconLeverage, StatusDot, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
-import Link from "next/link";
 import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows } from "./shared";
 
 export function PositionCardLeverage({
   debt,
-  collIndex,
+  branchId,
   deposit,
   interestRate,
+  liquidated = false,
+  status,
   statusTag,
   troveId,
+  isZombie,
 }:
   & Pick<
     PositionLoanCommitted,
-    | "collIndex"
-    | "deposit"
+    | "branchId"
     | "interestRate"
+    | "isZombie"
+    | "status"
     | "troveId"
   >
   & {
     debt: null | Dnum;
+    deposit: null | Dnum;
+    liquidated?: boolean;
     statusTag?: ReactNode;
   })
 {
-  const token = getCollToken(collIndex);
+  const token = getCollToken(branchId);
   if (!token) {
-    throw new Error(`Collateral token not found for index ${collIndex}`);
+    throw new Error(`Collateral token not found for index ${branchId}`);
   }
 
   const collateralPriceUsd = usePrice(token.symbol);
 
   const maxLtv = dn.from(1 / token.collateralRatio, 18);
-  const ltv = debt && collateralPriceUsd.data
+  const ltv = debt && deposit && collateralPriceUsd.data
     && getLtv(deposit, debt, collateralPriceUsd.data);
   const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
-  const redemptionRisk = getRedemptionRisk(interestRate);
+  const redemptionRisk = useRedemptionRiskOfLoan({ branchId, troveId, interestRate, status, isZombie });
 
   return (
-    <Link
-      href={`/loan?id=${collIndex}:${troveId}`}
-      legacyBehavior
-      passHref
-    >
-      <PositionCard
-        heading={[
-          <div
-            key="start"
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              color: "positionContent",
-            })}
-          >
-            <div>Multiply position</div>
-            {statusTag}
-          </div>,
-        ]}
-        contextual={
-          <div
-            className={css({
-              color: "positionContent",
-            })}
-          >
-            <IconLeverage size={32} />
-          </div>
-        }
-        main={{
-          value: (
-            <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-              {deposit ? fmtnum(deposit, 2) : "−"}
-              <TokenIcon size={24} symbol={token.symbol} />
-            </HFlex>
-          ),
-          label: "Net value",
-        }}
-        secondary={
-          <CardRows>
-            <CardRow
-              start={
+    <PositionCard
+      className="position-card  position-card-loan position-card-leverage"
+      href={`/loan?id=${branchId}:${troveId}`}
+      heading={[
+        <div
+          key="start"
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            color: "positionContent",
+          })}
+        >
+          <div>Multiply position</div>
+          {statusTag}
+        </div>,
+      ]}
+      contextual={
+        <div
+          className={css({
+            color: "positionContent",
+          })}
+        >
+          <IconLeverage size={32} />
+        </div>
+      }
+      main={{
+        value: (
+          <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+            {deposit ? fmtnum(deposit, 2) : "−"}
+            <TokenIcon size={24} symbol={token.symbol} />
+          </HFlex>
+        ),
+        label: "Net value",
+      }}
+      secondary={
+        <CardRows>
+          <CardRow
+            start={
+              <div
+                className={css({
+                  display: "flex",
+                  gap: 8,
+                  fontSize: 14,
+                })}
+              >
                 <div
                   className={css({
-                    display: "flex",
-                    gap: 8,
-                    fontSize: 14,
+                    color: "positionContentAlt",
                   })}
                 >
-                  <div
-                    className={css({
-                      color: "positionContentAlt",
-                    })}
-                  >
-                    LTV
-                  </div>
-                  {ltv && (
+                  LTV
+                </div>
+                {liquidated
+                  ? "N/A"
+                  : ltv
+                  ? (
                     <div
                       className={css({
                         "--status-positive": "token(colors.positiveAlt)",
@@ -122,86 +127,88 @@ export function PositionCardLeverage({
                     >
                       {fmtnum(ltv, "pct2")}%
                     </div>
-                  )}
-                </div>
-              }
-              end={
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontSize: 14,
-                  })}
-                >
-                  {liquidationRisk && (
-                    <div
-                      className={css({
-                        color: "positionContent",
-                      })}
-                    >
-                      {liquidationRisk === "low" ? "Low" : liquidationRisk === "medium" ? "Medium" : "High"}{" "}
-                      liquidation risk
-                    </div>
-                  )}
-                  <StatusDot
-                    mode={riskLevelToStatusMode(liquidationRisk)}
-                    size={8}
-                  />
-                </div>
-              }
-            />
-            <CardRow
-              start={
-                <div
-                  className={css({
-                    display: "flex",
-                    gap: 8,
-                    fontSize: 14,
-                  })}
-                >
-                  <div
-                    className={css({
-                      color: "positionContentAlt",
-                    })}
-                  >
-                    Interest rate
-                  </div>
+                  )
+                  : "−"}
+              </div>
+            }
+            end={!liquidated && (
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 14,
+                })}
+              >
+                {liquidationRisk && (
                   <div
                     className={css({
                       color: "positionContent",
                     })}
                   >
-                    {fmtnum(interestRate, "pct2")}%
+                    {liquidationRisk === "low" ? "Low" : liquidationRisk === "medium" ? "Medium" : "High"}{" "}
+                    liquidation risk
                   </div>
-                </div>
-              }
-              end={
+                )}
+                <StatusDot
+                  mode={riskLevelToStatusMode(liquidationRisk)}
+                  size={8}
+                />
+              </div>
+            )}
+          />
+          <CardRow
+            start={
+              <div
+                className={css({
+                  display: "flex",
+                  gap: 8,
+                  fontSize: 14,
+                })}
+              >
                 <div
                   className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    fontSize: 14,
+                    color: "positionContentAlt",
                   })}
                 >
-                  <div
-                    className={css({
-                      color: "positionContent",
-                    })}
-                  >
-                    {formatRedemptionRisk(redemptionRisk)}
-                  </div>
-                  <StatusDot
-                    mode={riskLevelToStatusMode(redemptionRisk)}
-                    size={8}
-                  />
+                  Interest rate
                 </div>
-              }
-            />
-          </CardRows>
-        }
-      />
-    </Link>
+                <div
+                  className={css({
+                    color: "positionContent",
+                  })}
+                >
+                  {liquidated
+                    ? "N/A"
+                    : fmtnum(interestRate, "pct2")}%
+                </div>
+              </div>
+            }
+            end={!liquidated && (
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 14,
+                })}
+              >
+                <div
+                  className={css({
+                    color: "positionContent",
+                  })}
+                >
+                  {formatRedemptionRisk(redemptionRisk.data ?? null)}
+                </div>
+                <StatusDot
+                  mode={riskLevelToStatusMode(redemptionRisk.data)}
+                  size={8}
+                />
+              </div>
+            )}
+          />
+        </CardRows>
+      }
+    />
   );
 }

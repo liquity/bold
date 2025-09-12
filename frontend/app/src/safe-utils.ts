@@ -38,19 +38,14 @@ export async function getSafeTransaction(safeTxHash: string): Promise<
 
 export const SafeStatusSchema = v.object({
   address: vAddress(),
-  nonce: v.number(),
   threshold: v.number(),
   owners: v.array(vAddress()),
-  masterCopy: vAddress(),
-  modules: v.array(vAddress()),
-  fallbackHandler: vAddress(),
-  guard: vAddress(),
   version: v.string(),
 });
 
-export async function getSafeStatus(safeAddress: Address): Promise<
-  v.InferOutput<typeof SafeStatusSchema> | null
-> {
+export type SafeStatus = v.InferOutput<typeof SafeStatusSchema>;
+
+export async function getSafeStatus(safeAddress: Address): Promise<SafeStatus | null> {
   const response = await safeApiCall(`/safes/${safeAddress}`);
 
   if (response.status === 404) {

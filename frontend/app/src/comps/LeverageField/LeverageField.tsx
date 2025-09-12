@@ -59,8 +59,7 @@ export function LeverageField({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: 300,
-            marginRight: -20,
+            width: 260,
           }}
         >
           <Slider
@@ -243,7 +242,7 @@ export function useLeverageField({
         isFocused.current = focused;
         onFocusChange?.(focused);
 
-        // Make sure the the input value corresponds to the leverage
+        // Make sure the input value corresponds to the leverage
         // factor matching to the desired liquidation price.
         if (!focused && price) {
           const lf = getLeverageFactorFromLiquidationPriceClamped(price);

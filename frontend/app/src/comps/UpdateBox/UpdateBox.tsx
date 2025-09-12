@@ -30,37 +30,65 @@ export function UpdateBox({
       })}
     >
       {updates.map(({ label, before, after }, index) => (
-        <HFlex
+        <div
           key={index}
-          justifyContent="space-between"
-          gap={16}
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "start",
+            justifyContent: "space-between",
+            gap: 8,
+            medium: {
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 16,
+            },
+          })}
         >
-          <HFlex gap={4}>{label}</HFlex>
-          <ValueUpdate
-            before={
-              <HFlex
-                gap={4}
-                justifyContent="flex-start"
-                className={css({
-                  fontVariantNumeric: "tabular-nums",
-                })}
-              >
-                {before}
-              </HFlex>
-            }
-            after={
-              <HFlex
-                gap={4}
-                justifyContent="flex-start"
-                className={css({
-                  fontVariantNumeric: "tabular-nums",
-                })}
-              >
-                {after}
-              </HFlex>
-            }
-          />
-        </HFlex>
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              whiteSpace: "nowrap",
+            })}
+          >
+            {label}
+          </div>
+          <div
+            className={css({
+              minWidth: 0,
+            })}
+          >
+            <ValueUpdate
+              before={
+                <HFlex
+                  gap={4}
+                  justifyContent="flex-start"
+                  className={css({
+                    fontVariantNumeric: "tabular-nums",
+                  })}
+                >
+                  {before}
+                </HFlex>
+              }
+              after={
+                <HFlex
+                  gap={4}
+                  justifyContent="flex-start"
+                  className={css({
+                    fontVariantNumeric: "tabular-nums",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  })}
+                >
+                  {after}
+                </HFlex>
+              }
+            />
+          </div>
+        </div>
       ))}
     </div>
   );

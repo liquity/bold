@@ -1,4 +1,5 @@
-import { fmtnum } from "@/src/formatting";
+import { ONE_DAY, ONE_HOUR, ONE_MINUTE, ONE_SECOND } from "@/src/constants";
+import { fmtnum, formatRelativeTime } from "@/src/formatting";
 import * as dn from "dnum";
 import { expect, test } from "vitest";
 
@@ -58,4 +59,40 @@ test("fmtnum() works", () => {
   // number shorthand for digits
   expect(fmtnum(dn.from(123.456), 1)).toBe("123.5");
   expect(fmtnum(dn.from(123.456), 3)).toBe("123.456");
+});
+
+test("formatRelativeTime() works", () => {
+  // days
+  expect(formatRelativeTime(ONE_DAY)).toBe("tomorrow");
+  expect(formatRelativeTime(-ONE_DAY)).toBe("yesterday");
+  expect(formatRelativeTime(2 * ONE_DAY)).toBe("in 2 days");
+  expect(formatRelativeTime(-2 * ONE_DAY)).toBe("2 days ago");
+
+  // hours
+  expect(formatRelativeTime(ONE_HOUR)).toBe("in 1 hour");
+  expect(formatRelativeTime(-ONE_HOUR)).toBe("1 hour ago");
+  expect(formatRelativeTime(2 * ONE_HOUR)).toBe("in 2 hours");
+  expect(formatRelativeTime(-2 * ONE_HOUR)).toBe("2 hours ago");
+
+  // minutes
+  expect(formatRelativeTime(ONE_MINUTE)).toBe("in 1 minute");
+  expect(formatRelativeTime(-ONE_MINUTE)).toBe("1 minute ago");
+  expect(formatRelativeTime(2 * ONE_MINUTE)).toBe("in 2 minutes");
+  expect(formatRelativeTime(-2 * ONE_MINUTE)).toBe("2 minutes ago");
+
+  // seconds
+  expect(formatRelativeTime(ONE_SECOND)).toBe("in 1 second");
+  expect(formatRelativeTime(-ONE_SECOND)).toBe("1 second ago");
+  expect(formatRelativeTime(2 * ONE_SECOND)).toBe("in 2 seconds");
+  expect(formatRelativeTime(-2 * ONE_SECOND)).toBe("2 seconds ago");
+
+  // "just now" (anything less than a second)
+  expect(formatRelativeTime(0)).toBe("just now");
+  expect(formatRelativeTime(500)).toBe("just now");
+  expect(formatRelativeTime(ONE_SECOND - 1)).toBe("just now");
+  expect(formatRelativeTime(-(ONE_SECOND - 1))).toBe("just now");
+
+  // bigint
+  expect(formatRelativeTime(BigInt(ONE_DAY))).toBe("tomorrow");
+  expect(formatRelativeTime(BigInt(-ONE_DAY))).toBe("yesterday");
 });

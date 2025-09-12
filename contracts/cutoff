@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+manifest=deployment-manifest.json
+
+die() {
+    if [ $# -gt 0 ]; then
+        echo "$@" >&2
+    fi
+    exit 1
+}
+
+call_u256() {
+    cast call --json "$1" "$2"'(uint256)' | jq -er '.[0]' ||
+        die Failed to call "'$2'".
+}
+
+command -v jq &> /dev/null || die Missing dependency: jq.
+command -v cast &> /dev/null || die Missing dependency: cast.
+[ -f "$manifest" ] || die Deployment manifest not found in current directory.
+
+governance=$(jq -r .governance.governance "$manifest")
+cutoff=$(jq -r .governance.constants.EPOCH_VOTING_CUTOFF "$manifest")
+seconds_within_epoch=$(call_u256 "$governance" 'secondsWithinEpoch()') || die
+
+if [ "$seconds_within_epoch" -gt "$cutoff" ]; then
+    echo Nothing to do, already in cutoff period.
+    exit 0
+fi
+
+epoch_start=$(call_u256 "$governance" 'epochStart()') || die
+
+cast -q rpc evm_setNextBlockTimestamp $((epoch_start + cutoff + 1)) ||
+    die Failed to set block timestamp.
+
+cast -q rpc evm_mine ||
+    die Failed to mine block.
+
+seconds_within_epoch=$(call_u256 "$governance" 'secondsWithinEpoch()') || die
+
+if [ "$seconds_within_epoch" -gt "$cutoff" ]; then
+    echo Successfully fast-forwarded to cutoff period.
+else
+    die Failed to fast-forward to cutoff period.
+fi

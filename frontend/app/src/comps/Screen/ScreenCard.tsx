@@ -1,19 +1,22 @@
 import type { ReactNode } from "react";
 
-import { css } from "@/styled-system/css";
+import { css, cx } from "@/styled-system/css";
 import { LoadingSurface } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
 import { match } from "ts-pattern";
 
 const LOADING_CARD_WIDTH = 468;
 const FINAL_CARD_WIDTH = 534;
+const CARD_HEIGHT = 310;
 
 export function ScreenCard({
   children,
-  finalHeight = 252,
+  className,
+  finalHeight = CARD_HEIGHT,
   mode,
 }: {
   children: ReactNode;
+  className?: string;
   finalHeight?: number;
   mode: "ready" | "loading" | "error";
 }) {
@@ -45,14 +48,19 @@ export function ScreenCard({
 
   return (
     <a.div
-      className={css({
-        flexShrink: 0,
-        display: "flex",
-        justifyContent: "center",
-        flexDirection: "column",
-      })}
+      className={cx(
+        className,
+        css({
+          flexShrink: 0,
+          display: "flex",
+          justifyContent: "center",
+          flexDirection: "column",
+          maxWidth: {
+            medium: FINAL_CARD_WIDTH
+          },
+        }),
+      )}
       style={{
-        width: FINAL_CARD_WIDTH,
         height: spring.containerHeight,
       }}
     >

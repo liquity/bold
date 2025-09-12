@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.24;
 
-import "lib/Solady/src/utils/SSTORE2.sol";
+import "Solady/utils/SSTORE2.sol";
 import "./utils/JSON.sol";
 
 import "./utils/baseSVG.sol";
@@ -9,7 +9,7 @@ import "./utils/bauhaus.sol";
 
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-import {ITroveManager} from "src/Interfaces/ITroveManager.sol";
+import {ITroveManager} from "../Interfaces/ITroveManager.sol";
 
 interface IMetadataNFT {
     struct TroveData {
@@ -29,16 +29,22 @@ interface IMetadataNFT {
 contract MetadataNFT is IMetadataNFT {
     FixedAssetReader public immutable assetReader;
 
-    string public constant name = "Liquity V2 Trove";
-    string public constant description = "Liquity V2 Trove position";
-
     constructor(FixedAssetReader _assetReader) {
         assetReader = _assetReader;
     }
 
     function uri(TroveData memory _troveData) public view returns (string memory) {
         string memory attr = attributes(_troveData);
-        return json.formattedMetadata(name, description, renderSVGImage(_troveData), attr);
+        return json.formattedMetadata(
+            string.concat("Liquity V2 - ", IERC20Metadata(_troveData._collToken).name()),
+            string.concat(
+                "Liquity V2 is a collateralized debt platform. Users can lock up ",
+                IERC20Metadata(_troveData._collToken).symbol(),
+                " to issue stablecoin tokens (BOLD) to their own Ethereum address. The individual collateralized debt positions are called Troves, and are represented as NFTs."
+            ),
+            renderSVGImage(_troveData),
+            attr
+        );
     }
 
     function renderSVGImage(TroveData memory _troveData) internal view returns (string memory) {

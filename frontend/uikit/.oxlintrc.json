@@ -1,0 +1,19 @@
+{
+  "plugins": [
+    "jsx-a11y",
+    "react",
+    "react-perf",
+    "typescript",
+    "unicorn"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "no-unused-vars": "off",
+    "react/react-in-jsx-scope": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/mouse-events-have-key-events": "off"
+  }
+}

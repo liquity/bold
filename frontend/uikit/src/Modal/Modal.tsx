@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 
 import { a, useTransition } from "@react-spring/web";
-import FocusTrap from "focus-trap-react";
+import { FocusTrap } from "focus-trap-react";
 import { useEffect } from "react";
 import { css } from "../../styled-system/css";
 import { IconCross } from "../icons";
@@ -47,8 +47,18 @@ export function Modal({
   });
 
   useEffect(() => {
-    if ("document" in globalThis) {
-      document.body.style.overflow = visible ? "hidden" : "auto";
+    if (!("document" in globalThis)) {
+      return;
+    }
+    if (visible) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      document.documentElement.style.overflow = "hidden";
+      document.body.style.position = "relative";
+      document.body.style.left = `-${scrollbarWidth / 2}px`;
+    } else {
+      document.documentElement.style.overflow = "visible";
+      document.body.style.removeProperty("position");
+      document.body.style.removeProperty("left");
     }
   }, [visible]);
 
@@ -61,27 +71,36 @@ export function Modal({
       }, item) => (
         item && (
           <a.section
-            style={{
-              opacity: overlayOpacity,
-              pointerEvents: visible ? "auto" : "none",
+            onMouseDown={({ target, currentTarget }) => {
+              if (target === currentTarget) {
+                onClose();
+              }
             }}
             className={css({
               position: "fixed",
               inset: 0,
               zIndex: 2,
-              overflow: "auto",
-              background: "rgba(18, 27, 68, 0.7)",
+              display: "grid",
+              placeItems: "start center",
+              overflowX: "auto",
+              background: "transparent",
+              medium: {
+                placeItems: "center",
+                background: "rgba(18, 27, 68, 0.7)",
+              },
             })}
+            style={{
+              overflowY: visible ? "scroll" : "hidden",
+              opacity: overlayOpacity,
+              pointerEvents: visible ? "auto" : "none",
+            }}
           >
             <div
-              onMouseDown={({ target, currentTarget }) => {
-                if (target === currentTarget) {
-                  onClose();
-                }
-              }}
               className={css({
                 display: "flex",
                 justifyContent: "center",
+                // this is to let the overlay handle the onMouseDown event
+                pointerEvents: "none",
               })}
             >
               <FocusTrap
@@ -98,17 +117,33 @@ export function Modal({
                     }
                   }}
                   className={css({
-                    padding: 64,
+                    height: {
+                      base: "100%",
+                      medium: "auto",
+                    },
+                    padding: {
+                      base: 0,
+                      medium: 64,
+                    },
+                    // and this is to re-enable the onMouseDown event
+                    pointerEvents: "auto",
                   })}
                 >
                   <a.div
                     className={css({
                       position: "relative",
                       width: "100%",
+                      height: {
+                        base: "100%",
+                        medium: "auto",
+                      },
                       padding: 24,
                       outline: "2px solid accent",
                       background: "background",
-                      borderRadius: 8,
+                      borderRadius: {
+                        base: 0,
+                        medium: 8,
+                      },
                     })}
                     style={{
                       maxWidth,

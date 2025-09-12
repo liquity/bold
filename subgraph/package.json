@@ -7,11 +7,11 @@
     "codegen": "pnpm graph codegen"
   },
   "devDependencies": {
-    "@graphprotocol/graph-cli": "^0.80.1"
+    "@graphprotocol/graph-cli": "^0.97.0"
   },
   "dependencies": {
-    "@graphprotocol/graph-ts": "^0.35.1",
-    "tsx": "^4.19.2",
-    "zx": "^8.1.9"
+    "@graphprotocol/graph-ts": "^0.38.0",
+    "tsx": "^4.19.4",
+    "zx": "^8.5.3"
   }
 }

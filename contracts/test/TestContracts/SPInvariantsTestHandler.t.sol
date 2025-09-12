@@ -10,8 +10,10 @@ import {ICollSurplusPool} from "src/Interfaces/ICollSurplusPool.sol";
 import {HintHelpers} from "src/HintHelpers.sol";
 import {IPriceFeedTestnet} from "./Interfaces/IPriceFeedTestnet.sol";
 import {ITroveManagerTester} from "./Interfaces/ITroveManagerTester.sol";
+import {LiquityMath} from "src/Dependencies/LiquityMath.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 import {StringFormatting} from "../Utils/StringFormatting.sol";
+import {TroveId} from "../Utils/TroveId.sol";
 import {BaseHandler} from "./BaseHandler.sol";
 
 import {
@@ -20,21 +22,22 @@ import {
     _100pct,
     ETH_GAS_COMPENSATION,
     COLL_GAS_COMPENSATION_DIVISOR,
-    MIN_ANNUAL_INTEREST_RATE
+    MIN_ANNUAL_INTEREST_RATE,
+    MIN_BOLD_IN_SP
 } from "src/Dependencies/Constants.sol";
 
 using {mulDivCeil} for uint256;
 
 // Test parameters
 uint256 constant OPEN_TROVE_BORROWED_MIN = 2_000 ether;
-uint256 constant OPEN_TROVE_BORROWED_MAX = 100_000 ether;
+uint256 constant OPEN_TROVE_BORROWED_MAX = 100e18 ether;
 uint256 constant OPEN_TROVE_ICR = 1.5 ether; // CCR
 uint256 constant LIQUIDATION_ICR = MCR - _1pct;
 
 // Universal constants
 uint256 constant MCR = 1.1 ether;
 
-contract SPInvariantsTestHandler is BaseHandler {
+contract SPInvariantsTestHandler is BaseHandler, TroveId {
     using StringFormatting for uint256;
 
     struct Contracts {
@@ -80,13 +83,9 @@ contract SPInvariantsTestHandler is BaseHandler {
         initialPrice = priceFeed.getPrice();
     }
 
-    function _getTroveId(address owner, uint256 i) internal pure returns (uint256) {
-        return uint256(keccak256(abi.encode(owner, i)));
-    }
-
     function openTrove(uint256 borrowed) external returns (uint256 debt) {
         uint256 i = troveIndexOf[msg.sender];
-        vm.assume(troveManager.getTroveStatus(_getTroveId(msg.sender, i)) != ITroveManager.Status.active);
+        vm.assume(troveManager.getTroveStatus(addressToTroveId(msg.sender, i)) != ITroveManager.Status.active);
 
         borrowed = _bound(borrowed, OPEN_TROVE_BORROWED_MIN, OPEN_TROVE_BORROWED_MAX);
         uint256 price = priceFeed.getPrice();
@@ -172,11 +171,11 @@ contract SPInvariantsTestHandler is BaseHandler {
 
     function liquidateMe() external {
         vm.assume(troveManager.getTroveIdsCount() > 1);
-        uint256 troveId = _getTroveId(msg.sender, troveIndexOf[msg.sender]);
+        uint256 troveId = addressToTroveId(msg.sender, troveIndexOf[msg.sender]);
         vm.assume(troveManager.getTroveStatus(troveId) == ITroveManager.Status.active);
 
         (uint256 debt, uint256 coll,,,) = troveManager.getEntireDebtAndColl(troveId);
-        vm.assume(debt <= spBold); // only interested in SP offset, no redistribution
+        vm.assume(debt <= (spBold > MIN_BOLD_IN_SP ? spBold - MIN_BOLD_IN_SP : 0)); // only interested in SP offset, no redistribution
 
         logCall("liquidateMe");
 
@@ -184,19 +183,15 @@ contract SPInvariantsTestHandler is BaseHandler {
 
         uint256 collBefore = collateralToken.balanceOf(address(this));
         uint256 accountSurplusBefore = collSurplusPool.getCollateral(msg.sender);
-        uint256 collCompensation = troveManager.getCollGasCompensation(coll);
+        uint256 totalBoldDeposits = stabilityPool.getTotalBoldDeposits();
+        uint256 boldInSPForOffsets = totalBoldDeposits - LiquityMath._min(MIN_BOLD_IN_SP, totalBoldDeposits);
+        uint256 collCompensation = troveManager.getCollGasCompensation(coll, debt, boldInSPForOffsets);
         // Calc claimable coll based on the remaining coll to liquidate, less the liq. penalty that goes to the SP depositors
         uint256 seizedColl = debt * (_100pct + troveManager.get_LIQUIDATION_PENALTY_SP()) / priceFeed.getPrice();
         // The Trove owner bears the gas compensation costs
         uint256 claimableColl = coll - seizedColl - collCompensation;
 
-        // try
         troveManager.liquidate(troveId);
-        // {} catch Panic(uint256 errorCode) {
-        //     // XXX ignore assertion failure inside liquidation (due to P = 0)
-        //     assertEq(errorCode, 1, "Unexpected revert in liquidate()");
-        //     vm.assume(false);
-        // }
 
         priceFeed.setPrice(initialPrice);
 

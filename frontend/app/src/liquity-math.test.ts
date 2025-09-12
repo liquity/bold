@@ -31,27 +31,20 @@ const d = (value: number | bigint): Dnum => (
 );
 
 test("getRedemptionRisk() works", () => {
-  // From constants.ts:
-  //  up to 3.5% => high
-  //  >3.5% up to 5% = medium
-  //  >5% = low
+  const totalDebt = d(1_000_000); // 1M total debt
 
-  const interest = (value: number) => d(value / 100);
+  expect(getRedemptionRisk(d(0), d(0))).toBe("not-applicable");
 
-  expect(getRedemptionRisk(null)).toBe(null);
+  // high risk: low debtInFront ratio
+  expect(getRedemptionRisk(d(0), totalDebt)).toBe("high");
+  expect(getRedemptionRisk(d(10_000), totalDebt)).toBe("high"); // 1% ratio
 
-  expect(getRedemptionRisk(interest(-1))).toBe("high");
-  expect(getRedemptionRisk(interest(0))).toBe("high");
+  // medium risk: medium debtInFront ratio
+  expect(getRedemptionRisk(d(400_000), totalDebt)).toBe("medium"); // 40% ratio
 
-  expect(getRedemptionRisk(interest(3.49))).toBe("high");
-  expect(getRedemptionRisk(interest(3.50))).toBe("high");
-  expect(getRedemptionRisk(interest(3.51))).toBe("medium");
-
-  expect(getRedemptionRisk(interest(4.99))).toBe("medium");
-  expect(getRedemptionRisk(interest(5.00))).toBe("medium");
-  expect(getRedemptionRisk(interest(5.01))).toBe("low");
-
-  expect(getRedemptionRisk(interest(10))).toBe("low");
+  // low risk: high debtInFront ratio
+  expect(getRedemptionRisk(d(800_000), totalDebt)).toBe("low"); // 80% ratio
+  expect(getRedemptionRisk(d(900_000), totalDebt)).toBe("low"); // 90% ratio
 });
 
 test("getLiquidationRisk() works", () => {

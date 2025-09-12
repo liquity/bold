@@ -289,7 +289,7 @@ contract LiquidationsTest is DevTestSetup {
         // Check B has received all coll minus coll gas comp
         assertApproxEqAbs(
             troveManager.getTroveEntireColl(BTroveId) - BInitialColl,
-            collAmount * 995 / 1000, // Collateral - coll gas comp
+            collAmount, // no coll gas comp
             10,
             "B trove coll mismatch"
         );
@@ -372,13 +372,15 @@ contract LiquidationsTest is DevTestSetup {
 
         // Check SP Bold has decreased
         uint256 finalSPBoldBalance = stabilityPool.getTotalBoldDeposits();
-        assertEq(vars.spBoldBalance - finalSPBoldBalance, vars.liquidationAmount / 2, "SP Bold balance mismatch");
+        // subtract 1e18 for the min remaining in the SP
+        assertEq(vars.spBoldBalance - finalSPBoldBalance, vars.liquidationAmount / 2 - 1e18, "SP Bold balance mismatch");
         // Check SP Coll has  increased
         uint256 finalSPCollBalance = stabilityPool.getCollBalance();
         // vars.liquidationAmount to Coll + 5%
         assertApproxEqAbs(
             finalSPCollBalance - vars.spCollBalance,
-            vars.liquidationAmount / 2 * DECIMAL_PRECISION / vars.price * 105 / 100,
+            // subtract 1e18 for the min remaining in the SP
+            (vars.liquidationAmount / 2 - 1e18) * DECIMAL_PRECISION / vars.price * 105 / 100,
             10,
             "SP Coll balance mismatch"
         );
@@ -386,24 +388,31 @@ contract LiquidationsTest is DevTestSetup {
         // Check B has received debt
         assertApproxEqAbs(
             troveManager.getTroveEntireDebt(vars.BTroveId) - vars.BDebt,
-            vars.liquidationAmount / 2 + vars.AInterest,
+            // Add 1e18 for the extra redist portion due to SP min 1e18
+            vars.liquidationAmount / 2 + 1e18 + vars.AInterest,
             3,
             "B debt mismatch"
         );
-        // Check B has received coll
+        // // Check B has received coll
         assertApproxEqAbs(
             troveManager.getTroveEntireColl(vars.BTroveId) - vars.BColl,
             //vars.collAmount * 995 / 1000 - vars.liquidationAmount / 2 * DECIMAL_PRECISION / vars.price * 105 / 100,
-            (vars.liquidationAmount / 2 + vars.AInterest) * DECIMAL_PRECISION / vars.price * 110 / 100,
+            // add 1e18 for extra redist portion
+            (vars.liquidationAmount / 2 + 1e18 + vars.AInterest) * DECIMAL_PRECISION / vars.price * 110 / 100,
             10,
             "B trove coll mismatch"
         );
 
         // Check A retains ~4.5% of the collateral (after claiming from CollSurplus)
-        // vars.collAmount - 0.5% - (vars.liquidationAmount to Coll + 5%)
-        uint256 collSurplusAmount = vars.collAmount * 995 / 1000
-            - vars.liquidationAmount / 2 * DECIMAL_PRECISION / vars.price * 105 / 100
-            - (vars.liquidationAmount / 2 + vars.AInterest) * DECIMAL_PRECISION / vars.price * 110 / 100;
+        // vars.collAmount - 0.5% (of offset) - (vars.liquidationAmount to Coll + 5% / 10%)
+        uint256 collSurplusAmount =
+        // Portion offset
+        vars.collAmount * (vars.liquidationAmount / 2 - 1e18) / (vars.liquidationAmount + vars.AInterest) * 995 / 1000
+            - (vars.liquidationAmount / 2 - 1e18) * DECIMAL_PRECISION / vars.price * 105 / 100
+        // Portion redistributed
+        + vars.collAmount * (vars.liquidationAmount / 2 + 1e18 + vars.AInterest)
+            / (vars.liquidationAmount + vars.AInterest)
+            - (vars.liquidationAmount / 2 + 1e18 + vars.AInterest) * DECIMAL_PRECISION / vars.price * 110 / 100;
         assertApproxEqAbs(
             collToken.balanceOf(address(collSurplusPool)),
             collSurplusAmount,

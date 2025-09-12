@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 
-import { css } from "@/styled-system/css";
+import { css, cx } from "@/styled-system/css";
 import { IconChevronDown, useElementSize } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 
 export function ErrorBox({
   children,
@@ -29,18 +29,26 @@ export function ErrorBox({
     },
   });
 
+  const detailsId = useId();
+
   return (
     <section
-      className={css({
-        width: "100%",
-        background: "negativeSurface",
-        color: "negative",
-        fontSize: 14,
-        border: "1px solid token(colors.negativeSurfaceBorder)",
-        borderRadius: 8,
-      })}
+      className={cx(
+        "error-box",
+        css({
+          width: "100%",
+          minWidth: 0,
+          background: "negativeSurface",
+          color: "negative",
+          fontSize: 14,
+          border: "1px solid token(colors.negativeSurfaceBorder)",
+          borderRadius: 8,
+        }),
+      )}
     >
       <button
+        aria-expanded={expanded}
+        aria-controls={detailsId}
         onClick={() => setExpanded(!expanded)}
         className={css({
           display: "flex",
@@ -86,6 +94,7 @@ export function ErrorBox({
         </div>
       </button>
       <a.div
+        id={detailsId}
         style={{
           overflow: "hidden",
           willChange: "height",
@@ -94,14 +103,18 @@ export function ErrorBox({
       >
         <div
           ref={contentRef}
-          className={css({
-            padding: "8px 24px 24px",
-            color: "negativeSurfaceContent",
-            overflow: "auto",
-            _focusVisible: {
-              outline: "2px solid token(colors.focused)",
-            },
-          })}
+          className={cx(
+            "content",
+            css({
+              padding: "8px 24px 24px",
+              color: "negativeSurfaceContent",
+              overflow: "auto",
+              overflowWrap: "anywhere",
+              _focusVisible: {
+                outline: "2px solid token(colors.focused)",
+              },
+            }),
+          )}
         >
           {children}
         </div>

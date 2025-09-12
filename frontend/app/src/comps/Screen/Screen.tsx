@@ -1,20 +1,20 @@
 import type { ReactNode } from "react";
 
+import { useBreakpoint } from "@/src/breakpoints";
 import { css, cx } from "@/styled-system/css";
 import { IconArrowBack } from "@liquity2/uikit";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import Link from "next/link";
-import { isValidElement } from "react";
+import { isValidElement, useState } from "react";
 
 export function Screen({
   back,
   children,
   className,
-  gap = 48,
   heading = null,
   paddingTop = 0,
   ready = true,
-  width = 534,
+  width,
 }: {
   back?: {
     href: string;
@@ -22,15 +22,21 @@ export function Screen({
   } | null;
   children: ReactNode;
   className?: string;
-  gap?: number;
   heading?: ReactNode | {
     title: ReactNode;
     subtitle?: ReactNode;
   };
   ready?: boolean;
-  width?: number;
+  width?: number | `${number}%`;
   paddingTop?: number;
 }) {
+  const [compactMode, setCompactMode] = useState(false);
+  useBreakpoint(({ medium }) => {
+    setCompactMode(!medium);
+  });
+
+  width ??= compactMode ? "100%" : 534;
+
   const backTransition = useTransition(ready && back, {
     keys: (back) => JSON.stringify(back),
     initial: { opacity: 0, transform: "translateY(0px)" },
@@ -70,8 +76,8 @@ export function Screen({
     from: {
       opacity: 0,
       transform: `
-        scale3d(0.95, 0.95, 1)
-        translate3d(0, 20px, 0)
+        scale3d(0.97, 0.97, 1)
+        translate3d(0, 8px, 0)
       `,
     },
     to: {
@@ -84,7 +90,7 @@ export function Screen({
     delay: 100,
     config: {
       mass: 1,
-      tension: 2200,
+      tension: 2800,
       friction: 120,
     },
   });
@@ -109,7 +115,10 @@ export function Screen({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 28,
+            fontSize: {
+              base: 20,
+              medium: 28,
+            },
           })}
         >
           {heading.title}
@@ -128,9 +137,11 @@ export function Screen({
       </header>
     )
     : (
-      <div style={{ width }}>
-        {heading}
-      </div>
+      heading && (
+        <div style={{ width }}>
+          {heading}
+        </div>
+      )
     );
 
   return (
@@ -139,12 +150,20 @@ export function Screen({
         css({
           position: "relative",
           flexGrow: 1,
-          display: "flex",
-          gap: 48,
-          flexDirection: "column",
-          alignItems: "center",
+          display: "grid",
+          justifyItems: "center",
+          minWidth: 0,
+          gap: {
+            base: 20,
+            large: 48,
+          },
+          gridTemplateColumns: "1fr",
+          gridTemplateRows: "auto 1fr",
           width: "100%",
-          padding: 24,
+          padding: {
+            base: 0,
+            large: 24,
+          },
           transformOrigin: "50% 0",
         }),
         className,
@@ -157,24 +176,17 @@ export function Screen({
         back && (
           <a.div
             className={css({
-              position: {
-                base: "static",
-                large: "absolute",
-              },
-              width: {
-                base: "100%",
-                large: "auto",
-              },
-              maxWidth: {
-                base: 540,
-                large: "100%",
-              },
-              marginBottom: {
-                base: -16,
-                large: 0,
-              },
+              width: "100%",
+              maxWidth: 540,
+              marginBottom: 0,
               left: 0,
               zIndex: 1,
+              large: {
+                position: "absolute",
+                width: "auto",
+                maxWidth: "100%",
+                marginBottom: 0,
+              },
             })}
             style={{
               transform: style.transform,
@@ -182,6 +194,7 @@ export function Screen({
             }}
           >
             <BackButton
+              compact={compactMode}
               href={back.href}
               label={back.label}
             />
@@ -203,14 +216,16 @@ export function Screen({
       )}
       <a.div
         className={css({
-          display: "flex",
-          flexDirection: "column",
           position: "relative",
+          display: "grid",
+          gap: {
+            base: 32,
+            medium: 48,
+          },
           transformOrigin: "50% 0",
           willChange: "transform, opacity",
         })}
         style={{
-          gap,
           width,
           ...screenSpring,
         }}
@@ -221,38 +236,41 @@ export function Screen({
   );
 }
 
-export function BackButton({
+function BackButton({
+  compact,
   href,
   label,
 }: {
+  compact: boolean;
   href: string;
   label: ReactNode;
 }) {
   return (
-    <Link href={href} passHref legacyBehavior>
-      <a
-        className={css({
-          display: "flex",
-          alignItems: "center",
-          padding: "0 16px",
-          gap: 8,
-          color: "secondaryContent",
-          background: "secondary",
-          height: 40,
-          width: "fit-content",
-          whiteSpace: "nowrap",
-          borderRadius: 20,
-          _active: {
-            translate: "0 1px",
-          },
-          _focusVisible: {
-            outline: "2px solid token(colors.focused)",
-          },
-        })}
-      >
-        <IconArrowBack size={20} />
-        {label}
-      </a>
+    <Link
+      href={href}
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        padding: "0 16px",
+        gap: 8,
+        color: "secondaryContent",
+        background: "secondary",
+        width: "fit-content",
+        whiteSpace: "nowrap",
+        borderRadius: 20,
+        _active: {
+          translate: "0 1px",
+        },
+        _focusVisible: {
+          outline: "2px solid token(colors.focused)",
+        },
+      })}
+      style={{
+        height: compact ? 34 : 40,
+      }}
+    >
+      <IconArrowBack size={20} />
+      {label}
     </Link>
   );
 }

@@ -168,6 +168,7 @@ export const lightTheme = {
     tableBorder: "gray:100",
     warning: "yellow:400",
     warningAlt: "yellow:300",
+    warningAltContent: "blue:950",
     disabledBorder: "gray:200",
     disabledContent: "gray:500",
     disabledSurface: "gray:50",
@@ -185,11 +186,16 @@ export const lightTheme = {
     brandGreenContent: "green:950",
     brandGreenContentAlt: "green:800",
 
-    riskGradient1: "green:400",
+    // colors are resolved so we can animate them
+    riskGradient1: "#63D77D", // green:400
     riskGradient2: "#B8E549",
-    riskGradient3: "yellow:400",
+    riskGradient3: "#F1C91E", // yellow:400
     riskGradient4: "#FFA12B",
-    riskGradient5: "red:500",
+    riskGradient5: "#FB7C59", // red:400
+
+    riskGradientDimmed1: "red:100",
+    riskGradientDimmed2: "yellow:100",
+    riskGradientDimmed3: "green:100",
 
     loadingGradient1: "blue:50",
     loadingGradient2: "blue:100",

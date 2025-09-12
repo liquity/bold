@@ -2,7 +2,8 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
-import { getCollToken } from "@/src/liquity-utils";
+import { DNUM_0 } from "@/src/dnum-utils";
+import { getBranch, getCollToken, useEarnPool } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
@@ -15,6 +16,7 @@ const RequestSchema = createRequestSchema(
   "earnClaimRewards",
   {
     earnPosition: vPositionEarn(),
+    compound: v.optional(v.boolean(), false),
   },
 );
 
@@ -24,17 +26,46 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
   title: "Review & Send Transaction",
 
   Summary({ request }) {
+    const { compound = false } = request;
+    const earnPool = useEarnPool(request.earnPosition.branchId);
+
+    // when compounding, show the updated position with the BOLD rewards
+    const updatedEarnPosition = compound
+      ? {
+        ...request.earnPosition,
+        deposit: dn.add(
+          request.earnPosition.deposit,
+          request.earnPosition.rewards.bold,
+        ),
+        rewards: { bold: DNUM_0, coll: DNUM_0 },
+      }
+      : request.earnPosition;
+
+    const poolDeposit = earnPool.data?.totalDeposited;
+
+    const newPoolDeposit = compound && poolDeposit
+      ? dn.add(poolDeposit, request.earnPosition.rewards.bold)
+      : poolDeposit;
+
+    const poolDepositProps = !poolDeposit || !newPoolDeposit ? {} : {
+      poolDeposit: newPoolDeposit,
+      prevPoolDeposit: poolDeposit,
+    };
+
     return (
       <EarnPositionSummary
-        collIndex={request.earnPosition.collIndex}
-        earnPosition={request.earnPosition}
+        branchId={request.earnPosition.branchId}
+        earnPosition={updatedEarnPosition}
+        prevEarnPosition={compound ? request.earnPosition : undefined}
         txPreviewMode
+        {...poolDepositProps}
       />
     );
   },
 
   Details({ request }) {
-    const collateral = getCollToken(request.earnPosition.collIndex);
+    const collateral = getCollToken(request.earnPosition.branchId);
+    const { compound = false } = request;
 
     const boldPrice = usePrice("BOLD");
     const collPrice = usePrice(collateral.symbol);
@@ -47,7 +78,7 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
     return (
       <>
         <TransactionDetailsRow
-          label="Claim BOLD rewards"
+          label={compound ? "Compound BOLD rewards" : "Claim BOLD rewards"}
           value={[
             <Amount
               key="start"
@@ -82,21 +113,17 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
 
   steps: {
     claimRewards: {
-      name: () => "Claim rewards",
+      name: (ctx) => ctx.request.compound ? "Compound rewards" : "Claim rewards",
       Status: TransactionStatus,
 
       async commit(ctx) {
-        const { collIndex } = ctx.request.earnPosition;
-        const collateral = ctx.contracts.collaterals[collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + collIndex);
-        }
-
-        const { StabilityPool } = collateral.contracts;
+        const { branchId } = ctx.request.earnPosition;
+        const { compound = false } = ctx.request;
+        const branch = getBranch(branchId);
         return ctx.writeContract({
-          ...StabilityPool,
+          ...branch.contracts.StabilityPool,
           functionName: "withdrawFromSP",
-          args: [0n, true],
+          args: [0n, !compound],
         });
       },
 

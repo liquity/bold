@@ -209,8 +209,8 @@ Deploying Liquity contracts with the following settings:
   CHAIN_ID:               ${options.chainId}
   DEPLOYMENT_MODE:        ${options.mode}
   DEPLOYER (address):     ${deployerAddress}
-  SALT:                   ${options.salt ? options.salt : chalk.yellow("block.timestamp will be used !!")}
-  EPOCH_START:            ${options.epochStart ? options.epochStart : chalk.yellow("auto based on block.timestamp will be used !!")}
+  SALT:                   ${options.salt ?? chalk.yellow("block.timestamp will be used !!")}
+  EPOCH_START:            ${options.epochStart ?? chalk.yellow("auto based on block.timestamp will be used !!")}
   ETHERSCAN_API_KEY:      ${options.etherscanApiKey && "(secret)"}
   LEDGER_PATH:            ${options.ledgerPath}
   OPEN_DEMO_TROVES:       ${options.openDemoTroves ? "yes" : "no"}
@@ -240,8 +240,14 @@ Deploying Liquity contracts with the following settings:
 
   process.env.DEPLOYER = options.deployer;
   process.env.DEPLOYMENT_MODE = options.mode;
-  process.env.SALT = options.salt;
-  process.env.EPOCH_START = String(options.epochStart);
+
+  if (options.salt) {
+    process.env.SALT = options.salt;
+  }
+
+  if (options.epochStart) {
+    process.env.EPOCH_START = String(options.epochStart);
+  }
 
   if (options.openDemoTroves) {
     process.env.OPEN_DEMO_TROVES = "true";

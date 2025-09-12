@@ -6,8 +6,8 @@ dataSources:
     name: BoldToken
     source:
       abi: BoldToken
-      address: "0xb01dd87b29d187f3e3a4bf6cdaebfb97f3d9ab98"
-      startBlock: 21640111
+      address: "0x6440f144b7e50d6a8439336510312d2f54beb01d"
+      startBlock: 22483043
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -15,7 +15,6 @@ dataSources:
       entities:
         - Collateral
         - CollateralAddresses
-        - Token
       abis:
         - name: BorrowerOperations
           file: ../contracts/out/BorrowerOperations.sol/BorrowerOperations.json
@@ -38,8 +37,8 @@ dataSources:
     name: Governance
     source:
       abi: Governance
-      address: "0x636deb767cd7d0f15ca4ab8ea9a9b26e98b426ac"
-      startBlock: 21640111
+      address: "0x807def5e7d057df05c796f4bc75c3fe82bd6eee1"
+      startBlock: 22496547
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -47,28 +46,21 @@ dataSources:
       entities:
         - GovernanceAllocation
         - GovernanceInitiative
-        - GovernanceStats
         - GovernanceUser
       abis:
         - name: Governance
           file: ../contracts/out/Governance.sol/Governance.json
       eventHandlers:
-        - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,uint8)
-          handler: handleAllocateLQTY
-        - event: ClaimForInitiative(indexed address,uint256,uint256,uint8)
-          handler: handleClaimForInitiative
         - event: DepositLQTY(indexed
             address,address,uint256,uint256,uint256,uint256,uint256)
           handler: handleDepositLQTY
-        - event: RegisterInitiative(address,address,uint256,uint8)
-          handler: handleRegisterInitiative
-        - event: SnapshotVotesForInitiative(indexed address,uint256,uint256,uint256)
-          handler: handleSnapshotVotesForInitiative
-        - event: UnregisterInitiative(address,uint256,uint8)
-          handler: handleUnregisterInitiative
         - event: WithdrawLQTY(indexed
             address,address,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleWithdrawLQTY
+        - event: AllocateLQTY(indexed address,indexed address,int256,int256,uint256,uint8)
+          handler: handleAllocateLQTY
+        - event: RegisterInitiative(address,address,uint256,uint8)
+          handler: handleRegisterInitiative
       file: ./src/Governance.mapping.ts
     network: mainnet
 templates:
@@ -98,6 +90,13 @@ templates:
             uint256,uint8,uint256,uint256,uint256,int256,uint256,int256)
           handler: handleTroveOperation
           receipt: true
+        - event: TroveUpdated(indexed
+            uint256,uint256,uint256,uint256,uint256,uint256,uint256)
+          handler: handleTroveUpdated
+        - event: BatchedTroveUpdated(indexed
+            uint256,address,uint256,uint256,uint256,uint256,uint256)
+          handler: handleBatchedTroveUpdated
+          receipt: true
         - event: BatchUpdated(indexed
             address,uint8,uint256,uint256,uint256,uint256,uint256,uint256)
           handler: handleBatchUpdated
@@ -120,27 +119,3 @@ templates:
       eventHandlers:
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
-  - name: StabilityPool
-    kind: ethereum/contract
-    network: mainnet
-    source:
-      abi: StabilityPool
-    mapping:
-      kind: ethereum/events
-      apiVersion: 0.0.9
-      language: wasm/assemblyscript
-      file: ./src/StabilityPool.mapping.ts
-      entities:
-        - StabilityPool
-        - StabilityPoolDeposit
-      abis:
-        - name: StabilityPool
-          file: ../contracts/out/StabilityPool.sol/StabilityPool.json
-      eventHandlers:
-        - event: DepositUpdated(indexed
-            address,uint256,uint256,uint256,uint256,uint256,uint256,uint256)
-          handler: handleDepositUpdated
-        - event: S_Updated(uint256,uint128,uint128)
-          handler: handleSUpdated
-        - event: B_Updated(uint256,uint128,uint128)
-          handler: handleBUpdated

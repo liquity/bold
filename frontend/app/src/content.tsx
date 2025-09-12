@@ -1,11 +1,22 @@
-/* eslint-disable react/jsx-key */
-/* eslint-disable import/no-anonymous-default-export */
+/* oxlint-disable react/jsx-key */
 
 import type { ReactNode as N } from "react";
+
+import { css } from "@/styled-system/css";
 
 export default {
   // Used in the top bar and other places
   appName: "Liquity V2",
+  appDescription: `
+    Liquity V2 is a new borrowing protocol that lets users
+    deposit ETH or LSTs as collateral and mint the stablecoin BOLD.
+  `,
+  appUrl: typeof window === "undefined"
+    ? "https://www.liquity.org/"
+    : window.location.origin,
+  appIcon: (
+    typeof window === "undefined" ? "" : window.location.origin
+  ) + "/favicon.svg",
 
   // Menu bar
   menu: {
@@ -130,11 +141,10 @@ export default {
         secondary: <>The interest rate is set and updated by a third party of your choice. They may charge a fee.</>,
       },
       strategy: {
-        label: "Automated (ICP)",
+        label: "Autonomous Rate Manager",
         secondary: (
           <>
-            The interest rate is set and updated by an automated strategy running on the decentralized Internet Computer
-            (ICP).
+            The interest rate is set and updated by an automated strategy running on the Internet Computer (ICP).
           </>
         ),
       },
@@ -143,13 +153,13 @@ export default {
     icStrategyModal: {
       title: (
         <>
-          Automated Strategies (<abbr title="Internet Computer">ICP</abbr>)
+          Autonomous Rate Manager (ARM)
         </>
       ),
       intro: (
         <>
           These strategies are run on the Internet Computer (ICP). They are automated and decentralized. More strategies
-          will be added over time.
+          may be added over time.
         </>
       ),
     },
@@ -207,6 +217,31 @@ export default {
         description: "Direct protocol incentives with LQTY while earning from Liquity V1",
       },
     },
+    earnTable: {
+      title: "Earn rewards with BOLD",
+      subtitle: "Earn BOLD & (staked) ETH rewards by depositing your BOLD in a stability pool",
+      forksInfo: {
+        text: (
+          <>
+            <abbr title="Stability Pool">SP</abbr> depositors earn additional rewards from forks.
+          </>
+        ),
+        titleAttr: "Stability Pool depositors earn additional rewards from forks.",
+        learnMore: {
+          url: "https://docs.liquity.org/v2-documentation/friendly-fork-program",
+          label: "Learn more",
+          title: "Learn more about the Liquity V2 Friendly Fork Program",
+        },
+      },
+    },
+    yieldTable: {
+      title: "Top 3 external yield opportunities",
+      hint: {
+        title: "All yield sources on Dune",
+        url: "https://dune.com/liquity/liquity-v2-yields",
+        label: "Learn more",
+      },
+    },
     statsBar: {
       label: "Protocol stats",
     },
@@ -231,16 +266,16 @@ export default {
 
   // Borrow screen
   borrowScreen: {
-    headline: (tokensIcons: N, boldIcon: N) => (
+    headline: (eth: N, bold: N) => (
       <>
-        Borrow {boldIcon} BOLD with {tokensIcons} ETH
+        Borrow {bold} with {eth}
       </>
     ),
     depositField: {
-      label: "You deposit",
+      label: "Collateral",
     },
     borrowField: {
-      label: "You borrow",
+      label: "Loan",
     },
     liquidationPriceField: {
       label: "ETH liquidation price",
@@ -297,17 +332,20 @@ export default {
 
   // Earn home screen
   earnHome: {
-    headline: (tokensIcons: N, boldIcon: N) => (
+    headline: (rewards: N, bold: N) => (
       <>
-        Deposit {boldIcon} BOLD to earn rewards {tokensIcons}
+        Deposit
+        <NoWrap>{bold} BOLD</NoWrap>
+        to earn <NoWrap>rewards {rewards}</NoWrap>
       </>
     ),
     subheading: (
       <>
-        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, in case the
-        system needs to liquidate positions, the BOLD may be swapped to collateral.
+        A BOLD deposit in a stability pool earns rewards from the fees that users pay on their loans. Also, the BOLD may
+        be swapped to collateral in case the system needs to liquidate positions.
       </>
     ),
+    learnMore: ["https://docs.liquity.org/v2-faq/bold-and-earn", "Learn more"],
     poolsColumns: {
       pool: "Pool",
       apr: "APR",
@@ -370,7 +408,8 @@ export default {
       ],
       alsoClaimRewardsDeposit: [
         <>
-          If checked, rewards are paid out as part of the update transaction.
+          If checked, rewards are paid out as part of the update transaction. Otherwise rewards will be compounded into
+          your deposit.
         </>,
       ],
       alsoClaimRewardsWithdraw: [
@@ -407,7 +446,10 @@ export default {
         By staking LQTY you can vote on incentives for Liquity V2, while still earning Liquity V1 fees.
       </>
     ),
-    learnMore: ["https://docs.liquity.org/faq/staking", "Learn more"],
+    learnMore: [
+      "https://docs.liquity.org/v2-faq/lqty-staking",
+      "Learn more",
+    ],
     accountDetails: {
       myDeposit: "My deposit",
       votingPower: "Voting power",
@@ -453,6 +495,17 @@ export default {
           Rewards will be paid out as part of the update transaction.
         </>,
       ],
+      votingShare: (
+        <>
+          Your voting share is the amount of LQTY you have staked and that is available to vote, divided by the total
+          amount of LQTY staked via the governance contract.
+        </>
+      ),
+      votingPower: (
+        <>
+          Your relative voting power changes over time, depending on your and others allocations of LQTY.
+        </>
+      ),
     },
   },
 } as const;
@@ -472,5 +525,28 @@ function Link({
     <a href={href} {...props}>
       {children}
     </a>
+  );
+}
+
+function NoWrap({
+  children,
+  gap = 8,
+}: {
+  children: N;
+  gap?: number;
+}) {
+  return (
+    <span
+      className={css({
+        display: "inline-flex",
+        alignItems: "center",
+        whiteSpace: "nowrap",
+      })}
+      style={{
+        gap,
+      }}
+    >
+      {children}
+    </span>
   );
 }

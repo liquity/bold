@@ -1,32 +1,25 @@
-import type { CollIndex, Dnum, TroveId } from "@/src/types";
+import type { BranchId, Dnum, TroveId } from "@/src/types";
 import type { Config as WagmiConfig } from "wagmi";
 
-import { CLOSE_FROM_COLLATERAL_SLIPPAGE, DATA_REFRESH_INTERVAL } from "@/src/constants";
+import { CLOSE_FROM_COLLATERAL_SLIPPAGE } from "@/src/constants";
 import { getProtocolContract } from "@/src/contracts";
-import { getCollateralContracts } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
+import { getBranch } from "@/src/liquity-utils";
 import { useDebouncedQueryKey } from "@/src/react-utils";
-import { useWagmiConfig } from "@/src/services/Ethereum";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
+import { useConfig as useWagmiConfig } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
 const DECIMAL_PRECISION = 10n ** 18n;
 
 export async function getLeverUpTroveParams(
-  collIndex: CollIndex,
+  branchId: BranchId,
   troveId: TroveId,
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const collContracts = getCollateralContracts(collIndex);
-
-  if (!collContracts) {
-    throw new Error("Invalid collateral index: " + collIndex);
-  }
-
-  const { PriceFeed, TroveManager } = collContracts;
-
+  const { PriceFeed, TroveManager } = getBranch(branchId).contracts;
   const [priceResult, troveDataResult] = await readContracts(wagmiConfig, {
     contracts: [{
       abi: PriceFeed.abi,
@@ -73,19 +66,12 @@ export async function getLeverUpTroveParams(
 }
 
 export async function getLeverDownTroveParams(
-  collIndex: CollIndex,
+  branchId: BranchId,
   troveId: TroveId,
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const collContracts = getCollateralContracts(collIndex);
-
-  if (!collContracts) {
-    throw new Error("Invalid collateral index: " + collIndex);
-  }
-
-  const { PriceFeed, TroveManager } = collContracts;
-
+  const { PriceFeed, TroveManager } = getBranch(branchId).contracts;
   const [priceResult, troveDataResult] = await readContracts(wagmiConfig, {
     contracts: [{
       abi: PriceFeed.abi,
@@ -133,21 +119,18 @@ export async function getLeverDownTroveParams(
 
 // from openLeveragedTroveWithIndex() in contracts/src/test/zapperLeverage.t.sol
 export async function getOpenLeveragedTroveParams(
-  collIndex: CollIndex,
+  branchId: BranchId,
   collAmount: bigint,
   leverageFactor: number,
   wagmiConfig: WagmiConfig,
 ) {
-  const collContracts = getCollateralContracts(collIndex);
-
-  if (!collContracts) {
-    throw new Error("Invalid collateral index: " + collIndex);
+  const { PriceFeed } = getBranch(branchId).contracts;
+  const FetchPriceAbi = PriceFeed.abi.find((fn) => fn.name === "fetchPrice");
+  if (!FetchPriceAbi) {
+    throw new Error("fetchPrice ABI not found");
   }
-
-  const { PriceFeed } = collContracts;
-
   const [price] = await readContract(wagmiConfig, {
-    abi: PriceFeed.abi,
+    abi: [{ ...FetchPriceAbi, stateMutability: "view" }] as const,
     address: PriceFeed.address,
     functionName: "fetchPrice",
   });
@@ -168,32 +151,22 @@ export async function getOpenLeveragedTroveParams(
 
 // from _getCloseFlashLoanAmount() in contracts/src/test/zapperLeverage.t.sol
 export async function getCloseFlashLoanAmount(
-  collIndex: CollIndex,
+  branchId: BranchId,
   troveId: TroveId,
   wagmiConfig: WagmiConfig,
 ): Promise<bigint | null> {
-  const collContracts = getCollateralContracts(collIndex);
-
-  if (!collContracts) {
-    throw new Error("Invalid collateral index: " + collIndex);
-  }
-
-  const { PriceFeed, TroveManager } = collContracts;
-
+  const { PriceFeed, TroveManager } = getBranch(branchId).contracts;
   const [priceResult, latestTroveDataResult] = await readContracts(wagmiConfig, {
-    contracts: [
-      {
-        abi: PriceFeed.abi,
-        address: PriceFeed.address,
-        functionName: "fetchPrice",
-      },
-      {
-        abi: TroveManager.abi,
-        address: TroveManager.address,
-        functionName: "getLatestTroveData",
-        args: [BigInt(troveId)],
-      },
-    ],
+    contracts: [{
+      abi: PriceFeed.abi,
+      address: PriceFeed.address,
+      functionName: "fetchPrice",
+    }, {
+      abi: TroveManager.abi,
+      address: TroveManager.address,
+      functionName: "getLatestTroveData",
+      args: [BigInt(troveId)],
+    }],
   });
 
   const [price] = priceResult.result ?? [];
@@ -216,12 +189,12 @@ function leverageRatioToCollateralRatio(inputRatio: bigint) {
 }
 
 export function useCheckLeverageSlippage({
-  collIndex,
+  branchId,
   initialDeposit,
   leverageFactor,
   ownerIndex,
 }: {
-  collIndex: CollIndex;
+  branchId: BranchId;
   initialDeposit: Dnum | null;
   leverageFactor: number;
   ownerIndex: number | null;
@@ -232,7 +205,7 @@ export function useCheckLeverageSlippage({
 
   const debouncedQueryKey = useDebouncedQueryKey([
     "openLeveragedTroveParams",
-    collIndex,
+    branchId,
     String(!initialDeposit || initialDeposit[0]),
     leverageFactor,
     ownerIndex,
@@ -241,12 +214,12 @@ export function useCheckLeverageSlippage({
   return useQuery({
     queryKey: debouncedQueryKey,
     queryFn: async () => {
-      const params = initialDeposit && await getOpenLeveragedTroveParams(
-        collIndex,
+      const params = initialDeposit && (await getOpenLeveragedTroveParams(
+        branchId,
         initialDeposit[0],
         leverageFactor,
         wagmiConfig,
-      );
+      ));
 
       if (params === null) {
         return null;
@@ -270,6 +243,5 @@ export function useCheckLeverageSlippage({
         && dn.gt(initialDeposit, 0)
         && ownerIndex !== null,
     ),
-    refetchInterval: DATA_REFRESH_INTERVAL,
   });
 }

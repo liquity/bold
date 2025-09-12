@@ -9,7 +9,7 @@ export const PriceFeed = [{
     "type": "bool",
     "internalType": "bool",
   }],
-  "stateMutability": "view",
+  "stateMutability": "nonpayable",
 }, {
   "type": "function",
   "name": "fetchRedemptionPrice",
@@ -19,18 +19,12 @@ export const PriceFeed = [{
     "type": "bool",
     "internalType": "bool",
   }],
-  "stateMutability": "view",
-}, {
-  "type": "function",
-  "name": "getEthUsdStalenessThreshold",
-  "inputs": [],
-  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-  "stateMutability": "pure",
+  "stateMutability": "nonpayable",
 }, {
   "type": "function",
   "name": "getPrice",
   "inputs": [],
-  "outputs": [{ "name": "_price", "type": "uint256", "internalType": "uint256" }],
+  "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
   "stateMutability": "view",
 }, {
   "type": "function",
@@ -40,14 +34,13 @@ export const PriceFeed = [{
   "stateMutability": "view",
 }, {
   "type": "function",
-  "name": "setAddresses",
-  "inputs": [{ "name": "_borrowerOperationsAddress", "type": "address", "internalType": "address" }],
-  "outputs": [],
+  "name": "setPrice",
+  "inputs": [{ "name": "price", "type": "uint256", "internalType": "uint256" }],
+  "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
   "stateMutability": "nonpayable",
 }, {
-  "type": "function",
-  "name": "setPrice",
-  "inputs": [{ "name": "_price", "type": "uint256", "internalType": "uint256" }],
-  "outputs": [],
-  "stateMutability": "nonpayable",
+  "type": "event",
+  "name": "LastGoodPriceUpdated",
+  "inputs": [{ "name": "_lastGoodPrice", "type": "uint256", "indexed": false, "internalType": "uint256" }],
+  "anonymous": false,
 }] as const;

@@ -14,84 +14,65 @@ import * as types from './graphql';
  * Therefore it is highly recommended to use the babel or swc plugin for production.
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
-const documents = {
-    "\n  query BorrowerInfo($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n      troves\n      trovesByCollateral\n    }\n  }\n": types.BorrowerInfoDocument,
-    "\n  fragment FullTroveFragment on Trove {\n    id\n    borrower\n    closedAt\n    createdAt\n    debt\n    deposit\n    interestRate\n    mightBeLeveraged\n    stake\n    status\n    troveId\n    updatedAt\n    collateral {\n      id\n      token {\n        symbol\n        name\n      }\n      minCollRatio\n      collIndex\n    }\n    interestBatch {\n      id\n      annualInterestRate\n      annualManagementFee\n      batchManager\n    }\n  }\n": types.FullTroveFragmentFragmentDoc,
-    "\n  query TrovesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        borrower: $account,\n        status_in: [active,redeemed,liquidated],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      borrower\n      closedAt\n      createdAt\n      debt\n      deposit\n      interestRate\n      mightBeLeveraged\n      stake\n      status\n      troveId\n      updatedAt\n      collateral {\n        id\n        token {\n          symbol\n          name\n        }\n        minCollRatio\n        collIndex\n      }\n      interestBatch {\n        id\n        annualInterestRate\n        annualManagementFee\n        batchManager\n      }\n    }\n  }\n": types.TrovesByAccountDocument,
-    "\n  query TroveById($id: ID!) {\n    trove(id: $id) {\n      id\n      borrower\n      closedAt\n      createdAt\n      debt\n      deposit\n      interestRate\n      mightBeLeveraged\n      stake\n      status\n      troveId\n      updatedAt\n      collateral {\n        id\n        token {\n          symbol\n          name\n        }\n        minCollRatio\n        collIndex\n      }\n      interestBatch {\n        id\n        annualInterestRate\n        annualManagementFee\n        batchManager\n      }\n    }\n  }\n": types.TroveByIdDocument,
-    "\n  query StabilityPools {\n    stabilityPools {\n      id\n      totalDeposited\n    }\n  }\n": types.StabilityPoolsDocument,
-    "\n  fragment StabilityPoolDepositFragment on StabilityPoolDeposit {\n    id\n    deposit\n    depositor\n    collateral {\n      collIndex\n    }\n    snapshot {\n      B\n      P\n      S\n      epoch\n      scale\n    }\n  }\n": types.StabilityPoolDepositFragmentFragmentDoc,
-    "\n  query StabilityPoolDepositsByAccount($account: Bytes!) {\n    stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        epoch\n        scale\n      }\n    }\n  }\n": types.StabilityPoolDepositsByAccountDocument,
-    "\n  query StabilityPoolDeposit($id: ID!) {\n    stabilityPoolDeposit(id: $id) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        epoch\n        scale\n      }\n    }\n  }\n": types.StabilityPoolDepositDocument,
-    "\n  query StabilityPoolEpochScale($id: ID!) {\n    stabilityPoolEpochScale(id: $id) {\n      id\n      B\n      S\n    }\n  }\n": types.StabilityPoolEpochScaleDocument,
-    "\n  query InterestBatch($id: ID!) {\n    interestBatch(id: $id) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n": types.InterestBatchDocument,
-    "\n  query AllInterestRateBrackets {\n    interestRateBrackets(orderBy: rate) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n    }\n  }\n": types.AllInterestRateBracketsDocument,
-    "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n": types.GovernanceInitiativesDocument,
-    "\n  query GovernanceUser($id: ID!) {\n    governanceUser(id: $id) {\n      id\n      allocatedLQTY\n      stakedLQTY\n      stakedOffset\n      allocations {\n        id\n        atEpoch\n        vetoLQTY\n        voteLQTY\n        initiative {\n          id\n        }\n      }\n    }\n  }\n": types.GovernanceUserDocument,
-    "\n  query GovernanceStats {\n    governanceStats(id: \"stats\") {\n      id\n      totalLQTYStaked\n      totalOffset\n      totalInitiatives\n    }\n  }\n": types.GovernanceStatsDocument,
-    "\n  query GovernanceUserAllocations($id: ID!) {\n    governanceUser(id: $id) {\n      allocated\n    }\n  }\n": types.GovernanceUserAllocationsDocument,
+type Documents = {
+    "\n  query BlockNumber {\n    _meta {\n      block {\n        number\n      }\n    }\n  }\n": typeof types.BlockNumberDocument,
+    "\n  query NextOwnerIndexesByBorrower($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n    }\n  }\n": typeof types.NextOwnerIndexesByBorrowerDocument,
+    "\n  query TrovesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        or: [\n          { previousOwner: $account, status: liquidated },\n          { borrower: $account, status_in: [active, redeemed] }\n        ],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      closedAt\n      createdAt\n      lastUserActionAt\n      updatedAt\n      mightBeLeveraged\n      status\n      debt\n      redemptionCount\n      redeemedColl\n      redeemedDebt\n    }\n  }\n": typeof types.TrovesByAccountDocument,
+    "\n  query TroveById($id: ID!) {\n    trove(id: $id) {\n      id\n      borrower\n      closedAt\n      createdAt\n      lastUserActionAt\n      updatedAt\n      mightBeLeveraged\n      previousOwner\n      status\n      debt\n      redemptionCount\n      redeemedColl\n      redeemedDebt\n    }\n  }\n": typeof types.TroveByIdDocument,
+    "\n  query InterestBatches($ids: [ID!]!) {\n    interestBatches(where: { id_in: $ids }) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n": typeof types.InterestBatchesDocument,
+    "\n  query AllInterestRateBrackets {\n    interestRateBrackets(\n      first: 1000\n      where: { totalDebt_gt: 0 }\n      orderBy: rate\n    ) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n      sumDebtTimesRateD36\n      pendingDebtTimesOneYearD36\n      updatedAt\n    }\n  }\n": typeof types.AllInterestRateBracketsDocument,
+    "\n  query GovernanceGlobalData {\n    governanceInitiatives {\n      id\n    }\n\n    governanceVotingPower(id: \"total\") {\n      allocatedLQTY\n      allocatedOffset\n      unallocatedLQTY\n      unallocatedOffset\n    }\n  }\n": typeof types.GovernanceGlobalDataDocument,
+    "\n  query UserAllocationHistory($user: String) {\n    governanceAllocations(\n      where: { user: $user }\n      orderBy: epoch\n      orderDirection: desc\n      first: 1000\n    ) {\n      epoch\n      initiative { id }\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n  }\n": typeof types.UserAllocationHistoryDocument,
+    "\n  query TotalAllocationHistory($initiative: String) {\n    governanceAllocations(\n      where: { initiative: $initiative, user: null }\n      orderBy: epoch\n      orderDirection: desc\n      first: 1000\n    ) {\n      epoch\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n  }\n": typeof types.TotalAllocationHistoryDocument,
+};
+const documents: Documents = {
+    "\n  query BlockNumber {\n    _meta {\n      block {\n        number\n      }\n    }\n  }\n": types.BlockNumberDocument,
+    "\n  query NextOwnerIndexesByBorrower($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n    }\n  }\n": types.NextOwnerIndexesByBorrowerDocument,
+    "\n  query TrovesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        or: [\n          { previousOwner: $account, status: liquidated },\n          { borrower: $account, status_in: [active, redeemed] }\n        ],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      closedAt\n      createdAt\n      lastUserActionAt\n      updatedAt\n      mightBeLeveraged\n      status\n      debt\n      redemptionCount\n      redeemedColl\n      redeemedDebt\n    }\n  }\n": types.TrovesByAccountDocument,
+    "\n  query TroveById($id: ID!) {\n    trove(id: $id) {\n      id\n      borrower\n      closedAt\n      createdAt\n      lastUserActionAt\n      updatedAt\n      mightBeLeveraged\n      previousOwner\n      status\n      debt\n      redemptionCount\n      redeemedColl\n      redeemedDebt\n    }\n  }\n": types.TroveByIdDocument,
+    "\n  query InterestBatches($ids: [ID!]!) {\n    interestBatches(where: { id_in: $ids }) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n": types.InterestBatchesDocument,
+    "\n  query AllInterestRateBrackets {\n    interestRateBrackets(\n      first: 1000\n      where: { totalDebt_gt: 0 }\n      orderBy: rate\n    ) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n      sumDebtTimesRateD36\n      pendingDebtTimesOneYearD36\n      updatedAt\n    }\n  }\n": types.AllInterestRateBracketsDocument,
+    "\n  query GovernanceGlobalData {\n    governanceInitiatives {\n      id\n    }\n\n    governanceVotingPower(id: \"total\") {\n      allocatedLQTY\n      allocatedOffset\n      unallocatedLQTY\n      unallocatedOffset\n    }\n  }\n": types.GovernanceGlobalDataDocument,
+    "\n  query UserAllocationHistory($user: String) {\n    governanceAllocations(\n      where: { user: $user }\n      orderBy: epoch\n      orderDirection: desc\n      first: 1000\n    ) {\n      epoch\n      initiative { id }\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n  }\n": types.UserAllocationHistoryDocument,
+    "\n  query TotalAllocationHistory($initiative: String) {\n    governanceAllocations(\n      where: { initiative: $initiative, user: null }\n      orderBy: epoch\n      orderDirection: desc\n      first: 1000\n    ) {\n      epoch\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n  }\n": types.TotalAllocationHistoryDocument,
 };
 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query BorrowerInfo($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n      troves\n      trovesByCollateral\n    }\n  }\n"): typeof import('./graphql').BorrowerInfoDocument;
+export function graphql(source: "\n  query BlockNumber {\n    _meta {\n      block {\n        number\n      }\n    }\n  }\n"): typeof import('./graphql').BlockNumberDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment FullTroveFragment on Trove {\n    id\n    borrower\n    closedAt\n    createdAt\n    debt\n    deposit\n    interestRate\n    mightBeLeveraged\n    stake\n    status\n    troveId\n    updatedAt\n    collateral {\n      id\n      token {\n        symbol\n        name\n      }\n      minCollRatio\n      collIndex\n    }\n    interestBatch {\n      id\n      annualInterestRate\n      annualManagementFee\n      batchManager\n    }\n  }\n"): typeof import('./graphql').FullTroveFragmentFragmentDoc;
+export function graphql(source: "\n  query NextOwnerIndexesByBorrower($id: ID!) {\n    borrowerInfo(id: $id) {\n      nextOwnerIndexes\n    }\n  }\n"): typeof import('./graphql').NextOwnerIndexesByBorrowerDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query TrovesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        borrower: $account,\n        status_in: [active,redeemed,liquidated],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      borrower\n      closedAt\n      createdAt\n      debt\n      deposit\n      interestRate\n      mightBeLeveraged\n      stake\n      status\n      troveId\n      updatedAt\n      collateral {\n        id\n        token {\n          symbol\n          name\n        }\n        minCollRatio\n        collIndex\n      }\n      interestBatch {\n        id\n        annualInterestRate\n        annualManagementFee\n        batchManager\n      }\n    }\n  }\n"): typeof import('./graphql').TrovesByAccountDocument;
+export function graphql(source: "\n  query TrovesByAccount($account: Bytes!) {\n    troves(\n      where: {\n        or: [\n          { previousOwner: $account, status: liquidated },\n          { borrower: $account, status_in: [active, redeemed] }\n        ],\n      }\n      orderBy: updatedAt\n      orderDirection: desc\n    ) {\n      id\n      closedAt\n      createdAt\n      lastUserActionAt\n      updatedAt\n      mightBeLeveraged\n      status\n      debt\n      redemptionCount\n      redeemedColl\n      redeemedDebt\n    }\n  }\n"): typeof import('./graphql').TrovesByAccountDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query TroveById($id: ID!) {\n    trove(id: $id) {\n      id\n      borrower\n      closedAt\n      createdAt\n      debt\n      deposit\n      interestRate\n      mightBeLeveraged\n      stake\n      status\n      troveId\n      updatedAt\n      collateral {\n        id\n        token {\n          symbol\n          name\n        }\n        minCollRatio\n        collIndex\n      }\n      interestBatch {\n        id\n        annualInterestRate\n        annualManagementFee\n        batchManager\n      }\n    }\n  }\n"): typeof import('./graphql').TroveByIdDocument;
+export function graphql(source: "\n  query TroveById($id: ID!) {\n    trove(id: $id) {\n      id\n      borrower\n      closedAt\n      createdAt\n      lastUserActionAt\n      updatedAt\n      mightBeLeveraged\n      previousOwner\n      status\n      debt\n      redemptionCount\n      redeemedColl\n      redeemedDebt\n    }\n  }\n"): typeof import('./graphql').TroveByIdDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query StabilityPools {\n    stabilityPools {\n      id\n      totalDeposited\n    }\n  }\n"): typeof import('./graphql').StabilityPoolsDocument;
+export function graphql(source: "\n  query InterestBatches($ids: [ID!]!) {\n    interestBatches(where: { id_in: $ids }) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n"): typeof import('./graphql').InterestBatchesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  fragment StabilityPoolDepositFragment on StabilityPoolDeposit {\n    id\n    deposit\n    depositor\n    collateral {\n      collIndex\n    }\n    snapshot {\n      B\n      P\n      S\n      epoch\n      scale\n    }\n  }\n"): typeof import('./graphql').StabilityPoolDepositFragmentFragmentDoc;
+export function graphql(source: "\n  query AllInterestRateBrackets {\n    interestRateBrackets(\n      first: 1000\n      where: { totalDebt_gt: 0 }\n      orderBy: rate\n    ) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n      sumDebtTimesRateD36\n      pendingDebtTimesOneYearD36\n      updatedAt\n    }\n  }\n"): typeof import('./graphql').AllInterestRateBracketsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query StabilityPoolDepositsByAccount($account: Bytes!) {\n    stabilityPoolDeposits(where: { depositor: $account, deposit_gt: 0 }) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        epoch\n        scale\n      }\n    }\n  }\n"): typeof import('./graphql').StabilityPoolDepositsByAccountDocument;
+export function graphql(source: "\n  query GovernanceGlobalData {\n    governanceInitiatives {\n      id\n    }\n\n    governanceVotingPower(id: \"total\") {\n      allocatedLQTY\n      allocatedOffset\n      unallocatedLQTY\n      unallocatedOffset\n    }\n  }\n"): typeof import('./graphql').GovernanceGlobalDataDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query StabilityPoolDeposit($id: ID!) {\n    stabilityPoolDeposit(id: $id) {\n      id\n      deposit\n      depositor\n      collateral {\n        collIndex\n      }\n      snapshot {\n        B\n        P\n        S\n        epoch\n        scale\n      }\n    }\n  }\n"): typeof import('./graphql').StabilityPoolDepositDocument;
+export function graphql(source: "\n  query UserAllocationHistory($user: String) {\n    governanceAllocations(\n      where: { user: $user }\n      orderBy: epoch\n      orderDirection: desc\n      first: 1000\n    ) {\n      epoch\n      initiative { id }\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n  }\n"): typeof import('./graphql').UserAllocationHistoryDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query StabilityPoolEpochScale($id: ID!) {\n    stabilityPoolEpochScale(id: $id) {\n      id\n      B\n      S\n    }\n  }\n"): typeof import('./graphql').StabilityPoolEpochScaleDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query InterestBatch($id: ID!) {\n    interestBatch(id: $id) {\n      collateral {\n        collIndex\n      }\n      batchManager\n      debt\n      coll\n      annualInterestRate\n      annualManagementFee\n    }\n  }\n"): typeof import('./graphql').InterestBatchDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query AllInterestRateBrackets {\n    interestRateBrackets(orderBy: rate) {\n      collateral {\n        collIndex\n      }\n      rate\n      totalDebt\n    }\n  }\n"): typeof import('./graphql').AllInterestRateBracketsDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query GovernanceInitiatives {\n    governanceInitiatives {\n      id\n    }\n  }\n"): typeof import('./graphql').GovernanceInitiativesDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query GovernanceUser($id: ID!) {\n    governanceUser(id: $id) {\n      id\n      allocatedLQTY\n      stakedLQTY\n      stakedOffset\n      allocations {\n        id\n        atEpoch\n        vetoLQTY\n        voteLQTY\n        initiative {\n          id\n        }\n      }\n    }\n  }\n"): typeof import('./graphql').GovernanceUserDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query GovernanceStats {\n    governanceStats(id: \"stats\") {\n      id\n      totalLQTYStaked\n      totalOffset\n      totalInitiatives\n    }\n  }\n"): typeof import('./graphql').GovernanceStatsDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query GovernanceUserAllocations($id: ID!) {\n    governanceUser(id: $id) {\n      allocated\n    }\n  }\n"): typeof import('./graphql').GovernanceUserAllocationsDocument;
+export function graphql(source: "\n  query TotalAllocationHistory($initiative: String) {\n    governanceAllocations(\n      where: { initiative: $initiative, user: null }\n      orderBy: epoch\n      orderDirection: desc\n      first: 1000\n    ) {\n      epoch\n      voteLQTY\n      vetoLQTY\n      voteOffset\n      vetoOffset\n    }\n  }\n"): typeof import('./graphql').TotalAllocationHistoryDocument;
 
 
 export function graphql(source: string) {

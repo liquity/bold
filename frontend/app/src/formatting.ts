@@ -1,5 +1,6 @@
 import type { Dnum, RiskLevel } from "@/src/types";
 
+import { ONE_DAY, ONE_HOUR, ONE_MINUTE, ONE_SECOND } from "@/src/constants";
 import { DNUM_0, DNUM_1 } from "@/src/dnum-utils";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
@@ -76,7 +77,7 @@ export function fmtnum(
   const {
     dust = true,
     prefix = "",
-    preset,
+    preset: _preset,
     scale = 1,
     suffix = "",
     ...dnOptions
@@ -114,6 +115,7 @@ export function formatLiquidationRisk(liquidationRisk: RiskLevel | null) {
     .with("low", () => "Low liquidation risk")
     .with("medium", () => "Medium liquidation risk")
     .with("high", () => "High liquidation risk")
+    .with("not-applicable", () => "Liquidation risk N/A")
     .exhaustive();
 }
 
@@ -123,6 +125,7 @@ export function formatRedemptionRisk(redemptionRisk: RiskLevel | null) {
     .with("low", () => "Low redemption risk")
     .with("medium", () => "Medium redemption risk")
     .with("high", () => "High redemption risk")
+    .with("not-applicable", () => "Redemption risk N/A")
     .exhaustive();
 }
 
@@ -132,6 +135,7 @@ export function formatRisk(risk: RiskLevel | null) {
     .with("low", () => "Low")
     .with("medium", () => "Medium")
     .with("high", () => "High")
+    .with("not-applicable", () => "N/A")
     .exhaustive();
 }
 
@@ -184,7 +188,14 @@ export function formatPercentage(
   }%`;
 }
 
-export function formatDate(date: Date, format: "full" | "iso" = "full") {
+export function formatDate(date: Date, format: "short" | "full" | "iso" = "full") {
+  if (format === "short") {
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
   if (format === "full") {
     return date.toLocaleDateString("en-US", {
       year: "numeric",
@@ -198,4 +209,47 @@ export function formatDate(date: Date, format: "full" | "iso" = "full") {
     return date.toISOString();
   }
   throw new Error(`Invalid date format: ${format}`);
+}
+
+const relativeTimeFormat = new Intl.RelativeTimeFormat(
+  "en-US",
+  { numeric: "auto" },
+);
+
+const relativeTimeUnits = [
+  [ONE_DAY, "days"],
+  [ONE_HOUR, "hours"],
+  [ONE_MINUTE, "minutes"],
+  [ONE_SECOND, "seconds"],
+] as const;
+
+export function formatRelativeTime(duration: number | bigint) {
+  duration = Number(duration);
+
+  for (const [threshold, unit] of relativeTimeUnits) {
+    if (Math.abs(duration) >= threshold) {
+      return relativeTimeFormat.format(
+        Math.ceil(duration / threshold),
+        unit,
+      );
+    }
+  }
+
+  return "just now";
+}
+
+export function formatDuration(durationInSeconds: number | bigint) {
+  durationInSeconds = Number(durationInSeconds);
+
+  const seconds = durationInSeconds % 60;
+  const minutes = Math.floor(durationInSeconds / 60) % 60;
+  const hours = Math.floor(durationInSeconds / (60 * 60)) % 24;
+  const days = Math.floor(durationInSeconds / (60 * 60 * 24));
+
+  return [
+    days ? `${days}d` : null,
+    hours ? `${hours}h` : null,
+    minutes ? `${minutes}m` : null,
+    seconds ? `${seconds}s` : null,
+  ].filter(Boolean).join(" ");
 }

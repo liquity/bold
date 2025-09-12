@@ -1,6 +1,6 @@
 "use client";
 
-import type { MouseEvent, MutableRefObject, ReactNode, TouchEvent } from "react";
+import type { MouseEvent, ReactNode, RefObject, TouchEvent } from "react";
 
 import { a, useSpring } from "@react-spring/web";
 import { useEffect, useRef, useState } from "react";
@@ -9,6 +9,7 @@ import { token } from "../../styled-system/tokens";
 import { useElementSize } from "../react-utils";
 
 export type TabItem = {
+  disabled?: boolean;
   label: ReactNode;
   panelId: string;
   tabId: string;
@@ -50,7 +51,11 @@ export function Tabs({
   useKeyboardNavigation({
     isFocused,
     itemsLength: items.length,
-    onSelect,
+    onSelect: (index, context) => {
+      if (!items[index].disabled) {
+        onSelect(index, context);
+      }
+    },
     selected,
   });
 
@@ -103,10 +108,6 @@ export function Tabs({
         "--background": token("colors.accent"),
         borderRadius: 12,
       },
-      activeTabContent: {
-        // color: token("colors.accentContent"),
-        color: token(`colors.${selected ? "selected" : "interactive"}`),
-      },
       tabsGap: 0,
     }
     : {
@@ -122,9 +123,6 @@ export function Tabs({
         "--background": token("colors.controlSurface"),
         borderRadius: 8,
       },
-      activeTabContent: {
-        color: token(`colors.${selected ? "selected" : "interactive"}`),
-      },
       tabsGap: 8,
     };
 
@@ -133,7 +131,6 @@ export function Tabs({
       ref={container}
       role="tablist"
       className={css({
-        overflow: "hidden",
         display: "flex",
         width: "100%",
         padding: 4,
@@ -188,7 +185,7 @@ export function Tabs({
             background: "var(--background)",
             border: "1px solid token(colors.border)",
             transformOrigin: "0 0",
-            borderRadius: 8,
+            borderRadius: 0,
           })}
           style={{
             transform: barSpring.transform,
@@ -205,65 +202,68 @@ function Tab({
   compact,
   onSelect,
   selected,
-  tabItem: { label, tabId, panelId },
+  tabItem: { disabled, label, tabId, panelId },
 }: {
   compact?: boolean;
   onSelect: (context: Exclude<OnSelectContext, { origin: "keyboard" }>) => void;
   selected: boolean;
   tabItem: TabItem;
 }) {
-  const styles = compact
-    ? {
-      activeTabContent: {
-        color: selected ? token("colors.accentContent") : token("colors.interactive"),
-      },
-    }
-    : {
-      activeTabContent: {
-        color: selected ? token("colors.selected") : token("colors.interactive"),
-      },
-    };
+  const tabColor = compact
+    ? (selected ? token("colors.accentContent") : token("colors.interactive"))
+    : (selected ? token("colors.selected") : token("colors.interactive"));
   return (
     <button
       aria-controls={panelId}
       aria-selected={selected}
       id={tabId}
       onMouseDown={(event) => {
-        onSelect({ origin: "mouse", event });
+        if (!disabled) {
+          onSelect({ origin: "mouse", event });
+        }
       }}
       onTouchStart={(event) => {
-        onSelect({ origin: "touch", event });
+        if (!disabled) {
+          onSelect({ origin: "touch", event });
+        }
       }}
       role="tab"
       tabIndex={selected ? 0 : -1}
+      title={typeof label === "string" ? label : undefined}
       className={css({
         zIndex: 3,
         alignItems: "center",
         justifyContent: "center",
         height: "100%",
         fontSize: 16,
-        color: "interactive",
         cursor: "pointer",
         whiteSpace: "nowrap",
         textOverflow: "ellipsis",
         overflow: "hidden",
+        transition: "color 80ms ease-in-out",
         _focusVisible: {
           outline: "2px solid token(colors.focused)",
-          borderRadius: 8,
         },
       })}
       style={{
-        color: styles.activeTabContent.color,
+        color: tabColor,
         padding: compact ? "0 12px" : "0 16px",
         outlineOffset: compact ? 1 : -2,
+        pointerEvents: disabled ? "none" : "auto",
+        opacity: disabled ? 0.5 : 1,
+        borderRadius: compact ? 12 : 8,
       }}
     >
       <div
+        className={css({
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        })}
         style={{
           translate: compact ? "0 -0.5px" : "0 0",
         }}
       >
-        {label}
+        <span>{label}</span>
       </div>
     </button>
   );
@@ -276,7 +276,7 @@ function useKeyboardNavigation({
   onSelect,
   selected,
 }: {
-  isFocused: MutableRefObject<boolean>;
+  isFocused: RefObject<boolean>;
   itemsLength: number;
   onSelect: (
     index: number,
@@ -314,8 +314,8 @@ function useFocusSelected({
   isFocused,
   selected,
 }: {
-  container: MutableRefObject<HTMLDivElement | null>;
-  isFocused: MutableRefObject<boolean>;
+  container: RefObject<HTMLDivElement | null>;
+  isFocused: RefObject<boolean>;
   selected: number;
 }) {
   useEffect(() => {

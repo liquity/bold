@@ -7,8 +7,8 @@ import "./MainnetPriceFeedBase.sol";
 // import "forge-std/console2.sol";
 
 contract WETHPriceFeed is MainnetPriceFeedBase {
-    constructor(address _owner, address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold)
-        MainnetPriceFeedBase(_owner, _ethUsdOracleAddress, _ethUsdStalenessThreshold)
+    constructor(address _ethUsdOracleAddress, uint256 _ethUsdStalenessThreshold, address _borrowerOperationsAddress)
+        MainnetPriceFeedBase(_ethUsdOracleAddress, _ethUsdStalenessThreshold, _borrowerOperationsAddress)
     {
         _fetchPricePrimary();
 
@@ -33,10 +33,6 @@ contract WETHPriceFeed is MainnetPriceFeedBase {
     //  _fetchPricePrimary returns:
     // - The price
     // - A bool indicating whether a new oracle failure was detected in the call
-    function _fetchPricePrimary(bool /* _isRedemption */ ) internal virtual returns (uint256, bool) {
-        return _fetchPricePrimary();
-    }
-
     function _fetchPricePrimary() internal returns (uint256, bool) {
         assert(priceSource == PriceSource.primary);
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);

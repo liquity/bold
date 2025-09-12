@@ -4,8 +4,8 @@ import type { PositionLoanCommitted } from "@/src/types";
 
 import { ARROW_RIGHT } from "@/src/characters";
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { ETH_MAX_RESERVE, MIN_DEBT } from "@/src/constants";
@@ -14,13 +14,11 @@ import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import { getCollToken } from "@/src/liquity-utils";
-import { useAccount, useBalance } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
+import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
-  Button,
   HFlex,
   InfoTooltip,
   InputField,
@@ -44,9 +42,8 @@ export function PanelUpdateBorrowPosition({
   loan: PositionLoanCommitted;
 }) {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
 
-  const collToken = getCollToken(loan.collIndex);
+  const collToken = getCollToken(loan.branchId);
   if (!collToken) {
     throw new Error("collToken not found");
   }
@@ -119,7 +116,12 @@ export function PanelUpdateBorrowPosition({
     collPrice.data,
   );
 
-  const isBelowMinDebt = debtChange.parsed && !debtChange.isEmpty && newDebt && dn.lt(newDebt, MIN_DEBT);
+  const maxLtv = dn.div(dn.from(1, 18), collToken.collateralRatio);
+
+  const isBelowMinDebt = debtChange.parsed && !debtChange.isEmpty && newDebt
+    && dn.lt(newDebt, MIN_DEBT);
+
+  const isAboveMaxLtv = newLoanDetails.ltv && dn.gt(newLoanDetails.ltv, maxLtv);
 
   const insufficientBold = debtMode === "remove"
     && debtChange.parsed
@@ -138,7 +140,9 @@ export function PanelUpdateBorrowPosition({
     && (
       !dn.eq(loanDetails.deposit ?? dnum18(0), newLoanDetails.deposit ?? dnum18(0))
       || !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0))
-    );
+    )
+    // the LTV is not above the maximum
+    && !isAboveMaxLtv;
 
   return (
     <>
@@ -390,7 +394,26 @@ export function PanelUpdateBorrowPosition({
                 label: <abbr title="Loan-to-value ratio">LTV</abbr>,
                 before: <Amount value={loanDetails.ltv} percentage />,
                 after: newLoanDetails.ltv && dn.gt(newLoanDetails.ltv, 0)
-                  ? <Amount value={newLoanDetails.ltv} percentage />
+                  ? isAboveMaxLtv
+                    ? (
+                      <div
+                        className={css({
+                          color: "negativeStrong",
+                        })}
+                      >
+                        <Amount
+                          value={maxLtv}
+                          prefix=">"
+                          percentage
+                        />
+                      </div>
+                    )
+                    : (
+                      <Amount
+                        value={newLoanDetails.ltv}
+                        percentage
+                      />
+                    )
                   : "N/A",
               },
               {
@@ -404,43 +427,23 @@ export function PanelUpdateBorrowPosition({
           />
         </div>
       </VFlex>
-
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          gap: 32,
-          width: "100%",
+      <FlowButton
+        disabled={!allowSubmit}
+        label="Update position"
+        request={{
+          flowId: "updateBorrowPosition",
+          backLink: [`/loan?id=${loan.branchId}:${loan.troveId}`, "Back to editing"],
+          successLink: ["/", "Go to the dashboard"],
+          successMessage: "The position has been updated successfully.",
+          prevLoan: { ...loan },
+          loan: {
+            ...loan,
+            deposit: newDeposit ?? loan.deposit,
+            borrowed: newDebt ?? loan.borrowed,
+          },
+          maxUpfrontFee: dnum18(maxUint256),
         }}
-      >
-        <ConnectWarningBox />
-        <Button
-          disabled={!allowSubmit}
-          label="Update position"
-          mode="primary"
-          size="large"
-          wide
-          onClick={() => {
-            if (account.address) {
-              txFlow.start({
-                flowId: "updateBorrowPosition",
-                backLink: [`/loan?id=${loan.collIndex}:${loan.troveId}`, "Back to editing"],
-                successLink: ["/", "Go to the dashboard"],
-                successMessage: "The position has been updated successfully.",
-
-                prevLoan: { ...loan },
-                loan: {
-                  ...loan,
-                  deposit: newDeposit ?? loan.deposit,
-                  borrowed: newDebt ?? loan.borrowed,
-                },
-                maxUpfrontFee: dnum18(maxUint256),
-              });
-            }
-          }}
-        />
-      </div>
+      />
     </>
   );
 }

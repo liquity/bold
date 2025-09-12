@@ -209,6 +209,7 @@ export function Dropdown({
         ref={floatingRefs.setReference}
         aria-expanded={showMenu}
         aria-controls={dropdownId}
+        aria-haspopup="listbox"
         type="button"
         onClick={() => {
           if (!preventOpenOnRelease.current) {
@@ -221,7 +222,7 @@ export function Dropdown({
         className={cx(
           "group",
           css({
-            display: "flex",
+            display: "grid",
             outline: 0,
             cursor: "pointer",
           }),
@@ -235,7 +236,8 @@ export function Dropdown({
           buttonItem && (
             <div
               className={css({
-                display: "flex",
+                display: "grid",
+                gridAutoFlow: "column",
                 alignItems: "center",
                 padding: "0 10px 0 16px",
                 height: "100%",
@@ -244,10 +246,10 @@ export function Dropdown({
                 borderStyle: "solid",
                 borderColor: "#F5F6F8",
                 boxShadow: `
-                0 2px 2px rgba(0, 0, 0, 0.1),
-                0 4px 10px rgba(18, 27, 68, 0.05),
-                inset 0 -1px 4px rgba(0, 0, 0, 0.05)
-              `,
+                  0 2px 2px rgba(0, 0, 0, 0.1),
+                  0 4px 10px rgba(18, 27, 68, 0.05),
+                  inset 0 -1px 4px rgba(0, 0, 0, 0.05)
+                `,
                 borderRadius: 90,
                 cursor: "pointer",
 
@@ -277,12 +279,24 @@ export function Dropdown({
               )}
               <div
                 className={css({
-                  display: "flex",
+                  display: "grid",
                   alignItems: "center",
                   gap: 8,
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 })}
               >
-                {buttonItem.label}
+                <div
+                  className={css({
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  })}
+                >
+                  {buttonItem.label}
+                </div>
               </div>
               <div>
                 <IconChevronDown size={size === "small" ? 16 : 24} />

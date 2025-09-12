@@ -5,7 +5,7 @@ export function Banner() {
 // Example banner:
 
 // import { css } from "@/styled-system/css";
-// import { AnchorTextButton } from "@liquity2/uikit";
+// import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 // import Link from "next/link";
 
 // export function Banner() {
@@ -30,17 +30,12 @@ export function Banner() {
 //         })}
 //       >
 //         Banner content goes here. Here is a{" "}
-//         <Link
+//         <LinkTextButton
+//           external
+//           label="link example"
 //           href="https://example.com"
-//           passHref
-//           legacyBehavior
-//         >
-//           <AnchorTextButton
-//             external
-//             label="link example"
-//             className={css({ color: "inherit" })}
-//           />
-//         </Link>.
+//           className={css({ color: "inherit" })}
+//         />.
 //       </div>
 //     </div>
 //   );

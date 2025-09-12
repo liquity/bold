@@ -1,12 +1,13 @@
 import type { FlowStepDeclaration } from "@/src/services/TransactionFlow";
 import type { ComponentPropsWithoutRef } from "react";
 
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
-import { useAccount } from "@/src/services/Ethereum";
 import { useStoredState } from "@/src/services/StoredState";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { useAccount } from "@/src/wagmi-utils";
 import { css, cx } from "@/styled-system/css";
-import { AnchorTextButton, Dropdown, IconChevronDown, TextButton } from "@liquity2/uikit";
+import { Dropdown, IconChevronDown, TextButton } from "@liquity2/uikit";
 import { match } from "ts-pattern";
 
 export function TransactionStatus(
@@ -43,7 +44,7 @@ export function TransactionStatus(
 function TxLink({ txHash }: { txHash: string }) {
   const account = useAccount();
   return (
-    <AnchorTextButton
+    <LinkTextButton
       label="transaction"
       href={account.safeStatus === null
         ? `${CHAIN_BLOCK_EXPLORER?.url}tx/${txHash}`

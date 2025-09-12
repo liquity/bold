@@ -1,13 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ReactNode, Ref } from "react";
 
 import { a, useSpring, useTransition } from "@react-spring/web";
-import { useEffect, useState } from "react";
-import { forwardRef, useId, useRef } from "react";
+import { useEffect, useId, useState } from "react";
 import { css, cx } from "../../styled-system/css";
-import { IconCross } from "../icons";
-import { useElementSize } from "../react-utils";
 
 const diffSpringConfig = {
   mass: 1,
@@ -16,14 +13,32 @@ const diffSpringConfig = {
 };
 
 type Drawer = {
-  mode: "error" | "loading" | "success";
+  mode: "error" | "loading" | "success" | "warning";
   message: ReactNode;
   autoClose?: number;
 };
 
-const InputField = forwardRef<HTMLInputElement, {
+function InputField({
+  contextual,
+  disabled = false,
+  drawer,
+  id: idFromProps,
+  onDrawerClose,
+  label,
+  labelHeight = 12,
+  labelSpacing = 12,
+  onBlur,
+  onChange,
+  onFocus,
+  placeholder,
+  ref,
+  secondary,
+  secondaryHeight = 24,
+  secondarySpacing = 14,
+  value,
+  valueUnfocused,
+}: {
   contextual?: ReactNode;
-  difference?: ReactNode;
   disabled?: boolean;
   drawer?: null | Drawer;
   id?: string;
@@ -36,9 +51,9 @@ const InputField = forwardRef<HTMLInputElement, {
   labelSpacing?: number;
   onBlur?: () => void;
   onChange?: (value: string) => void;
-  onDifferenceClick?: () => void;
   onFocus?: () => void;
   placeholder?: string;
+  ref?: Ref<HTMLInputElement>;
   secondary?:
     | ReactNode
     | { end: ReactNode; start?: ReactNode }
@@ -47,27 +62,7 @@ const InputField = forwardRef<HTMLInputElement, {
   secondarySpacing?: number;
   value?: string;
   valueUnfocused?: ReactNode;
-}>(function InputField({
-  contextual,
-  difference,
-  disabled = false,
-  drawer,
-  id: idFromProps,
-  onDrawerClose,
-  label,
-  labelHeight = 12,
-  labelSpacing = 12,
-  onBlur,
-  onChange,
-  onDifferenceClick,
-  onFocus,
-  placeholder,
-  secondary,
-  secondaryHeight = 12,
-  secondarySpacing = 20,
-  value,
-  valueUnfocused,
-}, ref) {
+}) {
   const [focused, setFocused] = useState(false);
 
   const label_ = label
@@ -84,57 +79,6 @@ const InputField = forwardRef<HTMLInputElement, {
 
   const autoId = useId();
   const id = idFromProps ?? autoId;
-
-  const valueMeasurement = useRef<HTMLDivElement>(null);
-
-  const [differenceSpring, differenceSpringApi] = useSpring(() => ({
-    initial: {
-      transform: `translate3d(0px, 0, 0) scale3d(1,1,1)`,
-      opacity: 0,
-    },
-    config: diffSpringConfig,
-  }));
-
-  const differenceLeftBeforeHiding = useRef<number | null>(null);
-
-  useElementSize(valueMeasurement, ({ inlineSize }) => {
-    const diffLeft = inlineSize + 26;
-
-    // hide
-    if (!difference) {
-      differenceSpringApi.start({
-        transform: `
-          translate3d(${(differenceLeftBeforeHiding.current ?? diffLeft)}px, 0, 0)
-          scale3d(1.1, 1.1, 1)
-        `,
-        opacity: 0,
-        immediate: true,
-      });
-      return;
-    }
-
-    // prepare before first show
-    if (differenceLeftBeforeHiding.current === null) {
-      differenceSpringApi.start({
-        transform: `
-          translate3d(${diffLeft}px, 0, 0)
-          scale3d(1.1, 1.1, 1)
-        `,
-        immediate: true,
-      });
-    }
-
-    // show
-    differenceSpringApi.start({
-      transform: `
-        translate3d(${diffLeft}px, 0, 0)
-        scale3d(1, 1, 1)
-      `,
-      opacity: 1,
-      config: diffSpringConfig,
-    });
-    differenceLeftBeforeHiding.current = diffLeft;
-  });
 
   const showValueUnfocused = valueUnfocused && !focused;
 
@@ -166,7 +110,7 @@ const InputField = forwardRef<HTMLInputElement, {
           background: "fieldSurface",
           border: "1px solid token(colors.fieldBorder)",
           borderRadius: 8,
-          padding: 16,
+          padding: "16px 16px 10px",
         })}
       >
         <div
@@ -189,65 +133,18 @@ const InputField = forwardRef<HTMLInputElement, {
           {label_.end && <div>{label_.end}</div>}
         </div>
         <div
-          ref={valueMeasurement}
-          className={css({
-            position: "absolute",
-            fontSize: 28,
-            fontWeight: 500,
-            letterSpacing: -1,
-            whiteSpace: "nowrap",
-            visibility: "hidden",
-            pointerEvents: "none",
-          })}
-        >
-          {value}
-        </div>
-        {difference && (
-          <a.button
-            onClick={onDifferenceClick}
-            className={css({
-              position: "absolute",
-              top: (136 - 2) / 2 - 10,
-              left: 0,
-              display: "flex",
-              gap: 10,
-              alignItems: "center",
-              justifyContent: "center",
-              height: 20,
-              padding: "0 8px",
-              whiteSpace: "nowrap",
-              background: "strongSurface",
-              color: "strongSurfaceContent",
-              cursor: "pointer",
-              borderRadius: 10,
-              outline: 0,
-              _active: {
-                translate: "0 1px",
-              },
-              _focusVisible: {
-                outline: "2px solid token(colors.focused)",
-              },
-            })}
-            style={{
-              ...differenceSpring,
-              pointerEvents: difference ? "auto" : "none",
-            }}
-          >
-            {difference}
-            <IconCross size={12} />
-          </a.button>
-        )}
-        <div
           className={css({
             position: "relative",
             zIndex: 2,
             display: "flex",
+            gap: 16,
             height: 40,
           })}
         >
           <input
             ref={ref}
             id={id}
+            name={autoId}
             disabled={disabled}
             onBlur={() => {
               setFocused(false);
@@ -273,6 +170,8 @@ const InputField = forwardRef<HTMLInputElement, {
                 fontSize: 28,
                 fontWeight: 500,
                 letterSpacing: -1,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
                 color: "content",
                 background: "transparent",
                 border: 0,
@@ -306,10 +205,9 @@ const InputField = forwardRef<HTMLInputElement, {
           {contextual && (
             <div
               className={css({
-                position: "absolute",
-                zIndex: 2,
-                inset: `50% 0 auto auto`,
-                transform: "translateY(-50%)",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
               })}
             >
               {contextual}
@@ -319,9 +217,8 @@ const InputField = forwardRef<HTMLInputElement, {
         {(secondary_.start || secondary_.end) && (
           <div
             className={css({
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              display: "grid",
+              gridTemplateColumns: "auto auto",
               gap: 16,
               fontSize: 16,
               fontWeight: 500,
@@ -333,33 +230,33 @@ const InputField = forwardRef<HTMLInputElement, {
             })}
             style={{
               height: secondaryHeight + secondarySpacing,
-              paddingTop: secondarySpacing,
             }}
           >
             {secondary_.start
               ? (
                 <div
                   className={css({
-                    flexGrow: 0,
-                    flexShrink: 1,
                     display: "flex",
+                    alignItems: "flex-end",
+                    overflow: "hidden",
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
-                    maxWidth: "50%",
                   })}
                 >
-                  {secondary_.start}
+                  <span>
+                    {secondary_.start}
+                  </span>
                 </div>
               )
               : <div />}
             {secondary_.end && (
               <div
                 className={css({
-                  flexGrow: 0,
-                  flexShrink: 1,
                   display: "flex",
+                  alignItems: "flex-end",
                   whiteSpace: "nowrap",
                   textOverflow: "ellipsis",
+                  justifyContent: "flex-end",
                 })}
               >
                 {secondary_.end}
@@ -384,7 +281,7 @@ const InputField = forwardRef<HTMLInputElement, {
       <Drawer drawer={drawer} />
     </div>
   );
-});
+}
 
 function Drawer({
   drawer,

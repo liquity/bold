@@ -38,6 +38,7 @@ import {
     MAX_ANNUAL_INTEREST_RATE,
     MIN_ANNUAL_INTEREST_RATE,
     MIN_ANNUAL_INTEREST_RATE,
+    MIN_BOLD_IN_SP,
     MIN_DEBT,
     MIN_INTEREST_RATE_CHANGE_PERIOD,
     ONE_MINUTE,
@@ -133,6 +134,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     struct AdjustTroveContext {
+        uint256 i;
         AdjustedTroveProperties prop;
         uint256 upperHint;
         uint256 lowerHint;
@@ -336,6 +338,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
     // Constants (per branch)
     mapping(uint256 branchIdx => uint256) CCR;
+    mapping(uint256 branchIdx => uint256) BCR;
     mapping(uint256 branchIdx => uint256) MCR;
     mapping(uint256 branchIdx => uint256) SCR;
     mapping(uint256 branchIdx => uint256) LIQ_PENALTY_SP;
@@ -394,6 +397,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         for (uint256 i = 0; i < branches.length; ++i) {
             TestDeployer.LiquityContractsDev memory c = branches[i];
             CCR[i] = c.troveManager.get_CCR();
+            BCR[i] = c.troveManager.get_BCR();
             MCR[i] = c.troveManager.get_MCR();
             SCR[i] = c.troveManager.get_SCR();
             LIQ_PENALTY_SP[i] = c.troveManager.get_LIQUIDATION_PENALTY_SP();
@@ -541,8 +545,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         i = _bound(i, 0, branches.length - 1);
         tcr = _bound(tcr, TCR_MIN, TCR_MAX);
 
-        uint256 totalColl = branches[i].troveManager.getEntireSystemColl();
-        uint256 totalDebt = branches[i].troveManager.getEntireSystemDebt();
+        uint256 totalColl = branches[i].troveManager.getEntireBranchColl();
+        uint256 totalDebt = branches[i].troveManager.getEntireBranchDebt();
 
         vm.assume(totalColl > 0);
         uint256 price = totalDebt * tcr / totalColl;
@@ -595,7 +599,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     function _openTrove(OpenTroveContext memory v) internal {
         v.i = _bound(v.i, 0, branches.length - 1);
         v.borrowed = _bound(v.borrowed, BORROWED_MIN, BORROWED_MAX);
-        v.icr = _bound(v.icr, ICR_MIN, ICR_MAX);
+        if (!v.join) v.icr = _bound(v.icr, ICR_MIN, ICR_MAX);
+        if (v.join) v.icr = _bound(v.icr, ICR_MIN + BCR[v.i], ICR_MAX);
         if (!v.join) v.interestRate = _bound(v.interestRate, INTEREST_RATE_MIN, INTEREST_RATE_MAX);
         if (v.join) v.batchManager = _pickBatchManager(v.i, v.batchManagerSeed);
         v.upperHint = _pickHint(v.i, v.upperHintSeed);
@@ -649,7 +654,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             assertFalse(isShutdown[v.i], "Should have failed as branch had been shut down");
             assertFalse(v.wasOpen, "Should have failed as Trove was open");
             assertGeDecimal(v.debt, MIN_DEBT, 18, "Should have failed as debt < min");
-            assertGeDecimal(icr_, MCR[v.i], 18, "Should have failed as ICR < MCR");
+            if (!v.join) assertGeDecimal(icr_, MCR[v.i], 18, "Should have failed as ICR < MCR");
+            if (v.join) assertGeDecimal(icr_, MCR[v.i] + BCR[v.i], 18, "Should have failed as ICR < MCR + BCR");
             assertGeDecimal(newTCR, CCR[v.i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
@@ -691,8 +697,13 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             } else if (selector == BorrowerOperations.DebtBelowMin.selector) {
                 assertLtDecimal(v.debt, MIN_DEBT, 18, "Shouldn't have failed as debt >= min");
             } else if (selector == BorrowerOperations.ICRBelowMCR.selector) {
+                assertFalse(v.join, "Shouldn't have thrown ICRBelowMCR as a batch was joined");
                 uint256 icr_ = _CR(v.i, v.coll, v.debt);
                 assertLtDecimal(icr_, MCR[v.i], 18, "Shouldn't have failed as ICR >= MCR");
+            } else if (selector == BorrowerOperations.ICRBelowMCRPlusBCR.selector) {
+                assertTrue(v.join, "Shouldn't have thrown ICRBelowMCRPlusBCR as a batch wasn't joined");
+                uint256 icr_ = _CR(v.i, v.coll, v.debt);
+                assertLtDecimal(icr_, MCR[v.i] + BCR[v.i], 18, "Shouldn't have failed as ICR >= MCR + BCR");
             } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
                 uint256 newTCR = _TCR(v.i, int256(v.coll), int256(v.borrowed), v.upfrontFee);
                 assertLtDecimal(newTCR, CCR[v.i], 18, "Shouldn't have failed as new TCR >= CCR");
@@ -731,7 +742,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     ) external {
         AdjustTroveContext memory v;
 
-        i = _bound(i, 0, branches.length - 1);
+        v.i = i = _bound(i, 0, branches.length - 1);
         v.prop = AdjustedTroveProperties(_bound(prop, 0, uint8(AdjustedTroveProperties._COUNT) - 1));
         useZombieSeed %= 100;
         v.upperHint = _pickHint(i, upperHintSeed);
@@ -816,7 +827,12 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             assertLeDecimal(-v.debtDelta, int256(v.t.entireDebt), 18, "Should have failed as repayment > debt");
             v.newDebt = v.t.entireDebt.add(v.debtDelta) + v.upfrontFee;
             assertGeDecimal(v.newDebt, MIN_DEBT, 18, "Should have failed as new debt < MIN_DEBT");
-            assertGeDecimal(v.newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
+
+            if (v.batchManager == address(0)) {
+                assertGeDecimal(v.newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
+            } else {
+                assertGeDecimal(v.newICR, MCR[i] + BCR[i], 18, "Should have failed as new ICR < MCR + BCR");
+            }
 
             if (v.oldTCR >= CCR[i]) {
                 assertGeDecimal(v.newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
@@ -863,8 +879,16 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
                 assertLtDecimal(v.newDebt, MIN_DEBT, 18, "Shouldn't have failed as new debt >= MIN_DEBT");
                 info("New debt would have been: ", v.newDebt.decimal());
             } else if (selector == BorrowerOperations.ICRBelowMCR.selector) {
+                assertEq(v.batchManager, address(0), "Shouldn't have thrown ICRBelowMCR as Trove was in a batch");
                 v.newICR = _ICR(i, v.collDelta, v.debtDelta, v.upfrontFee, v.t);
                 assertLtDecimal(v.newICR, MCR[i], 18, "Shouldn't have failed as new ICR >= MCR");
+                info("New ICR would have been: ", v.newICR.decimal());
+            } else if (selector == BorrowerOperations.ICRBelowMCRPlusBCR.selector) {
+                assertNotEq(
+                    v.batchManager, address(0), "Shouldn't have thrown ICRBelowMCRPlusBCR as Trove wasn't in a batch"
+                );
+                v.newICR = _ICR(v.i, v.collDelta, v.debtDelta, v.upfrontFee, v.t);
+                assertLtDecimal(v.newICR, MCR[v.i] + BCR[v.i], 18, "Shouldn't have failed as new ICR >= MCR + BCR");
                 info("New ICR would have been: ", v.newICR.decimal());
             } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
                 v.newTCR = _TCR(i, v.collDelta, v.debtDelta, v.upfrontFee);
@@ -1038,7 +1062,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             // Preconditions
             assertTrue(v.wasOpen, "Should have failed as Trove wasn't open");
-            assertGt(numTroves(i), 1, "Should have failed to close last Trove in the system");
+            if (!isShutdown[i]) assertGt(numTroves(i), 1, "Should have failed to close last Trove in the system");
             if (!isShutdown[i]) assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
@@ -1244,6 +1268,9 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         amount = _bound(amount, 0, _handlerBold);
         maxIterationsPerCollateral = _bound(maxIterationsPerCollateral, 0, maxNumTroves * 11 / 10);
 
+        uint256 totalUnbacked = _getTotalUnbacked();
+        if (totalUnbacked > 0) amount = Math.min(amount, totalUnbacked);
+
         uint256 oldBaseRate = _getBaseRate();
         uint256 boldSupply = boldToken.totalSupply();
         uint256 redemptionRate = _getRedemptionRate(oldBaseRate + _getBaseRateIncrease(boldSupply, amount));
@@ -1287,7 +1314,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             // Effects (global)
             _baseRate = Math.min(oldBaseRate + _getBaseRateIncrease(boldSupply, totalDebtRedeemed), _100pct);
-            if (_timeSinceLastRedemption >= ONE_MINUTE) _timeSinceLastRedemption = 0;
+            _timeSinceLastRedemption %= ONE_MINUTE;
 
             for (uint256 j = 0; j < branches.length; ++j) {
                 if (r[j].attemptedAmount == 0) continue; // no effects on unredeemed branches
@@ -1719,6 +1746,12 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         try v.c.stabilityPool.withdrawFromSP(amount, claim) {
             // Preconditions
             assertGtDecimal(v.initialBoldDeposit, 0, 18, "Should have failed as user had zero deposit");
+            assertGeDecimal(
+                v.totalBoldDeposits + v.boldYield,
+                v.boldClaimed + v.withdrawn + MIN_BOLD_IN_SP,
+                18,
+                "Should have failed as withdrawal left less than MIN_BOLD_IN_SP"
+            );
 
             // Effects (deposit)
             v.ethStash += v.ethGain;
@@ -1728,18 +1761,10 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             v.boldDeposit -= v.boldClaimed;
             v.boldDeposit -= v.withdrawn;
 
-            // See if the change unblocked any pending yield
-            v.totalBoldDeposits += v.boldYield;
-            v.totalBoldDeposits -= v.boldClaimed;
-            v.totalBoldDeposits -= v.withdrawn;
-
-            uint256 newBoldYield =
-                v.totalBoldDeposits >= DECIMAL_PRECISION ? v.blockedSPYield * v.boldDeposit / v.totalBoldDeposits : 0;
-
             assertApproxEqAbsDecimal(
                 v.c.stabilityPool.getCompoundedBoldDeposit(msg.sender), v.boldDeposit, 1e7, 18, "Wrong deposit"
             );
-            assertApproxEq(v.c.stabilityPool.getDepositorYieldGain(msg.sender), newBoldYield, 1e11, "Wrong yield gain");
+            assertEqDecimal(v.c.stabilityPool.getDepositorYieldGain(msg.sender), 0, 18, "Wrong yield gain");
             assertEqDecimal(v.c.stabilityPool.getDepositorCollGain(msg.sender), 0, 18, "Wrong coll gain");
             assertEqDecimal(v.c.stabilityPool.stashedColl(msg.sender), v.ethStash, 18, "Wrong stashed coll");
 
@@ -1757,6 +1782,13 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             // Justify failures
             if (reason.equals("StabilityPool: User must have a non-zero deposit")) {
                 assertEqDecimal(v.initialBoldDeposit, 0, 18, "Shouldn't have failed as user had a non-zero deposit");
+            } else if (reason.equals("Withdrawal must leave totalBoldDeposits >= MIN_BOLD_IN_SP")) {
+                assertLtDecimal(
+                    v.totalBoldDeposits + v.boldYield,
+                    v.boldClaimed + v.withdrawn + MIN_BOLD_IN_SP,
+                    18,
+                    "Shouldn't have failed as withdrawal left more than MIN_BOLD_IN_SP"
+                );
             } else {
                 revert(reason);
             }
@@ -2047,7 +2079,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             assertTrue(v.wasActive, "Should have failed as Trove wasn't active");
             assertEq(_batchManagerOf[i][v.troveId], address(0), "Should have failed as Trove was in a batch");
             assertTrue(_batchManagers[i].has(v.newBatchManager), "Should have failed as batch manager wasn't valid");
-            assertGeDecimal(newICR, MCR[i], 18, "Should have failed as new ICR < MCR");
+            assertGeDecimal(newICR, MCR[i] + BCR[i], 18, "Should have failed as new ICR < MCR + BCR");
             assertGeDecimal(newTCR, CCR[i], 18, "Should have failed as new TCR < CCR");
 
             // Effects (Trove)
@@ -2091,9 +2123,9 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
                 assertFalse(
                     _batchManagers[i].has(v.newBatchManager), "Shouldn't have failed as batch manager was valid"
                 );
-            } else if (selector == BorrowerOperations.ICRBelowMCR.selector) {
+            } else if (selector == BorrowerOperations.ICRBelowMCRPlusBCR.selector) {
                 uint256 newICR = _ICR(i, 0, 0, v.upfrontFee, v.t);
-                assertLtDecimal(newICR, MCR[i], 18, "Shouldn't have failed as new ICR >= MCR");
+                assertLtDecimal(newICR, MCR[i] + BCR[i], 18, "Shouldn't have failed as new ICR >= MCR + BCR");
                 info("New ICR would have been: ", newICR.decimal());
             } else if (selector == BorrowerOperations.TCRBelowCCR.selector) {
                 uint256 newTCR = _TCR(i, 0, 0, v.upfrontFee);
@@ -2376,7 +2408,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     function _getTotalDebt(uint256 i) internal view returns (uint256) {
-        return branches[i].troveManager.getEntireSystemDebt();
+        return branches[i].troveManager.getEntireBranchDebt();
     }
 
     function _getUnbacked(uint256 i) internal view returns (uint256) {
@@ -2384,6 +2416,13 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         uint256 totalDebt = _getTotalDebt(i);
 
         return sp < totalDebt ? totalDebt - sp : 0;
+    }
+
+    function _getTotalUnbacked() internal view returns (uint256 totalUnbacked) {
+        for (uint256 i = 0; i < branches.length; ++i) {
+            if (isShutdown[i] || _TCR(i) < SCR[i]) continue;
+            totalUnbacked += _getUnbacked(i);
+        }
     }
 
     function _CR(uint256 i, uint256 coll, uint256 debt) internal view returns (uint256) {
@@ -2422,8 +2461,8 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     function _TCR(uint256 i, int256 collDelta, int256 debtDelta, uint256 upfrontFee) internal view returns (uint256) {
-        uint256 coll = branches[i].troveManager.getEntireSystemColl().add(collDelta);
-        uint256 debt = branches[i].troveManager.getEntireSystemDebt().add(debtDelta) + upfrontFee;
+        uint256 coll = branches[i].troveManager.getEntireBranchColl().add(collDelta);
+        uint256 debt = branches[i].troveManager.getEntireBranchDebt().add(debtDelta) + upfrontFee;
 
         return _CR(i, coll, debt);
     }
@@ -2431,7 +2470,7 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     // We open at most one Trove per actor per branch, for reasons of simplicity,
     // as Troves aren't enumerable per user, only globally.
     function _troveIdOf(uint256 i, address owner) internal view returns (uint256) {
-        return uint256(keccak256(abi.encode(owner, _troveIndexOf[i][owner])));
+        return uint256(keccak256(abi.encode(owner, owner, _troveIndexOf[i][owner])));
     }
 
     function _troveIdsFrom(uint256 i, address[] storage owners) internal view returns (uint256[] memory ret) {
@@ -2620,32 +2659,35 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
     }
 
     function _aggregateLiquidation(uint256 i, LatestTroveData memory trove, LiquidationTotals storage t) internal {
-        // Coll gas comp
+        // Offset debt by SP
+        uint256 spRemaining = spBoldDeposits[i] - t.spOffset;
+        uint256 spOffset = Math.min(trove.entireDebt, spRemaining > MIN_BOLD_IN_SP ? spRemaining - MIN_BOLD_IN_SP : 0);
+        t.spOffset += spOffset;
+
+        // Share coll proportionally between SP and redistribution based on offset fraction
         uint256 collRemaining = trove.entireColl;
-        uint256 collGasComp = Math.min(collRemaining / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
+        uint256 collSPPortion = collRemaining * spOffset / trove.entireDebt;
+
+        // Deduct coll gas comp from SP portion
+        uint256 collGasComp = Math.min(collSPPortion / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
         t.collGasComp += collGasComp;
         collRemaining -= collGasComp;
 
-        // Offset debt by SP
-        uint256 spOffset = Math.min(trove.entireDebt, spBoldDeposits[i] - t.spOffset);
-        t.spOffset += spOffset;
-
-        // Send coll to SP
-        uint256 collSPPortion = collRemaining * spOffset / trove.entireDebt;
-        uint256 spCollGain = Math.min(collSPPortion, spOffset * (_100pct + LIQ_PENALTY_SP[i]) / _price[i]);
+        // Send remainder of SP portion to SP, capped by liq penalty
+        uint256 spCollGain = Math.min(collSPPortion - collGasComp, spOffset * (_100pct + LIQ_PENALTY_SP[i]) / _price[i]);
         t.spCollGain += spCollGain;
         collRemaining -= spCollGain;
 
-        // Redistribute debt
+        // Redistribute remaining debt
         uint256 debtRedist = trove.entireDebt - spOffset;
         t.debtRedist += debtRedist;
 
-        // Redistribute coll
+        // Redistribute remaining coll, capped by redist penalty
         uint256 collRedist = Math.min(collRemaining, debtRedist * (_100pct + LIQ_PENALTY_REDIST[i]) / _price[i]);
         t.collRedist += collRedist;
         collRemaining -= collRedist;
 
-        // Surplus
+        // Send remaining coll to surplus pool
         t.collSurplus += collRemaining;
     }
 
@@ -2726,12 +2768,13 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
             }
         }
 
-        if (totalProportions == 0) return (0, r);
-
         for (uint256 i = 0; i < branches.length; ++i) {
             r[i].newDesignatedVictimId = designatedVictimId[i];
+            if (totalProportions == 0) continue;
 
             r[i].attemptedAmount = amount * proportions[i] / totalProportions;
+            amount -= r[i].attemptedAmount;
+            totalProportions -= proportions[i];
             if (r[i].attemptedAmount == 0) continue;
 
             uint256 remainingAmount = r[i].attemptedAmount;
@@ -3029,6 +3072,10 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
 
             if (selector == BorrowerOperations.ICRBelowMCR.selector) {
                 return (selector, "BorrowerOperations.ICRBelowMCR()");
+            }
+
+            if (selector == BorrowerOperations.ICRBelowMCRPlusBCR.selector) {
+                return (selector, "BorrowerOperations.ICRBelowMCRPlusBCR()");
             }
 
             if (selector == BorrowerOperations.RepaymentNotMatchingCollWithdrawal.selector) {

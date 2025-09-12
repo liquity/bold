@@ -1,5 +1,4 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
-import type { Address } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
@@ -7,13 +6,12 @@ import { dnum18 } from "@/src/dnum-utils";
 import { signPermit } from "@/src/permit";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
-import { GovernanceUserAllocated, graphQuery } from "@/src/subgraph-queries";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
+import { useAccount } from "@/src/wagmi-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { maxUint256 } from "viem";
+import { encodeFunctionData, maxUint256 } from "viem";
 import { getBytecode } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
@@ -67,34 +65,9 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
       name: () => "Initialize Staking",
       Status: TransactionStatus,
       async commit(ctx) {
-        if (!ctx.account) {
-          throw new Error("Account address is required");
-        }
         return ctx.writeContract({
           ...ctx.contracts.Governance,
           functionName: "deployUserProxy",
-        });
-      },
-      async verify(ctx, hash) {
-        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
-      },
-    },
-
-    resetAllocations: {
-      name: () => "Reset Votes",
-      Status: TransactionStatus,
-      async commit(ctx) {
-        if (!ctx.account) {
-          throw new Error("Account address is required");
-        }
-        const allocated = await graphQuery(
-          GovernanceUserAllocated,
-          { id: ctx.account.toLowerCase() },
-        );
-        return ctx.writeContract({
-          ...ctx.contracts.Governance,
-          functionName: "resetAllocations",
-          args: [(allocated.governanceUser?.allocated ?? []) as Address[], true],
         });
       },
       async verify(ctx, hash) {
@@ -115,10 +88,6 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
         );
       },
       async commit(ctx) {
-        if (!ctx.account) {
-          throw new Error("Account address is required");
-        }
-
         const userProxyAddress = await ctx.readContract({
           ...ctx.contracts.Governance,
           functionName: "deriveUserProxyAddress",
@@ -161,38 +130,26 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
       },
     },
 
-    stakeDeposit: {
+    // reset allocations + deposit LQTY in a single transaction
+    deposit: {
       name: () => "Stake",
       Status: TransactionStatus,
-
       async commit(ctx) {
-        if (!ctx.account) {
-          throw new Error("Account address is required");
-        }
+        const { Governance } = ctx.contracts;
+        const inputs: `0x${string}`[] = [];
 
         const approveStep = ctx.steps?.find((step) => step.id === "approve");
         const isPermit = approveStep?.artifact?.startsWith("permit:") === true;
 
-        // deposit approved LQTY
-        if (!isPermit) {
-          return ctx.writeContract({
-            ...ctx.contracts.Governance,
-            functionName: "depositLQTY",
-            args: [ctx.request.lqtyAmount[0]],
-          });
-        }
-
         // deposit LQTY via permit
-        const { userProxyAddress, ...permit } = JSON.parse(
-          approveStep?.artifact?.replace(/^permit:/, "") ?? "{}",
-        );
-
-        return ctx.writeContract({
-          ...ctx.contracts.Governance,
-          functionName: "depositLQTYViaPermit",
-          args: [
-            ctx.request.lqtyAmount[0],
-            {
+        if (isPermit) {
+          const { userProxyAddress, ...permit } = JSON.parse(
+            approveStep?.artifact?.replace(/^permit:/, "") ?? "{}",
+          );
+          inputs.push(encodeFunctionData({
+            abi: Governance.abi,
+            functionName: "depositLQTYViaPermit",
+            args: [ctx.request.lqtyAmount[0], {
               owner: ctx.account,
               spender: userProxyAddress,
               value: ctx.request.lqtyAmount[0],
@@ -200,11 +157,39 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
               v: permit.v,
               r: permit.r,
               s: permit.s,
-            },
-          ],
+            }],
+          }));
+        } else {
+          const userProxyAddress = await ctx.readContract({
+            ...Governance,
+            functionName: "deriveUserProxyAddress",
+            args: [ctx.account],
+          });
+
+          const lqtyAllowance = await ctx.readContract({
+            ...ctx.contracts.LqtyToken,
+            functionName: "allowance",
+            args: [ctx.account, userProxyAddress],
+          });
+
+          if (dn.gt(ctx.request.lqtyAmount, dnum18(lqtyAllowance))) {
+            throw new Error("LQTY allowance is not enough");
+          }
+
+          // deposit approved LQTY
+          inputs.push(encodeFunctionData({
+            abi: Governance.abi,
+            functionName: "depositLQTY",
+            args: [ctx.request.lqtyAmount[0]],
+          }));
+        }
+
+        return ctx.writeContract({
+          ...Governance,
+          functionName: "multiDelegateCall",
+          args: [inputs],
         });
       },
-
       async verify(ctx, hash) {
         await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
@@ -212,23 +197,7 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
   },
 
   async getSteps(ctx) {
-    if (!ctx.account) {
-      throw new Error("Account address is required");
-    }
-
     const steps: string[] = [];
-
-    // check if the user has any allocations
-    const allocated = await graphQuery(
-      GovernanceUserAllocated,
-      { id: ctx.account.toLowerCase() },
-    );
-    if (
-      allocated.governanceUser
-      && allocated.governanceUser.allocated.length > 0
-    ) {
-      steps.push("resetAllocations");
-    }
 
     // get the user proxy address
     const userProxyAddress = await ctx.readContract({
@@ -255,13 +224,13 @@ export const stakeDeposit: FlowDeclaration<StakeDepositRequest> = {
       args: [ctx.account, userProxyAddress],
     });
 
-    // approve
+    // approve needed
     if (dn.gt(ctx.request.lqtyAmount, dnum18(lqtyAllowance))) {
       steps.push("approve");
     }
 
     // stake
-    steps.push("stakeDeposit");
+    steps.push("deposit");
 
     return steps;
   },

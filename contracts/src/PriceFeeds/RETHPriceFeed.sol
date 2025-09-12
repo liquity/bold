@@ -10,13 +10,15 @@ import "../Interfaces/IRETHPriceFeed.sol";
 
 contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
     constructor(
-        address _owner,
         address _ethUsdOracleAddress,
         address _rEthEthOracleAddress,
         address _rEthTokenAddress,
         uint256 _ethUsdStalenessThreshold,
-        uint256 _rEthEthStalenessThreshold
-    ) CompositePriceFeed(_owner, _ethUsdOracleAddress, _rEthTokenAddress, _ethUsdStalenessThreshold) {
+        uint256 _rEthEthStalenessThreshold,
+        address _borrowerOperationsAddress
+    )
+        CompositePriceFeed(_ethUsdOracleAddress, _rEthTokenAddress, _ethUsdStalenessThreshold, _borrowerOperationsAddress)
+    {
         // Store RETH-ETH oracle
         rEthEthOracle.aggregator = AggregatorV3Interface(_rEthEthOracleAddress);
         rEthEthOracle.stalenessThreshold = _rEthEthStalenessThreshold;
@@ -36,7 +38,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         assert(priceSource == PriceSource.primary);
         (uint256 ethUsdPrice, bool ethUsdOracleDown) = _getOracleAnswer(ethUsdOracle);
         (uint256 rEthEthPrice, bool rEthEthOracleDown) = _getOracleAnswer(rEthEthOracle);
-        (uint256 rEthPerEth, bool exchangeRateIsDown) = _getCanonicalRate();
+        (uint256 ethPerReth, bool exchangeRateIsDown) = _getCanonicalRate();
 
         // If either the ETH-USD feed or exchange rate is down, shut down and switch to the last good price
         // seen by the system since we need both for primary and fallback price calcs
@@ -57,7 +59,7 @@ contract RETHPriceFeed is CompositePriceFeed, IRETHPriceFeed {
         uint256 rEthUsdMarketPrice = ethUsdPrice * rEthEthPrice / 1e18;
 
         // Calculate the canonical LST-USD price: USD_per_RETH = USD_per_ETH * ETH_per_RETH
-        uint256 rEthUsdCanonicalPrice = ethUsdPrice * rEthPerEth / 1e18;
+        uint256 rEthUsdCanonicalPrice = ethUsdPrice * ethPerReth / 1e18;
 
         uint256 rEthUsdPrice;
 

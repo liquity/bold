@@ -19,7 +19,6 @@ import "../../Interfaces/IExchange.sol";
 contract HybridCurveUniV3Exchange is LeftoversSweep, IExchange {
     using SafeERC20 for IERC20;
 
-    // TODO: pass it as param in functions, so we can reuse the same exchange for different branches
     IERC20 public immutable collToken;
     IBoldToken public immutable boldToken;
     IERC20 public immutable USDC;

@@ -3,8 +3,8 @@
 import type { ReactNode } from "react";
 
 import { BLOCKING_LIST, BLOCKING_VPNAPI } from "@/src/env";
-import { useAccount } from "@/src/services/Ethereum";
 import type { Address } from "@/src/types";
+import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { useQuery } from "@tanstack/react-query";
 import * as v from "valibot";

@@ -60,6 +60,36 @@ contract OraclesMainnet is TestAccounts {
         uint256 price;
         uint256 coll;
         uint256 debtRequest;
+        uint256 debt_B;
+        uint256 debt_C;
+        uint256 debt_D;
+        uint256 ICR_A;
+        uint256 ICR_B;
+        uint256 ICR_C;
+        uint256 ICR_D;
+        uint256 redemptionICR_A;
+        uint256 redemptionICR_B;
+        uint256 redemptionICR_C;
+        uint256 redemptionICR_D;
+        uint256 troveId_A;
+        uint256 troveId_B;
+        uint256 troveId_C;
+        uint256 troveId_D;
+        int256 newEthPrice;
+        uint256 systemPrice;
+        uint256 newSystemPrice;
+        uint256 newSystemRedemptionPrice;
+        int256 ethPerRethMarket;
+        int256 usdPerEthMarket;
+        uint256 ethPerRethLST;
+        LatestTroveData troveDataBefore_A;
+        LatestTroveData troveDataBefore_B;
+        LatestTroveData troveDataBefore_C;
+        LatestTroveData troveDataBefore_D;
+        LatestTroveData troveDataAfter_A;
+        LatestTroveData troveDataAfter_B;
+        LatestTroveData troveDataAfter_C;
+        LatestTroveData troveDataAfter_D;
     }
 
     function setUp() public {
@@ -79,7 +109,7 @@ contract OraclesMainnet is TestAccounts {
 
         vars.numCollaterals = 3;
         TestDeployer.TroveManagerParams memory tmParams =
-            TestDeployer.TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16);
+            TestDeployer.TroveManagerParams(150e16, 110e16, 10e16, 110e16, 5e16, 10e16);
         TestDeployer.TroveManagerParams[] memory troveManagerParamsArray =
             new TestDeployer.TroveManagerParams[](vars.numCollaterals);
         for (uint256 i = 0; i < troveManagerParamsArray.length; i++) {
@@ -195,6 +225,42 @@ contract OraclesMainnet is TestAccounts {
         mock.setUpdatedAt(block.timestamp - 7 days);
     }
 
+    function etchMockToEthOracle() internal returns (ChainlinkOracleMock) {
+        // Etch the mock code to the ETH-USD oracle address
+        vm.etch(address(ethOracle), address(mockOracle).code);
+        ChainlinkOracleMock mock = ChainlinkOracleMock(address(ethOracle));
+        mock.setDecimals(8);
+        mock.setPrice(0);
+        // Make it current
+        mock.setUpdatedAt(block.timestamp);
+
+        return mock;
+    }
+
+    function etchMockToRethOracle() internal returns (ChainlinkOracleMock) {
+        // Etch the mock code to the ETH-USD oracle address
+        vm.etch(address(rethOracle), address(mockOracle).code);
+        ChainlinkOracleMock mock = ChainlinkOracleMock(address(rethOracle));
+        mock.setDecimals(18);
+        mock.setPrice(0);
+        // Make it current
+        mock.setUpdatedAt(block.timestamp);
+
+        return mock;
+    }
+
+    function etchMockToStethOracle() internal returns (ChainlinkOracleMock) {
+        // Etch the mock code to the ETH-USD oracle address
+        vm.etch(address(stethOracle), address(mockOracle).code);
+        ChainlinkOracleMock mock = ChainlinkOracleMock(address(stethOracle));
+        mock.setDecimals(8);
+        mock.setPrice(0);
+        // Make it current
+        mock.setUpdatedAt(block.timestamp);
+
+        return mock;
+    }
+
     function etchGasGuzzlerToEthOracle(bytes memory _mockOracleCode) internal {
         // Etch the mock code to the ETH-USD oracle address
         vm.etch(address(ethOracle), _mockOracleCode);
@@ -204,7 +270,6 @@ contract OraclesMainnet is TestAccounts {
         mock.setPrice(2000e8);
         mock.setUpdatedAt(block.timestamp);
     }
-
 
     function etchGasGuzzlerToRethOracle(bytes memory _mockOracleCode) internal {
         // Etch the mock code to the RETH-ETH oracle address
@@ -226,6 +291,12 @@ contract OraclesMainnet is TestAccounts {
         // Set 1 STETH =  2000 USD
         mock.setPrice(2000e8);
         mock.setUpdatedAt(block.timestamp);
+    }
+
+    function etchMockToRethToken() internal {
+        vm.etch(address(rethToken), address(mockRethToken).code);
+        RETHTokenMock mock = RETHTokenMock(address(rethToken));
+        mock.setExchangeRate(0);
     }
 
     function etchGasGuzzlerMockToRethToken(bytes memory _mockTokenCode) internal {
@@ -742,9 +813,9 @@ contract OraclesMainnet is TestAccounts {
         assertEq(contractsArray[1].troveManager.shutdownTime(), 0);
 
         // Make the exchange rate 0
-        vm.etch(address(rethToken), address(mockRethToken).code);
+        etchMockToRethToken();
         uint256 rate = rethToken.getExchangeRate();
-        assertEq(rate, 0);
+        assertEq(rate, 0, "rate not zero");
 
         // Fetch price again
         (, oracleFailedWhileBranchLive) = rethPriceFeed.fetchPrice();
@@ -788,7 +859,7 @@ contract OraclesMainnet is TestAccounts {
         assertGt(lastGoodPrice1, 0, "lastGoodPrice 0");
 
         // Make the exchange rate 0
-        vm.etch(address(rethToken), address(mockRethToken).code);
+        etchMockToRethToken();
         uint256 rate = rethToken.getExchangeRate();
         assertEq(rate, 0);
 
@@ -977,7 +1048,7 @@ contract OraclesMainnet is TestAccounts {
         assertGt(exchangeRate, 0);
 
         // Make the exchange rate return 0
-        vm.etch(address(rethToken), address(mockRethToken).code);
+        etchMockToRethToken();
         uint256 rate = rethToken.getExchangeRate();
         assertEq(rate, 0, "mock rate non-zero");
 
@@ -2102,7 +2173,7 @@ contract OraclesMainnet is TestAccounts {
         assertTrue(revertAsExpected);
     }
 
-     function testRevertLowGasETHOracle() public {
+    function testRevertLowGasETHOracle() public {
         // Confirm call to the real external contracts succeeds with sufficient gas i.e. 500k
         (bool success,) = address(wethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
         assertTrue(success);
@@ -2144,6 +2215,302 @@ contract OraclesMainnet is TestAccounts {
         vm.expectRevert(MainnetPriceFeedBase.InsufficientGasForExternalCall.selector);
         (bool revertsAsExpected,) = address(rethPriceFeed).call{gas: 500000}(abi.encodeWithSignature("fetchPrice()"));
         assertTrue(revertsAsExpected);
+    }
+
+    /*
+    function testTMCodeSize() public {
+        uint256 codeSize = address(contractsArray[0].troveManager).code.length;
+        uint256 left = 24576 - codeSize;
+        console.log(codeSize, "TM contract size");
+        console.log(left, "space left in TM");
+    }
+    */
+
+    function testRETHRedemptionOnlyHitsTrovesAtICRGte100() public {
+        Vars memory vars;
+        // Set two mock market oracles: RETH-ETH, and ETH-USD
+        ChainlinkOracleMock mockRETHOracle = etchMockToRethOracle();
+        ChainlinkOracleMock mockETHOracle = etchMockToEthOracle();
+
+        vars.usdPerEthMarket = 2000e8; // 2000 usd, 8 decimal
+        // Set 1 ETH = 2000 USD on market oracle
+        mockETHOracle.setPrice(vars.usdPerEthMarket);
+
+        vars.ethPerRethLST = rethToken.getExchangeRate();
+
+        // Make market RETH price 1% lower than LST exchange rate
+        vars.ethPerRethMarket = int256(vars.ethPerRethLST) * 99 / 100;
+        mockRETHOracle.setPrice(vars.ethPerRethMarket);
+
+        console.log(_getLatestAnswerFromOracle(rethOracle), "reth oracle latest answer");
+        console.log(_getLatestAnswerFromOracle(ethOracle), "eth oracle latest answer");
+
+        // Open annchor Trove with high CR and 51m BOLD
+        vm.startPrank(A);
+        vars.troveId_A = contractsArray[1].borrowerOperations.openTrove(
+            A, 0, 1000_000 ether, 51_000_000e18, 0, 0, 5e16, 51_000_000e18, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        // Get the calculated RETH-USD price directly from the system
+        (vars.systemPrice,) = contractsArray[1].priceFeed.fetchPrice();
+
+        // Open 3 Troves with ICRs clustered together
+        vars.coll = 10 ether;
+        vars.debt_B = 10000e18 + 1e18;
+        vars.debt_C = 10000e18;
+        vars.debt_D = 10000e18 - 1e18;
+
+        vm.startPrank(B);
+        vars.troveId_B = contractsArray[1].borrowerOperations.openTrove(
+            B, 0, vars.coll, vars.debt_B, 0, 0, 5e15, vars.debt_B, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        vm.startPrank(C);
+        vars.troveId_C = contractsArray[1].borrowerOperations.openTrove(
+            C, 0, vars.coll, vars.debt_C, 0, 0, 5e15, vars.debt_C, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        vm.startPrank(D);
+        vars.troveId_D = contractsArray[1].borrowerOperations.openTrove(
+            D, 0, vars.coll, vars.debt_D, 0, 0, 5e15, vars.debt_D, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        vars.ICR_C = contractsArray[1].troveManager.getCurrentICR(vars.troveId_C, vars.systemPrice);
+
+        // Check ICRs are clustered
+        // console.log(contractsArray[1].troveManager.getCurrentICR(vars.troveId_A, vars.systemPrice), "A ICR");
+        // console.log(contractsArray[1].troveManager.getCurrentICR(vars.troveId_A, vars.systemPrice), "A ICR");
+        // console.log(contractsArray[1].troveManager.getCurrentICR(vars.troveId_B, vars.systemPrice), "B ICR");
+        // console.log(contractsArray[1].troveManager.getCurrentICR(vars.troveId_C, vars.systemPrice), "C ICR");
+        // console.log(contractsArray[1].troveManager.getCurrentICR(vars.troveId_D, vars.systemPrice), "D ICR");
+
+        // Scale the price down such that C has ICR ~100%, ceil division
+        vars.newEthPrice = vars.usdPerEthMarket * 1e18 / int256(vars.ICR_C) + 1;
+        mockETHOracle.setPrice(vars.newEthPrice);
+
+        // Get new system price from PriceFeed
+        (vars.newSystemPrice,) = contractsArray[1].priceFeed.fetchPrice();
+        // Calculate the new redemption price, given RETH-ETH market price is 1% greater than exchange rate
+        vars.newSystemRedemptionPrice = vars.newSystemPrice * 100 / 99;
+
+        // Confirm ICR ordering
+        vars.ICR_A = contractsArray[1].troveManager.getCurrentICR(vars.troveId_A, vars.newSystemPrice);
+        vars.ICR_B = contractsArray[1].troveManager.getCurrentICR(vars.troveId_B, vars.newSystemPrice);
+        vars.ICR_C = contractsArray[1].troveManager.getCurrentICR(vars.troveId_C, vars.newSystemPrice);
+        vars.ICR_D = contractsArray[1].troveManager.getCurrentICR(vars.troveId_D, vars.newSystemPrice);
+
+        // console.log(vars.ICR_A, "A ICR after price drop");
+        // console.log(vars.ICR_B, "B ICR after price drop");
+        // console.log(vars.ICR_C, "C ICR after price drop");
+        // console.log(vars.ICR_D, "D ICR after price drop");
+
+        assertLt(vars.ICR_B, 1e18, "B ICR not < 100%");
+        assertGt(vars.ICR_C, 1e18, "C ICR not > 100%");
+        assertGt(vars.ICR_D, 1e18, "D ICR not > 100%");
+        assertGt(vars.ICR_A, vars.ICR_D, "A ICR not > D ICR");
+
+        // TODO: Confirm that if we used the *redemption* price to calc ICRs, all ICRs would be > 100%
+        vars.redemptionICR_A =
+            contractsArray[1].troveManager.getCurrentICR(vars.troveId_A, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_B =
+            contractsArray[1].troveManager.getCurrentICR(vars.troveId_B, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_C =
+            contractsArray[1].troveManager.getCurrentICR(vars.troveId_C, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_D =
+            contractsArray[1].troveManager.getCurrentICR(vars.troveId_D, vars.newSystemRedemptionPrice);
+
+        // console.log(vars.redemptionICR_A, " vars.redemptionICR_A");
+        // console.log(vars.redemptionICR_B, " vars.redemptionICR_B");
+        // console.log(vars.redemptionICR_C, " vars.redemptionICR_C");
+        // console.log(vars.redemptionICR_D, " vars.redemptionICR_D");
+
+        assertGe(vars.redemptionICR_A, 1e18, "A ICR not > 100%");
+        assertGe(vars.redemptionICR_B, 1e18, "B ICR not > 100%");
+        assertGe(vars.redemptionICR_C, 1e18, "C ICR not > 100%");
+        assertGe(vars.redemptionICR_D, 1e18, "D ICR not > 100%");
+
+        // A deposits 25m to WETH and STETH SPs, making them fully backed -
+        // so A's redemption should now fully hits the RETH branch
+        vm.startPrank(A);
+        contractsArray[0].stabilityPool.provideToSP(25_000_000e18, false);
+        contractsArray[2].stabilityPool.provideToSP(25_000_000e18, false);
+
+        vars.troveDataBefore_A = contractsArray[1].troveManager.getLatestTroveData(vars.troveId_A);
+        vars.troveDataBefore_B = contractsArray[1].troveManager.getLatestTroveData(vars.troveId_B);
+        vars.troveDataBefore_C = contractsArray[1].troveManager.getLatestTroveData(vars.troveId_C);
+        vars.troveDataBefore_D = contractsArray[1].troveManager.getLatestTroveData(vars.troveId_D);
+
+        // A redeems. Expect redemption to hit Troves C, D, A and skip B
+        collateralRegistry.redeemCollateral(50000e18, 100, 1e18);
+
+        vars.troveDataAfter_A = contractsArray[1].troveManager.getLatestTroveData(vars.troveId_A);
+        vars.troveDataAfter_B = contractsArray[1].troveManager.getLatestTroveData(vars.troveId_B);
+        vars.troveDataAfter_C = contractsArray[1].troveManager.getLatestTroveData(vars.troveId_C);
+        vars.troveDataAfter_D = contractsArray[1].troveManager.getLatestTroveData(vars.troveId_D);
+
+        // Expect B's Trove to be untouched
+        assertEq(vars.troveDataAfter_B.entireDebt, vars.troveDataBefore_B.entireDebt, "B's debt not same after redeem");
+        assertEq(vars.troveDataAfter_B.entireColl, vars.troveDataBefore_B.entireColl, "B's coll not same after redeem");
+
+        // Expect A, C and D to have been redeemed
+        assertLt(vars.troveDataAfter_A.entireDebt, vars.troveDataBefore_A.entireDebt, "A's debt not lower after redeem");
+        assertLt(vars.troveDataAfter_A.entireColl, vars.troveDataBefore_A.entireColl, "A's coll not lower after redeem");
+        // console.log(vars.troveDataAfter_A.entireDebt, "A after");
+        // console.log(vars.troveDataBefore_A.entireDebt, "A before");
+        assertLt(vars.troveDataAfter_C.entireDebt, vars.troveDataBefore_C.entireDebt, "C's debt not lower after redeem");
+        assertLt(vars.troveDataAfter_C.entireColl, vars.troveDataBefore_C.entireColl, "C's coll not lower after redeem");
+        assertLt(vars.troveDataAfter_D.entireDebt, vars.troveDataBefore_D.entireDebt, "D's debt not lower after redeem");
+        assertLt(vars.troveDataAfter_D.entireColl, vars.troveDataBefore_D.entireColl, "D's coll not lower after redeem");
+
+        // console.log(vars.troveDataAfter_D.entireDebt, "D after");
+        // console.log(vars.troveDataBefore_D.entireDebt, "D before");
+    }
+
+    function testSTETHRedemptionOnlyHitsTrovesAtICRGte100() public {
+        Vars memory vars;
+        // Set two mock market oracles: STETH-USD, and ETH-USD
+        ChainlinkOracleMock mockSTETHOracle = etchMockToStethOracle();
+        ChainlinkOracleMock mockETHOracle = etchMockToEthOracle();
+
+        vars.usdPerEthMarket = 2000e8; // 2000 usd, 8 decimal
+        // Set 1 ETH = 2000 USD on market oracle
+        mockETHOracle.setPrice(vars.usdPerEthMarket);
+
+        // Make market STETH-USD price 0.5% greater than market ETH-USD price
+        mockSTETHOracle.setPrice(vars.usdPerEthMarket * 1005 / 1000);
+
+        console.log(_getLatestAnswerFromOracle(stethOracle), "steth oracle latest answer");
+        console.log(_getLatestAnswerFromOracle(ethOracle), "eth oracle latest answer");
+
+        // Open anchor Trove with high CR and 51m BOLD
+        vm.startPrank(A);
+        vars.troveId_A = contractsArray[2].borrowerOperations.openTrove(
+            A, 0, 1000_000 ether, 51_000_000e18, 0, 0, 5e16, 51_000_000e18, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        // Get the calculated WSTETH-USD price directly from the system
+        (vars.systemPrice,) = contractsArray[2].priceFeed.fetchPrice();
+
+        // Open 3 Troves with ICRs clustered together
+        vars.coll = 10 ether;
+        vars.debt_B = 10000e18 + 1e18;
+        vars.debt_C = 10000e18;
+        vars.debt_D = 10000e18 - 1e18;
+
+        vm.startPrank(B);
+        vars.troveId_B = contractsArray[2].borrowerOperations.openTrove(
+            B, 0, vars.coll, vars.debt_B, 0, 0, 5e15, vars.debt_B, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        vm.startPrank(C);
+        vars.troveId_C = contractsArray[2].borrowerOperations.openTrove(
+            C, 0, vars.coll, vars.debt_C, 0, 0, 5e15, vars.debt_C, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        vm.startPrank(D);
+        vars.troveId_D = contractsArray[2].borrowerOperations.openTrove(
+            D, 0, vars.coll, vars.debt_D, 0, 0, 5e15, vars.debt_D, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        vars.ICR_C = contractsArray[2].troveManager.getCurrentICR(vars.troveId_C, vars.systemPrice);
+
+        // Check ICRs are clustered
+        console.log(contractsArray[2].troveManager.getCurrentICR(vars.troveId_A, vars.systemPrice), "A ICR");
+        console.log(contractsArray[2].troveManager.getCurrentICR(vars.troveId_B, vars.systemPrice), "B ICR");
+        console.log(contractsArray[2].troveManager.getCurrentICR(vars.troveId_C, vars.systemPrice), "C ICR");
+        console.log(contractsArray[2].troveManager.getCurrentICR(vars.troveId_D, vars.systemPrice), "D ICR");
+
+        // Scale the ETH-USD price down such that C has ICR ~100%
+        vars.newEthPrice = vars.usdPerEthMarket * 1e18 / int256(vars.ICR_C) + 10;
+        mockETHOracle.setPrice(vars.newEthPrice);
+        // Scale STETH-USD price down too, keep it 0.5% above ETH-USD
+        mockSTETHOracle.setPrice(vars.newEthPrice * 1005 / 1000);
+
+        // Get new system price from PriceFeed
+        (vars.newSystemPrice,) = contractsArray[2].priceFeed.fetchPrice();
+        vars.newSystemRedemptionPrice = vars.newSystemPrice * 1005 / 1000;
+
+        // console.log(_getLatestAnswerFromOracle(stethOracle), "steth oracle latest answer after price drop");
+        // console.log(_getLatestAnswerFromOracle(ethOracle), "eth oracle latest answer after price drop");
+
+        // Confirm ICR ordering
+        vars.ICR_A = contractsArray[2].troveManager.getCurrentICR(vars.troveId_A, vars.newSystemPrice);
+        vars.ICR_B = contractsArray[2].troveManager.getCurrentICR(vars.troveId_B, vars.newSystemPrice);
+        vars.ICR_C = contractsArray[2].troveManager.getCurrentICR(vars.troveId_C, vars.newSystemPrice);
+        vars.ICR_D = contractsArray[2].troveManager.getCurrentICR(vars.troveId_D, vars.newSystemPrice);
+
+        // console.log(vars.ICR_A, "A ICR after price drop");
+        // console.log(vars.ICR_B, "B ICR after price drop");
+        // console.log(vars.ICR_C, "C ICR after price drop");
+        // console.log(vars.ICR_D, "D ICR after price drop");
+
+        assertLt(vars.ICR_B, 1e18, "B ICR not < 100%");
+        assertGt(vars.ICR_C, 1e18, "C ICR not > 100%");
+        assertGt(vars.ICR_D, 1e18, "D ICR not > 100%");
+        assertGt(vars.ICR_A, vars.ICR_D, "A ICR not > D ICR");
+
+        // TODO: Confirm that if we used the *redemption* price to calc ICRs, all ICRs would be > 100%
+        vars.redemptionICR_A =
+            contractsArray[2].troveManager.getCurrentICR(vars.troveId_A, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_B =
+            contractsArray[2].troveManager.getCurrentICR(vars.troveId_B, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_C =
+            contractsArray[2].troveManager.getCurrentICR(vars.troveId_C, vars.newSystemRedemptionPrice);
+        vars.redemptionICR_D =
+            contractsArray[2].troveManager.getCurrentICR(vars.troveId_D, vars.newSystemRedemptionPrice);
+
+        // console.log(vars.redemptionICR_A, " vars.redemptionICR_A");
+        // console.log(vars.redemptionICR_B, " vars.redemptionICR_B");
+        // console.log(vars.redemptionICR_C, " vars.redemptionICR_C");
+        // console.log(vars.redemptionICR_D, " vars.redemptionICR_D");
+
+        assertGe(vars.redemptionICR_A, 1e18, "A ICR not > 100%");
+        assertGe(vars.redemptionICR_B, 1e18, "B ICR not > 100%");
+        assertGe(vars.redemptionICR_C, 1e18, "C ICR not > 100%");
+        assertGe(vars.redemptionICR_D, 1e18, "D ICR not > 100%");
+
+        // A deposits 25m to WETH and RETH SPs, making them fully backed -
+        // so A's redemption should now fully hit the STETH branch
+        vm.startPrank(A);
+        contractsArray[0].stabilityPool.provideToSP(25_000_000e18, false);
+        contractsArray[1].stabilityPool.provideToSP(25_000_000e18, false);
+
+        vars.troveDataBefore_A = contractsArray[2].troveManager.getLatestTroveData(vars.troveId_A);
+        vars.troveDataBefore_B = contractsArray[2].troveManager.getLatestTroveData(vars.troveId_B);
+        vars.troveDataBefore_C = contractsArray[2].troveManager.getLatestTroveData(vars.troveId_C);
+        vars.troveDataBefore_D = contractsArray[2].troveManager.getLatestTroveData(vars.troveId_D);
+
+        // A redeems. Expect redemption to hit Troves C, D, A and skip B
+        collateralRegistry.redeemCollateral(50000e18, 100, 1e18);
+
+        vars.troveDataAfter_A = contractsArray[2].troveManager.getLatestTroveData(vars.troveId_A);
+        vars.troveDataAfter_B = contractsArray[2].troveManager.getLatestTroveData(vars.troveId_B);
+        vars.troveDataAfter_C = contractsArray[2].troveManager.getLatestTroveData(vars.troveId_C);
+        vars.troveDataAfter_D = contractsArray[2].troveManager.getLatestTroveData(vars.troveId_D);
+
+        // Expect B's Trove to be untouched
+        assertEq(vars.troveDataAfter_B.entireDebt, vars.troveDataBefore_B.entireDebt, "B's debt not same after redeem");
+        assertEq(vars.troveDataAfter_B.entireColl, vars.troveDataBefore_B.entireColl, "B's coll not same after redeem");
+
+        // Expect A, C and D to have been redeemed
+        assertLt(vars.troveDataAfter_A.entireDebt, vars.troveDataBefore_A.entireDebt, "A's debt not lower after redeem");
+        assertLt(vars.troveDataAfter_A.entireColl, vars.troveDataBefore_A.entireColl, "A's coll not lower after redeem");
+        // console.log(vars.troveDataAfter_A.entireDebt, "A after");
+        // console.log(vars.troveDataBefore_A.entireDebt, "A before");
+        assertLt(vars.troveDataAfter_C.entireDebt, vars.troveDataBefore_C.entireDebt, "C's debt not lower after redeem");
+        assertLt(vars.troveDataAfter_C.entireColl, vars.troveDataBefore_C.entireColl, "C's coll not lower after redeem");
+        assertLt(vars.troveDataAfter_D.entireDebt, vars.troveDataBefore_D.entireDebt, "D's debt not lower after redeem");
+        assertLt(vars.troveDataAfter_D.entireColl, vars.troveDataBefore_D.entireColl, "D's coll not lower after redeem");
+        // console.log(vars.troveDataAfter_D.entireDebt, "D after");
+        // console.log(vars.troveDataBefore_D.entireDebt, "D before");
     }
 
     // - More basic actions tests (adjust, close, etc)

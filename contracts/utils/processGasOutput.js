@@ -27,7 +27,7 @@ for (line of data) {
 console.log("Logged gas data is");
 console.dir(gasUsed);
 
-// Convert 'gas left' at each step to to 'gas used' by each step
+// Convert 'gas left' at each step to 'gas used' by each step
 processedData = [];
 totalGas = 0;
 for (i = 0; i < gasUsed.length; i++) {

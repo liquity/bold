@@ -22,6 +22,7 @@ import "src/DefaultPool.sol";
 import "src/GasPool.sol";
 import "src/HintHelpers.sol";
 import "src/MultiTroveGetter.sol";
+import {DebtInFrontHelper, IDebtInFrontHelper} from "src/DebtInFrontHelper.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
@@ -66,6 +67,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     string constant DEPLOYMENT_MODE_COMPLETE = "complete";
     string constant DEPLOYMENT_MODE_BOLD_ONLY = "bold-only";
     string constant DEPLOYMENT_MODE_USE_EXISTING_BOLD = "use-existing-bold";
+
+    uint256 constant NUM_BRANCHES = 3;
 
     address WETH_ADDRESS = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address USDC_ADDRESS = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -188,6 +191,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         uint256 CCR;
         uint256 MCR;
         uint256 SCR;
+        uint256 BCR;
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
     }
@@ -195,7 +199,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     struct DeploymentVars {
         uint256 numCollaterals;
         IERC20Metadata[] collaterals;
-        IPriceFeed[] priceFeeds;
         IAddressesRegistry[] addressesRegistries;
         ITroveManager[] troveManagers;
         LiquityContracts contracts;
@@ -220,6 +223,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         ICurveStableswapNGPool usdcCurvePool;
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
+        IDebtInFrontHelper debtInFrontHelper;
         IExchangeHelpers exchangeHelpers;
     }
 
@@ -320,11 +324,30 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             ERC20Faucet(lqty).mock_setWildcardSpender(address(stakingV1), true);
         }
 
-        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](3);
-        // TODO: move params out of here
-        troveManagerParamsArray[0] = TroveManagerParams(150e16, 110e16, 110e16, 5e16, 10e16); // WETH
-        troveManagerParamsArray[1] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // wstETH
-        troveManagerParamsArray[2] = TroveManagerParams(150e16, 120e16, 110e16, 5e16, 10e16); // rETH
+        TroveManagerParams[] memory troveManagerParamsArray = new TroveManagerParams[](NUM_BRANCHES);
+
+        // WETH
+        troveManagerParamsArray[0] = TroveManagerParams({
+            CCR: CCR_WETH,
+            MCR: MCR_WETH,
+            SCR: SCR_WETH,
+            BCR: BCR_ALL,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_WETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_WETH
+        });
+
+        // wstETH
+        troveManagerParamsArray[1] = TroveManagerParams({
+            CCR: CCR_SETH,
+            MCR: MCR_SETH,
+            SCR: SCR_SETH,
+            BCR: BCR_ALL,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+        });
+
+        // rETH (same as wstETH)
+        troveManagerParamsArray[2] = troveManagerParamsArray[1];
 
         string[] memory collNames = new string[](2);
         string[] memory collSymbols = new string[](2);
@@ -427,27 +450,34 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             demoAccounts[6] = 0x92db14e403b83dfe3df233f83dfa3a0d7096f21ca9b0d6d6b8d88b2b4ec1564e;
             demoAccounts[7] = 0x4bbbf85ce3377467afe5d46f804f221813b2bb87f24d81f60f1fcdbf7cbf4356;
 
-            DemoTroveParams[] memory demoTroves = new DemoTroveParams[](16);
+            DemoTroveParams[] memory demoTroves = new DemoTroveParams[](24);
 
-            demoTroves[0] = DemoTroveParams(0, demoAccounts[0], 0, 25e18, 2800e18, 5.0e16);
-            demoTroves[1] = DemoTroveParams(0, demoAccounts[1], 0, 37e18, 2400e18, 4.7e16);
-            demoTroves[2] = DemoTroveParams(0, demoAccounts[2], 0, 30e18, 4000e18, 3.3e16);
-            demoTroves[3] = DemoTroveParams(0, demoAccounts[3], 0, 65e18, 6000e18, 4.3e16);
+            demoTroves[0] = DemoTroveParams(0, demoAccounts[0], 0, 35 ether, 2_800 ether, 5.0e16);
+            demoTroves[1] = DemoTroveParams(0, demoAccounts[1], 0, 47 ether, 2_400 ether, 4.7e16);
+            demoTroves[2] = DemoTroveParams(0, demoAccounts[2], 0, 40 ether, 4_000 ether, 3.3e16);
+            demoTroves[3] = DemoTroveParams(0, demoAccounts[3], 0, 75 ether, 6_000 ether, 4.3e16);
+            demoTroves[4] = DemoTroveParams(0, demoAccounts[4], 0, 29 ether, 2_280 ether, 5.0e16);
+            demoTroves[5] = DemoTroveParams(0, demoAccounts[5], 0, 58.37 ether, 4_400 ether, 4.7e16);
+            demoTroves[6] = DemoTroveParams(0, demoAccounts[6], 0, 43.92 ether, 5_500 ether, 3.8e16);
+            demoTroves[7] = DemoTroveParams(0, demoAccounts[7], 0, 57.2 ether, 6_000 ether, 4.3e16);
 
-            demoTroves[4] = DemoTroveParams(0, demoAccounts[4], 0, 19e18, 2280e18, 5.0e16);
-            demoTroves[5] = DemoTroveParams(0, demoAccounts[5], 0, 48.37e18, 4400e18, 4.7e16);
-            demoTroves[6] = DemoTroveParams(0, demoAccounts[6], 0, 33.92e18, 5500e18, 3.8e16);
-            demoTroves[7] = DemoTroveParams(0, demoAccounts[7], 0, 47.2e18, 6000e18, 4.3e16);
+            demoTroves[8] = DemoTroveParams(1, demoAccounts[0], 0, 31 ether, 2_000 ether, 3.3e16);
+            demoTroves[9] = DemoTroveParams(1, demoAccounts[1], 0, 26 ether, 2_000 ether, 4.1e16);
+            demoTroves[10] = DemoTroveParams(1, demoAccounts[2], 0, 28 ether, 2_300 ether, 3.8e16);
+            demoTroves[11] = DemoTroveParams(1, demoAccounts[3], 0, 32 ether, 2_200 ether, 4.3e16);
+            demoTroves[12] = DemoTroveParams(1, demoAccounts[4], 0, 95 ether, 12_000 ether, 7.0e16);
+            demoTroves[13] = DemoTroveParams(1, demoAccounts[5], 0, 97 ether, 4_000 ether, 4.4e16);
+            demoTroves[14] = DemoTroveParams(1, demoAccounts[6], 0, 81 ether, 11_000 ether, 3.3e16);
+            demoTroves[15] = DemoTroveParams(1, demoAccounts[7], 0, 94 ether, 12_800 ether, 4.4e16);
 
-            demoTroves[8] = DemoTroveParams(1, demoAccounts[0], 1, 21e18, 2000e18, 3.3e16);
-            demoTroves[9] = DemoTroveParams(1, demoAccounts[1], 1, 16e18, 2000e18, 4.1e16);
-            demoTroves[10] = DemoTroveParams(1, demoAccounts[2], 1, 18e18, 2300e18, 3.8e16);
-            demoTroves[11] = DemoTroveParams(1, demoAccounts[3], 1, 22e18, 2200e18, 4.3e16);
-
-            demoTroves[12] = DemoTroveParams(1, demoAccounts[4], 1, 85e18, 12000e18, 7.0e16);
-            demoTroves[13] = DemoTroveParams(1, demoAccounts[5], 1, 87e18, 4000e18, 4.4e16);
-            demoTroves[14] = DemoTroveParams(1, demoAccounts[6], 1, 71e18, 11000e18, 3.3e16);
-            demoTroves[15] = DemoTroveParams(1, demoAccounts[7], 1, 84e18, 12800e18, 4.4e16);
+            demoTroves[16] = DemoTroveParams(2, demoAccounts[0], 0, 45 ether, 3_000 ether, 2.4e16);
+            demoTroves[17] = DemoTroveParams(2, demoAccounts[1], 0, 35 ether, 2_100 ether, 5.0e16);
+            demoTroves[18] = DemoTroveParams(2, demoAccounts[2], 0, 67 ether, 2_200 ether, 4.5e16);
+            demoTroves[19] = DemoTroveParams(2, demoAccounts[3], 0, 32 ether, 4_900 ether, 3.2e16);
+            demoTroves[20] = DemoTroveParams(2, demoAccounts[4], 0, 82 ether, 4_500 ether, 6.9e16);
+            demoTroves[21] = DemoTroveParams(2, demoAccounts[5], 0, 74 ether, 7_300 ether, 4.1e16);
+            demoTroves[22] = DemoTroveParams(2, demoAccounts[6], 0, 54 ether, 6_900 ether, 2.9e16);
+            demoTroves[23] = DemoTroveParams(2, demoAccounts[7], 0, 65 ether, 8_100 ether, 1.5e16);
 
             for (uint256 i = 0; i < deployed.contractsArray.length; i++) {
                 tapFaucet(demoAccounts, deployed.contractsArray[i]);
@@ -476,6 +506,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     function openDemoTroves(DemoTroveParams[] memory demoTroves, LiquityContracts[] memory contractsArray) internal {
         for (uint256 i = 0; i < demoTroves.length; i++) {
+            console2.log(
+                "openTrove({ coll: %18e, borrow: %18e, rate: %18e%% })",
+                demoTroves[i].coll,
+                demoTroves[i].debt,
+                demoTroves[i].annualInterestRate * 100
+            );
+
             DemoTroveParams memory trove = demoTroves[i];
             LiquityContracts memory contracts = contractsArray[trove.collIndex];
 
@@ -533,42 +570,24 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         r.contractsArray = new LiquityContracts[](vars.numCollaterals);
         vars.collaterals = new IERC20Metadata[](vars.numCollaterals);
-        vars.priceFeeds = new IPriceFeed[](vars.numCollaterals);
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
+        // Collaterals
         if (block.chainid == 1 && !useTestnetPriceFeeds) {
             // mainnet
             // ETH
             vars.collaterals[0] = IERC20Metadata(WETH);
-            vars.priceFeeds[0] = new WETHPriceFeed(deployer, ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD);
 
             // wstETH
             vars.collaterals[1] = IERC20Metadata(WSTETH_ADDRESS);
-            vars.priceFeeds[1] = new WSTETHPriceFeed(
-                deployer,
-                ETH_ORACLE_ADDRESS,
-                STETH_ORACLE_ADDRESS,
-                WSTETH_ADDRESS,
-                ETH_USD_STALENESS_THRESHOLD,
-                STETH_USD_STALENESS_THRESHOLD
-            );
 
             // RETH
             vars.collaterals[2] = IERC20Metadata(RETH_ADDRESS);
-            vars.priceFeeds[2] = new RETHPriceFeed(
-                deployer,
-                ETH_ORACLE_ADDRESS,
-                RETH_ORACLE_ADDRESS,
-                RETH_ADDRESS,
-                ETH_USD_STALENESS_THRESHOLD,
-                RETH_ETH_STALENESS_THRESHOLD
-            );
         } else {
             // Sepolia
             // Use WETH as collateral for the first branch
             vars.collaterals[0] = WETH;
-            vars.priceFeeds[0] = new PriceFeedTestnet();
 
             // Deploy plain ERC20Faucets for the rest of the branches
             for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
@@ -578,7 +597,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                     100 ether, //     _tapAmount
                     1 days //         _tapPeriod
                 );
-                vars.priceFeeds[vars.i] = new PriceFeedTestnet();
             }
         }
 
@@ -593,12 +611,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers);
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
+        r.debtInFrontHelper = new DebtInFrontHelper(r.collateralRegistry, r.hintHelpers);
 
         // Deploy per-branch contracts for each branch
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             vars.contracts = _deployAndConnectCollateralContracts(
                 vars.collaterals[vars.i],
-                vars.priceFeeds[vars.i],
                 r.boldToken,
                 r.collateralRegistry,
                 r.usdcCurvePool,
@@ -634,6 +652,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             deployer,
             _troveManagerParams.CCR,
             _troveManagerParams.MCR,
+            _troveManagerParams.BCR,
             _troveManagerParams.SCR,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
@@ -647,7 +666,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     function _deployAndConnectCollateralContracts(
         IERC20Metadata _collToken,
-        IPriceFeed _priceFeed,
         IBoldToken _boldToken,
         ICollateralRegistry _collateralRegistry,
         ICurveStableswapNGPool _usdcCurvePool,
@@ -670,7 +688,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
         assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
-        contracts.priceFeed = _priceFeed;
         contracts.interestRouter = IInterestRouter(_governance);
         addresses.borrowerOperations = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry)))
@@ -698,6 +715,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             SALT, keccak256(getBytecode(type(SortedTroves).creationCode, address(contracts.addressesRegistry)))
         );
 
+        contracts.priceFeed = _deployPriceFeed(address(_collToken), addresses.borrowerOperations);
+
         IAddressesRegistry.AddressVars memory addressVars = IAddressesRegistry.AddressVars({
             collToken: _collToken,
             borrowerOperations: IBorrowerOperations(addresses.borrowerOperations),
@@ -719,7 +738,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             WETH: WETH
         });
         contracts.addressesRegistry.setAddresses(addressVars);
-        contracts.priceFeed.setAddresses(addresses.borrowerOperations);
 
         contracts.borrowerOperations = new BorrowerOperations{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
@@ -752,6 +770,42 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         // deploy zappers
         (contracts.gasCompZapper, contracts.wethZapper, contracts.leverageZapper) =
             _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _usdcCurvePool);
+    }
+
+    function _deployPriceFeed(address _collTokenAddress, address _borroweOperationsAddress)
+        internal
+        returns (IPriceFeed)
+    {
+        if (block.chainid == 1 && !useTestnetPriceFeeds) {
+            // mainnet
+            // ETH
+            if (_collTokenAddress == address(WETH)) {
+                return new WETHPriceFeed(ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD, _borroweOperationsAddress);
+            } else if (_collTokenAddress == WSTETH_ADDRESS) {
+                // wstETH
+                return new WSTETHPriceFeed(
+                    ETH_ORACLE_ADDRESS,
+                    STETH_ORACLE_ADDRESS,
+                    WSTETH_ADDRESS,
+                    ETH_USD_STALENESS_THRESHOLD,
+                    STETH_USD_STALENESS_THRESHOLD,
+                    _borroweOperationsAddress
+                );
+            }
+            // RETH
+            assert(_collTokenAddress == RETH_ADDRESS);
+            return new RETHPriceFeed(
+                ETH_ORACLE_ADDRESS,
+                RETH_ORACLE_ADDRESS,
+                RETH_ADDRESS,
+                ETH_USD_STALENESS_THRESHOLD,
+                RETH_ETH_STALENESS_THRESHOLD,
+                _borroweOperationsAddress
+            );
+        }
+
+        // Sepolia
+        return new PriceFeedTestnet();
     }
 
     function _deployZappers(
@@ -1108,6 +1162,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 string.concat('"boldToken":"', address(deployed.boldToken).toHexString(), '",'),
                 string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",'),
                 string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
+                string.concat('"debtInFrontHelper":"', address(deployed.debtInFrontHelper).toHexString(), '",'),
                 string.concat('"exchangeHelpers":"', address(deployed.exchangeHelpers).toHexString(), '",'),
                 string.concat('"branches":[', branches.join(","), "],"),
                 string.concat('"governance":', _governanceManifest, "") // no comma

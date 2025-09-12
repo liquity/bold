@@ -1,36 +1,78 @@
 "use client";
 
-import type { PositionLoanCommitted } from "@/src/types";
+import type { Dnum, PositionLoanCommitted } from "@/src/types";
 
+import { useBreakpoint } from "@/src/breakpoints";
+import { InlineTokenAmount } from "@/src/comps/Amount/InlineTokenAmount";
 import { Field } from "@/src/comps/Field/Field";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { getCollateralContract } from "@/src/contracts";
+import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
-import { fmtnum } from "@/src/formatting";
+import { TROVE_EXPLORER_0, TROVE_EXPLORER_1 } from "@/src/env";
+import { fmtnum, formatDate } from "@/src/formatting";
 import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId, useLoan } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
 import { usePrice } from "@/src/services/Prices";
 import { useStoredState } from "@/src/services/StoredState";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { isPrefixedtroveId } from "@/src/types";
+import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, Button, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
+import { addressesEqual, Button, IconExternal, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
+import { useState } from "react";
 import { match, P } from "ts-pattern";
+import { zeroAddress } from "viem";
 import { useReadContract } from "wagmi";
 import { LoanScreenCard } from "./LoanScreenCard";
 import { PanelClosePosition } from "./PanelClosePosition";
+import { PanelInterestRate } from "./PanelInterestRate";
 import { PanelUpdateBorrowPosition } from "./PanelUpdateBorrowPosition";
 import { PanelUpdateLeveragePosition } from "./PanelUpdateLeveragePosition";
-import { PanelUpdateRate } from "./PanelUpdateRate";
+
+const troveExplorers = [
+  ...(TROVE_EXPLORER_0 ? [TROVE_EXPLORER_0] : []),
+  ...(TROVE_EXPLORER_1 ? [TROVE_EXPLORER_1] : []),
+];
+
+function TroveExplorerLink(props: {
+  troveExplorer: { name: string; url: string };
+  collTokenName: string;
+  troveId: bigint;
+  last?: boolean;
+}) {
+  const href = props.troveExplorer.url
+    .replace("{branch}", props.collTokenName)
+    .replace("{troveId}", props.troveId.toString());
+
+  return (
+    <LinkTextButton
+      label={<>{props.troveExplorer.name} {props.last && <IconExternal size={16} />}</>}
+      href={href}
+      external
+    />
+  );
+}
 
 const TABS = [
-  { label: "Update Loan", id: "colldebt" },
-  { label: "Interest rate", id: "rate" },
-  { label: "Close loan", id: "close" },
+  {
+    label: "Update Loan",
+    labelCompact: "Update",
+    id: "colldebt",
+  },
+  {
+    label: "Interest rate",
+    labelCompact: "Rate",
+    id: "rate",
+  },
+  {
+    label: "Close loan",
+    labelCompact: "Close",
+    id: "close",
+  },
 ];
 
 export type LoanLoadingState =
@@ -46,34 +88,60 @@ export function LoanScreen() {
   const paramPrefixedId = searchParams.get("id");
   const storedState = useStoredState();
 
+  const [compactMode, setCompactMode] = useState(false);
+  useBreakpoint(({ medium }) => {
+    setCompactMode(!medium);
+  });
+
   if (!isPrefixedtroveId(paramPrefixedId)) {
     notFound();
   }
-  const { troveId, collIndex } = parsePrefixedTroveId(paramPrefixedId);
+  const { troveId, branchId } = parsePrefixedTroveId(paramPrefixedId);
 
-  const loan = useLoan(collIndex, troveId);
+  const loan = useLoan(branchId, troveId);
   const loanMode = storedState.loanModes[paramPrefixedId] ?? loan.data?.type ?? "borrow";
 
-  const collToken = getCollToken(loan.data?.collIndex ?? null);
+  const collToken = getCollToken(loan.data?.branchId ?? null);
   const collPriceUsd = usePrice(collToken?.symbol ?? null);
 
   const fullyRedeemed = loan.data
     && loan.data.status === "redeemed"
-    && dn.eq(loan.data.borrowed, 0);
+    && dn.eq(loan.data.recordedDebt, 0);
 
-  const loadingState = match([loan, collPriceUsd.data ?? null])
+  const isLiquidated = loan.data?.status === "liquidated";
+  const account = useAccount();
+
+  const collSurplus = useReadContract({
+    ...getBranchContract(branchId, "CollSurplusPool"),
+    functionName: "getCollateral",
+    args: [loan.data?.borrower ?? zeroAddress],
+    query: {
+      enabled: Boolean(loan.data?.borrower && isLiquidated),
+      select: dnum18,
+    },
+  });
+
+  const loadingState = match([
+    loan,
+    collPriceUsd.data ?? null,
+    // only include collSurplus in loading check if the loan is liquidated
+    isLiquidated ? collSurplus : { status: "success" },
+  ])
     .returnType<LoanLoadingState>()
     .with(
       P.union(
-        [P.any, null],
-        [{ status: "pending" }, P.any],
-        [{ fetchStatus: "fetching", data: null }, P.any],
+        [P.any, null, P.any],
+        [{ status: "pending" }, P.any, P.any],
+        [{ fetchStatus: "fetching", data: null }, P.any, P.any],
+        [P.any, P.any, { status: "pending" }],
+        [P.any, P.any, { fetchStatus: "fetching", data: undefined }],
       ),
       () => "loading",
     )
-    .with([{ status: "error" }, P.any], () => "error")
-    .with([{ data: null }, P.any], () => "not-found")
-    .with([{ data: P.nonNullable }, P.any], () => "success")
+    .with([{ status: "error" }, P.any, P.any], () => "error")
+    .with([P.any, P.any, { status: "error" }], () => "error")
+    .with([{ data: null }, P.any, P.any], () => "not-found")
+    .with([{ data: P.nonNullable }, P.any, P.any], () => "success")
     .otherwise(() => "error");
 
   const contentTransition = useTransition(loadingState, {
@@ -130,129 +198,189 @@ export function LoanScreen() {
         />
       }
     >
-      {contentTransition((style, item) => (
-        item === "success" && loan.data && (
-          modeTransition((modeStyle) => (
-            loan.data && (
-              <a.div
-                className={css({
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 32,
-                })}
-                style={{
-                  opacity: style.opacity,
-                  translateY: modeStyle.translateY,
-                }}
-              >
-                {loan.data.status === "liquidated"
-                  ? <ClaimCollateralSurplus loan={loan.data} />
-                  : (
-                    <>
-                      {loan.data.status === "redeemed" && (
-                        <div
-                          className={css({
-                            display: "flex",
-                            alignItems: "center",
-                            height: 64,
-                            padding: 16,
-                            background: "infoSurface",
-                            border: "1px solid token(colors.infoSurfaceBorder)",
-                            borderRadius: 8,
-                          })}
-                        >
-                          <div
-                            className={css({
-                              display: "flex",
-                              gap: 8,
-                            })}
-                          >
-                            {fullyRedeemed
-                              ? "This loan has been fully redeemed."
-                              : "This loan has been partially redeemed."}
-                            <InfoTooltip content={content.generalInfotooltips.redeemedLoan} />
-                          </div>
-                        </div>
+      {contentTransition((style, contentStatus) =>
+        contentStatus === "success" && (
+          // this <div> is only needed to prevent a warning when contentTransition
+          // would otherwise try to pass a ref to a fragment (for internal tracking),
+          // which is not allowed
+          <div
+            className={css({
+              display: "flex",
+              flexDirection: "column",
+              width: "100%",
+            })}
+          >
+            {loan.data && (
+              modeTransition((modeStyle) => (
+                loan.data && (
+                  <a.div
+                    className={css({
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 32,
+                    })}
+                    style={{
+                      opacity: style.opacity,
+                      translateY: modeStyle.translateY,
+                    }}
+                  >
+                    {loan.data.status === "liquidated"
+                      ? (
+                        <ClaimCollateralSurplus
+                          accountAddress={account.address ?? null}
+                          collSurplus={collSurplus.data ?? null}
+                          loan={loan.data}
+                        />
+                      )
+                      : (
+                        <>
+                          {loan.data.status === "redeemed" && (
+                            <div
+                              className={css({
+                                display: "flex",
+                                flexDirection: "column",
+                                padding: 16,
+                                gap: 8,
+                                background: "infoSurface",
+                                border: "1px solid token(colors.infoSurfaceBorder)",
+                                borderRadius: 8,
+                              })}
+                            >
+                              <p
+                                className={css({
+                                  display: "flex",
+                                  gap: 8,
+                                })}
+                              >
+                                {fullyRedeemed
+                                  ? <>Loan fully redeemed.</>
+                                  : <>Loan partially redeemed.</>}
+                                <InfoTooltip content={content.generalInfotooltips.redeemedLoan} />
+                              </p>
+
+                              <p>
+                                {loan.data.redemptionCount}{" "}
+                                {loan.data.redemptionCount === 1 ? <>redemption</> : <>redemptions</>}{" "}
+                                since last user action on{" "}
+                                <time
+                                  dateTime={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
+                                  title={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
+                                >
+                                  {formatDate(new Date(loan.data.lastUserActionAt), "short")}
+                                </time>.
+                                <br />
+                                <InlineTokenAmount
+                                  symbol="BOLD"
+                                  value={loan.data.redeemedDebt}
+                                  suffix=" BOLD"
+                                />{" "}
+                                repaid in exchange for{" "}
+                                <InlineTokenAmount
+                                  symbol={collToken?.symbol}
+                                  value={loan.data.redeemedColl}
+                                  suffix={` ${collToken?.name}`}
+                                />.
+                              </p>
+
+                              {collToken && troveExplorers.length > 0 && (
+                                <p>
+                                  See Loan History on {troveExplorers[0] && troveExplorers[1]
+                                    ? (
+                                      <>
+                                        <TroveExplorerLink
+                                          troveExplorer={troveExplorers[0]}
+                                          collTokenName={collToken.name}
+                                          troveId={BigInt(troveId)}
+                                        />{" "}
+                                        or{" "}
+                                        <TroveExplorerLink
+                                          troveExplorer={troveExplorers[1]}
+                                          collTokenName={collToken.name}
+                                          troveId={BigInt(troveId)}
+                                          last
+                                        />
+                                      </>
+                                    )
+                                    : troveExplorers[0] && (
+                                      <TroveExplorerLink
+                                        troveExplorer={troveExplorers[0]}
+                                        collTokenName={collToken.name}
+                                        troveId={BigInt(troveId)}
+                                        last
+                                      />
+                                    )}
+                                </p>
+                              )}
+                            </div>
+                          )}
+                          <Tabs
+                            items={TABS.map(({ label, labelCompact, id }) => ({
+                              label: compactMode ? labelCompact : label,
+                              panelId: `p-${id}`,
+                              tabId: `t-${id}`,
+                            }))}
+                            selected={TABS.findIndex(({ id }) => id === action)}
+                            onSelect={(index) => {
+                              if (!loan.data) {
+                                return;
+                              }
+                              const tab = TABS[index];
+                              if (!tab) {
+                                throw new Error("Invalid tab index");
+                              }
+                              const id = getPrefixedTroveId(
+                                loan.data.branchId,
+                                loan.data.troveId,
+                              );
+                              router.push(
+                                `/loan/${tab.id}?id=${id}`,
+                                { scroll: false },
+                              );
+                            }}
+                          />
+
+                          {action === "colldebt" && (
+                            loanMode === "multiply"
+                              ? <PanelUpdateLeveragePosition loan={loan.data} />
+                              : <PanelUpdateBorrowPosition loan={loan.data} />
+                          )}
+                          {action === "rate" && <PanelInterestRate loan={loan.data} />}
+                          {action === "close" && <PanelClosePosition loan={loan.data} />}
+                        </>
                       )}
-                      <Tabs
-                        items={TABS.map(({ label, id }) => ({
-                          label,
-                          panelId: `p-${id}`,
-                          tabId: `t-${id}`,
-                        }))}
-                        selected={TABS.findIndex(({ id }) => id === action)}
-                        onSelect={(index) => {
-                          if (!loan.data) {
-                            return;
-                          }
-                          const tab = TABS[index];
-                          if (!tab) {
-                            throw new Error("Invalid tab index");
-                          }
-                          const id = getPrefixedTroveId(
-                            loan.data.collIndex,
-                            loan.data.troveId,
-                          );
-                          router.push(
-                            `/loan/${tab.id}?id=${id}`,
-                            { scroll: false },
-                          );
-                        }}
-                      />
-                      {action === "colldebt" && (
-                        loanMode === "multiply"
-                          ? <PanelUpdateLeveragePosition loan={loan.data} />
-                          : <PanelUpdateBorrowPosition loan={loan.data} />
-                      )}
-                      {action === "rate" && <PanelUpdateRate loan={loan.data} />}
-                      {action === "close" && <PanelClosePosition loan={loan.data} />}
-                    </>
-                  )}
-              </a.div>
-            )
-          ))
+                  </a.div>
+                )
+              ))
+            )}
+          </div>
         )
-      ))}
+      )}
     </Screen>
   );
 }
 
 function ClaimCollateralSurplus({
+  accountAddress,
+  collSurplus,
   loan,
 }: {
+  accountAddress: null | `0x${string}`;
+  collSurplus: null | Dnum;
   loan: PositionLoanCommitted;
 }) {
-  const account = useAccount();
   const txFlow = useTransactionFlow();
-  const collToken = getCollToken(loan.collIndex);
-  if (!collToken) {
-    throw new Error(`collToken not found for index ${loan.collIndex}`);
-  }
-
-  const csp = getCollateralContract(loan.collIndex, "CollSurplusPool");
-  if (!csp) {
-    throw new Error("Collateral surplus pool not found for collateral index: " + loan.collIndex);
-  }
-
+  const collToken = getCollToken(loan.branchId);
   const collPriceUsd = usePrice(collToken.symbol);
 
-  const collSurplus = useReadContract({
-    ...csp,
-    functionName: "getCollateral",
-    args: [loan.borrower],
-    query: {
-      enabled: Boolean(loan.borrower),
-      select: dnum18,
-    },
-  });
-
-  const collSurplusUsd = collPriceUsd.data && collSurplus.data
-    ? dn.mul(collSurplus.data, collPriceUsd.data)
+  const collSurplusUsd = collPriceUsd.data && collSurplus
+    ? dn.mul(collSurplus, collPriceUsd.data)
     : null;
 
-  const isOwner = account.address && addressesEqual(account.address, loan.borrower);
+  const isOwner = accountAddress && (
+    addressesEqual(accountAddress, loan.borrower)
+  );
 
-  if (!collSurplus.data || dn.eq(collSurplus.data, 0)) {
+  if (!collSurplus || dn.eq(collSurplus, 0)) {
     return null;
   }
 
@@ -314,7 +442,7 @@ function ClaimCollateralSurplus({
                 lineHeight: 1,
               })}
             >
-              <div>{fmtnum(collSurplus.data ?? 0)}</div>
+              <div>{fmtnum(collSurplus ?? 0)}</div>
             </div>
             <div>
               <div
@@ -347,23 +475,23 @@ function ClaimCollateralSurplus({
       />
       {isOwner && (
         <Button
-          disabled={!collSurplus.data || dn.eq(collSurplus.data, 0) || !isOwner}
+          disabled={!collSurplus || dn.eq(collSurplus, 0) || !isOwner}
           mode="primary"
           size="large"
           label="Claim remaining collateral"
           onClick={() => {
-            if (account.address) {
+            if (accountAddress) {
               txFlow.start({
                 flowId: "claimCollateralSurplus",
                 backLink: [
-                  `/loan?id=${loan.collIndex}:${loan.troveId}`,
+                  `/loan?id=${loan.branchId}:${loan.troveId}`,
                   "Back to the loan",
                 ],
                 successLink: ["/", "Go to the dashboard"],
                 successMessage: "The loan position has been closed successfully.",
                 borrower: loan.borrower,
-                collIndex: loan.collIndex,
-                collSurplus: collSurplus.data ?? dnum18(0),
+                branchId: loan.branchId,
+                collSurplus: collSurplus ?? dnum18(0),
               });
             }
           }}

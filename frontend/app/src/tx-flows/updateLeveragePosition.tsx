@@ -6,7 +6,7 @@ import { MAX_UPFRONT_FEE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLeverDownTroveParams, getLeverUpTroveParams } from "@/src/liquity-leverage";
-import { getCollToken, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
+import { getBranch, getCollToken, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -17,7 +17,7 @@ import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
-import { createRequestSchema, verifyTransaction, verifyTroveUpdate } from "./shared";
+import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "updateLeveragePosition",
@@ -46,7 +46,7 @@ function useUpfrontFeeData(
   const isBorrowing = dn.gt(debtChange, 0);
 
   const upfrontFee = usePredictAdjustTroveUpfrontFee(
-    loan.collIndex,
+    loan.branchId,
     loan.troveId,
     isBorrowing ? debtChange : [0n, 18],
   );
@@ -68,10 +68,6 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
 
   Summary({ request }) {
     const { loan, prevLoan } = request;
-    const collateral = getCollToken(loan.collIndex);
-    if (!collateral) {
-      throw new Error(`Invalid collateral index: ${loan.collIndex}`);
-    }
 
     const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
     const loadingState = match(upfrontFeeData)
@@ -104,10 +100,8 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
   Details({ request }) {
     const { loan, prevLoan, depositChange, leverageFactorChange } = request;
 
-    const collateral = getCollToken(loan.collIndex);
-    if (!collateral) {
-      throw new Error(`Invalid collateral index: ${loan.collIndex}`);
-    }
+    const branch = getBranch(loan.branchId);
+    const collateral = getCollToken(branch.id);
 
     const collPrice = usePrice(collateral.symbol);
     const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
@@ -182,7 +176,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
   steps: {
     approveLst: {
       name: ({ request }) => {
-        const token = getCollToken(request.loan.collIndex);
+        const token = getCollToken(request.loan.branchId);
         return `Approve ${token?.name ?? ""}`;
       },
       Status: (props) => (
@@ -196,14 +190,11 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           throw new Error("Invalid step: depositChange is required with approveLst");
         }
 
-        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
-        if (!collateral) {
-          throw new Error(`Invalid collateral index: ${ctx.request.loan.collIndex}`);
-        }
-        const Zapper = collateral.contracts.LeverageLSTZapper;
+        const branch = getBranch(ctx.request.loan.branchId);
+        const Zapper = branch.contracts.LeverageLSTZapper;
 
         return ctx.writeContract({
-          ...collateral.contracts.CollToken,
+          ...branch.contracts.CollToken,
           functionName: "approve",
           args: [
             Zapper.address,
@@ -227,15 +218,12 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           throw new Error("Invalid step: depositChange is required with increaseDeposit");
         }
 
-        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
-        if (!collateral) {
-          throw new Error(`Invalid collateral index: ${ctx.request.loan.collIndex}`);
-        }
+        const branch = getBranch(ctx.request.loan.branchId);
 
         // add ETH
-        if (collateral.symbol === "ETH") {
+        if (branch.symbol === "ETH") {
           return ctx.writeContract({
-            ...collateral.contracts.LeverageWETHZapper,
+            ...branch.contracts.LeverageWETHZapper,
             functionName: "addCollWithRawETH",
             args: [BigInt(ctx.request.loan.troveId)],
             value: ctx.request.depositChange[0],
@@ -244,14 +232,14 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
 
         // add LST
         return ctx.writeContract({
-          ...collateral.contracts.LeverageLSTZapper,
+          ...branch.contracts.LeverageLSTZapper,
           functionName: "addColl",
           args: [BigInt(ctx.request.loan.troveId), ctx.request.depositChange[0]],
         });
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -264,10 +252,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           throw new Error("Invalid step: depositChange is required with decreaseDeposit");
         }
 
-        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
-        if (!collateral) {
-          throw new Error(`Invalid collateral index: ${ctx.request.loan.collIndex}`);
-        }
+        const branch = getBranch(ctx.request.loan.branchId);
 
         const args = [
           BigInt(ctx.request.loan.troveId),
@@ -275,9 +260,9 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         ] as const;
 
         // withdraw ETH
-        if (collateral.symbol === "ETH") {
+        if (branch.symbol === "ETH") {
           return ctx.writeContract({
-            ...collateral.contracts.LeverageWETHZapper,
+            ...branch.contracts.LeverageWETHZapper,
             functionName: "withdrawCollToRawETH",
             args,
           });
@@ -285,14 +270,14 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
 
         // withdraw LST
         return ctx.writeContract({
-          ...collateral.contracts.LeverageLSTZapper,
+          ...branch.contracts.LeverageLSTZapper,
           functionName: "withdrawColl",
           args,
         });
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -306,7 +291,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }
 
         const params = await getLeverUpTroveParams(
-          ctx.request.loan.collIndex,
+          ctx.request.loan.branchId,
           ctx.request.loan.troveId,
           ctx.request.leverageFactorChange[1],
           ctx.wagmiConfig,
@@ -315,10 +300,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           throw new Error("Couldn't fetch trove lever up params");
         }
 
-        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
-        if (!collateral) {
-          throw new Error(`Invalid collateral index: ${ctx.request.loan.collIndex}`);
-        }
+        const branch = getBranch(ctx.request.loan.branchId);
 
         const args = [{
           troveId: BigInt(ctx.request.loan.troveId),
@@ -328,9 +310,9 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }] as const;
 
         // leverage up ETH trove
-        if (collateral.symbol === "ETH") {
+        if (branch.symbol === "ETH") {
           return ctx.writeContract({
-            ...collateral.contracts.LeverageWETHZapper,
+            ...branch.contracts.LeverageWETHZapper,
             functionName: "leverUpTrove",
             args,
           });
@@ -338,14 +320,14 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
 
         // leverage up LST trove
         return ctx.writeContract({
-          ...collateral.contracts.LeverageLSTZapper,
+          ...branch.contracts.LeverageLSTZapper,
           functionName: "leverUpTrove",
           args,
         });
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -359,7 +341,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }
 
         const params = await getLeverDownTroveParams(
-          ctx.request.loan.collIndex,
+          ctx.request.loan.branchId,
           ctx.request.loan.troveId,
           ctx.request.leverageFactorChange[1],
           ctx.wagmiConfig,
@@ -368,10 +350,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           throw new Error("Couldn't fetch trove lever down params");
         }
 
-        const collateral = ctx.contracts.collaterals[ctx.request.loan.collIndex];
-        if (!collateral) {
-          throw new Error(`Invalid collateral index: ${ctx.request.loan.collIndex}`);
-        }
+        const branch = getBranch(ctx.request.loan.branchId);
 
         const args = [{
           troveId: BigInt(ctx.request.loan.troveId),
@@ -379,23 +358,23 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           minBoldAmount: params.minBoldAmount,
         }] as const;
 
-        if (collateral.symbol === "ETH") {
+        if (branch.symbol === "ETH") {
           return ctx.writeContract({
-            ...collateral.contracts.LeverageWETHZapper,
+            ...branch.contracts.LeverageWETHZapper,
             functionName: "leverDownTrove",
             args,
           });
         }
 
         return ctx.writeContract({
-          ...collateral.contracts.LeverageLSTZapper,
+          ...branch.contracts.LeverageLSTZapper,
           functionName: "leverDownTrove",
           args,
         });
       },
 
       async verify(ctx, hash) {
-        await verifyTroveUpdate(ctx.wagmiConfig, hash, ctx.request.loan);
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
   },
@@ -403,16 +382,12 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
   async getSteps(ctx) {
     const { depositChange, leverageFactorChange, loan } = ctx.request;
 
-    const collateral = ctx.contracts.collaterals[loan.collIndex];
-    if (!collateral) {
-      throw new Error(`Invalid collateral index: ${loan.collIndex}`);
-    }
-
     const steps: string[] = [];
+    const branch = getBranch(loan.branchId);
 
     // only check approval for non-ETH collaterals
-    if (collateral.symbol !== "ETH" && depositChange && dn.gt(depositChange, 0)) {
-      const { LeverageLSTZapper, CollToken } = collateral.contracts;
+    if (branch.symbol !== "ETH" && depositChange && dn.gt(depositChange, 0)) {
+      const { LeverageLSTZapper, CollToken } = branch.contracts;
       const allowance = dnum18(
         await ctx.readContract({
           ...CollToken,

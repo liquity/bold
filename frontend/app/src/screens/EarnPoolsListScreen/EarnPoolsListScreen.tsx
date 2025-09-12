@@ -1,21 +1,32 @@
 "use client";
 
-import type { CollIndex } from "@/src/types";
+import type { BranchId } from "@/src/types";
 
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
+import { SboldPositionSummary } from "@/src/comps/EarnPositionSummary/SboldPositionSummary";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { getContracts } from "@/src/contracts";
-import { useEarnPosition } from "@/src/liquity-utils";
-import { useAccount } from "@/src/services/Ethereum";
+import { getBranches, useEarnPosition } from "@/src/liquity-utils";
+import { isSboldEnabled, useSboldPosition } from "@/src/sbold";
+import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 
-export function EarnPoolsListScreen() {
-  const { collaterals } = getContracts();
+type PoolId = BranchId | "sbold";
 
-  const poolsTransition = useTransition(collaterals.map((c) => c.collIndex), {
+export function EarnPoolsListScreen() {
+  const branches = getBranches();
+  const collSymbols = branches.map((b) => b.symbol);
+
+  const pools: PoolId[] = branches.map((b) => b.branchId);
+
+  if (isSboldEnabled()) {
+    pools.push("sbold");
+  }
+
+  const poolsTransition = useTransition(pools, {
     from: { opacity: 0, transform: "scale(1.1) translateY(64px)" },
     enter: { opacity: 1, transform: "scale(1) translateY(0px)" },
     leave: { opacity: 0, transform: "scale(1) translateY(0px)" },
@@ -36,12 +47,13 @@ export function EarnPoolsListScreen() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: 8,
+              flexFlow: "wrap",
+              gap: "0 8px",
             })}
           >
             {content.earnHome.headline(
               <TokenIcon.Group>
-                {["BOLD" as const, ...collaterals.map((coll) => coll.symbol)].map((symbol) => (
+                {["BOLD" as const, ...collSymbols].map((symbol) => (
                   <TokenIcon
                     key={symbol}
                     symbol={symbol}
@@ -52,34 +64,59 @@ export function EarnPoolsListScreen() {
             )}
           </div>
         ),
-        subtitle: content.earnHome.subheading,
+        subtitle: (
+          <>
+            {content.earnHome.subheading}{" "}
+            <LinkTextButton
+              label={content.earnHome.learnMore[1]}
+              href={content.earnHome.learnMore[0]}
+              external
+            />
+          </>
+        ),
       }}
-      width={67 * 8}
-      gap={16}
     >
-      {poolsTransition((style, collIndex) => (
-        <a.div style={style}>
-          <EarnPool
-            collIndex={collIndex}
-          />
-        </a.div>
-      ))}
+      <div
+        className={css({
+          display: "grid",
+          gap: 16,
+        })}
+      >
+        {poolsTransition((style, poolId) => (
+          <a.div style={style}>
+            {poolId === "sbold"
+              ? <SboldPool />
+              : <EarnPool branchId={poolId} />}
+          </a.div>
+        ))}
+      </div>
     </Screen>
   );
 }
 
 function EarnPool({
-  collIndex,
+  branchId,
 }: {
-  collIndex: CollIndex;
+  branchId: BranchId;
 }) {
   const account = useAccount();
-  const earnPosition = useEarnPosition(collIndex, account.address ?? null);
+  const earnPosition = useEarnPosition(branchId, account.address ?? null);
   return (
     <EarnPositionSummary
-      collIndex={collIndex}
+      branchId={branchId}
       earnPosition={earnPosition.data ?? null}
       linkToScreen
+    />
+  );
+}
+
+function SboldPool() {
+  const account = useAccount();
+  const sboldPosition = useSboldPosition(account.address ?? null);
+  return (
+    <SboldPositionSummary
+      linkToScreen
+      sboldPosition={sboldPosition.data ?? null}
     />
   );
 }

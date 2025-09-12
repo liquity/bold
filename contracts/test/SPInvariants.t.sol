@@ -9,7 +9,7 @@ import {BaseInvariantTest} from "./TestContracts/BaseInvariantTest.sol";
 import {TestDeployer} from "./TestContracts/Deployment.t.sol";
 import {SPInvariantsTestHandler} from "./TestContracts/SPInvariantsTestHandler.t.sol";
 
-contract SPInvariantsTest is Assertions, BaseInvariantTest {
+abstract contract SPInvariantsBase is Assertions, BaseInvariantTest {
     IStabilityPool stabilityPool;
     SPInvariantsTestHandler handler;
 
@@ -38,7 +38,7 @@ contract SPInvariantsTest is Assertions, BaseInvariantTest {
         targetContract(address(handler));
     }
 
-    function invariant_allFundsClaimable() external view {
+    function assert_AllFundsClaimable() internal view {
         uint256 stabilityPoolColl = stabilityPool.getCollBalance();
         uint256 stabilityPoolBold = stabilityPool.getTotalBoldDeposits();
         uint256 yieldGainsOwed = stabilityPool.getYieldGainsOwed();
@@ -53,52 +53,21 @@ contract SPInvariantsTest is Assertions, BaseInvariantTest {
             sumYieldGains += stabilityPool.getDepositorYieldGain(actors[i].account);
         }
 
-        assertApproxEq(stabilityPoolColl, claimableColl, 1e15, "SP coll !~ claimable coll");
-        assertApproxEq(stabilityPoolBold, claimableBold, 1e15, "SP BOLD !~ claimable BOLD");
-        assertApproxEq(yieldGainsOwed, sumYieldGains, 1e15, "SP yieldGainsOwed !~= sum(yieldGain)");
+        // These tolerances might seem quite loose, but we have to consider
+        // that we're dealing with quintillions of BOLD in this test
+        assertGeDecimal(stabilityPoolColl, claimableColl, 18, "SP coll insolvency");
+        assertApproxEqAbsRelDecimal(stabilityPoolColl, claimableColl, 1e-5 ether, 1, 18, "SP coll loss");
+
+        assertGeDecimal(stabilityPoolBold, claimableBold, 18, "SP BOLD insolvency");
+        assertApproxEqAbsRelDecimal(stabilityPoolBold, claimableBold, 1e-7 ether, 1, 18, "SP BOLD loss");
+
+        assertGeDecimal(yieldGainsOwed, sumYieldGains, 18, "SP yield insolvency");
+        assertApproxEqAbsRelDecimal(yieldGainsOwed, sumYieldGains, 1 ether, 1, 18, "SP yield loss");
     }
+}
 
-    function test_Issue_NoLossOfFundsAfterAnyTwoLiquidationsFollowingTinyP() external {
-        vm.prank(adam);
-        handler.openTrove(100_000 ether); // used as funds
-
-        vm.prank(barb); // can't use startPrank because of the handler's internal pranking
-        uint256 debt = handler.openTrove(2_000 ether);
-        vm.prank(barb);
-        handler.provideToSp(debt + debt / 1 ether + 1, false);
-        vm.prank(barb);
-        handler.liquidateMe();
-
-        vm.prank(barb);
-        debt = handler.openTrove(2_000 ether);
-        vm.prank(barb);
-        handler.provideToSp(debt, false);
-        vm.prank(barb);
-        handler.liquidateMe();
-
-        this.invariant_allFundsClaimable();
-
-        vm.prank(adam);
-        handler.provideToSp(80_000 ether, false);
-
-        this.invariant_allFundsClaimable();
-
-        vm.prank(barb);
-        debt = handler.openTrove(2_000 ether);
-        vm.prank(barb);
-        handler.liquidateMe();
-
-        this.invariant_allFundsClaimable();
-
-        vm.prank(barb);
-        debt = handler.openTrove(2_000 ether);
-        vm.prank(barb);
-        handler.liquidateMe();
-
-        // Expect SP LUSD ~ claimable LUSD: ...
-        this.invariant_allFundsClaimable();
-
-        // Adam still has non-zero deposit
-        assertGt(stabilityPool.getCompoundedBoldDeposit(adam), 0, "Adam deposit 0");
+contract SPInvariantsTest is SPInvariantsBase {
+    function invariant_AllFundsClaimable() external view {
+        assert_AllFundsClaimable();
     }
 }

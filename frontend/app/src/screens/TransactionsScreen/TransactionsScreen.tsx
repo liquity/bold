@@ -4,14 +4,15 @@ import type { FlowStepStatus } from "@/src/services/TransactionFlow";
 import type { ComponentProps, ReactNode } from "react";
 
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
+import { LinkButton } from "@/src/comps/LinkButton/LinkButton";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
-import { AnchorButton, AnchorTextButton, Button, HFlex, IconCross, VFlex } from "@liquity2/uikit";
+import { Button, IconCross } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
-import Link from "next/link";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { match, P } from "ts-pattern";
 
 export type LoadingState =
@@ -37,12 +38,27 @@ export function TransactionsScreen() {
   } = useTransactionFlow();
 
   const isLastStep = flow?.steps && currentStepIndex === flow.steps.length - 1;
+  const isSuccess = isLastStep && step?.status === "confirmed";
 
-  const successMessageTransition = useTransition(isLastStep && step?.status === "confirmed", {
-    from: { height: 0, opacity: 0, transform: "scale(0.9)" },
-    enter: { height: 56, opacity: 1, transform: "scale(1)" },
-    leave: { height: 0, opacity: 0, transform: "scale(1)" },
-    config: boxTransitionConfig,
+  const successMessageTransition = useTransition(isSuccess, {
+    from: {
+      opacity: 0,
+      transform: "translateY(24px)",
+    },
+    enter: {
+      opacity: 1,
+      transform: "translateY(0px)",
+      delay: 500,
+    },
+    leave: {
+      opacity: 0,
+      immediate: true,
+    },
+    config: {
+      mass: 1,
+      tension: 2000,
+      friction: 120,
+    },
   });
 
   const errorBoxTransition = useTransition(step?.error, {
@@ -111,7 +127,7 @@ export function TransactionsScreen() {
         href: flow.request.backLink[0],
         label: "Back",
       }}
-      heading={<fd.Summary {...flow} />}
+      heading={fd.Summary && <fd.Summary {...flow} />}
     >
       <header
         className={css({
@@ -127,41 +143,55 @@ export function TransactionsScreen() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 28,
+            textAlign: "center",
+            fontSize: {
+              base: 20,
+              medium: 28,
+            },
           })}
         >
           {fd.title}
         </h1>
       </header>
 
-      <VFlex gap={32}>
+      <div
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          gap: 32,
+        })}
+      >
         <fd.Details {...flow} />
-      </VFlex>
+      </div>
 
-      <VFlex gap={0}>
+      <div>
         <div
           className={css({
             paddingBottom: 32,
           })}
         >
-          {successMessageTransition((style, show) => (
-            show && (
-              <a.div
-                style={style}
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: 56,
-                  whiteSpace: "nowrap",
-                  textAlign: "center",
-                  color: "positive",
-                })}
-              >
-                {flow.request.successMessage}
-              </a.div>
-            )
-          ))}
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              height: 56,
+              whiteSpace: "nowrap",
+              textAlign: "center",
+              color: "positive",
+            })}
+            style={{
+              marginBottom: flow.steps.length === 1 ? -24 : 0,
+            }}
+          >
+            {successMessageTransition((style, show) => (
+              show && (
+                <a.div style={style}>
+                  {flow.request.successMessage}
+                </a.div>
+              )
+            ))}
+          </div>
 
           <FlowSteps
             currentStep={currentStepIndex}
@@ -190,21 +220,18 @@ export function TransactionsScreen() {
         >
           {step.status === "confirmed"
             ? (
-              <Link
+              <LinkButton
+                id="flow-success-link"
                 href={flow.request.successLink[0]}
-                legacyBehavior
-                passHref
-              >
-                <AnchorButton
-                  label={flow.request.successLink[1]}
-                  mode="positive"
-                  size="large"
-                  wide
-                />
-              </Link>
+                label={flow.request.successLink[1]}
+                mode="positive"
+                size="large"
+                wide
+              />
             )
             : (
               <Button
+                className={`flow-commit-step flow-commit-step-${step.id}`}
                 disabled={step.status === "awaiting-verify" || step.status === "awaiting-commit"}
                 label={(
                   step.status === "error" ? "Retry: " : ""
@@ -232,6 +259,12 @@ export function TransactionsScreen() {
         {errorBoxTransition((style, error) => (
           error && (
             <a.div
+              className={css({
+                flexGrow: 0,
+                display: "grid",
+                overflow: "hidden",
+                maxWidth: "100%",
+              })}
               style={{
                 ...style,
                 opacity: style.opacity.to([0, 0.5, 1], [0, 0, 1]),
@@ -246,7 +279,7 @@ export function TransactionsScreen() {
             </a.div>
           )
         ))}
-      </VFlex>
+      </div>
     </Screen>
   );
 }
@@ -274,7 +307,13 @@ export function TransactionDetailsRow({
       >
         {Array.isArray(label)
           ? (
-            <VFlex gap={4}>
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+              })}
+            >
               <div
                 className={css({
                   fontSize: 16,
@@ -293,16 +332,19 @@ export function TransactionDetailsRow({
                   {secondary}
                 </div>
               ))}
-            </VFlex>
+            </div>
           )
           : (
-            <HFlex
-              alignItems="flex-start"
-              justifyContent="flex-start"
-              gap={8}
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
+                gap: 8,
+              })}
             >
               {label}
-            </HFlex>
+            </div>
           )}
       </div>
       <div
@@ -312,18 +354,25 @@ export function TransactionDetailsRow({
       >
         {Array.isArray(value)
           ? (
-            <VFlex
-              alignItems="flex-end"
-              gap={4}
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-end",
+                gap: 4,
+              })}
             >
-              <HFlex
-                gap={8}
+              <div
                 className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
                   fontSize: 16,
                 })}
               >
                 {value[0]}
-              </HFlex>
+              </div>
               {value.slice(1).map((secondary, index) => (
                 <div
                   key={index}
@@ -336,16 +385,18 @@ export function TransactionDetailsRow({
                   {secondary}
                 </div>
               ))}
-            </VFlex>
+            </div>
           )
           : (
-            <HFlex
+            <div
               className={css({
+                display: "flex",
+                alignItems: "center",
                 fontSize: 24,
               })}
             >
               {value}
-            </HFlex>
+            </div>
           )}
       </div>
     </div>
@@ -422,18 +473,17 @@ function StepDisc({
   mode: StepDiscMode;
   secondary: string;
 }) {
-  const [forcedMode, setForcedMode] = useState<StepDiscMode>(mode);
   const [showLabel, setShowLabel] = useState(false);
 
   const modeTransition = useTransition(mode, {
     initial: { transform: "scale(1)" },
-    from: { transform: "scale(1.4)" },
+    from: { transform: "scale(0.5)" },
     enter: { transform: "scale(1)" },
-    leave: { immediate: true },
+    leave: { opacity: 0, immediate: true },
     config: {
       mass: 1,
-      tension: 2000,
-      friction: 180,
+      tension: 2400,
+      friction: 120,
     },
   });
 
@@ -451,21 +501,6 @@ function StepDisc({
   return (
     <div
       title={label}
-      onClick={() => {
-        const forcedStatuses: StepDiscMode[] = [
-          "upcoming",
-          "ready",
-          "loading",
-          "success",
-          "error",
-        ];
-        const forcedStatus = forcedStatuses[
-          (forcedStatuses.indexOf(forcedMode) + 1) % forcedStatuses.length
-        ];
-        if (forcedStatus) {
-          setForcedMode(forcedStatus);
-        }
-      }}
       onMouseEnter={() => setShowLabel(true)}
       onMouseLeave={() => setShowLabel(false)}
       className={css({
@@ -608,30 +643,94 @@ function Tick() {
 }
 
 function NoTransactionsScreen() {
+  const [showLoader, setShowLoader] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowLoader(false);
+    }, 1000);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
+
+  const transition = useTransition(showLoader, {
+    from: {
+      opacity: 0,
+      transform: "scale(0.97)",
+    },
+    enter: {
+      opacity: 1,
+      transform: "scale(1)",
+    },
+    leave: {
+      opacity: 0,
+      transform: "scale(1)",
+      immediate: true,
+    },
+    config: {
+      mass: 1,
+      tension: 2000,
+      friction: 120,
+    },
+  });
+
   return (
     <div
       className={css({
         flexGrow: 1,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: 20,
+        position: "relative",
         width: "100%",
+        height: "100%",
+        "& > div": {
+          position: "absolute",
+          inset: 0,
+          display: "grid",
+          placeItems: "center",
+        },
       })}
     >
-      <div>
-        No ongoing transactions.
-      </div>
-      <div>
-        <Link
-          href="/"
-          legacyBehavior
-          passHref
-        >
-          <AnchorTextButton label="Back to dashboard" />
-        </Link>
-      </div>
+      {transition((style, show) => (
+        show
+          ? (
+            <a.div style={style}>
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                  fontSize: 16,
+                  userSelect: "none",
+                  color: "content",
+                })}
+              >
+                <Spinner size={20} />
+                <div>Preparing transactions…</div>
+              </div>
+            </a.div>
+          )
+          : (
+            <a.div style={style}>
+              <div
+                className={css({
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: 20,
+                })}
+              >
+                <div>No ongoing transactions.</div>
+                <div>
+                  <LinkTextButton
+                    href="/"
+                    label="Go to the dashboard"
+                  />
+                </div>
+              </div>
+            </a.div>
+          )
+      ))}
     </div>
   );
 }

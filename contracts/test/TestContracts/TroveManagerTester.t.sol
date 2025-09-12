@@ -13,7 +13,12 @@ for testing the parent's internal functions. */
 contract TroveManagerTester is ITroveManagerTester, TroveManager {
     uint256 constant STALE_TROVE_DURATION = 90 days;
 
-    constructor(IAddressesRegistry _addressesRegistry) TroveManager(_addressesRegistry) {}
+    // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
+    uint256 public immutable BCR;
+
+    constructor(IAddressesRegistry _addressesRegistry) TroveManager(_addressesRegistry) {
+        BCR = _addressesRegistry.BCR();
+    }
 
     // Single liquidation function. Closes the trove if its ICR is lower than the minimum collateral ratio.
     function liquidate(uint256 _troveId) external override {
@@ -28,6 +33,10 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
 
     function get_MCR() external view returns (uint256) {
         return MCR;
+    }
+
+    function get_BCR() external view returns (uint256) {
+        return BCR;
     }
 
     function get_SCR() external view returns (uint256) {
@@ -92,6 +101,18 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
 
     function computeICR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256) {
         return LiquityMath._computeCR(_coll, _debt, _price);
+    }
+
+    function getCollGasCompensation(uint256 _entireColl, uint256 _entireDebt, uint256 _boldInSPForOffsets)
+        external
+        pure
+        returns (uint256)
+    {
+        uint256 collSubjectToGasCompensation = _entireColl;
+        if (_boldInSPForOffsets < _entireDebt) {
+            collSubjectToGasCompensation = _entireColl * _boldInSPForOffsets / _entireDebt;
+        }
+        return _getCollGasCompensation(collSubjectToGasCompensation);
     }
 
     function getCollGasCompensation(uint256 _coll) external pure returns (uint256) {

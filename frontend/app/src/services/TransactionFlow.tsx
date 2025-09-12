@@ -8,12 +8,12 @@ import type { Config as WagmiConfig } from "wagmi";
 import type { ReadContractOptions } from "wagmi/query";
 
 import { GAS_MIN_HEADROOM, GAS_RELATIVE_HEADROOM, LOCAL_STORAGE_PREFIX } from "@/src/constants";
-import { getContracts } from "@/src/contracts";
+import { CONTRACTS } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { useAccount } from "@/src/services/Ethereum";
 import { useStoredState } from "@/src/services/StoredState";
 import { noop } from "@/src/utils";
 import { vAddress } from "@/src/valibot-utils";
+import { useAccount } from "@/src/wagmi-utils";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
@@ -25,12 +25,20 @@ import { estimateGas, readContract, writeContract } from "wagmi/actions";
 /* flows registration */
 
 import { allocateVotingPower, type AllocateVotingPowerRequest } from "@/src/tx-flows/allocateVotingPower";
+import { claimBribes, type ClaimBribesRequest } from "@/src/tx-flows/claimBribes";
 import { claimCollateralSurplus, type ClaimCollateralSurplusRequest } from "@/src/tx-flows/claimCollateralSurplus";
 import { closeLoanPosition, type CloseLoanPositionRequest } from "@/src/tx-flows/closeLoanPosition";
 import { earnClaimRewards, type EarnClaimRewardsRequest } from "@/src/tx-flows/earnClaimRewards";
 import { earnUpdate, type EarnUpdateRequest } from "@/src/tx-flows/earnUpdate";
+import { legacyCloseLoanPosition, type LegacyCloseLoanPositionRequest } from "@/src/tx-flows/legacyCloseLoanPosition";
+import { legacyEarnWithdrawAll, type LegacyEarnWithdrawAllRequest } from "@/src/tx-flows/legacyEarnWithdrawAll";
+import { legacyRedeemCollateral, type LegacyRedeemCollateralRequest } from "@/src/tx-flows/legacyRedeemCollateral";
+import { legacyUnstakeAll, type LegacyUnstakeAllRequest } from "@/src/tx-flows/legacyUnstakeAll";
 import { openBorrowPosition, type OpenBorrowPositionRequest } from "@/src/tx-flows/openBorrowPosition";
 import { openLeveragePosition, type OpenLeveragePositionRequest } from "@/src/tx-flows/openLeveragePosition";
+import { redeemCollateral, type RedeemCollateralRequest } from "@/src/tx-flows/redeemCollateral";
+import { sboldDeposit, type SboldDepositRequest } from "@/src/tx-flows/sboldDeposit";
+import { sboldRedeem, type SboldRedeemRequest } from "@/src/tx-flows/sboldRedeem";
 import { stakeClaimRewards, type StakeClaimRewardsRequest } from "@/src/tx-flows/stakeClaimRewards";
 import { stakeDeposit, type StakeDepositRequest } from "@/src/tx-flows/stakeDeposit";
 import { unstakeDeposit, type UnstakeDepositRequest } from "@/src/tx-flows/unstakeDeposit";
@@ -40,12 +48,20 @@ import { updateLoanInterestRate, type UpdateLoanInterestRateRequest } from "@/sr
 
 export type FlowRequestMap = {
   "allocateVotingPower": AllocateVotingPowerRequest;
+  "claimBribes": ClaimBribesRequest;
   "claimCollateralSurplus": ClaimCollateralSurplusRequest;
   "closeLoanPosition": CloseLoanPositionRequest;
   "earnClaimRewards": EarnClaimRewardsRequest;
   "earnUpdate": EarnUpdateRequest;
+  "legacyCloseLoanPosition": LegacyCloseLoanPositionRequest;
+  "legacyEarnWithdrawAll": LegacyEarnWithdrawAllRequest;
+  "legacyRedeemCollateral": LegacyRedeemCollateralRequest;
+  "legacyUnstakeAll": LegacyUnstakeAllRequest;
   "openBorrowPosition": OpenBorrowPositionRequest;
   "openLeveragePosition": OpenLeveragePositionRequest;
+  "redeemCollateral": RedeemCollateralRequest;
+  "sboldDeposit": SboldDepositRequest;
+  "sboldRedeem": SboldRedeemRequest;
   "stakeClaimRewards": StakeClaimRewardsRequest;
   "stakeDeposit": StakeDepositRequest;
   "unstakeDeposit": UnstakeDepositRequest;
@@ -56,12 +72,20 @@ export type FlowRequestMap = {
 
 const FlowIdSchema = v.union([
   v.literal("allocateVotingPower"),
+  v.literal("claimBribes"),
   v.literal("claimCollateralSurplus"),
   v.literal("closeLoanPosition"),
   v.literal("earnClaimRewards"),
   v.literal("earnUpdate"),
+  v.literal("legacyCloseLoanPosition"),
+  v.literal("legacyEarnWithdrawAll"),
+  v.literal("legacyRedeemCollateral"),
+  v.literal("legacyUnstakeAll"),
   v.literal("openBorrowPosition"),
   v.literal("openLeveragePosition"),
+  v.literal("redeemCollateral"),
+  v.literal("sboldDeposit"),
+  v.literal("sboldRedeem"),
   v.literal("stakeClaimRewards"),
   v.literal("stakeDeposit"),
   v.literal("unstakeDeposit"),
@@ -72,12 +96,20 @@ const FlowIdSchema = v.union([
 
 export const flows: FlowsMap = {
   allocateVotingPower,
+  claimBribes,
   claimCollateralSurplus,
   closeLoanPosition,
   earnClaimRewards,
   earnUpdate,
+  legacyCloseLoanPosition,
+  legacyEarnWithdrawAll,
+  legacyRedeemCollateral,
+  legacyUnstakeAll,
   openBorrowPosition,
   openLeveragePosition,
+  redeemCollateral,
+  sboldDeposit,
+  sboldRedeem,
   stakeClaimRewards,
   stakeDeposit,
   unstakeDeposit,
@@ -137,13 +169,15 @@ export type FlowStepDeclaration<FlowRequest extends BaseFlowRequest = BaseFlowRe
 
 export type FlowDeclaration<FlowRequest extends BaseFlowRequest> = {
   title: ReactNode;
-  Summary: ComponentType<{
-    account: Address | null;
-    request: FlowRequest;
-    steps: FlowStep[] | null;
-  }>;
+  Summary:
+    | null
+    | ComponentType<{
+      account: Address;
+      request: FlowRequest;
+      steps: FlowStep[] | null;
+    }>;
   Details: ComponentType<{
-    account: Address | null;
+    account: Address;
     request: FlowRequest;
     steps: FlowStep[] | null;
   }>;
@@ -154,14 +188,14 @@ export type FlowDeclaration<FlowRequest extends BaseFlowRequest> = {
 
 // passed to the react context + saved in local storage
 export type Flowstate<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
-  account: Address | null;
+  account: Address;
   request: FlowRequest;
   steps: FlowStep[] | null;
 };
 
 // passed to the step functions
 export type FlowParams<FlowRequest extends BaseFlowRequest = BaseFlowRequest> = {
-  account: Address | null;
+  account: Address;
   contracts: Contracts;
   isSafe: boolean;
   preferredApproveMethod: "permit" | "approve-amount" | "approve-infinite";
@@ -326,7 +360,7 @@ export function TransactionFlow({
           ? {
             ...flow,
             account: account.address,
-            contracts: getContracts(),
+            contracts: CONTRACTS,
             isSafe: account.safeStatus !== null,
             preferredApproveMethod: storedState.preferredApproveMethod,
             readContract: getReadContract(wagmiConfig),
@@ -370,7 +404,7 @@ function useSteps(
 
       return flowDeclaration.getSteps({
         account: account.address,
-        contracts: getContracts(),
+        contracts: CONTRACTS,
         isSafe: account.safeStatus !== null,
         preferredApproveMethod: storedState.preferredApproveMethod,
         readContract: getReadContract(wagmiConfig),
@@ -423,7 +457,7 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
       const params: FlowParams<FlowRequestMap[keyof FlowRequestMap]> = {
         readContract: getReadContract(wagmiConfig),
         account,
-        contracts: getContracts(),
+        contracts: CONTRACTS,
         isSafe,
         preferredApproveMethod: storedState.preferredApproveMethod,
         request: flow.request,
@@ -485,6 +519,11 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
     const verifyingStep = flow.steps.find((step) => step.status === "awaiting-verify" && step.artifact);
     if (!verifyingStep) return;
 
+    // if runningStepRef is set, no need to resume
+    if (runningStepRef.current !== null) {
+      return;
+    }
+
     const stepIndex = flow.steps.indexOf(verifyingStep);
     const flowDeclaration = getFlowDeclaration(flow.request.flowId);
     if (!flowDeclaration) return;
@@ -495,19 +534,21 @@ function useFlowManager(account: Address | null, isSafe: boolean = false) {
     startStep(stepDef, stepIndex, verifyingStep.artifact);
   }, [flow, account, startStep]);
 
+  const discardFlow = useCallback(() => {
+    setFlow(null);
+    FlowContextStorage.clear();
+    runningStepRef.current = null;
+  }, [setFlow]);
+
   const startFlow = useCallback((
     request: FlowRequestMap[keyof FlowRequestMap],
     account: Address,
   ) => {
+    discardFlow(); // discard any current flow before starting a new one
     const newFlow = { account, request, steps: null };
     setFlow(newFlow);
     FlowContextStorage.set(newFlow);
-  }, []);
-
-  const discardFlow = useCallback(() => {
-    setFlow(null);
-    FlowContextStorage.clear();
-  }, []);
+  }, [discardFlow, setFlow]);
 
   const setFlowSteps = useCallback((steps: FlowStep[] | null) => {
     if (!flow) return;

@@ -34,14 +34,14 @@ contract LiquityBase is ILiquityBase {
     }
     // --- Gas compensation functions ---
 
-    function getEntireSystemColl() public view returns (uint256 entireSystemColl) {
+    function getEntireBranchColl() public view returns (uint256 entireSystemColl) {
         uint256 activeColl = activePool.getCollBalance();
         uint256 liquidatedColl = defaultPool.getCollBalance();
 
         return activeColl + liquidatedColl;
     }
 
-    function getEntireSystemDebt() public view returns (uint256 entireSystemDebt) {
+    function getEntireBranchDebt() public view returns (uint256 entireSystemDebt) {
         uint256 activeDebt = activePool.getBoldDebt();
         uint256 closedDebt = defaultPool.getBoldDebt();
 
@@ -49,8 +49,8 @@ contract LiquityBase is ILiquityBase {
     }
 
     function _getTCR(uint256 _price) internal view returns (uint256 TCR) {
-        uint256 entireSystemColl = getEntireSystemColl();
-        uint256 entireSystemDebt = getEntireSystemDebt();
+        uint256 entireSystemColl = getEntireBranchColl();
+        uint256 entireSystemDebt = getEntireBranchDebt();
 
         TCR = LiquityMath._computeCR(entireSystemColl, entireSystemDebt, _price);
 

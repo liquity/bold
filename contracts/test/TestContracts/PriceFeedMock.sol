@@ -30,6 +30,4 @@ contract PriceFeedMock is IPriceFeedMock {
     function getEthUsdStalenessThreshold() external pure returns (uint256) {
         return 0;
     }
-
-    function setAddresses(address _borrowerOperationsAddress) external {}
 }

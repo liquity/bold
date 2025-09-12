@@ -1,125 +1,130 @@
-![Liquity V2](https://github.com/user-attachments/assets/b3ffbc5e-b7a8-46b6-a080-e18a0792bb64)
+<img width="830" alt="Liquity V2" src="https://github.com/user-attachments/assets/d9eb5b2a-d437-4472-94d6-07fa537e689a" />
 
 [![Coverage Status](https://coveralls.io/repos/github/liquity/bold/badge.svg?branch=main&t=yZSfc8)](https://coveralls.io/github/liquity/bold?branch=main)
 
 ## Table of Contents
-1. [Significant Changes in Liquity v2](#significant-changes-in-liquity-v2)
 
-2. [What Remains the Same in v2 from v1](#what-remains-the-same-in-v2-from-v1)
-  
-3. [Liquity v2 Overview](#liquity-v2-overview)
-
-4. [Multicollateral Architecture Overview](#multicollateral-architecture-overview)
-
-5. [Core System Contracts](#core-system-contracts)
-   - [Top Level Contracts](#top-level-contracts)
-   - [Branch-level Contracts](#branch-level-contracts)
-   - [Peripheral Helper Contracts](#peripheral-helper-contracts)
-
-6. [Mainnet PriceFeed Contracts](#mainnet-pricefeed-contracts)
-
-7. [Public State-changing Functions](#public-state-changing-functions)
-   - [CollateralRegistry](#collateralregistry)
-   - [BorrowerOperations](#borroweroperations)
-   - [TroveManager](#trovemanager)
-   - [StabilityPool](#stabilitypool)
-   - [All PriceFeeds](#all-pricefeeds)
-   - [BOLDToken](#boldtoken)
-
-8. [Borrowing, Fees, and Interest Rates](#borrowing-fees-and-interest-rates)
-   - [Interest on Trove Debt](#interest-on-trove-debt)
-   - [Applying a Trove’s Interest](#applying-a-troves-interest)
-   - [Interest Rate Scheme Implementation](#interest-rate-scheme-implementation)
-   - [Core Debt Invariant](#core-debt-invariant)
-   - [Redemption Evasion Mitigation](#redemption-evasion-mitigation)
-   - [Upfront Borrowing Fees](#upfront-borrowing-fees)
-   - [Premature Adjustment Fees](#premature-adjustment-fees)
-   - [Batches and Premature Adjustment Fees](#batches-and-premature-adjustment-fees)
-
-9. [Supplying Hints to Trove Operations](#supplying-hints-to-trove-operations)
-
-10. [Example OpenTrove Transaction with Hints](#example-opentrove-transaction-with-hints)
-
-11. [BOLD Redemptions](#bold-redemptions)
-
-12. [Redemption Routing](#redemption-routing)
-
-13. [Redemptions at Branch Level](#redemptions-at-branch-level)
-   - [Redemption Fees](#redemption-fees)
-   - [Fee Schedule](#fee-schedule)
-   - [Redemption Fee During Bootstrapping Period](#redemption-fee-during-bootstrapping-period)
-
-14. [Unredeemable Troves](#unredeemable-troves)
-
-15. [Stability Pool Implementation](#stability-pool-implementation)
-   - [How Deposits and ETH Gains are Calculated](#how-deposits-and-eth-gains-are-calculated)
-   - [Collateral Gains from Liquidations and the Product-Sum Algorithm](#collateral-gains-from-liquidations-and-the-product-sum-algorithm)
-   - [BOLD Yield Gains](#bold-yield-gains)
-
-16. [Liquidation and the Stability Pool](#liquidation-and-the-stability-pool)
-
-17. [Liquidation Logic](#liquidation-logic)
-
-18. [Liquidation Penalties and Borrowers’ Collateral Surplus](#liquidation-penalties-and-borrowers-collateral-surplus)
-   - [Claiming Collateral Surpluses](#claiming-collateral-surpluses)
-
-19. [Liquidation Gas Compensation](#liquidation-gas-compensation)
-
-20. [Redistributions](#redistributions)
-   - [Corrected Stake Solution](#corrected-stake-solution)
-
-21. [Critical Collateral Ratio (CCR) Restrictions](#critical-collateral-ratio-ccr-restrictions)
-
-22. [Delegation](#delegation)
-   - [Add and Remove Managers](#add-and-remove-managers)
-   - [Individual Interest Delegates](#individual-interest-delegates)
-   - [Batch Interest Managers](#batch-interest-managers)
-   - [Batch Management Implementation](#batch-management-implementation)
-
-23. [Collateral Branch Shutdown](#collateral-branch-shutdown)
-   - [Shutdown Logic](#shutdown-logic)
-   - [Urgent Redemptions](#urgent-redemptions)
-
-24. [Collateral Choices in Liquity v2](#collateral-choices-in-liquity-v2)
-
-25. [Oracles in Liquity v2](#oracles-in-liquity-v2)
-   - [Terminology](#terminology)
-   - [Choice of Oracles and Price Calculations](#choice-of-oracles-and-price-calculations)
-   - [PriceFeed Deployment](#pricefeed-deployment)
-   - [Fetching the Price](#fetching-the-price)
-
-26. [Known Issues and Mitigations](#known-issues-and-mitigations)
-   - [1 - Oracle Price Frontrunning](#1---oracle-price-frontrunning)
-   - [2 - Bypassing Redemption Routing Logic via Temporary SP Deposits](#2---bypassing-redemption-routing-logic-via-temporary-sp-deposits)
-   - [3 - Path-dependent Redemptions: Lower Fee when Chunking](#3---path-dependent-redemptions-lower-fee-when-chunking)
-   - [4 - Oracle Failure and Urgent Redemptions with the Frozen Last Good Price](#4---oracle-failure-and-urgent-redemptions-with-the-frozen-last-good-price)
-   - [5 - Stale Oracle Price Before Shutdown Triggered](#5---stale-oracle-price-before-shutdown-triggered)
-   - [6 - Batch Management Ops Don’t Check for a Shutdown Branch](#6---batch-management-ops-dont-check-for-a-shutdown-branch)
-   - [7 - Discrepancy Between Aggregate and Sum of Individual Debts](#7---discrepancy-between-aggregate-and-sum-of-individual-debts)
-   - [8 - Discrepancy Between `yieldGainsOwed` and Sum of Individual Yield Gains in StabilityPool](#8---discrepancy-between-yieldgainsowed-and-sum-of-individual-yield-gains-in-stabilitypool)
-   - [9 - LST Oracle Risks](#9---lst-oracle-risks)
-   - [10 - Branch Shutdown and Bad Debt](#10---branch-shutdown-and-bad-debt)
-   - [11 - Inaccurate Calculation of Average Branch Interest Rate](#11---inaccurate-calculation-of-average-branch-interest-rate)
-   - [12 - TroveManager Can Make Troves Liquidatable by Changing the Batch Interest Rate](#12---trovemanager-can-make-troves-liquidatable-by-changing-the-batch-interest-rate)
-   - [13 - Trove Adjustments May Be Griefed by Sandwich Raising the Average Interest Rate](#13---trove-adjustments-may-be-griefed-by-sandwich-raising-the-average-interest-rate)
-   - [14 - Stability Pool Claiming and Compounding Yield Can Be Used to Gain a Slightly Higher Rate of Rewards](#14---stability-pool-claiming-and-compounding-yield-can-be-used-to-gain-a-slightly-higher-rate-of-rewards)
-   - [15 - Urgent Redemptions Premium Can Worsen the ICR](#15---urgent-redemptions-premium-can-worsen-the-icr)
-   - [16 - Oracle code nitpicks](#16---oracle-code-nitpicks)
-   - [17 - Path dependence of redistributions](#17---path-dependence-of-redistributions---sequential-vs-batch-liquidations)
-   - [18 - TODOs left in code comments](#18---todos-in-code-comments)
-
-   - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
-     
-
-27. [Requirements](#requirements)
-
-28. [Setup](#setup)
-
-29. [How to Develop](#how-to-develop)
-
-
-
-
+- [Significant changes in Liquity v2](#significant-changes-in-liquity-v2)
+- [Liquity v2 Overview](#liquity-v2-overview)
+- [Multicollateral Architecture Overview](#multicollateral-architecture-overview)
+- [Core System Contracts](#core-system-contracts)
+  - [Top level contracts](#top-level-contracts)
+  - [Branch-level contracts](#branch-level-contracts)
+  - [Peripheral helper contracts](#peripheral-helper-contracts)
+  - [Mainnet PriceFeed contracts](#mainnet-pricefeed-contracts)
+- [Public state-changing functions](#public-state-changing-functions)
+  - [CollateralRegistry](#collateralregistry)
+  - [BorrowerOperations](#borroweroperations)
+  - [TroveManager](#trovemanager)
+  - [StabilityPool](#stabilitypool)
+  - [All PriceFeeds](#all-pricefeeds)
+  - [BOLDToken](#boldtoken)
+- [Borrowing, fees and interest rates](#borrowing-fees-and-interest-rates)
+  - [Interest on Trove debt](#interest-on-trove-debt)
+  - [Applying a Trove's interest](#applying-a-troves-interest)
+  - [Interest rate scheme implementation](#interest-rate-scheme-implementation)
+  - [Aggregate vs individual recorded debts](#aggregate-vs-individual-recorded-debts)
+  - [Core debt invariant](#core-debt-invariant)
+  - [Applying and minting pending aggregate interest](#applying-and-minting-pending-aggregate-interest)
+  - [Redemption evasion mitigation](#redemption-evasion-mitigation)
+  - [Upfront borrowing fees](#upfront-borrowing-fees)
+  - [Premature adjustment fees](#premature-adjustment-fees)
+- [Supplying Hints to Trove operations](#supplying-hints-to-trove-operations)
+- [BOLD Redemptions](#bold-redemptions)
+- [Redemption routing](#redemption-routing)
+  - [True unbacked portions and `MIN_BOLD_IN_SP`](#true-unbacked-portions-and-min_bold_in_sp)
+- [Redemptions at branch level](#redemptions-at-branch-level)
+  - [Redemption fees](#redemption-fees)
+  - [Rationale for fee schedule](#rationale-for-fee-schedule)
+  - [Fee Schedule](#fee-schedule)
+  - [Redemption fee during bootstrapping period](#redemption-fee-during-bootstrapping-period)
+  - [Redemption impact on borrowers](https://github.com/liquity/bold?tab=readme-ov-file#redemption-impact-on-borrowers)
+- [Redemption warning](https://github.com/liquity/bold?tab=readme-ov-file#redemption-warning)
+- [Zombie Troves](#zombie-troves)
+  - [Full Zombie Troves logic](#full-zombie-troves-logic)
+- [Stability Pool implementation](#stability-pool-implementation)
+  - [How deposits and ETH gains are calculated](#how-deposits-and-eth-gains-are-calculated)
+  - [Collateral gains from Liquidations and the Product-Sum algorithm](#collateral-gains-from-liquidations-and-the-product-sum-algorithm)
+  - [Scalable reward distribution for compounding, decreasing stake](#scalable-reward-distribution-for-compounding-decreasing-stake)
+  - [BOLD Yield Gains](#bold-yield-gains)
+- [Liquidation and the Stability Pool](#liquidation-and-the-stability-pool)
+- [Liquidation logic](#liquidation-logic)
+- [Liquidation penalties and borrowers' collateral surplus](#liquidation-penalties-and-borrowers-collateral-surplus)
+  - [Claiming collateral surpluses](#claiming-collateral-surpluses)
+- [Liquidation gas compensation](#liquidation-gas-compensation)
+- [Redistributions](#redistributions)
+  - [Redistributions and Corrected Stakes](#redistributions-and-corrected-stakes)
+  - [Corrected Stake Solution](#corrected-stake-solution)
+- [Critical collateral ratio (CCR) restrictions](#critical-collateral-ratio-ccr-restrictions)
+  - [Rationale](#rationale)
+- [Delegation](#delegation)
+  - [Add and Remove managers](#add-and-remove-managers)
+  - [Individual interest delegates](#individual-interest-delegates)
+  - [Batch interest managers](#batch-interest-managers)
+  - [Batch management implementation](#batch-management-implementation)
+  - [Internal representation as shared Trove](#internal-representation-as-shared-trove)
+  - [Batch management fee](#batch-management-fee)
+  - [Batch `recordedDebt` updates](#batch-recordeddebt-updates)
+  - [Batch premature adjustment fees](#batch-premature-adjustment-fees)
+  - [Batch shares and kicking Troves from a batch](#batch-shares-and-kicking-Troves-from-a-batch)
+  - [Batch invariants](#batch-invariants)
+- [Collateral branch shutdown](#collateral-branch-shutdown)
+  - [Interest rates and shutdown](#interest-rates-and-shutdown)
+  - [Shutdown logic](#shutdown-logic)
+  - [Closing the last Trove in the system](#closing-the-last-trove-in-the-system)
+  - [Urgent redemptions](#urgent-redemptions)
+    - [Urgent redemption best practice](#urgent-redemption-best-practice)
+- [Collateral choices in Liquity v2](#collateral-choices-in-liquity-v2)
+- [Oracles in Liquity v2](#oracles-in-liquity-v2)
+  - [Choice of oracles and price calculations](#choice-of-oracles-and-price-calculations)
+  - [Mitigating redemption arbitrages / oracle frontrunning](#mitigating-redemption-arbitrages--oracle-frontrunning)
+  - [Worst price approach analysis](#is-the-worst-price-approach-sufficient-to-mitigate-front-running)
+  - [PriceFeed Deployment](#pricefeed-deployment)
+  - [Fetching the price](#fetching-the-price)
+  - [Fallback price calculations if an oracle has failed](#fallback-price-calculations-if-an-oracle-has-failed)
+  - [Protection against upward market price manipulation](#protection-against-upward-market-price-manipulation)
+- [Known issues and mitigations](#known-issues-and-mitigations)
+  - [1 - Oracle price frontrunning](#1---oracle-price-frontrunning)
+  - [2 - Bypassing redemption routing logic via temporary SP deposits](#2---bypassing-redemption-routing-logic-via-temporary-sp-deposits)
+  - [3 - Path-dependent redemptions: lower fee when chunking](#3---path-dependent-redemptions-lower-fee-when-chunking)
+  - [4 - Oracle failure and urgent redemptions with the frozen last good price](#4---oracle-failure-and-urgent-redemptions-with-the-frozen-last-good-price)
+  - [5 - Stale oracle price before shutdown triggered](#5---stale-oracle-price-before-shutdown-triggered)
+  - [6 - Discrepancy between aggregate and sum of individual debts](#6---discrepancy-between-aggregate-and-sum-of-individual-debts)
+  - [7 - Rounding errors in the SP favor the system](#7---rounding-errors-in-the-sp-favor-the-system)
+  - [8 - LST oracle risks](#8---lst-oracle-risks)
+  - [9 - Branch shutdown and bad debt](#9---branch-shutdown-and-bad-debt)
+  - [10 - Inaccurate calculation of average branch interest rate](#10---inaccurate-calculation-of-average-branch-interest-rate)
+  - [11 - TroveManager can make troves liquidatable by changing the batch interest rate](#11---trovemanager-can-make-troves-liquidatable-by-changing-the-batch-interest-rate)
+  - [12 - Trove Adjustments may be griefed by sandwich raising the average interest rate](#12---trove-adjustments-may-be-griefed-by-sandwich-raising-the-average-interest-rate)
+  - [13 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards](#13---stability-pool-claiming-and-compounding-yield-can-be-used-to-gain-a-slightly-higher-rate-of-rewards)
+  - [14 - Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1](#14---urgent-redemptions-premium-can-worsen-the-icr-when-trove-coll-value--debt-value--1)
+  - [15 - Overflow threshold in SP calculations](#15---Overflow-threshold-in-sp-calculations)
+  - [16 - Just in time StabilityPool deposits](#16---just-in-time-stabilitypool-deposits)
+  - [17 - Batch vs sequential redistributions](#17---batch-vs-sequential-redistributions)
+  - [18 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price](#18---lastGoodPrice-used-in-urgent-redemptions-may-not-represent-a-previous-redemption-price)
+  - [19 - Users Can Game Upfront Fees by Chunking Debt](#19---users-can-game-upfront-fees-by-chunking-debt)
+  - [20 - Users can game upfront fees by joining an empty batch](#20---Users-can-game-upfront-fees-by-joining-an-empty-batch)
+  - [21 - Deployment backrunning](#21---deployment-backrunning)
+  - [22 - Repeated redistribution can eventually result in zero stake Troves](#22---repeated-redistribution-can-eventually-result-in-zero-stake-Troves)
+  - [23 - Redistributions and CR drag down cascades](23---redistributions-and-cr-drag-down-cascades)
+  - [24 - SP loss evasion](#24---sp-loss-evasion)
+  - [25 - Redistribution loss evasion](25---redistribution-loss-evasion)
+  - [26 - Debt in front considerations](#26---debt-in-front-should-not-include-troves-at-the-same-interest-rate)
+  - [Issues identified in audits requiring no fix](#issues-identified-in-audits-requiring-no-fix)
+- [Considerations for v2 forks](#considerations-for-v2-forks)
+  - [High level trust assumptions](#high-level-trust-assumptions)
+  - [Known issues in Liquity v2](#known-issues-in-liquity-v2)
+  - [Collateral choices](#collateral-choices)
+  - [Immutable vs upgradeable forks](#immutable-vs-upgradeable-forks)
+  - [Branch risk parameters](#branch-risk-parameters)
+  - [Redemption floor fee](#redemption-floor-fee)
+  - [Bootstrapping, seeding liquidity and early growth](#bootstrapping-seeding-liquidity-and-early-growth)
+  - [Oracle considerations](#oracle-considerations)
+  - [Redemption impact on borrowers](#redemption-impact-on-borrowers)
+  - [Closing the last Trove in the system](#closing-the-last-trove-in-the-system)
+  - [Redemptions should be left to bots](#redemptions-should-be-left-to-bots)
+  - [Security and audits](#security-and-audits)
+  - [Code diff with Liquity v2](#code-diff-with-liquity-v2)
 
 ## Significant changes in Liquity v2
 
@@ -135,7 +140,7 @@
 
 - **Redemption ordering.** In a given branch, redemptions hit Troves in order of their annual interest rate, from lowest to highest. Troves with higher annual interest rates are more shielded from redemptions - they have more “debt-in-front” of them than Troves with lower interest rates. A Trove’s collateral ratio is not taken into account at all for redemption ordering.
 
-- **Unredeemable Troves.** Redemptions now do not close Troves - they leave them open. Redemptions may now leave some Troves with a zero or very small BOLD debt < MIN_DEBT. These Troves are tagged as `unredeemable` in order to eliminate a redemption griefing attack vector. They become redeemable again when the borrower brings them back above the `MIN_DEBT`.
+- **Zombie Troves.** Redemptions now do not close Troves - they leave them open. Redemptions may now leave some Troves with a zero or very small BOLD debt < MIN_DEBT. These Troves are tagged as `Zombie` in order to eliminate a redemption griefing attack vector. Zombie Troves are unredeemable (save for a special case). They become normal Troves again when their recorded debt is brought back above the `MIN_DEBT`.
 
 - **Troves represented by NFTs.** Troves are freely transferable and a given Ethereum address may own multiple Troves (by holding the corresponding NFTs).
 
@@ -274,7 +279,7 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 ### CollateralRegistry
 
 
-- `redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage)`: redeems `_boldAmount` of BOLD tokens from the system in exchange for a mix of collaterals. Splits the BOLD redemption according to the [redemption routing logic](#redemption-routing), redeems from a number of Troves in each collateral branch, burns `_boldAmount` from the caller’s BOLD balance, and transfers each redeemed collateral amount to the redeemer. Executes successfully if the caller has sufficient BOLD to redeem. The number of Troves redeemed from per branch is capped by `_maxIterationsPerCollateral`. The borrower has to provide a `_maxFeePercentage` that he/she is willing to accept which mitigates fee slippage, i.e. when another redemption transaction is processed first and drives up the redemption fee.  Troves left with `debt < MIN_DEBT` are flagged as `unredeemable`.
+- `redeemCollateral(uint256 _boldAmount, uint256 _maxIterations, uint256 _maxFeePercentage)`: redeems `_boldAmount` of BOLD tokens from the system in exchange for a mix of collaterals. Splits the BOLD redemption according to the [redemption routing logic](#redemption-routing), redeems from a number of Troves in each collateral branch, burns `_boldAmount` from the caller’s BOLD balance, and transfers each redeemed collateral amount to the redeemer. Executes successfully if the caller has sufficient BOLD to redeem. The number of Troves redeemed from per branch is capped by `_maxIterationsPerCollateral`. The borrower has to provide a `_maxFeePercentage` that he/she is willing to accept which mitigates fee slippage, i.e. when another redemption transaction is processed first and drives up the redemption fee.  Troves left with `debt < MIN_DEBT` are flagged as `Zombie`.
 
 ### BorrowerOperations
 
@@ -339,7 +344,7 @@ The function takes the following param struct as input:
         uint256 _upperHint,
         uint256 _lowerHint,
         uint256 _maxUpfrontFee
-    )` - enables a borrower with a unredeemable Trove to adjust it. Any adjustment must result in the Trove’s `debt > MIN_DEBT` and `ICR > MCR`, along with the usual borrowing [CCR constraints](#critical-collateral-ratio-ccr-restrictions). The adjustment reinserts it to its previous batch, if it had one.
+    )` - enables a borrower with a Zombie Trove to adjust it. Any adjustment must result in the Trove’s `debt > MIN_DEBT` and `ICR > MCR`, along with the usual borrowing [CCR constraints](#critical-collateral-ratio-ccr-restrictions). The adjustment reinserts it to its previous batch, if it had one.
 
 - `claimCollateral()`: Claims the caller’s accumulated collateral surplus gains from their liquidated Troves which were left with a collateral surplus after collateral seizure at liquidation.  Sends the accumulated collateral surplus to the caller and zeros their recorded balance.
 
@@ -353,13 +358,13 @@ The function takes the following param struct as input:
         uint256 _maxUpfrontFee
     )`: Change’s the caller’s annual interest rate on their Trove. The update is considered “premature” if they’ve recently changed their interest rate (i.e. within `INTEREST_RATE_ADJ_COOLDOWN` seconds), and if so, they incur an upfront fee - see the [interest rate adjustment section](#interest-rate-adjustments-redemption-evasion-mitigation).  The fee is also based on the system average interest rate, so the user may provide a `_maxUpfrontFee` if they make a premature adjustment.
 
-- `applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies all pending debt to the Trove - i.e. adds its accrued interest and any redistribution debt gain, to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest and gains applied with sufficient regularity even if their owner doesn’t touch them. Also makes unredeemable Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).  If the Trove is in a batch, it applies all of the batch's accrued interest and accrued management fee to the batch's recorded debt, as well as the _individual_ Trove's redistribution debt gain.
+- `applyPendingDebt(uint256 _troveId, uint256 _lowerHint, uint256 _upperHint)`: Applies all pending debt to the Trove - i.e. adds its accrued interest and any redistribution debt gain, to its recorded debt and updates its `lastDebtUpdateTime` to now. The purpose is to make sure all Troves can have their interest and gains applied with sufficient regularity even if their owner doesn’t touch them. Also makes Zombie Troves that have reached `debt > MIN_DEBT` (e.g. from interest or redistribution gains) become redeemable again, by reinserting them to the SortedList and previous batch (if they were in one).  If the Trove is in a batch, it applies all of the batch's accrued interest and accrued management fee to the batch's recorded debt, as well as the _individual_ Trove's redistribution debt gain.
 
 -  `setAddManager(uint256 _troveId, address _manager)`: sets an “Add” manager for the caller’s chosen Trove, who has permission to add collateral and repay debt to their Trove.
 
--  `setRemoveManager(uint256 _troveId, address _manager)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove.
+-  `setRemoveManager(uint256 _troveId, address _manager)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove, and assumes “Add” manager permission.
 
-- `setRemoveManagerWithReceiver(uint256 _troveId, address _manager, address _receiver)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove to the provided `_receiver` address.
+- `setRemoveManagerWithReceiver(uint256 _troveId, address _manager, address _receiver)`: sets a “Remove” manager for the caller’s chosen Trove, who has permission to remove collateral from and draw new BOLD from their Trove to the provided `_receiver` address, and assumes “Add” manager permission.
 
 - `setInterestIndividualDelegate(
         uint256 _troveId,
@@ -410,12 +415,18 @@ The function takes the following param struct as input:
         uint256 _maxUpfrontFee
     )`: revokes the batch manager’s permission to manage the caller’s Trove. Sets a new owner-chosen annual interest rate, and removes it from the batch. Since this action very likely changes the Trove’s interest rate, it’s subject to a premature adjustment fee as per regular adjustments.
 
+- `kickFromBatch(
+        uint256 _troveId,
+        uint256 _upperHint,
+        uint256 _lowerHint
+    )`: removes a Trove from its batch, if the batch's debt:shares ratio has exceeded the limit of `1e9`. As a batch having such inflated shares isn't allowed to mint new shares any more, it could happen that an unredeemable (zombie) Trove receives a significant amount of redistributed debt, which can't be made redeemable, because that would involve minting new shares within its batch. In this case, the `kickFromBatch` function can be used to permissionlessly remove such a Trove from its batch.
+
 ### TroveManager
 
 - `batchLiquidateTroves(uint256[] calldata _troveArray)`: Accepts a custom list of Troves IDs as an argument. Steps through the provided list and attempts to liquidate every Trove, until it reaches the end or it runs out of gas. A Trove is liquidated only if it meets the conditions for liquidation, i.e. ICR < MCR. Troves with ICR >= MCR are skipped in the loop. Permissionless.
 
 
-- `urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral)`: Executes successfully only when the collateral branch has already been shut down.  Redeems only from the branch it is called on. Redeems from Troves with a slight collateral bonus - that is, 1 BOLD redeems for $1.01 worth of LST collateral.  Does not flag any redeemed-from Troves as `unredeemable`. Caller specifies the `_minCollateral` they want to receive.
+- `urgentRedemption(uint256 _boldAmount, uint256[] calldata _troveIds, uint256 _minCollateral)`: Executes successfully only when the collateral branch has already been shut down.  Redeems only from the branch it is called on. Redeems from Troves with a slight collateral bonus - that is, 1 BOLD redeems for $1.01 worth of LST collateral.  Does not flag any redeemed-from Troves as `Zombie`. Caller specifies the `_minCollateral` they want to receive.
 
 ### StabilityPool
 
@@ -510,8 +521,6 @@ It’s best to think of the `aggRecordedDebt` and aggregate interest calculation
 
 [This example](https://docs.google.com/spreadsheets/d/1Q_PtY4iyUsTNVQi-a90fS0B4ODEQpJE-GwpiIUDRoas/edit?usp=sharing) illustrates how it works.
 
-[TODO - DIAGRAM]
-
 ### Core debt invariant 
 
 For a given branch, the system maintains the following invariant:
@@ -568,20 +577,19 @@ The premature adjustment fee works as so:
 - When a borrower adjusts their interest rate via `adjustTroveInterestRate` the system checks that the cooldown period has passed since their last interest rate adjustment 
 - If the adjustment is sooner it incurs an upfront fee (equal to 7 days of average interest of the respective branch) which is added to their debt.
 
-#### Batches and premature adjustment fees
+#### Batches and upfront fees
 
 ##### Joining a batch
-When a trove joins a batch, it pays an upfront fee if the last trove adjustment was done more than the cool period ago. It does’t matter if the Trove and batch have the same interest rate, or when was the last adjustment by the batch.
+When a trove joins a batch, it always pays an upfront fee to ensure that borrowers can not game the fee logic and gain free interest rate updates (e.g. if they also manage the batch they joined).
 
-The last interest rate timestamp will be updated to the time of joining.
+The Trove's last interest rate timestamp is updated to the time of joining.
 
-Batch interest rate changes only take into account global batch timestamps, so when the new batch manager changes the interest rate less than the cooldown period after the borrower moved to the new batch, but more than the cooldown period after its last adjustment, the newly joined borrower wouldn't pay the upfront fee despite the fact that his last interest rate change happened less than the cooldown period ago.
+Batch interest rate changes only take into account the relevant batch's timestamp. So when the new batch manager changes the interest rate less than the cooldown period after the borrower moved to the new batch, but more than the cooldown period after the batch's last rate adjustment, the newly joined borrower wouldn't pay the upfront fee despite the fact that his last interest rate change happened less than the cooldown period ago.
 
-That’s why Troves pay upfront fee when joining even if the interest is the same. Otherwise a trove may game it by having a batch created in advance (with no recent changens), joining it and the changing the rate of the batch.
+That’s why Troves pay upfront fee when joining even if their prior interest rate was the same as the batch's rate when they joined. Otherwise a Trove may game it by having a batch created in advance (with no recent changes), joining it and the changing the rate of the batch.
 
 ##### Leaving a batch
-When a trove leaves a batch, the user's timestamp is again reset to the current time.
-No upfront fee is charged, unless the interest rate is changed in the same transaction and either the batch changed the interest rate, or the trove joined the batch, less than the cooldown period ago.
+When a Trove leaves a batch an upfront fee is only charged if they change their interest rate and the time passed since they joined the batch is less than the cooldown period. The Trove's `lastInterestRateAdjTime` timestamp is again reset to the current time.
 
 ##### Switching batches
 As the function to switch batches is just a wrapper that calls the functions for leaving and joining a batch, this means that switching batches always incurs in upfront fee now (unless user doesn’t use the wrapper and waits for 1 week between leaving and joining).
@@ -673,9 +681,11 @@ _Example: 2000 BOLD is redeemed across 4 branches_
 
 As can be seen in the above table and proven in generality (TBD), the outside debt is reduced by the same proportion in all branches, making redemptions path-independent.
 
+### True unbacked portions and `MIN_BOLD_IN_SP`
 
-[TODO - GRAPH BRANCH REDEMPTION]
+In practice, only `SP.getTotalBoldDeposits() - MIN_BOLD_IN_SP` is used for liquidation  - that is, there is always 1 BOLD in the SP of a given branch  - see the [min 1 BOLD in SP section](https://github.com/liquity/bold?tab=readme-ov-file#minimum-1-bold-token-in-the-sp). This 1 BOLD does not count towards the backing of a branch.
 
+Therefore the true unbacked portion of a given branch is slightly larger than the amount used in the calculation above - and in turn, the “true” ratio of the unbacked portions of all branches is slightly distorted. However, this distortion is only significant for very small system sizes, and considered a non-issue in practice.  
 
 ## Redemptions at branch level
 
@@ -685,10 +695,9 @@ In order to fulfill the redemption request on a given branch, Troves are redeeme
 
 A redemption sequence of n steps will fully redeem all debt from the first n-1 Troves, and, and potentially partially redeem from the final Trove in the sequence.
 
-
 Redemptions are skipped for Troves with ICR  < 100%. This is to ensure that redemptions improve the ICR of the Trove.
 
-Unredeemable troves are also skipped - see [unredeemable Troves section](#unredeemable-troves).
+Zombie troves (save for one special case) are also skipped - see [Zombie Troves section](#zombie-troves).
 
 ### Redemption fees
 
@@ -734,8 +743,30 @@ At deployment, the `baseRate` is set to `INITIAL_REDEMPTION_RATE`, which is some
 
 The intention is to discourage early redemptions in the early days when the total system debt is small, and give it time to grow.
 
+### Redemption impact on borrowers
 
-## Unredeemable Troves
+When a borrower’s Trove is redeemed from, both their collateral and debt reduces. Their BOLD funds held are not affected. Thus, they lose part of their exposure to the collateral token.
+
+For every 1 BOLD redeemed, $1 USD worth of collateral is redeemed from their Trove, sans redemption fees. The fees are split between the borrowers hit by the redemption.
+
+If BOLD were trading at $1, the redemption would result in no net loss for the borrower - in fact it would result in a net gain due to the redemption fees received.
+
+However in practice, BOLD is typically redeemed by arbitrageurs when it is trading at <$1, and the redemption typically helps restore the BOLD price toward $1 by reducing the BOLD supply.
+
+Thus, a redemption may technically cause slight short-term loss for the borrower, since the increase in the value of the borrower’s _debt_ from peg restoration may be greater than the redemption fee paid to their Trove.
+
+The full PnL picture for the borrower depends on the price of BOLD when they borrowed. If they borrow BOLD at $1 and it drops to $0.99 and a redemption restores it to $1, then both the redeemer and the borrower make a net gain overall: redemption fees for the borrower and arb profits for the redeemer. In this case, the loss is borne by the other parties who bought/borrowed at $1 and sold at $0.99.
+
+## Redemption warning
+
+As explained above, redemptions are an economic mechanism intended to keep BOLD peg floor. It is expected that professional bots perform them (usually through private mempools). A redemption is a complex operation and is not meant for regular end users. That’s why the protection against attacks like frontrunning, implemented in the smart contracts redemption function, is relatively simple. We expect that bots integrate those functions into their smart contracts that perform the whole arbitrage loop, and make sure the operation is profitable (and, of course, revert otherwise). If users want to redeem BOLD they should be aware of these dangers. Some examples of the attacks they may suffer:
+- An attacker frontrunning with another redemption, which makes user’s one unpfrofitable
+- An attacker frontrunning to mess the total supply (repaying to reduce it in order to increase the fee) or the unbacked portions of each branch (to change the proportions of collaterals, or even to make a branch fully backed and reduce the redeemable amount).
+- An attacker sandwiching the collateral / BOLD swap if the user tries to complete the arbitrage.
+
+It is also recommended to simulate the transaction. The final redeemed amount may be less than the requested amount, and redeemers could pay a higher than needed redemption rate. The election of proper `_maxIterationsPerCollateral` param is important and hard: it’s intended to avoid out of gas errors, but it may cap the redemption if set too low.
+
+## Zombie Troves
 
 In Liquity v2, redemptions do not close Troves (unlike v1).
 
@@ -743,36 +774,51 @@ In Liquity v2, redemptions do not close Troves (unlike v1).
 
 Hence redemptions in v2 always leave Troves open. This ensures that normal redemptions never lower the TCR* of a branch.
 
-**Need for unredeemable Troves**: Leaving Troves open at redemption means redemptions may result in Troves with very small (or zero) `debt < MIN_DEBT`.  This could create a griefing risk - by creating many Troves with tiny `debt < MIN_DEBT` at the minimum interest rate, an attacker could “clog up” the bottom of the sorted list of Troves, and future redemptions would hit many Troves without redeeming much BOLD, or even be unprofitable due to gas costs.
+**Need for zombie Troves**: Leaving Troves open at redemption means redemptions may result in Troves with very small (or zero) `debt < MIN_DEBT`.  This could create a griefing risk - by creating many Troves with tiny `debt < MIN_DEBT` at the minimum interest rate, an attacker could “clog up” the bottom of the sorted list of Troves, and future redemptions would hit many Troves without redeeming much BOLD, or even be unprofitable due to gas costs.
 
-Therefore, when a Trove is redeemed to below MIN_DEBT, it is tagged as unredeemable and removed from the sorted list.  
+Therefore, when a Trove is redeemed to below `MIN_DEBT`, it is tagged as a "Zombie" and removed from the sorted list.  
 
-When a borrower touches their unredeemable Trove, they must either bring it back to `debt > MIN_DEBT` (in which case the Trove becomes redeemable again), or close it. Adjustments that leave it with insufficient debt are not possible.
+When a borrower touches their Zombie Trove, they must either bring it back to `debt > MIN_DEBT` (in which case the Trove becomes redeemable again), or close it. Adjustments that leave it with insufficient debt are not possible.
 
-Pending debt gains from redistributions and accrued interest can bring the Trove's debt above `MIN_DEBT`, but these pending gains don't make the Trove redeemable again. Only the borrower can do that when they adjust it and leave their recorded `debt > MIN_DEBT`.
+Pending debt gains from redistributions and accrued interest can bring the Trove's debt above `MIN_DEBT`, but these pending gains don't make the Trove normal again. When the pending gains are applied - either via direct debt adjustment, or the permissionless `applyPendingDebt` - and the resulting recorded `debt > MIN_DEBT`, the Trove becomes normal.
 
-### Full unredeemable Troves logic
+### Full Zombie Troves logic
 
 When a Trove is redeemed down to `debt < MIN_DEBT`, we:
-- Change its status to `unredeemable`
+- Change its status to `Zombie`
 - Remove it from the SortedTroves list
 - _Don't_ remove it from the `TroveManager.Troves` array since this is only used for off-chain hints (also this saves gas for the borrower for future Trove touches)
 
 
-Unredeemable Troves:
+Zombie Troves:
 
-
-- Can not be redeemed
+- Can not be redeemed (save for one special case - see below)
 - Can be liquidated
 - Do receive redistribution gains
 - Do accrue interest
-- Can have their accrued interest permissionlessly applied
+- Can have their accrued interest permissionlessly applied (which, if brings `debt >= MIN_DEBT`, re-adds them to the Sorted list and changes their status to `Active`)
 - Can not have their interest rate changed by their owner/manager
-- Can not be adjusted such that they're left with debt <`MIN_DEBT` by owner/manager
+- Can not be adjusted such that they're left with `debt < MIN_DEBT` by owner/manager
 - Can be closed by their owner
-- Can be brought above `MIN_DEBT` by owner (which re-adds them to the Sorted Troves list, and changes their status back to 'Active')
+- Can have their debt adjusted to above `MIN_DEBT` by owner (which re-adds them to the Sorted Troves list, and changes their status to `Active`)
 
 _(*as long as TCR > 100%. If TCR < 100%, then normal redemptions would lower the TCR, but the shutdown threshold is set above 100%, and therefore the branch would be shut down first. See the [shutdown section](#shutdown-logic) )_
+
+### Special case: redemptions and `lastZombieTroveId`
+
+When the first Zombie Trove with non-zero debt is created by a redemption, it is tagged as the `lastZombieTroveId`. 
+
+This  `lastZombieTroveId` Zombie Trove is always first in line for future redemptions. This remains the case until one of the following events:
+
+- Its recorded debt is brought above MIN_DEBT - either by a debt adjustment, or an `applyPendingDebt` call
+- It is fully redeemed down to 0 debt - at which point, it becomes a regular zombie Trove
+- It is closed
+
+### Rationale for `lastZombieTroveId`
+
+The intent is to ensure that an attacker can not deliberately create many unredeemable zombie Troves with non-zero debt via strategic redemptions. At most, they can create one (which will be first in line for future redemptions).
+
+It's still theoretically possible for multiple Zombie troves with non-zero debt to exist due to redistributions. However, redistributions are harder to deliberately engineer - they rely on price drops, an empty Stability Pool and liquidations. The total unredeemable debt in an active branch is bounded by the total redistributed debt that Zombie Troves have received.
 
 
 ## Stability Pool implementation
@@ -808,8 +854,7 @@ A mathematical manipulation allows us to factor out the initial deposit, and acc
 The approach is similar in spirit to the Scalable Reward Distribution on the Ethereum Network by Bogdan Batog et al (i.e. the standard UniPool algorithm), however, the arithmetic is more involved as it handles a compounding, decreasing stake along with a corresponding collateral gain.
 
 The formula for a depositor’s accumulated collateral gain is derived here:
-
-[LINK PAPER]
+https://github.com/liquity/dev/blob/main/papers/Scalable_Reward_Distribution_with_Compounding_Stakes.pdf
 
 ### Scalable reward distribution for compounding, decreasing stake
 
@@ -849,12 +894,22 @@ Stability Pool depositors can expect to earn net gains from liquidations, as in 
 If the liquidated debt is higher than the amount of BOLD in the Stability Pool, the system applies both steps 1) and then 2): that is, it cancels as much debt as possible with the BOLD in the Stability Pool, and then redistributes the remaining liquidated collateral and debt across all active Troves in the branch.
 
 
+## Minimum 1 BOLD token in the SP
+
+Once the SP has reached at least 1 BOLD in size, the system enforces that at least 1 BOLD remain in it - e.g. that `totalBoldDeposits >=1e18`.  Specifically:
+
+- SP withdrawals check that the resulting `totalBoldDeposits >= 1e18`. This means that if a depositor's withdrawal would result in `totalBoldDeposits < 1e18`, then it will revert. The depositor can just withdraw slightly less, in order to leave 1e18 `totalBoldDeposits` in the SP. At worst, they forego 1 BOLD. This situation should be rare, and can be remedied by anyone else depositing 1 BOLD to the SP, allowing them to withdraw.
+
+- When `totalBoldDeposits >= 1e18` BOLD, offsets leave `1e18` BOLD in the SP. In `batchLiquidateTroves` we track `boldInSPForOffsets`, and it is `1e18` less than the total SP. So all liquidation logic remains the same, and only the offset boundary has shifted.
+
+- In the special case of `totalBoldDeposits < 1e18` (e.g. before at least 1 BOLD has been deposited), liquidations do a pure redistribution and do not perform an offset against the SP. This means that if somehow a liquidation occurs when `totalBoldDeposits < 1e18`, then it will still succeed and will not deplete the SP.
+
 ## Liquidation logic
 
 | Condition                         | Description                                                                                                                                                                                                                                                                                                                  |
 |-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| ICR < MCR & SP.BOLD >= Trove.debt | BOLD in the StabilityPool equal to the Trove's debt is offset with the Trove's debt. The Trove's seized collateral is shared between depositors.                                                                                                                                                                                    |
-| ICR < MCR & SP.BOLD < Trove.debt  | The total StabilityPool BOLD is offset with an equal amount of debt from the Trove. A portion of the Trove's collateral corresponding to the offset debt is shared between depositors. The remaining debt and seized collateral (minus collateral gas compensation) is redistributed to active Troves.  |
+| ICR < MCR & SP.BOLD - 1 >= Trove.debt | BOLD in the StabilityPool equal to the Trove's debt is offset with the Trove's debt. The Trove's seized collateral is shared between depositors.                                                                                                                                                                                    |
+| ICR < MCR & SP.BOLD - 1 < Trove.debt  | The offsettable BOLD in the SP is offset with an equal amount of debt from the Trove. A portion of the Trove's collateral corresponding to the offset debt is shared between depositors. The remaining debt and seized collateral (minus collateral gas compensation) is redistributed to active Troves.  |
 | ICR < MCR & SP.BOLD = 0           | Redistribute all debt and seized collateral (minus collateral gas compensation) to active Troves.                                                                                                                                                                                                                                    |
 | ICR >= MCR                        | Liquidation not possible.                                                                                                                                                                                                                                                                                                     |
 
@@ -899,9 +954,22 @@ The collateral portion of the gas compensation is calculated at liquidation. It 
 
 That is, the max collateral that can be paid is 2 stETH on the stETH branch, 2 rETH on the rETH branch, etc.
 
+These two components are termed the **WETH gas compensation** and the **collateral gas compensation**, respectively.
+
 Thus the total funds the liquidator receives upon a Trove liquidation is:
 
 `0.0375 WETH + min(0.5% trove_collateral, 2_units_of_LST)`. 
+
+
+The collateral gas compensation is paid out only for liquidations that offset debt against funds in the SP.  A pure redistribution liquidation sends no collateral gas compensation to the liquidator. 
+
+In the case of a mixed offset and redistribution liquidation, the liquidator receives collateral gas compensation only in proportion to the fraction of the Trove’s debt that was offset against the Stability Pool. e.g. if 25% of the Trove’s debt was offset against the SP and the remaining 75% redistributed, then the collateral gas compensation would be given by:
+
+`min(0.5% trove_collateral / 4, 2_units_of_LST)`
+
+
+The WETH gas compensation is always paid out regardless of the liquidation type.
+
 
 ## Redistributions
 
@@ -913,8 +981,11 @@ When a borrower touches their Trove, redistribution gains are applied - i.e. add
 
 This is the standard Batog / UniPool reward distribution scheme common across DeFi.
 
-A Trove’s redistribution gains can also be applied permissionlessly (along with accrued interest) using the function `applyTroveInterestPermissionless`. Similarly, batch redistribution gains can be applied with `applyBatchInterestAndFeePermissionless`.
+A Trove’s redistribution gains can also be applied permissionlessly (along with accrued interest) using the function `applyPendingDebt`. 
 
+Pending redistribution debt gains do not bear interest - that is, if a Trove has pending redistribution debt gain then only a part of its total debt earns interest, and the pending redistribution debt gain is not included in the interest accrual calculation. 
+
+All else equal, this means that a Trove with a pending redistribution debt gain gets a lower effective interest rate than a Trove without. However, anyone may apply a Trove's pending gains (see above) and force subsequent interest to be generated based on the entire debt.
 
 ### Redistributions and Corrected Stakes
 
@@ -955,13 +1026,12 @@ When the TCR of a branch falls below its Critical Collateral Ratio (CCR), the sy
 
 Here is the full CCR-based logic:
 
-<img width="703" alt="image" src="https://github.com/user-attachments/assets/63c1d142-ed93-47c6-a996-fe228c34476d">
-
-
+<img width="668" alt="image" src="https://github.com/user-attachments/assets/03dcfd5c-9ffc-40fd-be60-392af5cb8baa" />
 
 As a result, when `TCR < CCR`, the following restrictions apply:
 
-<img width="696" alt="image" src="https://github.com/user-attachments/assets/066d4bbe-58e5-4fca-8941-67341bf30e85">
+<img width="671" alt="image" src="https://github.com/user-attachments/assets/dd01d27e-27ed-4e71-b97e-6527f722a111" />
+
 
 
 ### Rationale
@@ -971,7 +1041,6 @@ The CCR logic has the following purposes:
 
 - Ensure that when `TCR >= CCR` borrower operations can not reduce system health too much by bringing the `TCR < CCR`
 - Ensure that when `TCR < CCR`, borrower operations only improve system health
-- Ensure that when `TCR < CCR`, borrower operations can not grow the debt of the system
 
 ##  Delegation 
 
@@ -989,17 +1058,18 @@ Add managers and Remove managers may be set by the Trove owner when the Trove is
 
 - An Add Manager may add collateral or repay debt to a Trove
 - When set to `address(0)`, any address is allowed to perform these operations on the Trove
-- Otherwise, only the designated `AddManager` in this mapping Trove is allowed to add collateral / repay debt
+- Otherwise, only the designated `AddManager` in this mapping Trove is allowed to add collateral / repay debt (plus the owner and the Remove Manager)
 - A Trove owner may set the AddManager equal to their own address in order to disallow anyone from adding collateral / repaying debt.
 
 #### Remove Managers
 
 Remove Managers may withdraw collateral or draw new BOLD debt.
 
-- Only the designated Remove manager, if any, and the Trove owner, are allowed 
+- Only the designated Remove manager, if any, and the Trove owner, are allowed.
 - A receiver address may be chosen which can be different from the Remove Manager and Trove owner. The receiver receives the collateral and BOLD drawn by the Remove Manager.
 - By default, a Trove has no Remove Manager - it must be explicitly set by the Trove owner upon opening or at a later point.
- - The receiver address can never be zero.
+- The receiver address can never be zero.
+- The Remove Manager is also an Add Manager.
 
 ### Individual interest delegates
 
@@ -1035,7 +1105,7 @@ The system tracks a batch’s `recordedDebt` and `annualInterestRate`. Accrued i
 
 ### Batch management fee
 
-The management fee is an annual percentage, and is calculated in the same way as annual interest.  It is initially chosen by the batch manager when they register, and can not be changed for that batch thereafter.
+The management fee is an annual percentage, and is calculated in the same way as annual interest.  It is initially chosen by the batch manager when they register. Thereafter, it can not be raised - the manager can only lower the fee via `lowerBatchManagementfee`.
 
 ### Batch `recordedDebt` updates
 
@@ -1053,6 +1123,25 @@ Batch managers incur premature fees in the same manner as individual Troves - i.
 When a borrower adds their Trove to a batch, there is a trust assumption: they expect the batch manager to manage interest rates well and not incur excessive adjustment fees.  However, the manager can commit in advance to a maximum update frequency when they register by passing a `_minInterestRateChangePeriod`.
 
 Generally is expected that competent batch managers will build good reputations and attract borrowers. Malicious or poor managers will likely end up with empty batches in the long-term.
+
+### Batch shares and kicking Troves from a batch
+
+The function `kickFromBatch` enables anyone to permissionlessly kick a Trove out of a batch if its debt:shares ratio has exceeded the maximum `MAX_BATCH_SHARES_RATIO`, i,e. 1e9.
+
+A batch with such a high ratio isn't allowed to mint new shares. It’s thus possible that an unredeemable (zombie) Trove receives a significant amount of redistributed debt which can’t in turn be applied via `applyPendingDebt`, since that would involve minting new shares within its batch. Such a Trove would be protected against redemptions, even if its debt becomes greater than the `MIN_DEBT` through redistribution gains or interest accrual.
+
+In this case, the `kickFromBatch` function can be used to permissionlessly remove the Trove, so that its pending debt redistribution debt gain (and interest) can be applied, and - if its resulting `debt > MIN_DEBT` - it can be redeemed against.
+
+### Buffer Collateral Ratio (BCR)
+
+Troves in a batch are subject to additional collateral ratio constraints involving the branch level `BCR` constant. This constant acts as a buffer on top of the MCR.  Specifically:
+
+- A Trove opened into or added to a batch must satisfy `CR >= MCR + BCR` when it joins the batch
+- A debt or collateral adjustment on a Trove inside a batch must result in `CR >= MCR + BCR`
+
+The purpose of the `BCR` is to ensure that a batch Trove cannot be added to or adjusted in a batch and then immediately liquidated after a premature adjustment fee brings its `CR < MCR`.  The `BCR` buffer ensures that a significant price drop must occur in between opening/adjusting the batch Trove and the premature adjustment fee.
+
+Note: self-liquidations are still possible, though they now rely entirely on price drops.
 
 ### Batch invariants
 
@@ -1108,6 +1197,12 @@ The following operations are still allowed after shut down:
 - Depositing to and withdrawing from the SP
 - Urgent redemptions (see below)
 
+### Closing the last Trove in the system
+
+Ordinarily, on active branches, the last Trove in the system can not be closed. This is to ensure there is always a final recipient active Trove available to receive redistributions. The owner of the last Trove is free to repay debt down to the minimum level, and the Trove can still be redeemed down to 0 debt (and thus become a zombie Trove), as usual.
+
+On shutdown branches, the last Trove _can_ be closed by its owner - since the priority on a shutdown branch is to clear all debt and remove collateral ASAP.
+
  ### Urgent redemptions 
 
 During shutdown the redemption logic is modified to incentivize swift reduction of the branch’s debt, and even do so when BOLD is trading at peg ($1 USD). Redemptions in shutdown are known as “urgent” redemptions.
@@ -1116,9 +1211,25 @@ Urgent redemptions:
 
 - Are performed directly via the shut down branch’s `TroveManager`, and they only affect that branch. They are not routed across branches.
 - Charge no redemption fee
-- Pay a slight collateral bonus of 1% to the redeemer. That is, in exchange for every 1 BOLD redeemed, the redeemer receives $1.01 worth of the LST collateral.
+- Pay a slight collateral bonus of 2% to the redeemer. That is, in exchange for every 1 BOLD redeemed, the redeemer receives $1.02 worth of the LST collateral.
 - Do not redeem Troves in order of interest rate. Instead, the redeemer passes a list of Troves to redeem from.
-- Do not create unredeemable Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
+- Do not create Zombie Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
+
+#### Urgent redemption best practice
+
+The `urgentRedeemCollateral` params are as such:
+
+- `_boldAmount` specifying the intended amount to redeem
+- `_troveIds` specifying the target Troves to redeem from 
+- `_minCollateral` allows the user specify the minimum collateral returned from the operation
+
+It’s expected that `_minCollateral` be calculated off-chain by the redeemer.
+
+Consider two redeemers Alice and Bob. Since there will be competition for urgent redemptions when they are profitable, if Alice’s redemption lands first, it may redeem from Bob’s target Troves in `_troveIds` before his redemption lands. The redemption logic skips Troves in the list that are unredeemable, and thus the actual BOLD amount redeemed by Bob could be significantly lower than `_boldAmount`. This in turn may result in the returned collateral being significantly lower than `_minCollateral`.
+
+Redemption bot creators should understand the competitive nature of redemptions, and take this dynamic into account when programming them. Mitigating frontrunning via transactions sent to private pools e.g. Flashbots may be preferable.
+
+
 
 ## Collateral choices in Liquity v2
 
@@ -1179,8 +1290,45 @@ The trade-off of this solution that redemptions may sometimes be unprofitable du
 
 However, this "worst price" solution only applies if the delta between market price and canonical price is within the oracle deviation threshold (1% for WSTETH, 2% for RETH). If the difference is greater, then the normal primary pricing calculation is used - a large delta is assumed to reflect a legitimate difference between market price and canonical rate.
 
-### TODO - [INHERITANCE DIAGRAM]
+### Is the “worst price” approach sufficient to mitigate front-running?
 
+An assumption of the v2 system is that adverse redemption arbs from oracle frontrunning are overall not worse than in Liquity v1, which uses only the ETH-USD Chainlink oracle. This is justified as follows:
+
+### WETH branch
+
+The WETH branch uses only the ETH-USD oracle, thus the adverse arb risks are the same as v1.
+
+### RETH branch
+
+RETH redemption price logic compares the RETH-ETH market oracle with the RETH-ETH LST exchange rate. When the delta between these is <2%, the system takes the max of the two for its RETH-ETH value, and otherwise, takes the min. The RETH-ETH value is multiplied by the ETH-USD market oracle price to derive a RETH-USD price.
+
+Here is RETH-ETH data for 07-2024 to 05-2025, for the latest Chainlink aggregator:
+https://docs.google.com/spreadsheets/d/1LxaKZwipSWmre2YxS_0AHT0cDd97yVae_DuJwKbejkQ/edit?usp=sharing
+
+Empirically, the relative market oracle deltas - i.e. the percentage difference between update `i` and update `i + 1` - are small. The largest was 0.46% in the dataset. Assuming no depeg (i.e.that the true RETH-ETH price equals the LST exchange rate), this implies the deltas between market oracle and exchange rate were always well under 2%. Thus usage of the min price for redemptions should be very rare, if it ever happens. In nearly all cases, it will use the “worst” price.
+
+
+Thus, the RETH branch just inherits the adverse arb risks of the ETH-USD oracle.
+
+### STETH branch
+
+The STETH redemption price logic compares two market oracles - STETH-USD and ETH-USD. 
+
+When the delta between oracle prices is >1%,the system uses the STETH-USD price rather than the max (“worst”) price.
+
+However it is ultimately the **redemption fee** that protects the system against market price movements:
+
+As in Liquity v1, any market price rise in range `[0.5%,1%]` can result in adverse profitable redemptions, since even though the ETH-USD oracle should update and the v2 system would use that (max) price, it can still be frontrun, and the fee is only 0.5%. The attacker can extract a profit (ignoring gas) of `market_price - stale_oracle_price - fee`.
+
+For market price rises above 1%, the STETH-USD oracle is used. The oracle should update, but if its frontrun (or if it’s just laggy and doesn’t update) the impact is actually the same as in v1: the system doesn’t use a max “worst” price, but it also didn’t in v1 either. The attacker extracts a profit of `market_price - stale_oracle_price - fee`, which for a given market price change >1%, would be the same quantity as if they frontran a stale ETH-USD oracle update.
+
+As long as both oracles are responsive (and assuming no LST depegs), the v2 system inherits the same adverse redemption arb risks as Liquity v1. 
+
+If for some reason the STETH-USD oracle doesn’t update quickly enough when the market price movement _should_ trigger it to update, then a  larger `market_price - stale_oracle_price` delta could result, in turn leading to larger adverse redemption volumes.
+
+However that would be purely an oracle issue. Chainlink has been chosen as the oracle provider in part due to their highly responsive oracles, and it’s assumed that STETH-USD oracle updates as responsively as ETH-USD, since they utilise the same underlying oracle network and infrastructure.
+
+Finally, Liquity v2 has extra protection from two measures that each reduce overall adverse arb profits: 1) a greater redemption fee gain (lower `BETA` parameter) and 2) redemption routing, which reduces adverse profits either by routing itself, or the flash loan fee required to manipulate StabilityPool quantities and bypass routing.
 
 ### PriceFeed Deployment 
 
@@ -1399,15 +1547,7 @@ Provisionally, the preset staleness thresholds in Liquity v2 as follows, though 
 | Chainlink rETH-ETH                                      | 24 hours         | 48 hours                                     |
 
 
-### 6 - Batch management ops don’t check for a shutdown branch
-
-Currently, batch management operations such as `setBatchManagerAnnualInterestRate` and `applyBatchInterestAndFeePermissionless` don’t check for branch shutdown. These operations should not be possible on a shutdown branch.
-
-#### Solution
-This fix is TODO.
-
-
-### 7 - Discrepancy between aggregate and sum of individual debts
+### 6 - Discrepancy between aggregate and sum of individual debts
 
 As mentioned in the interest rate [implementation section](#core-debt-invariant), the core debt invariant is given by:
 
@@ -1430,23 +1570,16 @@ However, this invariant doesn't hold perfectly - the aggregate is sometimes slig
 
 Though rounding error is inevitable, we have ensured that the error always “favors the system” - that is, the aggregate is always greater than the sum over Troves, and every Trove can be closed (until there is only 1 left in the system, as intended).
 
-### 8 - Discrepancy between `yieldGainsOwed` and sum of individual yield gains in StabilityPool
+### 7 - Rounding errors in the SP favor the system
 
-StabilityPool increases `yieldGainsOwed` by the amount of BOLD yield it receives from interest minting, and decreases it by the claimed amount any time a depositor makes a claim. As such, `yieldGainsOwed` should always equal the sum of unclaimed yield present in deposits:
+The StabilityPool calculates deposits and collateral and yield gains dynamically based on a depositor's snapshot of a global index `P` and reward sums `G` and `B`.  The Stability Pool arithmetic creates small rounding errors in the deposit and gains, which favor the pool over the users. That is, for a given StabilityPool the following invariants hold:
 
-`StabilityPool.getYieldGainsOwed() = SUM(StabilityPool.getDepositorYieldGain())`
+- `SUM(deposit_i)_over_all_depositors_i < totalBoldDeposits`
+- `SUM(coll_gain_i)_over_all_depositors_i < collBalance`
+- `SUM(yield_gain_i)_over_all_depositors_i < yieldGainsOwed + yieldGainsPending`
 
-Currently, the discrepancy between these 2 can be rather large, especially if yield is received immediately after a liquidation that results in very little remaining deposited BOLD in StabilityPool. What's worse, the discrepancy can sometimes be negative, meaning if every depositor were to try and claim their gains, at some point we would try to reduce `yieldGainsOwed` below zero, resulting in arithmetic underflow.
 
-#### Solution
-
-Some imprecision in the StabilityPool arithmetic is inevitable, but we should avoid arithmetic underflow in `yieldGainsOwed` by ensuring the error stays positive. The root cause of the underflow is not yet clear, however it seems to be connected to our error feedback mechanism.
-
-[PR 261](https://github.com/liquity/bold/pull/261) contains a proof-of-concept patch that eliminates error correction while also simplifying the code in an effort make it easier to reason about. This fixes all currently known instances of arithmetic underflow.
-
-**TODO**: we should analyze the issue more and understand the root cause better.
-
-### 9 - LST oracle risks 
+### 8 - LST oracle risks 
 
 Liquity v1 primarily used the Chainlink ETH-USD oracle to price collateral. ETH clearly has very deep liquidity and diverse price sources, which makes this oracle robust.
 
@@ -1481,7 +1614,7 @@ Taking the minimum of both market and canonical prices means that to make Liquit
 
 The best solution on paper seems to be 3) i.e. taking the minimum with an additional growth rate cap on the exchange rate, following [Aave’s approach](https://github.com/bgd-labs/aave-capo). However, deriving parameters for growth rate caps for each LST is tricky, and may not be suitable for an immutable system. 
 
-### 10 - Branch shutdown and bad debt
+### 9 - Branch shutdown and bad debt
 
 In the case of a collateral price collapse or oracle failure, a branch will shut down and urgent redemptions will be enabled. The collapsed branch may be left with 0 collateral (or collateral with 0 value), and some remaining bad debt.
 
@@ -1521,7 +1654,7 @@ And some additional solutions that may help reduce the chance of bad debt occurr
 
 Ultimately, no measures have been implemented in the protocol directly, so the protocol may end up with some bad debt in the case of a branch shut down.  Here there is a theoretical possibility that the BOLD supply may be reduced by either users accidentally burning BOLD, or that borrower's interest could be directed by governance to burn BOLD, which would restore its backing over time.
 
-### 11 - Inaccurate calculation of average branch interest rate
+### 10 - Inaccurate calculation of average branch interest rate
 
 `getNewApproxAvgInterestRateFromTroveChange` does not actually calculate the correct average interest rate for a collateral branch. Ideally, we would like to calculate the debt-weighted average interest of all Troves within the branch, upon which our calculation of the upfront fee is based. The desired formula would be:
 
@@ -1581,36 +1714,32 @@ sum(debt_i)
 
 While this wouldn't result in the most accurate estimation of the average interest rate either — considering we'd be using outdated debt values sampled at different times for each Trove as weights — at least we would have consistent weights in the numerator and denominator of our weighted average. To implement this though, we'd have to keep track of this modified sum (i.e. the sum of recorded Trove debts) in `ActivePool`, which we currently don't do.
 
-### 12 - TroveManager can make troves liquidatable by changing the batch interest rate
-Users that add their Trove to a Batch are allowing the BatchManager to charge a lot of fees by simply adjusting the interest rate as soon as they can via `setBatchManagerAnnualInterestRate`.
+### 11 - TroveManager can make troves liquidatable by changing the batch interest rate
+Users that add their Trove to a Batch are allowing the BatchManager to charge premature adjustment fees by simply adjusting the interest rate as soon as they can via `setBatchManagerAnnualInterestRate`.
 
-This change cannot result in triggering the critical threshold, however it can make any trove in the batch liquidatable
+This change cannot result in triggering the global critical threshold, however it can theoretically make a Trove in the batch liquidateable. 
 
-Thus BatchManagers should be considered benign trusted actors
+The BCR buffer enforces that Troves must join a batch at `CR >= MCR + BCR`, which creates a collateral buffer before they can be liquidated - therefore, Troves cannot immediately join a batch and be liquidated due to the upfront fee.  However, the collateral price may drop after they join, reducing their CR closer to the MCR, such than a premature adjustment fee could pull their `CR < MCR` and make them liquidateable.
 
-### 13 - Trove Adjustments may be griefed by sandwich raising the average interest rate
+Thus BatchManagers should be considered trusted actors by Trove owners.
+
+### 12 - Trove Adjustments may be griefed by sandwich raising the average interest rate
 
 Borrowing requires accepting an upfront fee. This is effectively a percentage of the debt change (not necessarily of TCR due to price changes). Due to this, it is possible for other ordinary operations to grief a Trove adjustments by changing the `avgInterestRate`.
 
 To mitigate this, users should use tight but not exact checks for the `_maxUpfrontFee`.
 
-### 14 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards
-The StabilityPool doesn't automatically compound Bold yield gains to depositors
+### 13 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards
+The StabilityPool doesn't automatically compound Bold yield gains to depositors. All deposits are added to `totalBoldDeposits` - but claimable yields are not part of `totalBoldDeposits`.
 
-All deposits are added to `totalBoldDeposits`.
+When a depositor claims their BOLD yield they may choose to add it directly to their deposit - which does increase `totalBoldDeposits`.
 
-Claimable yields are not part of `totalBoldDeposits`.
+Thus, if we compare a deposit that never claims gainst one that frequently "compounds" their yield gains by adding it to their deposit, the depositor compounding their claims will technically receive some of the rewards that could have been received by the passive depositor, due to the pro-rata reward scheme.
 
-Claiming bold allows to receive the corresponding yield and it does increase `totalBoldDeposits`.
+This simply means that frequently claiming and adding BOLD yield gains to one's deposit is the preferred strategy.
 
-If we compare a deposit that never claims, against one that compound their claims.
-
-The depositor compounding their claims will technically receive the rewards that could have been received by the passive depositor.
-
-Meaning that claiming frequently is the preferred strategy.
-
-### 15. Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1
-If ICR is less than 101% , urgent redemptions with 1% premium reduce the ICR of a Trove.
+### 14 - Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1
+If ICR is less than 102% , urgent redemptions with 2% premium reduce the ICR of a Trove.
 
 This may be used to lock in a bit more bad debt.
 
@@ -1618,32 +1747,55 @@ Liquidations already carry a collateral premium to the caller and to the liquida
 
 Redemptions at this CR may allow for a bit more bad debt to be redistributed which could cause a liquidation cascade, however the difference doesn't seem particularly meaningful when compared to how high the Liquidation Premium tends to be for liquidations.
 
-### 16 - Oracle code nitpicks
+### 15 - Overflow threshold in SP calculations
 
-Two informational issues are present in the oracle code which have no impact on core system operation or logic.
+The StabilityPool now uses a 36 digit decimal precision for the global index `P`.
 
-- The `WETHPriceFeed` contains one unused internal function - `_fetchPricePrimary(bool _isRedemption)`. Unlike the LST feeds, this PriceFeed in fact does not need to know whether the operation is a redemption, since it uses the ETH-USD market price for all operations via the internal function `_fetchPricePrimary()`.  
+As such, the calculation in `getCompoundedDeposit` overflows for a a deposit of 1e24 BOLD, since `initialDeposit * P` in `getCompoundedBoldDeposit` is of magnitude `1e24 * 1e18 * 1e36 = 1e78`, i.e. larger than the max uint256:
 
--The `RETHPriceFeed` contains a misnamed variable on L39 and L60. `rEthPerEth` should rather be named `ethPerReth`. However, its _value_ is assigned correctly from the external call to `getExchangeRate` (which returns an ETH per RETH value). It is also _used_ correctly, as per the arithmetic in comment on L59. It is only named incorrectly.
+https://github.com/liquity/bold/blob/b2ff26c5f09e72eaa5ad7eb24210aded4e80f00e/contracts/src/StabilityPool.sol#L530
 
-### 17 - Path dependence of redistributions - sequential vs batch liquidations
+The same bound can be found for the sums `G` and `B`, e.g. where `B` is updated in: https://github.com/liquity/bold/blob/b2ff26c5f09e72eaa5ad7eb24210aded4e80f00e/contracts/src/StabilityPool.sol#L372
 
-Liquidations via redistribution in `batchLiquidateTroves` do not distribute liquidated collateral and debt to the other Troves liquidated inside the liquidation loop. They only distribute collateral and debt to the active Troves which remain in the system after all liquidations in the loop have been resolved.
+An upper bound of ~1e23 BOLD before overflow is deemed acceptable - the USD value of total global wealth is many orders of magnitudes lower. However, forks should consider overflow calculations if they further increase precision or expect a much higher supply of their minted asset.
 
-#### Consequences
+### 16 - Just in time StabilityPool deposits
 
-All else equal, this leads to a slightly different end state when comparing the redistribution of a given set of Troves by a single batch liquidation to separate redistributions of those same Troves.
+It is possible for a depositor to front-run a liquidation transaction with a large SP deposit and reap most of the liquidation gains.
+
+For example:
+
+- User sees incoming profitable liquidation transaction
+- User front-runs it and immediately makes a large deposit with `provideToSP`
+- User extracts most of the collateral gain from the liquidation
+
+A frontrunner could deposit funds to the Stability Pool in this just-in-time (JIT) manner (instead of keeping their funds in the pool long-term), earn liquidation gains, then immediately withdraw their gain and remaining deposit.
+
+This is a known feature of the SP and is in fact considered to be positive. Such JIT deposits are beneficial (in terms of TCR) to system health and help prevent redistributions.
+
+Though long-term depositors may miss out on some liquidation gains in the case of large JIT deposits, their incentive to remain in the SP long-term comes from the BOLD yield generated by interest paid on Troves.
+
+#### Reclaiming borrow fees via JIT deposits
+
+When new debt is drawn on a Trove, an upfront fee is charged.  Part of this fee is sent as yield rewards to the SP. A borrower may reclaim some of their borrow fees by sequentially drawing their debt in chunks, and depositing their issued BOLD into the SP. As such, they'll then earn back a portion of their borrow fee paid on the next chunk of debt. They can repeat this process until they reach their target debt.
+
+Of course, the reclaimed fee portion depends on the size of their target debt, how finely they chunk their debt, and the prior size of the SP. Existing depositors will still earn a portion of their upfront fees which are split to depositors pro-rata.
+
+### 17 - Batch vs sequential redistributions 
+
+Liquidations via redistribution in `batchLiquidateTroves` do not distribute liquidated collateral and debt to the other Troves liquidated inside the liquidation loop. They only distribute collateral and debt to the active Troves which remain in the system _after_ all liquidations in the loop have been resolved.
+
+Despite this procedural difference, 1) the redistribution of a given set of Troves by a single batch liquidation and 2) the separate redistributions of those same Troves would both result in the same end state.
 
 Consider a system of Troves A,B,C,D,E.  A,B,C have `ICR < MCR` and are thus liquidateable.  D and E have `ICR > MCR` and are healthy.
 
-
 #### Scenario 1 - batch redistribution
 
-If A,B and C are redistributed in one `batchLiquidateTroves` call, the collateral and debt of A,B, and C is given purely to D and E (sans the collateral gas compensation of each).
+If A,B and C are redistributed in one `batchLiquidateTroves` call, the collateral and debt of A,B, and C is given purely to D and E.
 
 #### Scenario 2 - sequential redistribution
 
-However, if A, B and C are redistributed by sequential liquidation calls, then, collateral and debt is first “rolled” forward to the next Trove in the sequence, before finally being distributed to remaining active Troves D and E. That is:
+If A, B and C are redistributed by sequential liquidation calls, then, collateral and debt is first “rolled” forward to the next Trove in the sequence, before finally being distributed to remaining active Troves D and E. That is:
 
 
 ```
@@ -1655,80 +1807,357 @@ batchLiquidateTroves(C)
 -> D,E receive C’s debt and coll proportionally
 ```
 
-The end result is _almost_ the same: D and E receive all debt and coll of A,B and C sans collateral gas compensation. However, the total gas compensation paid out differs between scenario 1 and 2 - and thus the total collateral D and E receive differs slightly too.
+In Liquity v2 the resulting collateral and debt of active Troves D and E is exactly the same in both scenarios, since the same total coll and debt is redistributed proportionally. This is not the case in Liquity v1 where redistributions pay gas compensation, and rolling vs not rolling liquidations results in slightly different gas compensation payout and thus slightly end states for active Troves.
 
-#### Scenario 1 gas compensation
+### 18 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price
 
-In scenario 1, gas compensation for each liquidated Trove i is computed based on the Trove’s collateral **prior** to the `batchLiquidateTroves` call i.e. `coll_i`. Gas compensation is summed over all liquidated Troves and paid at the end.
+`lastGoodPrice` is set by the last price fetch of the system, which may be a redemption or another operation. In case of redemption, the `lastGoodPrice` will be a result of a previous call to `fetchRedemptionPrice`, and otherwise, a call to `fetchPrice`. Thus, it’s possible that the `lastGoodPrice` used in urgent redemptions after shutdown was not actually a _redemption_ price when the branch was previously active.
 
-For simplicity let `gas_comp()` be the function that determines the collateral gas compensation of a given Trove. The formula is:
+However, this is not considered an issue for the following reasons:
 
-gas_comp(coll_i) = `0.0375 WETH + min(0.5% * coll_i, 2_units_of_LST).`
+The `lastGoodPrice` is potentially out of date anyway when urgent redemptions occur, simply due to the passing of time. 
 
-i.e. it is linearly increasing with trove collateral up to the point where `coll_i == 400_units_of_LST`, beyond which it is constant.
-
-So in scenario 1:
+Urgent redemptions could be immediately unprofitable after oracle failure if `lastGoodPrice` is set by a normal price fetch that is greater than the redemption price would have been, _and_ the real price has not increased significantly since `lastGoodPrice` was recorded. However even then, urgent redemptions can still become profitable later if the real price increases.
 
 
-`total_gas_comp_1  = gas_comp(coll_A) + gas_comp(coll_B) + gas_comp(coll_C)`
+Overall, the bigger factor in urgent redemption unprofitability is likely to be a market price decrease post oracle-failure, rather than a `lastGoodPrice` that is slightly too high. As mentioned in [Known Issue 4](https://github.com/liquity/bold?tab=readme-ov-file#3---path-dependent-redemptions-lower-fee-when-chunking), `lastGoodPrice` can become out of date simply due to market price movements.
 
-#### Scenario 2 gas compensation
+### 19 - Users can game upfront fees by chunking debt
 
-In scenario 2, the collateral of all remaining Troves increases after each sequential liquidation.
+When a borrower opens a Trove or draws new debt, an [upfront fee](https://github.com/liquity/bold?tab=readme-ov-file#upfront-borrowing-fees) is charged based on the branch’s debt-weighted average interest rate. That is:
 
-Since A is liquidated first it receives no redistribution shares, so A’s liquidated collateral is the same as in scenario 1, i.e. `coll_A`.
+- Drawing new debt (by opening or adjusting a Trove) increases the total debt of the branch
+- Drawing new debt at above the current debt-weighed average interest rate, increases that weighted average
+- The fee is calculated based on the _resulting_ weighted average interest rate, i.e. incorporating the debt change and interest rate of the Trove in question:
 
-However B and C’s collateral does increase before they get liquidiated. Let:
+https://github.com/liquity/bold/blob/da7ec495972881aa16600b01525663e7879afe18/contracts/src/BorrowerOperations.sol#L637
+
+As such, a user that intends to draw new debt at an above-average interest rate can pay a lower overall upfront fee by splitting their debt into chunks, since their small debt chunk and new interest is incorporated into the weighted average at each step. 
+
+The earlier chunks have fees based on lower weighted averages, and thus the total overall fee from chunking is lower than the fee from drawing all debt in a single chunk. A single chunk would incur a maximal weighted average interest rate, and in turn a maximal fee.
+
+#### Impact
+
+This is considered a minor issue since a borrower can only significantly raise the average weighted interest rate (and thus can only benefit significantly from this exploit) in the first place if their intended debt increase is very large compared to current branch debt.  
+
+A debt increase large enough to be worth chunking corresponds to a significant expansion of branch debt, which generates significant fees for the branch’s SP.  Even if fees are gamed via chunking and somewhat reduced, they will still result in a significant yield boost and APR spike for the branch’s SP depositors.
+
+### 20 - Users can game upfront fees by joining an empty batch
+
+This issue involves a different action sequence from issue 20 and utilises a pre-made empty batch, however is it insignificant for the same reason as issue 20 is.
+
+Instead of simply opening a Trove at their desired interest rate, a borrower may do the following to (slightly) reduce the upfront fee they pay upon opening:
+
+- Create a batch manager via `registerBatchManager` and set the batch interest rate to the minimum
+- Wait for a period of `INTEREST_RATE_ADJ_COOLDOWN` 
+- Open a Trove and join the batch via `openTroveAndJoinInterestBatchManager`.  This incurs an upfront fee. The branch’s resulting debt-weighted average interest rate is calculated incorporating the Trove’s debt and the batch’s (minimum) interest rate. This rate is in turn used to calculate the fee.
+- In the same transaction, call `setBatchManagerAnnualInterestRate` and set the batch’s interest rate to the desired interest rate for the Trove. This final step incurs no fee, since the batch was created sufficiently long ago.
+
+By doing this, the borrower can pay a slightly lower upfront fee: the branch’s resulting debt-weighted average interest rate is slightly lower when it incorporates the batch’s old (minimum) interest rate, rather than the user’s new (higher) Trove interest rate.
+
+#### Impact
+
+Unless the Trove debt is very large relative to prior branch debt, the lower resulting debt-weighted interest rate attained in this approach will be negligibly lower than if the user simply opened their Trove at their desired rate. Thus, the upfront fee charged (based on that debt-weighted rate) will also only be negligibly lower.
+
+And like issue 20, a debt increase large enough to be worth gaming the upfront fee via this method is still very beneficial for SP depositors.
+
+### 21 - Deployment backrunning
+
+If a user were to immediately backrun the Liquity v2 deployment before the first legitimate Troves were opened, then it could be possible to game the system for an advantage. There are several avenues by which deployment could be backrun and exploited, e.g:
+
+- Opening Troves at MCR and triggering redistributions after interest accrual in the next block order to create zero-stake Troves, i.e. an accelerated variant of issue 23
+- Opening and redeeming from many small Troves in the next block, in order to attain many small low interest rate unredeemable zombie Troves
+
+Deployment backrun attacks tend to rely on a tiny/empty system (i.e. branches with no Troves), and an empty SP.
+
+However, such attacks are unrealistic, since:
+
+- The deployer address will be unknown until public launch. There will be a delay between technical deployment and the public launch announcement with disclosure of v2 contracts. It’s expected that the first Troves opened and SP deposits made will be legitimate ones.
+- If someone does somehow manage to backrun deployment before launch announcement, the v2 team may simply redeploy via a fresh unknown address before public announcement.
 
 
-coll_B’ denote B’s increased collateral after liquidation of A, so  `coll_B’ > coll_B`
-coll_C’ denote C’s increased collateral after liquidation of A, so `coll_C’ > coll_C`
+### 22 - Repeated redistribution can eventually result in zero stake Troves
 
-In the sequence:
+This issue carries over from Liquity v1, and was originally documented in [this issue](https://github.com/liquity/dev/issues/310).
+
+A Trove’s stake (for earning redistribution gains) is calculated as:
+
+https://github.com/liquity/bold/blob/a9649ab9f921950f2e7d8fbbba3294aabe7686f6/contracts/src/TroveManager.sol#L1077
+
+When a series of liquidations occur that trigger redistributions, the stakes of the liquidated Troves are removed from the system, but the collateral of the liquidated troves remains in the system - it just moves from `ActivePool` to `DefaultPool`. Thus, the `totalStakes` decreases but `totalCollateral` remains constant (ignoring gas compensation).
+
+Over time as redistributions occur, due to the stake computation, fresh stakes become smaller and smaller for a given Trove collateral size. Eventually, fresh stakes are so small and close in magnitude to 1 wei, such that they lose significant precision. Eventually new stakes may evaluate to 0 due to the floor division. 
+
+Zero-stake Troves break the proportional reward distribution mechanism. When redistributions occur on a branch with zero-stake Troves which have a significant share of branch collateral, then a significant portion of the redistributed debt and collateral will remain in limbo, unassigned to any Trove. The “limbo” collateral would be unclaimable/unredeemable, and the limbo debt would thus be bad debt, unbacked by collateral.  
+
+Furthermore, if _all_ Troves in a branch are zero-stake Troves, then `totalStakes` would be 0. This would break redistributions through a division-by-zero error, which would block all future liquidations via redistribution.
+
+#### Likelihood
+
+Previous calculations showed that it would take on the order of ~1000 redistributions of 10% of branch debt for the branch to begin creating stakes with significant precision loss. If larger fractions of branch debt can be redistributed, it would take fewer redistributions - and vice versa.  However these extreme scenarios are unlikely to occur in the normal lifetime of a Liquity v2 branch. For reference, zero redistributions have occurred in Liquity v1 from launch until present date (May 2025) - all liquidations were absorbed by the Stability Pool.
+
+Deliberately triggering sizable redistributions is difficult to engineer, since they require both the Stability Pool to be empty and large liquidateable Troves to be available.
+
+Despite this, the collateral gas compensation is now not paid out for redistributed collateral, making redistributions less profitable than in Liquity v1.
+
+### 23 - Redistributions and CR drag down cascades
+
+When a redistribution occurs, debt and collateral of the liquidated Trove is assigned to all healthy Troves in proportion to their collateral.
+
+As long as the liquidated Trove has `ICR > 100%`, this distribution constitutes a net gain for all recipient Troves - that is, the dollar value of the collateral they receive is greater than the debt they receive.
+
+However, since the liquidated Trove has `ICR < MCR` and active Troves have `ICR >= MCR`, the redistribution reduces the ICR of all each active Trove.
+
+For active Troves close to the MCR, it is possible that the redistribution results in a `ICR < MCR` - i.e. they could be “dragged down” to below MCR and thus in turn liquidateable.  It is even possible that a “cascade” occurs - i.e. active Troves become liquidateable, and in turn are redistributed, potentially dragging more healthy Troves below MCR.
+
+This drag-down effect depends on:
+
+- The amount of debt and collateral liquidated
+- The ICR of the liquidated Trove
+- The distribution of branch collateral in healthy Troves - i.e. what proportion of collateral is in low-ICR active Troves
+
+For realistic distributions of Troves, the drag-down effect is fairly small and self-limiting.
+
+This drag-down dynamic is inherited from Liquity v1. However, Liquity v2 does not pay the collateral gas compensation for redistributions - as such, all else equal, the magnitude of the drag-down effect in v2 is somewhat reduced. As are the incentives for a liquidator to trigger repeated redistributions.
+
+### 24 - SP loss evasion
+
+It is possible that a Stability Pool depositor may frontrun and evade an incoming liquidation in order to avoid making a net loss. For example:
+
+- Depositor sees incoming liquidation of Trove with ICR < 100% in the mempool
+- Depositor frontruns and withdraws their deposit before the liquidation occurs
+- Liquidation is absorbed by the remaining funds in the SP
+- Depositor re-deposits
+
+The impact of this is that all other depositors in the SP absorb the loss of the unprofitable liquidation, and the frontrunner evades it.
+
+This was partially mitigated in Liquity v1 by requiring that no undercollateralized Troves were present in the system upon a withdrawal from the SP. However, this is infeasible in v2 since Troves are no longer ordered by collateral ratio, and also accrue interest at different rates. Thus, checking for undercollateralized Troves in v2 would require an inefficient loop over all Troves, which is prohibitively expensive gas-wise.
 
 
-```
-liquidate(A)
--> pay gas compensation to liquidator. B and C’s collateral increases by their shares of A’s collateral
-liquidate(B)
--> pay gas compensation to liquidator based on B’s increased collateral, coll_B’
-liquidate(C)
--> D,E receive C’s debt and coll proportionally
-```
+However, no fix is required since it’s expected that:
 
-Here, the total gas comp paid is:
+- Most liquidations are profitable for SP depositors, i.e. occur at ICR > 100%, so the collateral value that SP depositors receive is greater than the amount of debt cancelled against their BOLD deposit.
 
-`total_gas_comp_2  = gas_comp(coll_A) + gas_comp(coll_B’) + gas_comp(coll_C’)`
+- Liquidations are MEV competitive and a significant portion of liquidations are expected to be performed via private pools e.g. Flashbots, and not via the public gas auction
 
-And since `gas_comp()` is a linear increasing function of collateral (for troves under 400 units of LST collateral), then it can be that `total_gas_comp_2 > total_gas_comp_1`.
+- The majority of SP deposits are “sticky” - that is, most depositors leave their deposit in the SP for the medium/long term to earn continuous BOLD yield, and are not running frontrunning bots in order to evade a very occasional unprofitable liquidation.
 
-#### Impact summary
+### 25 - Redistribution Loss evasion
 
-In a batch liquidation where 1 or more Troves somewhere in the middle of (i.e. not first or last) the `batchLiquidateTroves` loop have under 400 units of LST collateral, then the remaining active Troves after the call receive slightly **less** collateral from the redistribution than in the case where the Troves are liquidated individually and sequentially. Accordingly,  the liquidator also receives slightly **more** gas compensation.
+It is possible that a borrower may frontrun and evade an income redistribution liquidation in order to avoid making a net loss. For example:
 
-#### Design choice: no rolling redistributions inside `batchLiquidateTroves`
+- Borrower sees incoming redistribution liquidation of a Trove with ICR < 100% in the mempool
+- Borrower frontruns and closes their Trove before the redistribution occurs
+- Redistribution is absorbed by the remaining active Troves
+- Borrower re-opens Trove
 
-The choice to make `batchLiquidateTroves` behave as it does - i.e. to not roll debt and collateral shares through to other Troves inside its liquidation loop - was conscious and deliberate.
+The impact of this is that all other active Troves absorb the loss from the unprofitable liquidation, and the frontrunniner evades it.
 
-The current approach is more gas efficient and makes the code simpler to reason about than inner rolling liquidations.
+However, no fix is required since it’s expected that:
 
-The discrepancy between batch and sequential liquidation gas compensation is minor, and does not have negative consequences for the system. Collateral gas compensation is in any case an arbitrary design choice in the first place.
+- Most redistributions are profitable for active Troves, i.e. occur at ICR > 100% - thus the collateral value that active Troves receive is greater than the amount of debt cancelled against their BOLD deposit.
 
-#### Knock on drag-down of healthy Troves below MCR
+- Redistributions are expected to be very rare, and only occur if the Stability Pool has already been emptied.  Even if the SP _is_ empty, JIT deposits to the Stability Pool can in most cases profitably absorb liquidations
 
-The impact of redistributions on the remaining active Troves is that they see their ICRs reduced. It’s possible that this ICR reduction causes them to fall below the MCR and thus also become liquidateable - however this knock-on “drag-down” effect can occur as a result of either batch or sequential liquidations, is a known dynamic of the system, and was also present in Liquity v1.
+- Liquidations are MEV intensive and a significant portion of liquidations are expected to be performed via private pools e.g. Flashbots, and not performed via the public gas auction
 
-Past simulation has shown that this potential knock-on drag-down effect is minor, though does depend on the system state - i.e. the distribution of ICRs and collateral sizes.
 
-### 18 - TODOs in code comments
+### 26 - Debt in front should not include Troves at the same interest rate
 
-A number of TODOs remain in comments in core smart contracts:
+When borrowers assess their redemption risk, it’s recommended that they consider their  “debt-in-front” metric - i.e. how much branch debt is in Troves at lower interest rates than theirs, and thus, all else equal, how much must be redeemed before theirs will be redeemed.
 
-- TroveManager L1276: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/TroveManager.sol#L1276  This `assert` always holds true since the encapsulating function is only called when a Trove is opened.
+This metric is not perfect, since debt-in-front can fluctuate dramatically: any borrower may adjust their debt at any time. Trove debts also change continuously over time based on their respective interest rates. However, debt-in-front does provide a rough metric on which a redemption risk estimate can be based, and is used by several front ends.
 
-- StabilityPool L372: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/StabilityPool.sol#L372  This `assert` is always true since the encapsulating function triggerBoldRewards is only ever called when there is non-zero BOLD yield for the SP - see ActivePool L258: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/ActivePool.sol#L258.
 
-- MainnetPriceFeedBase L52: https://github.com/liquity/bold/blob/6a793b24b294f6f1581746e021bcd6845fc3dc06/contracts/src/PriceFeeds/MainnetPriceFeedBase.sol#L52  This is irrelevant now that contracts have been deployed.
+Debt-in-front has one more caveat - that is, borrowers should not consider Troves at the _same_ interest rate as part of their debt-in-front.
+
+This is due to the fact that all Troves at the same interest rate are redeemed in LIFO order.  
+
+Thus, it’s possible (for example) for a batch manager with a batch at a given interest rate to re-insert their batch at a different position for free (ignoring gas) by re-setting the batch’s interest rate to the same value. They could do this as a frontrun to a redemption transaction in order to put more debt in front of another Trove they control, just prior to redemption.
+
+
+Thus, Borrowers should not consider Troves at identical interest rates to be part of their ‘debt-in-front’. To be conservative, borrowers and front ends should consider debt-in-front to only include debt from Troves in the branch at lower interest rates.
+
 
 ### Issues identified in audits requiring no fix
-A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/labels/wontfix).
+A collection of issues identified in security audits which nevertheless do not require a fix [can be found here](https://github.com/liquity/bold/issues?q=label%3Awontfix+).
+
+# Considerations for v2 forks
+
+The following section outlines some considerations that licensed forks of Liquity v2 should be aware of. 
+
+Modifying the original v2 design and code can potentially create technical, economic and UX impacts. All changes should be thoroughly considered from those perspectives. 
+
+## Known issues in Liquity v2
+
+Fork teams should familiarise themselves with the [known issues](https://github.com/liquity/bold?tab=readme-ov-file#known-issues-and-mitigations) of Liquity v2. Some are deliberate design choices with trade-offs, others are simply quirks of the system.
+
+## High level trust assumptions
+
+In general, Liquity v2 assumes:
+
+- Economically and technically sound collateral
+- Robust price oracles
+
+A major problem with any single collateral or oracle could in turn cause a major issue in the relevant collateral branch. The system does its best to “contain” damage via branch shutdown, but in the worst case, a single oracle or collateral failure could lead to de-peg of the stablecoin and systemic failure.
+
+Thus, fork collateral and oracles should be evaluated and chosen very carefully.
+
+## Collateral choices
+
+In the original v2, LST collateral was selected conservatively. STETH and RETH were chosen for their track records of security and liquidity, and newer, less liquid LSTs were rejected.
+
+The following dimensions should be considered:
+
+### Number of collaterals
+
+The greater the number of collaterals the less efficient redemptions are, since gas costs increase with the number of branches.
+
+Thus a larger number of collateral branches implies a higher effective redemption fee, which in turn implies a looser stablecoin peg. It’s recommended to analyse redemption profitability based on your chosen collaterals and the gas costs on your chosen chain / L2.
+
+### Liquidity considerations
+
+How liquid is the market for the collateral? How much sell volume would it take to significantly move the collateral price? Historically, how volatile has the collateral price been?
+
+For a given branch, how much sell volume would it take to suddenly drop the price such that Troves at or close to the MCR become immediately undercollateralized?
+
+For a given branch size and TCR, how much sell volume would it take to drop the price such that the system crosses the CCR or SCR threshold?
+
+A large enough sudden collateral price drop could cause the branch to shut down and potentially leave it with significant bad debt. An extreme crash could even cause the stablecoin to become underbacked, if the given collateral constitutes a large fraction of the total. Thus, collateral with a history of reasonable liquidity and volatility should be chosen.
+
+Liquidity is also potentially important for oracle manipulation (see the oracle considerations section below).
+
+### Technical risk
+
+What is the technical track record of the collateral? For how long has it been live without problems? Did the team behind it invest thoroughly in security? Is it immutable or can it be upgraded - if so, which aspects do the team/DAO control?
+
+### Collateral token decimals and conversion
+
+All collateral tokens in Liquity v2 as well as BOLD and LQTY use 18 decimal digits.
+
+If you plan to use a collateral token with a different number of decimal digits, be sure to convert to/from the decimals used in your system in all the right places - for example, when calculating the price of the collateral in USD.
+
+It is recommended to wrap such tokens in an intermediate one with 18 decimal digits, and then use the wrapped token for all internal system operations. Collateral should be wrapped at inflow and unwrapped just prior to outflow. This reduces room for conversion error and helps ensure that all system operations are scaled correctly.
+
+## Immutable vs upgradeable forks
+
+Liquity v2 is immutable, which added development constraints: in particular, collateral and oracle price sources/calculations had to be chosen carefully, and all security work was front-loaded since no changes could be made post launch.
+
+If your system is upgradeable you may be tempted to take more risk in certain areas - for example, collateral choice or system risk parameters.
+
+However, upgradeability should not be seen as a reason to underinvest in security or economic modelling. Upgradeability is also an attack surface in itself.
+
+## Branch risk parameters
+
+In general, we suggest `SCR <= MCR < CCR`.  While Liquity v2 sets `MCR = SCR`, a larger MCR is viable.
+
+The more risky the collateral - i.e. the greater the chance of a large, sudden price drop - the larger the values these risk parameters should take.
+
+Ideally:
+
+- Most liquidations should occur at CR > 100%, to ensure profitability for SP depositors.  
+- Branch shutdown should clear most branch debt (via liquidations, urgent redemptions and borrowers closing Troves) before the branch becomes undercollateralized, i.e. before the TCR drops below 100%
+- Economic modelling should be performed based on your assumptions about collateral volatility to select these risk parameters.
+ 
+## Redemption floor fee
+
+The greater the redemption floor fee the looser the peg, and vice versa. A non-zero floor fee is recommended, as it imposes a minimum cost on system griefing and/or some kinds of economic manipulation.
+
+The redemption floor fee should also be considered in tandem with oracle update thresholds (see oracle considerations below).
+
+
+## Bootstrapping, seeding liquidity and early growth
+
+The smaller the system, the lower the absolute cost to redeem a given fraction `x%` of total stablecoin supply. Additionally, the smaller the system, the lower cost of deliberately emptying the SP by opening and self-liquidating a Trove.
+
+Such actions may be done in order to set up economic manipulations or to simply grief the system.
+
+In general, it is recommended to support early system growth by seeding liquidity in Troves and SPs or coordinating with early users who will do so. The bigger the system grows early on, the higher the absolute costs of deliberate redemption/self-liquidation.
+
+See also this section on [deployment backrunning](https://github.com/liquity/bold?tab=readme-ov-file#21---deployment-backrunning)
+
+
+## Oracle considerations
+
+Liquity v2 uses a combination of Chainlink push-based market oracles and LST exchange rates to price collateral.  
+
+### Type of oracle used
+
+If your fork uses a different type of oracle, then care should be taken to ensure that the oracle logic in your PriceFeed contracts is appropriate for the oracle used.
+
+For example, if switching to a push-based price feed such as Pyth or Redstone, the original v2 staleness threshold logic may no longer be relevant, and the fork team may need to ensure they are running bots/infra to push oracle prices frequently enough.
+
+
+If DEX pools are used as oracles, then price manipulation protection should be considered (e.g. TWAP), and a contingency should be in place for the scenario where liquidity dries up and price manipulation suddenly becomes cheaper.
+
+### Liquidity and price sources
+
+The fact that a reputable market oracle exists for an asset (Chainlink, Pyth, Redstone, etc) is no guarantee that the asset pricing is robust and unmanipulable.
+
+If the asset has thin liquidity and/or liquidity concentrated on a small set of price sources, it may be relatively cheap to manipulate.  
+
+
+Fork teams should ask themselves: how much total liquidity exists for this asset? Where is it concentrated? Is it spread across a variety of on and off-chain exchanges, or concentrated on a couple of DEX pools?
+
+Ultimately, market oracles source prices from wherever the liquidity and volume is, and if an asset is priced based on thin liquidity sitting in 1-2 DEX pools then it may not be robust enough for use as collateral in a v2 fork.
+
+###  Price manipulation protection
+
+Liquity v2 protects against upwards price manipulation on LST branches by taking the _minimum_ of two price sources for borrowing ops and liquidations, and the _maximum_ of two price sources for redemptions. The full logic is [here.](https://github.com/liquity/bold?tab=readme-ov-file#oracles-in-liquity-v2)
+
+In general, the systemic risks from oracle manipulation in terms of impact from lowest to highest are:
+
+- Excess stablecoin minting. Potentially suddenly catastrophic for the peg
+- Excess liquidations. Could cause major loss for borrowers
+- Unprofitable redemptions when the stablecoin is under peg. May lead to a long-term de-peg if they persist
+- Excess redemptions. Could shrink the system when the stablecoin is at peg
+
+See the [oracles](https://github.com/liquity/bold?tab=readme-ov-file#oracles-in-liquity-v2) and [LST oracle risk section](https://github.com/liquity/bold?tab=readme-ov-file#8---lst-oracle-risks) for analysis specific to v2.
+
+If your fork uses new types of oracles or oracle logic, the impact of manipulation on stablecoin minting, liquidations and redemptions should be analysed with these priorities in mind.
+
+### Oracle decimals 
+
+Liquity v2 expects 8 decimal digit precision for the ETH-USD Chainlink price source and scales it to 18 digits before using it in internal operations. Take care to note the decimal precision of all your oracles and scale them accordingly before using them in system ops.
+
+### Staleness thresholds
+
+When using market oracles which are Chainlink push-based or equivalent, the staleness thresholds should be larger than the oracle’s heartbeat by a healthy buffer.
+
+This ensures that short delays in oracle updates do not trigger an unnecessary branch shutdown.
+
+For example, in Liquity v2 the oracle heartbeats and staleness thresholds are as such:
+
+| Market oracle | Heartbeat | Staleness threshold |
+|---------------|-----------|-------------------|
+| ETH-USD | 1 hour | 24 hours |
+| STETH-USD | 1 hour | 24 hours |
+| RETH-ETH | 24 hours | 48 hours |
+
+
+### Redemption floor fee and oracle update thresholds
+
+When using market oracles which are Chainlink push-based or equivalent, the redemption floor fee `x` should be equal or greater than the oracle price update deviation threshold `y`. This is to ensure that a market price movement in range `(x, y)` does not lead to adverse redemptions: in this range, a price movement makes redemption profitable when the stablecoin is trading at $1, but does not trigger an oracle update and redeemers can extract value from the system. Thus, the floor fee `x` should be equal to or greater than oracle threshold `y` to eliminate redemption profits in this range.
+
+Liquity v2 actually mitigates this a different way for the LST branches, taking the “worst” price from two sources. For the WETH branch, it sets `x = y`. Systems using purely push-based market oracles to price collateral should set a sufficiently high redemption fee floor.
+
+## Redemption impact on borrowers
+
+Fork teams should be aware that redemptions technically may cause a slight short-term loss for borrowers, even though redemption fees are paid to the borrower.  See the [explanation here](https://github.com/liquity/bold?tab=readme-ov-file#redemption-impact-on-borrowers).
+
+## Redemptions should be left to bots
+
+Though redemptions are permissionless, they are complicated and MEV-competitive. They are generally performed by sophisticated bots / savvy aribtrageurs. Fork teams should make ordinary users aware they if they manually redeem e.g. through front ends or Etherscan, they risk losing their funds  - see [here for more detail](https://github.com/liquity/bold?tab=readme-ov-file#redemption-warning).
+
+
+## Closing the last Trove in the system
+
+As [explained here](https://github.com/liquity/bold?tab=readme-ov-file#closing-the-last-trove-in-the-system), the last Trove in a branch can not be closed unless that branch has been shut down. 
+
+## Security and audits
+
+It is advisable to perform one or more security audits for any changes made to the core system contracts or parameters. Even seemingly tiny or trivial changes can have outsized and unintended impacts on system security and economic resilience.
+
+## Code diff with Liquity v2
+
+It’s advisable to publicly showcase the diff between your code and the original Liquity v2 code in your repo, so that all code changes to original smart contracts are surfaced and readily visible. 

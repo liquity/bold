@@ -3,11 +3,11 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { DNUM_0 } from "@/src/dnum-utils";
-import { getCollToken } from "@/src/liquity-utils";
+import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
-import { vCollIndex, vPositionEarn } from "@/src/valibot-utils";
+import { vBranchId, vDnum, vPositionEarn } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
@@ -15,10 +15,12 @@ import { createRequestSchema, verifyTransaction } from "./shared";
 const RequestSchema = createRequestSchema(
   "earnUpdate",
   {
-    prevEarnPosition: vPositionEarn(),
-    earnPosition: vPositionEarn(),
-    collIndex: vCollIndex(),
+    branchId: vBranchId(),
     claimRewards: v.boolean(),
+    earnPosition: vPositionEarn(),
+    poolDeposit: vDnum(),
+    prevEarnPosition: vPositionEarn(),
+    prevPoolDeposit: vDnum(),
   },
 );
 
@@ -30,7 +32,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
   Summary({ request }) {
     return (
       <EarnPositionSummary
-        collIndex={request.collIndex}
+        branchId={request.branchId}
         earnPosition={{
           ...request.earnPosition,
 
@@ -49,9 +51,11 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
               : request.earnPosition.rewards.coll,
           },
         }}
+        poolDeposit={request.poolDeposit}
         prevEarnPosition={dn.eq(request.prevEarnPosition.deposit, 0)
           ? null
           : request.prevEarnPosition}
+        prevPoolDeposit={request.prevPoolDeposit}
         txPreviewMode
       />
     );
@@ -61,7 +65,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
     const { earnPosition, prevEarnPosition, claimRewards } = request;
     const { rewards } = earnPosition;
 
-    const collateral = getCollToken(earnPosition.collIndex);
+    const collateral = getCollToken(earnPosition.branchId);
 
     const boldPrice = usePrice("BOLD");
     const collPrice = usePrice(collateral.symbol);
@@ -130,16 +134,12 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
     provideToStabilityPool: {
       name: () => "Deposit",
       Status: TransactionStatus,
-      async commit({ contracts, request, writeContract }) {
-        const collateral = contracts.collaterals[request.collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + request.collIndex);
-        }
-
+      async commit({ request, writeContract }) {
         const { earnPosition, prevEarnPosition, claimRewards } = request;
+        const branch = getBranch(request.branchId);
         const change = earnPosition.deposit[0] - prevEarnPosition.deposit[0];
         return writeContract({
-          ...collateral.contracts.StabilityPool,
+          ...branch.contracts.StabilityPool,
           functionName: "provideToSP",
           args: [change, claimRewards],
         });
@@ -152,16 +152,12 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
     withdrawFromStabilityPool: {
       name: () => "Withdraw",
       Status: TransactionStatus,
-      async commit({ contracts, request, writeContract }) {
-        const collateral = contracts.collaterals[request.collIndex];
-        if (!collateral) {
-          throw new Error("Invalid collateral index: " + request.collIndex);
-        }
-
+      async commit({ request, writeContract }) {
         const { earnPosition, prevEarnPosition, claimRewards } = request;
         const change = earnPosition.deposit[0] - prevEarnPosition.deposit[0];
+        const branch = getBranch(request.branchId);
         return writeContract({
-          ...collateral.contracts.StabilityPool,
+          ...branch.contracts.StabilityPool,
           functionName: "withdrawFromSP",
           args: [-change, claimRewards],
         });
