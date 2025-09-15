@@ -229,6 +229,7 @@ export function DelegateModal({
                           }}
                           selectLabel="Choose"
                           onSelect={onSelectDelegate}
+                          url={delegatesList.find(group => group.name === groupName)?.url}
                         />
                       )
                       : (
