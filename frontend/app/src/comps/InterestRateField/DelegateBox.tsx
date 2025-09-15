@@ -92,7 +92,7 @@ export function DelegateBox({
               })}
             >
               <MiniChart />
-              {fmtnum(delegate.interestRate, "pct1z")}%
+              {fmtnum(delegate.interestRate, "pct2z")}%
             </div>
           </div>
           <div
