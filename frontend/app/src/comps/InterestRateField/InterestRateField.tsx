@@ -76,6 +76,8 @@ export const InterestRateField = memo(
     const [delegatePicker, setDelegatePicker] = useState<
       "strategy" | "delegate" | null
     >(null);
+    
+    const [delegateDisplayName, setDelegateDisplayName] = useState<string | null>(null);
 
     const autoInputId = useId();
     const inputId = inputIdFromProps ?? autoInputId;
@@ -114,6 +116,7 @@ export const InterestRateField = memo(
       setDelegatePicker(null);
       onDelegateChange(null);
       onModeChange("manual");
+      setDelegateDisplayName(null);
     }, [
       branchId,
       onDelegateChange,
@@ -165,6 +168,7 @@ export const InterestRateField = memo(
       setDelegatePicker(null);
       fieldValue.setValue(dn.toString(dn.mul(delegate.interestRate, 100)));
       onDelegateChange(delegate.address ?? null);
+      setDelegateDisplayName(delegate.name || null);
     };
 
     const branch = getBranch(branchId);
@@ -255,7 +259,7 @@ export const InterestRateField = memo(
                           borderRadius: 4,
                         })}
                       />
-                      {shortenAddress(delegate, 4).toLowerCase()}
+                      {delegateDisplayName || shortenAddress(delegate, 4).toLowerCase()}
                     </div>
                   )
                   : "Choose delegate"}
@@ -317,6 +321,7 @@ export const InterestRateField = memo(
                       onModeChange(mode);
                     }
                     onDelegateChange(null);
+                    setDelegateDisplayName(null);
                   }}
                   selected={activeDelegateModes.findIndex((mode_) => mode_ === mode)}
                   size="small"
