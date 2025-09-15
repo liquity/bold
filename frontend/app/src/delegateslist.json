@@ -1,6 +1,7 @@
 [
   {
     "name": "Summerstone",
+    "url": "https://summerstone.xyz/docs/for-users/managed-interest-rates/supported-protocols/bold-from-liquity-v2/index.html#active-strategies",
     "strategies": [
       {
         "name": "Balanced",
@@ -21,6 +22,7 @@
   },
   {
     "name": "Bolder Cash",
+    "url": "https://bolder.cash/rate-strategies?f=bold&c=combined",
     "strategies": [
       {
         "name": "Low Rate",
@@ -41,6 +43,7 @@
   },
   {
     "name": "Trove Zero",
+    "url": "https://trovezero.xyz/",
     "strategies": [
       {
         "name": "",
