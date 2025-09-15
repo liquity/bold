@@ -2,10 +2,11 @@ import type { Address, BranchId, Delegate } from "@/src/types";
 
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import content from "@/src/content";
-import { useInterestBatchDelegate } from "@/src/liquity-utils";
+import delegatesList from "@/src/delegateslist.json";
+import { getBranch, useInterestBatchDelegate, useInterestBatchDelegates } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { AddressField, Modal } from "@liquity2/uikit";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { DelegateBox } from "./DelegateBox";
 
 const URL_WHAT_IS_DELEGATION =
@@ -29,6 +30,29 @@ export function DelegateModal({
   const [delegateAddressValue, setDelegateAddressValue] = useState("");
 
   const delegate = useInterestBatchDelegate(branchId, delegateAddress);
+
+  const filteredStrategies = useMemo(() => {
+    const branch = getBranch(branchId);
+    const branchSymbol = branch.symbol;
+    const strategies: Array<{ groupName: string; strategy: any }> = [];
+    delegatesList.forEach((group) => {
+      group.strategies.forEach((strategy) => {
+        if (strategy.branches.some((branch) => branch.toLowerCase() === branchSymbol.toLowerCase())) {
+          strategies.push({
+            groupName: group.name,
+            strategy,
+          });
+        }
+      });
+    });
+    return strategies;
+  }, [branchId]);
+
+  const delegateAddresses = useMemo(() => {
+    return filteredStrategies.map(({ strategy }) => strategy.address as Address);
+  }, [filteredStrategies]);
+
+  const delegatesQuery = useInterestBatchDelegates(branchId, delegateAddresses);
 
   return (
     <Modal
@@ -154,6 +178,85 @@ export function DelegateModal({
               </div>
             </>
           )}
+      </div>
+      <div>
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            gap: "16px",
+          })}
+        >
+          {filteredStrategies.map(({ groupName, strategy }, index) => {
+            const delegateAddress = strategy.address as Address;
+            const delegateData = delegatesQuery.data?.find((d) =>
+              d.address.toLowerCase() === delegateAddress.toLowerCase()
+            );
+
+            const displayName = strategy.name ? groupName + " - " + strategy.name : groupName;
+
+            return (
+              <div key={index}>
+                {delegatesQuery.status === "pending"
+                  ? (
+                    <div
+                      className={css({
+                        color: "contentAlt",
+                        paddingTop: 40,
+                      })}
+                    >
+                      Loading…
+                    </div>
+                  )
+                  : delegatesQuery.status === "error"
+                  ? (
+                    <div className={css({ color: "contentAlt", paddingTop: 40 })}>
+                      Error: {delegatesQuery.error?.name}
+                    </div>
+                  )
+                  : delegateData
+                  ? (
+                    <DelegateBox
+                      branchId={branchId}
+                      delegate={{
+                        ...delegateData,
+                        name: displayName,
+                      }}
+                      selectLabel="Choose"
+                      onSelect={onSelectDelegate}
+                    />
+                  )
+                  : (
+                    <div className={css({ color: "contentAlt" })}>
+                      No data available for {displayName}
+                    </div>
+                  )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 8,
+          paddingTop: 32,
+          paddingBottom: 24,
+        })}
+      >
+        <div
+          className={css({
+            marginTop: "16px",
+          })}
+        >
+          <LinkTextButton
+            label="What is delegation?"
+            href={URL_WHAT_IS_DELEGATION}
+            external
+          />
+        </div>
       </div>
     </Modal>
   );

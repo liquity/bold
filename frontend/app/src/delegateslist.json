@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Summerstone",
+    "strategies": [
+      {
+        "name": "Balanced",
+        "address": "0x00000000001991cee928c561e37725816cbf73ba",
+        "branches": ["ETH"]
+      },
+      {
+        "name": "Balanced",
+        "address": "0x000000000017d2a7b863e9ebbe6f9ab7255eb7c5",
+        "branches": ["wstETH"]
+      },
+      {
+        "name": "Balanced",
+        "address": "0x0000000000704f94ce2fe636dab92677a9745dc3",
+        "branches": ["rETH"]
+      }
+    ]
+  },
+  {
+    "name": "Bolder Cash",
+    "strategies": [
+      {
+        "name": "Low Rate",
+        "address": "0x25bc0272217fb0fd7a2ff0d62cebe1aba15e4d91",
+        "branches": ["ETH", "wstETH", "rETH"]
+      },
+      {
+        "name": "Mid Rate",
+        "address": "0x50bc02c6c7124e6e1b8333b80a0416e504e2d044",
+        "branches": ["ETH", "wstETH", "rETH"]
+      },
+      {
+        "name": "High Rate",
+        "address": "0x75bc02022344159b7ef50a3ff5291dd2bc6918c7",
+        "branches": ["ETH", "wstETH", "rETH"]
+      }
+    ]
+  },
+  {
+    "name": "Trove Zero",
+    "strategies": [
+      {
+        "name": "",
+        "address": "0xe707784292289be3aa0fb6f9d33d420291f98695",
+        "branches": ["wstETH"]
+      }
+    ]
+  }
+]
