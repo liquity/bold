@@ -2,7 +2,7 @@ import type { Address, BranchId, Delegate } from "@/src/types";
 
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import content from "@/src/content";
-import delegatesList from "@/src/delegateslist.json";
+import delegatesList from "@/src/delegates.json";
 import { getBranch, useInterestBatchDelegate, useInterestBatchDelegates } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { AddressField, Modal } from "@liquity2/uikit";
@@ -229,7 +229,7 @@ export function DelegateModal({
                           }}
                           selectLabel="Choose"
                           onSelect={onSelectDelegate}
-                          url={delegatesList.find(group => group.name === groupName)?.url}
+                          url={delegatesList.find((group) => group.name === groupName)?.url}
                         />
                       )
                       : (
