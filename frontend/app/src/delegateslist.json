@@ -54,6 +54,17 @@
     ]
   },
   {
+    "name": "Trove Zero",
+    "url": "https://trovezero.xyz/",
+    "strategies": [
+      {
+        "name": "",
+        "address": "0xe707784292289be3aa0fb6f9d33d420291f98695",
+        "branches": ["wstETH"]
+      }
+    ]
+  },
+  {
     "name": "Bolder Cash",
     "url": "https://bolder.cash/rate-strategies?f=bold&c=combined",
     "strategies": [
@@ -71,17 +82,6 @@
         "name": "High Rate",
         "address": "0x75bc02022344159b7ef50a3ff5291dd2bc6918c7",
         "branches": ["ETH", "wstETH", "rETH"]
-      }
-    ]
-  },
-  {
-    "name": "Trove Zero",
-    "url": "https://trovezero.xyz/",
-    "strategies": [
-      {
-        "name": "",
-        "address": "0xe707784292289be3aa0fb6f9d33d420291f98695",
-        "branches": ["wstETH"]
       }
     ]
   }
