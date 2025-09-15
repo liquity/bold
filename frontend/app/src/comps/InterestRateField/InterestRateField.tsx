@@ -209,7 +209,12 @@ export const InterestRateField = memo(
                           borderRadius: 4,
                         })}
                       />
-                      {delegateDisplayName || shortenAddress(delegate, 4).toLowerCase()}
+                      {(() => {
+                        const displayName = delegateDisplayName || shortenAddress(delegate, 4).toLowerCase();
+                        return breakpoint === "small" && displayName.length > 16
+                          ? displayName.substring(0, 16) + "..."
+                          : displayName;
+                      })()}
                     </div>
                   )
                   : "Choose delegate"}
