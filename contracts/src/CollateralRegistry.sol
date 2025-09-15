@@ -66,6 +66,8 @@ contract CollateralRegistry is ICollateralRegistry {
             _activeBranchIds.push(i);
         }
 
+        branches = numTokens;
+
         // Initialize the baseRate state variable
         baseRate = INITIAL_BASE_RATE;
         emit BaseRateUpdated(INITIAL_BASE_RATE);
