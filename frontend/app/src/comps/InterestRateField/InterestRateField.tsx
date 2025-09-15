@@ -12,7 +12,6 @@ import { getRedemptionRisk } from "@/src/liquity-math";
 import {
   EMPTY_LOAN,
   findClosestRateIndex,
-  getBranch,
   useAverageInterestRate,
   useDebtInFrontOfInterestRate,
   useDebtInFrontOfLoan,
@@ -29,15 +28,11 @@ import Image from "next/image";
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { match } from "ts-pattern";
 import { DelegateModal } from "./DelegateModal";
-import { IcStrategiesModal } from "./IcStrategiesModal";
 import { MiniChart } from "./MiniChart";
-
-import icLogo from "./ic-logo.svg";
 
 const DELEGATE_MODES = [
   "manual",
   "delegate",
-  "strategy",
 ] as const;
 
 export type DelegateMode = typeof DELEGATE_MODES[number];
@@ -74,9 +69,9 @@ export const InterestRateField = memo(
     loan?: PositionLoanCommitted;
   }) {
     const [delegatePicker, setDelegatePicker] = useState<
-      "strategy" | "delegate" | null
+      "delegate" | null
     >(null);
-    
+
     const [delegateDisplayName, setDelegateDisplayName] = useState<string | null>(null);
 
     const autoInputId = useId();
@@ -171,10 +166,7 @@ export const InterestRateField = memo(
       setDelegateDisplayName(delegate.name || null);
     };
 
-    const branch = getBranch(branchId);
-
-    const hasStrategies = branch.strategies.length > 0;
-    const activeDelegateModes = DELEGATE_MODES.filter((mode) => mode !== "strategy" || hasStrategies);
+    const activeDelegateModes = DELEGATE_MODES;
 
     const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
 
@@ -200,38 +192,6 @@ export const InterestRateField = memo(
                     ? 1
                     : 2
                 )}
-              />
-            ))
-            .with("strategy", () => (
-              <TextButton
-                size="large"
-                label={delegate
-                  ? (
-                    <div
-                      title={delegate}
-                      className={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                      })}
-                    >
-                      <Image
-                        alt=""
-                        src={icLogo}
-                        width={24}
-                        height={24}
-                        className={css({
-                          display: "block",
-                          borderRadius: 4,
-                        })}
-                      />
-                      {shortenAddress(delegate, 4).toLowerCase()}
-                    </div>
-                  )
-                  : "Choose strategy"}
-                onClick={() => {
-                  setDelegatePicker("strategy");
-                }}
               />
             ))
             .with("delegate", () => (
@@ -430,7 +390,7 @@ export const InterestRateField = memo(
                       },
                     })}
                   >
-                    %{breakpoint === "large" ? " per year" : ""}
+                    %
                   </span>
                 </span>
               )
@@ -444,14 +404,6 @@ export const InterestRateField = memo(
           }}
           onSelectDelegate={handleDelegateSelect}
           visible={delegatePicker === "delegate"}
-        />
-        <IcStrategiesModal
-          branchId={branchId}
-          onClose={() => {
-            setDelegatePicker(null);
-          }}
-          onSelectDelegate={handleDelegateSelect}
-          visible={delegatePicker === "strategy"}
         />
       </>
     );

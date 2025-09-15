@@ -1,5 +1,38 @@
 [
   {
+    "name": "Autonomous Rate Manager",
+    "url": "https://www.liquity.org/blog/autonomous-interest-manager",
+    "strategies": [
+      {
+        "name": "",
+        "address": "0xe507e4d0763851a6287238aadd243948d18ab60a",
+        "branches": ["ETH"]
+      }
+    ]
+  },
+  {
+    "name": "Autonomous Rate Manager",
+    "url": "https://www.liquity.org/blog/autonomous-interest-manager",
+    "strategies": [
+      {
+        "name": "",
+        "address": "0x8869a6fb59a8df330f90d9fbf46ebfaff6d4bc14",
+        "branches": ["wstETH"]
+      }
+    ]
+  },
+  {
+    "name": "Autonomous Rate Manager",
+    "url": "https://www.liquity.org/blog/autonomous-interest-manager",
+    "strategies": [
+      {
+        "name": "",
+        "address": "0x7700b2d305f47ae82e9598bab6d7ccb57299a82b",
+        "branches": ["rETH"]
+      }
+    ]
+  },
+  {
     "name": "Summerstone",
     "url": "https://summerstone.xyz/docs/for-users/managed-interest-rates/supported-protocols/bold-from-liquity-v2/index.html#active-strategies",
     "strategies": [
