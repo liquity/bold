@@ -8,7 +8,6 @@ import content from "@/src/content";
 import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { getRedemptionRisk } from "@/src/liquity-math";
 import {
   EMPTY_LOAN,
   findClosestRateIndex,
@@ -155,8 +154,6 @@ export const InterestRateField = memo(
       )
       : debtInFrontOfInterestRate.data;
 
-    const redemptionRisk = debtInFront
-      && getRedemptionRisk(debtInFront.debtInFront, debtInFront.totalDebt);
     const redeemableTransition = useAppear(debtInFront !== undefined);
 
     const handleDelegateSelect = (delegate: Delegate) => {
