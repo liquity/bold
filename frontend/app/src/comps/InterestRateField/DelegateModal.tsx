@@ -64,11 +64,11 @@ export function DelegateModal({
   }, [delegateAddressValue]);
 
   const isCustomDelegate = useMemo(() => {
-    if (!isSearchingAddress || !delegateAddress) return false;
+    if (!isSearchingAddress || !delegateAddress || !delegate.data) return false;
     return !searchFilteredStrategies.some(({ strategy }) =>
       strategy.address.toLowerCase() === delegateAddress.toLowerCase()
     );
-  }, [isSearchingAddress, delegateAddress, searchFilteredStrategies]);
+  }, [isSearchingAddress, delegateAddress, delegate.data, searchFilteredStrategies]);
 
   const delegateAddresses = useMemo(() => {
     return searchFilteredStrategies.map(({ strategy }) => strategy.address as Address);
