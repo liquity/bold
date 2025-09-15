@@ -189,6 +189,9 @@ export function DelegateBox({
               className={css({
                 fontSize: 14,
               })}
+              onClick={() => {
+                navigator.clipboard.writeText(delegate.address);
+              }}
             />
           </div>
           <div>
