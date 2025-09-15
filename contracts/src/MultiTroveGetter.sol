@@ -23,7 +23,7 @@ contract MultiTroveGetter is IMultiTroveGetter {
         view
         returns (CombinedTroveData[] memory _troves)
     {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
         require(address(troveManager) != address(0), "Invalid collateral index");
 
         ISortedTroves sortedTroves = troveManager.sortedTroves();
@@ -134,7 +134,7 @@ contract MultiTroveGetter is IMultiTroveGetter {
         view
         returns (DebtPerInterestRate[] memory data, uint256 currId)
     {
-        ITroveManager troveManager = collateralRegistry.getTroveManager(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
         require(address(troveManager) != address(0), "Invalid collateral index");
 
         ISortedTroves sortedTroves = troveManager.sortedTroves();

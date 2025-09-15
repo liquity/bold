@@ -12,6 +12,7 @@ interface ICollateralRegistry {
     event CollateralRemoved(uint256 _branchId, address _token, address _troveManager);
     event CollateralDeletedForever(uint256 _branchId);
 
+    function allTroveManagerAddresses(uint256 _branchId) external view returns (ITroveManager);
     function isActiveCollateral(uint256 _branchId) external view returns (bool);
     function addCollateral(IERC20Metadata _token, ITroveManager _troveManager) external;
     function removeCollateral(uint256 _index) external;
