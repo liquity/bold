@@ -1,8 +1,10 @@
+import type { UserAllocation, UserState } from "@/src/liquity-governance";
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
+import type { Address } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
-import { getUserAllocatedInitiatives } from "@/src/liquity-governance";
+import { getUserAllocations, getUserStates } from "@/src/liquity-governance";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
@@ -11,6 +13,79 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { encodeFunctionData } from "viem";
 import { createRequestSchema, verifyTransaction } from "./shared";
+
+function calculateUnstakingStrategy(
+  userState: UserState,
+  userAllocations: UserAllocation[],
+  unstakeAmount: bigint,
+): {
+  needsReallocation: boolean;
+  newAllocations?: Record<Address, { amount: bigint; vote: "for" | "against" }>;
+  withdrawFromUnallocated: bigint;
+  remainingStakedLQTY: bigint;
+} {
+  const { unallocatedLQTY, stakedLQTY } = userState;
+  const remainingStakedLQTY = stakedLQTY - unstakeAmount;
+  const hasAllocations = userAllocations.length > 0;
+
+  // Simple case: no allocations or sufficient unallocated LQTY
+  if (!hasAllocations || unallocatedLQTY >= unstakeAmount) {
+    return {
+      needsReallocation: false,
+      withdrawFromUnallocated: unstakeAmount,
+      remainingStakedLQTY,
+    };
+  }
+
+  // Complex case: need to reallocate with preserved percentages
+  const totalAllocatedLQTY = userAllocations.reduce(
+    (sum, alloc) => sum + alloc.voteLQTY + alloc.vetoLQTY,
+    0n,
+  );
+
+  const allocationEntries = userAllocations
+    .map((alloc) => {
+      const allocatedAmount = alloc.voteLQTY + alloc.vetoLQTY;
+      const percentage = (allocatedAmount * 10n ** 18n) / totalAllocatedLQTY;
+      return {
+        address: alloc.initiative,
+        percentage,
+        vote: alloc.voteLQTY > alloc.vetoLQTY ? "for" as const : "against" as const,
+      };
+    })
+    .filter(({ percentage }) => percentage > 0n)
+    .sort((a, b) => a.percentage > b.percentage ? -1 : 1);
+
+  let remainingLQTY = remainingStakedLQTY;
+  let remainingPercentage = allocationEntries.reduce((sum, { percentage }) => sum + percentage, 0n);
+  const newAllocations: Record<Address, { amount: bigint; vote: "for" | "against" }> = {};
+
+  // Process all but the last allocation
+  for (let i = 0; i < allocationEntries.length - 1; i++) {
+    const entry = allocationEntries[i];
+    if (!entry) continue;
+
+    const { address, percentage, vote } = entry;
+    const amount = remainingLQTY * percentage / remainingPercentage;
+
+    newAllocations[address] = { amount, vote };
+    remainingLQTY -= amount;
+    remainingPercentage -= percentage;
+  }
+
+  // Give remaining LQTY to last allocation to avoid dust
+  const lastEntry = allocationEntries[allocationEntries.length - 1];
+  if (lastEntry) {
+    newAllocations[lastEntry.address] = { amount: remainingLQTY, vote: lastEntry.vote };
+  }
+
+  return {
+    needsReallocation: true,
+    newAllocations,
+    withdrawFromUnallocated: unallocatedLQTY,
+    remainingStakedLQTY,
+  };
+}
 
 const RequestSchema = createRequestSchema(
   "unstakeDeposit",
@@ -38,11 +113,15 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
 
   Details({ request }) {
     const lqtyPrice = usePrice("LQTY");
+    const isFullUnstake = dn.eq(request.lqtyAmount, request.stakePosition.deposit);
+
     return (
       <TransactionDetailsRow
         label={[
           "You withdraw",
-          "Your voting power will be reset.",
+          isFullUnstake
+            ? "Your voting power will be reset."
+            : "Voting allocations will be preserved when possible.",
         ]}
         value={[
           <Amount
@@ -67,26 +146,67 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
       async commit(ctx) {
         const { Governance } = ctx.contracts;
         const inputs: `0x${string}`[] = [];
+        const unstakeAmount = ctx.request.lqtyAmount[0];
 
-        const allocatedInitiatives = await getUserAllocatedInitiatives(
-          ctx.wagmiConfig,
-          ctx.account,
-        );
+        const [userState, userAllocations] = await Promise.all([
+          getUserStates(ctx.wagmiConfig, ctx.account),
+          getUserAllocations(ctx.wagmiConfig, ctx.account),
+        ]);
 
-        // reset allocations if the user has any
-        if (allocatedInitiatives.length > 0) {
-          inputs.push(encodeFunctionData({
-            abi: Governance.abi,
-            functionName: "resetAllocations",
-            args: [allocatedInitiatives, true],
-          }));
+        const allocatedInitiatives = userAllocations
+          .filter(({ voteLQTY, vetoLQTY }) => (voteLQTY + vetoLQTY) > 0n)
+          .map(({ initiative }) => initiative);
+
+        const isFullUnstake = unstakeAmount === userState.stakedLQTY;
+
+        if (userAllocations.length > 0) {
+          if (isFullUnstake) {
+            // Full unstake: reset all allocations
+            inputs.push(encodeFunctionData({
+              abi: Governance.abi,
+              functionName: "resetAllocations",
+              args: [allocatedInitiatives, true],
+            }));
+          } else {
+            const strategy = calculateUnstakingStrategy(userState, userAllocations, unstakeAmount);
+
+            if (strategy.needsReallocation && strategy.newAllocations) {
+              // Partial unstake: reallocate with preserved percentages
+              const initiativeAddresses = Object.keys(strategy.newAllocations) as Address[];
+
+              const [votes, vetos] = initiativeAddresses.reduce(
+                ([v, ve], address, index) => {
+                  const allocation = strategy.newAllocations![address];
+                  if (!allocation) return [v, ve];
+
+                  if (allocation.vote === "for") {
+                    v[index] = allocation.amount;
+                  } else if (allocation.vote === "against") {
+                    ve[index] = allocation.amount;
+                  }
+                  return [v, ve];
+                },
+                [
+                  Array.from<bigint>({ length: initiativeAddresses.length }).fill(0n),
+                  Array.from<bigint>({ length: initiativeAddresses.length }).fill(0n),
+                ],
+              );
+
+              inputs.push(encodeFunctionData({
+                abi: Governance.abi,
+                functionName: "allocateLQTY",
+                args: [allocatedInitiatives, initiativeAddresses, votes, vetos],
+              }));
+            }
+            // else: Partial unstake with enough unallocated LQTY - preserve allocations
+          }
         }
 
         // withdraw LQTY
         inputs.push(encodeFunctionData({
           abi: Governance.abi,
           functionName: "withdrawLQTY",
-          args: [ctx.request.lqtyAmount[0]],
+          args: [unstakeAmount],
         }));
 
         return ctx.writeContract({
