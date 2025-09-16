@@ -8,6 +8,7 @@ import "./IBoldToken.sol";
 import "./ITroveManager.sol";
 import "./IBoldRewardsReceiver.sol";
 import "./IAddressesRegistry.sol";
+import "./ISystemParams.sol";
 
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
@@ -30,7 +31,7 @@ import "./IAddressesRegistry.sol";
  *
 */
 interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
-    function initialize(IAddressesRegistry _addressesRegistry) external;
+    function initialize(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) external;
 
     function boldToken() external view returns (IBoldToken);
     function troveManager() external view returns (ITroveManager);

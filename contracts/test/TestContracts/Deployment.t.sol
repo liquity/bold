@@ -13,6 +13,7 @@ import "src/HintHelpers.sol";
 import "src/MultiTroveGetter.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
+import {SystemParams, ISystemParams} from "src/SystemParams.sol";
 import "./BorrowerOperationsTester.t.sol";
 import "./TroveManagerTester.t.sol";
 import "./CollateralRegistryTester.sol";
@@ -168,6 +169,10 @@ contract TestDeployer is MetadataDeployment {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
 
+    function getBytecode(bytes memory _creationCode, address _addressesRegistry, address _systemParams) public pure returns (bytes memory) {
+        return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _systemParams));
+    }
+
     function getBytecode(bytes memory _creationCode, bool _disable) public pure returns (bytes memory) {
         return abi.encodePacked(_creationCode, abi.encode(_disable));
     }
@@ -258,6 +263,10 @@ contract TestDeployer is MetadataDeployment {
     {
         DeploymentVarsDev memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
+        
+        // Deploy SystemParams
+        ISystemParams systemParams = deploySystemParamsDev();
+        
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
@@ -272,7 +281,7 @@ contract TestDeployer is MetadataDeployment {
         // Deploy the first branch with WETH collateral
         vars.collaterals[0] = _WETH;
         (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
-            _deployAddressesRegistryDev(troveManagerParamsArray[0]);
+            _deployAddressesRegistryDev(systemParams, troveManagerParamsArray[0]);
         vars.addressesRegistries[0] = addressesRegistry;
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
@@ -284,13 +293,13 @@ contract TestDeployer is MetadataDeployment {
             );
             vars.collaterals[vars.i] = collToken;
             // Addresses registry and TM address
-            (addressesRegistry, troveManagerAddress) = _deployAddressesRegistryDev(troveManagerParamsArray[vars.i]);
+            (addressesRegistry, troveManagerAddress) = _deployAddressesRegistryDev(systemParams, troveManagerParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers);
-        hintHelpers = new HintHelpers(collateralRegistry);
+        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, systemParams);
+        hintHelpers = new HintHelpers(collateralRegistry, systemParams);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
         contractsArray[0] = _deployAndConnectCollateralContractsDev(
@@ -301,7 +310,8 @@ contract TestDeployer is MetadataDeployment {
             vars.addressesRegistries[0],
             address(vars.troveManagers[0]),
             hintHelpers,
-            multiTroveGetter
+            multiTroveGetter,
+            systemParams
         );
 
         // Deploy the remaining branches with LST collateral
@@ -314,29 +324,31 @@ contract TestDeployer is MetadataDeployment {
                 vars.addressesRegistries[vars.i],
                 address(vars.troveManagers[vars.i]),
                 hintHelpers,
-                multiTroveGetter
+                multiTroveGetter,
+                systemParams
             );
         }
 
         boldToken.setCollateralRegistry(address(collateralRegistry));
     }
 
-    function _deployAddressesRegistryDev(TroveManagerParams memory _troveManagerParams)
+    function _deployAddressesRegistryDev(ISystemParams _systemParams, TroveManagerParams memory _troveManagerParams)
         internal
         returns (IAddressesRegistry, address)
     {
         IAddressesRegistry addressesRegistry = new AddressesRegistry(address(this));
         address troveManagerAddress = getAddress(
-            address(this), getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry)), SALT
+            address(this), getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry), address(_systemParams)), SALT
         );
 
         return (addressesRegistry, troveManagerAddress);
     }
 
-    // TODO(@bayological): Implement
-    // function deploySystemParamsDev() public returns (ISystemParams) {
-    //     return new SystemParams();
-    // }
+    function deploySystemParamsDev() public returns (ISystemParams) {
+        SystemParams systemParams = new SystemParams{salt: SALT}(false);
+        systemParams.initialize(address(this));
+        return ISystemParams(systemParams);
+    }
 
     function _deployAndConnectCollateralContractsDev(
         IERC20Metadata _collToken,
@@ -346,10 +358,12 @@ contract TestDeployer is MetadataDeployment {
         IAddressesRegistry _addressesRegistry,
         address _troveManagerAddress,
         IHintHelpers _hintHelpers,
-        IMultiTroveGetter _multiTroveGetter
+        IMultiTroveGetter _multiTroveGetter,
+        ISystemParams _systemParams
     ) internal returns (LiquityContractsDev memory contracts) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _collToken;
+        contracts.systemParams = _systemParams;
 
         // Deploy all contracts, using testers for TM and PriceFeed
         contracts.addressesRegistry = _addressesRegistry;
@@ -366,7 +380,7 @@ contract TestDeployer is MetadataDeployment {
         // Pre-calc addresses
         addresses.borrowerOperations = getAddress(
             address(this),
-            getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
+            getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry), address(_systemParams)),
             SALT
         );
         addresses.troveManager = _troveManagerAddress;
@@ -377,7 +391,7 @@ contract TestDeployer is MetadataDeployment {
         addresses.stabilityPool =
             getAddress(address(this), getBytecode(type(StabilityPool).creationCode, bool(false)), stabilityPoolSalt);
         addresses.activePool = getAddress(
-            address(this), getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry)), SALT
+            address(this), getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry), address(_systemParams)), SALT
         );
         addresses.defaultPool = getAddress(
             address(this), getBytecode(type(DefaultPool).creationCode, address(contracts.addressesRegistry)), SALT
@@ -417,11 +431,11 @@ contract TestDeployer is MetadataDeployment {
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
-        contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
-        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
+        contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry, _systemParams);
+        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: stabilityPoolSalt}(false);
-        contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
+        contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.pools.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
         contracts.pools.gasPool = new GasPool{salt: SALT}(contracts.addressesRegistry);
         contracts.pools.collSurplusPool = new CollSurplusPool{salt: SALT}(contracts.addressesRegistry);
@@ -437,7 +451,7 @@ contract TestDeployer is MetadataDeployment {
         assert(address(contracts.pools.collSurplusPool) == addresses.collSurplusPool);
         assert(address(contracts.sortedTroves) == addresses.sortedTroves);
 
-        contracts.stabilityPool.initialize(contracts.addressesRegistry);
+        contracts.stabilityPool.initialize(contracts.addressesRegistry, _systemParams);
 
         // Connect contracts
         _boldToken.setBranchAddresses(
@@ -490,25 +504,25 @@ contract TestDeployer is MetadataDeployment {
         IWETH WETH = IWETH(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
         vars.collaterals[0] = WETH;
         (vars.addressesRegistries[0], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_troveManagerParamsArray[0]);
+            _deployAddressesRegistryMainnet(result.systemParams, _troveManagerParamsArray[0]);
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
 
         // RETH
         vars.collaterals[1] = IERC20Metadata(0xae78736Cd615f374D3085123A210448E74Fc6393);
         (vars.addressesRegistries[1], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_troveManagerParamsArray[1]);
+            _deployAddressesRegistryMainnet(result.systemParams, _troveManagerParamsArray[1]);
         vars.troveManagers[1] = ITroveManager(troveManagerAddress);
 
         // WSTETH
         vars.collaterals[2] = IERC20Metadata(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
         (vars.addressesRegistries[2], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_troveManagerParamsArray[2]);
+            _deployAddressesRegistryMainnet(result.systemParams, _troveManagerParamsArray[2]);
         vars.troveManagers[2] = ITroveManager(troveManagerAddress);
 
         // Deploy registry and register the TMs
-        result.collateralRegistry = new CollateralRegistryTester(result.boldToken, vars.collaterals, vars.troveManagers);
+        result.collateralRegistry = new CollateralRegistryTester(result.boldToken, vars.collaterals, vars.troveManagers, result.systemParams);
 
-        result.hintHelpers = new HintHelpers(result.collateralRegistry);
+        result.hintHelpers = new HintHelpers(result.collateralRegistry, result.systemParams);
         result.multiTroveGetter = new MultiTroveGetter(result.collateralRegistry);
 
         // Deploy each set of core contracts
@@ -524,42 +538,32 @@ contract TestDeployer is MetadataDeployment {
             params.hintHelpers = result.hintHelpers;
             params.multiTroveGetter = result.multiTroveGetter;
             result.contractsArray[vars.i] =
-                _deployAndConnectCollateralContractsMainnet(params, result.externalAddresses, vars.oracleParams);
+                _deployAndConnectCollateralContractsMainnet(params, result.externalAddresses, vars.oracleParams, result.systemParams);
         }
 
         result.boldToken.setCollateralRegistry(address(result.collateralRegistry));
     }
 
-    // TODO(@bayological): Update below to remove params that are now in SystemParams from addressesRegistry constructor
-
-    function _deployAddressesRegistryMainnet(TroveManagerParams memory _troveManagerParams)
+    function _deployAddressesRegistryMainnet(ISystemParams _systemParams, TroveManagerParams memory _troveManagerParams)
         internal
         returns (IAddressesRegistry, address)
     {
-        IAddressesRegistry addressesRegistry = new AddressesRegistry(
-            address(this),
-            _troveManagerParams.CCR,
-            _troveManagerParams.MCR,
-            _troveManagerParams.BCR,
-            _troveManagerParams.SCR,
-            _troveManagerParams.LIQUIDATION_PENALTY_SP,
-            _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
-        );
+        IAddressesRegistry addressesRegistry = new AddressesRegistry(address(this));
         address troveManagerAddress =
-            getAddress(address(this), getBytecode(type(TroveManager).creationCode, address(addressesRegistry)), SALT);
+            getAddress(address(this), getBytecode(type(TroveManager).creationCode, address(addressesRegistry), address(_systemParams)), SALT);
 
         return (addressesRegistry, troveManagerAddress);
     }
 
-    // TODO(@bayological): The below function needs to be updated to deploy SystemParams
-
     function _deployAndConnectCollateralContractsMainnet(
         DeploymentParamsMainnet memory _params,
         ExternalAddresses memory _externalAddresses,
-        OracleParams memory _oracleParams
+        OracleParams memory _oracleParams,
+        ISystemParams _systemParams
     ) internal returns (LiquityContracts memory contracts) {
         LiquityContractAddresses memory addresses;
         contracts.collToken = _params.collToken;
+        contracts.systemParams = _systemParams;
         contracts.interestRouter = new MockInterestRouter();
 
         contracts.addressesRegistry = _params.addressesRegistry;
@@ -575,7 +579,7 @@ contract TestDeployer is MetadataDeployment {
         bytes32 stabilityPoolSalt = keccak256(abi.encodePacked(address(contracts.addressesRegistry)));
         addresses.borrowerOperations = getAddress(
             address(this),
-            getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry)),
+            getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry), address(_systemParams)),
             SALT
         );
         addresses.troveManager = _params.troveManagerAddress;
@@ -585,7 +589,7 @@ contract TestDeployer is MetadataDeployment {
         addresses.stabilityPool =
             getAddress(address(this), getBytecode(type(StabilityPool).creationCode, false), stabilityPoolSalt);
         addresses.activePool = getAddress(
-            address(this), getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry)), SALT
+            address(this), getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry), address(_systemParams)), SALT
         );
         addresses.defaultPool = getAddress(
             address(this), getBytecode(type(DefaultPool).creationCode, address(contracts.addressesRegistry)), SALT
@@ -628,11 +632,11 @@ contract TestDeployer is MetadataDeployment {
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
-        contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
-        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
+        contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry, _systemParams);
+        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: stabilityPoolSalt}(false);
-        contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
+        contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
         contracts.gasPool = new GasPool{salt: SALT}(contracts.addressesRegistry);
         contracts.collSurplusPool = new CollSurplusPool{salt: SALT}(contracts.addressesRegistry);
@@ -648,7 +652,7 @@ contract TestDeployer is MetadataDeployment {
         assert(address(contracts.collSurplusPool) == addresses.collSurplusPool);
         assert(address(contracts.sortedTroves) == addresses.sortedTroves);
 
-        contracts.stabilityPool.initialize(contracts.addressesRegistry);
+        contracts.stabilityPool.initialize(contracts.addressesRegistry, _systemParams);
 
         // Connect contracts
         _params.boldToken.setBranchAddresses(
@@ -693,5 +697,11 @@ contract TestDeployer is MetadataDeployment {
             _oracleParams.stEthUsdStalenessThreshold,
             _borrowerOperationsAddress
         );
+    }
+
+    function _deploySystemParamsMainnet() internal returns (ISystemParams) {
+        SystemParams systemParams = new SystemParams{salt: SALT}(false);
+        systemParams.initialize(address(this));
+        return ISystemParams(systemParams);
     }
 }
