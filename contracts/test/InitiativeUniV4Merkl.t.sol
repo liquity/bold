@@ -53,7 +53,7 @@ contract InitiativeUniV4Merkl is E2EHelpers {
 
         // Allocate to initiative
         _allocateLQTY_begin(staker);
-        _allocateLQTY_vote(address(uniV4MerklRewardsInitiative), int256(lqtyStake)); // TODO
+        _allocateLQTY_vote(address(uniV4MerklRewardsInitiative), int256(lqtyStake));
         _allocateLQTY_end();
 
         // Donate
@@ -77,6 +77,7 @@ contract InitiativeUniV4Merkl is E2EHelpers {
         */
 
         // Claim for initiative
+        uint256 initialMerklDistributorBoldBalance = boldToken.balanceOf(address(merklDistributionCreator.distributor()));
         (,, uint256 claimableAmount) = governance.getInitiativeState(address(uniV4MerklRewardsInitiative));
         // Creating a campaign is expensive, and uses more than the allowed by Gorvernace contract, so we need a wrapper
         // governance.claimForInitiative(address(uniV4MerklRewardsInitiative));
@@ -96,19 +97,20 @@ contract InitiativeUniV4Merkl is E2EHelpers {
             campaignData: uniV4MerklRewardsInitiative.getCampaignData()
         });
         bytes32 campaignId = merklDistributionCreator.campaignId(params);
+        uint256 campaignAmount = params.amount * 97 / 100;
         IDistributionCreator.CampaignParameters memory campaign = merklDistributionCreator.campaign(campaignId);
         assertEq(campaign.creator, params.creator, "creator");
         assertEq(campaign.rewardToken, params.rewardToken, "rewardToken");
-        assertEq(campaign.amount, params.amount * 97 / 100, "amount minus fees");
+        assertEq(campaign.amount, campaignAmount, "amount minus fees");
         assertEq(campaign.campaignType, params.campaignType, "campaignType");
         assertEq(campaign.startTimestamp, params.startTimestamp, "startTimestamp");
         assertEq(campaign.duration, params.duration, "duration");
         assertEq(campaign.campaignData, params.campaignData, "campaignData");
 
-        assertGt(
-            boldToken.balanceOf(address(merklDistributionCreator.distributor())),
-            0,
-            "Merkl Distributor should have some BOLD"
+        assertEq(
+            boldToken.balanceOf(address(merklDistributionCreator.distributor())) - initialMerklDistributorBoldBalance,
+            campaignAmount,
+            "Merkl Distributor should have campaign amount BOLD"
         );
 
     }
