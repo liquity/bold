@@ -88,6 +88,7 @@ type LeaderboardActivityLabel =
   | "Bunni"
   | "Camelot"
   | "Spectra"
+  | "Uniswap"
   | "GoSlow NFT"
   | "Borrowing"
   | "Stability Pool";
@@ -106,6 +107,8 @@ function getLeaderboardActivityName(activity: Address): LeaderboardActivityLabel
       return "Spectra";
     case CONTRACT_ADDRESSES.GoSlowNft.toLowerCase():
       return "GoSlow NFT";
+    case CONTRACT_ADDRESSES.strategies.UniswapV4.toLowerCase():
+      return "Uniswap";
     // case "trove":
     //   return "Borrowing";
     // case "stabilityPool":

@@ -134,6 +134,7 @@ export const EnvSchema = v.pipe(
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     SUBGRAPH_URL_SERVER: v.pipe(v.string(), v.url()),
     SHELL_SUBGRAPH_URL: v.pipe(v.string(), v.url()),
+    UNISWAP_V4_SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.pipe(
       v.string(),
@@ -392,6 +393,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
   SUBGRAPH_URL_SERVER: process.env.NEXT_PUBLIC_SUBGRAPH_URL_SERVER,
   SHELL_SUBGRAPH_URL: process.env.NEXT_PUBLIC_SHELL_SUBGRAPH_URL,
+  UNISWAP_V4_SUBGRAPH_URL: process.env.NEXT_PUBLIC_UNISWAP_V4_SUBGRAPH_URL,
   VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
 
@@ -590,6 +592,7 @@ export const {
   SUBGRAPH_URL,
   SUBGRAPH_URL_SERVER,
   SHELL_SUBGRAPH_URL,
+  UNISWAP_V4_SUBGRAPH_URL,
   VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,
 } = parsedEnv.output;

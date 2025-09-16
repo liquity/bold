@@ -170,6 +170,7 @@ export const CONTRACT_ADDRESSES = {
     Bunni: "0x7fbd42c058b97d906b2c0e67d8ee288f851935c7",
     Camelot: "0xA20723963Fb33297a3F5491831742f9B63EFe4f2",
     Spectra: "0xdbfdad05d2d280195331582516813358f41d1cc4",
+    UniswapV4: "0xd88F38F930b7952f2DB2432Cb002E7abbF3dD869", // Position Manager contract
   },
 
   collaterals: COLLATERAL_CONTRACTS.map(({ collIndex, symbol, contracts }) => ({
