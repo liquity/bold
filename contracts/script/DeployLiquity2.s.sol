@@ -824,9 +824,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     ) internal returns (ILeverageZapper) {
         ILeverageZapper leverageZapperHybrid;
         if (_lst) {
-            leverageZapperHybrid = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
+            //leverageZapperHybrid = new LeverageLSTZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
         } else {
-            leverageZapperHybrid = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
+            //leverageZapperHybrid = new LeverageWETHZapper(_addressesRegistry, _flashLoanProvider, _hybridExchange);
         }
 
         return leverageZapperHybrid;
