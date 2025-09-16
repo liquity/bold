@@ -82,7 +82,7 @@ contract CollateralRegistry is ICollateralRegistry {
         external
     {
         _requireValidMaxFeePercentage(_maxFeePercentage);
-        _requireAmountGreaterThanZero(_boldAmount);
+        _requireAmountGreaterThanOne(_boldAmount);
 
         RedemptionTotals memory totals;
 
@@ -337,8 +337,8 @@ contract CollateralRegistry is ICollateralRegistry {
         );
     }
 
-    function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
-        require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
+    function _requireAmountGreaterThanOne(uint256 _amount) internal pure {
+        require(_amount >= 1e18, "CollateralRegistry: Amount must be greater than 1 Stablecoin.");
     }
 
     function getDebtLimit(uint256 _indexTroveManager) external view returns (uint256) {

