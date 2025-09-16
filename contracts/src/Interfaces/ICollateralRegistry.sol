@@ -41,4 +41,6 @@ interface ICollateralRegistry {
     function updateMCR(uint256 _collIndex, uint256 _newMCR) external;
     function updateBCR(uint256 _collIndex, uint256 _newBCR) external;
     function updateSCR(uint256 _collIndex, uint256 _newSCR) external;
+
+    function governor() external view returns (address);
 }

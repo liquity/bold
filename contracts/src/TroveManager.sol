@@ -126,6 +126,10 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // Timestamp at which branch was shut down. 0 if not shut down.
     uint256 public shutdownTime;
 
+    //gas compensation max reward. Must be higher for different assets.
+    uint256 public gasCompensationMaxReward;
+
+
     /*
     * --- Variable container structs for liquidations ---
     *
@@ -222,6 +226,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         emit BoldTokenAddressChanged(address(boldToken));
         emit SortedTrovesAddressChanged(address(sortedTroves));
         emit CollateralRegistryAddressChanged(address(collateralRegistry));
+
+        gasCompensationMaxReward = COLL_GAS_COMPENSATION_CAP;
     }
 
     // --- Getters ---
@@ -365,7 +371,13 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // Return the amount of Coll to be drawn from a trove's collateral and sent as gas compensation.
     function _getCollGasCompensation(uint256 _coll) internal pure returns (uint256) {
         // _entireDebt should never be zero, but we add the condition defensively to avoid an unexpected revert
-        return LiquityMath._min(_coll / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
+        return LiquityMath._min(_coll / COLL_GAS_COMPENSATION_DIVISOR, gasCompensationMaxReward);
+    }
+
+    //allow governor to update gasCompensationMaxReward.
+    function updateGasCompensationMaxReward(uint256 _newGasCompensationMaxReward) external {
+        require(msg.sender == collateralRegistry.governor(), "Only Address Registry owner can update gasCompensationMaxReward");
+        gasCompensationMaxReward = _newGasCompensationMaxReward;
     }
 
     /* In a full liquidation, returns the values for a trove's coll and debt to be offset, and coll and debt to be

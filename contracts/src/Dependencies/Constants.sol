@@ -55,7 +55,7 @@ uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SAGA = 30 * _1pct;
 
 // Fraction of collateral awarded to liquidator
 uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%
-uint256 constant COLL_GAS_COMPENSATION_CAP = 2 ether; // Max coll gas compensation capped at 2 ETH
+uint256 constant COLL_GAS_COMPENSATION_CAP = 500 ether; // Max coll gas compensation capped at 2 ETH
 
 // Minimum amount of net Bold debt a trove must have
 uint256 constant MIN_DEBT = 200e18;
