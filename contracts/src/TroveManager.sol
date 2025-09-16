@@ -1552,8 +1552,9 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // If branch has not been shut down, or it's a liquidation,
         // require at least 1 trove in the system
         // ** NEW: **
-        // TODO: Add check if branch has been removed, do we still require at least 1 trove in the system?
-        if ((isActiveStatus && shutdownTime == 0) || closedStatus == Status.closedByLiquidation) {
+        // If branch has been removed, we don't require at least 1 trove in the system.
+        //a trove is required: 1. if the branch is active. or 2. either shutdown is 0, or the last trove is being liquidated.
+        if (isActiveStatus && (shutdownTime == 0 || closedStatus == Status.closedByLiquidation)){
             _requireMoreThanOneTroveInSystem(TroveIdsArrayLength);
         }
 
