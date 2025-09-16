@@ -11,7 +11,7 @@ import { usePrice } from "@/src/services/Prices";
 import { vDnum, vPositionStake } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
-import { encodeFunctionData } from "viem";
+import { Abi, encodeFunctionData } from "viem";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 function calculateUnstakingStrategy(
@@ -98,6 +98,66 @@ const RequestSchema = createRequestSchema(
 
 export type UnstakeDepositRequest = v.InferOutput<typeof RequestSchema>;
 
+function generateUnstakeTransactions(
+  userState: UserState,
+  userAllocations: UserAllocation[],
+  unstakeAmount: bigint,
+  governanceAbi: Abi,
+) {
+  const inputs: `0x${string}`[] = [];
+  const allocatedInitiatives = userAllocations
+    .filter(({ voteLQTY, vetoLQTY }) => (voteLQTY + vetoLQTY) > 0n)
+    .map(({ initiative }) => initiative);
+
+  const isFullUnstake = unstakeAmount === userState.stakedLQTY;
+
+  if (userAllocations.length > 0) {
+    if (isFullUnstake) {
+      inputs.push(encodeFunctionData({
+        abi: governanceAbi,
+        functionName: "resetAllocations",
+        args: [allocatedInitiatives, true],
+      }));
+    } else {
+      const strategy = calculateUnstakingStrategy(userState, userAllocations, unstakeAmount);
+      if (strategy.needsReallocation && strategy.newAllocations) {
+        const initiativeAddresses = Object.keys(strategy.newAllocations) as Address[];
+        const [votes, vetos] = initiativeAddresses.reduce(
+          ([v, ve], address, index) => {
+            const allocation = strategy.newAllocations![address];
+            if (!allocation) return [v, ve];
+            if (allocation.vote === "for") {
+              v[index] = allocation.amount;
+            } else if (allocation.vote === "against") {
+              ve[index] = allocation.amount;
+            }
+            return [v, ve];
+          },
+          [
+            Array.from<bigint>({ length: initiativeAddresses.length }).fill(0n),
+            Array.from<bigint>({ length: initiativeAddresses.length }).fill(0n),
+          ],
+        );
+
+        inputs.push(encodeFunctionData({
+          abi: governanceAbi,
+          functionName: "allocateLQTY",
+          args: [allocatedInitiatives, initiativeAddresses, votes, vetos],
+        }));
+        // else: Partial unstake with enough unallocated LQTY - preserve allocations
+      }
+    }
+  }
+
+  inputs.push(encodeFunctionData({
+    abi: governanceAbi,
+    functionName: "withdrawLQTY",
+    args: [unstakeAmount],
+  }));
+
+  return inputs;
+}
+
 export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
   title: "Review & Send Transaction",
 
@@ -145,7 +205,6 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
       Status: TransactionStatus,
       async commit(ctx) {
         const { Governance } = ctx.contracts;
-        const inputs: `0x${string}`[] = [];
         const unstakeAmount = ctx.request.lqtyAmount[0];
 
         const [userState, userAllocations] = await Promise.all([
@@ -153,61 +212,12 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
           getUserAllocations(ctx.wagmiConfig, ctx.account),
         ]);
 
-        const allocatedInitiatives = userAllocations
-          .filter(({ voteLQTY, vetoLQTY }) => (voteLQTY + vetoLQTY) > 0n)
-          .map(({ initiative }) => initiative);
-
-        const isFullUnstake = unstakeAmount === userState.stakedLQTY;
-
-        if (userAllocations.length > 0) {
-          if (isFullUnstake) {
-            // Full unstake: reset all allocations
-            inputs.push(encodeFunctionData({
-              abi: Governance.abi,
-              functionName: "resetAllocations",
-              args: [allocatedInitiatives, true],
-            }));
-          } else {
-            const strategy = calculateUnstakingStrategy(userState, userAllocations, unstakeAmount);
-
-            if (strategy.needsReallocation && strategy.newAllocations) {
-              // Partial unstake: reallocate with preserved percentages
-              const initiativeAddresses = Object.keys(strategy.newAllocations) as Address[];
-
-              const [votes, vetos] = initiativeAddresses.reduce(
-                ([v, ve], address, index) => {
-                  const allocation = strategy.newAllocations![address];
-                  if (!allocation) return [v, ve];
-
-                  if (allocation.vote === "for") {
-                    v[index] = allocation.amount;
-                  } else if (allocation.vote === "against") {
-                    ve[index] = allocation.amount;
-                  }
-                  return [v, ve];
-                },
-                [
-                  Array.from<bigint>({ length: initiativeAddresses.length }).fill(0n),
-                  Array.from<bigint>({ length: initiativeAddresses.length }).fill(0n),
-                ],
-              );
-
-              inputs.push(encodeFunctionData({
-                abi: Governance.abi,
-                functionName: "allocateLQTY",
-                args: [allocatedInitiatives, initiativeAddresses, votes, vetos],
-              }));
-            }
-            // else: Partial unstake with enough unallocated LQTY - preserve allocations
-          }
-        }
-
-        // withdraw LQTY
-        inputs.push(encodeFunctionData({
-          abi: Governance.abi,
-          functionName: "withdrawLQTY",
-          args: [unstakeAmount],
-        }));
+        const inputs = generateUnstakeTransactions(
+          userState,
+          userAllocations,
+          unstakeAmount,
+          Governance.abi,
+        );
 
         return ctx.writeContract({
           ...Governance,
