@@ -5,6 +5,9 @@ pragma solidity 0.8.24;
 import "./TestContracts/DevTestSetup.sol";
 import "./TestContracts/ERC20Faucet.sol";
 import "./TestContracts/CollateralRegistryTester.sol";
+import "../src/MultiTroveGetter.sol";
+import "../src/Interfaces/IMultiTroveGetter.sol";
+import "../src/HintHelpers.sol";
 
 contract BasicOps is DevTestSetup {
     function testOpenTroveFailsWithoutAllowance() public {
@@ -278,5 +281,70 @@ contract BasicOps is DevTestSetup {
         removedBranchIds = myCollateralRegistry.removedBranchIds();
         assertEq(removedBranchIds.length, 1);
         assertEq(removedBranchIds[0], 1);
+    }
+
+    function testMultiTroveGetterBranchIdAfterRemoval() public {
+        IERC20Metadata[] memory tokens = new IERC20Metadata[](2);
+        tokens[0] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        tokens[1] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        ITroveManager[] memory troveManagers = new ITroveManager[](2);
+        troveManagers[0] = new TroveManager(addressesRegistry, 0);
+        troveManagers[1] = new TroveManager(addressesRegistry, 1);
+
+        // Deploy a new collateral registry
+        CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(boldToken, tokens, troveManagers, address(0x123));
+
+        priceFeed.setPrice(2000e18);
+        vm.prank(A);
+        borrowerOperations.openTrove(
+            A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
+        );
+
+        vm.prank(address(0x123));
+        myCollateralRegistry.removeCollateral(1);
+
+        uint256[] memory removedBranchIds = myCollateralRegistry.removedBranchIds();
+        assertEq(removedBranchIds.length, 1);
+        assertEq(removedBranchIds[0], 1);
+
+        MultiTroveGetter multiTroveGetter = new MultiTroveGetter(myCollateralRegistry);
+        IMultiTroveGetter.CombinedTroveData[] memory _troves = multiTroveGetter.getMultipleSortedTroves(1, 0, 1);
+        assertEq(_troves.length, 1);
+
+
+        vm.expectRevert("Invalid collateral index");
+        multiTroveGetter.getMultipleSortedTroves(2, 0, 1);
+    }
+
+    function testHintHelpersBranchIdAfterRemoval() public {
+        IERC20Metadata[] memory tokens = new IERC20Metadata[](2);
+        tokens[0] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        tokens[1] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        ITroveManager[] memory troveManagers = new ITroveManager[](2);
+        troveManagers[0] = new TroveManager(addressesRegistry, 0);
+        troveManagers[1] = new TroveManager(addressesRegistry, 1);
+
+        // Deploy a new collateral registry
+        CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(boldToken, tokens, troveManagers, address(0x123));
+        
+        priceFeed.setPrice(2000e18);
+        vm.prank(A);
+        borrowerOperations.openTrove(
+            A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
+        );
+
+
+        vm.prank(address(0x123));
+        myCollateralRegistry.removeCollateral(1);
+
+        uint256[] memory removedBranchIds = myCollateralRegistry.removedBranchIds();
+        assertEq(removedBranchIds.length, 1);
+        assertEq(removedBranchIds[0], 1);
+
+        HintHelpers hintHelpers = new HintHelpers(myCollateralRegistry);
+        hintHelpers.predictOpenTroveUpfrontFee(1, 100e18, 1000e18);
+
+        vm.expectRevert();
+        hintHelpers.predictOpenTroveUpfrontFee(2, 100e18, 1000e18);
     }
 }
