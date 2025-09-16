@@ -60,6 +60,7 @@ contract TestDeployer is MetadataDeployment {
         IInterestRouter interestRouter;
         IERC20Metadata collToken;
         LiquityContractsDevPools pools;
+        ISystemParams systemParams;
     }
 
     struct LiquityContracts {
@@ -76,6 +77,7 @@ contract TestDeployer is MetadataDeployment {
         GasPool gasPool;
         IInterestRouter interestRouter;
         IERC20Metadata collToken;
+        ISystemParams systemParams;
     }
 
     struct LiquityContractAddresses {
@@ -119,6 +121,7 @@ contract TestDeployer is MetadataDeployment {
         IBoldToken boldToken;
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
+        ISystemParams systemParams;
     }
 
     struct DeploymentVarsMainnet {
@@ -322,21 +325,18 @@ contract TestDeployer is MetadataDeployment {
         internal
         returns (IAddressesRegistry, address)
     {
-        IAddressesRegistry addressesRegistry = new AddressesRegistry(
-            address(this),
-            _troveManagerParams.CCR,
-            _troveManagerParams.MCR,
-            _troveManagerParams.BCR,
-            _troveManagerParams.SCR,
-            _troveManagerParams.LIQUIDATION_PENALTY_SP,
-            _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
-        );
+        IAddressesRegistry addressesRegistry = new AddressesRegistry(address(this));
         address troveManagerAddress = getAddress(
             address(this), getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry)), SALT
         );
 
         return (addressesRegistry, troveManagerAddress);
     }
+
+    // TODO(@bayological): Implement
+    // function deploySystemParamsDev() public returns (ISystemParams) {
+    //     return new SystemParams();
+    // }
 
     function _deployAndConnectCollateralContractsDev(
         IERC20Metadata _collToken,
@@ -417,11 +417,11 @@ contract TestDeployer is MetadataDeployment {
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
-        contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry);
+        contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
+        contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: stabilityPoolSalt}(false);
-        contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
+        contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
         contracts.pools.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
         contracts.pools.gasPool = new GasPool{salt: SALT}(contracts.addressesRegistry);
         contracts.pools.collSurplusPool = new CollSurplusPool{salt: SALT}(contracts.addressesRegistry);
@@ -467,6 +467,10 @@ contract TestDeployer is MetadataDeployment {
         vars.oracleParams.ethUsdStalenessThreshold = _24_HOURS;
         vars.oracleParams.stEthUsdStalenessThreshold = _24_HOURS;
         vars.oracleParams.rEthEthStalenessThreshold = _48_HOURS;
+
+        // Deploy System Params
+        // TODO(@bayological): Implement
+        result.systemParams = _deploySystemParamsMainnet();
 
         // Colls: WETH, WSTETH, RETH
         vars.numCollaterals = 3;
@@ -526,6 +530,8 @@ contract TestDeployer is MetadataDeployment {
         result.boldToken.setCollateralRegistry(address(result.collateralRegistry));
     }
 
+    // TODO(@bayological): Update below to remove params that are now in SystemParams from addressesRegistry constructor
+
     function _deployAddressesRegistryMainnet(TroveManagerParams memory _troveManagerParams)
         internal
         returns (IAddressesRegistry, address)
@@ -544,6 +550,8 @@ contract TestDeployer is MetadataDeployment {
 
         return (addressesRegistry, troveManagerAddress);
     }
+
+    // TODO(@bayological): The below function needs to be updated to deploy SystemParams
 
     function _deployAndConnectCollateralContractsMainnet(
         DeploymentParamsMainnet memory _params,
@@ -620,11 +628,11 @@ contract TestDeployer is MetadataDeployment {
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
-        contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry);
-        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry);
+        contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
+        contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: stabilityPoolSalt}(false);
-        contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
+        contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry, contracts.systemParams);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
         contracts.gasPool = new GasPool{salt: SALT}(contracts.addressesRegistry);
         contracts.collSurplusPool = new CollSurplusPool{salt: SALT}(contracts.addressesRegistry);

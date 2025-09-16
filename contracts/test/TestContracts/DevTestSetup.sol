@@ -64,6 +64,7 @@ contract DevTestSetup is BaseTest {
         troveNFT = contracts.troveNFT;
         metadataNFT = addressesRegistry.metadataNFT();
         mockInterestRouter = contracts.interestRouter;
+        systemParams = contracts.systemParams;
 
         // Give some Coll to test accounts, and approve it to BorrowerOperations
         uint256 initialCollAmount = 10_000_000_000e18;
@@ -77,6 +78,25 @@ contract DevTestSetup is BaseTest {
         BCR = troveManager.get_BCR();
         LIQUIDATION_PENALTY_SP = troveManager.get_LIQUIDATION_PENALTY_SP();
         LIQUIDATION_PENALTY_REDISTRIBUTION = troveManager.get_LIQUIDATION_PENALTY_REDISTRIBUTION();
+        
+        MIN_DEBT = systemParams.MIN_DEBT();
+        SP_YIELD_SPLIT = systemParams.SP_YIELD_SPLIT();
+        MIN_ANNUAL_INTEREST_RATE = systemParams.MIN_ANNUAL_INTEREST_RATE();
+        INTEREST_RATE_ADJ_COOLDOWN = systemParams.INTEREST_RATE_ADJ_COOLDOWN();
+        ETH_GAS_COMPENSATION = systemParams.ETH_GAS_COMPENSATION();
+        COLL_GAS_COMPENSATION_DIVISOR = systemParams.COLL_GAS_COMPENSATION_DIVISOR();
+        MAX_ANNUAL_INTEREST_RATE = systemParams.MAX_ANNUAL_INTEREST_RATE();
+        MIN_BOLD_IN_SP = systemParams.MIN_BOLD_IN_SP();
+        REDEMPTION_FEE_FLOOR = systemParams.REDEMPTION_FEE_FLOOR();
+        INITIAL_BASE_RATE = systemParams.INITIAL_BASE_RATE();
+        MAX_BATCH_SHARES_RATIO = systemParams.MAX_BATCH_SHARES_RATIO();
+        MAX_ANNUAL_BATCH_MANAGEMENT_FEE = systemParams.MAX_ANNUAL_BATCH_MANAGEMENT_FEE();
+        REDEMPTION_MINUTE_DECAY_FACTOR = systemParams.REDEMPTION_MINUTE_DECAY_FACTOR();
+        URGENT_REDEMPTION_BONUS = systemParams.URGENT_REDEMPTION_BONUS();
+        
+        // TODO(@bayological): These may need initializing. They come from borrower ops but can be fetched from sys params
+        // UPFRONT_INTEREST_PERIOD;
+        // MIN_INTEREST_RATE_CHANGE_PERIOD;
     }
 
     function _setupForWithdrawCollGainToTrove() internal returns (uint256, uint256, uint256) {

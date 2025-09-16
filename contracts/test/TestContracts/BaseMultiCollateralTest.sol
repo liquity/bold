@@ -8,6 +8,7 @@ import {IWETH} from "src/Interfaces/IWETH.sol";
 import {HintHelpers} from "src/HintHelpers.sol";
 import {MultiTroveGetter} from "src/MultiTroveGetter.sol";
 import {TestDeployer} from "./Deployment.t.sol";
+import {ISystemParams} from "src/Interfaces/ISystemParams.sol";
 
 contract BaseMultiCollateralTest {
     struct Contracts {
@@ -17,6 +18,7 @@ contract BaseMultiCollateralTest {
         HintHelpers hintHelpers;
         MultiTroveGetter multiTroveGetter;
         TestDeployer.LiquityContractsDev[] branches;
+        ISystemParams systemParams;
     }
 
     IERC20 weth;
@@ -24,12 +26,14 @@ contract BaseMultiCollateralTest {
     IBoldToken boldToken;
     HintHelpers hintHelpers;
     TestDeployer.LiquityContractsDev[] branches;
+    ISystemParams systemParams;
 
     function setupContracts(Contracts memory contracts) internal {
         weth = contracts.weth;
         collateralRegistry = contracts.collateralRegistry;
         boldToken = contracts.boldToken;
         hintHelpers = contracts.hintHelpers;
+        systemParams = contracts.systemParams;
 
         for (uint256 i = 0; i < contracts.branches.length; ++i) {
             branches.push(contracts.branches[i]);

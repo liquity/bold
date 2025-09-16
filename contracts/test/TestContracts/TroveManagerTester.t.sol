@@ -4,6 +4,7 @@ pragma solidity 0.8.24;
 
 import "src/Interfaces/IAddressesRegistry.sol";
 import "src/Interfaces/ICollateralRegistry.sol";
+import "src/Interfaces/ISystemParams.sol";
 import "src/TroveManager.sol";
 import "./Interfaces/ITroveManagerTester.sol";
 
@@ -16,8 +17,12 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
     // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
     uint256 public immutable BCR;
 
-    constructor(IAddressesRegistry _addressesRegistry) TroveManager(_addressesRegistry) {
-        BCR = _addressesRegistry.BCR();
+    uint256 public immutable UPFRONT_INTEREST_PERIOD;
+
+
+    constructor(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) TroveManager(_addressesRegistry, _systemParams) {
+        BCR = _systemParams.BCR();
+        UPFRONT_INTEREST_PERIOD = _systemParams.UPFRONT_INTEREST_PERIOD();
     }
 
     // Single liquidation function. Closes the trove if its ICR is lower than the minimum collateral ratio.
@@ -119,8 +124,12 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         return _getCollGasCompensation(_coll);
     }
 
-    function getETHGasCompensation() external pure returns (uint256) {
+    function getETHGasCompensation() external view returns (uint256) {
         return ETH_GAS_COMPENSATION;
+    }
+
+    function get_MIN_DEBT() external view returns (uint256) {
+        return MIN_DEBT;
     }
 
     /*
@@ -158,7 +167,7 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         return _calcUpfrontFee(openTrove.debtIncrease, avgInterestRate);
     }
 
-    function _calcUpfrontFee(uint256 _debt, uint256 _avgInterestRate) internal pure returns (uint256) {
+    function _calcUpfrontFee(uint256 _debt, uint256 _avgInterestRate) internal view returns (uint256) {
         return _calcInterest(_debt * _avgInterestRate, UPFRONT_INTEREST_PERIOD);
     }
 

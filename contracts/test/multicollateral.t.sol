@@ -7,28 +7,7 @@ import "./TestContracts/DevTestSetup.sol";
 
 contract MulticollateralTest is DevTestSetup {
     uint256 NUM_COLLATERALS = 4;
-    TestDeployer.LiquityContractsDev[] public contractsArray;
-
-    // Test constants
-    // Collateral branch parameters (SETH = staked ETH, i.e. wstETH / rETH)
-    uint256 constant CCR_WETH = 150 * _1pct;
-    uint256 constant CCR_SETH = 160 * _1pct;
-
-    uint256 constant MCR_WETH = 110 * _1pct;
-    uint256 constant MCR_SETH = 120 * _1pct;
-
-    uint256 constant SCR_WETH = 110 * _1pct;
-    uint256 constant SCR_SETH = 120 * _1pct;
-
-    // Batch CR buffer (same for all branches for now)
-    // On top of MCR to join a batch, or adjust inside a batch
-    uint256 constant BCR_ALL = 10 * _1pct;
-
-    uint256 constant LIQUIDATION_PENALTY_SP_WETH = 5 * _1pct;
-    uint256 constant LIQUIDATION_PENALTY_SP_SETH = 5 * _1pct;
-
-    uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_WETH = 10 * _1pct;
-    uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SETH = 20 * _1pct;
+    TestDeployer.LiquityContractsDev[] public contractsArray; 
 
     function openMulticollateralTroveNoHints100pctWithIndex(
         uint256 _collIndex,
@@ -764,6 +743,29 @@ contract MulticollateralTest is DevTestSetup {
 
 contract CsBold013 is TestAccounts {
     uint256 constant INITIAL_PRICE = 2_000 ether;
+
+    // TODO: Determine appropriate values for test(WETH, SETH) or remove test
+    // Collateral branch parameters (SETH = staked ETH, i.e. wstETH / rETH)
+    uint256 constant CCR_WETH = 150 * _1pct;
+    uint256 constant CCR_SETH = 160 * _1pct;
+
+    uint256 constant MCR_WETH = 110 * _1pct;
+    uint256 constant MCR_SETH = 120 * _1pct;
+
+    uint256 constant SCR_WETH = 110 * _1pct;
+    uint256 constant SCR_SETH = 120 * _1pct;
+
+    // Batch CR buffer (same for all branches for now)
+    // On top of MCR to join a batch, or adjust inside a batch
+    uint256 constant BCR_ALL = 10 * _1pct;
+
+    uint256 constant LIQUIDATION_PENALTY_SP_WETH = 5 * _1pct;
+    uint256 constant LIQUIDATION_PENALTY_SP_SETH = 5 * _1pct;
+
+    uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_WETH = 10 * _1pct;
+    uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SETH = 20 * _1pct;
+
+    uint256 constant MIN_ANNUAL_INTEREST_RATE = _1pct / 2;
 
     IBoldToken boldToken;
     ICollateralRegistry collateralRegistry;

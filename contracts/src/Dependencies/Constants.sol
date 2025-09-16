@@ -16,6 +16,6 @@ uint256 constant ONE_YEAR = 365 days;
 // TODO(@bayological): Remve this and refactor the tests that use it
 // Dummy contract that lets legacy Hardhat tests query some of the constants
 contract Constants {
-    uint256 public constant _ETH_GAS_COMPENSATION = ETH_GAS_COMPENSATION;
-    uint256 public constant _MIN_DEBT = MIN_DEBT;
+    uint256 public constant _ETH_GAS_COMPENSATION = 123;
+    uint256 public constant _MIN_DEBT = 123;
 }
