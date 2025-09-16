@@ -38,6 +38,7 @@ interface IAddressesRegistry {
         ICollateralRegistry collateralRegistry;
         IBoldToken boldToken;
         IERC20Metadata gasToken;
+        address liquidityStrategy;
     }
 
     function CCR() external returns (uint256);
@@ -65,6 +66,7 @@ interface IAddressesRegistry {
     function collateralRegistry() external view returns (ICollateralRegistry);
     function boldToken() external view returns (IBoldToken);
     function gasToken() external view returns (IERC20Metadata);
+    function liquidityStrategy() external view returns (address);
 
     function setAddresses(AddressVars memory _vars) external;
 }

@@ -175,6 +175,9 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
     uint256 public currentScale;
 
+    // TODO: is this 1-1 between SP and liquidity strategy?
+    address public liquidityStrategy;
+
     /* Coll Gain sum 'S': During its lifetime, each deposit d_t earns an Coll gain of ( d_t * [S - S_t] )/P_t, where S_t
     * is the depositor's snapshot of S taken at the time t when the deposit was made.
     *
@@ -206,6 +209,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         collToken = _addressesRegistry.collToken();
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();
+        liquidityStrategy = _addressesRegistry.liquidityStrategy();
 
         emit TroveManagerAddressChanged(address(troveManager));
         emit BoldTokenAddressChanged(address(boldToken));
@@ -386,6 +390,23 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         emit B_Updated(scaleToB[currentScale], currentScale);
     }
 
+    // --- Liquidity strategy functions ---
+
+    /*
+    * Stable token liquidity in the stability pool can be used to rebalance FPMM pools.
+    * Collateral will be swapped for stable tokens in the SP.
+    * Removed stable tokens will be factored out from LPs' positions.
+    * Added collateral will be added to LPs collateral gain which can be later claimed by the depositor.
+    */
+    function swapCollateralForStable(uint256 amountStableOut, uint256 amountCollIn) external {
+        _requireNonZeroAmount(amountStableOut);
+        _requireNonZeroAmount(amountCollIn);
+
+        _requireCallerIsLiquidityStrategy();
+
+        _offset(amountStableOut, amountCollIn);
+    }
+
     // --- Liquidation functions ---
 
     /*
@@ -395,7 +416,10 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     */
     function offset(uint256 _debtToOffset, uint256 _collToAdd) external override {
         _requireCallerIsTroveManager();
+        _offset(_debtToOffset, _collToAdd);
+    }
 
+    function _offset(uint256 _debtToOffset, uint256 _collToAdd) internal {
         scaleToS[currentScale] += P * _collToAdd / totalBoldDeposits;
         emit S_Updated(scaleToS[currentScale], currentScale);
 
@@ -608,6 +632,10 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     function _requireUserHasNoDeposit(address _address) internal view {
         uint256 initialDeposit = deposits[_address].initialValue;
         require(initialDeposit == 0, "StabilityPool: User must have no deposit");
+    }
+
+    function _requireCallerIsLiquidityStrategy() internal view {
+        require(msg.sender == liquidityStrategy, "StabilityPool: Caller is not LiquidityStrategy");
     }
 
     function _requireNonZeroAmount(uint256 _amount) internal pure {

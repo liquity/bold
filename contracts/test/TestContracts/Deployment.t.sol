@@ -411,7 +411,9 @@ contract TestDeployer is MetadataDeployment {
             collateralRegistry: _collateralRegistry,
             boldToken: _boldToken,
             collToken: _collToken,
-            gasToken: _gasToken
+            gasToken: _gasToken,
+            // TODO: add liquidity strategy
+            liquidityStrategy: address(0)
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
@@ -612,7 +614,9 @@ contract TestDeployer is MetadataDeployment {
             collateralRegistry: _params.collateralRegistry,
             boldToken: _params.boldToken,
             collToken: _params.collToken,
-            gasToken: _params.gasToken
+            gasToken: _params.gasToken,
+            // TODO: add liquidity strategy
+            liquidityStrategy: address(0)
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
