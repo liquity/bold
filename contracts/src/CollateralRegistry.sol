@@ -356,20 +356,21 @@ contract CollateralRegistry is ICollateralRegistry {
         getTroveManager(_indexTroveManager).setDebtLimit(_newDebtLimit);
     }
 
-    function updateCCR(uint256 _collIndex, uint256 _newCCR) external onlyGovernor {
-        getTroveManager(_collIndex).addressesRegistry().updateCCR(_newCCR);
+    function updateCCR(uint256 _branchId, uint256 _newCCR) external onlyGovernor {
+        allTroveManagerAddresses[_branchId].addressesRegistry().updateCCR(_newCCR);
     }
 
-    function updateMCR(uint256 _collIndex, uint256 _newMCR) external onlyGovernor {
-        getTroveManager(_collIndex).addressesRegistry().updateMCR(_newMCR);
+    // Use the branchId, not the array index
+    function updateMCR(uint256 _branchId, uint256 _newMCR) external onlyGovernor {
+        allTroveManagerAddresses[_branchId].addressesRegistry().updateMCR(_newMCR);
     }
 
-    function updateBCR(uint256 _collIndex, uint256 _newBCR) external onlyGovernor {
-        getTroveManager(_collIndex).addressesRegistry().updateBCR(_newBCR);
+    function updateBCR(uint256 _branchId, uint256 _newBCR) external onlyGovernor {
+        allTroveManagerAddresses[_branchId].addressesRegistry().updateBCR(_newBCR);
     }
 
-    function updateSCR(uint256 _collIndex, uint256 _newSCR) external onlyGovernor {
-        getTroveManager(_collIndex).addressesRegistry().updateSCR(_newSCR);
+    function updateSCR(uint256 _branchId, uint256 _newSCR) external onlyGovernor {
+        allTroveManagerAddresses[_branchId].addressesRegistry().updateSCR(_newSCR);
     }
 
     // ==== Add a new collateral ==== 
