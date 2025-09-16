@@ -1,5 +1,6 @@
 import type { Strategy, StrategyId } from "./types";
 
+import strategyBalancer from "./strategy-icons/balancer.svg";
 import strategyBunni from "./strategy-icons/bunni.png";
 import strategyCamelot from "./strategy-icons/camelot.png";
 import strategySpectra from "./strategy-icons/spectra.svg";
@@ -7,12 +8,19 @@ import strategyTeller from "./strategy-icons/teller.png";
 
 export function isStrategyId(id: string): id is StrategyId {
   return (
-    id === "bunni" 
+    id === "balancer"
+    || id === "bunni" 
     || id === "camelot" 
     || id === "spectra" 
     || id === "teller" 
   );
 }
+
+export const BALANCER: Strategy = {
+  id: "balancer",
+  icon: strategyBalancer,
+  name: "Balancer",
+} as const;
 
 export const BUNNI: Strategy = {
   id: "bunni",
@@ -39,6 +47,7 @@ export const TELLER: Strategy = {
 } as const;
 
 export const STRATEGIES: Strategy[] = [
+  BALANCER,
   BUNNI,
   CAMELOT,
   SPECTRA,
@@ -46,6 +55,7 @@ export const STRATEGIES: Strategy[] = [
 ] as const;
 
 export const STRATEGIES_BY_ID = {
+  balancer: BALANCER,
   bunni: BUNNI,
   camelot: CAMELOT,
   spectra: SPECTRA,

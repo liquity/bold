@@ -26,7 +26,12 @@ export type Token = {
   symbol: TokenSymbol;
 };
 
-export type StrategyId = "bunni" | "camelot" | "spectra" | "teller";
+export type StrategyId = 
+  | "balancer"
+  | "bunni"
+  | "camelot"
+  | "spectra"
+  | "teller"
 
 export type Strategy = {
   id: StrategyId;
