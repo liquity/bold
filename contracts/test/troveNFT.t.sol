@@ -135,14 +135,14 @@ contract troveNFTTest is DevTestSetup {
     }
 
     function testTroveNFTMetadata() public view {
-        assertEq(troveNFTWETH.name(), "Liquity V2 - Wrapped Ether Tester", "Invalid Trove Name");
-        assertEq(troveNFTWETH.symbol(), "LV2_WETH", "Invalid Trove Symbol");
+        assertEq(troveNFTWETH.name(), "Mustang - Wrapped Ether Tester", "Invalid Trove Name");
+        assertEq(troveNFTWETH.symbol(), "MUST_WETH", "Invalid Trove Symbol");
 
-        assertEq(troveNFTWstETH.name(), "Liquity V2 - Wrapped Staked Ether", "Invalid Trove Name");
-        assertEq(troveNFTWstETH.symbol(), "LV2_wstETH", "Invalid Trove Symbol");
+        assertEq(troveNFTWstETH.name(), "Mustang - Wrapped Staked Ether", "Invalid Trove Name");
+        assertEq(troveNFTWstETH.symbol(), "MUST_wstETH", "Invalid Trove Symbol");
 
-        assertEq(troveNFTRETH.name(), "Liquity V2 - Rocket Pool ETH", "Invalid Trove Name");
-        assertEq(troveNFTRETH.symbol(), "LV2_rETH", "Invalid Trove Symbol");
+        assertEq(troveNFTRETH.name(), "Mustang - Rocket Pool ETH", "Invalid Trove Name");
+        assertEq(troveNFTRETH.symbol(), "MUST_rETH", "Invalid Trove Symbol");
     }
 
     string topMulti =
