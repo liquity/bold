@@ -278,10 +278,13 @@ contract TestDeployer is MetadataDeployment {
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
+        // TODO: Before sys params we deployed address registry per branch
+        //       We should do the same for sys params
+
         // Deploy the first branch with WETH collateral
         vars.collaterals[0] = _WETH;
         (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
-            _deployAddressesRegistryDev(systemParams, troveManagerParamsArray[0]);
+            _deployAddressesRegistryDev(systemParams);
         vars.addressesRegistries[0] = addressesRegistry;
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
@@ -293,7 +296,7 @@ contract TestDeployer is MetadataDeployment {
             );
             vars.collaterals[vars.i] = collToken;
             // Addresses registry and TM address
-            (addressesRegistry, troveManagerAddress) = _deployAddressesRegistryDev(systemParams, troveManagerParamsArray[vars.i]);
+            (addressesRegistry, troveManagerAddress) = _deployAddressesRegistryDev(systemParams);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
@@ -332,7 +335,7 @@ contract TestDeployer is MetadataDeployment {
         boldToken.setCollateralRegistry(address(collateralRegistry));
     }
 
-    function _deployAddressesRegistryDev(ISystemParams _systemParams, TroveManagerParams memory _troveManagerParams)
+    function _deployAddressesRegistryDev(ISystemParams _systemParams)
         internal
         returns (IAddressesRegistry, address)
     {
