@@ -1211,7 +1211,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         return _troveEntireDebt;
     }
 
-    function _calcUpfrontFee(uint256 _debt, uint256 _avgInterestRate) internal pure returns (uint256) {
+    function _calcUpfrontFee(uint256 _debt, uint256 _avgInterestRate) internal view returns (uint256) {
         return _calcInterest(_debt * _avgInterestRate, UPFRONT_INTEREST_PERIOD);
     }
 
@@ -1491,7 +1491,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireAtLeastMinDebt(uint256 _debt) internal pure {
+    function _requireAtLeastMinDebt(uint256 _debt) internal view {
         if (_debt < MIN_DEBT) {
             revert DebtBelowMin();
         }
@@ -1512,7 +1512,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireValidAnnualInterestRate(uint256 _annualInterestRate) internal pure {
+    function _requireValidAnnualInterestRate(uint256 _annualInterestRate) internal view {
         if (_annualInterestRate < MIN_ANNUAL_INTEREST_RATE) {
             revert InterestRateTooLow();
         }

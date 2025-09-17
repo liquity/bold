@@ -2413,11 +2413,11 @@ contract InvariantsTestHandler is Assertions, BaseHandler, BaseMultiCollateralTe
         return _baseRate * decaySinceLastRedemption / DECIMAL_PRECISION;
     }
 
-    function _getBaseRateIncrease(uint256 boldSupply, uint256 redeemed) internal pure returns (uint256) {
+    function _getBaseRateIncrease(uint256 boldSupply, uint256 redeemed) internal view returns (uint256) {
         return boldSupply > 0 ? redeemed * DECIMAL_PRECISION / boldSupply / REDEMPTION_BETA : 0;
     }
 
-    function _getRedemptionRate(uint256 baseRate) internal pure returns (uint256) {
+    function _getRedemptionRate(uint256 baseRate) internal view returns (uint256) {
         return Math.min(REDEMPTION_FEE_FLOOR + baseRate, _100pct);
     }
 

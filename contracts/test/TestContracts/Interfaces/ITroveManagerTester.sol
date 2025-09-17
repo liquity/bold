@@ -31,10 +31,10 @@ interface ITroveManagerTester is ITroveManager {
     function checkBelowCriticalThreshold(uint256 _price) external view returns (bool);
 
     function computeICR(uint256 _coll, uint256 _debt, uint256 _price) external pure returns (uint256);
-    function getCollGasCompensation(uint256 _coll) external pure returns (uint256);
+    function getCollGasCompensation(uint256 _coll) external view returns (uint256);
     function getCollGasCompensation(uint256 _coll, uint256 _debt, uint256 _boldInSPForOffsets)
         external
-        pure
+        view
         returns (uint256);
 
     function getEffectiveRedemptionFeeInColl(uint256 _redeemAmount, uint256 _price) external view returns (uint256);

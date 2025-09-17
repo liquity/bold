@@ -242,7 +242,7 @@ contract CollateralRegistry is ICollateralRegistry {
         return baseRate * decayFactor / DECIMAL_PRECISION;
     }
 
-    function _calcRedemptionRate(uint256 _baseRate) internal pure returns (uint256) {
+    function _calcRedemptionRate(uint256 _baseRate) internal view returns (uint256) {
         return LiquityMath._min(
             REDEMPTION_FEE_FLOOR + _baseRate,
             DECIMAL_PRECISION // cap at a maximum of 100%
@@ -312,7 +312,7 @@ contract CollateralRegistry is ICollateralRegistry {
 
     // require functions
 
-    function _requireValidMaxFeePercentage(uint256 _maxFeePercentage) internal pure {
+    function _requireValidMaxFeePercentage(uint256 _maxFeePercentage) internal view {
         require(
             _maxFeePercentage >= REDEMPTION_FEE_FLOOR && _maxFeePercentage <= DECIMAL_PRECISION,
             "Max fee percentage must be between 0.5% and 100%"

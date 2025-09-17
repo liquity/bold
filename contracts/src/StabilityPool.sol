@@ -180,7 +180,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
     uint256 public currentScale;
 
-    uint256 public immutable MIN_BOLD_IN_SP;
+    uint256 public MIN_BOLD_IN_SP;
 
     address public liquidityStrategy;
 

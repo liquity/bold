@@ -76,7 +76,7 @@ contract HintHelpers is IHintHelpers {
         }
     }
 
-    function _calcUpfrontFee(uint256 _debt, uint256 _avgInterestRate) internal pure returns (uint256) {
+    function _calcUpfrontFee(uint256 _debt, uint256 _avgInterestRate) internal view returns (uint256) {
         return _debt * _avgInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
     }
 

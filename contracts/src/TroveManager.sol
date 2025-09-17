@@ -348,7 +348,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     // Return the amount of Coll to be drawn from a trove's collateral and sent as gas compensation.
-    function _getCollGasCompensation(uint256 _coll) internal pure returns (uint256) {
+    function _getCollGasCompensation(uint256 _coll) internal view returns (uint256) {
         // _entireDebt should never be zero, but we add the condition defensively to avoid an unexpected revert
         return LiquityMath._min(_coll / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
     }
@@ -534,7 +534,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         LiquidationValues memory _singleLiquidation,
         LiquidationValues memory totals,
         TroveChange memory troveChange
-    ) internal pure {
+    ) internal view {
         // Tally all the values with their respective running totals
         totals.collGasCompensation += _singleLiquidation.collGasCompensation;
         totals.ETHGasCompensation += ETH_GAS_COMPENSATION;
@@ -1920,7 +1920,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 _currentBatchDebtShares,
         uint256 _batchDebt,
         bool _checkBatchSharesRatio
-    ) internal pure {
+    ) internal view {
         // debt / shares should be below MAX_BATCH_SHARES_RATIO
         if (_currentBatchDebtShares * MAX_BATCH_SHARES_RATIO < _batchDebt && _checkBatchSharesRatio) {
             revert BatchSharesRatioTooHigh();
