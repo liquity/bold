@@ -20,8 +20,8 @@ export function PartnerStrategySummary({
   }> = {
     balancer: {
       title: "Balancer V3",
-      subtitle: "AMM stable pool with USND/USDC liquidity",
-      href: `https://balancer.fi/pools/arbitrum/v3/0xc11d4777d0bcc257bba293b90522f5d6bd875228`,
+      subtitle: "AMM stable pools with USND/USDC liquidity",
+      href: `https://balancer.fi/pools?textSearch=usnd`,
       infoItems: [],
     },
     bunni: {
