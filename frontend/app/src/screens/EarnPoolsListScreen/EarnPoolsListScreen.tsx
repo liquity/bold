@@ -25,7 +25,7 @@ export function EarnPoolsListScreen() {
   const bpName = useBreakpointName();
 
   let pools: PoolId[] = collaterals.map((c) => c.collIndex);
-  let strategies: StrategyId[] = ["balancer", "bunni", "camelot", "spectra", "teller"];
+  let strategies: StrategyId[] = ["balancer", "camelot", "spectra", "teller"];
 
   if (isYusndEnabled()) {
     pools = ["yusnd", ...pools];
@@ -132,7 +132,7 @@ export function EarnPoolsListScreen() {
       >
         <div className={css({
           display: "grid",
-          gridTemplateColumns: bpName === "large" ? "repeat(3, 1fr)" : "repeat(2, 1fr)",
+          gridTemplateColumns: bpName === "large" ? "repeat(4, 1fr)" : "repeat(2, 1fr)",
           gap: 16,
           justifyItems: "center",
         })}>

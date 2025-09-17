@@ -24,12 +24,12 @@ export function PartnerStrategySummary({
       href: `https://balancer.fi/pools?textSearch=usnd`,
       infoItems: [],
     },
-    bunni: {
-      title: "Bunni",
-      subtitle: "Rehypothecation DEX built on Uniswap v4 with USND liquidity",
-      href: `https://bunni.xyz/explore/pools/arbitrum/0x75c55eda2c37c47eaf1db8b500171f72f23dc5b16404e904866a6ad1b3a3e537`,
-      infoItems: [],
-    },
+    // bunni: {
+    //   title: "Bunni",
+    //   subtitle: "Rehypothecation DEX built on Uniswap v4 with USND liquidity",
+    //   href: `https://bunni.xyz/explore/pools/arbitrum/0x75c55eda2c37c47eaf1db8b500171f72f23dc5b16404e904866a6ad1b3a3e537`,
+    //   infoItems: [],
+    // },
     camelot: {
       title: "Camelot",
       subtitle: "The Arbitrum native DEX with ETH/USND liquidity",

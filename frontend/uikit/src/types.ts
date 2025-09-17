@@ -28,7 +28,6 @@ export type Token = {
 
 export type StrategyId = 
   | "balancer"
-  | "bunni"
   | "camelot"
   | "spectra"
   | "teller"
