@@ -11,6 +11,8 @@ import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Dependencies/LiquityBaseInit.sol";
 
+import "forge-std/console.sol";
+
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
  *
@@ -398,13 +400,16 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     * Removed stable tokens will be factored out from LPs' positions.
     * Added collateral will be added to LPs collateral gain which can be later claimed by the depositor.
     */
-    function swapCollateralForStable(uint256 amountStableOut, uint256 amountCollIn) external {
-        _requireNonZeroAmount(amountStableOut);
-        _requireNonZeroAmount(amountCollIn);
-
+    function swapCollateralForStable(uint256 amountCollIn, uint256 amountStableOut ) external {
         _requireCallerIsLiquidityStrategy();
 
-        _offset(amountStableOut, amountCollIn);
+        _updateTrackingVariables(amountStableOut, amountCollIn);
+
+        _swapCollateralForStable(amountCollIn, amountStableOut);
+        
+        // TODO: added this to avoid higher rate of scaling of P during rebalances for very small totalBoldDeposits
+        // Discuss with team if it is ok to have a larger limit for this to make scaling even less aggressive
+        require(totalBoldDeposits >= MIN_BOLD_IN_SP, "Total Bold deposits must be >= MIN_BOLD_IN_SP");
     }
 
     // --- Liquidation functions ---
@@ -416,14 +421,17 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     */
     function offset(uint256 _debtToOffset, uint256 _collToAdd) external override {
         _requireCallerIsTroveManager();
-        _offset(_debtToOffset, _collToAdd);
+
+        _updateTrackingVariables(_debtToOffset, _collToAdd);
+
+        _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
     }
 
-    function _offset(uint256 _debtToOffset, uint256 _collToAdd) internal {
-        scaleToS[currentScale] += P * _collToAdd / totalBoldDeposits;
+    function _updateTrackingVariables(uint256 _amountStableOut, uint256 _amountCollIn) internal {
+        scaleToS[currentScale] += P * _amountCollIn / totalBoldDeposits;
         emit S_Updated(scaleToS[currentScale], currentScale);
 
-        uint256 numerator = P * (totalBoldDeposits - _debtToOffset);
+        uint256 numerator = P * (totalBoldDeposits - _amountStableOut);
         uint256 newP = numerator / totalBoldDeposits;
 
         // For `P` to turn zero, `totalBoldDeposits` has to be greater than `P * (totalBoldDeposits - _debtToOffset)`.
@@ -449,8 +457,17 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
 
         emit P_Updated(newP);
         P = newP;
+    }
 
-        _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
+    function _swapCollateralForStable(uint256 _amountCollIn, uint256 _amountStableOut) internal {
+        _updateTotalBoldDeposits(0, _amountStableOut);
+        IERC20(address(boldToken)).safeTransfer(liquidityStrategy, _amountStableOut);
+
+        collBalance += _amountCollIn;
+        collToken.safeTransferFrom(msg.sender, address(this), _amountCollIn);
+        
+        emit StabilityPoolCollBalanceUpdated(collBalance);
+
     }
 
     function _moveOffsetCollAndDebt(uint256 _collToAdd, uint256 _debtToOffset) internal {
