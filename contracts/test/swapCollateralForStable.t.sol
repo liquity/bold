@@ -195,8 +195,6 @@ contract SwapCollateralForStableTest is DevTestSetup {
         assertEq(collToken.balanceOf(liquidityStrategy), initialValues.lsCollBalance - collSwapAmount);
     }
 
-    // ========== MULTIPLE DEPOSITORS TESTS ==========
-
     function testSwapCollateralForStableWithMultipleDepositors() public {
         uint256 depositA = 1000e18; // 1/6
         uint256 depositB = 2000e18; // 1/3
@@ -273,8 +271,6 @@ contract SwapCollateralForStableTest is DevTestSetup {
         // C should loose 1/2 of the Bold because they deposited 1/2 of the total deposits
         assertApproxEqAbs(boldToken.balanceOf(C), depositC - (initialValues.depositor3BoldBalance + stableSwapAmount / 2 + 1e18), 1e18);
     }
-
-    // ========== INTEGRATION WITH LIQUIDATIONS ==========
 
     function testSwapCollateralForStableAfterLiquidation() public {
         uint256 stableAmount = 2000e18;
@@ -361,8 +357,6 @@ contract SwapCollateralForStableTest is DevTestSetup {
         assertApproxEqAbs(boldToken.balanceOf(C), cBoldDeposit - (stableSwapAmount + stableAmount), 1e18);
     }
 
-    // ========== EVENT TESTING ==========
-
     function testSwapCollateralForStableEmitsCorrectEvents() public {
         uint256 stableAmount = 1000e18;
 
@@ -407,98 +401,64 @@ contract SwapCollateralForStableTest is DevTestSetup {
         vm.stopPrank();
     }
 
-    // // ========== SCALE CHANGES TESTS ==========
+    function testSwapCollateralForStableWithScaleChanges() public {
+        // Create a scenario that will trigger scale change
+        uint256 stableAmount = 10_000_000_000e18;
+        uint256 collSwapAmount = 1_000_000e18;
+        uint256 stableSwapAmount = stableAmount - 1e18; // Large amount relative to deposits
 
-    // function testSwapCollateralForStableWithScaleChanges() public {
-    //     // Create a scenario that will trigger scale changes
-    //     uint256 largeDeposit = 1000000e18;
-    //     makeSPDepositAndClaim(A, largeDeposit);
-        
-    //     // Perform multiple large swaps to potentially trigger scale changes
-    //     uint256 collSwapAmount = 100e18;
-    //     uint256 stableSwapAmount = 200000e18; // Large amount relative to deposits
-        
-    //     uint256 initialScale = stabilityPool.currentScale();
-        
-    //     vm.startPrank(liquidityStrategy);
-    //     stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount);
-    //     vm.stopPrank();
-        
-    //     // Check if scale changed (it might not in this case, but the mechanism should work)
-    //     uint256 finalScale = stabilityPool.currentScale();
-    //     assertTrue(finalScale >= initialScale);
-        
-    //     // Verify the swap still worked correctly regardless of scale changes
-    //     assertEq(stabilityPool.getTotalBoldDeposits(), largeDeposit - stableSwapAmount);
-    //     assertEq(stabilityPool.getCollBalance(), collSwapAmount);
-    // }
+        deal(address(boldToken), A, stableAmount/2);
+        deal(address(boldToken), B, stableAmount/2);
+        deal(address(collToken), liquidityStrategy, collSwapAmount);
 
-    // // ========== BOUNDARY CONDITIONS ==========
+        makeSPDepositAndClaim(A, stableAmount/2);
+        makeSPDepositAndClaim(B, stableAmount/2);
+        
+        
+        uint256 initialScale = stabilityPool.currentScale();
 
-    // function testSwapCollateralForStableAtMinimumDeposit() public {
-    //     // Test with minimum possible deposit
-    //     uint256 minDeposit = 1e18; // MIN_BOLD_IN_SP
-    //     makeSPDepositAndClaim(A, minDeposit);
         
-    //     uint256 collSwapAmount = 0.001e18; // Very small
-    //     uint256 stableSwapAmount = 0.5e18; // Half of minimum deposit
-        
-    //     vm.startPrank(liquidityStrategy);
-    //     stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount);
-    //     vm.stopPrank();
-        
-    //     // Should still work and leave at least MIN_BOLD_IN_SP
-    //     assertTrue(stabilityPool.getTotalBoldDeposits() >= 1e18);
-    //     assertEq(stabilityPool.getCollBalance(), collSwapAmount);
-    // }
+        vm.startPrank(liquidityStrategy);
+        stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount);
+        vm.stopPrank();
 
-    // function testSwapCollateralForStableWithMaxUint256() public {
-    //     // Test with very large numbers (but not actually max uint256 to avoid overflow)
-    //     uint256 largeDeposit = 1000000000e18; // 1 billion tokens
-    //     makeSPDepositAndClaim(A, largeDeposit);
+        // 1e36 * (1e18 / 1e28) = 1e26 
+        // 1e26 < 1e27, so the scale should increase
         
-    //     uint256 collSwapAmount = 1000000e18; // 1 million collateral
-    //     uint256 stableSwapAmount = 100000000e18; // 100 million stable
-        
-    //     vm.startPrank(liquidityStrategy);
-    //     stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount);
-    //     vm.stopPrank();
-        
-    //     // Should handle large numbers correctly
-    //     assertEq(stabilityPool.getTotalBoldDeposits(), largeDeposit - stableSwapAmount);
-    //     assertEq(stabilityPool.getCollBalance(), collSwapAmount);
-    //     assertEq(boldToken.balanceOf(liquidityStrategy), stableSwapAmount);
-    //     assertEq(collToken.balanceOf(liquidityStrategy), 10000e18 - collSwapAmount); // Initial 10000e18 - swapped
-    // }
+        uint256 finalScale = stabilityPool.currentScale();
+        assertGt(finalScale, initialScale);
+        assertEq(finalScale, 1);
 
-    // // ========== REENTRANCY AND SECURITY TESTS ==========
+        // P should be scaled back up 1e26 * 1e9 = 1e35
+        assertEq(stabilityPool.P(), 1e35);
+        
+        // // Verify the swap still worked correctly regardless of scale changes
+        assertEq(stabilityPool.getTotalBoldDeposits(), stableAmount - stableSwapAmount);
+        assertEq(stabilityPool.getCollBalance(), collSwapAmount);
 
-    // function testSwapCollateralForStableCannotBeCalledByNonLiquidityStrategy() public {
-    //     makeSPDepositAndClaim(A, 1000e18);
-        
-    //     // Try calling from different addresses
-    //     address[] memory testAddresses = new address[](4);
-    //     testAddresses[0] = A;
-    //     testAddresses[1] = B;
-    //     testAddresses[2] = C;
-    //     testAddresses[3] = address(this);
-        
-    //     for (uint256 i = 0; i < testAddresses.length; i++) {
-    //         vm.startPrank(testAddresses[i]);
-    //         vm.expectRevert("StabilityPool: Caller is not LiquidityStrategy");
-    //         stabilityPool.swapCollateralForStable(1e18, 1000e18);
-    //         vm.stopPrank();
-    //     }
-    // }
+        uint256 compundedBoldDeposit = stabilityPool.getCompoundedBoldDeposit(A);
+        assertEq(compundedBoldDeposit, (stableAmount - stableSwapAmount) / 2);
 
-    // function testSwapCollateralForStableWithZeroSPDeposits() public {
-    //     // Try to swap when SP has no deposits
-    //     uint256 collSwapAmount = 1e18;
-    //     uint256 stableSwapAmount = 1000e18;
+        uint256 depositorCollGain = stabilityPool.getDepositorCollGain(A);
+        assertEq(depositorCollGain, collSwapAmount / 2 );
+    }
+
+
+    function testSwapCollateralForStableAtMinimumDeposit() public {
+        uint256 stableAmount = 2e18;
+
+        deal(address(boldToken), A, stableAmount);
+        makeSPDepositAndClaim(A, stableAmount);
         
-    //     vm.startPrank(liquidityStrategy);
-    //     vm.expectRevert(); // Should revert due to division by zero or insufficient balance
-    //     stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount);
-    //     vm.stopPrank();
-    // }
+        uint256 collSwapAmount = 0.001e18;
+        uint256 stableSwapAmount = 1e18;
+        
+        vm.startPrank(liquidityStrategy);
+        stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount);
+        vm.stopPrank();
+        
+        // Should still work and leave at least MIN_BOLD_IN_SP
+        assertEq(stabilityPool.getTotalBoldDeposits(), 1e18);
+        assertEq(stabilityPool.getCollBalance(), collSwapAmount);
+    }
 }

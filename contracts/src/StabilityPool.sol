@@ -177,7 +177,6 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
     uint256 public currentScale;
 
-    // TODO: is this 1-1 between SP and liquidity strategy?
     address public liquidityStrategy;
 
     /* Coll Gain sum 'S': During its lifetime, each deposit d_t earns an Coll gain of ( d_t * [S - S_t] )/P_t, where S_t
@@ -204,7 +203,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
             _disableInitializers();
         }
     }
-
+    
     function initialize(IAddressesRegistry _addressesRegistry) external initializer {
         __LiquityBase_init(_addressesRegistry);
 
