@@ -167,6 +167,8 @@ export const CONTRACT_ADDRESSES = {
 
   strategies: {
     Balancer: "0xc11d4777d0bcc257bba293b90522f5d6bd875228",
+    Balancer2: "0x483bc7fe92fc392305dd97d4d3363e0e0a7f144d",
+    Balancer3: "0xa0d9b4e8d6470e965977571661134ce8c0d9eb73",
     Bunni: "0x7fbd42c058b97d906b2c0e67d8ee288f851935c7",
     Camelot: "0xA20723963Fb33297a3F5491831742f9B63EFe4f2",
     Spectra: "0xdbfdad05d2d280195331582516813358f41d1cc4",
