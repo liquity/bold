@@ -1,10 +1,9 @@
 import type { Address, BranchId, Delegate } from "@/src/types";
-import type { UseQueryResult } from "@tanstack/react-query";
 
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import content from "@/src/content";
+import { useKnownDelegates } from "@/src/liquity-delegate";
 import { getBranch, useInterestBatchDelegate, useInterestBatchDelegates } from "@/src/liquity-utils";
-import type { KnownDelegates } from "@/src/liquity-delegate";
 import { css } from "@/styled-system/css";
 import { AddressField, Modal } from "@liquity2/uikit";
 import { useMemo, useState } from "react";
@@ -15,13 +14,11 @@ const URL_WHAT_IS_DELEGATION =
 
 export function DelegateModal({
   branchId,
-  knownDelegates,
   onClose,
   onSelectDelegate,
   visible,
 }: {
   branchId: BranchId;
-  knownDelegates: UseQueryResult<KnownDelegates | null>;
   onClose: () => void;
   onSelectDelegate: (delegate: Delegate) => void;
   visible: boolean;
@@ -29,12 +26,12 @@ export function DelegateModal({
   const [delegateAddress, setDelegateAddress] = useState<null | Address>(null);
   const [delegateAddressValue, setDelegateAddressValue] = useState("");
 
-  const knownDelegatesQuery = knownDelegates;
+  const knownDelegatesQuery = useKnownDelegates();
 
   const delegate = useInterestBatchDelegate(branchId, delegateAddress);
 
   const filteredStrategies = useMemo(() => {
-    if (knownDelegatesQuery.status === "pending" || !knownDelegatesQuery.data) return [];
+    if (!knownDelegatesQuery || knownDelegatesQuery.status === "pending" || !knownDelegatesQuery.data) return [];
     const branch = getBranch(branchId);
     const branchSymbol = branch.symbol;
     const strategies: Array<{ groupName: string; strategy: any }> = [];
@@ -49,7 +46,7 @@ export function DelegateModal({
       });
     });
     return strategies;
-  }, [branchId, knownDelegatesQuery.data, knownDelegatesQuery.status]);
+  }, [branchId, knownDelegatesQuery?.data, knownDelegatesQuery?.status]);
 
   const searchFilteredStrategies = useMemo(() => {
     if (!delegateAddressValue.trim()) {
@@ -77,7 +74,7 @@ export function DelegateModal({
   }, [isSearchingAddress, delegateAddress, delegate.data, searchFilteredStrategies]);
 
   const isKnownDelegateForOtherCollateral = useMemo(() => {
-    if (!isSearchingAddress || !delegateAddress || !knownDelegatesQuery.data) return false;
+    if (!isSearchingAddress || !delegateAddress || !knownDelegatesQuery?.data) return false;
 
     const addressExists = knownDelegatesQuery.data.some((group) =>
       group.strategies.some((strategy) => strategy.address.toLowerCase() === delegateAddress.toLowerCase())
@@ -88,7 +85,7 @@ export function DelegateModal({
     );
 
     return addressExists && !existsForCurrentCollateral;
-  }, [isSearchingAddress, delegateAddress, knownDelegatesQuery.data, searchFilteredStrategies]);
+  }, [isSearchingAddress, delegateAddress, knownDelegatesQuery?.data, searchFilteredStrategies]);
 
   const delegateAddresses = useMemo(() => {
     return searchFilteredStrategies.map(({ strategy }) => strategy.address as Address);
@@ -203,7 +200,7 @@ export function DelegateModal({
             </div>
           )}
 
-          {knownDelegatesQuery.status === "pending"
+          {knownDelegatesQuery?.status === "pending"
             ? (
               <div
                 className={css({
@@ -216,7 +213,7 @@ export function DelegateModal({
                 Loading delegates...
               </div>
             )
-            : knownDelegatesQuery.status === "error"
+            : knownDelegatesQuery?.status === "error"
             ? (
               <div
                 className={css({
@@ -279,7 +276,7 @@ export function DelegateModal({
                           }}
                           selectLabel="Choose"
                           onSelect={onSelectDelegate}
-                          url={knownDelegatesQuery.data?.find((group) => group.name === groupName)?.url}
+                          url={knownDelegatesQuery?.data?.find((group) => group.name === groupName)?.url}
                         />
                       )
                       : (

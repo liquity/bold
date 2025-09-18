@@ -8,7 +8,7 @@ import content from "@/src/content";
 import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { useDelegateDisplayName, useKnownDelegates } from "@/src/liquity-delegate";
+import { useDelegateDisplayName } from "@/src/liquity-delegate";
 import {
   EMPTY_LOAN,
   findClosestRateIndex,
@@ -72,7 +72,6 @@ export const InterestRateField = memo(
       "delegate" | null
     >(null);
 
-    const knownDelegates = useKnownDelegates();
     const delegateDisplayName = useDelegateDisplayName(delegate);
 
     const autoInputId = useId();
@@ -396,7 +395,6 @@ export const InterestRateField = memo(
         />
         <DelegateModal
           branchId={branchId}
-          knownDelegates={knownDelegates}
           onClose={() => {
             setDelegatePicker(null);
           }}
