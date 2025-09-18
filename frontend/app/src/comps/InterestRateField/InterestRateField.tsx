@@ -8,6 +8,7 @@ import content from "@/src/content";
 import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
+import { useDelegateDisplayName, useKnownDelegates } from "@/src/liquity-delegate";
 import {
   EMPTY_LOAN,
   findClosestRateIndex,
@@ -71,7 +72,8 @@ export const InterestRateField = memo(
       "delegate" | null
     >(null);
 
-    const [delegateDisplayName, setDelegateDisplayName] = useState<string | null>(null);
+    const knownDelegates = useKnownDelegates();
+    const delegateDisplayName = useDelegateDisplayName(delegate);
 
     const autoInputId = useId();
     const inputId = inputIdFromProps ?? autoInputId;
@@ -108,11 +110,13 @@ export const InterestRateField = memo(
 
     useEffect(() => {
       setDelegatePicker(null);
-      onDelegateChange(null);
-      onModeChange("manual");
-      setDelegateDisplayName(null);
+      if (!delegate) {
+        onDelegateChange(null);
+        onModeChange("manual");
+      }
     }, [
       branchId,
+      delegate,
       onDelegateChange,
       onModeChange,
     ]);
@@ -160,7 +164,6 @@ export const InterestRateField = memo(
       setDelegatePicker(null);
       fieldValue.setValue(dn.toString(dn.mul(delegate.interestRate, 100)));
       onDelegateChange(delegate.address ?? null);
-      setDelegateDisplayName(delegate.name || null);
     };
 
     const activeDelegateModes = DELEGATE_MODES;
@@ -276,7 +279,6 @@ export const InterestRateField = memo(
                       onModeChange(mode);
                     }
                     onDelegateChange(null);
-                    setDelegateDisplayName(null);
                   }}
                   selected={activeDelegateModes.findIndex((mode_) => mode_ === mode)}
                   size="small"
@@ -394,6 +396,7 @@ export const InterestRateField = memo(
         />
         <DelegateModal
           branchId={branchId}
+          knownDelegates={knownDelegates}
           onClose={() => {
             setDelegatePicker(null);
           }}

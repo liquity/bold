@@ -1,8 +1,10 @@
 import type { Address, BranchId, Delegate } from "@/src/types";
+import type { UseQueryResult } from "@tanstack/react-query";
 
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import content from "@/src/content";
-import { getBranch, useInterestBatchDelegate, useInterestBatchDelegates, useKnownDelegates } from "@/src/liquity-utils";
+import { getBranch, useInterestBatchDelegate, useInterestBatchDelegates } from "@/src/liquity-utils";
+import type { KnownDelegates } from "@/src/liquity-delegate";
 import { css } from "@/styled-system/css";
 import { AddressField, Modal } from "@liquity2/uikit";
 import { useMemo, useState } from "react";
@@ -13,11 +15,13 @@ const URL_WHAT_IS_DELEGATION =
 
 export function DelegateModal({
   branchId,
+  knownDelegates,
   onClose,
   onSelectDelegate,
   visible,
 }: {
   branchId: BranchId;
+  knownDelegates: UseQueryResult<KnownDelegates | null>;
   onClose: () => void;
   onSelectDelegate: (delegate: Delegate) => void;
   visible: boolean;
@@ -25,7 +29,7 @@ export function DelegateModal({
   const [delegateAddress, setDelegateAddress] = useState<null | Address>(null);
   const [delegateAddressValue, setDelegateAddressValue] = useState("");
 
-  const knownDelegatesQuery = useKnownDelegates();
+  const knownDelegatesQuery = knownDelegates;
 
   const delegate = useInterestBatchDelegate(branchId, delegateAddress);
 
@@ -239,7 +243,7 @@ export function DelegateModal({
                   ? `This delegate (${delegateAddressValue}) does not support your Trove collateral. Choose a delegate for your collateral (${
                     getBranch(branchId).symbol
                   }).`
-                  : `No delegates found matching \"${delegateAddressValue}\"`}
+                  : `No delegates found matching "${delegateAddressValue}"`}
               </div>
             )
             : (

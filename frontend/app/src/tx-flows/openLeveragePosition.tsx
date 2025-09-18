@@ -4,6 +4,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION, MAX_UPFRONT_FEE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
+import { useDelegateDisplayName } from "@/src/liquity-delegate";
 import { getOpenLeveragedTroveParams } from "@/src/liquity-leverage";
 import { getBranch, getCollToken, getTroveOperationHints, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
@@ -61,6 +62,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
       loan.borrowed,
       loan.interestRate,
     );
+    const delegateDisplayName = useDelegateDisplayName(loan.batchManager);
 
     const initialDeposit = dn.div(loan.deposit, request.leverageFactor);
     const yearlyBoldInterest = dn.mul(loan.borrowed, loan.interestRate);
@@ -109,7 +111,11 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
             <TransactionDetailsRow
               label="Interest rate delegate"
               value={[
-                <AccountButton key="start" address={loan.batchManager} />,
+                <AccountButton
+                  key="start"
+                  address={loan.batchManager}
+                  displayName={delegateDisplayName ?? undefined}
+                />,
                 <div key="end">
                   {fmtnum(loan.interestRate, "pctfull")}% ({fmtnum(yearlyBoldInterest, {
                     digits: 4,
