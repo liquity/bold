@@ -2,8 +2,7 @@ import type { Address, BranchId, Delegate } from "@/src/types";
 
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import content from "@/src/content";
-import delegatesList from "@/src/delegates.json";
-import { getBranch, useInterestBatchDelegate, useInterestBatchDelegates } from "@/src/liquity-utils";
+import { getBranch, useInterestBatchDelegate, useInterestBatchDelegates, useKnownDelegates } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { AddressField, Modal } from "@liquity2/uikit";
 import { useMemo, useState } from "react";
@@ -26,13 +25,16 @@ export function DelegateModal({
   const [delegateAddress, setDelegateAddress] = useState<null | Address>(null);
   const [delegateAddressValue, setDelegateAddressValue] = useState("");
 
+  const knownDelegatesQuery = useKnownDelegates();
+
   const delegate = useInterestBatchDelegate(branchId, delegateAddress);
 
   const filteredStrategies = useMemo(() => {
+    if (knownDelegatesQuery.status === "pending" || !knownDelegatesQuery.data) return [];
     const branch = getBranch(branchId);
     const branchSymbol = branch.symbol;
     const strategies: Array<{ groupName: string; strategy: any }> = [];
-    delegatesList.forEach((group) => {
+    knownDelegatesQuery.data.forEach((group) => {
       group.strategies.forEach((strategy) => {
         if (strategy.branches.some((branch) => branch.toLowerCase() === branchSymbol.toLowerCase())) {
           strategies.push({
@@ -43,7 +45,7 @@ export function DelegateModal({
       });
     });
     return strategies;
-  }, [branchId]);
+  }, [branchId, knownDelegatesQuery.data, knownDelegatesQuery.status]);
 
   const searchFilteredStrategies = useMemo(() => {
     if (!delegateAddressValue.trim()) {
@@ -183,7 +185,33 @@ export function DelegateModal({
             </div>
           )}
 
-          {searchFilteredStrategies.length === 0 && delegateAddressValue.trim() && !isCustomDelegate
+          {knownDelegatesQuery.status === "pending"
+            ? (
+              <div
+                className={css({
+                  padding: "40px 20px",
+                  textAlign: "center",
+                  color: "contentAlt",
+                  fontSize: 16,
+                })}
+              >
+                Loading delegates...
+              </div>
+            )
+            : knownDelegatesQuery.status === "error"
+            ? (
+              <div
+                className={css({
+                  padding: "40px 20px",
+                  textAlign: "center",
+                  color: "contentAlt",
+                  fontSize: 16,
+                })}
+              >
+                Error loading delegates
+              </div>
+            )
+            : searchFilteredStrategies.length === 0 && delegateAddressValue.trim() && !isCustomDelegate
             ? (
               <div
                 className={css({
@@ -229,7 +257,7 @@ export function DelegateModal({
                           }}
                           selectLabel="Choose"
                           onSelect={onSelectDelegate}
-                          url={delegatesList.find((group) => group.name === groupName)?.url}
+                          url={knownDelegatesQuery.data?.find((group) => group.name === groupName)?.url}
                         />
                       )
                       : (

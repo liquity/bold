@@ -31,7 +31,7 @@ import {
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
+import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, KNOWN_DELEGATES_URL, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { usePrice } from "@/src/services/Prices";
 import {
@@ -50,6 +50,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
+import type { InferOutput } from "valibot";
 import { encodeAbiParameters, erc20Abi, isAddressEqual, keccak256, parseAbiParameters, zeroAddress } from "viem";
 import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
@@ -1476,4 +1477,33 @@ export function useRedemptionRiskOfInterestRate(
     if (!data) return { status, data };
     return { status, data: getRedemptionRisk(data.debtInFront, data.totalDebt) };
   }, [status, data]);
+}
+
+const KnownDelegatesSchema = v.array(
+  v.object({
+    name: v.string(),
+    url: v.string(),
+    strategies: v.array(
+      v.object({
+        name: v.string(),
+        address: v.string(),
+        branches: v.array(v.string()),
+      }),
+    ),
+  }),
+);
+
+export type KnownDelegates = InferOutput<typeof KnownDelegatesSchema>;
+
+export function useKnownDelegates(): UseQueryResult<KnownDelegates | null> {
+  return useQuery({
+    queryKey: ["knownDelegates"],
+    queryFn: async () => {
+      if (!KNOWN_DELEGATES_URL) return null;
+
+      const response = await fetch(KNOWN_DELEGATES_URL);
+      const data = await response.json();
+      return v.parse(KnownDelegatesSchema, data);
+    },
+  });
 }
