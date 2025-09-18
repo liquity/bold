@@ -152,7 +152,7 @@ export default function ShellsPage() {
   const users = useMemo(() => {
     return shellBalances?.map((balance, index) => {
       const address = getAddress(balance.holder);
-      const activities = [
+      const activities = Array.from(new Set([
         ...(loansByAccounts && loansByAccounts.some(loan => isAddressEqual(getAddress(loan.borrower), address)) ? ['Borrowing'] : []),
         ...(stabilityPoolDepositors && Object.keys(stabilityPoolDepositors.stabilityPool).some(depositor => isAddressEqual(getAddress(depositor), address)) ? ['Stability Pool'] : []),
         ...(stabilityPoolDepositors && stabilityPoolDepositors.yusnd.some(depositor => isAddressEqual(getAddress(depositor), address)) ? ['yUSND'] : []),
@@ -160,7 +160,7 @@ export default function ShellsPage() {
             (activity) => isAddressEqual(getAddress(activity.holder), address)
           )
           .map((activity) => getLeaderboardActivityName(getAddress(activity.token))) ?? []).filter((activity) => activity !== null),
-      ] as LeaderboardActivityLabel[];
+      ] as LeaderboardActivityLabel[]));
       return {
         address,
         ensName: ensNames?.find(ensName => isAddressEqual(ensName.address, address))?.ensName ?? null,
