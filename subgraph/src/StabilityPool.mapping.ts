@@ -2,7 +2,7 @@ import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
 import {
   StabilityPool,
   StabilityPoolDeposit,
-  StabilityPoolDepositSnapshot,
+  // StabilityPoolDepositSnapshot,
   StabilityPoolScale,
 } from "../generated/schema";
 import {
@@ -17,14 +17,10 @@ import {
 export function handleDepositUpdated(event: DepositUpdatedEvent): void {
   let collId = dataSource.context().getString("collId");
 
-  let sp = StabilityPool.load(collId);
-  if (!sp) {
-    sp = new StabilityPool(collId);
-    sp.totalDeposited = BigInt.fromI32(0);
-  }
+  let sp = loadOrCreateStabilityPool(collId);
 
   let spDeposit = loadOrCreateStabilityPoolDeposit(event.params._depositor, collId);
-  let spDepositSnapshot = loadOrCreateSnapshot(spDeposit.id);
+  // let spDepositSnapshot = loadOrCreateSnapshot(spDeposit.id);
 
   let diff = event.params._newDeposit.minus(spDeposit.deposit);
   sp.totalDeposited = sp.totalDeposited.plus(diff);
@@ -32,12 +28,12 @@ export function handleDepositUpdated(event: DepositUpdatedEvent): void {
 
   spDeposit.deposit = event.params._newDeposit;
 
-  spDepositSnapshot.P = event.params._snapshotP;
-  spDepositSnapshot.S = event.params._snapshotS;
-  spDepositSnapshot.B = event.params._snapshotB;
-  spDepositSnapshot.scale = event.params._snapshotScale;
+  // spDepositSnapshot.P = event.params._snapshotP;
+  // spDepositSnapshot.S = event.params._snapshotS;
+  // spDepositSnapshot.B = event.params._snapshotB;
+  // spDepositSnapshot.scale = event.params._snapshotScale;
 
-  spDepositSnapshot.save();
+  // spDepositSnapshot.save();
   spDeposit.save();
 }
 
@@ -64,12 +60,8 @@ export function handleDepositOperation(event: DepositOperationEvent): void {
   let depositor = event.params._depositor;
 
   // Load or create the stability pool
-  let sp = StabilityPool.load(collId);
-  if (!sp) {
-    sp = new StabilityPool(collId);
-    sp.totalDeposited = BigInt.fromI32(0);
-    sp.save();
-  }
+  let sp = loadOrCreateStabilityPool(collId);
+  sp.save();
 
   // Load or create the stability pool deposit
   let spDeposit = loadOrCreateStabilityPoolDeposit(depositor, collId);
@@ -99,11 +91,7 @@ export function handleStabilityPoolCollBalanceUpdated(event: StabilityPoolCollBa
   let collId = dataSource.context().getString("collId");
   
   // Load or create the stability pool
-  let sp = StabilityPool.load(collId);
-  if (!sp) {
-    sp = new StabilityPool(collId);
-    sp.totalDeposited = BigInt.fromI32(0);
-  }
+  let sp = loadOrCreateStabilityPool(collId);
 
   sp.collBalance = event.params._newBalance;
   
@@ -119,11 +107,7 @@ export function handleStabilityPoolBoldBalanceUpdated(event: StabilityPoolBoldBa
   let collId = dataSource.context().getString("collId");
   
   // Load or create the stability pool
-  let sp = StabilityPool.load(collId);
-  if (!sp) {
-    sp = new StabilityPool(collId);
-    sp.totalDeposited = BigInt.fromI32(0);
-  }
+  let sp = loadOrCreateStabilityPool(collId);
 
   sp.totalDeposited = event.params._newBalance;
   
@@ -133,6 +117,16 @@ export function handleStabilityPoolBoldBalanceUpdated(event: StabilityPoolBoldBa
   
   // The event is still processed, which means it's tracked in the subgraph
   sp.save();
+}
+
+function loadOrCreateStabilityPool(collId: string): StabilityPool {
+  let sp = StabilityPool.load(collId);
+  if (!sp) {
+    sp = new StabilityPool(collId);
+    sp.totalDeposited = BigInt.fromI32(0);
+    sp.collBalance = BigInt.fromI32(0);
+  }
+  return sp;
 }
 
 function loadOrCreateStabilityPoolScale(
@@ -162,20 +156,20 @@ function loadOrCreateStabilityPoolDeposit(depositor: Address, collId: string): S
     spDeposit.collateral = collId;
     spDeposit.deposit = BigInt.fromI32(0);
     spDeposit.depositor = depositor;
-    spDeposit.snapshot = loadOrCreateSnapshot(spId).id;
+    // spDeposit.snapshot = loadOrCreateSnapshot(spId).id;
   }
 
   return spDeposit;
 }
 
-function loadOrCreateSnapshot(spId: string): StabilityPoolDepositSnapshot {
-  let snapshot = StabilityPoolDepositSnapshot.load(spId);
-  if (!snapshot) {
-    snapshot = new StabilityPoolDepositSnapshot(spId);
-    snapshot.P = BigInt.fromI32(0);
-    snapshot.S = BigInt.fromI32(0);
-    snapshot.B = BigInt.fromI32(0);
-    snapshot.scale = BigInt.fromI32(0);
-  }
-  return snapshot;
-}
+// function loadOrCreateSnapshot(spId: string): StabilityPoolDepositSnapshot {
+//   let snapshot = StabilityPoolDepositSnapshot.load(spId);
+//   if (!snapshot) {
+//     snapshot = new StabilityPoolDepositSnapshot(spId);
+//     snapshot.P = BigInt.fromI32(0);
+//     snapshot.S = BigInt.fromI32(0);
+//     snapshot.B = BigInt.fromI32(0);
+//     snapshot.scale = BigInt.fromI32(0);
+//   }
+//   return snapshot;
+// }
