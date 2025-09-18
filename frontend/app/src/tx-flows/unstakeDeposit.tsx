@@ -181,7 +181,7 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
           "You withdraw",
           isFullUnstake
             ? "Your voting power will be reset."
-            : "Voting allocations will be preserved when possible.",
+            : "Voting allocations will be preserved proportionally.",
         ]}
         value={[
           <Amount
