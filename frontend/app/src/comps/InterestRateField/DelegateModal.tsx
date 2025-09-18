@@ -72,6 +72,20 @@ export function DelegateModal({
     );
   }, [isSearchingAddress, delegateAddress, delegate.data, searchFilteredStrategies]);
 
+  const isKnownDelegateForOtherCollateral = useMemo(() => {
+    if (!isSearchingAddress || !delegateAddress || !knownDelegatesQuery.data) return false;
+
+    const addressExists = knownDelegatesQuery.data.some((group) =>
+      group.strategies.some((strategy) => strategy.address.toLowerCase() === delegateAddress.toLowerCase())
+    );
+
+    const existsForCurrentCollateral = searchFilteredStrategies.some(({ strategy }) =>
+      strategy.address.toLowerCase() === delegateAddress.toLowerCase()
+    );
+
+    return addressExists && !existsForCurrentCollateral;
+  }, [isSearchingAddress, delegateAddress, knownDelegatesQuery.data, searchFilteredStrategies]);
+
   const delegateAddresses = useMemo(() => {
     return searchFilteredStrategies.map(({ strategy }) => strategy.address as Address);
   }, [searchFilteredStrategies]);
@@ -221,7 +235,11 @@ export function DelegateModal({
                   fontSize: 16,
                 })}
               >
-                No delegates found matching "{delegateAddressValue}"
+                {isKnownDelegateForOtherCollateral
+                  ? `This delegate (${delegateAddressValue}) does not support your Trove collateral. Choose a delegate for your collateral (${
+                    getBranch(branchId).symbol
+                  }).`
+                  : `No delegates found matching \"${delegateAddressValue}\"`}
               </div>
             )
             : (
