@@ -93,11 +93,15 @@ type LeaderboardActivityLabel =
   | "Borrowing"
   | "Stability Pool";
 
-function getLeaderboardActivityName(activity: Address): LeaderboardActivityLabel {
+function getLeaderboardActivityName(activity: Address): LeaderboardActivityLabel | null {
   switch (activity.toLowerCase()) {
     case CONTRACT_ADDRESSES.YUSND.toLowerCase():
       return "yUSND";
     case CONTRACT_ADDRESSES.strategies.Balancer.toLowerCase():
+      return "Balancer";
+    case CONTRACT_ADDRESSES.strategies.Balancer2.toLowerCase():
+      return "Balancer";
+    case CONTRACT_ADDRESSES.strategies.Balancer3.toLowerCase():
       return "Balancer";
     case CONTRACT_ADDRESSES.strategies.Bunni.toLowerCase():
       return "Bunni";
@@ -114,7 +118,7 @@ function getLeaderboardActivityName(activity: Address): LeaderboardActivityLabel
     // case "stabilityPool":
     //   return "Stability Pool";
     default:
-      throw new Error(`Unknown leaderboard activity: ${activity}`);
+      return null;
   }
 }
 
@@ -155,7 +159,7 @@ export default function ShellsPage() {
         ...(shellActivitiesOfHolders?.filter(
             (activity) => isAddressEqual(getAddress(activity.holder), address)
           )
-          .map((activity) => getLeaderboardActivityName(getAddress(activity.token))) ?? []),
+          .map((activity) => getLeaderboardActivityName(getAddress(activity.token))) ?? []).filter((activity) => activity !== null),
       ] as LeaderboardActivityLabel[];
       return {
         address,
