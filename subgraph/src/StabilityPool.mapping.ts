@@ -2,7 +2,7 @@ import { Address, BigInt, dataSource } from "@graphprotocol/graph-ts";
 import {
   StabilityPool,
   StabilityPoolDeposit,
-  StabilityPoolDepositSnapshot,
+  // StabilityPoolDepositSnapshot,
   StabilityPoolScale,
 } from "../generated/schema";
 import {
@@ -162,14 +162,14 @@ function loadOrCreateStabilityPoolDeposit(depositor: Address, collId: string): S
   return spDeposit;
 }
 
-function loadOrCreateSnapshot(spId: string): StabilityPoolDepositSnapshot {
-  let snapshot = StabilityPoolDepositSnapshot.load(spId);
-  if (!snapshot) {
-    snapshot = new StabilityPoolDepositSnapshot(spId);
-    snapshot.P = BigInt.fromI32(0);
-    snapshot.S = BigInt.fromI32(0);
-    snapshot.B = BigInt.fromI32(0);
-    snapshot.scale = BigInt.fromI32(0);
-  }
-  return snapshot;
-}
+// function loadOrCreateSnapshot(spId: string): StabilityPoolDepositSnapshot {
+//   let snapshot = StabilityPoolDepositSnapshot.load(spId);
+//   if (!snapshot) {
+//     snapshot = new StabilityPoolDepositSnapshot(spId);
+//     snapshot.P = BigInt.fromI32(0);
+//     snapshot.S = BigInt.fromI32(0);
+//     snapshot.B = BigInt.fromI32(0);
+//     snapshot.scale = BigInt.fromI32(0);
+//   }
+//   return snapshot;
+// }
