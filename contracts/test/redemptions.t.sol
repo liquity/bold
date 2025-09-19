@@ -1000,6 +1000,46 @@ contract Redemptions is DevTestSetup {
         assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.closedByLiquidation));
     }
 
+    function testZombieTroveCanActAsLastTrove() public {
+        (,, ABCDEF memory troveIDs) = _setupForRedemptionAscendingInterest();
+
+        _redeemAndCreateEmptyZombieTrovesAAndB(troveIDs);
+
+        // Check A, B removed from sorted list
+        assertFalse(sortedTroves.contains(troveIDs.A));
+        assertFalse(sortedTroves.contains(troveIDs.B));
+
+        // Check A, B zombie (already checked in helper above)
+        //assertEq(uint8(troveManager.getTroveStatus(troveIDs.A)), uint8(ITroveManager.Status.zombie));
+        //assertEq(uint8(troveManager.getTroveStatus(troveIDs.B)), uint8(ITroveManager.Status.zombie));
+
+        // Check A, B empty (already checked in helper above)
+        //assertEq(troveManager.getTroveEntireDebt(troveIDs.A), 0);
+        //assertEq(troveManager.getTroveEntireDebt(troveIDs.B), 0);
+
+        // Check last Zombie trove pointer
+        assertEq(troveManager.lastZombieTroveId(), 0, "Wrong last zombie trove pointer");
+
+        // Zombie troves are not in the array
+        assertEq(troveManager.getTroveIdsCount(), 4, "Wrong number of troves");
+        // We need some extra Bold for closing, due to interest
+        deal(address(boldToken), E, boldToken.balanceOf(E) + 300e18);
+
+        // Close troves B to F
+        closeTrove(B, troveIDs.B);
+        transferBold(E, C, boldToken.balanceOf(E));
+        closeTrove(C, troveIDs.C);
+        transferBold(C, D, boldToken.balanceOf(C));
+        closeTrove(D, troveIDs.D);
+        assertEq(troveManager.getTroveIdsCount(), 1, "Wrong number of troves");
+
+        // A cannot be closed, as it is the last one
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.OnlyOneTroveLeft.selector);
+        borrowerOperations.closeTrove(troveIDs.A);
+        vm.stopPrank();
+    }
+
     // -- Redemption after redistribution
 
     function testRedemptionAfterRedistributionInBatch() public {
