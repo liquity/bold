@@ -38,7 +38,7 @@ export function useDelegateDisplayName(delegateAddress: string | null) {
   const knownDelegatesQuery = useKnownDelegates();
 
   return useMemo(() => {
-    if (!delegateAddress || !knownDelegatesQuery.data) return null;
+    if (!delegateAddress || !knownDelegatesQuery.data) return undefined;
 
     // branchId could be used for filtering delegates by collateral in the future
     for (const group of knownDelegatesQuery.data) {
@@ -49,6 +49,6 @@ export function useDelegateDisplayName(delegateAddress: string | null) {
         return strategy.name ? `${group.name} - ${strategy.name}` : group.name;
       }
     }
-    return null;
+    return undefined;
   }, [delegateAddress, knownDelegatesQuery.data]);
 }

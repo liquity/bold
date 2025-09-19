@@ -100,7 +100,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
         <TransactionDetailsRow
           label="Interest rate delegate"
           value={[
-            <AccountButton key="start" address={loan.batchManager} displayName={delegateDisplayName ?? undefined} />,
+            <AccountButton key="start" address={loan.batchManager} displayName={delegateDisplayName} />,
             <div key="end">
               {delegate.isLoading
                 ? "Loading…"
@@ -162,7 +162,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                     textDecoration: "line-through",
                   })}
                 >
-                  <AccountButton address={prevLoan.batchManager} displayName={prevDelegateDisplayName ?? undefined} />
+                  <AccountButton address={prevLoan.batchManager} displayName={prevDelegateDisplayName} />
                 </div>,
                 <div
                   key="end"

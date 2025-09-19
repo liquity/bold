@@ -155,7 +155,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                 <AccountButton
                   key="start"
                   address={request.interestRateDelegate}
-                  displayName={delegateDisplayName ?? undefined}
+                  displayName={delegateDisplayName}
                 />,
                 <div key="end">
                   {delegate.isLoading

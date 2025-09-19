@@ -114,7 +114,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
                 <AccountButton
                   key="start"
                   address={loan.batchManager}
-                  displayName={delegateDisplayName ?? undefined}
+                  displayName={delegateDisplayName}
                 />,
                 <div key="end">
                   {fmtnum(loan.interestRate, "pctfull")}% ({fmtnum(yearlyBoldInterest, {
