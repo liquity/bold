@@ -140,29 +140,8 @@ export default {
         label: "Delegated",
         secondary: <>The interest rate is set and updated by a third party of your choice. They may charge a fee.</>,
       },
-      strategy: {
-        label: "Autonomous Rate Manager",
-        secondary: (
-          <>
-            The interest rate is set and updated by an automated strategy running on the Internet Computer (ICP).
-          </>
-        ),
-      },
     },
 
-    icStrategyModal: {
-      title: (
-        <>
-          Autonomous Rate Manager (ARM)
-        </>
-      ),
-      intro: (
-        <>
-          These strategies are run on the Internet Computer (ICP). They are automated and decentralized. More strategies
-          may be added over time.
-        </>
-      ),
-    },
 
     delegatesModal: {
       title: "Set a delegate",

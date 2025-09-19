@@ -9,9 +9,13 @@ import Image from "next/image";
 
 export function AccountButton({
   address,
+  displayName,
 }: {
   address: Address;
+  displayName?: string;
 }) {
+  const label = displayName || shortenAddress(address, 4).toLowerCase();
+
   return (
     <LinkTextButton
       key="start"
@@ -34,7 +38,7 @@ export function AccountButton({
               borderRadius: 4,
             })}
           />
-          {shortenAddress(address, 4).toLowerCase()}
+          {label}
         </div>
       }
       href={`${CHAIN_BLOCK_EXPLORER?.url}address/${address}`}
