@@ -60,23 +60,13 @@ function calculateUnstakingStrategy(
   let remainingPercentage = allocationEntries.reduce((sum, { percentage }) => sum + percentage, 0n);
   const newAllocations: Record<Address, { amount: bigint; vote: "for" | "against" }> = {};
 
-  // Process all but the last allocation
-  for (let i = 0; i < allocationEntries.length - 1; i++) {
-    const entry = allocationEntries[i];
-    if (!entry) continue;
-
+  for (const entry of allocationEntries) {
     const { address, percentage, vote } = entry;
     const amount = remainingLQTY * percentage / remainingPercentage;
 
     newAllocations[address] = { amount, vote };
     remainingLQTY -= amount;
     remainingPercentage -= percentage;
-  }
-
-  // Give remaining LQTY to last allocation to avoid dust
-  const lastEntry = allocationEntries[allocationEntries.length - 1];
-  if (lastEntry) {
-    newAllocations[lastEntry.address] = { amount: remainingLQTY, vote: lastEntry.vote };
   }
 
   return {
