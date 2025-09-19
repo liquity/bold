@@ -184,6 +184,13 @@ export const InterestRateField = memo(
                 interestChartData={interestChartData}
                 interestRate={interestRate}
                 fieldValue={fieldValue}
+                handleColor={redemptionRisk && (
+                  redemptionRisk === "high"
+                    ? 0
+                    : redemptionRisk === "medium"
+                    ? 1
+                    : 2
+                )}
               />
             ))
             .with("delegate", () => (
@@ -411,9 +418,10 @@ export const InterestRateField = memo(
 
 function ManualInterestRateSlider({
   fieldValue,
+  handleColor,
   interestChartData,
   interestRate,
-}: {
+}: Pick<Parameters<typeof Slider>[0], "handleColor"> & {
   fieldValue: ReturnType<typeof useInputFieldValue>;
   interestChartData: ReturnType<typeof useInterestRateChartData>;
   interestRate: Dnum | null;
@@ -507,6 +515,7 @@ function ManualInterestRateSlider({
         <Slider
           gradient={gradientStops}
           gradientMode="high-to-low"
+          handleColor={handleColor}
           chart={interestChartData.data?.map(({ size }) => size) ?? []}
           onChange={(value) => {
             if (interestChartData.data) {
