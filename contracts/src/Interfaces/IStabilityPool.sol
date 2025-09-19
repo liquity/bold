@@ -72,7 +72,6 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
      */
     function offset(uint256 _debt, uint256 _coll) external;
 
-
     function deposits(address _depositor) external view returns (uint256 initialValue);
     function stashedColl(address _depositor) external view returns (uint256);
 
@@ -119,4 +118,5 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     function liquidityStrategy() external view returns (address);
 
     function P_PRECISION() external view returns (uint256);
+    function MIN_BOLD_AFTER_REBALANCE() external view returns (uint256);
 }

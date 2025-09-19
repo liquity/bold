@@ -11,8 +11,6 @@ import "./Interfaces/ITroveManager.sol";
 import "./Interfaces/IBoldToken.sol";
 import "./Dependencies/LiquityBaseInit.sol";
 
-import "forge-std/console.sol";
-
 /*
  * The Stability Pool holds Bold tokens deposited by Stability Pool depositors.
  *
@@ -174,6 +172,10 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     // The number of scale changes after which an untouched deposit stops receiving yield / coll gains
     uint256 public constant SCALE_SPAN = 2;
 
+    // The minimum amount of Bold in the SP after a rebalance
+    // Introduced to avoid higher rate of scale changes 
+    uint256 public constant MIN_BOLD_AFTER_REBALANCE = 1_000e18;
+
     // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
     uint256 public currentScale;
 
@@ -203,7 +205,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
             _disableInitializers();
         }
     }
-    
+
     function initialize(IAddressesRegistry _addressesRegistry) external initializer {
         __LiquityBase_init(_addressesRegistry);
 
@@ -406,9 +408,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
 
         _swapCollateralForStable(amountCollIn, amountStableOut);
         
-        // TODO: added this to avoid higher rate of scaling of P during rebalances for very small totalBoldDeposits
-        // Discuss with team if it is ok to have a larger limit for this to make scaling even less aggressive
-        require(totalBoldDeposits >= MIN_BOLD_IN_SP, "Total Bold deposits must be >= MIN_BOLD_IN_SP");
+        require(totalBoldDeposits >= MIN_BOLD_AFTER_REBALANCE, "Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE");
     }
 
     // --- Liquidation functions ---

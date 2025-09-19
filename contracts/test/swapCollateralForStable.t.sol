@@ -64,23 +64,22 @@ contract SwapCollateralForStableTest is DevTestSetup {
         stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount);
 
 
-        vm.expectRevert("Total Bold deposits must be >= MIN_BOLD_IN_SP");
+        vm.expectRevert("Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE");
         stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount - .1e18);
         vm.stopPrank();
     }
 
     function testSwapCollateralForStableWithSurplus() public {
-        uint256 stableAmount = 2000e18;
-        uint256 collAmount = 2e18;
         SwapTestVars memory initialValues;
 
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
-       borrowerOperations.openTrove(
+
+        borrowerOperations.openTrove(
             A,
             0,
-            collAmount,
-            stableAmount,
+            2e18,
+            2000e18,
             0,
             0,
             MIN_ANNUAL_INTEREST_RATE,
@@ -95,8 +94,8 @@ contract SwapCollateralForStableTest is DevTestSetup {
         borrowerOperations.openTrove(
             B,
             0,
-            2 * collAmount,
-            stableAmount + 100e18,
+            4e18,
+            4000e18,
             0,
             0,
             MIN_ANNUAL_INTEREST_RATE,
@@ -109,7 +108,7 @@ contract SwapCollateralForStableTest is DevTestSetup {
 
 
         // B deposits to SP
-        makeSPDepositAndClaim(B, stableAmount + 100e18);
+        makeSPDepositAndClaim(B, 4000e18);
 
         initialValues.depositor1CollBalance = collToken.balanceOf(B);
         initialValues.depositor1BoldBalance = boldToken.balanceOf(B);
@@ -119,10 +118,10 @@ contract SwapCollateralForStableTest is DevTestSetup {
         initialValues.lsCollBalance = collToken.balanceOf(liquidityStrategy);
 
         // Check SP has deposits
-        assertEq(initialValues.spBoldBalance, stableAmount + 100e18, "SP should have Bold deposits");
+        assertEq(initialValues.spBoldBalance, 4000e18, "SP should have Bold deposits");
         
-        uint256 collSwapAmount = stableAmount / 2000; // we use the price to calculate the amount of collateral to swap
-        uint256 stableSwapAmount = stableAmount;
+        uint256 collSwapAmount = 1e18;
+        uint256 stableSwapAmount = 2000e18;
 
         // Simulate a rebalance by calling swapCollateralForStable as liquidity strategy
         vm.startPrank(liquidityStrategy);
@@ -154,19 +153,20 @@ contract SwapCollateralForStableTest is DevTestSetup {
         assertEq(finalLSCollBalance, initialValues.lsCollBalance - collSwapAmount);
         
         vm.prank(B);
-        stabilityPool.withdrawFromSP(100e18 - 1e18, true); // subtract 1e18 to avoid MIN_BOLD_IN_SP
+        stabilityPool.withdrawFromSP(finalSPBoldBalance - 1000e18, true); // subtract 1000e18 to avoid MIN_BOLD_AFTER_REBALANCE
 
         // Check B has received Bold
         // Received bold is less than the initial deposit because of the rebalance
-        assertApproxEqAbs(boldToken.balanceOf(B), initialValues.depositor1BoldBalance + 99e18, 1e18);
+        assertApproxEqAbs(boldToken.balanceOf(B), initialValues.depositor1BoldBalance + 1000e18, 1e18);
 
         // Check B has received Coll
         // Even though the collateral was never deposited, depositor should have received the collateral from the rebalance
-        assertApproxEqAbs(collToken.balanceOf(B), initialValues.depositor1CollBalance + collSwapAmount, 1e18);
+        assertEq(collToken.balanceOf(B), initialValues.depositor1CollBalance + collSwapAmount);
+       
     }
 
     function testSwapCollateralForStableWithLargerAmounts() public {
-        uint256 stableAmount = 1e32; // Large amount
+        uint256 stableAmount = 1e32; 
         
         deal(address(collToken), address(liquidityStrategy), 1e32);
         deal(address(boldToken), A, stableAmount);
@@ -174,7 +174,7 @@ contract SwapCollateralForStableTest is DevTestSetup {
         makeSPDepositAndClaim(A, stableAmount);
         
         uint256 collSwapAmount = 1e30;
-        uint256 stableSwapAmount = stableAmount - 1e18; // avoid MIN_BOLD_IN_SP
+        uint256 stableSwapAmount = stableAmount - 1000e18; // avoid MIN_BOLD_AFTER_REBALANCE
         
         SwapTestVars memory initialValues;
         initialValues.spBoldBalance = stabilityPool.getTotalBoldDeposits();
@@ -358,9 +358,9 @@ contract SwapCollateralForStableTest is DevTestSetup {
     }
 
     function testSwapCollateralForStableEmitsCorrectEvents() public {
-        uint256 stableAmount = 1000e18;
+        uint256 stableAmount = 10_000e18;
 
-        uint256 collSwapAmount = 1e18;
+        uint256 collSwapAmount = 1000e18;
         uint256 stableSwapAmount = stableAmount / 2;
         
 
@@ -379,13 +379,13 @@ contract SwapCollateralForStableTest is DevTestSetup {
         // Expect events to be emitted in the correct order
         // First: S_Updated (from _updateTrackingVariables)
         // S_Updated value = P * _amountCollIn / totalBoldDeposits
-        // = 1e36 * 1e18 / 1000e18 = 1e33
+        // = 1e36 * 1000e18 / 10_000e18 = 1e35
         vm.expectEmit(true, true, true, true);
-        emit S_Updated(1e33, 0);
+        emit S_Updated(1e35, 0);
         
         // Second: P_Updated (from _updateTrackingVariables)
         // P_Updated value = P * (totalBoldDeposits - _amountStableOut) / totalBoldDeposits
-        // = 1e36 * (1000e18 - 1000e18 / 2) / 1000e18 = 5e35
+        // = 1e36 * (10000e18 - 10000e18 / 2) / 10000e18 = 5e35
         vm.expectEmit(true, true, true, true);
         emit P_Updated(5e35);
         
@@ -403,9 +403,9 @@ contract SwapCollateralForStableTest is DevTestSetup {
 
     function testSwapCollateralForStableWithScaleChanges() public {
         // Create a scenario that will trigger scale change
-        uint256 stableAmount = 10_000_000_000e18;
+        uint256 stableAmount = 10_000_000_000_000e18;
         uint256 collSwapAmount = 1_000_000e18;
-        uint256 stableSwapAmount = stableAmount - 1e18; // Large amount relative to deposits
+        uint256 stableSwapAmount = stableAmount - 1000e18; // Swap out all liquidity - MIN_BOLD_AFTER_REBALANCE
 
         deal(address(boldToken), A, stableAmount/2);
         deal(address(boldToken), B, stableAmount/2);
@@ -445,20 +445,20 @@ contract SwapCollateralForStableTest is DevTestSetup {
 
 
     function testSwapCollateralForStableAtMinimumDeposit() public {
-        uint256 stableAmount = 2e18;
+        uint256 stableAmount = 2000e18;
 
         deal(address(boldToken), A, stableAmount);
         makeSPDepositAndClaim(A, stableAmount);
         
-        uint256 collSwapAmount = 0.001e18;
-        uint256 stableSwapAmount = 1e18;
+        uint256 collSwapAmount = 1e18;
+        uint256 stableSwapAmount = 1000e18;
         
         vm.startPrank(liquidityStrategy);
         stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount);
         vm.stopPrank();
         
         // Should still work and leave at least MIN_BOLD_IN_SP
-        assertEq(stabilityPool.getTotalBoldDeposits(), 1e18);
+        assertEq(stabilityPool.getTotalBoldDeposits(), 1_000e18);
         assertEq(stabilityPool.getCollBalance(), collSwapAmount);
     }
 }
