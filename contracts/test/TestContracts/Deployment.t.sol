@@ -264,8 +264,7 @@ contract TestDeployer is MetadataDeployment {
         DeploymentVarsDev memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         
-        // Deploy SystemParams
-        ISystemParams systemParams = deploySystemParamsDev();
+        ISystemParams[] memory systemParamsArray = new ISystemParams[](vars.numCollaterals);
         
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
@@ -278,13 +277,14 @@ contract TestDeployer is MetadataDeployment {
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
-        // TODO: Before sys params we deployed address registry per branch
-        //       We should do the same for sys params
+        for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
+            systemParamsArray[vars.i] = deploySystemParamsDev(troveManagerParamsArray[vars.i], vars.i);
+        }
 
         // Deploy the first branch with WETH collateral
         vars.collaterals[0] = _WETH;
         (IAddressesRegistry addressesRegistry, address troveManagerAddress) =
-            _deployAddressesRegistryDev(systemParams);
+            _deployAddressesRegistryDev(systemParamsArray[0]);
         vars.addressesRegistries[0] = addressesRegistry;
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
         for (vars.i = 1; vars.i < vars.numCollaterals; vars.i++) {
@@ -296,13 +296,13 @@ contract TestDeployer is MetadataDeployment {
             );
             vars.collaterals[vars.i] = collToken;
             // Addresses registry and TM address
-            (addressesRegistry, troveManagerAddress) = _deployAddressesRegistryDev(systemParams);
+            (addressesRegistry, troveManagerAddress) = _deployAddressesRegistryDev(systemParamsArray[vars.i]);
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, systemParams);
-        hintHelpers = new HintHelpers(collateralRegistry, systemParams);
+        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, systemParamsArray[0]);
+        hintHelpers = new HintHelpers(collateralRegistry, systemParamsArray[0]);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
         contractsArray[0] = _deployAndConnectCollateralContractsDev(
@@ -314,7 +314,7 @@ contract TestDeployer is MetadataDeployment {
             address(vars.troveManagers[0]),
             hintHelpers,
             multiTroveGetter,
-            systemParams
+            systemParamsArray[0]
         );
 
         // Deploy the remaining branches with LST collateral
@@ -328,7 +328,7 @@ contract TestDeployer is MetadataDeployment {
                 address(vars.troveManagers[vars.i]),
                 hintHelpers,
                 multiTroveGetter,
-                systemParams
+                systemParamsArray[vars.i]
             );
         }
 
@@ -347,10 +347,23 @@ contract TestDeployer is MetadataDeployment {
         return (addressesRegistry, troveManagerAddress);
     }
 
-    function deploySystemParamsDev() public returns (ISystemParams) {
-        SystemParams systemParams = new SystemParams{salt: SALT}(false);
+    function deploySystemParamsDev(TroveManagerParams memory params, uint256 index) public returns (ISystemParams) {
+        bytes32 uniqueSalt = keccak256(abi.encodePacked(SALT, index));
+        SystemParams systemParams = new SystemParams{salt: uniqueSalt}(false);
         systemParams.initialize(address(this));
+        
+        systemParams.updateCollateralParams(params.CCR, params.SCR, params.MCR, params.BCR);
+        systemParams.updateLiquidationParams(5e16, 20e16, params.LIQUIDATION_PENALTY_SP, params.LIQUIDATION_PENALTY_REDISTRIBUTION);
+        
         return ISystemParams(systemParams);
+    }
+
+    function updateSystemParamsCollateral(ISystemParams systemParams, uint256 ccr, uint256 scr, uint256 mcr, uint256 bcr) public {
+        systemParams.updateCollateralParams(ccr, scr, mcr, bcr);
+    }
+
+    function updateSystemParamsLiquidation(ISystemParams systemParams, uint256 minSP, uint256 maxRedist, uint256 sp, uint256 redist) public {
+        systemParams.updateLiquidationParams(minSP, maxRedist, sp, redist);
     }
 
     function _deployAndConnectCollateralContractsDev(

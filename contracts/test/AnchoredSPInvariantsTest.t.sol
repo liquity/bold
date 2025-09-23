@@ -28,6 +28,7 @@ contract AnchoredInvariantsTest is Logging, BaseInvariantTest, BaseMultiCollater
         Contracts memory contracts;
         (contracts.branches, contracts.collateralRegistry, contracts.boldToken, contracts.hintHelpers,, contracts.weth)
         = deployer.deployAndConnectContractsMultiColl(p);
+        contracts.systemParams = contracts.branches[0].systemParams;
         setupContracts(contracts);
 
         handler = new InvariantsTestHandler({contracts: contracts, assumeNoExpectedFailures: true});
