@@ -109,6 +109,9 @@ contract MulticollateralTest is DevTestSetup {
                 vm.stopPrank();
             }
         }
+        
+        systemParams = contractsArray[0].systemParams;
+        UPFRONT_INTEREST_PERIOD = systemParams.UPFRONT_INTEREST_PERIOD();
     }
 
     function testMultiCollateralDeployment() public {

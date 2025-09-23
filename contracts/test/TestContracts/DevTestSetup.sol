@@ -93,10 +93,8 @@ contract DevTestSetup is BaseTest {
         MAX_ANNUAL_BATCH_MANAGEMENT_FEE = systemParams.MAX_ANNUAL_BATCH_MANAGEMENT_FEE();
         REDEMPTION_MINUTE_DECAY_FACTOR = systemParams.REDEMPTION_MINUTE_DECAY_FACTOR();
         URGENT_REDEMPTION_BONUS = systemParams.URGENT_REDEMPTION_BONUS();
-        
-        // TODO(@bayological): These may need initializing. They come from borrower ops but can be fetched from sys params
-        // UPFRONT_INTEREST_PERIOD;
-        // MIN_INTEREST_RATE_CHANGE_PERIOD;
+        MIN_INTEREST_RATE_CHANGE_PERIOD = systemParams.MIN_INTEREST_RATE_CHANGE_PERIOD();
+        UPFRONT_INTEREST_PERIOD = systemParams.UPFRONT_INTEREST_PERIOD();
     }
 
     function _setupForWithdrawCollGainToTrove() internal returns (uint256, uint256, uint256) {

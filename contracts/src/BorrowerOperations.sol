@@ -199,6 +199,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         UPFRONT_INTEREST_PERIOD = _systemParams.UPFRONT_INTEREST_PERIOD();
         MIN_ANNUAL_INTEREST_RATE = _systemParams.MIN_ANNUAL_INTEREST_RATE();
         MAX_ANNUAL_INTEREST_RATE = _systemParams.MAX_ANNUAL_INTEREST_RATE();
+        INTEREST_RATE_ADJ_COOLDOWN = _systemParams.INTEREST_RATE_ADJ_COOLDOWN();
 
         troveManager = _addressesRegistry.troveManager();
         gasPoolAddress = _addressesRegistry.gasPoolAddress();
