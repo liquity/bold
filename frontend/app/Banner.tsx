@@ -29,7 +29,7 @@ export function Banner() {
           maxWidth: 1092,
         })}
       >
-        It's Arbitrum Week! Earn 5x daily bonus in Shells if you borrow against ARB between Sept. 22 and Sept. 29.
+        It's Arbitrum Week! Earn 5x daily bonus in Shells if you borrow against ARB between Sept. 23 and Sept. 30.
         {/* <Link
           href="https://example.com"
           passHref
