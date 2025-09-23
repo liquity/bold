@@ -99,7 +99,7 @@ contract SystemParams is Initializable, OwnableUpgradeable, ISystemParams {
         CCR = 150 * _1pct; // 150%
         SCR = 110 * _1pct; // 110%
         MCR = 110 * _1pct; // 110%
-        BCR = 40 * _1pct; // 40%
+        BCR = 10 * _1pct; // 10%
 
         // Interest parameters
         MIN_ANNUAL_INTEREST_RATE = _1pct / 2; // 0.5%
