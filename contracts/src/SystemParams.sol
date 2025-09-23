@@ -88,7 +88,7 @@ contract SystemParams is Initializable, OwnableUpgradeable, ISystemParams {
         MIN_LIQUIDATION_PENALTY_SP = 5 * _1pct; // 5%
         MAX_LIQUIDATION_PENALTY_REDISTRIBUTION = 20 * _1pct; // 20%
         LIQUIDATION_PENALTY_SP = 5e16; // 5%
-        LIQUIDATION_PENALTY_REDISTRIBUTION = 20e16; // 20%
+        LIQUIDATION_PENALTY_REDISTRIBUTION = 10e16; // 10%
 
         // Gas compensation parameters
         COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%
@@ -99,7 +99,7 @@ contract SystemParams is Initializable, OwnableUpgradeable, ISystemParams {
         CCR = 150 * _1pct; // 150%
         SCR = 110 * _1pct; // 110%
         MCR = 110 * _1pct; // 110%
-        BCR = 10 * _1pct; // 10%
+        BCR = 40 * _1pct; // 40%
 
         // Interest parameters
         MIN_ANNUAL_INTEREST_RATE = _1pct / 2; // 0.5%
