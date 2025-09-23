@@ -79,6 +79,7 @@ contract ShutdownTest is DevTestSetup {
         SCR = troveManager.get_SCR();
         UPFRONT_INTEREST_PERIOD = systemParams.UPFRONT_INTEREST_PERIOD();
         MIN_INTEREST_RATE_CHANGE_PERIOD = systemParams.MIN_INTEREST_RATE_CHANGE_PERIOD();
+        URGENT_REDEMPTION_BONUS = systemParams.URGENT_REDEMPTION_BONUS();
     }
 
     function openMulticollateralTroveNoHints100pctWithIndex(
