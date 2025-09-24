@@ -264,8 +264,6 @@ contract TestDeployer is MetadataDeployment {
         DeploymentVarsDev memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
         
-        ISystemParams[] memory systemParamsArray = new ISystemParams[](vars.numCollaterals);
-        
         // Deploy Bold
         vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
@@ -277,6 +275,8 @@ contract TestDeployer is MetadataDeployment {
         vars.addressesRegistries = new IAddressesRegistry[](vars.numCollaterals);
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
+        ISystemParams[] memory systemParamsArray = new ISystemParams[](vars.numCollaterals);
+        
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             systemParamsArray[vars.i] = deploySystemParamsDev(troveManagerParamsArray[vars.i], vars.i);
         }
