@@ -1,5 +1,3 @@
-// TODO(@bayological): Fix compilation errors with core contracts & replace address registry param usage with sys params
-
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
