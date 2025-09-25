@@ -2,7 +2,6 @@
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
-import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { StakePositionSummary } from "@/src/comps/StakePositionSummary/StakePositionSummary";
 import content from "@/src/content";
@@ -51,16 +50,6 @@ export function StakeScreen() {
           >
             {content.stakeScreen.headline(<TokenIcon size={24} symbol="LQTY" />)}
           </div>
-        ),
-        subtitle: (
-          <>
-            {content.stakeScreen.subheading}{" "}
-            <LinkTextButton
-              label={content.stakeScreen.learnMore[1]}
-              href={content.stakeScreen.learnMore[0]}
-              external
-            />
-          </>
         ),
       }}
     >
