@@ -142,7 +142,6 @@ export default {
       },
     },
 
-
     delegatesModal: {
       title: "Set a delegate",
       intro: (
@@ -463,10 +462,28 @@ export default {
       title: "Allocate your voting power",
       intro: (
         <>
-          Direct incentives from Liquity V2 protocol revenues towards liquidity providers for BOLD. Upvote from Thursday
-          to Tuesday. Downvote all week. <Link href="https://docs.liquity.org/v2-faq/lqty-staking">Learn more</Link>
+          Vote on initiatives and direct incentives from Liquity V2 protocol revenues towards 
+          liquidity venues for BOLD. Upvote from Thursday to Tuesday. Downvote all week. Get and 
+          claim bribes for some of them.
         </>
       ),
+      resources: {
+        overview: {
+          description: "Learn more about voting accrual, initiative and protocol incentivized liquidity (PIL).",
+          linkText: "LQTY Voting & Staking in V2",
+          linkUrl: "https://docs.liquity.org/v2-faq/lqty-staking"
+        },
+        dashboard: {
+          description: "Check stats for the weekly voting and reward distributions.",
+          linkText: "Protocol Incentivized Liquidy (PIL) data",
+          linkUrl: "https://dune.com/liquity/protocol-incentivized-liquidity"
+        },
+        bribes: {
+          description: "Initiatives can offer Bribes. Active bribing campaigns are visible below and can be claimed weekly.",
+          linkText: "Bribing Markets",
+          linkUrl: "https://www.liquity.org/blog/bribe-markets-in-liquity-v2-strategic-value-for-lqty-stakers"
+        }
+      }
     },
     infoTooltips: {
       alsoClaimRewardsDeposit: [
