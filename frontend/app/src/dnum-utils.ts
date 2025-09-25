@@ -38,6 +38,10 @@ export function dnumMin(a: Dnum, ...rest: Dnum[]) {
   return rest.reduce((min, value) => dn.lt(value, min) ? value : min, a);
 }
 
+export function dnumNeg(value: Dnum): Dnum {
+  return [-value[0], value[1]];
+}
+
 export const jsonStringifyWithDnum: typeof JSON.stringify = (data, replacer, space) => {
   return JSON.stringify(
     data,

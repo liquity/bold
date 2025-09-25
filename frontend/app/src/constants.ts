@@ -3,9 +3,9 @@
 import type { BranchId, ChainId, CollateralSymbol, IcStrategy, RiskLevel } from "@/src/types";
 
 import { vEnvLegacyCheck } from "@/src/valibot-utils";
-import { norm } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
+import { maxUint256 } from "viem";
 
 // make sure the icons in /public/fork-icons/
 // are 54x54px, especially for PNGs.
@@ -31,6 +31,8 @@ export const GAS_ALLOCATE_LQTY_MIN_HEADROOM = 350_000;
 export const LOCAL_STORAGE_PREFIX = "liquity2:";
 
 export const LEVERAGE_FACTOR_MIN = 1.1;
+export const LEVERAGE_FACTOR_DEFAULT = 1.5;
+export const LEVERAGE_FACTOR_PRECISION = 0.1;
 
 export const MAX_LTV_ALLOWED_RATIO = 0.916; // ratio of the max LTV allowed by the app (when opening a position)
 export const MAX_LTV_RESERVE_RATIO = 0.04; // ratio of the max LTV in non-limited mode (e.g. when updating a position), to prevent reaching the max LTV
@@ -56,9 +58,9 @@ export const DATA_REFRESH_INTERVAL = 30_000;
 export const PRICE_REFRESH_INTERVAL = 60_000;
 export const DATA_STALE_TIME = 5_000;
 
-export const LEVERAGE_MAX_SLIPPAGE = 0.05; // 5%
-export const CLOSE_FROM_COLLATERAL_SLIPPAGE = 0.05; // 5%
-export const MAX_UPFRONT_FEE = 1000n * 10n ** 18n;
+export const LEVERAGE_SLIPPAGE_TOLERANCE = 0.0005; // 0.05%
+export const LEVERAGE_PRICE_IMPACT_HIGH = 0.01; // 1%
+export const MAX_UPFRONT_FEE = maxUint256;
 export const MIN_DEBT = dn.from(2000, 18);
 
 export const TROVE_STATUS_NONEXISTENT = 0;
@@ -67,18 +69,12 @@ export const TROVE_STATUS_CLOSED_BY_OWNER = 2;
 export const TROVE_STATUS_CLOSED_BY_LIQUIDATION = 3;
 export const TROVE_STATUS_ZOMBIE = 4;
 
+// XXX what is the point of this?
 export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = {
   ETH: dn.from(100_000_000n, 18),
   WSTETH: dn.from(100_000_000n, 18),
   RETH: dn.from(100_000_000n, 18),
 };
-
-// LTV factor suggestions, as ratios of the multiply factor range
-export const LEVERAGE_FACTOR_SUGGESTIONS = [
-  norm(1.5, 1.1, 11), // 1.5x multiply with a 1.1x => 11x range
-  norm(2.5, 1.1, 11),
-  norm(5, 1.1, 11),
-];
 
 // DEBT suggestions, as ratios of the max LTV
 export const DEBT_SUGGESTIONS = [

@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import type { LoanLoadingState } from "./LoanScreen";
 
 import { useFlashTransition } from "@/src/anim-utils";
-import { INFINITY } from "@/src/characters";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { LoanStatusTag } from "@/src/comps/Tag/LoanStatusTag";
 import { Value } from "@/src/comps/Value/Value";
@@ -508,6 +507,23 @@ function LoanCard(props: {
                                 color: "accent",
                               })}
                             >
+                              {mode === "multiply"
+                                ? <IconBorrow size={16} />
+                                : <IconLeverage size={16} />}
+                            </div>
+                          ),
+
+                          label: mode === "multiply"
+                            ? "Convert to BOLD loan"
+                            : "Convert to Multiply position",
+                        },
+                        {
+                          icon: (
+                            <div
+                              className={css({
+                                color: "accent",
+                              })}
+                            >
                               <IconCopy size={16} />
                             </div>
                           ),
@@ -562,13 +578,16 @@ function LoanCard(props: {
                       selected={0}
                       onSelect={(index) => {
                         if (index === 0) {
+                          props.onLeverageModeChange(mode === "multiply" ? "borrow" : "multiply");
+                        }
+                        if (index === 1) {
                           navigator.clipboard.writeText(window.location.href);
                           copyTransition.flash();
                         }
-                        if (index === 1) {
+                        if (index === 2) {
                           window.open(`${CHAIN_BLOCK_EXPLORER?.url}address/${loan.borrower}`);
                         }
-                        if (index === 2 && nftUrl) {
+                        if (index === 3 && nftUrl) {
                           window.open(nftUrl);
                         }
                       }}
@@ -593,40 +612,38 @@ function LoanCard(props: {
                     {mode === "multiply"
                       ? (
                         <div
-                          title={`${fmtnum(loan.deposit, "full")} ${collateral}`}
+                          title={`${fmtnum(depositPreLeverage ?? 0)} ${collateral.name}`}
                           className={css({
                             display: "flex",
                             alignItems: "center",
                             gap: 8,
                           })}
                         >
-                          <div>{fmtnum(loan.deposit)}</div>
+                          <Value negative={loanDetails.status === "underwater"}>
+                            {fmtnum(depositPreLeverage ?? 0)}
+                          </Value>
+
                           <TokenIcon symbol={collateral.symbol} size={24} />
-                          <div
-                            className={css({
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 4,
-                            })}
-                          >
-                            <div>
+
+                          {leverageFactor !== null && (
+                            <div
+                              className={css({
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 4,
+                              })}
+                            >
                               <Value
                                 negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
-                                title={`Multiply factor: ${
-                                  loanDetails.status === "underwater" || leverageFactor === null
-                                    ? INFINITY
-                                    : `${roundToDecimal(leverageFactor, 3)}x`
-                                }`}
+                                title={`Multiply: ${roundToDecimal(leverageFactor, 1)}x`}
                                 className={css({
                                   fontSize: 16,
                                 })}
                               >
-                                {loanDetails.status === "underwater" || leverageFactor === null
-                                  ? INFINITY
-                                  : `${roundToDecimal(leverageFactor, 1)}x`}
+                                {roundToDecimal(leverageFactor, 1)}x
                               </Value>
                             </div>
-                          </div>
+                          )}
                         </div>
                       )
                       : (
@@ -650,7 +667,7 @@ function LoanCard(props: {
                       color: "positionContentAlt",
                     })}
                   >
-                    {mode === "multiply" ? "Total exposure" : "Total debt"}
+                    {mode === "multiply" ? "Net value" : "Total debt"}
                   </div>
                 </div>
               </div>
@@ -666,7 +683,7 @@ function LoanCard(props: {
                 {closedOrLiquidated
                   ? (
                     <>
-                      <GridItem label={mode === "multiply" ? "Net value" : "Collateral"}>N/A</GridItem>
+                      <GridItem label={mode === "multiply" ? "Exposure" : "Collateral"}>N/A</GridItem>
                       <GridItem label="Liq. price" title="Liquidation price">N/A</GridItem>
                       <GridItem label="LTV" title="Loan-to-value ratio">N/A</GridItem>
                       <GridItem label="Interest rate">N/A</GridItem>
@@ -686,24 +703,11 @@ function LoanCard(props: {
                   )
                   : (
                     <>
-                      {mode === "multiply"
-                        ? (
-                          <GridItem label="Net value">
-                            <Value
-                              negative={loanDetails.status === "underwater"}
-                              title={`${fmtnum(depositPreLeverage)} ${collateral.name}`}
-                            >
-                              {fmtnum(depositPreLeverage)} {collateral.name}
-                            </Value>
-                          </GridItem>
-                        )
-                        : (
-                          <GridItem label="Collateral">
-                            <div title={`${fmtnum(loan.deposit, "full")} ${collateral.name}`}>
-                              {fmtnum(loan.deposit)} {collateral.name}
-                            </div>
-                          </GridItem>
-                        )}
+                      <GridItem label={mode === "multiply" ? "Exposure" : "Collateral"}>
+                        <div title={`${fmtnum(loan.deposit, "full")} ${collateral.name}`}>
+                          {fmtnum(loan.deposit)} {collateral.name}
+                        </div>
+                      </GridItem>
                       <GridItem label="Liq. price" title="Liquidation price">
                         <Value negative={ltv && dn.gt(ltv, maxLtv)}>
                           {loanDetails.liquidationPrice

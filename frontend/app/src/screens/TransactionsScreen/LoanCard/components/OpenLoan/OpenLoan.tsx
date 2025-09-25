@@ -7,13 +7,12 @@ import { GridItem } from "@/src/screens/TransactionsScreen/LoanCard/components/c
 import { GridItemWrapper } from "@/src/screens/TransactionsScreen/LoanCard/components/components/GridItemWrapper";
 import { TotalDebt } from "@/src/screens/TransactionsScreen/LoanCard/components/components/TotalDebt";
 import { CollateralCell } from "@/src/screens/TransactionsScreen/LoanCard/components/OpenLoan/components/CollateralCell";
-import { NetValueCell } from "@/src/screens/TransactionsScreen/LoanCard/components/OpenLoan/components/NetValueCell";
 import { riskLevelToStatusMode } from "@/src/uikit-utils.tsx";
 import { css } from "@/styled-system/css";
 import { HFlex, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useMemo } from "react";
-import { LeveragedExposure } from "./components/LeveragedExposure";
+import { NetValue } from "./components/NetValue";
 
 import type { LoanDetails, PositionLoan, PositionLoanCommitted } from "@/src/types";
 import type { CollateralToken } from "@liquity2/uikit";
@@ -56,13 +55,7 @@ export const OpenLoan: FC<OpenLoanProps> = ({
   return (
     <>
       {leverageMode
-        ? (
-          <LeveragedExposure
-            loan={loan}
-            loanDetails={loanDetails}
-            prevLoanDetails={prevLoanDetails ?? null}
-          />
-        )
+        ? <NetValue loan={loan} loanDetails={loanDetails} prevLoanDetails={prevLoanDetails ?? null} />
         : <TotalDebt loan={loan} prevLoan={prevLoan} />}
       <div
         className={css({
@@ -72,22 +65,12 @@ export const OpenLoan: FC<OpenLoanProps> = ({
           paddingTop: 32,
         })}
       >
-        {leverageMode
-          ? (
-            <NetValueCell
-              depositPreLeverage={depositPreLeverage}
-              prevDepositPreLeverage={prevLoanDetails?.depositPreLeverage}
-              collTokenName={collToken.name}
-              isUnderwater={loanDetails.status === "underwater"}
-            />
-          )
-          : (
-            <CollateralCell
-              collTokenName={collToken.name}
-              deposit={loan.deposit}
-              prevDeposit={prevLoan?.deposit}
-            />
-          )}
+        <CollateralCell
+          leverageMode={leverageMode}
+          collTokenName={collToken.name}
+          deposit={loan.deposit}
+          prevDeposit={prevLoan?.deposit}
+        />
         <GridItemWrapper label="Liq. price" title="Liquidation price">
           <Value negative={ltv && dn.gt(ltv, maxLtv)}>
             {fmtnum(liquidationPrice, { preset: "2z", prefix: "$" })}

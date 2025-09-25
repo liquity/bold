@@ -345,7 +345,7 @@ export function LoanScreen() {
                               : <PanelUpdateBorrowPosition loan={loan.data} />
                           )}
                           {action === "rate" && <PanelInterestRate loan={loan.data} />}
-                          {action === "close" && <PanelClosePosition loan={loan.data} />}
+                          {action === "close" && <PanelClosePosition loan={loan.data} loanMode={loanMode} />}
                         </>
                       )}
                   </a.div>

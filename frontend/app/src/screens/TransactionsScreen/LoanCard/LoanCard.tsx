@@ -107,6 +107,7 @@ export function LoanCard({
   }, [
     isLoanClosing,
     prevLoan,
+    prevLoanDetails,
     collToken,
     loan,
     loanDetails,
