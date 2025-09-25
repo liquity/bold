@@ -11,6 +11,7 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
+import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { DEBT_SUGGESTIONS, ETH_MAX_RESERVE, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
 import content from "@/src/content";
 import { dnum18, DNUM_0, dnumMax, dnumMin } from "@/src/dnum-utils";
@@ -30,6 +31,7 @@ import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalances } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
+  Checkbox,
   COLLATERALS as KNOWN_COLLATERALS,
   Dropdown,
   HFlex,
@@ -44,7 +46,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import { maxUint256 } from "viem";
 
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
@@ -82,6 +84,9 @@ export function BorrowScreen() {
   const [interestRate, setInterestRate] = useState<null | Dnum>(null);
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
   const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(null);
+  const [agreeToLiquidationRisk, setAgreeToLiquidationRisk] = useState(false);
+
+  const agreeCheckboxId = useId();
 
   const setInterestRateRounded = useCallback((averageInterestRate: Dnum, setValue: (value: string) => void) => {
     const rounded = dn.div(dn.round(dn.mul(averageInterestRate, 1e4)), 1e4);
@@ -154,7 +159,9 @@ export function BorrowScreen() {
   );
 
   const isBelowMinDebt = debt.parsed && !debt.isEmpty && dn.lt(debt.parsed, MIN_DEBT);
+  const isAboveMaxLtv = loanDetails.ltv && dn.gt(loanDetails.ltv, loanDetails.maxLtv);
 
+  const isDelegated = interestRateMode === "delegate" && interestRateDelegate;
   const allowSubmit = account.isConnected
     && deposit.parsed
     && dn.gt(deposit.parsed, 0)
@@ -162,7 +169,9 @@ export function BorrowScreen() {
     && dn.gt(debt.parsed, 0)
     && interestRate
     && dn.gt(interestRate, 0)
-    && !isBelowMinDebt;
+    && !isBelowMinDebt
+    && !isAboveMaxLtv
+    && (loanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk));
 
   return (
     <Screen
@@ -285,10 +294,19 @@ export function BorrowScreen() {
                 label="BOLD"
               />
             }
-            drawer={debt.isFocused || !isBelowMinDebt ? null : {
-              mode: "error",
-              message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
-            }}
+            drawer={debt.isFocused ? null : (
+              isBelowMinDebt
+                ? {
+                  mode: "error",
+                  message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
+                }
+                : isAboveMaxLtv
+                ? {
+                  mode: "error",
+                  message: `Your LTV must be lower than ${fmtnum(dn.toNumber(loanDetails.maxLtv), "pct2z")}%`,
+                }
+                : null
+            )}
             label={content.borrowScreen.borrowField.label}
             placeholder="0.00"
             secondary={{
@@ -569,6 +587,47 @@ export function BorrowScreen() {
             }
           />
         </div>
+      )}
+
+      {loanDetails.status === "at-risk" && (
+        <WarningBox>
+          {isDelegated
+            ? (
+              <div>
+                When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>{" "}
+                must be below{" "}
+                {fmtnum(loanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
+                proceed.
+              </div>
+            )
+            : (
+              <>
+                <div>
+                  Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
+                  {fmtnum(loanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
+                  {fmtnum(loanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
+                </div>
+                <label
+                  htmlFor={agreeCheckboxId}
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    cursor: "pointer",
+                  })}
+                >
+                  <Checkbox
+                    id={agreeCheckboxId}
+                    checked={agreeToLiquidationRisk}
+                    onChange={(checked) => {
+                      setAgreeToLiquidationRisk(checked);
+                    }}
+                  />
+                  I understand. Let's continue.
+                </label>
+              </>
+            )}
+        </WarningBox>
       )}
 
       <FlowButton
