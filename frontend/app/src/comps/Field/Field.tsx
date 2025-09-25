@@ -285,6 +285,7 @@ export const FooterInfoLoanToValue = memo(
                 <span
                   className={css({
                     fontVariantNumeric: "tabular-nums",
+                    color: higherThanMax ? "negativeStrong" : undefined,
                   })}
                 >
                   {fmtnum(higherThanMax ? maxLtvRatio : ltvRatio, {

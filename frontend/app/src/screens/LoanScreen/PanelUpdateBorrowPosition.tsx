@@ -8,6 +8,7 @@ import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
+import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { ETH_MAX_RESERVE, MIN_DEBT } from "@/src/constants";
 import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -19,6 +20,7 @@ import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
+  Checkbox,
   HFlex,
   InfoTooltip,
   InputField,
@@ -32,7 +34,7 @@ import {
 import { maxUint256 } from "viem";
 
 import * as dn from "dnum";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 type ValueUpdateMode = "add" | "remove";
 
@@ -70,6 +72,9 @@ export function PanelUpdateBorrowPosition({
   // debt change
   const [debtMode, setDebtMode] = useState<ValueUpdateMode>("add");
   const debtChange = useInputFieldValue((value) => fmtnum(value, "full"));
+
+  const [agreeToLiquidationRisk, setAgreeToLiquidationRisk] = useState(false);
+  const agreeCheckboxId = useId();
 
   const newDebt = debtChange.parsed && (
     debtMode === "remove"
@@ -142,7 +147,9 @@ export function PanelUpdateBorrowPosition({
       || !dn.eq(loanDetails.debt ?? dnum18(0), newLoanDetails.debt ?? dnum18(0))
     )
     // the LTV is not above the maximum
-    && !isAboveMaxLtv;
+    && !isAboveMaxLtv
+    // at-risk warning agreement (only for non-delegated loans)
+    && (newLoanDetails.status !== "at-risk" || (!loan.batchManager && agreeToLiquidationRisk));
 
   return (
     <>
@@ -285,6 +292,11 @@ export function PanelUpdateBorrowPosition({
               }
               drawer={!debtChange.isFocused && isBelowMinDebt
                 ? { mode: "error", message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+                : isAboveMaxLtv
+                ? {
+                  mode: "error",
+                  message: `Your LTV must be lower than ${fmtnum(dn.toNumber(loanDetails.maxLtv), "pct2z")}%`,
+                }
                 : insufficientBold
                 ? { mode: "error", message: "Insufficient BOLD balance." }
                 : null}
@@ -427,6 +439,48 @@ export function PanelUpdateBorrowPosition({
           />
         </div>
       </VFlex>
+
+      {newLoanDetails.status === "at-risk" && (
+        <WarningBox>
+          {loan.batchManager
+            ? (
+              <div>
+                When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>{" "}
+                must be below{" "}
+                {fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
+                proceed.
+              </div>
+            )
+            : (
+              <>
+                <div>
+                  Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
+                  {fmtnum(newLoanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
+                  {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
+                </div>
+                <label
+                  htmlFor={agreeCheckboxId}
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    cursor: "pointer",
+                  })}
+                >
+                  <Checkbox
+                    id={agreeCheckboxId}
+                    checked={agreeToLiquidationRisk}
+                    onChange={(checked) => {
+                      setAgreeToLiquidationRisk(checked);
+                    }}
+                  />
+                  I understand. Let's continue.
+                </label>
+              </>
+            )}
+        </WarningBox>
+      )}
+
       <FlowButton
         disabled={!allowSubmit}
         label="Update position"
