@@ -1,6 +1,5 @@
 import { useVotingState } from "@/src/screens/StakeScreen/components/PanelVoting/providers/PanelVotingProvider/hooks";
 import { css } from "@/styled-system/css";
-import { BribeMarketsInfo } from "./components/BribeMarketsInfo";
 import { CastVotes } from "./components/CastVotes";
 import { CutoffWarning } from "./components/CutoffWarning";
 import { EpochInitiativesTable } from "./components/EpochInitiativesTable";
@@ -35,7 +34,6 @@ export const PanelVoting: FC = () => {
         <VotingRoundTimer />
         <CutoffWarning />
         <EpochInitiativesTable />
-        <BribeMarketsInfo />
         <EpochVotingStatus />
         <CastVotes />
       </section>
