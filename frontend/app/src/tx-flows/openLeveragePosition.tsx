@@ -73,7 +73,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
     return (
       <>
         <TransactionDetailsRow
-          label="Initial deposit"
+          label="Deposit"
           value={[
             `${fmtnum(request.initialDeposit)} ${collToken.name}`,
             collPrice.data && fmtnum(
@@ -83,7 +83,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
           ]}
         />
         <TransactionDetailsRow
-          label="Borrowed"
+          label="Total debt"
           value={[
             `${fmtnum(borrowedWithFee)} BOLD`,
             <div
@@ -101,7 +101,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
                 value={upfrontFee.data}
                 suffix=" BOLD creation fee"
               />
-              <InfoTooltip heading="BOLD Creation Fee">
+              <InfoTooltip heading="BOLD creation fee">
                 This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of average
                 interest for the respective collateral asset.
               </InfoTooltip>
