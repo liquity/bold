@@ -1,4 +1,4 @@
-import type { CollateralToken } from "@liquity2/uikit";
+import type { CollateralToken, Drawer } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ComponentPropsWithoutRef } from "react";
 
@@ -8,6 +8,7 @@ import {
   LEVERAGE_SLIPPAGE_TOLERANCE,
   LTV_RISK,
   MAX_LTV_ALLOWED_RATIO,
+  MIN_DEBT,
 } from "@/src/constants";
 import content from "@/src/content";
 import { DNUM_0, DNUM_1, dnumNeg } from "@/src/dnum-utils";
@@ -39,20 +40,17 @@ export function LeverageField({
   leverageFactor,
   liquidationPriceInputFieldProps,
   liquidationRisk,
-  onDrawerClose,
   sliderProps,
 }: ReturnType<typeof useLeverageField> & {
   disabled?: boolean;
   drawer?: ComponentPropsWithoutRef<typeof InputField>["drawer"];
   inputId: string;
-  onDrawerClose?: ComponentPropsWithoutRef<typeof InputField>["onDrawerClose"];
 }) {
   return (
     <InputField
       id={inputId}
       secondarySpacing={16}
       drawer={drawer}
-      onDrawerClose={onDrawerClose}
       contextual={
         <div
           style={{
@@ -178,23 +176,30 @@ export function useLeverageField({
     inputAmount: leverageFactorChange < 0 && depositChange ? dn.abs(depositChange) : DNUM_0,
   });
 
-  const priceImpact = leverageFactorChange !== 0
-    ? (leverageFactorChange > 0
+  const quoteData = leverageFactorChange === 0 ? null : (
+    leverageFactorChange > 0
       ? quoteLeverUp
-      : quoteLeverDown)
-      .data?.priceImpact ?? null
-    : null;
+      : quoteLeverDown
+  ).data;
 
-  const actualDebtChange = leverageFactorChange !== 0
-    ? (leverageFactorChange > 0
-      ? (quoteLeverUp.data?.bouncing === false && quoteLeverUp.data.inputAmount
-        ? quoteLeverUp.data.inputAmount
-        : null)
-      : (quoteLeverDown.data?.bouncing === false && quoteLeverDown.data.outputAmount
-        ? dnumNeg(quoteLeverDown.data.outputAmount)
-        : null))
-    : DNUM_0;
+  // undefined: loading or not applicable (no leverage change)
+  // null: loaded, but the quote failed due to lack of liquidity
+  const quoteAmount = leverageFactorChange === 0 ? undefined : (
+    leverageFactorChange > 0
+      ? quoteLeverUp.data?.inputAmount
+      : quoteLeverDown.data?.outputAmount
+  );
 
+  const actualDebtChange = leverageFactorChange === 0 ? DNUM_0 : (
+    !quoteData?.bouncing && (
+        leverageFactorChange > 0
+          ? quoteAmount
+          : quoteAmount && dnumNeg(quoteAmount)
+      )
+    || null
+  );
+
+  const priceImpact = quoteData?.priceImpact ?? null;
   const debtChange = actualDebtChange ?? idealDebtChange;
   const debt = debtChange && dn.add(positionDebt, debtChange);
   const ltv = (deposit && debt && getLtv(deposit, debt, collPrice)) ?? getLtvFromLeverageFactor(leverageFactor);
@@ -259,6 +264,19 @@ export function useLeverageField({
     keyboardStep,
   }), [sliderValue, sliderGradient, onSliderChange, keyboardStep]);
 
+  const drawer: Drawer | null = deposit && dn.gt(deposit, DNUM_0) && debt && dn.lt(debt, MIN_DEBT)
+    ? { mode: "error", message: `Total debt must be at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+    : quoteAmount === null
+    ? { mode: "error", message: `Not enough ${collToken.name} liquidity to reach your chosen exposure.` }
+    : null;
+
+  const isValid = !drawer
+    && collPrice
+    && (
+      quoteData === null
+      || quoteData?.bouncing === false
+    );
+
   return {
     collPrice,
     collToken,
@@ -266,6 +284,8 @@ export function useLeverageField({
     debtChange,
     deposit,
     depositChange,
+    drawer,
+    isValid,
     leverageFactor,
     leverageFactorChange,
     liquidationPriceInputFieldProps,

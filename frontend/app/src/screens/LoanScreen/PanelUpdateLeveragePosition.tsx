@@ -10,7 +10,7 @@ import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { Value } from "@/src/comps/Value/Value";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
-import { ETH_MAX_RESERVE, LEVERAGE_SLIPPAGE_TOLERANCE, MAX_LTV_RESERVE_RATIO, MIN_DEBT } from "@/src/constants";
+import { ETH_MAX_RESERVE, LEVERAGE_SLIPPAGE_TOLERANCE, MAX_LTV_RESERVE_RATIO } from "@/src/constants";
 import { DNUM_0, dnumNeg } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
@@ -102,8 +102,6 @@ export function PanelUpdateLeveragePosition({
 
   const agreeCheckboxId = useId();
 
-  const isBelowMinDebt = newLoanDetails.debt && dn.lt(newLoanDetails.debt, MIN_DEBT);
-
   const allowSubmit = account.isConnected
     && (newLoanDetails.status !== "at-risk" || agreeToLiquidationRisk)
     && newLoanDetails.status !== "underwater"
@@ -113,8 +111,7 @@ export function PanelUpdateLeveragePosition({
       !dn.eq(initialLoanDetails.deposit ?? DNUM_0, newLoanDetails.deposit ?? DNUM_0)
       || initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor
     )
-    // above the minimum debt
-    && !isBelowMinDebt;
+    && leverageField.isValid;
 
   return (
     <>
@@ -216,18 +213,7 @@ export function PanelUpdateLeveragePosition({
         />
 
         <Field
-          field={
-            <LeverageField
-              inputId="input-liquidation-price"
-              drawer={isBelowMinDebt
-                ? {
-                  mode: "error",
-                  message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
-                }
-                : null}
-              {...leverageField}
-            />
-          }
+          field={<LeverageField inputId="input-liquidation-price" {...leverageField} />}
           footer={[
             {
               start: leverageField.leverageFactorChange === 0

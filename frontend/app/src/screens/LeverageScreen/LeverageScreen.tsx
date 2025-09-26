@@ -10,7 +10,7 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { ETH_MAX_RESERVE, LEVERAGE_FACTOR_DEFAULT, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
+import { ETH_MAX_RESERVE, LEVERAGE_FACTOR_DEFAULT, MAX_COLLATERAL_DEPOSITS } from "@/src/constants";
 import content from "@/src/content";
 import { dnum18, DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
@@ -120,14 +120,9 @@ export function LeverageScreen() {
 
   const hasDeposit = Boolean(depositPreLeverage.parsed && dn.gt(depositPreLeverage.parsed, 0));
 
-  const leverageFieldDrawer = (hasDeposit && newLoan.borrowed && dn.lt(newLoan.borrowed, MIN_DEBT))
-    ? { mode: "error" as const, message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
-    : undefined;
-
   const allowSubmit = account.isConnected
     && hasDeposit
-    && interestRate && dn.gt(interestRate, 0)
-    && leverageField.debt && dn.gt(leverageField.debt, 0);
+    && leverageField.isValid;
 
   return (
     <Screen
@@ -223,13 +218,7 @@ export function LeverageScreen() {
         />
 
         <Field
-          field={
-            <LeverageField
-              drawer={leverageFieldDrawer}
-              inputId="input-liquidation-price"
-              {...leverageField}
-            />
-          }
+          field={<LeverageField inputId="input-liquidation-price" {...leverageField} />}
           footer={[
             {
               start: <Field.FooterInfoLiquidationRisk riskLevel={leverageField.liquidationRisk} />,
