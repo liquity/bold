@@ -20,16 +20,16 @@ const actions = {
     path: "/borrow",
     title: "Borrow",
   },
-  // multiply: {
-  //   colors: {
-  //     background: token("colors.brandGreen"),
-  //     foreground: token("colors.brandGreenContent"),
-  //     foregroundAlt: token("colors.brandGreenContentAlt"),
-  //   },
-  //   description: contentActions.multiply.description,
-  //   path: "/multiply",
-  //   title: "Multiply",
-  // },
+  multiply: {
+    colors: {
+      background: token("colors.brandGreen"),
+      foreground: token("colors.brandGreenContent"),
+      foregroundAlt: token("colors.brandGreenContentAlt"),
+    },
+    description: contentActions.multiply.description,
+    path: "/multiply",
+    title: "Multiply",
+  },
   earn: {
     colors: {
       background: token("colors.brandBlue"),

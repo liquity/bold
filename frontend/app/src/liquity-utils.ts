@@ -861,9 +861,8 @@ export function useLoan(branchId: BranchId, troveId: TroveId): UseQueryResult<Po
 
   return useQuery<PositionLoanCommitted | null>({
     queryKey: ["TroveById", id],
-    queryFn: () => (
-      id ? fetchLoanById(wagmiConfig, id) : null
-    ),
+    queryFn: () => id ? fetchLoanById(wagmiConfig, id) : null,
+    refetchInterval: 60_000,
   });
 }
 

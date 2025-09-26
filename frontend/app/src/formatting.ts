@@ -9,6 +9,7 @@ import { match, P } from "ts-pattern";
 const fmtnumPresets = {
   "1z": { digits: 1, trailingZeros: true },
   "2z": { digits: 2, trailingZeros: true },
+  "4z": { digits: 4, trailingZeros: true },
   "12z": { digits: 12, trailingZeros: true },
   "2diff": { digits: 2, signDisplay: "exceptZero" },
   "4diff": { digits: 4, signDisplay: "exceptZero" },

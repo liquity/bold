@@ -1,8 +1,9 @@
 import type { PositionLoanCommitted } from "@/src/types";
-import type { Dnum } from "dnum";
+import * as dn from "dnum";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { DNUM_0 } from "@/src/dnum-utils";
 import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv } from "@/src/liquity-math";
@@ -11,14 +12,13 @@ import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconBorrow, StatusDot, TokenIcon } from "@liquity2/uikit";
-import * as dn from "dnum";
 import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows } from "./shared";
 
 export function PositionCardBorrow({
   batchManager,
+  borrowed,
   branchId,
-  debt,
   deposit,
   interestRate,
   isZombie,
@@ -29,32 +29,29 @@ export function PositionCardBorrow({
   & Pick<
     PositionLoanCommitted,
     | "batchManager"
+    | "borrowed"
     | "branchId"
+    | "deposit"
     | "interestRate"
     | "isZombie"
     | "status"
     | "troveId"
   >
-  & {
-    debt: null | Dnum;
-    deposit: null | Dnum;
-    statusTag?: ReactNode;
-  })
+  & { statusTag?: ReactNode })
 {
   const token = getCollToken(branchId);
   const collateralPriceUsd = usePrice(token?.symbol ?? null);
 
-  const ltv = debt && deposit && collateralPriceUsd.data
-    && getLtv(deposit, debt, collateralPriceUsd.data);
+  const ltv = collateralPriceUsd.data && getLtv(deposit, borrowed, collateralPriceUsd.data);
   const redemptionRisk = useRedemptionRiskOfLoan({ branchId, troveId, interestRate, status, isZombie });
 
-  const maxLtv = token && dn.from(1 / token.collateralRatio, 18);
-  const liquidationRisk = ltv && maxLtv && getLiquidationRisk(ltv, maxLtv);
+  const maxLtv = dn.from(1 / token.collateralRatio, 18);
+  const liquidationRisk = ltv && getLiquidationRisk(ltv, maxLtv);
 
   const title = token
     ? [
       `Loan ID: ${shortenTroveId(troveId)}…`,
-      `Debt: ${fmtnum(debt, "full")} BOLD`,
+      `Debt: ${fmtnum(borrowed, "full")} BOLD`,
       `Collateral: ${fmtnum(deposit, "full")} ${token.name}`,
       `Interest rate: ${fmtnum(interestRate, "pctfull")}%`,
     ]
@@ -90,21 +87,11 @@ export function PositionCardBorrow({
       main={{
         value: (
           <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-            <div
-              className={css({
-                display: "grid",
-              })}
-            >
-              <Amount value={debt} fallback="−" />
-            </div>
-            <TokenIcon
-              size={24}
-              symbol="BOLD"
-            />
+            <Amount value={borrowed} fallback="−" />
+            <TokenIcon size={24} symbol="BOLD" />
           </HFlex>
         ),
-        // label: "Total debt",
-        label: token && (
+        label: (
           <div
             className={css({
               display: "flex",
@@ -112,7 +99,7 @@ export function PositionCardBorrow({
               alignItems: "cente",
             })}
           >
-            Backed by {deposit ? fmtnum(deposit) : "−"} {token.name}
+            Backed by {!dn.eq(deposit, DNUM_0) ? fmtnum(deposit) : "−"} {token.name}
             <TokenIcon size="small" symbol={token.symbol} />
           </div>
         ),

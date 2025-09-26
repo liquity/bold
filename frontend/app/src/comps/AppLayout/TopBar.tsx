@@ -7,7 +7,7 @@ import { Tag } from "@/src/comps/Tag/Tag";
 import content from "@/src/content";
 import { DEPLOYMENT_FLAVOR } from "@/src/env";
 import { css } from "@/styled-system/css";
-import { IconBorrow, IconDashboard, IconEarn, IconStake } from "@liquity2/uikit";
+import { IconBorrow, IconDashboard, IconEarn, IconLeverage, IconStake } from "@liquity2/uikit";
 import Link from "next/link";
 import { AccountButton } from "./AccountButton";
 import { Menu } from "./Menu";
@@ -16,6 +16,7 @@ import { MenuDrawerButton } from "./MenuDrawer";
 const menuItems: MenuItem[] = [
   [content.menu.dashboard, "/", IconDashboard],
   [content.menu.borrow, "/borrow", IconBorrow],
+  [content.menu.multiply, "/multiply", IconLeverage],
   [content.menu.earn, "/earn", IconEarn],
   [content.menu.stake, "/stake", IconStake],
 ];

@@ -29,6 +29,7 @@ const RequestSchema = createRequestSchema(
   {
     prevLoan: vPositionLoanCommited(),
     loan: vPositionLoanCommited(),
+    leverageMode: v.boolean(),
   },
 );
 
@@ -38,7 +39,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
   title: "Review & Send Transaction",
 
   Summary({ request }) {
-    const { loan, prevLoan } = request;
+    const { loan, prevLoan, leverageMode } = request;
     const upfrontFee = usePredictAdjustInterestRateUpfrontFee(
       loan.branchId,
       loan.troveId,
@@ -56,7 +57,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
 
     return (
       <LoanCard
-        leverageMode={false}
+        leverageMode={leverageMode}
         loadingState={loadingState}
         loan={{
           ...loan,

@@ -22,7 +22,7 @@ type Mode = "positions" | "loading" | "actions";
 
 const actionCards = [
   "borrow",
-  // "multiply",
+  "multiply",
   "earn",
   "stake",
 ] as const;

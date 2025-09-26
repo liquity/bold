@@ -2,8 +2,11 @@ import type { RiskLevel } from "@/src/types";
 import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
+import { Amount } from "@/src/comps/Amount/Amount";
+import { Value } from "@/src/comps/Value/Value";
+import { LEVERAGE_PRICE_IMPACT_HIGH } from "@/src/constants";
 import content from "@/src/content";
-import { jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
@@ -399,6 +402,104 @@ export const FooterInfoMaxLtv = memo(
   (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
 );
 
+export const FooterInfoPriceImpact = memo(
+  function FooterInfoPriceImpact(props: {
+    inputTokenName: string;
+    outputTokenName: string;
+    priceImpact?: Dnum | null;
+  }) {
+    return (
+      <Field.FooterInfo
+        label="Price impact"
+        value={
+          <Value negative={dn.gte(props.priceImpact ?? DNUM_0, LEVERAGE_PRICE_IMPACT_HIGH)}>
+            <HFlex gap={4}>
+              <Amount value={props.priceImpact} percentage fallback="−" />
+              <InfoTooltip heading="Price impact">
+                The difference between the current spot price and the price at which your {props.inputTokenName}{" "}
+                gets converted to{" "}
+                {props.outputTokenName}. Depends on the size of your position and the available liquidity.
+              </InfoTooltip>
+            </HFlex>
+          </Value>
+        }
+      />
+    );
+  },
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+);
+
+export function FooterInfoPriceImpactNone() {
+  return (
+    <Field.FooterInfo
+      label="Price impact"
+      value="N/A"
+    />
+  );
+}
+
+export const FooterInfoSlippageRefundClose = memo(
+  function FooterInfoSlippageRefundClose(props: {
+    collateralName: string;
+    slippageProtection: Dnum;
+  }) {
+    return (
+      <Field.FooterInfo
+        label="Slippage refund"
+        value={
+          <HFlex gap={4}>
+            <Amount prefix="~" value={props.slippageProtection} suffix=" BOLD" />
+            <InfoTooltip heading="Slippage refund">
+              To allow for slippage, slightly more of your {props.collateralName}{" "}
+              will be converted to BOLD than needed for the repayment. The remaining BOLD will be refunded to your
+              wallet. The actual amount may be higher or lower than indicated here, according to the execution price of
+              your trade.
+            </InfoTooltip>
+          </HFlex>
+        }
+      />
+    );
+  },
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+);
+
+export const FooterInfoSlippageRefundLeverUp = memo(
+  function FooterInfoSlippageRefundLeverUp(props: {
+    collateralName: string;
+    slippageProtection: Dnum | null;
+  }) {
+    // When leveraging on the ETH branch, the wallet receives WETH instead of raw ETH
+    const collateralName = props.collateralName === "ETH" ? "WETH" : props.collateralName;
+
+    return (
+      <Field.FooterInfo
+        label="Slippage refund"
+        value={
+          <HFlex gap={4}>
+            <Amount prefix="~" value={props.slippageProtection} format="4z" suffix={` ${collateralName}`} />
+            <InfoTooltip heading="Slippage refund">
+              To allow for slippage, slightly more BOLD will be converted to {collateralName}{" "}
+              than needed to reach your chosen exposure. The remaining {collateralName}{" "}
+              will be refunded to your wallet. The actual amount may be higher or lower than indicated here, according
+              to the execution price of your trade.
+            </InfoTooltip>
+          </HFlex>
+        }
+      />
+    );
+  },
+  (prev, next) => jsonStringifyWithDnum(prev) === jsonStringifyWithDnum(next),
+);
+
+export function FooterInfoSlippageRefundNone() {
+  return (
+    <Field.FooterInfo
+      label="Slippage refund"
+      value="N/A"
+    />
+  );
+}
+
 Field.FooterInfo = FooterInfo;
 Field.FooterInfoLiquidationPrice = FooterInfoLiquidationPrice;
 Field.FooterInfoLiquidationRisk = FooterInfoLiquidationRisk;
@@ -408,3 +509,8 @@ Field.FooterInfoRiskLabel = FooterInfoRiskLabel;
 Field.FooterInfoWarnLevel = FooterInfoWarnLevel;
 Field.FooterInfoCollPrice = FooterInfoCollPrice;
 Field.FooterInfoMaxLtv = FooterInfoMaxLtv;
+Field.FooterInfoPriceImpact = FooterInfoPriceImpact;
+Field.FooterInfoPriceImpactNone = FooterInfoPriceImpactNone;
+Field.FooterInfoSlippageRefundClose = FooterInfoSlippageRefundClose;
+Field.FooterInfoSlippageRefundLeverUp = FooterInfoSlippageRefundLeverUp;
+Field.FooterInfoSlippageRefundNone = FooterInfoSlippageRefundNone;

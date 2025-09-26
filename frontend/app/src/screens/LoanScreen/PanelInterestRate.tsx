@@ -28,8 +28,10 @@ import { useEffect, useRef, useState } from "react";
 
 export function PanelInterestRate({
   loan,
+  loanMode,
 }: {
   loan: PositionLoanCommitted;
+  loanMode: "borrow" | "multiply";
 }) {
   const account = useAccount();
 
@@ -242,6 +244,7 @@ export function PanelInterestRate({
           successLink: ["/", "Go to the dashboard"],
           successMessage: "The position interest rate has been updated successfully.",
 
+          leverageMode: loanMode === "multiply",
           prevLoan: { ...loan },
           loan: {
             ...loan,

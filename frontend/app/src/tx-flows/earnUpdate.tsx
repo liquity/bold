@@ -116,7 +116,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
               <Amount
                 key="start"
                 value={rewards.coll}
-                suffix={` ${collateral.symbol}`}
+                suffix={` ${collateral.name}`}
               />,
               <Amount
                 key="end"

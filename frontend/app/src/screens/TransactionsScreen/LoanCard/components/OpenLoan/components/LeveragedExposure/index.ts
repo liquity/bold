@@ -1,1 +1,0 @@
-export { LeveragedExposure } from './LeveragedExposure';

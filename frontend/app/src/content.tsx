@@ -164,10 +164,10 @@ export default {
         You are repaying your debt and closing the position. The deposit will be returned to your wallet.
       </>
     ),
-    repayWithCollateralMessage: (
+    repayWithCollateralMessage: (collateralName: string) => (
       <>
-        To close your position, a part of your collateral will be sold to pay back the debt. The rest of your collateral
-        will be returned to your wallet.
+        To close your position, part of your {collateralName}{" "}
+        will be sold to pay back the debt. The rest will be returned to your wallet.
       </>
     ),
     buttonRepayAndClose: "Repay & close",
@@ -256,9 +256,6 @@ export default {
     borrowField: {
       label: "Loan",
     },
-    liquidationPriceField: {
-      label: "ETH liquidation price",
-    },
     interestRateField: {
       label: "Interest rate",
     },
@@ -278,10 +275,10 @@ export default {
       </>
     ),
     depositField: {
-      label: "You deposit",
+      label: "Deposit",
     },
     liquidationPriceField: {
-      label: "ETH liquidation price",
+      label: "Liquidation price",
     },
     interestRateField: {
       label: "Interest rate",
