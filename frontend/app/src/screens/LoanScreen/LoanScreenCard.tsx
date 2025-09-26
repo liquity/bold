@@ -684,7 +684,7 @@ function LoanCard(props: {
                   ? (
                     <>
                       <GridItem label={mode === "multiply" ? "Exposure" : "Collateral"}>N/A</GridItem>
-                      <GridItem label="Liq. price" title="Liquidation price">N/A</GridItem>
+                      <GridItem label="Liquidation price">N/A</GridItem>
                       <GridItem label="LTV" title="Loan-to-value ratio">N/A</GridItem>
                       <GridItem label="Interest rate">N/A</GridItem>
                       <GridItem label="Liquidation risk">
@@ -708,7 +708,7 @@ function LoanCard(props: {
                           {fmtnum(loan.deposit)} {collateral.name}
                         </div>
                       </GridItem>
-                      <GridItem label="Liq. price" title="Liquidation price">
+                      <GridItem label="Liquidation price">
                         <Value negative={ltv && dn.gt(ltv, maxLtv)}>
                           {loanDetails.liquidationPrice
                             ? fmtnum(loanDetails.liquidationPrice, { preset: "2z", prefix: "$" })

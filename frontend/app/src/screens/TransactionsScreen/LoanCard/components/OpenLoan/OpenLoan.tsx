@@ -71,7 +71,7 @@ export const OpenLoan: FC<OpenLoanProps> = ({
           deposit={loan.deposit}
           prevDeposit={prevLoan?.deposit}
         />
-        <GridItemWrapper label="Liq. price" title="Liquidation price">
+        <GridItemWrapper label="Liquidation price">
           <Value negative={ltv && dn.gt(ltv, maxLtv)}>
             {fmtnum(liquidationPrice, { preset: "2z", prefix: "$" })}
           </Value>
