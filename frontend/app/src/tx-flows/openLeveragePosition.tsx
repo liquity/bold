@@ -1,11 +1,18 @@
 import type { FlowDeclaration } from "@/src/services/TransactionFlow";
+import type { TroveId } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION, MAX_UPFRONT_FEE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { useDelegateDisplayName } from "@/src/liquity-delegate";
-import { getBranch, getCollToken, getTroveOperationHints, usePredictOpenTroveUpfrontFee } from "@/src/liquity-utils";
+import {
+  getBranch,
+  getCollToken,
+  getPrefixedTroveId,
+  getTroveOperationHints,
+  usePredictOpenTroveUpfrontFee,
+} from "@/src/liquity-utils";
 import { AccountButton } from "@/src/screens/TransactionsScreen/AccountButton";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
@@ -247,12 +254,24 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
           throw new Error("Failed to extract trove ID from transaction");
         }
 
+        const troveId: TroveId = `0x${troveOperation.args._troveId.toString(16)}`;
+        const prefixedTroveId = getPrefixedTroveId(branch.branchId, troveId);
+
+        // Workaround for https://github.com/liquity/bold/issues/1134:
+        // Explicitly save this as a Multiply position so it doesn't turn
+        // into a Borrow position when making a collateral-only adjustment
+        ctx.storedState.setState(({ loanModes }) => ({
+          loanModes: {
+            ...loanModes,
+            [prefixedTroveId]: "multiply",
+          },
+        }));
+
         // Wait for trove to appear in subgraph
+        // TODO: is this still needed? In `verifyTransaction` we wait for the
+        // subgraph to index up to the block in which the TX was included.
         while (true) {
-          const trove = await getIndexedTroveById(
-            branch.branchId,
-            `0x${troveOperation.args._troveId.toString(16)}`,
-          );
+          const trove = await getIndexedTroveById(branch.branchId, troveId);
           if (trove !== null) {
             break;
           }
