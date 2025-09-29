@@ -2,6 +2,7 @@ import type { CollateralToken, Drawer } from "@liquity2/uikit";
 import type { Dnum } from "dnum";
 import type { ComponentPropsWithoutRef } from "react";
 
+import { useBreakpointName } from "@/src/breakpoints";
 import {
   LEVERAGE_FACTOR_MIN,
   LEVERAGE_FACTOR_PRECISION,
@@ -46,6 +47,9 @@ export function LeverageField({
   drawer?: ComponentPropsWithoutRef<typeof InputField>["drawer"];
   inputId: string;
 }) {
+  const breakpoint = useBreakpointName();
+  console.log("breakpoint", breakpoint);
+
   return (
     <InputField
       id={inputId}
@@ -57,7 +61,7 @@ export function LeverageField({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            width: 260,
+            width: breakpoint === "small" ? 150 : 260,
           }}
         >
           <Slider {...sliderProps} />
@@ -67,7 +71,7 @@ export function LeverageField({
         start: content.leverageScreen.liquidationPriceField.label,
         end: (
           <div>
-            Total debt {!debt ? "−" : (
+            Debt {!debt ? "−" : (
               <>
                 <span
                   className={css({
@@ -265,7 +269,7 @@ export function useLeverageField({
   }), [sliderValue, sliderGradient, onSliderChange, keyboardStep]);
 
   const drawer: Drawer | null = deposit && dn.gt(deposit, DNUM_0) && debt && dn.lt(debt, MIN_DEBT)
-    ? { mode: "error", message: `Total debt must be at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+    ? { mode: "error", message: `Debt must be at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
     : quoteAmount === null
     ? { mode: "error", message: `Not enough ${collToken.name} liquidity to reach your chosen exposure.` }
     : null;

@@ -83,7 +83,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
           ]}
         />
         <TransactionDetailsRow
-          label="Total debt"
+          label="Debt"
           value={[
             `${fmtnum(borrowedWithFee)} BOLD`,
             <div

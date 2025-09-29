@@ -510,7 +510,7 @@ function ManualInterestRateSlider({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          width: breakpoint === "large" ? 260 : 200,
+          width: breakpoint === "small" ? 200 : 260,
           paddingTop: 16,
           ...style,
         }}

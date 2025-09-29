@@ -317,7 +317,7 @@ export function PanelUpdateLeveragePosition({
                 ),
               },
               {
-                label: "Total debt",
+                label: "Debt",
                 before: (
                   <Amount
                     title={`${fmtnum(initialLoanDetails.debt, "full")} BOLD`}
