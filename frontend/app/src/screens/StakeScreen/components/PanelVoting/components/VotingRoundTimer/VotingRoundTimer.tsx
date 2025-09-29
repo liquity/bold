@@ -1,13 +1,9 @@
-import { css } from "@/styled-system/css";
 import { Tag } from "@/src/comps/Tag/Tag.tsx";
 import { formatDate } from "@/src/formatting.ts";
-import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton.tsx";
 import { useVotingStateContext } from "@/src/screens/StakeScreen/components/PanelVoting/providers/PanelVotingProvider/hooks";
-import { IconExternal } from '@liquity2/uikit';
+import { css } from "@/styled-system/css";
 
 import type { FC } from "react";
-
-const url = 'https://voting.liquity.org/';
 
 export const VotingRoundTimer: FC = () => {
   const { governanceStateData } = useVotingStateContext();
@@ -58,25 +54,6 @@ export const VotingRoundTimer: FC = () => {
           </Tag>
         </div>
       )}
-
-      <div
-        className={css({
-          flexShrink: 0,
-          display: "grid",
-          justifyContent: "end",
-        })}
-      >
-        <LinkTextButton
-          label={
-            <>
-              Discuss
-              <IconExternal size={16} />
-            </>
-          }
-          href={url}
-          external
-        />
-      </div>
     </div>
   );
 };
