@@ -260,10 +260,10 @@ NEXT_PUBLIC_LIQUITY_GOVERNANCE_URL=https://api.liquity.org/v2/governance
 
 ### `NEXT_PUBLIC_SAFE_API_URL`
 
-URL for the Safe transaction service API.
+URL for the Safe transaction service API (optional). Can be disabled by passing an empty string, for example during local development via Anvil.
 
 ```dosini
-# Example
+# Default
 NEXT_PUBLIC_SAFE_API_URL=https://safe-transaction-mainnet.safe.global/api
 ```
 
