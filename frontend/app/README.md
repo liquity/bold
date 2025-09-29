@@ -236,9 +236,23 @@ Indicates a specific deployment variant (e.g., "preview"). This will be displaye
 NEXT_PUBLIC_DEPLOYMENT_FLAVOR=preview
 ```
 
+### `NEXT_PUBLIC_KNOWN_DELEGATES_URL`
+
+URL to fetch known interest rate delegates from (optional).
+
+```dosini
+# Default
+NEXT_PUBLIC_KNOWN_DELEGATES_URL=https://api.liquity.org/v2/known-delegates/ethereum.json
+```
+
 ### `NEXT_PUBLIC_KNOWN_INITIATIVES_URL`
 
 URL for fetching known initiatives data (optional).
+
+```dosini
+# Example
+NEXT_PUBLIC_KNOWN_INITIATIVES_URL=https://api.liquity.org/v2/known-initiatives/ethereum.json
+```
 
 ### `NEXT_PUBLIC_LIQUITY_STATS_URL`
 
