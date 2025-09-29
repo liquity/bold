@@ -166,7 +166,8 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
     function _deployAndConnectContracts() internal returns (DeploymentResult memory r) {
         _deployProxyInfrastructure(r);
         _deployStableToken(r);
-        _deployFPMM(r);
+        // TODO: Fix FPMM deployment - currently failing
+        //_deployFPMM(r);
         _deploySystemParams(r);
 
         IAddressesRegistry addressesRegistry = new AddressesRegistry(deployer);
@@ -233,9 +234,9 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
     }
 
     function _deploySystemParams(DeploymentResult memory r) internal {
-        r.systemParams = ISystemParams(
-            address(new TransparentUpgradeableProxy(address(r.systemParamsImpl), address(r.proxyAdmin), ""))
-        );
+        address systemParamsProxy = address(new TransparentUpgradeableProxy(address(r.systemParamsImpl), address(r.proxyAdmin), ""));
+        r.systemParams = ISystemParams(systemParamsProxy);
+        SystemParams(systemParamsProxy).initialize(deployer);
     }
 
     function _deployAndConnectCollateralContracts(
@@ -249,6 +250,7 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         contracts.collToken = _collToken;
         contracts.addressesRegistry = _addressesRegistry;
         contracts.priceFeed = _priceFeed;
+        contracts.systemParams = r.systemParams;
         // TODO: replace with governance timelock on mainnet
         contracts.interestRouter = IInterestRouter(0x56fD3F2bEE130e9867942D0F463a16fBE49B8d81);
 
@@ -260,11 +262,13 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         );
         assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
-        addresses.borrowerOperations =
-            _computeCreate2Address(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry));
+        addresses.borrowerOperations = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry), address(contracts.systemParams)))
+        );
         addresses.troveNFT = _computeCreate2Address(type(TroveNFT).creationCode, address(contracts.addressesRegistry));
-        addresses.activePool =
-            _computeCreate2Address(type(ActivePool).creationCode, address(contracts.addressesRegistry));
+        addresses.activePool = vm.computeCreate2Address(
+            SALT, keccak256(getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry), address(contracts.systemParams)))
+        );
         addresses.defaultPool =
             _computeCreate2Address(type(DefaultPool).creationCode, address(contracts.addressesRegistry));
         addresses.gasPool = _computeCreate2Address(type(GasPool).creationCode, address(contracts.addressesRegistry));
