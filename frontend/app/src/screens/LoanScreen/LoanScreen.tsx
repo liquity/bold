@@ -75,6 +75,66 @@ const TABS = [
   },
 ];
 
+function TroveHistoryLinksDrawer({
+  collTokenName,
+  troveId,
+}: {
+  collTokenName: string;
+  troveId: bigint;
+}) {
+  return (
+    <div
+      className={css({
+        width: "100%",
+        display: "flex",
+        justifyContent: "left",
+        alignItems: "center",
+        gap: 16,
+        marginTop: -22,
+        height: 60,
+        padding: "12px 16px",
+        whiteSpace: "nowrap",
+        background: "token(colors.fieldSurface)",
+        borderRadius: 8,
+        userSelect: "none",
+      })}
+    >
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginTop: 18,
+        })}
+      >
+        <span>
+          Trove History:
+        </span>
+        {troveExplorers.length > 0 && troveExplorers[0] && (
+          <>
+            <TroveExplorerLink
+              troveExplorer={troveExplorers[0]}
+              collTokenName={collTokenName}
+              troveId={troveId}
+            />
+            {troveExplorers.length > 1 && troveExplorers[1] && (
+              <>
+                {" "}|{" "}
+                <TroveExplorerLink
+                  troveExplorer={troveExplorers[1]}
+                  collTokenName={collTokenName}
+                  troveId={troveId}
+                  last
+                />
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export type LoanLoadingState =
   | "error"
   | "loading"
@@ -175,27 +235,33 @@ export function LoanScreen() {
         label: "Back",
       }}
       heading={
-        <LoanScreenCard
-          collateral={collToken}
-          collPriceUsd={collPriceUsd.data ?? null}
-          loadingState={loadingState}
-          loan={loan.data ?? null}
-          mode={loanMode}
-          onLeverageModeChange={() => {
-            storedState.setState(({ loanModes }) => {
-              return {
-                loanModes: {
-                  ...loanModes,
-                  [paramPrefixedId]: loanMode === "borrow" ? "multiply" : "borrow",
-                },
-              };
-            });
-          }}
-          onRetry={() => {
-            loan.refetch();
-          }}
-          troveId={troveId}
-        />
+        <div>
+          <LoanScreenCard
+            collateral={collToken}
+            collPriceUsd={collPriceUsd.data ?? null}
+            loadingState={loadingState}
+            loan={loan.data ?? null}
+            mode={loanMode}
+            onLeverageModeChange={() => {
+              storedState.setState(({ loanModes }) => {
+                return {
+                  loanModes: {
+                    ...loanModes,
+                    [paramPrefixedId]: loanMode === "borrow" ? "multiply" : "borrow",
+                  },
+                };
+              });
+            }}
+            onRetry={() => {
+              loan.refetch();
+            }}
+            troveId={troveId}
+          />
+          <TroveHistoryLinksDrawer
+            collTokenName={collToken?.name ?? ""}
+            troveId={BigInt(troveId)}
+          />
+        </div>
       }
     >
       {contentTransition((style, contentStatus) =>
