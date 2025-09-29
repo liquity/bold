@@ -1,7 +1,7 @@
 import type { LoanDetails, RiskLevel } from "@/src/types";
 import type { Dnum } from "dnum";
 
-import { LTV_RISK, MAX_LTV_ALLOWED_RATIO, REDEMPTION_RISK } from "@/src/constants";
+import { LEVERAGE_FACTOR_PRECISION, LTV_RISK, MAX_LTV_ALLOWED_RATIO, REDEMPTION_RISK } from "@/src/constants";
 import * as dn from "dnum";
 import { match } from "ts-pattern";
 
@@ -47,6 +47,13 @@ export function getLeverageFactorFromLtv(ltv: Dnum): number {
   return 1 / (1 - dn.toNumber(ltv));
 }
 
+export function roundLeverageFactor(leverageFactor: number) {
+  return Math.round(
+    leverageFactor
+      / LEVERAGE_FACTOR_PRECISION,
+  ) * LEVERAGE_FACTOR_PRECISION;
+}
+
 export function getLeverageFactorFromLiquidationPrice(
   liquidationPrice: Dnum,
   collPrice: Dnum,
@@ -54,16 +61,19 @@ export function getLeverageFactorFromLiquidationPrice(
 ): null | number {
   const collPriceRatio = dn.mul(collPrice, minCollRatio);
 
-  if (!dn.lt(liquidationPrice, collPriceRatio)) {
+  if (dn.gte(liquidationPrice, collPriceRatio)) {
     return null;
   }
 
-  return Math.round(
-    dn.toNumber(dn.div(
+  return dn.toNumber(
+    dn.div(
       collPriceRatio,
-      dn.sub(collPriceRatio, liquidationPrice),
-    )) * 10,
-  ) / 10;
+      dn.sub(
+        collPriceRatio,
+        liquidationPrice,
+      ),
+    ),
+  );
 }
 
 export function getLiquidationPriceFromLeverage(

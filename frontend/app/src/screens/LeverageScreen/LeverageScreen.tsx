@@ -2,20 +2,19 @@
 
 import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
 import type { Address, Dnum, PositionLoanUncommitted } from "@/src/types";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { ETH_MAX_RESERVE, LEVERAGE_MAX_SLIPPAGE, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
+import { ETH_MAX_RESERVE, LEVERAGE_FACTOR_DEFAULT, MAX_COLLATERAL_DEPOSITS } from "@/src/constants";
 import content from "@/src/content";
 import { dnum18, DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { useCheckLeverageSlippage } from "@/src/liquity-leverage";
 import {
   getBranch,
   getBranches,
@@ -24,13 +23,11 @@ import {
   useRedemptionRiskOfInterestRate,
 } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { infoTooltipProps } from "@/src/uikit-utils";
-import { useAccount, useBalance } from "@/src/wagmi-utils";
+import { useAccount, useBalances } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
   ADDRESS_ZERO,
-  Button,
   Dropdown,
   HFlex,
   IconSuggestion,
@@ -39,11 +36,10 @@ import {
   isCollateralSymbol,
   TextButton,
   TokenIcon,
-  VFlex,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 export function LeverageScreen() {
   const branches = getBranches();
@@ -57,19 +53,15 @@ export function LeverageScreen() {
 
   const router = useRouter();
   const account = useAccount();
-  const txFlow = useTransactionFlow();
 
   const branch = getBranch(collSymbol);
   const collaterals = branches.map((b) => getCollToken(b.branchId));
   const collateral = getCollToken(branch.id);
-
-  const balances = Object.fromEntries(collaterals.map(({ symbol }) => (
-    [symbol, useBalance(account.address, symbol)] as const
-  )));
+  const collPrice = usePrice(collateral.symbol);
+  const collateralSymbols = collaterals.map((collateral) => collateral.symbol);
+  const balances = useBalances(account.address, collateralSymbols);
 
   const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, branch.id);
-
-  const collPrice = usePrice(collateral.symbol);
 
   const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol] ?? null;
   const depositPreLeverage = useInputFieldValue(fmtnum, {
@@ -89,18 +81,15 @@ export function LeverageScreen() {
   const setInterestRateRounded = useCallback((averageInterestRate: Dnum, setValue: (value: string) => void) => {
     const rounded = dn.div(dn.round(dn.mul(averageInterestRate, 1e4)), 1e4);
     setValue(dn.toString(dn.mul(rounded, 100)));
-  }, [setInterestRate]);
+  }, []);
 
   const leverageField = useLeverageField({
-    depositPreLeverage: depositPreLeverage.parsed,
-    collPrice: collPrice.data ?? dn.from(0, 18),
+    positionDeposit: depositPreLeverage.parsed,
+    positionDebt: DNUM_0,
+    collPrice: collPrice.data ?? null,
     collToken: collateral,
+    defaultLeverageFactorAdjustment: LEVERAGE_FACTOR_DEFAULT - 1,
   });
-
-  // reset leverage when collateral changes
-  useEffect(() => {
-    leverageField.updateLeverageFactor(leverageField.leverageFactorSuggestions[0] ?? 1.1);
-  }, [collateral.symbol, leverageField.leverageFactorSuggestions]);
 
   const redemptionRisk = useRedemptionRiskOfInterestRate(branch.id, interestRate ?? DNUM_0);
   const depositUsd = depositPreLeverage.parsed && collPrice.data && dn.mul(
@@ -131,30 +120,9 @@ export function LeverageScreen() {
 
   const hasDeposit = Boolean(depositPreLeverage.parsed && dn.gt(depositPreLeverage.parsed, 0));
 
-  const leverageSlippage = useCheckLeverageSlippage({
-    branchId: branch.id,
-    initialDeposit: depositPreLeverage.parsed,
-    leverageFactor: leverageField.leverageFactor,
-    ownerIndex: nextOwnerIndex.data ?? null,
-  });
-
-  const leverageSlippageElements = useSlippageElements(
-    leverageSlippage,
-    hasDeposit && account.isConnected,
-  );
-
-  const hasAllowedSlippage = leverageSlippage.data
-    && dn.lte(leverageSlippage.data, LEVERAGE_MAX_SLIPPAGE);
-
-  const leverageFieldDrawer = (hasDeposit && newLoan.borrowed && dn.lt(newLoan.borrowed, MIN_DEBT))
-    ? { mode: "error" as const, message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
-    : leverageSlippageElements.drawer;
-
   const allowSubmit = account.isConnected
     && hasDeposit
-    && interestRate && dn.gt(interestRate, 0)
-    && leverageField.debt && dn.gt(leverageField.debt, 0)
-    && hasAllowedSlippage;
+    && leverageField.isValid;
 
   return (
     <Screen
@@ -175,106 +143,93 @@ export function LeverageScreen() {
         ),
       }}
     >
-      <div
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-          gap: 48,
-          width: 534,
-        })}
-      >
-        <Field
-          field={
-            <InputField
-              id="input-deposit"
-              contextual={
-                <Dropdown
-                  items={collaterals.map(({ symbol, name }) => ({
-                    icon: <TokenIcon symbol={symbol} />,
-                    label: name,
-                    value: account.isConnected
-                      ? fmtnum(balances[symbol]?.data ?? 0)
-                      : "−",
-                  }))}
-                  menuPlacement="end"
-                  menuWidth={300}
-                  onSelect={(index) => {
-                    setTimeout(() => {
-                      depositPreLeverage.setValue("");
-                      depositPreLeverage.focus();
-                    }, 0);
-                    const collToken = collaterals[index];
-                    if (!collToken) {
-                      throw new Error(`Unknown branch: ${index}`);
-                    }
-                    const { symbol } = collToken;
-                    router.push(
-                      `/multiply/${symbol.toLowerCase()}`,
-                      { scroll: false },
-                    );
-                  }}
-                  selected={branch.id}
-                />
-              }
-              label={content.leverageScreen.depositField.label}
-              placeholder="0.00"
-              secondary={{
-                start: fmtnum(depositUsd, { prefix: "$", preset: "2z" }),
-                end: maxAmount
-                  ? (
-                    <TextButton
-                      label={`Max ${fmtnum(maxAmount)} ${collateral.name}`}
-                      onClick={() => {
-                        depositPreLeverage.setValue(dn.toString(maxAmount));
-                      }}
-                    />
-                  )
-                  : "Fetching balance…",
-              }}
-              {...depositPreLeverage.inputFieldProps}
+      <Field
+        field={
+          <InputField
+            id="input-deposit"
+            contextual={
+              <Dropdown
+                items={collaterals.map(({ symbol, name }) => ({
+                  icon: <TokenIcon symbol={symbol} />,
+                  label: name,
+                  value: account.isConnected
+                    ? fmtnum(balances[symbol]?.data ?? 0)
+                    : "−",
+                }))}
+                menuPlacement="end"
+                menuWidth={300}
+                onSelect={(index) => {
+                  setTimeout(() => {
+                    depositPreLeverage.setValue("");
+                    depositPreLeverage.focus();
+                  }, 0);
+                  const collToken = collaterals[index];
+                  if (!collToken) {
+                    throw new Error(`Unknown branch: ${index}`);
+                  }
+                  const { symbol } = collToken;
+                  router.push(
+                    `/multiply/${symbol.toLowerCase()}`,
+                    { scroll: false },
+                  );
+                }}
+                selected={branch.id}
+              />
+            }
+            label={content.leverageScreen.depositField.label}
+            placeholder="0.00"
+            secondary={{
+              start: fmtnum(depositUsd, { prefix: "$", preset: "2z" }),
+              end: maxAmount
+                ? (
+                  <TextButton
+                    label={`Max ${fmtnum(maxAmount)} ${collateral.name}`}
+                    onClick={() => {
+                      depositPreLeverage.setValue(dn.toString(maxAmount));
+                    }}
+                  />
+                )
+                : "Fetching balance…",
+            }}
+            {...depositPreLeverage.inputFieldProps}
+          />
+        }
+        footer={{
+          start: collPrice.data && (
+            <Field.FooterInfoCollPrice
+              collName={collateral.name}
+              collPriceUsd={collPrice.data}
             />
-          }
-          footer={{
-            start: collPrice.data && (
-              <Field.FooterInfoCollPrice
-                collName={collateral.name}
-                collPriceUsd={collPrice.data}
-              />
-            ),
-            end: (
-              <Field.FooterInfoMaxLtv
-                maxLtv={dn.div(dn.from(1, 18), collateral.collateralRatio)}
-              />
-            ),
-          }}
-        />
+          ),
+          end: (
+            <Field.FooterInfoMaxLtv
+              maxLtv={dn.div(dn.from(1, 18), collateral.collateralRatio)}
+            />
+          ),
+        }}
+      />
 
-        <Field
-          field={
-            <LeverageField
-              drawer={leverageFieldDrawer}
-              inputId="input-liquidation-price"
-              onDrawerClose={leverageSlippageElements.onClose}
-              {...leverageField}
-            />
-          }
-          footer={{
+      <Field
+        field={<LeverageField inputId="input-liquidation-price" {...leverageField} />}
+        footer={[
+          {
+            start: <Field.FooterInfoLiquidationRisk riskLevel={leverageField.liquidationRisk} />,
+            end: <Field.FooterInfoLoanToValue ltvRatio={leverageField.ltv} maxLtvRatio={leverageField.maxLtv} />,
+          },
+          {
             start: (
-              <>
-                <Field.FooterInfoLiquidationRisk
-                  riskLevel={leverageField.liquidationRisk}
-                />
-                <Field.FooterInfoLoanToValue
-                  ltvRatio={leverageField.ltv}
-                  maxLtvRatio={leverageField.maxLtv}
-                />
-              </>
+              <Field.FooterInfoPriceImpact
+                inputTokenName="BOLD"
+                outputTokenName={collateral.name}
+                priceImpact={leverageField.priceImpact}
+              />
             ),
+
             end: (
               <Field.FooterInfo
                 label="Exposure"
                 value={
-                  <HFlex gap={8}>
+                  <HFlex gap={4}>
                     <div
                       className={css({
                         flexShrink: 1,
@@ -283,7 +238,9 @@ export function LeverageScreen() {
                       })}
                     >
                       <Amount
-                        value={leverageField.deposit && dn.gt(leverageField.deposit, 0) ? leverageField.deposit : null}
+                        value={leverageField.deposit && dn.gt(leverageField.deposit, 0)
+                          ? leverageField.deposit
+                          : null}
                         format="2z"
                         fallback="−"
                         suffix={` ${collateral.name}`}
@@ -294,209 +251,130 @@ export function LeverageScreen() {
                 }
               />
             ),
-          }}
-        />
-
-        <Field
-          field={
-            <InterestRateField
-              branchId={branch.id}
-              debt={leverageField.debt}
-              delegate={interestRateDelegate}
-              inputId="input-interest-rate"
-              interestRate={interestRate}
-              mode={interestRateMode}
-              onAverageInterestRateLoad={setInterestRateRounded}
-              onChange={setInterestRate}
-              onDelegateChange={setInterestRateDelegate}
-              onModeChange={setInterestRateMode}
-            />
-          }
-          footer={{
+          },
+          {
             start: (
-              <Field.FooterInfoRedemptionRisk
-                riskLevel={redemptionRisk.data ?? null}
+              <Field.FooterInfoSlippageRefundLeverUp
+                slippageProtection={leverageField.slippageProtection}
+                collateralName={collateral.name}
               />
             ),
-            end: (
-              <span
+          },
+        ]}
+      />
+
+      <Field
+        field={
+          <InterestRateField
+            branchId={branch.id}
+            debt={leverageField.debt}
+            delegate={interestRateDelegate}
+            inputId="input-interest-rate"
+            interestRate={interestRate}
+            mode={interestRateMode}
+            onAverageInterestRateLoad={setInterestRateRounded}
+            onChange={setInterestRate}
+            onDelegateChange={setInterestRateDelegate}
+            onModeChange={setInterestRateMode}
+          />
+        }
+        footer={{
+          start: (
+            <Field.FooterInfoRedemptionRisk
+              riskLevel={redemptionRisk.data ?? null}
+            />
+          ),
+          end: (
+            <div
+              className={css({
+                overflow: "hidden",
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                color: "contentAlt",
+                fontSize: 14,
+              })}
+            >
+              <div
                 className={css({
                   display: "flex",
                   alignItems: "center",
-                  gap: 4,
-                  color: "contentAlt",
-                  fontSize: 14,
+                  flexShrink: 0,
                 })}
               >
                 <IconSuggestion size={16} />
-                <>You can adjust this rate at any time</>
+              </div>
+              <div
+                className={css({
+                  flexShrink: 1,
+                  display: "inline",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                })}
+              >
+                You can adjust this rate at any time
+              </div>
+              <div
+                className={css({
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                })}
+              >
                 <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateAdjustment)} />
-              </span>
-            ),
-          }}
-        />
+              </div>
+            </div>
+          ),
+        }}
+      />
 
-        <RedemptionInfo />
+      <RedemptionInfo />
 
+      <div
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          gap: 32,
+          width: "100%",
+        })}
+      >
+        {/*<ConnectWarningBox />*/}
         <div
           className={css({
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
-            gap: 32,
-            width: "100%",
+            alignItems: "center",
+            gap: 16,
           })}
         >
-          {/*<ConnectWarningBox />*/}
-          <div
-            className={css({
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: 16,
-            })}
-          >
-            <Button
-              // oxlint-disable-next-line
-              disabled={true || !allowSubmit}
-              label="Coming Soon"
-              mode="primary"
-              size="large"
-              wide
-              onClick={() => {
-                if (
-                  depositPreLeverage.parsed
-                  && leverageField.debt
-                  && account.address
-                  && typeof nextOwnerIndex.data === "number"
-                ) {
-                  txFlow.start({
-                    flowId: "openLeveragePosition",
-                    backLink: ["/multiply", "Back to editing"],
-                    successLink: ["/", "Go to the Dashboard"],
-                    successMessage: "The leveraged position has been created successfully.",
+          <FlowButton
+            disabled={!allowSubmit}
+            label={content.leverageScreen.action}
+            request={
+              // depositPreLeverage.parsed
+              // && leverageField.debt
+              // && account.address
+              typeof nextOwnerIndex.data === "number"
+                ? {
+                  flowId: "openLeveragePosition",
+                  backLink: [`/multiply/${collSymbol.toLowerCase()}`, "Back to editing"],
+                  successLink: ["/", "Go to the Dashboard"],
+                  successMessage: "The leveraged position has been created successfully.",
 
-                    ownerIndex: nextOwnerIndex.data,
-                    leverageFactor: leverageField.leverageFactor,
-                    loan: newLoan,
-                  });
+                  ownerIndex: nextOwnerIndex.data,
+                  loan: newLoan,
+                  initialDeposit: depositPreLeverage.parsed ?? DNUM_0,
+                  flashloanAmount: leverageField.depositChange ?? DNUM_0,
+                  boldAmount: leverageField.debtChange ?? DNUM_0,
                 }
-              }}
-            />
-
-            {
-              /*leverageSlippageElements.mode === "error"
-              ? (
-                <div
-                  className={css({
-                    color: "negative",
-                  })}
-                >
-                  {leverageSlippageElements.message}
-                </div>
-              )
-              : (
-                <div>
-                  {leverageSlippageElements.message}
-                </div>
-              )*/
+                : undefined
             }
-          </div>
+          />
         </div>
       </div>
     </Screen>
   );
-}
-
-function useSlippageElements(
-  leverageSlippage: ReturnType<typeof useCheckLeverageSlippage>,
-  ready: boolean,
-): {
-  mode: "error" | "loading" | "success";
-  drawer: ComponentPropsWithoutRef<typeof LeverageField>["drawer"];
-  message?: ReactNode;
-  onClose: () => void;
-} {
-  const [forceDrawerClosed, setForceDrawerClosed] = useState(false);
-
-  useEffect(() => {
-    setForceDrawerClosed(false);
-  }, [leverageSlippage.status]);
-
-  const onClose = () => {
-    setForceDrawerClosed(true);
-  };
-
-  if (forceDrawerClosed || !ready) {
-    return {
-      drawer: null,
-      mode: "success",
-      onClose,
-    };
-  }
-
-  if (leverageSlippage.status === "error") {
-    const retry = (
-      <TextButton
-        size="small"
-        label="retry"
-        onClick={() => {
-          leverageSlippage.refetch();
-        }}
-      />
-    );
-    return {
-      drawer: {
-        mode: "error",
-        message: (
-          <HFlex gap={4}>
-            <div>Slippage calculation failed.</div>
-            {retry}
-          </HFlex>
-        ),
-      },
-      message: (
-        <VFlex gap={4}>
-          <div>Slippage calculation failed. ({leverageSlippage.error.message})</div>
-          {retry}
-        </VFlex>
-      ),
-      mode: "error",
-      onClose,
-    };
-  }
-
-  if (leverageSlippage.status === "pending" || leverageSlippage.fetchStatus === "fetching") {
-    const message = "Calculating slippage…";
-    return {
-      drawer: null,
-      message,
-      mode: "loading",
-      onClose,
-    };
-  }
-
-  if (leverageSlippage.data && dn.gt(leverageSlippage.data, LEVERAGE_MAX_SLIPPAGE)) {
-    const message = (
-      <>
-        Slippage too high: {fmtnum(
-          leverageSlippage.data,
-          "pct2",
-        )}% (max {fmtnum(LEVERAGE_MAX_SLIPPAGE, "pct2")}%)
-      </>
-    );
-    return {
-      drawer: { mode: "error", message },
-      message,
-      mode: "error",
-      onClose,
-    };
-  }
-
-  return {
-    drawer: null,
-    onClose,
-    mode: "success",
-  };
 }

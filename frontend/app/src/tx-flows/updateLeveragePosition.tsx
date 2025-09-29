@@ -3,58 +3,67 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { MAX_UPFRONT_FEE } from "@/src/constants";
-import { dnum18 } from "@/src/dnum-utils";
+import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
-import { getLeverDownTroveParams, getLeverUpTroveParams } from "@/src/liquity-leverage";
 import { getBranch, getCollToken, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
 import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
-import { ADDRESS_ZERO } from "@liquity2/uikit";
+import { css } from "@/styled-system/css";
+import { ADDRESS_ZERO, InfoTooltip } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
+import type { BranchId, TroveId } from "../types";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "updateLeveragePosition",
   {
-    depositChange: v.union([v.null(), vDnum()]),
-    // set to null to indicate no multiply change
-    leverageFactorChange: v.union([
-      v.null(),
-      v.tuple([
-        v.number(), // prev multiply
-        v.number(), // new multiply
-      ]),
-    ]),
-    prevLoan: vPositionLoanCommited(),
     loan: vPositionLoanCommited(),
+    prevLoan: vPositionLoanCommited(),
+    depositChange: v.nullable(vDnum()),
+    debtChange: v.nullable(vDnum()),
+    leverageFactorChange: v.tuple([v.nullable(v.number()), v.number()]),
+
+    leverage: v.nullable(
+      v.union([
+        v.object({
+          direction: v.literal("up"),
+          flashloanAmount: vDnum(),
+          boldAmount: vDnum(),
+        }),
+        v.object({
+          direction: v.literal("down"),
+          flashloanAmount: vDnum(),
+          minBoldAmount: vDnum(),
+        }),
+      ]),
+    ),
   },
 );
 
 export type UpdateLeveragePositionRequest = v.InferOutput<typeof RequestSchema>;
 
 function useUpfrontFeeData(
-  loan: UpdateLeveragePositionRequest["loan"],
-  prevLoan: UpdateLeveragePositionRequest["prevLoan"],
+  branchId: BranchId,
+  troveId: TroveId,
+  debtChange: dn.Dnum | null,
 ) {
-  const debtChange = dn.sub(loan.borrowed, prevLoan.borrowed);
-  const isBorrowing = dn.gt(debtChange, 0);
+  const isBorrowing = debtChange && dn.gt(debtChange, DNUM_0);
 
   const upfrontFee = usePredictAdjustTroveUpfrontFee(
-    loan.branchId,
-    loan.troveId,
-    isBorrowing ? debtChange : [0n, 18],
+    branchId,
+    troveId,
+    isBorrowing ? debtChange : DNUM_0,
   );
 
   return {
     ...upfrontFee,
     data: !upfrontFee.data ? null : {
-      isBorrowing,
       debtChangeWithFee: isBorrowing
         ? dn.add(debtChange, upfrontFee.data)
         : debtChange,
@@ -67,9 +76,9 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
   title: "Review & Send Transaction",
 
   Summary({ request }) {
-    const { loan, prevLoan } = request;
+    const { debtChange, loan, prevLoan } = request;
 
-    const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
+    const upfrontFeeData = useUpfrontFeeData(loan.branchId, loan.troveId, debtChange);
     const loadingState = match(upfrontFeeData)
       .returnType<LoadingState>()
       .with({ status: "error" }, () => "error")
@@ -98,16 +107,15 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
   },
 
   Details({ request }) {
-    const { loan, prevLoan, depositChange, leverageFactorChange } = request;
+    const { loan, depositChange, debtChange, leverageFactorChange } = request;
 
     const branch = getBranch(loan.branchId);
     const collateral = getCollToken(branch.id);
 
     const collPrice = usePrice(collateral.symbol);
-    const upfrontFeeData = useUpfrontFeeData(loan, prevLoan);
+    const upfrontFeeData = useUpfrontFeeData(loan.branchId, loan.troveId, debtChange);
 
     const debtChangeWithFee = upfrontFeeData.data?.debtChangeWithFee;
-    const isBorrowing = upfrontFeeData.data?.isBorrowing;
 
     return (
       <>
@@ -125,47 +133,64 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
               <Amount
                 key="end"
                 fallback="…"
-                value={collPrice.data && dn.mul(depositChange, collPrice.data)}
+                value={collPrice.data && dn.mul(dn.abs(depositChange), collPrice.data)}
                 prefix="$"
               />,
             ]}
           />
         )}
-        {leverageFactorChange && (
-          <TransactionDetailsRow
-            label={isBorrowing ? "Multiply increase" : "Multiply decrease"}
-            value={[
-              <div key="start">
-                {fmtnum(leverageFactorChange[1] - leverageFactorChange[0], {
-                  digits: 2,
-                  signDisplay: "exceptZero",
-                })}x
-              </div>,
-              <div key="end">
-                {fmtnum(leverageFactorChange[1], 2)}x multiply
-              </div>,
-            ]}
-          />
-        )}
         <TransactionDetailsRow
-          label={isBorrowing ? "Additional debt" : "Debt reduction"}
+          label="Multiply change"
+          value={[
+            <div key="start">
+              {leverageFactorChange[0]
+                ? (
+                  <>
+                    {fmtnum(leverageFactorChange[1] - (leverageFactorChange[0]), {
+                      digits: 1,
+                      signDisplay: "exceptZero",
+                    })}x
+                  </>
+                )
+                : <>N/A</>}
+            </div>,
+            <div key="end">
+              {fmtnum(leverageFactorChange[1], 1)}x
+            </div>,
+          ]}
+        />
+        <TransactionDetailsRow
+          label="Debt change"
           value={[
             <Amount
               key="start"
               fallback="…"
               value={debtChangeWithFee}
+              format="2diff"
               suffix=" BOLD"
             />,
             upfrontFeeData.data?.upfrontFee
             && dn.gt(upfrontFeeData.data.upfrontFee, 0)
             && (
-              <Amount
+              <div
                 key="end"
-                fallback="…"
-                prefix="Incl. "
-                value={upfrontFeeData.data.upfrontFee}
-                suffix=" BOLD interest rate adjustment fee"
-              />
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                })}
+              >
+                <Amount
+                  fallback="…"
+                  prefix="Incl. "
+                  value={upfrontFeeData.data.upfrontFee}
+                  suffix=" BOLD creation fee"
+                />
+                <InfoTooltip heading="BOLD creation fee">
+                  This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of
+                  average interest for the respective collateral asset.
+                </InfoTooltip>
+              </div>
             ),
           ]}
         />
@@ -210,7 +235,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
     },
 
     increaseDeposit: {
-      name: () => "Increase Deposit",
+      name: () => "Deposit",
       Status: TransactionStatus,
 
       async commit(ctx) {
@@ -244,7 +269,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
     },
 
     decreaseDeposit: {
-      name: () => "Decrease Deposit",
+      name: () => "Withdraw",
       Status: TransactionStatus,
 
       async commit(ctx) {
@@ -282,30 +307,20 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
     },
 
     leverUpTrove: {
-      name: () => "Increase Multiplier",
+      name: () => "Multiply",
       Status: TransactionStatus,
 
       async commit(ctx) {
-        if (!ctx.request.leverageFactorChange) {
-          throw new Error("Invalid step: leverageFactorChange is required with leverUpTrove");
-        }
-
-        const params = await getLeverUpTroveParams(
-          ctx.request.loan.branchId,
-          ctx.request.loan.troveId,
-          ctx.request.leverageFactorChange[1],
-          ctx.wagmiConfig,
-        );
-        if (!params) {
-          throw new Error("Couldn't fetch trove lever up params");
+        if (ctx.request.leverage?.direction !== "up") {
+          throw new Error("Invalid step: leverUpTrove");
         }
 
         const branch = getBranch(ctx.request.loan.branchId);
 
         const args = [{
           troveId: BigInt(ctx.request.loan.troveId),
-          flashLoanAmount: params.flashLoanAmount,
-          boldAmount: params.effectiveBoldAmount,
+          flashLoanAmount: dn.from(ctx.request.leverage.flashloanAmount, 18)[0],
+          boldAmount: dn.from(ctx.request.leverage.boldAmount, 18)[0],
           maxUpfrontFee: MAX_UPFRONT_FEE,
         }] as const;
 
@@ -332,30 +347,20 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
     },
 
     leverDownTrove: {
-      name: () => "Decrease Multiplier",
+      name: () => "Multiply",
       Status: TransactionStatus,
 
       async commit(ctx) {
-        if (!ctx.request.leverageFactorChange) {
-          throw new Error("Invalid step: leverageFactorChange is required with leverDownTrove");
-        }
-
-        const params = await getLeverDownTroveParams(
-          ctx.request.loan.branchId,
-          ctx.request.loan.troveId,
-          ctx.request.leverageFactorChange[1],
-          ctx.wagmiConfig,
-        );
-        if (!params) {
-          throw new Error("Couldn't fetch trove lever down params");
+        if (ctx.request.leverage?.direction !== "down") {
+          throw new Error("Invalid step: leverDownTrove");
         }
 
         const branch = getBranch(ctx.request.loan.branchId);
 
         const args = [{
           troveId: BigInt(ctx.request.loan.troveId),
-          flashLoanAmount: params.flashLoanAmount,
-          minBoldAmount: params.minBoldAmount,
+          flashLoanAmount: dn.from(ctx.request.leverage.flashloanAmount, 18)[0],
+          minBoldAmount: dn.from(ctx.request.leverage.minBoldAmount)[0],
         }] as const;
 
         if (branch.symbol === "ETH") {
@@ -380,7 +385,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
   },
 
   async getSteps(ctx) {
-    const { depositChange, leverageFactorChange, loan } = ctx.request;
+    const { depositChange, leverage, loan } = ctx.request;
 
     const steps: string[] = [];
     const branch = getBranch(loan.branchId);
@@ -401,13 +406,16 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
       }
     }
 
+    if (leverage?.direction === "down") {
+      steps.push("leverDownTrove");
+    }
+
     if (depositChange) {
       steps.push(dn.gt(depositChange, 0) ? "increaseDeposit" : "decreaseDeposit");
     }
 
-    if (leverageFactorChange) {
-      const [oldLeverage, newLeverage] = leverageFactorChange;
-      steps.push(newLeverage > oldLeverage ? "leverUpTrove" : "leverDownTrove");
+    if (leverage?.direction === "up") {
+      steps.push("leverUpTrove");
     }
 
     return steps;

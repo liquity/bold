@@ -98,7 +98,7 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
             <Amount
               key="start"
               value={rewardsColl}
-              suffix={` ${collateral.symbol}`}
+              suffix={` ${collateral.name}`}
             />,
             <Amount
               key="end"

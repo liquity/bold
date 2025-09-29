@@ -9,6 +9,8 @@ import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/Transact
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
 import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
+import { css } from "@/styled-system/css";
+import { InfoTooltip } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
@@ -112,13 +114,25 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
                 suffix=" BOLD"
               />,
               upfrontFeeData.data?.upfrontFee && dn.gt(upfrontFeeData.data.upfrontFee, 0n) && (
-                <Amount
+                <div
                   key="end"
-                  fallback="…"
-                  prefix="Incl. "
-                  value={upfrontFeeData.data.upfrontFee}
-                  suffix=" BOLD interest rate adjustment fee"
-                />
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                  })}
+                >
+                  <Amount
+                    fallback="…"
+                    prefix="Incl. "
+                    value={upfrontFeeData.data.upfrontFee}
+                    suffix=" BOLD creation fee"
+                  />
+                  <InfoTooltip heading="BOLD creation fee">
+                    This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of
+                    average interest for the respective collateral asset.
+                  </InfoTooltip>
+                </div>
               ),
             ]}
           />

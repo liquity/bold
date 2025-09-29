@@ -3,15 +3,13 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
-import { getCloseFlashLoanAmount } from "@/src/liquity-leverage";
 import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { usePrice } from "@/src/services/Prices";
 import { getIndexedTroveById } from "@/src/subgraph";
 import { sleep } from "@/src/utils";
-import { vPositionLoanCommited } from "@/src/valibot-utils";
+import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
@@ -22,7 +20,11 @@ const RequestSchema = createRequestSchema(
   "closeLoanPosition",
   {
     loan: vPositionLoanCommited(),
-    repayWithCollateral: v.boolean(),
+    repayWithCollateral: v.optional(
+      v.object({
+        flashLoanAmount: vDnum(),
+      }),
+    ),
   },
 );
 
@@ -47,15 +49,10 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
   Details({ request }) {
     const { loan, repayWithCollateral } = request;
     const collateral = getCollToken(loan.branchId);
-    const collPrice = usePrice(collateral.symbol);
-
-    if (!collPrice.data) {
-      return null;
-    }
 
     const amountToRepay = repayWithCollateral
-      ? (dn.div(loan.borrowed ?? dn.from(0), collPrice.data))
-      : (loan.borrowed ?? dn.from(0));
+      ? repayWithCollateral.flashLoanAmount
+      : loan.borrowed;
 
     const collToReclaim = repayWithCollateral
       ? dn.sub(loan.deposit, amountToRepay)
@@ -65,23 +62,23 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       <>
         {dn.gt(amountToRepay, 0) && (
           <TransactionDetailsRow
-            label={repayWithCollateral ? "You repay (from collateral)" : "You repay"}
+            label={repayWithCollateral ? "You repay from your loan" : "You repay"}
             value={[
               <Amount
                 key="start"
                 value={amountToRepay}
-                suffix={` ${repayWithCollateral ? collateral.symbol : "BOLD"}`}
+                suffix={` ${repayWithCollateral ? collateral.name : "BOLD"}`}
               />,
             ]}
           />
         )}
         <TransactionDetailsRow
-          label="You reclaim collateral"
+          label="You reclaim"
           value={[
             <Amount
               key="start"
               value={collToReclaim}
-              suffix={` ${collateral.symbol}`}
+              suffix={` ${collateral.name}`}
             />,
           ]}
         />
@@ -144,11 +141,12 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       Status: TransactionStatus,
 
       async commit(ctx) {
-        const { loan } = ctx.request;
+        const { loan, repayWithCollateral } = ctx.request;
+        const deposit = dn.from(loan.deposit, 18)[0];
         const branch = getBranch(loan.branchId);
 
         // repay with BOLD => get ETH
-        if (!ctx.request.repayWithCollateral && branch.symbol === "ETH") {
+        if (!repayWithCollateral && branch.symbol === "ETH") {
           return ctx.writeContract({
             ...branch.contracts.LeverageWETHZapper,
             functionName: "closeTroveToRawETH",
@@ -157,7 +155,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         }
 
         // repay with BOLD => get LST
-        if (!ctx.request.repayWithCollateral) {
+        if (!repayWithCollateral) {
           return ctx.writeContract({
             ...branch.contracts.LeverageLSTZapper,
             functionName: "closeTroveToRawETH",
@@ -167,22 +165,14 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
 
         // from here, we are repaying with the collateral
 
-        const closeFlashLoanAmount = await getCloseFlashLoanAmount(
-          loan.branchId,
-          loan.troveId,
-          ctx.wagmiConfig,
-        );
-
-        if (closeFlashLoanAmount === null) {
-          throw new Error("The flash loan amount could not be calculated.");
-        }
+        const closeFlashLoanAmount = dn.from(repayWithCollateral.flashLoanAmount, 18)[0];
 
         // repay with collateral => get ETH
         if (branch.symbol === "ETH") {
           return ctx.writeContract({
             ...branch.contracts.LeverageWETHZapper,
             functionName: "closeTroveFromCollateral",
-            args: [BigInt(loan.troveId), closeFlashLoanAmount],
+            args: [BigInt(loan.troveId), closeFlashLoanAmount, deposit - closeFlashLoanAmount],
           });
         }
 
@@ -190,7 +180,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         return ctx.writeContract({
           ...branch.contracts.LeverageLSTZapper,
           functionName: "closeTroveFromCollateral",
-          args: [BigInt(loan.troveId), closeFlashLoanAmount],
+          args: [BigInt(loan.troveId), closeFlashLoanAmount, deposit - closeFlashLoanAmount],
         });
       },
 

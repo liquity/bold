@@ -2,7 +2,7 @@ import type { Dnum } from "dnum";
 
 import { ADDRESS_ZERO, isAddress } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 const inputValueRegex = /^[0-9]*\.?[0-9]*?$/;
 export function isInputFloat(value: string) {
@@ -115,11 +115,13 @@ export function useForm<Form extends Record<string, FormValue<unknown>>>(
   } as const;
 }
 
-type InputFieldUpdateData = {
+export type InputFieldUpdateData = {
   focused: boolean;
   parsed: Dnum | null;
   value: string;
 };
+
+const validateNoop = (parsed: Dnum | null, value: string) => ({ parsed, value });
 
 export function useInputFieldValue(
   format: (value: Dnum) => string,
@@ -128,7 +130,7 @@ export function useInputFieldValue(
     onChange,
     onFocusChange,
     parse = parseInputFloat,
-    validate = (parsed, value) => ({ parsed, value }),
+    validate = validateNoop,
   }: {
     defaultValue?: string;
     onChange?: (data: InputFieldUpdateData) => void;
@@ -137,63 +139,60 @@ export function useInputFieldValue(
     validate?: (parsed: Dnum | null, value: string) => { parsed: Dnum | null; value: string };
   } = {},
 ) {
-  const [{ value, focused, parsed }, set] = useState<{
-    value: string;
-    focused: boolean;
-    parsed: Dnum | null;
-  }>({
+  const [data, setData] = useState<InputFieldUpdateData>({
     value: defaultValue,
     focused: false,
     parsed: parse(defaultValue),
   });
 
-  const ref = useRef<HTMLInputElement>(null);
+  const { value, focused, parsed } = data;
+  const dataRef = useRef(data);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const isEmpty = !value.trim();
+  const inputFieldValue = isEmpty || focused || !parsed ? value : format(parsed);
 
-  return useMemo(() => {
-    const setValue = (value: string) => {
-      let parsed = parse(value);
+  const setDataAndRef = useCallback((newData: InputFieldUpdateData) => {
+    setData(newData);
+    dataRef.current = newData;
+  }, []);
 
-      const result = validate(parsed, value);
-      parsed = result.parsed;
-      value = result.value;
+  const setValue = useCallback((value: string) => {
+    const newData = { ...dataRef.current, ...validate(parse(value), value) };
+    setDataAndRef(newData);
+    onChange?.(newData);
+  }, [parse, validate, setDataAndRef, onChange]);
 
-      set((s) => ({ ...s, parsed, value }));
-      onChange?.({ focused, parsed, value });
-    };
+  const focus = useCallback(() => {
+    inputRef.current?.focus();
+  }, []);
 
-    const setFocused = (focused: boolean) => {
-      set((s) => ({ ...s, focused }));
-    };
+  const onBlur = useCallback(() => {
+    const newData = { ...dataRef.current, focused: false };
+    setDataAndRef(newData);
+    onFocusChange?.(newData);
+  }, [setDataAndRef, onFocusChange]);
 
-    return ({
-      focus: () => {
-        ref.current?.focus();
-      },
-      inputFieldProps: {
-        ref,
-        onBlur: () => {
-          setFocused(false);
-          onFocusChange?.({ focused: false, parsed, value });
-        },
-        onFocus: () => {
-          setFocused(true);
-          onFocusChange?.({ focused: true, parsed, value });
-        },
-        onChange: setValue,
-        value: focused || !parsed || !value.trim() ? value : format(parsed),
-      },
-      isEmpty: value.trim() === "",
-      isFocused: focused,
-      parsed,
-      setValue,
-      value,
-    });
-  }, [
-    focused,
-    format,
-    onChange,
-    onFocusChange,
+  const onFocus = useCallback(() => {
+    const newData = { ...dataRef.current, focused: true };
+    setDataAndRef(newData);
+    onFocusChange?.(newData);
+  }, [setDataAndRef, onFocusChange]);
+
+  const inputFieldProps = useMemo(() => ({
+    ref: inputRef,
+    onBlur,
+    onFocus,
+    onChange: setValue,
+    value: inputFieldValue,
+  }), [onBlur, onFocus, setValue, inputFieldValue]);
+
+  return useMemo(() => ({
+    focus,
+    inputFieldProps,
+    isEmpty,
+    isFocused: focused,
     parsed,
     value,
-  ]);
+    setValue,
+  }), [focus, inputFieldProps, isEmpty, focused, parsed, value, setValue]);
 }
