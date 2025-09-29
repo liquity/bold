@@ -175,7 +175,7 @@ export const EnvSchema = v.pipe(
       v.optional(v.string(), ""),
       v.transform((value) => value.trim() || null),
     ),
-    KNOWN_DELEGATES_URL: v.optional(v.pipe(v.string(), v.url())),
+    KNOWN_DELEGATES_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
     KNOWN_INITIATIVES_URL: v.optional(v.pipe(v.string(), v.url())),
     LEGACY_CHECK: v.optional(vEnvLegacyCheck(), "true"),
     LIQUITY_STATS_URL: v.optional(v.pipe(v.string(), v.url())),
