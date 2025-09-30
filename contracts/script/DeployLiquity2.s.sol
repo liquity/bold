@@ -172,8 +172,8 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
 
         IAddressesRegistry addressesRegistry = new AddressesRegistry(deployer);
 
-        address troveManagerAddress = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(TroveManager).creationCode, address(addressesRegistry), address(r.systemParams)))
+        address troveManagerAddress = _computeCreate2Address(
+            type(TroveManager).creationCode, address(addressesRegistry), address(r.systemParams)
         );
 
         IERC20Metadata collToken = IERC20Metadata(CONFIG.USDm_ALFAJORES_ADDRESS);
@@ -262,12 +262,12 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         );
         assert(address(contracts.metadataNFT) == addresses.metadataNFT);
 
-        addresses.borrowerOperations = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(BorrowerOperations).creationCode, address(contracts.addressesRegistry), address(contracts.systemParams)))
+        addresses.borrowerOperations = _computeCreate2Address(
+            type(BorrowerOperations).creationCode, address(contracts.addressesRegistry), address(contracts.systemParams)
         );
         addresses.troveNFT = _computeCreate2Address(type(TroveNFT).creationCode, address(contracts.addressesRegistry));
-        addresses.activePool = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry), address(contracts.systemParams)))
+        addresses.activePool = _computeCreate2Address(
+            type(ActivePool).creationCode, address(contracts.addressesRegistry), address(contracts.systemParams)
         );
         addresses.defaultPool =
             _computeCreate2Address(type(DefaultPool).creationCode, address(contracts.addressesRegistry));
@@ -372,14 +372,13 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         return vm.computeCreate2Address(SALT, keccak256(getBytecode(creationCode, _addressesRegistry)));
     }
 
-    function _computeCreate2AddressWithPar(bytes memory creationCode, address _addressesRegistry)
+    function _computeCreate2Address(bytes memory creationCode, address _addressesRegistry, address _systemParams)
         internal
         view
         returns (address)
     {
-        return vm.computeCreate2Address(SALT, keccak256(getBytecode(creationCode, _addressesRegistry)));
+        return vm.computeCreate2Address(SALT, keccak256(getBytecode(creationCode, _addressesRegistry, _systemParams)));
     }
-
 
 
     function _getBranchContractsJson(LiquityContracts memory c) internal view returns (string memory) {
@@ -433,18 +432,27 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
 
         branches[0] = _getBranchContractsJson(deployed.contracts);
 
-        return string.concat(
+        string memory part1 = string.concat(
             "{",
             string.concat('"constants":', _getDeploymentConstants(deployed.contracts.systemParams), ","),
             string.concat('"collateralRegistry":"', address(deployed.collateralRegistry).toHexString(), '",'),
             string.concat('"boldToken":"', address(deployed.stableToken).toHexString(), '",'),
-            string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",'),
+            string.concat('"hintHelpers":"', address(deployed.hintHelpers).toHexString(), '",')
+        );
+
+        string memory part2 = string.concat(
             string.concat('"stableTokenV3Impl":"', address(deployed.stableTokenV3Impl).toHexString(), '",'),
             string.concat('"stabilityPoolImpl":"', address(deployed.stabilityPoolImpl).toHexString(), '",'),
-            string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",'),
+            string.concat('"systemParamsImpl":"', address(deployed.systemParamsImpl).toHexString(), '",'),
+            string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",')
+        );
+
+        string memory part3 = string.concat(
             string.concat('"fpmm":"', address(deployed.fpmm).toHexString(), '",'),
             string.concat('"branches":[', branches.join(","), "]"),
             "}"
         );
+
+        return string.concat(part1, part2, part3);
     }
 }
