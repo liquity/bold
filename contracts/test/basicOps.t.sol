@@ -223,17 +223,49 @@ contract BasicOps is DevTestSetup {
 
         // Deploy a new collateral registry
         CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(boldToken, tokens, troveManagers, address(0x123));
-        uint256 branchId = myCollateralRegistry.branches();
+        uint256 count = myCollateralRegistry.branches();
+        uint256 branchId = count;
+
+        assertEq(count, 1);
 
         vm.startPrank(address(0x123));
-        IERC20Metadata collToken = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        IERC20Metadata collToken = addressesRegistry.collToken();
         ITroveManager troveManager = new TroveManager(addressesRegistry, branchId);
         myCollateralRegistry.addCollateral(collToken, troveManager);
         vm.stopPrank();
 
         uint256[] memory activeBranchIds = myCollateralRegistry.activeBranchIds();
+        count = myCollateralRegistry.branches();
         assertEq(activeBranchIds.length, 2);
+        assertEq(count, 2);
         assertEq(activeBranchIds[1], branchId);
+    }
+
+    function testAddCollateralRevertsIfTokenDoesNotMatchTroveManagerCollateralToken() public {
+        IERC20Metadata[] memory tokens = new IERC20Metadata[](1);
+        tokens[0] = IERC20Metadata(address(0x0000000000000000000000000000000000000000));
+        ITroveManager[] memory troveManagers = new ITroveManager[](1);
+        troveManagers[0] = ITroveManager(address(0x0000000000000000000000000000000000000000));
+
+        // Deploy a new collateral registry
+        CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(boldToken, tokens, troveManagers, address(0x123));
+        uint256 count = myCollateralRegistry.branches();
+
+        assertEq(count, 1);
+
+        uint256 branchId = count;
+
+        vm.startPrank(address(0x123));
+        IERC20Metadata collToken = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        ITroveManager troveManager = new TroveManager(addressesRegistry, branchId);
+        vm.expectRevert("CollateralRegistry: Token does not match TroveManager collateral token");
+        myCollateralRegistry.addCollateral(collToken, troveManager);
+        vm.stopPrank();
+
+        uint256[] memory activeBranchIds = myCollateralRegistry.activeBranchIds();
+        count = myCollateralRegistry.branches();
+        assertEq(activeBranchIds.length, 1);
+        assertEq(count, 1);
     }
 
     function testRemoveCollateral() public {
