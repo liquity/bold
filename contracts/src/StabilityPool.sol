@@ -172,8 +172,14 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     // The number of scale changes after which an untouched deposit stops receiving yield / coll gains
     uint256 public constant SCALE_SPAN = 2;
 
+    // The minimum amount of Bold in the SP after a rebalance
+    // Introduced to avoid higher rate of scale changes 
+    uint256 public constant MIN_BOLD_AFTER_REBALANCE = 1_000e18;
+
     // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
     uint256 public currentScale;
+
+    address public liquidityStrategy;
 
     /* Coll Gain sum 'S': During its lifetime, each deposit d_t earns an Coll gain of ( d_t * [S - S_t] )/P_t, where S_t
     * is the depositor's snapshot of S taken at the time t when the deposit was made.
@@ -206,6 +212,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         collToken = _addressesRegistry.collToken();
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();
+        liquidityStrategy = _addressesRegistry.liquidityStrategy();
 
         emit TroveManagerAddressChanged(address(troveManager));
         emit BoldTokenAddressChanged(address(boldToken));
@@ -386,6 +393,24 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         emit B_Updated(scaleToB[currentScale], currentScale);
     }
 
+    // --- Liquidity strategy functions ---
+
+    /*
+    * Stable token liquidity in the stability pool can be used to rebalance FPMM pools.
+    * Collateral will be swapped for stable tokens in the SP.
+    * Removed stable tokens will be factored out from LPs' positions.
+    * Added collateral will be added to LPs collateral gain which can be later claimed by the depositor.
+    */
+    function swapCollateralForStable(uint256 amountCollIn, uint256 amountStableOut ) external {
+        _requireCallerIsLiquidityStrategy();
+
+        _updateTrackingVariables(amountStableOut, amountCollIn);
+
+        _swapCollateralForStable(amountCollIn, amountStableOut);
+        
+        require(totalBoldDeposits >= MIN_BOLD_AFTER_REBALANCE, "Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE");
+    }
+
     // --- Liquidation functions ---
 
     /*
@@ -396,10 +421,16 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     function offset(uint256 _debtToOffset, uint256 _collToAdd) external override {
         _requireCallerIsTroveManager();
 
-        scaleToS[currentScale] += P * _collToAdd / totalBoldDeposits;
+        _updateTrackingVariables(_debtToOffset, _collToAdd);
+
+        _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
+    }
+
+    function _updateTrackingVariables(uint256 _amountStableOut, uint256 _amountCollIn) internal {
+        scaleToS[currentScale] += P * _amountCollIn / totalBoldDeposits;
         emit S_Updated(scaleToS[currentScale], currentScale);
 
-        uint256 numerator = P * (totalBoldDeposits - _debtToOffset);
+        uint256 numerator = P * (totalBoldDeposits - _amountStableOut);
         uint256 newP = numerator / totalBoldDeposits;
 
         // For `P` to turn zero, `totalBoldDeposits` has to be greater than `P * (totalBoldDeposits - _debtToOffset)`.
@@ -425,8 +456,17 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
 
         emit P_Updated(newP);
         P = newP;
+    }
 
-        _moveOffsetCollAndDebt(_collToAdd, _debtToOffset);
+    function _swapCollateralForStable(uint256 _amountCollIn, uint256 _amountStableOut) internal {
+        _updateTotalBoldDeposits(0, _amountStableOut);
+        IERC20(address(boldToken)).safeTransfer(liquidityStrategy, _amountStableOut);
+
+        collBalance += _amountCollIn;
+        collToken.safeTransferFrom(msg.sender, address(this), _amountCollIn);
+        
+        emit StabilityPoolCollBalanceUpdated(collBalance);
+
     }
 
     function _moveOffsetCollAndDebt(uint256 _collToAdd, uint256 _debtToOffset) internal {
@@ -608,6 +648,10 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     function _requireUserHasNoDeposit(address _address) internal view {
         uint256 initialDeposit = deposits[_address].initialValue;
         require(initialDeposit == 0, "StabilityPool: User must have no deposit");
+    }
+
+    function _requireCallerIsLiquidityStrategy() internal view {
+        require(msg.sender == liquidityStrategy, "StabilityPool: Caller is not LiquidityStrategy");
     }
 
     function _requireNonZeroAmount(uint256 _amount) internal pure {

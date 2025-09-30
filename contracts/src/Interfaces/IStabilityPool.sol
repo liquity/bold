@@ -55,6 +55,14 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     function claimAllCollGains() external;
 
     /*
+    * Stable token liquidity in the stability pool can be used to rebalance FPMM pools.
+    * Collateral will be swapped for stable tokens in the SP.
+    * Removed stable tokens will be factored out from LPs' positions.
+    * Added collateral will be added to LPs collateral gain which can be later claimed by the depositor.
+    */
+    function swapCollateralForStable(uint256 amountStableOut, uint256 amountCollIn) external;
+
+    /*
      * Initial checks:
      * - Caller is TroveManager
      * ---
@@ -107,6 +115,8 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
 
     function P() external view returns (uint256);
     function currentScale() external view returns (uint256);
+    function liquidityStrategy() external view returns (address);
 
     function P_PRECISION() external view returns (uint256);
+    function MIN_BOLD_AFTER_REBALANCE() external view returns (uint256);
 }

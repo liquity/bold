@@ -351,7 +351,9 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
             multiTroveGetter: r.multiTroveGetter,
             collateralRegistry: r.collateralRegistry,
             boldToken: IBoldToken(address(r.stableToken)),
-            gasToken: IERC20Metadata(CONFIG.USDm_ALFAJORES_ADDRESS)
+            gasToken: IERC20Metadata(CONFIG.USDm_ALFAJORES_ADDRESS),
+            // TODO: set liquidity strategy
+            liquidityStrategy: address(0)
         });
         contracts.addressesRegistry.setAddresses(addressVars);
     }
