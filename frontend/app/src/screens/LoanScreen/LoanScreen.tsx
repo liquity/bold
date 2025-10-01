@@ -236,7 +236,7 @@ export function LoanScreen() {
         label: "Back",
       }}
       heading={
-        <div>
+        <>
           <LoanScreenCard
             collateral={collToken}
             collPriceUsd={collPriceUsd.data ?? null}
@@ -262,7 +262,7 @@ export function LoanScreen() {
             collTokenName={collToken?.name ?? ""}
             troveId={BigInt(troveId)}
           />
-        </div>
+        </>
       }
     >
       {contentTransition((style, contentStatus) =>
