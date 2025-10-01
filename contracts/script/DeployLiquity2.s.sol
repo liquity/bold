@@ -491,9 +491,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _branchId));
     }
 
-    // function getBytecode(bytes memory _creationCode, address _addressesRegistry, address _governor) public pure returns (bytes memory) {
-    //     return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _governor));
-    // }
+    function getBytecode(bytes memory _creationCode, address _addressesRegistry, address _governor) public pure returns (bytes memory) {
+        return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _governor));
+    }
     
     function _deployAndConnectContracts(
         TroveManagerParams[] memory troveManagerParamsArray,
@@ -725,6 +725,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             address(contracts.borrowerOperations),
             address(contracts.activePool)
         );
+
+        // Update gas compensation max reward
+        _updateGasCompensationMaxReward(contracts.troveManager);
 
         // deploy zappers
         (contracts.gasCompZapper, contracts.wethZapper, contracts.leverageZapper) =
@@ -959,5 +962,22 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             ),
             "}"
         );
+    }
+
+    function _updateGasCompensationMaxReward(ITroveManager _troveManager) internal {
+        IERC20Metadata _collToken = _troveManager.addressesRegistry().collToken();
+        if (address(_collToken) == WETH_ADDRESS) {
+            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_WETH);
+        } else if (address(_collToken) == RETH_ADDRESS) {
+            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_RETH);
+        } else if (address(_collToken) == TBTC_ADDRESS) {
+            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_TBTC);
+        } else if (address(_collToken) == FBTC_ADDRESS) {
+            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_FBTC);
+        } else if (address(_collToken) == SAGA_ADDRESS) {
+            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_SAGA);
+        } else {
+            revert("Invalid collateral token");
+        }
     }
 }
