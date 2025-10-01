@@ -29,6 +29,7 @@ contract ActivePool is IActivePool {
     address public immutable borrowerOperationsAddress;
     address public immutable troveManagerAddress;
     address public immutable defaultPoolAddress;
+    address public immutable systemParamsAddress;
 
     IBoldToken public immutable boldToken;
 
@@ -75,6 +76,7 @@ contract ActivePool is IActivePool {
     event ActivePoolCollBalanceUpdated(uint256 _collBalance);
 
     constructor(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) {
+        systemParamsAddress = address(_systemParams);
         collToken = _addressesRegistry.collToken();
         borrowerOperationsAddress = address(_addressesRegistry.borrowerOperations());
         troveManagerAddress = address(_addressesRegistry.troveManager());

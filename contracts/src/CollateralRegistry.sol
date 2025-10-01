@@ -15,6 +15,7 @@ import "./Interfaces/ICollateralRegistry.sol";
 contract CollateralRegistry is ICollateralRegistry {
     // See: https://github.com/ethereum/solidity/issues/12587
     uint256 public immutable totalCollaterals;
+    address public immutable systemParamsAddress;
 
     IERC20Metadata internal immutable token0;
     IERC20Metadata internal immutable token1;
@@ -57,6 +58,7 @@ contract CollateralRegistry is ICollateralRegistry {
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens <= 10, "Collateral list too long");
         totalCollaterals = numTokens;
+        systemParamsAddress = address(_systemParams);
 
         boldToken = _boldToken;
 

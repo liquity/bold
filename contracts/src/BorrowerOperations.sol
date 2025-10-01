@@ -30,6 +30,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ISortedTroves internal sortedTroves;
     // Wrapped ETH for liquidation reserve (gas compensation)
     IERC20Metadata internal immutable gasToken;
+    address public immutable systemParamsAddress;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
     uint256 public immutable CCR;
@@ -181,6 +182,8 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     {
         // This makes impossible to open a trove with zero withdrawn Bold
         assert(_systemParams.MIN_DEBT() > 0);
+
+        systemParamsAddress = address(_systemParams);
 
         collToken = _addressesRegistry.collToken();
 

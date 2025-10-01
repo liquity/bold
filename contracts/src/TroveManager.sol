@@ -29,6 +29,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     ICollateralRegistry internal collateralRegistry;
     // Gas token for liquidation reserve (gas compensation)
     IERC20Metadata internal immutable gasToken;
+    address public immutable systemParamsAddress;
 
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
     uint256 public immutable CCR;
@@ -196,6 +197,8 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
     constructor(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) LiquityBase(_addressesRegistry) {
+        systemParamsAddress = address(_systemParams);
+        
         CCR = _systemParams.CCR();
         MCR = _systemParams.MCR();
         SCR = _systemParams.SCR();
