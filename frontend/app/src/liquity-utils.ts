@@ -698,11 +698,6 @@ export const StatsSchema = v.pipe(
       v.string(),
     ),
     boldYield: v.optional(v.nullable(v.array(BoldYieldItem))),
-    // TODO: phase out in the future, once all frontends update to the "safe" (losely-typed) `prices` schema
-    otherPrices: v.optional(v.record(
-      v.string(),
-      v.string(),
-    )),
     branch: v.record(
       v.string(),
       v.object({
@@ -751,11 +746,7 @@ export const StatsSchema = v.pipe(
       }),
     ),
     prices: Object.fromEntries(
-      [
-        ...Object.entries(value.prices),
-        // TODO: phase out in the future, once all frontends update to the "safe" (losely-typed) `prices` schema
-        ...Object.entries(value.otherPrices ?? {}),
-      ].map(([symbol, price]) => [
+      Object.entries(value.prices).map(([symbol, price]) => [
         symbol,
         dnumOrNull(price, 18),
       ]),

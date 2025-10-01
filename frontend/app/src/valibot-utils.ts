@@ -274,17 +274,6 @@ export function vCollateralSymbol() {
   ]);
 }
 
-export function vTokenSymbol() {
-  return v.union([
-    vCollateralSymbol(),
-    v.literal("BOLD"),
-    v.literal("LEGACY_BOLD"),
-    v.literal("LQTY"),
-    v.literal("LUSD"),
-    v.literal("SBOLD"),
-  ]);
-}
-
 export function vEnvLegacyCheck() {
   return v.union([
     vEnvFlag(),
