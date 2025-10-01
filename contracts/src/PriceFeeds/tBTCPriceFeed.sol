@@ -55,14 +55,20 @@ contract TBTCPriceFeed is TokenPriceFeedBase {
         assert(priceSource == PriceSource.primary);
         (uint256 tbtcUsdPrice, bool tbtcUsdOracleDown) = _getOracleAnswer(tBTCUsdOracle);
         (uint256 btcUsdPrice, bool btcOracleDown) = _getOracleAnswer(btcUsdOracle);
-        
-        // tBTC oracle is down or invalid answer
-        if (tbtcUsdOracleDown) {
-            return (_shutDownAndSwitchToLastGoodPrice(address(tBTCUsdOracle.aggregator)), true);
-        }
 
-        // BTC oracle is down or invalid answer
-        if (btcOracleDown) {
+        if (tbtcUsdOracleDown && btcOracleDown) {
+            // both oracles are down or invalid answer, use lastGoodPrice
+            uint256 price = _shutDownAndSwitchToLastGoodPrice(address(tBTCUsdOracle.aggregator));
+            // Emit events for both oracle failures (tBTC-USD emitted first already)
+            emit ShutDownFromOracleFailure(address(btcUsdOracle.aggregator));
+            return (price, true);
+        } else if (tbtcUsdOracleDown) {
+            // tBTC oracle is down or invalid answer, use BTC-USD
+            lastGoodPrice = btcUsdPrice;
+            return (_shutDownAndSwitchToLastGoodPrice(address(tBTCUsdOracle.aggregator)), true);
+        } else if (btcOracleDown) {
+            // BTC oracle is down or invalid answer, use tBTC-USD
+            lastGoodPrice = tbtcUsdPrice;
             return (_shutDownAndSwitchToLastGoodPrice(address(btcUsdOracle.aggregator)), true);
         }
 
