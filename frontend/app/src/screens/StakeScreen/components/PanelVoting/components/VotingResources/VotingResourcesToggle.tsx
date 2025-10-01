@@ -35,19 +35,22 @@ export const VotingResourcesToggle: FC = () => {
             outline: "2px solid token(colors.focused)",
             outlineOffset: 1,
           },
+          paddingBottom: 10,
         })}
       >
-        <span className={css({
-          fontWeight: 500,
-          color: isExpanded ? "contentAlt" : "accent"
-        })}>
+        <span
+          className={css({
+            fontWeight: 500,
+            color: isExpanded ? "contentAlt" : "accent",
+          })}
+        >
           {isExpanded ? "Hide" : "Learn more"}
         </span>
         <span
           className={css({
             color: "contentAlt",
             transition: "transform 0.15s ease",
-            transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+            transform: isExpanded ? "rotate(0deg)" : "rotate(180deg)",
             display: "flex",
             alignItems: "center",
           })}

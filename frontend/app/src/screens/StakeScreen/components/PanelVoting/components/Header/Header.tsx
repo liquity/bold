@@ -10,7 +10,6 @@ export const Header: FC = () => {
         display: "flex",
         flexDirection: "column",
         gap: 20,
-        paddingBottom: 10,
       })}
     >
       <h1
@@ -19,19 +18,20 @@ export const Header: FC = () => {
         })}
       >
         {content.stakeScreen.votingPanel.title}
-    </h1>
-    <div
-      className={css({
-        color: "contentAlt",
-        fontSize: 14,
-        "& a": {
-          color: "accent",
-          _focusVisible: {
-            borderRadius: 2,
-            outline: "2px solid token(colors.focused)",
-            outlineOffset: 1,
+      </h1>
+      <div
+        className={css({
+          color: "contentAlt",
+          fontSize: 14,
+          "& a": {
+            color: "accent",
+            _focusVisible: {
+              borderRadius: 2,
+              outline: "2px solid token(colors.focused)",
+              outlineOffset: 1,
+            },
           },
-        }})}
+        })}
       >
         {content.stakeScreen.votingPanel.intro}
       </div>
