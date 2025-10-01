@@ -8,6 +8,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 import "./Interfaces/ITroveNFT.sol";
 import "./Interfaces/IAddressesRegistry.sol";
 import "./Interfaces/IExternalURIgetter.sol";
+import "./Interfaces/ICollateralRegistry.sol";
 
 import {IMetadataNFT} from "./NFTMetadata/MetadataNFT.sol";
 import {ITroveManager} from "./Interfaces/ITroveManager.sol";
@@ -18,27 +19,26 @@ contract TroveNFT is ERC721, ITroveNFT {
     ITroveManager public immutable troveManager;
     IERC20Metadata internal immutable collToken;
     IBoldToken internal immutable boldToken;
+    ICollateralRegistry internal immutable collateralRegistry;
 
     IMetadataNFT public immutable metadataNFT;
 
-    address public governor;
     bool public uriUpdated = false;
     address public externalURIgetter;
 
 
 
-    constructor(IAddressesRegistry _addressesRegistry, address _governor)
+    constructor(IAddressesRegistry _addressesRegistry)
         ERC721(
             string.concat("Mustang - ", _addressesRegistry.collToken().name()),
             string.concat("MUST_", _addressesRegistry.collToken().symbol())
         )
     {
-        require(_governor != address(0), "TroveNFT: Governor cannot be the zero address");
-        governor = _governor;
         troveManager = _addressesRegistry.troveManager();
         collToken = _addressesRegistry.collToken();
         metadataNFT = _addressesRegistry.metadataNFT();
         boldToken = _addressesRegistry.boldToken();
+        collateralRegistry = _addressesRegistry.collateralRegistry();
     }
 
     function tokenURI(uint256 _tokenId) public view override(ERC721, IERC721Metadata) returns (string memory) {
@@ -76,14 +76,8 @@ contract TroveNFT is ERC721, ITroveNFT {
         require(msg.sender == address(troveManager), "TroveNFT: Caller is not the TroveManager contract");
     }
 
-    function updateGovernor(address _governor) external {
-        require(msg.sender == governor, "TroveNFT: Caller is not the governor");
-        require(_governor != address(0), "TroveNFT: Governor cannot be the zero address");
-        governor = _governor;
-    }
-
     function updateUri(address _externalURIgetter) external {
-        require(msg.sender == governor, "TroveNFT: Caller is not the governor");
+        require(msg.sender == collateralRegistry.governor(), "TroveNFT: Caller is not the governor");
         uriUpdated = true;
         externalURIgetter = _externalURIgetter;
     }
