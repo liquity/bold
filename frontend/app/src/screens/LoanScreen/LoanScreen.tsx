@@ -83,44 +83,44 @@ function TroveHistoryLinksDrawer({
   troveId: bigint;
 }) {
   return (
-    <div
-      className={css({
-        width: "100%",
-        display: "flex",
-        justifyContent: "left",
-        alignItems: "center",
-        gap: 16,
-        marginTop: -22,
-        height: 60,
-        padding: "12px 16px",
-        whiteSpace: "nowrap",
-        background: "token(colors.fieldSurface)",
-        borderRadius: 8,
-        userSelect: "none",
-      })}
-    >
+    troveExplorers.length > 0 && (
       <div
         className={css({
+          width: "100%",
           display: "flex",
+          justifyContent: "left",
           alignItems: "center",
-          gap: 8,
-          marginTop: 18,
-          fontSize: 14,
+          gap: 16,
+          marginTop: -22,
+          height: 60,
+          padding: "12px 16px",
+          whiteSpace: "nowrap",
+          background: "token(colors.fieldSurface)",
+          borderRadius: 8,
+          userSelect: "none",
         })}
       >
-        <span>
-          Trove History:
-        </span>
-        {troveExplorers.length > 0 && troveExplorers[0] && (
-          <>
-            <TroveExplorerLink
-              troveExplorer={troveExplorers[0]}
-              collTokenName={collTokenName}
-              troveId={troveId}
-            />
-            {troveExplorers.length > 1 && troveExplorers[1] && (
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginTop: 18,
+            fontSize: 14,
+          })}
+        >
+          <span>
+            Trove History:
+          </span>
+          {troveExplorers[0] && troveExplorers[1]
+            ? (
               <>
-                {" "}|{" "}
+                <TroveExplorerLink
+                  troveExplorer={troveExplorers[0]}
+                  collTokenName={collTokenName}
+                  troveId={troveId}
+                />{" "}
+                |{" "}
                 <TroveExplorerLink
                   troveExplorer={troveExplorers[1]}
                   collTokenName={collTokenName}
@@ -128,11 +128,18 @@ function TroveHistoryLinksDrawer({
                   last
                 />
               </>
+            )
+            : troveExplorers[0] && (
+              <TroveExplorerLink
+                troveExplorer={troveExplorers[0]}
+                collTokenName={collTokenName}
+                troveId={troveId}
+                last
+              />
             )}
-          </>
-        )}
+        </div>
       </div>
-    </div>
+    )
   );
 }
 
