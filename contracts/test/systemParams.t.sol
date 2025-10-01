@@ -7,544 +7,823 @@ import {SystemParams} from "../src/SystemParams.sol";
 import {ISystemParams} from "../src/Interfaces/ISystemParams.sol";
 
 contract SystemParamsTest is DevTestSetup {
-    address owner;
-    address nonOwner;
+    function testConstructorSetsAllParametersCorrectly() public {
+        ISystemParams.DebtParams memory debtParams = ISystemParams.DebtParams({
+            minDebt: 2000e18
+        });
 
-    event VersionUpdated(uint256 oldVersion, uint256 newVersion);
-    event MinDebtUpdated(uint256 oldMinDebt, uint256 newMinDebt);
-    event LiquidationParamsUpdated(
-        uint256 minLiquidationPenaltySP,
-        uint256 maxLiquidationPenaltyRedistribution,
-        uint256 liquidationPenaltySP,
-        uint256 liquidationPenaltyRedistribution
-    );
-    event GasCompParamsUpdated(
-        uint256 collGasCompensationDivisor,
-        uint256 collGasCompensationCap,
-        uint256 ethGasCompensation
-    );
-    event CollateralParamsUpdated(uint256 ccr, uint256 scr, uint256 mcr, uint256 bcr);
-    event InterestParamsUpdated(
-        uint256 minAnnualInterestRate,
-        uint256 maxAnnualInterestRate,
-        uint128 maxAnnualBatchManagementFee,
-        uint256 upfrontInterestPeriod,
-        uint256 interestRateAdjCooldown,
-        uint128 minInterestRateChangePeriod,
-        uint256 maxBatchSharesRatio
-    );
-    event RedemptionParamsUpdated(
-        uint256 redemptionFeeFloor,
-        uint256 initialBaseRate,
-        uint256 redemptionMinuteDecayFactor,
-        uint256 redemptionBeta,
-        uint256 urgentRedemptionBonus
-    );
-    event StabilityPoolParamsUpdated(uint256 spYieldSplit, uint256 minBoldInSP);
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16, // 5%
+            liquidationPenaltyRedistribution: 10e16 // 10%
+        });
 
-    function setUp() public override {
-        super.setUp();
-        owner = SystemParams(address(systemParams)).owner();
-        nonOwner = address(0x1234);
+        ISystemParams.GasCompParams memory gasCompParams = ISystemParams.GasCompParams({
+            collGasCompensationDivisor: 200,
+            collGasCompensationCap: 2 ether,
+            ethGasCompensation: 0.0375 ether
+        });
+
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: 150 * _1pct,
+            scr: 110 * _1pct,
+            mcr: 110 * _1pct,
+            bcr: 10 * _1pct
+        });
+
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: _1pct / 2, // 0.5%
+            maxAnnualInterestRate: 250 * _1pct,
+            maxAnnualBatchManagementFee: uint128(_100pct / 10), // 10%
+            upfrontInterestPeriod: 7 days,
+            interestRateAdjCooldown: 7 days,
+            minInterestRateChangePeriod: 1 hours,
+            maxBatchSharesRatio: 1e9
+        });
+
+        ISystemParams.RedemptionParams memory redemptionParams = ISystemParams.RedemptionParams({
+            redemptionFeeFloor: _1pct / 2, // 0.5%
+            initialBaseRate: _100pct,
+            redemptionMinuteDecayFactor: 998076443575628800,
+            redemptionBeta: 1,
+            urgentRedemptionBonus: 2 * _1pct
+        });
+
+        ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
+            spYieldSplit: 75 * _1pct,
+            minBoldInSP: 1e18
+        });
+
+        SystemParams params = new SystemParams(
+            debtParams,
+            liquidationParams,
+            gasCompParams,
+            collateralParams,
+            interestParams,
+            redemptionParams,
+            poolParams
+        );
+
+        // Verify all parameters were set correctly
+        assertEq(params.MIN_DEBT(), 2000e18);
+        assertEq(params.LIQUIDATION_PENALTY_SP(), 5e16);
+        assertEq(params.LIQUIDATION_PENALTY_REDISTRIBUTION(), 10e16);
+        assertEq(params.COLL_GAS_COMPENSATION_DIVISOR(), 200);
+        assertEq(params.COLL_GAS_COMPENSATION_CAP(), 2 ether);
+        assertEq(params.ETH_GAS_COMPENSATION(), 0.0375 ether);
+        assertEq(params.CCR(), 150 * _1pct);
+        assertEq(params.SCR(), 110 * _1pct);
+        assertEq(params.MCR(), 110 * _1pct);
+        assertEq(params.BCR(), 10 * _1pct);
+        assertEq(params.MIN_ANNUAL_INTEREST_RATE(), _1pct / 2);
+        assertEq(params.MAX_ANNUAL_INTEREST_RATE(), 250 * _1pct);
+        assertEq(params.MAX_ANNUAL_BATCH_MANAGEMENT_FEE(), uint128(_100pct / 10));
+        assertEq(params.UPFRONT_INTEREST_PERIOD(), 7 days);
+        assertEq(params.INTEREST_RATE_ADJ_COOLDOWN(), 7 days);
+        assertEq(params.MIN_INTEREST_RATE_CHANGE_PERIOD(), 1 hours);
+        assertEq(params.MAX_BATCH_SHARES_RATIO(), 1e9);
+        assertEq(params.REDEMPTION_FEE_FLOOR(), _1pct / 2);
+        assertEq(params.INITIAL_BASE_RATE(), _100pct);
+        assertEq(params.REDEMPTION_MINUTE_DECAY_FACTOR(), 998076443575628800);
+        assertEq(params.REDEMPTION_BETA(), 1);
+        assertEq(params.URGENT_REDEMPTION_BONUS(), 2 * _1pct);
+        assertEq(params.SP_YIELD_SPLIT(), 75 * _1pct);
+        assertEq(params.MIN_BOLD_IN_SP(), 1e18);
     }
 
-    function testInitialization() public {
-        SystemParams freshParams = new SystemParams(false);
-        freshParams.initialize(owner);
+    // ========== DEBT VALIDATION TESTS ==========
 
-        // Check debt parameters
-        assertEq(freshParams.MIN_DEBT(), 2000e18);
+    function testConstructorRevertsWhenMinDebtIsZero() public {
+        ISystemParams.DebtParams memory debtParams = ISystemParams.DebtParams({minDebt: 0});
 
-        // Check liquidation parameters
-        assertEq(freshParams.MIN_LIQUIDATION_PENALTY_SP(), 5 * _1pct);
-        assertEq(freshParams.MAX_LIQUIDATION_PENALTY_REDISTRIBUTION(), 20 * _1pct);
-        assertEq(freshParams.LIQUIDATION_PENALTY_SP(), 5e16);
-        assertEq(freshParams.LIQUIDATION_PENALTY_REDISTRIBUTION(), 10e16);
-
-        // Check gas compensation parameters
-        assertEq(freshParams.COLL_GAS_COMPENSATION_DIVISOR(), 200);
-        assertEq(freshParams.COLL_GAS_COMPENSATION_CAP(), 2 ether);
-        assertEq(freshParams.ETH_GAS_COMPENSATION(), 0.0375 ether);
-
-        // Check collateral parameters
-        assertEq(freshParams.CCR(), 150 * _1pct);
-        assertEq(freshParams.SCR(), 110 * _1pct);
-        assertEq(freshParams.MCR(), 110 * _1pct);
-        assertEq(freshParams.BCR(), 10 * _1pct);
-
-        // Check interest parameters
-        assertEq(freshParams.MIN_ANNUAL_INTEREST_RATE(), _1pct / 2);
-        assertEq(freshParams.MAX_ANNUAL_INTEREST_RATE(), 250 * _1pct);
-        assertEq(freshParams.MAX_ANNUAL_BATCH_MANAGEMENT_FEE(), uint128(_100pct / 10));
-        assertEq(freshParams.UPFRONT_INTEREST_PERIOD(), 7 days);
-        assertEq(freshParams.INTEREST_RATE_ADJ_COOLDOWN(), 7 days);
-        assertEq(freshParams.MIN_INTEREST_RATE_CHANGE_PERIOD(), 1 hours);
-        assertEq(freshParams.MAX_BATCH_SHARES_RATIO(), 1e9);
-
-        // Check redemption parameters
-        assertEq(freshParams.REDEMPTION_FEE_FLOOR(), _1pct / 2);
-        assertEq(freshParams.INITIAL_BASE_RATE(), _100pct);
-        assertEq(freshParams.REDEMPTION_MINUTE_DECAY_FACTOR(), 998076443575628800);
-        assertEq(freshParams.REDEMPTION_BETA(), 1);
-        assertEq(freshParams.URGENT_REDEMPTION_BONUS(), 2 * _1pct);
-
-        // Check stability pool parameters
-        assertEq(freshParams.SP_YIELD_SPLIT(), 75 * _1pct);
-        assertEq(freshParams.MIN_BOLD_IN_SP(), 1e18);
-
-        // Check version
-        assertEq(freshParams.version(), 1);
-
-        // Check ownership
-        assertEq(freshParams.owner(), owner);
-    }
-
-    function testDisableInitializers() public {
-        SystemParams disabledParams = new SystemParams(true);
-
-        vm.expectRevert();
-        disabledParams.initialize(owner);
-    }
-
-    function testUpdateMinDebt() public {
-        uint256 oldMinDebt = systemParams.MIN_DEBT();
-        uint256 newMinDebt = 3000e18;
-
-        vm.prank(owner);
-        vm.expectEmit(true, true, false, true);
-        emit MinDebtUpdated(oldMinDebt, newMinDebt);
-        systemParams.updateMinDebt(newMinDebt);
-
-        assertEq(systemParams.MIN_DEBT(), newMinDebt);
-    }
-
-    function testUpdateMinDebtRevertsWhenZero() public {
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
-        systemParams.updateMinDebt(0);
+        new SystemParams(
+            debtParams,
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateMinDebtRevertsWhenTooHigh() public {
-        vm.prank(owner);
+    function testConstructorRevertsWhenMinDebtTooHigh() public {
+        ISystemParams.DebtParams memory debtParams = ISystemParams.DebtParams({minDebt: 10001e18});
+
         vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
-        systemParams.updateMinDebt(10001e18);
+        new SystemParams(
+            debtParams,
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateLiquidationParams() public {
-        uint256 minPenaltySP = 6 * _1pct;
-        uint256 maxPenaltyRedist = 25 * _1pct;
-        uint256 penaltySP = 7 * _1pct;
-        uint256 penaltyRedist = 15 * _1pct;
+    // ========== LIQUIDATION VALIDATION TESTS ==========
 
-        vm.prank(owner);
-        vm.expectEmit(true, true, false, true);
-        emit LiquidationParamsUpdated(minPenaltySP, maxPenaltyRedist, penaltySP, penaltyRedist);
-        systemParams.updateLiquidationParams(minPenaltySP, maxPenaltyRedist, penaltySP, penaltyRedist);
+    function testConstructorRevertsWhenSPPenaltyTooLow() public {
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 4 * _1pct, // Below hardcoded 5% minimum
+            liquidationPenaltyRedistribution: 10e16
+        });
 
-        assertEq(systemParams.MIN_LIQUIDATION_PENALTY_SP(), minPenaltySP);
-        assertEq(systemParams.MAX_LIQUIDATION_PENALTY_REDISTRIBUTION(), maxPenaltyRedist);
-        assertEq(systemParams.LIQUIDATION_PENALTY_SP(), penaltySP);
-        assertEq(systemParams.LIQUIDATION_PENALTY_REDISTRIBUTION(), penaltyRedist);
-    }
-
-    function testUpdateLiquidationParamsRevertsSPPenaltyTooLow() public {
-        uint256 minPenaltySP = 10 * _1pct;
-        uint256 penaltySP = 5 * _1pct; 
-
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.SPPenaltyTooLow.selector);
-        systemParams.updateLiquidationParams(minPenaltySP, 20 * _1pct, penaltySP, 15 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateLiquidationParamsRevertsSPPenaltyGtRedist() public {
-        uint256 penaltySP = 20 * _1pct;
-        uint256 penaltyRedist = 15 * _1pct;
+    function testConstructorRevertsWhenSPPenaltyGreaterThanRedistribution() public {
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 15e16,
+            liquidationPenaltyRedistribution: 10e16 // SP > Redistribution
+        });
 
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.SPPenaltyGtRedist.selector);
-        systemParams.updateLiquidationParams(5 * _1pct, 25 * _1pct, penaltySP, penaltyRedist);
+        new SystemParams(
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateLiquidationParamsRevertsRedistPenaltyTooHigh() public {
-        uint256 maxPenaltyRedist = 20 * _1pct;
-        uint256 penaltyRedist = 25 * _1pct;
+    function testConstructorRevertsWhenRedistPenaltyTooHigh() public {
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16,
+            liquidationPenaltyRedistribution: 21 * _1pct // Above hardcoded 20% maximum
+        });
 
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.RedistPenaltyTooHigh.selector);
-        systemParams.updateLiquidationParams(5 * _1pct, maxPenaltyRedist, 10 * _1pct, penaltyRedist);
+        new SystemParams(
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateGasCompParams() public {
-        uint256 divisor = 300;
-        uint256 cap = 3 ether;
-        uint256 ethComp = 0.05 ether;
+    // ========== GAS COMPENSATION VALIDATION TESTS ==========
 
-        vm.prank(owner);
-        vm.expectEmit(true, true, false, true);
-        emit GasCompParamsUpdated(divisor, cap, ethComp);
-        systemParams.updateGasCompParams(divisor, cap, ethComp);
+    function testConstructorRevertsWhenGasCompDivisorZero() public {
+        ISystemParams.GasCompParams memory gasCompParams = ISystemParams.GasCompParams({
+            collGasCompensationDivisor: 0,
+            collGasCompensationCap: 2 ether,
+            ethGasCompensation: 0.0375 ether
+        });
 
-        assertEq(systemParams.COLL_GAS_COMPENSATION_DIVISOR(), divisor);
-        assertEq(systemParams.COLL_GAS_COMPENSATION_CAP(), cap);
-        assertEq(systemParams.ETH_GAS_COMPENSATION(), ethComp);
+        vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            gasCompParams,
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateGasCompParamsRevertsInvalidDivisor() public {
-        // Test zero divisor
-        vm.prank(owner);
-        vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        systemParams.updateGasCompParams(0, 2 ether, 0.05 ether);
+    function testConstructorRevertsWhenGasCompDivisorTooHigh() public {
+        ISystemParams.GasCompParams memory gasCompParams = ISystemParams.GasCompParams({
+            collGasCompensationDivisor: 1001,
+            collGasCompensationCap: 2 ether,
+            ethGasCompensation: 0.0375 ether
+        });
 
-        // Test divisor too high
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        systemParams.updateGasCompParams(1001, 2 ether, 0.05 ether);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            gasCompParams,
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateGasCompParamsRevertsInvalidCap() public {
-        // Test zero cap
-        vm.prank(owner);
-        vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        systemParams.updateGasCompParams(200, 0, 0.05 ether);
+    function testConstructorRevertsWhenGasCompCapZero() public {
+        ISystemParams.GasCompParams memory gasCompParams = ISystemParams.GasCompParams({
+            collGasCompensationDivisor: 200,
+            collGasCompensationCap: 0,
+            ethGasCompensation: 0.0375 ether
+        });
 
-        // Test cap too high
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        systemParams.updateGasCompParams(200, 11 ether, 0.05 ether);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            gasCompParams,
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateGasCompParamsRevertsInvalidETHCompensation() public {
-        // Test zero ETH compensation
-        vm.prank(owner);
-        vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        systemParams.updateGasCompParams(200, 2 ether, 0);
+    function testConstructorRevertsWhenGasCompCapTooHigh() public {
+        ISystemParams.GasCompParams memory gasCompParams = ISystemParams.GasCompParams({
+            collGasCompensationDivisor: 200,
+            collGasCompensationCap: 11 ether,
+            ethGasCompensation: 0.0375 ether
+        });
 
-        // Test ETH compensation too high
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        systemParams.updateGasCompParams(200, 2 ether, 1.1 ether);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            gasCompParams,
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateCollateralParams() public {
-        uint256 ccr = 160 * _1pct;
-        uint256 scr = 120 * _1pct;
-        uint256 mcr = 115 * _1pct;
-        uint256 bcr = 15 * _1pct;
+    function testConstructorRevertsWhenETHGasCompZero() public {
+        ISystemParams.GasCompParams memory gasCompParams = ISystemParams.GasCompParams({
+            collGasCompensationDivisor: 200,
+            collGasCompensationCap: 2 ether,
+            ethGasCompensation: 0
+        });
 
-        vm.prank(owner);
-        vm.expectEmit(true, true, false, true);
-        emit CollateralParamsUpdated(ccr, scr, mcr, bcr);
-        systemParams.updateCollateralParams(ccr, scr, mcr, bcr);
-
-        assertEq(systemParams.CCR(), ccr);
-        assertEq(systemParams.SCR(), scr);
-        assertEq(systemParams.MCR(), mcr);
-        assertEq(systemParams.BCR(), bcr);
+        vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            gasCompParams,
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateCollateralParamsRevertsInvalidCCR() public {
-        // CCR too low
-        vm.prank(owner);
+    function testConstructorRevertsWhenETHGasCompTooHigh() public {
+        ISystemParams.GasCompParams memory gasCompParams = ISystemParams.GasCompParams({
+            collGasCompensationDivisor: 200,
+            collGasCompensationCap: 2 ether,
+            ethGasCompensation: 1.1 ether
+        });
+
+        vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            gasCompParams,
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
+
+    // ========== COLLATERAL VALIDATION TESTS ==========
+
+    function testConstructorRevertsWhenCCRTooLow() public {
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: _100pct, // <= 100%
+            scr: 110 * _1pct,
+            mcr: 110 * _1pct,
+            bcr: 10 * _1pct
+        });
+
         vm.expectRevert(ISystemParams.InvalidCCR.selector);
-        systemParams.updateCollateralParams(100 * _1pct, 110 * _1pct, 110 * _1pct, 10 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
 
-        // CCR too high
-        vm.prank(owner);
+    function testConstructorRevertsWhenCCRTooHigh() public {
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: 2 * _100pct, // >= 200%
+            scr: 110 * _1pct,
+            mcr: 110 * _1pct,
+            bcr: 10 * _1pct
+        });
+
         vm.expectRevert(ISystemParams.InvalidCCR.selector);
-        systemParams.updateCollateralParams(200 * _1pct, 110 * _1pct, 110 * _1pct, 10 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateCollateralParamsRevertsInvalidMCR() public {
-        // MCR too low
-        vm.prank(owner);
+    function testConstructorRevertsWhenMCRTooLow() public {
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: 150 * _1pct,
+            scr: 110 * _1pct,
+            mcr: _100pct, // <= 100%
+            bcr: 10 * _1pct
+        });
+
         vm.expectRevert(ISystemParams.InvalidMCR.selector);
-        systemParams.updateCollateralParams(150 * _1pct, 110 * _1pct, 100 * _1pct, 10 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
 
-        // MCR too high
-        vm.prank(owner);
+    function testConstructorRevertsWhenMCRTooHigh() public {
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: 150 * _1pct,
+            scr: 110 * _1pct,
+            mcr: 2 * _100pct, // >= 200%
+            bcr: 10 * _1pct
+        });
+
         vm.expectRevert(ISystemParams.InvalidMCR.selector);
-        systemParams.updateCollateralParams(150 * _1pct, 110 * _1pct, 200 * _1pct, 10 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateCollateralParamsRevertsInvalidBCR() public {
-        // BCR too low
-        vm.prank(owner);
+    function testConstructorRevertsWhenBCRTooLow() public {
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: 150 * _1pct,
+            scr: 110 * _1pct,
+            mcr: 110 * _1pct,
+            bcr: 4 * _1pct // < 5%
+        });
+
         vm.expectRevert(ISystemParams.InvalidBCR.selector);
-        systemParams.updateCollateralParams(150 * _1pct, 110 * _1pct, 110 * _1pct, 4 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
 
-        // BCR too high
-        vm.prank(owner);
+    function testConstructorRevertsWhenBCRTooHigh() public {
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: 150 * _1pct,
+            scr: 110 * _1pct,
+            mcr: 110 * _1pct,
+            bcr: 50 * _1pct // >= 50%
+        });
+
         vm.expectRevert(ISystemParams.InvalidBCR.selector);
-        systemParams.updateCollateralParams(150 * _1pct, 110 * _1pct, 110 * _1pct, 50 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateCollateralParamsRevertsInvalidSCR() public {
-        // SCR too low
-        vm.prank(owner);
+    function testConstructorRevertsWhenSCRTooLow() public {
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: 150 * _1pct,
+            scr: _100pct, // <= 100%
+            mcr: 110 * _1pct,
+            bcr: 10 * _1pct
+        });
+
         vm.expectRevert(ISystemParams.InvalidSCR.selector);
-        systemParams.updateCollateralParams(150 * _1pct, 100 * _1pct, 110 * _1pct, 10 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
 
-        // SCR too high
-        vm.prank(owner);
+    function testConstructorRevertsWhenSCRTooHigh() public {
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: 150 * _1pct,
+            scr: 2 * _100pct, // >= 200%
+            mcr: 110 * _1pct,
+            bcr: 10 * _1pct
+        });
+
         vm.expectRevert(ISystemParams.InvalidSCR.selector);
-        systemParams.updateCollateralParams(150 * _1pct, 200 * _1pct, 110 * _1pct, 10 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateInterestParams() public {
-        uint256 minRate = 1 * _1pct;
-        uint256 maxRate = 200 * _1pct;
-        uint128 maxFee = uint128(5 * _1pct);
-        uint256 upfrontPeriod = 14 days;
-        uint256 cooldown = 14 days;
-        uint128 minChangePeriod = 2 hours;
-        uint256 maxSharesRatio = 2e9;
+    // ========== INTEREST VALIDATION TESTS ==========
 
-        vm.prank(owner);
-        vm.expectEmit(true, true, false, true);
-        emit InterestParamsUpdated(minRate, maxRate, maxFee, upfrontPeriod, cooldown, minChangePeriod, maxSharesRatio);
-        systemParams.updateInterestParams(minRate, maxRate, maxFee, upfrontPeriod, cooldown, minChangePeriod, maxSharesRatio);
+    function testConstructorRevertsWhenMinInterestRateGreaterThanMax() public {
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: 100 * _1pct,
+            maxAnnualInterestRate: 50 * _1pct, // min > max
+            maxAnnualBatchManagementFee: uint128(_100pct / 10),
+            upfrontInterestPeriod: 7 days,
+            interestRateAdjCooldown: 7 days,
+            minInterestRateChangePeriod: 1 hours,
+            maxBatchSharesRatio: 1e9
+        });
 
-        assertEq(systemParams.MIN_ANNUAL_INTEREST_RATE(), minRate);
-        assertEq(systemParams.MAX_ANNUAL_INTEREST_RATE(), maxRate);
-        assertEq(systemParams.MAX_ANNUAL_BATCH_MANAGEMENT_FEE(), maxFee);
-        assertEq(systemParams.UPFRONT_INTEREST_PERIOD(), upfrontPeriod);
-        assertEq(systemParams.INTEREST_RATE_ADJ_COOLDOWN(), cooldown);
-        assertEq(systemParams.MIN_INTEREST_RATE_CHANGE_PERIOD(), minChangePeriod);
-        assertEq(systemParams.MAX_BATCH_SHARES_RATIO(), maxSharesRatio);
-    }
-
-    function testUpdateInterestParamsRevertsMinGtMax() public {
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.MinInterestRateGtMax.selector);
-        systemParams.updateInterestParams(
-            200 * _1pct, // min > max
-            100 * _1pct,
-            uint128(5 * _1pct),
-            7 days,
-            7 days,
-            1 hours,
-            1e9
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            interestParams,
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
         );
     }
 
-    function testUpdateInterestParamsRevertsMaxTooHigh() public {
-        vm.prank(owner);
+    function testConstructorRevertsWhenMaxInterestRateTooHigh() public {
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: _1pct / 2,
+            maxAnnualInterestRate: 1001 * _1pct, // > 1000%
+            maxAnnualBatchManagementFee: uint128(_100pct / 10),
+            upfrontInterestPeriod: 7 days,
+            interestRateAdjCooldown: 7 days,
+            minInterestRateChangePeriod: 1 hours,
+            maxBatchSharesRatio: 1e9
+        });
+
         vm.expectRevert(ISystemParams.InvalidInterestRateBounds.selector);
-        systemParams.updateInterestParams(
-            1 * _1pct,
-            1001 * _1pct, // > 1000%
-            uint128(5 * _1pct),
-            7 days,
-            7 days,
-            1 hours,
-            1e9
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            interestParams,
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
         );
     }
 
-    function testUpdateInterestParamsRevertsInvalidFee() public {
-        vm.prank(owner);
+    function testConstructorRevertsWhenMaxBatchManagementFeeTooHigh() public {
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: _1pct / 2,
+            maxAnnualInterestRate: 250 * _1pct,
+            maxAnnualBatchManagementFee: uint128(_100pct + 1), // > 100%
+            upfrontInterestPeriod: 7 days,
+            interestRateAdjCooldown: 7 days,
+            minInterestRateChangePeriod: 1 hours,
+            maxBatchSharesRatio: 1e9
+        });
+
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
-        systemParams.updateInterestParams(
-            1 * _1pct,
-            100 * _1pct,
-            uint128(101 * _1pct), // > 100%
-            7 days,
-            7 days,
-            1 hours,
-            1e9
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            interestParams,
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
         );
     }
 
-    function testUpdateInterestParamsRevertsInvalidUpfrontPeriod() public {
-        // Zero upfront period
-        vm.prank(owner);
-        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        systemParams.updateInterestParams(1 * _1pct, 100 * _1pct, uint128(5 * _1pct), 0, 7 days, 1 hours, 1e9);
+    function testConstructorRevertsWhenUpfrontInterestPeriodZero() public {
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: _1pct / 2,
+            maxAnnualInterestRate: 250 * _1pct,
+            maxAnnualBatchManagementFee: uint128(_100pct / 10),
+            upfrontInterestPeriod: 0,
+            interestRateAdjCooldown: 7 days,
+            minInterestRateChangePeriod: 1 hours,
+            maxBatchSharesRatio: 1e9
+        });
 
-        // Upfront period too long
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        systemParams.updateInterestParams(1 * _1pct, 100 * _1pct, uint128(5 * _1pct), 366 days, 7 days, 1 hours, 1e9);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            interestParams,
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateInterestParamsRevertsInvalidCooldown() public {
-        // Zero cooldown
-        vm.prank(owner);
-        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        systemParams.updateInterestParams(1 * _1pct, 100 * _1pct, uint128(5 * _1pct), 7 days, 0, 1 hours, 1e9);
+    function testConstructorRevertsWhenUpfrontInterestPeriodTooLong() public {
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: _1pct / 2,
+            maxAnnualInterestRate: 250 * _1pct,
+            maxAnnualBatchManagementFee: uint128(_100pct / 10),
+            upfrontInterestPeriod: 366 days,
+            interestRateAdjCooldown: 7 days,
+            minInterestRateChangePeriod: 1 hours,
+            maxBatchSharesRatio: 1e9
+        });
 
-        // Cooldown too long
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        systemParams.updateInterestParams(1 * _1pct, 100 * _1pct, uint128(5 * _1pct), 7 days, 366 days, 1 hours, 1e9);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            interestParams,
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateInterestParamsRevertsInvalidChangePeriod() public {
-        // Zero change period
-        vm.prank(owner);
-        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        systemParams.updateInterestParams(1 * _1pct, 100 * _1pct, uint128(5 * _1pct), 7 days, 7 days, 0, 1e9);
+    function testConstructorRevertsWhenInterestRateAdjCooldownZero() public {
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: _1pct / 2,
+            maxAnnualInterestRate: 250 * _1pct,
+            maxAnnualBatchManagementFee: uint128(_100pct / 10),
+            upfrontInterestPeriod: 7 days,
+            interestRateAdjCooldown: 0,
+            minInterestRateChangePeriod: 1 hours,
+            maxBatchSharesRatio: 1e9
+        });
 
-        // Change period too long
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        systemParams.updateInterestParams(1 * _1pct, 100 * _1pct, uint128(5 * _1pct), 7 days, 7 days, 31 days, 1e9);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            interestParams,
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateRedemptionParams() public {
-        uint256 feeFloor = 1 * _1pct;
-        uint256 baseRate = 50 * _1pct;
-        uint256 decayFactor = 999000000000000000;
-        uint256 beta = 2;
-        uint256 urgentBonus = 3 * _1pct;
+    function testConstructorRevertsWhenInterestRateAdjCooldownTooLong() public {
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: _1pct / 2,
+            maxAnnualInterestRate: 250 * _1pct,
+            maxAnnualBatchManagementFee: uint128(_100pct / 10),
+            upfrontInterestPeriod: 7 days,
+            interestRateAdjCooldown: 366 days,
+            minInterestRateChangePeriod: 1 hours,
+            maxBatchSharesRatio: 1e9
+        });
 
-        vm.prank(owner);
-        vm.expectEmit(true, true, false, true);
-        emit RedemptionParamsUpdated(feeFloor, baseRate, decayFactor, beta, urgentBonus);
-        systemParams.updateRedemptionParams(feeFloor, baseRate, decayFactor, beta, urgentBonus);
-
-        assertEq(systemParams.REDEMPTION_FEE_FLOOR(), feeFloor);
-        assertEq(systemParams.INITIAL_BASE_RATE(), baseRate);
-        assertEq(systemParams.REDEMPTION_MINUTE_DECAY_FACTOR(), decayFactor);
-        assertEq(systemParams.REDEMPTION_BETA(), beta);
-        assertEq(systemParams.URGENT_REDEMPTION_BONUS(), urgentBonus);
+        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            interestParams,
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateRedemptionParamsRevertsInvalidFeeFloor() public {
-        vm.prank(owner);
+    function testConstructorRevertsWhenMinInterestRateChangePeriodZero() public {
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: _1pct / 2,
+            maxAnnualInterestRate: 250 * _1pct,
+            maxAnnualBatchManagementFee: uint128(_100pct / 10),
+            upfrontInterestPeriod: 7 days,
+            interestRateAdjCooldown: 7 days,
+            minInterestRateChangePeriod: 0,
+            maxBatchSharesRatio: 1e9
+        });
+
+        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            interestParams,
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
+
+    function testConstructorRevertsWhenMinInterestRateChangePeriodTooLong() public {
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: _1pct / 2,
+            maxAnnualInterestRate: 250 * _1pct,
+            maxAnnualBatchManagementFee: uint128(_100pct / 10),
+            upfrontInterestPeriod: 7 days,
+            interestRateAdjCooldown: 7 days,
+            minInterestRateChangePeriod: 31 days,
+            maxBatchSharesRatio: 1e9
+        });
+
+        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            interestParams,
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
+
+    // ========== REDEMPTION VALIDATION TESTS ==========
+
+    function testConstructorRevertsWhenRedemptionFeeFloorTooHigh() public {
+        ISystemParams.RedemptionParams memory redemptionParams = ISystemParams.RedemptionParams({
+            redemptionFeeFloor: _100pct + 1,
+            initialBaseRate: _100pct,
+            redemptionMinuteDecayFactor: 998076443575628800,
+            redemptionBeta: 1,
+            urgentRedemptionBonus: 2 * _1pct
+        });
+
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
-        systemParams.updateRedemptionParams(101 * _1pct, 50 * _1pct, 999000000000000000, 1, 2 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            redemptionParams,
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateRedemptionParamsRevertsInvalidBaseRate() public {
-        vm.prank(owner);
+    function testConstructorRevertsWhenInitialBaseRateTooHigh() public {
+        ISystemParams.RedemptionParams memory redemptionParams = ISystemParams.RedemptionParams({
+            redemptionFeeFloor: _1pct / 2,
+            initialBaseRate: 1001 * _1pct, // > 1000%
+            redemptionMinuteDecayFactor: 998076443575628800,
+            redemptionBeta: 1,
+            urgentRedemptionBonus: 2 * _1pct
+        });
+
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
-        systemParams.updateRedemptionParams(1 * _1pct, 1001 * _1pct, 999000000000000000, 1, 2 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            redemptionParams,
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdateRedemptionParamsRevertsInvalidUrgentBonus() public {
-        vm.prank(owner);
+    function testConstructorRevertsWhenUrgentRedemptionBonusTooHigh() public {
+        ISystemParams.RedemptionParams memory redemptionParams = ISystemParams.RedemptionParams({
+            redemptionFeeFloor: _1pct / 2,
+            initialBaseRate: _100pct,
+            redemptionMinuteDecayFactor: 998076443575628800,
+            redemptionBeta: 1,
+            urgentRedemptionBonus: _100pct + 1
+        });
+
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
-        systemParams.updateRedemptionParams(1 * _1pct, 50 * _1pct, 999000000000000000, 1, 101 * _1pct);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            redemptionParams,
+            _getValidPoolParams()
+        );
     }
 
-    function testUpdatePoolParams() public {
-        uint256 yieldSplit = 80 * _1pct;
-        uint256 minBold = 10e18;
+    // ========== STABILITY POOL VALIDATION TESTS ==========
 
-        vm.prank(owner);
-        vm.expectEmit(true, true, false, true);
-        emit StabilityPoolParamsUpdated(yieldSplit, minBold);
-        systemParams.updatePoolParams(yieldSplit, minBold);
+    function testConstructorRevertsWhenSPYieldSplitTooHigh() public {
+        ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
+            spYieldSplit: _100pct + 1,
+            minBoldInSP: 1e18
+        });
 
-        assertEq(systemParams.SP_YIELD_SPLIT(), yieldSplit);
-        assertEq(systemParams.MIN_BOLD_IN_SP(), minBold);
-    }
-
-    function testUpdatePoolParamsRevertsInvalidYieldSplit() public {
-        vm.prank(owner);
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
-        systemParams.updatePoolParams(101 * _1pct, 1e18);
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            poolParams
+        );
     }
 
-    function testUpdatePoolParamsRevertsZeroMinBold() public {
-        vm.prank(owner);
+    function testConstructorRevertsWhenMinBoldInSPZero() public {
+        ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
+            spYieldSplit: 75 * _1pct,
+            minBoldInSP: 0
+        });
+
         vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
-        systemParams.updatePoolParams(75 * _1pct, 0);
-    }
-
-    function testUpdateVersion() public {
-        uint256 oldVersion = systemParams.version();
-        uint256 newVersion = 2;
-
-        vm.prank(owner);
-        vm.expectEmit(true, true, false, true);
-        emit VersionUpdated(oldVersion, newVersion);
-        systemParams.updateVersion(newVersion);
-
-        assertEq(systemParams.version(), newVersion);
-    }
-
-    function testOnlyOwnerCanUpdate() public {
-        vm.startPrank(nonOwner);
-
-        // Test all update functions revert for non-owner
-        vm.expectRevert("Ownable: caller is not the owner");
-        systemParams.updateMinDebt(3000e18);
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        systemParams.updateLiquidationParams(6 * _1pct, 25 * _1pct, 7 * _1pct, 15 * _1pct);
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        systemParams.updateGasCompParams(300, 3 ether, 0.05 ether);
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        systemParams.updateCollateralParams(160 * _1pct, 120 * _1pct, 115 * _1pct, 15 * _1pct);
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        systemParams.updateInterestParams(1 * _1pct, 200 * _1pct, uint128(5 * _1pct), 14 days, 14 days, 2 hours, 2e9);
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        systemParams.updateRedemptionParams(1 * _1pct, 50 * _1pct, 999000000000000000, 2, 3 * _1pct);
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        systemParams.updatePoolParams(80 * _1pct, 10e18);
-
-        vm.expectRevert("Ownable: caller is not the owner");
-        systemParams.updateVersion(2);
-
-        vm.stopPrank();
-    }
-
-    function testOwnerCanTransferOwnership() public {
-        address newOwner = address(0x5678);
-
-        // Transfer ownership
-        vm.prank(owner);
-        SystemParams(address(systemParams)).transferOwnership(newOwner);
-        assertEq(SystemParams(address(systemParams)).owner(), newOwner);
-
-        // New owner can update
-        vm.prank(newOwner);
-        systemParams.updateVersion(3);
-        assertEq(systemParams.version(), 3);
-
-        // Old owner cannot update
-        vm.prank(owner);
-        vm.expectRevert("Ownable: caller is not the owner");
-        systemParams.updateVersion(4);
-    }
-
-    function testParameterBoundaryValues() public {
-        // Test minimum valid values
-        vm.prank(owner);
-        systemParams.updateMinDebt(1); // Just above 0
-        assertEq(systemParams.MIN_DEBT(), 1);
-
-        vm.prank(owner);
-        systemParams.updateMinDebt(10000e18); // Exactly at max
-        assertEq(systemParams.MIN_DEBT(), 10000e18);
-
-        // Test collateral params at boundaries
-        vm.prank(owner);
-        systemParams.updateCollateralParams(
-            _100pct + 1,      // CCR just above 100%
-            _100pct + 1,      // SCR just above 100%
-            _100pct + 1,      // MCR just above 100%
-            5 * _1pct         // BCR at minimum
+        new SystemParams(
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            poolParams
         );
-        assertEq(systemParams.CCR(), _100pct + 1);
-        assertEq(systemParams.BCR(), 5 * _1pct);
+    }
 
-        // Test gas comp at boundaries
-        vm.prank(owner);
-        systemParams.updateGasCompParams(
-            1,           // Min divisor
-            10 ether,    // Max cap
-            1 ether      // Max ETH comp
-        );
-        assertEq(systemParams.COLL_GAS_COMPENSATION_DIVISOR(), 1);
-        assertEq(systemParams.COLL_GAS_COMPENSATION_CAP(), 10 ether);
-        assertEq(systemParams.ETH_GAS_COMPENSATION(), 1 ether);
+    // ========== HELPER FUNCTIONS ==========
+
+    function _getValidDebtParams() internal pure returns (ISystemParams.DebtParams memory) {
+        return ISystemParams.DebtParams({minDebt: 2000e18});
+    }
+
+    function _getValidLiquidationParams() internal pure returns (ISystemParams.LiquidationParams memory) {
+        return ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16,
+            liquidationPenaltyRedistribution: 10e16
+        });
+    }
+
+    function _getValidGasCompParams() internal pure returns (ISystemParams.GasCompParams memory) {
+        return ISystemParams.GasCompParams({
+            collGasCompensationDivisor: 200,
+            collGasCompensationCap: 2 ether,
+            ethGasCompensation: 0.0375 ether
+        });
+    }
+
+    function _getValidCollateralParams() internal pure returns (ISystemParams.CollateralParams memory) {
+        return ISystemParams.CollateralParams({
+            ccr: 150 * _1pct,
+            scr: 110 * _1pct,
+            mcr: 110 * _1pct,
+            bcr: 10 * _1pct
+        });
+    }
+
+    function _getValidInterestParams() internal pure returns (ISystemParams.InterestParams memory) {
+        return ISystemParams.InterestParams({
+            minAnnualInterestRate: _1pct / 2,
+            maxAnnualInterestRate: 250 * _1pct,
+            maxAnnualBatchManagementFee: uint128(_100pct / 10),
+            upfrontInterestPeriod: 7 days,
+            interestRateAdjCooldown: 7 days,
+            minInterestRateChangePeriod: 1 hours,
+            maxBatchSharesRatio: 1e9
+        });
+    }
+
+    function _getValidRedemptionParams() internal pure returns (ISystemParams.RedemptionParams memory) {
+        return ISystemParams.RedemptionParams({
+            redemptionFeeFloor: _1pct / 2,
+            initialBaseRate: _100pct,
+            redemptionMinuteDecayFactor: 998076443575628800,
+            redemptionBeta: 1,
+            urgentRedemptionBonus: 2 * _1pct
+        });
+    }
+
+    function _getValidPoolParams() internal pure returns (ISystemParams.StabilityPoolParams memory) {
+        return ISystemParams.StabilityPoolParams({
+            spYieldSplit: 75 * _1pct,
+            minBoldInSP: 1e18
+        });
     }
 }

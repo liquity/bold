@@ -13,7 +13,6 @@ import "src/HintHelpers.sol";
 import "src/MultiTroveGetter.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
-import {SystemParams, ISystemParams} from "src/SystemParams.sol";
 import "./BorrowerOperationsTester.t.sol";
 import "./TroveManagerTester.t.sol";
 import "./CollateralRegistryTester.sol";
@@ -23,6 +22,7 @@ import "src/CollateralRegistry.sol";
 import "./MockInterestRouter.sol";
 import "./PriceFeedTestnet.sol";
 import "./MetadataDeployment.sol";
+import "src/SystemParams.sol";
 
 import {WETHTester} from "./WETHTester.sol";
 import {ERC20Faucet} from "./ERC20Faucet.sol";
@@ -349,21 +349,64 @@ contract TestDeployer is MetadataDeployment {
 
     function deploySystemParamsDev(TroveManagerParams memory params, uint256 index) public returns (ISystemParams) {
         bytes32 uniqueSalt = keccak256(abi.encodePacked(SALT, index));
-        SystemParams systemParams = new SystemParams{salt: uniqueSalt}(false);
-        systemParams.initialize(address(this));
-        
-        systemParams.updateCollateralParams(params.CCR, params.SCR, params.MCR, params.BCR);
-        systemParams.updateLiquidationParams(5e16, 20e16, params.LIQUIDATION_PENALTY_SP, params.LIQUIDATION_PENALTY_REDISTRIBUTION);
-        
+
+        // Create parameter structs based on constants
+        ISystemParams.DebtParams memory debtParams = ISystemParams.DebtParams({
+            minDebt: 2000e18 // MIN_DEBT
+        });
+
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: params.LIQUIDATION_PENALTY_SP,
+            liquidationPenaltyRedistribution: params.LIQUIDATION_PENALTY_REDISTRIBUTION
+        });
+
+        ISystemParams.GasCompParams memory gasCompParams = ISystemParams.GasCompParams({
+            collGasCompensationDivisor: 200, // COLL_GAS_COMPENSATION_DIVISOR
+            collGasCompensationCap: 2 ether, // COLL_GAS_COMPENSATION_CAP
+            ethGasCompensation: 0.0375 ether // ETH_GAS_COMPENSATION
+        });
+
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: params.CCR,
+            scr: params.SCR,
+            mcr: params.MCR,
+            bcr: params.BCR
+        });
+
+        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
+            minAnnualInterestRate: DECIMAL_PRECISION / 200, // MIN_ANNUAL_INTEREST_RATE (0.5%)
+            maxAnnualInterestRate: 250 * (DECIMAL_PRECISION / 100), // MAX_ANNUAL_INTEREST_RATE (250%)
+            maxAnnualBatchManagementFee: uint128(DECIMAL_PRECISION / 10), // MAX_ANNUAL_BATCH_MANAGEMENT_FEE (10%)
+            upfrontInterestPeriod: 7 days, // UPFRONT_INTEREST_PERIOD
+            interestRateAdjCooldown: 7 days, // INTEREST_RATE_ADJ_COOLDOWN
+            minInterestRateChangePeriod: 1 hours, // MIN_INTEREST_RATE_CHANGE_PERIOD
+            maxBatchSharesRatio: 1e9 // MAX_BATCH_SHARES_RATIO
+        });
+
+        ISystemParams.RedemptionParams memory redemptionParams = ISystemParams.RedemptionParams({
+            redemptionFeeFloor: DECIMAL_PRECISION / 200, // REDEMPTION_FEE_FLOOR (0.5%)
+            initialBaseRate: DECIMAL_PRECISION, // INITIAL_BASE_RATE (100%)
+            redemptionMinuteDecayFactor: 998076443575628800, // REDEMPTION_MINUTE_DECAY_FACTOR
+            redemptionBeta: 1, // REDEMPTION_BETA
+            urgentRedemptionBonus: 2e16 // URGENT_REDEMPTION_BONUS (2%)
+        });
+
+        ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
+            spYieldSplit: 75 * (DECIMAL_PRECISION / 100), // SP_YIELD_SPLIT (75%)
+            minBoldInSP: 1e18 // MIN_BOLD_IN_SP
+        });
+
+        SystemParams systemParams = new SystemParams{salt: uniqueSalt}(
+            debtParams,
+            liquidationParams,
+            gasCompParams,
+            collateralParams,
+            interestParams,
+            redemptionParams,
+            poolParams
+        );
+
         return ISystemParams(systemParams);
-    }
-
-    function updateSystemParamsCollateral(ISystemParams systemParams, uint256 ccr, uint256 scr, uint256 mcr, uint256 bcr) public {
-        systemParams.updateCollateralParams(ccr, scr, mcr, bcr);
-    }
-
-    function updateSystemParamsLiquidation(ISystemParams systemParams, uint256 minSP, uint256 maxRedist, uint256 sp, uint256 redist) public {
-        systemParams.updateLiquidationParams(minSP, maxRedist, sp, redist);
     }
 
     function _deployAndConnectCollateralContractsDev(
@@ -716,8 +759,6 @@ contract TestDeployer is MetadataDeployment {
     }
 
     function _deploySystemParamsMainnet() internal returns (ISystemParams) {
-        SystemParams systemParams = new SystemParams{salt: SALT}(false);
-        systemParams.initialize(address(this));
-        return ISystemParams(systemParams);
+        return ISystemParams(address(0));
     }
 }
