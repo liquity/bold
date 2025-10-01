@@ -45,4 +45,5 @@ interface ICollateralRegistry {
 
     function governor() external view returns (address);
     function updateGovernor(address _newGovernor) external;
+    function acceptGovernor() external;
 }
