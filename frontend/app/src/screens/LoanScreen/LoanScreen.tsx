@@ -105,6 +105,7 @@ function TroveHistoryLinksDrawer({
           alignItems: "center",
           gap: 8,
           marginTop: 18,
+          fontSize: 14,
         })}
       >
         <span>
