@@ -48,7 +48,12 @@ contract TBTCPriceFeed is TokenPriceFeedBase {
 
     function fetchRedemptionPrice() external returns (uint256, bool) {
         // Use same price for redemption as all other ops in tBTC branch
-        return _fetchPricePrimary(true);
+        // If branch is live and the primary oracle setup has been working, try to use it
+        if (priceSource == PriceSource.primary) return _fetchPricePrimary(true);
+
+        // Otherwise if branch is shut down and already using the lastGoodPrice, continue with it
+        assert(priceSource == PriceSource.lastGoodPrice);
+        return (lastGoodPrice, false);
     }
 
     function _fetchPricePrimary(bool _isRedemption) internal returns (uint256, bool) {
