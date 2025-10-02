@@ -110,7 +110,7 @@ function TroveHistoryLinksDrawer({
           })}
         >
           <span>
-            Trove History:
+            Loan History:
           </span>
           {troveExplorers[0] && troveExplorers[1]
             ? (
