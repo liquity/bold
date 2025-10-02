@@ -16,6 +16,16 @@ import "./Dependencies/AddRemoveManagers.sol";
 import "./Types/LatestTroveData.sol";
 import "./Types/LatestBatchData.sol";
 
+/**
+ * @dev System parameters pattern:
+ * Most system parameters are copied from SystemParams to immutable variables at construction for gas optimization.
+ * However, to reduce contract size, the following parameters are read directly from SystemParams when needed:
+ * - SCR: Only used in shutdown() function
+ * - MAX_ANNUAL_BATCH_MANAGEMENT_FEE: Only used in registerBatchManager()
+ * - MIN_INTEREST_RATE_CHANGE_PERIOD: Only used in registerBatchManager()
+ * - MAX_BATCH_SHARES_RATIO: Only used in kickFromBatch()
+ * These are infrequently called operations where the additional ~2500 gas per read is acceptable.
+ */
 contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperations {
     using SafeERC20 for IERC20;
 
@@ -35,9 +45,6 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
     uint256 public immutable CCR;
 
-    // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
-    // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    uint256 public immutable SCR;
     bool public hasBeenShutDown;
 
     // Minimum collateral ratio for individual troves
@@ -48,10 +55,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
     uint256 public immutable ETH_GAS_COMPENSATION;
     uint256 public immutable MIN_DEBT;
-    uint128 public immutable MAX_ANNUAL_BATCH_MANAGEMENT_FEE;
-    uint128 public immutable MIN_INTEREST_RATE_CHANGE_PERIOD;
     uint256 public immutable INTEREST_RATE_ADJ_COOLDOWN;
-    uint256 public immutable MAX_BATCH_SHARES_RATIO;
     uint256 public immutable UPFRONT_INTEREST_PERIOD;
     uint256 public immutable MIN_ANNUAL_INTEREST_RATE;
     uint256 public immutable MAX_ANNUAL_INTEREST_RATE;
@@ -190,15 +194,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         gasToken = _addressesRegistry.gasToken();
 
         CCR = _systemParams.CCR();
-        SCR = _systemParams.SCR();
         MCR = _systemParams.MCR();
         BCR = _systemParams.BCR();
 
         ETH_GAS_COMPENSATION = _systemParams.ETH_GAS_COMPENSATION();
         MIN_DEBT = _systemParams.MIN_DEBT();
-        MAX_ANNUAL_BATCH_MANAGEMENT_FEE = _systemParams.MAX_ANNUAL_BATCH_MANAGEMENT_FEE();
-        MIN_INTEREST_RATE_CHANGE_PERIOD = _systemParams.MIN_INTEREST_RATE_CHANGE_PERIOD();
-        MAX_BATCH_SHARES_RATIO = _systemParams.MAX_BATCH_SHARES_RATIO();
         UPFRONT_INTEREST_PERIOD = _systemParams.UPFRONT_INTEREST_PERIOD();
         MIN_ANNUAL_INTEREST_RATE = _systemParams.MIN_ANNUAL_INTEREST_RATE();
         MAX_ANNUAL_INTEREST_RATE = _systemParams.MAX_ANNUAL_INTEREST_RATE();
@@ -886,8 +886,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireInterestRateInRange(_currentInterestRate, _minInterestRate, _maxInterestRate);
         // Not needed, implicitly checked in the condition above:
         //_requireValidAnnualInterestRate(_currentInterestRate);
-        if (_annualManagementFee > MAX_ANNUAL_BATCH_MANAGEMENT_FEE) revert AnnualManagementFeeTooHigh();
-        if (_minInterestRateChangePeriod < MIN_INTEREST_RATE_CHANGE_PERIOD) revert MinInterestRateChangePeriodTooLow();
+        if (_annualManagementFee > ISystemParams(systemParamsAddress).MAX_ANNUAL_BATCH_MANAGEMENT_FEE()) {
+            revert AnnualManagementFeeTooHigh();
+        }
+        if (_minInterestRateChangePeriod < ISystemParams(systemParamsAddress).MIN_INTEREST_RATE_CHANGE_PERIOD()) {
+            revert MinInterestRateChangePeriodTooLow();
+        }
 
         interestBatchManagers[msg.sender] =
             InterestBatchManager(_minInterestRate, _maxInterestRate, _minInterestRateChangePeriod);
@@ -1111,6 +1115,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         vars.batch = vars.troveManager.getLatestBatchData(vars.batchManager);
 
         if (_kick) {
+            uint256 MAX_BATCH_SHARES_RATIO = ISystemParams(systemParamsAddress).MAX_BATCH_SHARES_RATIO();
             if (vars.batch.totalDebtShares * MAX_BATCH_SHARES_RATIO >= vars.batch.entireDebtWithoutRedistribution) {
                 revert BatchSharesRatioTooLow();
             }
@@ -1251,6 +1256,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         // Otherwise, proceed with the TCR check:
         uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);
+        uint256 SCR = ISystemParams(systemParamsAddress).SCR();
         if (TCR >= SCR) revert TCRNotBelowSCR();
 
         _applyShutdown();
