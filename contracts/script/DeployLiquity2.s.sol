@@ -491,9 +491,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _branchId));
     }
 
-    // function getBytecode(bytes memory _creationCode, address _addressesRegistry, address _governor) public pure returns (bytes memory) {
-    //     return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _governor));
-    // }
+    function getBytecode(bytes memory _creationCode, address _addressesRegistry, address _governor) public pure returns (bytes memory) {
+        return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _governor));
+    }
     
     function _deployAndConnectContracts(
         TroveManagerParams[] memory troveManagerParamsArray,
@@ -653,7 +653,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
         addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry), GOVERNANCE_ADDRESS))
+            SALT, keccak256(getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry), address(GOVERNANCE_ADDRESS)))
         );
         addresses.stabilityPool = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)))
