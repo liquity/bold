@@ -105,7 +105,7 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
 
     function getCollGasCompensation(uint256 _entireColl, uint256 _entireDebt, uint256 _boldInSPForOffsets)
         external
-        pure
+        view
         returns (uint256)
     {
         uint256 collSubjectToGasCompensation = _entireColl;
@@ -115,11 +115,11 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
         return _getCollGasCompensation(collSubjectToGasCompensation);
     }
 
-    function getCollGasCompensation(uint256 _coll) external pure returns (uint256) {
+    function getCollGasCompensation(uint256 _coll) external view returns (uint256) {
         return _getCollGasCompensation(_coll);
     }
 
-    function getETHGasCompensation() external pure returns (uint256) {
+    function getETHGasCompensation() external view returns (uint256) {
         return ETH_GAS_COMPENSATION;
     }
 

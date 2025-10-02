@@ -369,7 +369,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     }
 
     // Return the amount of Coll to be drawn from a trove's collateral and sent as gas compensation.
-    function _getCollGasCompensation(uint256 _coll) internal pure returns (uint256) {
+    function _getCollGasCompensation(uint256 _coll) internal view returns (uint256) {
         // _entireDebt should never be zero, but we add the condition defensively to avoid an unexpected revert
         return LiquityMath._min(_coll / COLL_GAS_COMPENSATION_DIVISOR, gasCompensationMaxReward);
     }
