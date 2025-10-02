@@ -801,10 +801,12 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         // If the trove was zombie, and now it’s not anymore, put it back in the list
         if (_checkTroveIsZombie(troveManagerCached, _troveId) && trove.entireDebt >= MIN_DEBT) {
-            troveManagerCached.setTroveStatusToActive(_troveId);
-            _reInsertIntoSortedTroves(
-                _troveId, trove.annualInterestRate, _upperHint, _lowerHint, batchManager, batch.annualInterestRate
-            );
+            if(isBranchActive()){
+                troveManagerCached.setTroveStatusToActive(_troveId);
+                _reInsertIntoSortedTroves(
+                    _troveId, trove.annualInterestRate, _upperHint, _lowerHint, batchManager, batch.annualInterestRate
+                );
+            }
         }
     }
 
