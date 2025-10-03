@@ -1,5 +1,5 @@
 import { Address, BigInt, Bytes, dataSource, ethereum } from "@graphprotocol/graph-ts";
-import { InterestBatch, InterestRateBracket, Trove } from "../generated/schema";
+import { BorrowerInfo, InterestBatch, InterestRateBracket, Trove } from "../generated/schema";
 import {
   BatchedTroveUpdated as BatchedTroveUpdatedEvent,
   BatchUpdated as BatchUpdatedEvent,
@@ -24,6 +24,16 @@ const OP_OPEN_TROVE_AND_JOIN_BATCH = 7;
 const FLASH_LOAN_TOPIC = Bytes.fromHexString(
   // keccak256("FlashLoan(address,address,uint256,uint256)")
   "0x0d7d75e01ab95780d3cd1c8ec0dd6c2ce19e3a20427eec8bf53283b6fb8e95f0",
+);
+
+const COLL_BALANCE_UPDATED_TOPIC = Bytes.fromHexString(
+  // keccak256("CollBalanceUpdated(address,uint256)")
+  "0xf0393a34d05e6567686ad4e097f9d9d2781565957394f1f0d984e5d8e6378f20",
+);
+
+const LIQUIDATION_TOPIC = Bytes.fromHexString(
+  // keccak256("Liquidation(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")
+  "0x7243af9a1cff94d3429b2ee00b78c1c10589259f20dc167cb67704f38f9e824e",
 );
 
 function decodeAddress(data: Bytes, i: i32 = 0): ethereum.Value {
@@ -93,6 +103,78 @@ function getBatchUpdatedEventFrom(batchedTroveUpdatedEvent: BatchedTroveUpdatedE
     ],
     batchedTroveUpdatedEvent.receipt,
   );
+}
+
+function getCollSurplusBalanceChange(account: Address, newBalance: BigInt): BigInt {
+  let borrowerInfoId = account.toHexString();
+  let borrowerInfo = BorrowerInfo.load(borrowerInfoId);
+
+  if (!borrowerInfo) {
+    throw new Error("BorrowerInfo not found: " + borrowerInfoId);
+  }
+
+  let balanceChange = newBalance.minus(borrowerInfo.collSurplusBalance);
+  borrowerInfo.collSurplusBalance = newBalance;
+  borrowerInfo.save();
+
+  return balanceChange;
+}
+
+function getCollSurplusFrom(troveOperationEvent: TroveOperationEvent): BigInt {
+  let receipt = troveOperationEvent.receipt;
+
+  if (!receipt) {
+    throw new Error("Missing TX receipt");
+  }
+
+  let collBalanceUpdatedLogIndex = -1;
+
+  for (let i = 0; i < receipt.logs.length; ++i) {
+    if (receipt.logs[i].logIndex.equals(troveOperationEvent.logIndex.minus(BigInt.fromI32(4)))) {
+      if (receipt.logs[i].topics.length > 0 && receipt.logs[i].topics[0].equals(COLL_BALANCE_UPDATED_TOPIC)) {
+        collBalanceUpdatedLogIndex = i;
+      }
+      break;
+    }
+  }
+
+  if (collBalanceUpdatedLogIndex < 0) {
+    return BigInt.zero();
+  }
+
+  let collBalanceUpdatedLog = receipt.logs[collBalanceUpdatedLogIndex];
+
+  return getCollSurplusBalanceChange(
+    decodeAddress(collBalanceUpdatedLog.topics[1]).toAddress(),
+    decodeUint256(collBalanceUpdatedLog.data).toBigInt(),
+  );
+}
+
+function getPriceAtLiquidationFrom(troveOperationEvent: TroveOperationEvent): BigInt {
+  let receipt = troveOperationEvent.receipt;
+
+  if (!receipt) {
+    throw new Error("Missing TX receipt");
+  }
+
+  let liquidationLogIndex = -1;
+
+  for (let i = 0; i < receipt.logs.length; ++i) {
+    if (
+      receipt.logs[i].logIndex.gt(troveOperationEvent.logIndex)
+      && receipt.logs[i].topics.length > 0
+      && receipt.logs[i].topics[0].equals(LIQUIDATION_TOPIC)
+    ) {
+      liquidationLogIndex = i;
+      break;
+    }
+  }
+
+  if (liquidationLogIndex < 0) {
+    throw new Error("Missing Liquidation log");
+  }
+
+  return decodeUint256(receipt.logs[liquidationLogIndex].data, 9).toBigInt();
 }
 
 export function handleTroveUpdated(event: TroveUpdatedEvent): void {
@@ -202,6 +284,10 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   // Liquidation
   if (operation === OP_LIQUIDATE) {
     trove.status = "liquidated";
+    trove.liquidatedColl = event.params._collChangeFromOperation.neg();
+    trove.liquidatedDebt = event.params._debtChangeFromOperation.neg();
+    trove.collSurplus = getCollSurplusFrom(event);
+    trove.priceAtLiquidation = getPriceAtLiquidationFrom(event);
   }
 
   // Infer leverage flag on opening & adjustment

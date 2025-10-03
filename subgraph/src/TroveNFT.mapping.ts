@@ -71,6 +71,7 @@ function updateBorrowerTrovesCount(delta: i32, borrower: Bytes, collIndex: i32):
     borrowerInfo.troves = 0;
     borrowerInfo.trovesByCollateral = (new Array<i32>(collateralsCount)).fill(0);
     borrowerInfo.nextOwnerIndexes = (new Array<i32>(collateralsCount)).fill(0);
+    borrowerInfo.collSurplusBalance = BigInt.zero();
   }
 
   // track the amount of troves per collateral
