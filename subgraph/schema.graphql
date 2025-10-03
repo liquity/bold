@@ -54,6 +54,10 @@ type Trove @entity(immutable: false) {
   redemptionCount: Int!
   redeemedColl: BigInt!
   redeemedDebt: BigInt!
+  liquidatedColl: BigInt
+  liquidatedDebt: BigInt
+  collSurplus: BigInt
+  priceAtLiquidation: BigInt
 }
 
 type BorrowerInfo @entity(immutable: false) {
@@ -61,6 +65,7 @@ type BorrowerInfo @entity(immutable: false) {
   nextOwnerIndexes: [Int!]!
   troves: Int!
   trovesByCollateral: [Int!]!
+  collSurplusBalance: BigInt!
 }
 
 type InterestBatch @entity(immutable: false) {
