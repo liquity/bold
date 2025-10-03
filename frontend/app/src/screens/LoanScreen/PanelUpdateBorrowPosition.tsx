@@ -185,7 +185,7 @@ export function PanelUpdateBorrowPosition({
     && !isTcrAfterBelowCcr
     // at-risk warning agreement (only for non-delegated loans)
     && (newLoanDetails.status !== "at-risk" || (!loan.batchManager && agreeToLiquidationRisk))
-    // the account must have enought collateral
+    // the account must have enough collateral balance
     && !insufficientColl;
 
   return (
