@@ -6,6 +6,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import content from "@/src/content";
@@ -15,6 +16,7 @@ import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import {
   getCollToken,
+  useBranchCollateralRatios,
   useRedemptionRiskOfInterestRate,
   useRedemptionRiskOfLoan,
   useTroveRateUpdateCooldown,
@@ -23,7 +25,7 @@ import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, Checkbox, HFlex, IconSuggestion, InfoTooltip, StatusDot } from "@liquity2/uikit";
+import { addressesEqual, Checkbox, HFlex, IconExternal, IconSuggestion, InfoTooltip, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -61,6 +63,8 @@ export function PanelInterestRate({
 
   const updateRateCooldown = useUpdateRateCooldown(loan.branchId, loan.troveId);
 
+  const collateralRatios = useBranchCollateralRatios(loan.branchId);
+
   const currentRedemptionRisk = useRedemptionRiskOfLoan(loan);
   const newRedemptionRisk = useRedemptionRiskOfInterestRate(loan.branchId, interestRate, loan);
 
@@ -88,6 +92,10 @@ export function PanelInterestRate({
     && loan.borrowed
     && dn.mul(loan.borrowed, loan.interestRate);
 
+  const isTcrBelowCcr = collateralRatios.data?.tcr
+    && collateralRatios.data?.ccr
+    && dn.lt(collateralRatios.data.tcr, collateralRatios.data.ccr);
+
   const isDelegated = interestRateMode === "delegate" && interestRateDelegate;
   const allowSubmit = Boolean(
     account.address && addressesEqual(
@@ -102,6 +110,7 @@ export function PanelInterestRate({
       !dn.eq(interestRate, loan.interestRate)
       || loan.batchManager !== interestRateDelegate
     )
+    && !isTcrBelowCcr
     && (newLoanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk));
 
   return (
@@ -239,46 +248,74 @@ export function PanelInterestRate({
         />
       </div>
 
-      {newLoanDetails.status === "at-risk" && (
-        <WarningBox>
-          {isDelegated
-            ? (
-              <div>
-                When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>{" "}
-                must be below{" "}
-                {fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
-                proceed.
-              </div>
-            )
-            : (
-              <>
+      {isTcrBelowCcr
+        ? (
+          <WarningBox>
+            <div>
+              The system's <abbr title="Total Collateral Ratio">TCR</abbr> is currently below the{" "}
+              <abbr title="Critical Collateral Ratio">CCR</abbr>. Interest rate adjustments are restricted.{" "}
+              <LinkTextButton
+                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations"
+                target="_blank"
+                rel="noopener noreferrer"
+                label={
+                  <span
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      color: "white",
+                    })}
+                  >
+                    <span>Learn more</span>
+                    <IconExternal size={16} />
+                  </span>
+                }
+              />
+            </div>
+          </WarningBox>
+        )
+        : newLoanDetails.status === "at-risk" && (
+          <WarningBox>
+            {isDelegated
+              ? (
                 <div>
-                  Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
-                  {fmtnum(newLoanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
-                  {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
+                  When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>
+                  {" "}
+                  must be below{" "}
+                  {fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
+                  proceed.
                 </div>
-                <label
-                  htmlFor={agreeCheckboxId}
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    cursor: "pointer",
-                  })}
-                >
-                  <Checkbox
-                    id={agreeCheckboxId}
-                    checked={agreeToLiquidationRisk}
-                    onChange={(checked) => {
-                      setAgreeToLiquidationRisk(checked);
-                    }}
-                  />
-                  I understand. Let's continue.
-                </label>
-              </>
-            )}
-        </WarningBox>
-      )}
+              )
+              : (
+                <>
+                  <div>
+                    Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
+                    {fmtnum(newLoanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
+                    {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
+                  </div>
+                  <label
+                    htmlFor={agreeCheckboxId}
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      cursor: "pointer",
+                    })}
+                  >
+                    <Checkbox
+                      id={agreeCheckboxId}
+                      checked={agreeToLiquidationRisk}
+                      onChange={(checked) => {
+                        setAgreeToLiquidationRisk(checked);
+                      }}
+                    />
+                    I understand. Let's continue.
+                  </label>
+                </>
+              )}
+          </WarningBox>
+        )}
 
       <FlowButton
         disabled={!allowSubmit}

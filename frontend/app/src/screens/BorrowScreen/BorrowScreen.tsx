@@ -23,6 +23,7 @@ import {
   getBranches,
   getCollToken,
   useBranchCollateralRatios,
+  useBranchDebt,
   useNextOwnerIndex,
   useRedemptionRiskOfInterestRate,
 } from "@/src/liquity-utils";
@@ -114,6 +115,10 @@ export function BorrowScreen() {
     collPrice.data ?? null,
   );
 
+  const insufficientColl = deposit.parsed
+    && collBalance.data
+    && (dn.gt(deposit.parsed, collBalance.data));
+
   const debtSuggestions = loanDetails.maxDebt
       && loanDetails.depositUsd
       && loanDetails.deposit
@@ -161,6 +166,29 @@ export function BorrowScreen() {
   const isBelowMinDebt = debt.parsed && !debt.isEmpty && dn.lt(debt.parsed, MIN_DEBT);
   const isAboveMaxLtv = loanDetails.ltv && dn.gt(loanDetails.ltv, loanDetails.maxLtv);
 
+  const branchDebt = useBranchDebt(branch.id);
+
+  // expected TCR after the user opens the position
+  const tcrAfter = branchDebt.data
+      && collateralRatios.data?.tcr
+      && loanDetails.deposit
+      && loanDetails.collPrice
+      && debt.parsed
+    ? (() => {
+      const branchColl = dn.mul(collateralRatios.data.tcr, branchDebt.data);
+      const loanColl = dn.mul(loanDetails.deposit, loanDetails.collPrice);
+
+      const totalCollAfter = dn.add(branchColl, loanColl);
+      const totalDebtAfter = dn.add(branchDebt.data, debt.parsed);
+
+      return dn.div(totalCollAfter, totalDebtAfter);
+    })()
+    : null;
+
+  const isTcrAfterBelowCcr = tcrAfter
+    && collateralRatios.data?.ccr
+    && dn.lt(tcrAfter, collateralRatios.data.ccr);
+
   const isDelegated = interestRateMode === "delegate" && interestRateDelegate;
   const allowSubmit = account.isConnected
     && deposit.parsed
@@ -171,7 +199,9 @@ export function BorrowScreen() {
     && dn.gt(interestRate, 0)
     && !isBelowMinDebt
     && !isAboveMaxLtv
-    && (loanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk));
+    && !isTcrAfterBelowCcr
+    && (loanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk))
+    && !insufficientColl;
 
   return (
     <Screen
@@ -248,6 +278,14 @@ export function BorrowScreen() {
                 selected={branch.id}
               />
             }
+            drawer={deposit.isFocused ? null : (
+              insufficientColl
+                ? {
+                  mode: "error",
+                  message: `Insufficient ${collateral.name} balance.`,
+                }
+                : null
+            )}
             label={content.borrowScreen.depositField.label}
             placeholder="0.00"
             secondary={{
@@ -589,46 +627,75 @@ export function BorrowScreen() {
         </div>
       )}
 
-      {loanDetails.status === "at-risk" && (
-        <WarningBox>
-          {isDelegated
-            ? (
-              <div>
-                When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>{" "}
-                must be below{" "}
-                {fmtnum(loanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
-                proceed.
-              </div>
-            )
-            : (
-              <>
+      {isTcrAfterBelowCcr
+        ? (
+          <WarningBox>
+            <div>
+              Opening this loan would bring the system's <abbr title="Total Collateral Ratio">TCR</abbr> below the{" "}
+              <abbr title="Critical Collateral Ratio">CCR</abbr>. Please reduce your loan or add more collateral to
+              proceed.{" "}
+              <LinkTextButton
+                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations"
+                target="_blank"
+                rel="noopener noreferrer"
+                label={
+                  <span
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      color: "white",
+                    })}
+                  >
+                    <span>Learn more</span>
+                    <IconExternal size={16} />
+                  </span>
+                }
+              />
+            </div>
+          </WarningBox>
+        )
+        : loanDetails.status === "at-risk" && (
+          <WarningBox>
+            {isDelegated
+              ? (
                 <div>
-                  Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
-                  {fmtnum(loanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
-                  {fmtnum(loanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
+                  When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>
+                  {" "}
+                  must be below{" "}
+                  {fmtnum(loanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
+                  proceed.
                 </div>
-                <label
-                  htmlFor={agreeCheckboxId}
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    cursor: "pointer",
-                  })}
-                >
-                  <Checkbox
-                    id={agreeCheckboxId}
-                    checked={agreeToLiquidationRisk}
-                    onChange={(checked) => {
-                      setAgreeToLiquidationRisk(checked);
-                    }}
-                  />
-                  I understand. Let's continue.
-                </label>
-              </>
-            )}
-        </WarningBox>
-      )}
+              )
+              : (
+                <>
+                  <div>
+                    Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
+                    {fmtnum(loanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
+                    {fmtnum(loanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
+                  </div>
+                  <label
+                    htmlFor={agreeCheckboxId}
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      cursor: "pointer",
+                    })}
+                  >
+                    <Checkbox
+                      id={agreeCheckboxId}
+                      checked={agreeToLiquidationRisk}
+                      onChange={(checked) => {
+                        setAgreeToLiquidationRisk(checked);
+                      }}
+                    />
+                    I understand. Let's continue.
+                  </label>
+                </>
+              )}
+          </WarningBox>
+        )}
 
       <FlowButton
         disabled={!allowSubmit}
