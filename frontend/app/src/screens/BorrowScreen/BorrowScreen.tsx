@@ -185,7 +185,7 @@ export function BorrowScreen() {
     })()
     : null;
 
-  const isNewTcrBelowCcr = newTcr
+  const isCcrConditionsNotMet = newTcr
     && collateralRatios.data?.ccr
     && dn.lt(newTcr, collateralRatios.data.ccr);
 
@@ -199,7 +199,7 @@ export function BorrowScreen() {
     && dn.gt(interestRate, 0)
     && !isBelowMinDebt
     && !isAboveMaxLtv
-    && !isNewTcrBelowCcr
+    && !isCcrConditionsNotMet
     && (loanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk))
     && !insufficientColl;
 
@@ -627,7 +627,7 @@ export function BorrowScreen() {
         </div>
       )}
 
-      {isNewTcrBelowCcr
+      {isCcrConditionsNotMet
         ? (
           <WarningBox>
             <div>

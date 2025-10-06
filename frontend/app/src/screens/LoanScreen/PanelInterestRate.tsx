@@ -92,9 +92,11 @@ export function PanelInterestRate({
     && loan.borrowed
     && dn.mul(loan.borrowed, loan.interestRate);
 
-  const isTcrBelowCcr = collateralRatios.data?.tcr
+  const isCcrConditionsNotMet = collateralRatios.data?.tcr
     && collateralRatios.data?.ccr
-    && dn.lt(collateralRatios.data.tcr, collateralRatios.data.ccr);
+    && updateRateCooldown
+    && dn.lt(collateralRatios.data.tcr, collateralRatios.data.ccr)
+    && updateRateCooldown.active;
 
   const isDelegated = interestRateMode === "delegate" && interestRateDelegate;
   const allowSubmit = Boolean(
@@ -110,7 +112,7 @@ export function PanelInterestRate({
       !dn.eq(interestRate, loan.interestRate)
       || loan.batchManager !== interestRateDelegate
     )
-    && !isTcrBelowCcr
+    && !isCcrConditionsNotMet
     && (newLoanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk));
 
   return (
@@ -248,7 +250,7 @@ export function PanelInterestRate({
         />
       </div>
 
-      {isTcrBelowCcr
+      {isCcrConditionsNotMet
         ? (
           <WarningBox>
             <div>
