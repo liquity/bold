@@ -1,4 +1,4 @@
-import { Address, BigInt, Bytes, dataSource } from "@graphprotocol/graph-ts";
+import { Address, BigInt, Bytes, dataSource, DataSourceContext } from "@graphprotocol/graph-ts";
 import { BorrowerInfo, CollateralAddresses } from "../generated/schema";
 import { CollSurplusPool as CollSurplusPoolTemplate } from "../generated/templates";
 import { CollBalanceUpdated as CollBalanceUpdatedEvent } from "../generated/templates/CollSurplusPool/CollSurplusPool";
@@ -18,8 +18,11 @@ function getCollSurplusBalanceChange(account: Address, newBalance: BigInt): BigI
     throw new Error("BorrowerInfo not found: " + borrowerInfoId);
   }
 
-  let balanceChange = newBalance.minus(borrowerInfo.collSurplusBalance);
-  borrowerInfo.collSurplusBalance = newBalance;
+  let collIndex = dataSource.context().getI32("collIndex");
+  let collSurplusBalance = borrowerInfo.collSurplusBalance;
+  let balanceChange = newBalance.minus(collSurplusBalance[collIndex]);
+  collSurplusBalance[collIndex] = newBalance;
+  borrowerInfo.collSurplusBalance = collSurplusBalance;
   borrowerInfo.save();
 
   return balanceChange;
@@ -58,7 +61,10 @@ export function getCollSurplusFrom(troveOperationEvent: TroveOperationEvent): Bi
   // XXX extremely ugly hack: there's no easy way to get the CollSurplusPool address,
   // so we lazily set it here, and more importantly: instantiate a data source for it
   if (!addresses.collSurplusPool) {
-    CollSurplusPoolTemplate.create(collBalanceUpdatedLog.address);
+    let context = new DataSourceContext();
+    context.setI32("collIndex", dataSource.context().getI32("collIndex"));
+    CollSurplusPoolTemplate.createWithContext(collBalanceUpdatedLog.address, context);
+
     addresses.collSurplusPool = collBalanceUpdatedLog.address;
     addresses.save();
   }
@@ -80,7 +86,12 @@ export function handleCollBalanceUpdated(event: CollBalanceUpdatedEvent): void {
     throw new Error("BorrowerInfo not found: " + borrowerInfoId);
   }
 
-  borrowerInfo.collSurplusBalance = BigInt.zero();
-  borrowerInfo.lastCollSurplusClaimAt = event.block.timestamp;
+  let collIndex = dataSource.context().getI32("collIndex");
+  let collSurplusBalance = borrowerInfo.collSurplusBalance;
+  let lastCollSurplusClaimAt = borrowerInfo.lastCollSurplusClaimAt;
+  collSurplusBalance[collIndex] = BigInt.zero();
+  lastCollSurplusClaimAt[collIndex] = event.block.timestamp;
+  borrowerInfo.collSurplusBalance = collSurplusBalance;
+  borrowerInfo.lastCollSurplusClaimAt = lastCollSurplusClaimAt;
   borrowerInfo.save();
 }

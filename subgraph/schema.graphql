@@ -66,8 +66,8 @@ type BorrowerInfo @entity(immutable: false) {
   nextOwnerIndexes: [Int!]!
   troves: Int!
   trovesByCollateral: [Int!]!
-  collSurplusBalance: BigInt!
-  lastCollSurplusClaimAt: BigInt
+  collSurplusBalance: [BigInt!]!
+  lastCollSurplusClaimAt: [BigInt!]! # a zero element means a claim has never been made in that branch
 }
 
 type InterestBatch @entity(immutable: false) {
