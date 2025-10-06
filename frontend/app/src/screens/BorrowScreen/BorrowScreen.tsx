@@ -169,7 +169,7 @@ export function BorrowScreen() {
   const branchDebt = useBranchDebt(branch.id);
 
   // expected TCR after the user opens the position
-  const tcrAfter = branchDebt.data
+  const newTcr = branchDebt.data
       && collateralRatios.data?.tcr
       && loanDetails.deposit
       && loanDetails.collPrice
@@ -185,9 +185,9 @@ export function BorrowScreen() {
     })()
     : null;
 
-  const isTcrAfterBelowCcr = tcrAfter
+  const isNewTcrBelowCcr = newTcr
     && collateralRatios.data?.ccr
-    && dn.lt(tcrAfter, collateralRatios.data.ccr);
+    && dn.lt(newTcr, collateralRatios.data.ccr);
 
   const isDelegated = interestRateMode === "delegate" && interestRateDelegate;
   const allowSubmit = account.isConnected
@@ -199,7 +199,7 @@ export function BorrowScreen() {
     && dn.gt(interestRate, 0)
     && !isBelowMinDebt
     && !isAboveMaxLtv
-    && !isTcrAfterBelowCcr
+    && !isNewTcrBelowCcr
     && (loanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk))
     && !insufficientColl;
 
@@ -627,7 +627,7 @@ export function BorrowScreen() {
         </div>
       )}
 
-      {isTcrAfterBelowCcr
+      {isNewTcrBelowCcr
         ? (
           <WarningBox>
             <div>

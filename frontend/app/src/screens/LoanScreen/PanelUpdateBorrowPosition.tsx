@@ -145,7 +145,7 @@ export function PanelUpdateBorrowPosition({
   const collateralRatios = useBranchCollateralRatios(loan.branchId);
 
   // expected TCR after the user updates the position
-  const tcrAfter = branchDebt.data
+  const newTcr = branchDebt.data
       && collateralRatios.data?.tcr
       && newDeposit
       && newDebt
@@ -163,9 +163,9 @@ export function PanelUpdateBorrowPosition({
     })()
     : null;
 
-  const isTcrAfterBelowCcr = tcrAfter
+  const isNewTcrBelowCcr = newTcr
     && collateralRatios.data?.ccr
-    && dn.lt(tcrAfter, collateralRatios.data.ccr);
+    && dn.lt(newTcr, collateralRatios.data.ccr);
 
   const allowSubmit = account.isConnected
     // above min. debt
@@ -182,7 +182,7 @@ export function PanelUpdateBorrowPosition({
     // the LTV is not above the maximum
     && !isAboveMaxLtv
     // TCR must not be below CCR
-    && !isTcrAfterBelowCcr
+    && !isNewTcrBelowCcr
     // at-risk warning agreement (only for non-delegated loans)
     && (newLoanDetails.status !== "at-risk" || (!loan.batchManager && agreeToLiquidationRisk))
     // the account must have enough collateral balance
@@ -480,7 +480,7 @@ export function PanelUpdateBorrowPosition({
         </div>
       </VFlex>
 
-      {isTcrAfterBelowCcr
+      {isNewTcrBelowCcr
         ? (
           <WarningBox>
             <div>
