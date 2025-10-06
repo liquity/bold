@@ -80,6 +80,7 @@ templates:
         - InterestBatch
         - BorrowerInfo
         - Collateral
+        - CollateralAddresses
       abis:
         - name: TroveManager
           file: ../contracts/out/TroveManager.sol/TroveManager.json
@@ -119,3 +120,21 @@ templates:
       eventHandlers:
         - event: Transfer(indexed address,indexed address,indexed uint256)
           handler: handleTransfer
+  - name: CollSurplusPool
+    kind: ethereum/contract
+    network: mainnet
+    source:
+      abi: CollSurplusPool
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      file: ./src/CollSurplusPool.mapping.ts
+      entities:
+        - BorrowerInfo
+      abis:
+        - name: CollSurplusPool
+          file: ../contracts/out/CollSurplusPool.sol/CollSurplusPool.json
+      eventHandlers:
+        - event: CollBalanceUpdated(indexed address,uint256)
+          handler: handleCollBalanceUpdated
