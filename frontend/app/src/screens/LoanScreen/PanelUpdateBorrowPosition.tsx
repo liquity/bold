@@ -14,7 +14,7 @@ import { ETH_MAX_RESERVE, MIN_DEBT } from "@/src/constants";
 import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
-import { getLoanDetails } from "@/src/liquity-math";
+import { getLoanChanges, getLoanDetails } from "@/src/liquity-math";
 import { getCollToken, useBranchCollateralRatios, useBranchDebt } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
@@ -144,28 +144,46 @@ export function PanelUpdateBorrowPosition({
   const branchDebt = useBranchDebt(loan.branchId);
   const collateralRatios = useBranchCollateralRatios(loan.branchId);
 
+  const loanChanges = newDeposit && newDebt && collPrice.data
+    ? getLoanChanges(loan.deposit, newDeposit, loan.borrowed, newDebt, collPrice.data)
+    : null;
+
   // expected TCR after the user updates the position
   const newTcr = branchDebt.data
       && collateralRatios.data?.tcr
-      && newDeposit
-      && newDebt
-      && collPrice.data
+      && loanChanges
     ? (() => {
       const branchColl = dn.mul(collateralRatios.data.tcr, branchDebt.data);
 
-      const loanCollChange = dn.mul(dn.sub(newDeposit, loan.deposit), collPrice.data);
-      const loanDebtChange = dn.sub(newDebt, loan.borrowed);
-
-      const totalCollAfter = dn.add(branchColl, loanCollChange);
-      const totalDebtAfter = dn.add(branchDebt.data, loanDebtChange);
+      const totalCollAfter = dn.add(branchColl, loanChanges.loanCollChange);
+      const totalDebtAfter = dn.add(branchDebt.data, loanChanges.loanDebtChange);
 
       return dn.div(totalCollAfter, totalDebtAfter);
     })()
     : null;
 
-  const isNewTcrBelowCcr = newTcr
+  const isNewTcrLtCcr = newTcr
     && collateralRatios.data?.ccr
     && dn.lt(newTcr, collateralRatios.data.ccr);
+
+  const isNewTcrLteCcr = newTcr
+    && collateralRatios.data?.ccr
+    && dn.lte(newTcr, collateralRatios.data.ccr);
+
+  const isOldTcrLtCcr = collateralRatios.data?.ccr
+    && collateralRatios.data?.tcr
+    && dn.lt(collateralRatios.data.tcr, collateralRatios.data.ccr);
+
+  const isDebtChangeGteCollChange = dn.gte(
+    loanChanges?.loanDebtChange ?? dnum18(0),
+    loanChanges?.loanCollChange ?? dnum18(0),
+  );
+
+  const isCcrConditionsNotMet = !isOldTcrLtCcr
+    ? isNewTcrLtCcr
+    : (debtMode === "add" && dn.gt(debtChange.parsed ?? dnum18(0), dnum18(0)))
+    ? isNewTcrLteCcr || isDebtChangeGteCollChange
+    : isDebtChangeGteCollChange;
 
   const allowSubmit = account.isConnected
     // above min. debt
@@ -182,7 +200,7 @@ export function PanelUpdateBorrowPosition({
     // the LTV is not above the maximum
     && !isAboveMaxLtv
     // TCR must not be below CCR
-    && !isNewTcrBelowCcr
+    && !isCcrConditionsNotMet
     // at-risk warning agreement (only for non-delegated loans)
     && (newLoanDetails.status !== "at-risk" || (!loan.batchManager && agreeToLiquidationRisk))
     // the account must have enough collateral balance
@@ -480,7 +498,7 @@ export function PanelUpdateBorrowPosition({
         </div>
       </VFlex>
 
-      {isNewTcrBelowCcr
+      {isCcrConditionsNotMet
         ? (
           <WarningBox>
             <div>
