@@ -6,7 +6,7 @@ type Collateral @entity(immutable: false) {
   addresses: CollateralAddresses! @derivedFrom(field: "collateral")
 }
 
-type CollateralAddresses @entity(immutable: true) {
+type CollateralAddresses @entity(immutable: false) {
   id: ID! # "collIndex", e.g. "0"
   collateral: Collateral!
   borrowerOperations: Bytes!
@@ -15,6 +15,7 @@ type CollateralAddresses @entity(immutable: true) {
   token: Bytes!
   troveManager: Bytes!
   troveNft: Bytes!
+  collSurplusPool: Bytes
 }
 
 type InterestRateBracket @entity(immutable: false) {
@@ -66,6 +67,7 @@ type BorrowerInfo @entity(immutable: false) {
   troves: Int!
   trovesByCollateral: [Int!]!
   collSurplusBalance: BigInt!
+  lastCollSurplusClaimAt: BigInt
 }
 
 type InterestBatch @entity(immutable: false) {
