@@ -618,6 +618,14 @@ export function useCurrentEpochBribes(
   });
 }
 
+const InitiativeDataSchema = v.object({
+  address: vAddress(),
+  isBribeInitiative: v.boolean(),
+  bribeToken: v.union([vAddress(), v.null()]),
+});
+
+export const ApiInitiativesSchema = v.array(InitiativeDataSchema);
+
 const AllocationSchema = v.object({
   epoch: v.number(),
   voteLQTY: v.pipe(v.string(), v.transform((x) => BigInt(x))),
