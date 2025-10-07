@@ -530,6 +530,7 @@ export function useCurrentEpochBribes(
 ): UseQueryResult<InitiativeBribeResult> {
   const wagmiConfig = useWagmiConfig();
   const govState = useGovernanceState();
+  const governanceGlobal = useGovernanceGlobalData();
 
   // stabilize the order of addresses (cache improvement and predictable)
   const sortedAddress = useMemo(
@@ -542,21 +543,12 @@ export function useCurrentEpochBribes(
       "currentEpochBribes",
       sortedAddress.join(""),
       String(govState.data?.epoch),
+      governanceGlobal.data?.bribeInitiatives.size,
     ],
     queryFn: async () => {
       if (!govState.data || sortedAddress.length === 0) {
         return {};
       }
-
-      const bribeTokens = await readContracts(wagmiConfig, {
-        contracts: sortedAddress.map((initiative) => ({
-          abi: BribeInitiative,
-          address: initiative,
-          functionName: "bribeToken",
-        } as const)),
-        // this is needed because some initiatives may revert if they don't have a bribe token
-        allowFailure: true,
-      });
 
       // initiatives with a bribe token
       const bribeInitiatives: Array<{
@@ -564,12 +556,31 @@ export function useCurrentEpochBribes(
         bribeToken: Address;
       }> = [];
 
-      for (const [index, bribeTokenResult] of bribeTokens.entries()) {
-        if (bribeTokenResult.result && sortedAddress[index]) {
-          bribeInitiatives.push({
-            initiative: sortedAddress[index],
-            bribeToken: bribeTokenResult.result,
-          });
+      if (governanceGlobal.data && governanceGlobal.data.bribeInitiatives.size > 0) {
+        for (const initiative of sortedAddress) {
+          const bribeToken = governanceGlobal.data.bribeInitiatives.get(initiative);
+          if (bribeToken) {
+            bribeInitiatives.push({ initiative, bribeToken });
+          }
+        }
+      } else {
+        const bribeTokens = await readContracts(wagmiConfig, {
+          contracts: sortedAddress.map((initiative) => ({
+            abi: BribeInitiative,
+            address: initiative,
+            functionName: "bribeToken",
+          } as const)),
+          // this is needed because some initiatives may revert if they don't have a bribe token
+          allowFailure: true,
+        });
+
+        for (const [index, bribeTokenResult] of bribeTokens.entries()) {
+          if (bribeTokenResult.result && sortedAddress[index]) {
+            bribeInitiatives.push({
+              initiative: sortedAddress[index],
+              bribeToken: bribeTokenResult.result,
+            });
+          }
         }
       }
 
@@ -682,6 +693,7 @@ export function useBribingClaim(
   const govState = useGovernanceState();
   const govUser = useGovernanceUser(account);
   const initiatives = useNamedInitiatives();
+  const governanceGlobal = useGovernanceGlobalData();
 
   return useQuery({
     queryKey: [
@@ -707,17 +719,9 @@ export function useBribingClaim(
         };
       }
 
-      const [completedEpochs, userAllocations, bribeChecks] = await Promise.all([
+      const [completedEpochs, userAllocations] = await Promise.all([
         getLatestCompletedEpoch(currentEpoch),
         getUserAllocationHistory(account),
-        readContracts(wagmiConfig, {
-          contracts: initiativesToCheck.map((initiative) => ({
-            abi: BribeInitiative,
-            address: initiative,
-            functionName: "bribeToken",
-          } as const)),
-          allowFailure: true,
-        }),
       ]);
 
       const bribeInitiatives: Array<{
@@ -725,17 +729,42 @@ export function useBribingClaim(
         bribeToken: Address;
       }> = [];
 
-      for (const [index, token] of bribeChecks.entries()) {
-        const address = initiativesToCheck[index]?.toLowerCase() as Address | undefined;
-        if (
-          address
-          && token.result
-          && userAllocations.find((allocation) => allocation.initiative === address && allocation.voteLQTY > 0n)
-        ) {
-          bribeInitiatives.push({
-            address,
-            bribeToken: token.result,
-          });
+      if (governanceGlobal.data && governanceGlobal.data.bribeInitiatives.size > 0) {
+        for (const initiative of initiativesToCheck) {
+          const bribeToken = governanceGlobal.data.bribeInitiatives.get(initiative);
+          const address = initiative.toLowerCase() as Address;
+          if (
+            bribeToken
+            && userAllocations.find((allocation) => allocation.initiative === address && allocation.voteLQTY > 0n)
+          ) {
+            bribeInitiatives.push({
+              address,
+              bribeToken,
+            });
+          }
+        }
+      } else {
+        const bribeChecks = await readContracts(wagmiConfig, {
+          contracts: initiativesToCheck.map((initiative) => ({
+            abi: BribeInitiative,
+            address: initiative,
+            functionName: "bribeToken",
+          } as const)),
+          allowFailure: true,
+        });
+
+        for (const [index, token] of bribeChecks.entries()) {
+          const address = initiativesToCheck[index]?.toLowerCase() as Address | undefined;
+          if (
+            address
+            && token.result
+            && userAllocations.find((allocation) => allocation.initiative === address && allocation.voteLQTY > 0n)
+          ) {
+            bribeInitiatives.push({
+              address,
+              bribeToken: token.result,
+            });
+          }
         }
       }
 

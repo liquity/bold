@@ -309,6 +309,7 @@ const GovernanceGlobalDataQuery = graphql(`
 
 export interface GovernanceGlobalData {
   registeredInitiatives: Address[];
+  bribeInitiatives: Map<Address, Address | null>; // initiative -> bribe token
   totalVotingPower: {
     allocatedLQTY: bigint;
     allocatedOffset: bigint;
@@ -320,12 +321,19 @@ export interface GovernanceGlobalData {
 // get all the registered initiatives and total voting power
 export async function getGovernanceGlobalData(): Promise<GovernanceGlobalData> {
   let registeredInitiatives: Address[];
+  const bribeInitiatives = new Map<Address, Address | null>();
 
   if (LIQUITY_GOVERNANCE_URL) {
     try {
       const response = await fetch(`${LIQUITY_GOVERNANCE_URL}/initiatives.json`);
       const initiatives = v.parse(ApiInitiativesSchema, await response.json());
       registeredInitiatives = initiatives.map(i => i.address);
+      
+      initiatives.forEach(i => {
+        if (i.isBribeInitiative) {
+          bribeInitiatives.set(i.address, i.bribeToken);
+        }
+      });
     } catch {
       const { governanceInitiatives } = await graphQuery(GovernanceGlobalDataQuery);
       registeredInitiatives = governanceInitiatives.map(i => i.id as Address);
@@ -339,6 +347,7 @@ export async function getGovernanceGlobalData(): Promise<GovernanceGlobalData> {
 
   return {
     registeredInitiatives,
+    bribeInitiatives,
     totalVotingPower: {
       allocatedLQTY: BigInt(governanceVotingPower?.allocatedLQTY ?? 0),
       allocatedOffset: BigInt(governanceVotingPower?.allocatedOffset ?? 0),
