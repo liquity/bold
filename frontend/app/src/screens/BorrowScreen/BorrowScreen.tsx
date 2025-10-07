@@ -168,13 +168,21 @@ export function BorrowScreen() {
 
   const branchDebt = useBranchDebt(branch.id);
 
-  // expected TCR after the user opens the position
   const newTcr = branchDebt.data
-      && collateralRatios.data?.tcr
       && loanDetails.deposit
       && loanDetails.collPrice
       && debt.parsed
+      && dn.gt(debt.parsed, 0)
     ? (() => {
+      if (collateralRatios.data?.tcr === null && dn.eq(branchDebt.data, 0)) {
+        const loanColl = dn.mul(loanDetails.deposit, loanDetails.collPrice);
+        return dn.div(loanColl, debt.parsed);
+      }
+
+      if (!collateralRatios.data?.tcr) {
+        return null;
+      }
+
       const branchColl = dn.mul(collateralRatios.data.tcr, branchDebt.data);
       const loanColl = dn.mul(loanDetails.deposit, loanDetails.collPrice);
 
@@ -188,6 +196,10 @@ export function BorrowScreen() {
   const isCcrConditionsNotMet = newTcr
     && collateralRatios.data?.ccr
     && dn.lt(newTcr, collateralRatios.data.ccr);
+
+  const isOldTcrLtCcr = collateralRatios.data?.ccr
+    && collateralRatios.data?.tcr
+    && dn.lt(collateralRatios.data.tcr, collateralRatios.data.ccr);
 
   const isDelegated = interestRateMode === "delegate" && interestRateDelegate;
   const allowSubmit = account.isConnected
@@ -472,170 +484,50 @@ export function BorrowScreen() {
 
       <RedemptionInfo />
 
-      {collateralRatios.data?.isBelowCcr && collateralRatios.data?.tcr && (
-        <div
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            padding: 16,
-            fontSize: 16,
-            color: "content",
-            background: "infoSurface",
-            border: "1px solid token(colors.infoSurfaceBorder)",
-            borderRadius: 8,
-          })}
-        >
-          <div
-            className={css({
-              fontSize: 16,
-              fontWeight: 600,
-              marginBottom: 12,
-            })}
-          >
-            Borrowing Restrictions Active
-          </div>
-          <div
-            className={css({
-              display: "flex",
-              flexDirection: "column",
-              gap: 8,
-              fontSize: 15,
-              medium: {
-                fontSize: 14,
-              },
-            })}
-          >
-            <div
-              className={css({
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              })}
-            >
-              <span>Current TCR:</span>
-              <Amount
-                value={collateralRatios.data.tcr}
-                percentage
-                format={0}
-              />
-            </div>
-            <div
-              className={css({
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              })}
-            >
-              <span>Critical Threshold (CCR):</span>
-              <Amount
-                value={collateralRatios.data.ccr}
-                percentage
-                format={0}
-              />
-            </div>
-          </div>
-          <div
-            className={css({
-              marginTop: 12,
-              fontSize: 15,
-              color: "contentAlt",
-              lineHeight: 1.4,
-              medium: {
-                fontSize: 14,
-              },
-            })}
-          >
-            <div className={css({ marginBottom: 8 })}>
-              When the branch TCR falls below the CCR, these restrictions apply:
-            </div>
-            <ul
-              className={css({
-                margin: 0,
-                marginBottom: 8,
-                listStyle: "none",
-              })}
-            >
-              <li
-                className={css({
-                  position: "relative",
-                  paddingLeft: 12,
-                  "&::before": {
-                    content: "\"•\"",
-                    position: "absolute",
-                    left: 0,
-                    color: "contentAlt",
-                  },
-                })}
-              >
-                Opening a position: only allowed if resulting TCR {">"}{" "}
-                <Amount value={collateralRatios.data.ccr} percentage format={0} />
-              </li>
-              <li
-                className={css({
-                  position: "relative",
-                  paddingLeft: 12,
-                  "&::before": {
-                    content: "\"•\"",
-                    position: "absolute",
-                    left: 0,
-                    color: "contentAlt",
-                  },
-                })}
-              >
-                New borrowing: must bring resulting TCR {">"}{" "}
-                <Amount value={collateralRatios.data.ccr} percentage format={0} />
-              </li>
-              <li
-                className={css({
-                  position: "relative",
-                  paddingLeft: 12,
-                  "&::before": {
-                    content: "\"•\"",
-                    position: "absolute",
-                    left: 0,
-                    color: "contentAlt",
-                  },
-                })}
-              >
-                Collateral withdrawal: must be matched by debt repayment
-              </li>
-            </ul>
-          </div>
-          <LinkTextButton
-            href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
-            rel="noopener noreferrer"
-            target="_blank"
-            label={
-              <span
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  color: "accent",
-                  fontSize: 15,
-                  medium: {
-                    fontSize: 16,
-                  },
-                })}
-              >
-                <span>Learn more about borrowing restrictions</span>
-                <IconExternal size={16} />
-              </span>
-            }
-          />
-        </div>
-      )}
-
-      {isCcrConditionsNotMet
+      {isCcrConditionsNotMet && collateralRatios.data
         ? (
           <WarningBox>
             <div>
-              Opening this loan would bring the system's <abbr title="Total Collateral Ratio">TCR</abbr> below the{" "}
-              <abbr title="Critical Collateral Ratio">CCR</abbr>. Please reduce your loan or add more collateral to
-              proceed.{" "}
+              <div
+                className={css({
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: 12,
+                })}
+              >
+                Borrowing Restrictions Apply{" "}
+              </div>
+              <div
+                className={css({
+                  fontSize: 15,
+                  marginBottom: 12,
+                })}
+              >
+                {isOldTcrLtCcr && collateralRatios.data.tcr && (
+                  <>
+                    The branch <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+                    <Amount value={collateralRatios.data.tcr} percentage format={0} /> is currently below the{" "}
+                    <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+                    <Amount value={collateralRatios.data.ccr} percentage format={0} />.{" "}
+                  </>
+                )}
+                Opening a position must bring the branch <abbr title="Total Collateral Ratio">TCR</abbr> {isOldTcrLtCcr
+                  ? (
+                    <>
+                      above <Amount value={collateralRatios.data.ccr} percentage format={0} />.
+                    </>
+                  )
+                  : (
+                    <>
+                      above the <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+                      <Amount value={collateralRatios.data.ccr} percentage format={0} />.
+                    </>
+                  )} Opening this loan would result in a <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+                <Amount value={newTcr} percentage format={0} />. Please reduce your loan amount or increase your
+                collateral to proceed.
+              </div>
               <LinkTextButton
-                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations"
+                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
                 target="_blank"
                 rel="noopener noreferrer"
                 label={
@@ -647,7 +539,7 @@ export function BorrowScreen() {
                       color: "white",
                     })}
                   >
-                    <span>Learn more</span>
+                    <span>Learn more about borrowing restrictions</span>
                     <IconExternal size={16} />
                   </span>
                 }

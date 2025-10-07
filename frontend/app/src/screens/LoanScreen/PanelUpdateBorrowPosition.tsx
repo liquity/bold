@@ -179,11 +179,14 @@ export function PanelUpdateBorrowPosition({
     loanChanges?.loanCollChange ?? dnum18(0),
   );
 
-  const isCcrConditionsNotMet = !isOldTcrLtCcr
-    ? isNewTcrLtCcr
-    : (debtMode === "add" && dn.gt(debtChange.parsed ?? dnum18(0), dnum18(0)))
-    ? isNewTcrLteCcr || isDebtChangeGteCollChange
-    : isDebtChangeGteCollChange;
+  const isCcrConditionsNotMet = ((depositChange.parsed && dn.gt(depositChange.parsed, 0))
+    || (debtChange.parsed && dn.gt(debtChange.parsed, 0))) && (
+      !isOldTcrLtCcr
+        ? isNewTcrLtCcr
+        : (debtMode === "add" && dn.gt(debtChange.parsed ?? dnum18(0), dnum18(0)))
+        ? isNewTcrLteCcr || isDebtChangeGteCollChange
+        : isDebtChangeGteCollChange
+    );
 
   const allowSubmit = account.isConnected
     // above min. debt
@@ -498,15 +501,78 @@ export function PanelUpdateBorrowPosition({
         </div>
       </VFlex>
 
-      {isCcrConditionsNotMet
+      {isCcrConditionsNotMet && collateralRatios.data
         ? (
           <WarningBox>
             <div>
-              Updating this loan would bring the system's <abbr title="Total Collateral Ratio">TCR</abbr> below the{" "}
-              <abbr title="Critical Collateral Ratio">CCR</abbr>. Please reduce your loan or add more collateral to
-              proceed.{" "}
+              <div
+                className={css({
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: 12,
+                })}
+              >
+                Borrowing Restrictions Apply
+              </div>
+              <div
+                className={css({
+                  fontSize: 15,
+                  marginBottom: 12,
+                })}
+              >
+                {!isOldTcrLtCcr
+                  ? (
+                    // Case 1: TCR is currently above CCR, but update would push it below
+                    <>
+                      This update to your exising loan would bring the branch{" "}
+                      <abbr title="Total Collateral Ratio">TCR</abbr> to{" "}
+                      <Amount value={newTcr} percentage format={0} />, which is below the{" "}
+                      <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+                      <Amount value={collateralRatios.data.ccr} percentage format={0} />. Please reduce your loan amount
+                      or increase your collateral to proceed.
+                    </>
+                  )
+                  : debtMode === "add" && dn.gt(debtChange.parsed ?? dnum18(0), dnum18(0))
+                  ? (
+                    // Case 2: TCR is below CCR and user is borrowing more
+                    <>
+                      The branch <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+                      <Amount value={collateralRatios.data.tcr} percentage format={0} /> is currently below the{" "}
+                      <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+                      <Amount value={collateralRatios.data.ccr} percentage format={0} />. {isNewTcrLteCcr
+                        ? (
+                          <>
+                            New borrowing must bring the <abbr title="Total Collateral Ratio">TCR</abbr> above{" "}
+                            <Amount value={collateralRatios.data.ccr} percentage format={0} />. Your current loan update
+                            would result in a <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+                            <Amount value={newTcr} percentage format={0} />.
+                          </>
+                        )
+                        : (
+                          <>
+                            When borrowing, your collateral increase must exceed your debt increase.
+                          </>
+                        )} Please increase your collateral deposit or reduce your loan amount.
+                    </>
+                  )
+                  : (
+                    // Case 3: TCR is below CCR and user is withdrawing collateral
+                    <>
+                      The branch <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+                      <Amount
+                        value={collateralRatios.data.tcr}
+                        percentage
+                        format={0}
+                      />{" "}
+                      is currently below the <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+                      <Amount value={collateralRatios.data.ccr} percentage format={0} />. Collateral withdrawal must be
+                      matched by debt repayment. Please repay debt equal to or greater than the collateral value you
+                      wish to withdraw.
+                    </>
+                  )}
+              </div>
               <LinkTextButton
-                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations"
+                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
                 target="_blank"
                 rel="noopener noreferrer"
                 label={
@@ -518,7 +584,7 @@ export function PanelUpdateBorrowPosition({
                       color: "white",
                     })}
                   >
-                    <span>Learn more</span>
+                    <span>Learn more about borrowing restrictions</span>
                     <IconExternal size={16} />
                   </span>
                 }

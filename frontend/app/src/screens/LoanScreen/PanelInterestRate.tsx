@@ -250,14 +250,35 @@ export function PanelInterestRate({
         />
       </div>
 
-      {isCcrConditionsNotMet
+      {isCcrConditionsNotMet && collateralRatios.data
         ? (
           <WarningBox>
             <div>
-              The system's <abbr title="Total Collateral Ratio">TCR</abbr> is currently below the{" "}
-              <abbr title="Critical Collateral Ratio">CCR</abbr>. Interest rate adjustments are restricted.{" "}
+              <div
+                className={css({
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: 12,
+                })}
+              >
+                Borrowing Restrictions Apply
+              </div>
+              <div
+                className={css({
+                  fontSize: 15,
+                  marginBottom: 12,
+                })}
+              >
+                The branch <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+                <Amount value={collateralRatios.data.tcr} percentage format={0} /> is currently below the{" "}
+                <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+                <Amount value={collateralRatios.data.ccr} percentage format={0} />. Interest rate adjustments are
+                restricted until either the <abbr title="Total Collateral Ratio">TCR</abbr> rises above{" "}
+                <Amount value={collateralRatios.data.ccr} percentage format={0} />, or 7 days have passed since your
+                last adjustment.
+              </div>
               <LinkTextButton
-                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations"
+                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
                 target="_blank"
                 rel="noopener noreferrer"
                 label={
@@ -269,7 +290,7 @@ export function PanelInterestRate({
                       color: "white",
                     })}
                   >
-                    <span>Learn more</span>
+                    <span>Learn more about borrowing restrictions</span>
                     <IconExternal size={16} />
                   </span>
                 }
