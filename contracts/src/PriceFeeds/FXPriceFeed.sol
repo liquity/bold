@@ -7,7 +7,7 @@ interface IOracleAdapter {
     function getFXRateIfValid(address rateFeedID) external view returns (uint256 numerator, uint256 denominator);
 }
 
-contract MentoPriceFeed is IPriceFeed {
+contract FXPriceFeed is IPriceFeed {
 
     IOracleAdapter public oracleAdapter;
     address public rateFeedID;
