@@ -17,12 +17,9 @@ contract TroveManagerTester is ITroveManagerTester, TroveManager {
     // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
     uint256 public immutable BCR;
 
-    uint256 public immutable UPFRONT_INTEREST_PERIOD;
-
 
     constructor(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) TroveManager(_addressesRegistry, _systemParams) {
         BCR = _systemParams.BCR();
-        UPFRONT_INTEREST_PERIOD = _systemParams.UPFRONT_INTEREST_PERIOD();
     }
 
     // Single liquidation function. Closes the trove if its ICR is lower than the minimum collateral ratio.

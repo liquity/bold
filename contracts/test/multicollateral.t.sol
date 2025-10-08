@@ -111,8 +111,6 @@ contract MulticollateralTest is DevTestSetup {
         }
         
         systemParams = contractsArray[0].systemParams;
-        UPFRONT_INTEREST_PERIOD = systemParams.UPFRONT_INTEREST_PERIOD();
-        URGENT_REDEMPTION_BONUS = systemParams.URGENT_REDEMPTION_BONUS();
         REDEMPTION_FEE_FLOOR = systemParams.REDEMPTION_FEE_FLOOR();
         INITIAL_BASE_RATE = systemParams.INITIAL_BASE_RATE();
     }

@@ -29,12 +29,6 @@ interface ISystemParams {
 
     struct InterestParams {
         uint256 minAnnualInterestRate;
-        uint256 maxAnnualInterestRate;
-        uint128 maxAnnualBatchManagementFee;
-        uint256 upfrontInterestPeriod;
-        uint256 interestRateAdjCooldown;
-        uint128 minInterestRateChangePeriod;
-        uint256 maxBatchSharesRatio;
     }
 
     struct RedemptionParams {
@@ -42,7 +36,6 @@ interface ISystemParams {
         uint256 initialBaseRate;
         uint256 redemptionMinuteDecayFactor;
         uint256 redemptionBeta;
-        uint256 urgentRedemptionBonus;
     }
 
     struct StabilityPoolParams {
@@ -126,24 +119,6 @@ interface ISystemParams {
     /// @notice Min annual interest rate for a trove.
     function MIN_ANNUAL_INTEREST_RATE() external view returns (uint256);
 
-    /// @notice Max annual interest rate for a trove.
-    function MAX_ANNUAL_INTEREST_RATE() external view returns (uint256);
-
-    /// @notice Max fee that batch managers can charge.
-    function MAX_ANNUAL_BATCH_MANAGEMENT_FEE() external view returns (uint128);
-
-    /// @notice Time period for which interest is charged upfront to prevent rate gaming.
-    function UPFRONT_INTEREST_PERIOD() external view returns (uint256);
-
-    /// @notice Wait time in between interest rate adjustments.
-    function INTEREST_RATE_ADJ_COOLDOWN() external view returns (uint256);
-
-    /// @notice Minimum time in between interest rate changes triggered by a batch Manager.
-    function MIN_INTEREST_RATE_CHANGE_PERIOD() external view returns (uint128);
-
-    /// @notice Maximum ratio between batch debt and shares to prevent inflation attacks.
-    function MAX_BATCH_SHARES_RATIO() external view returns (uint256);
-
     /* ========== REDEMPTION PARAMETERS ========== */
 
     /// @notice Minimum redemption fee percentage.
@@ -157,9 +132,6 @@ interface ISystemParams {
 
     /// @notice Divisor controlling base rate sensitivity to redemption volume (higher = less sensitive).
     function REDEMPTION_BETA() external view returns (uint256);
-
-    /// @notice Extra collateral bonus given to redeemers during urgent redemptions after shutdown.
-    function URGENT_REDEMPTION_BONUS() external view returns (uint256);
 
     /* ========== STABILITY POOL PARAMETERS ========== */
 

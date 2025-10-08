@@ -110,7 +110,6 @@ contract troveNFTTest is DevTestSetup {
         }
 
         systemParams = contractsArray[0].systemParams;
-        UPFRONT_INTEREST_PERIOD = systemParams.UPFRONT_INTEREST_PERIOD();
         
         troveIds = new uint256[](NUM_VARIANTS);
 

@@ -19,15 +19,9 @@ contract HintHelpers is IHintHelpers {
     ICollateralRegistry public immutable collateralRegistry;
     address public immutable systemParamsAddress;
 
-    uint256 public immutable INTEREST_RATE_ADJ_COOLDOWN;
-    uint256 public immutable UPFRONT_INTEREST_PERIOD;
-
     constructor(ICollateralRegistry _collateralRegistry, ISystemParams _systemParams) {
         systemParamsAddress = address(_systemParams);
         collateralRegistry = _collateralRegistry;
-
-        INTEREST_RATE_ADJ_COOLDOWN = _systemParams.INTEREST_RATE_ADJ_COOLDOWN();
-        UPFRONT_INTEREST_PERIOD = _systemParams.UPFRONT_INTEREST_PERIOD();
     }
 
     /* getApproxHint() - return id of a Trove that is, on average, (length / numTrials) positions away in the

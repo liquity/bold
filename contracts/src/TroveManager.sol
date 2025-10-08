@@ -14,6 +14,7 @@ import "./Interfaces/ICollateralRegistry.sol";
 import "./Interfaces/IWETH.sol";
 import "./Interfaces/ISystemParams.sol";
 import "./Dependencies/LiquityBase.sol";
+import "./Dependencies/Constants.sol";
 
 contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // --- Connected contract declarations ---
@@ -50,8 +51,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     uint256 internal immutable MIN_BOLD_IN_SP;
     uint256 internal immutable ETH_GAS_COMPENSATION;
     uint256 internal immutable MIN_DEBT;
-    uint256 internal immutable URGENT_REDEMPTION_BONUS;
-    uint256 internal immutable MAX_BATCH_SHARES_RATIO;
 
     // --- Data structures ---
 
@@ -209,8 +208,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         MIN_BOLD_IN_SP = _systemParams.MIN_BOLD_IN_SP();
         ETH_GAS_COMPENSATION = _systemParams.ETH_GAS_COMPENSATION();
         MIN_DEBT = _systemParams.MIN_DEBT();
-        URGENT_REDEMPTION_BONUS = _systemParams.URGENT_REDEMPTION_BONUS();
-        MAX_BATCH_SHARES_RATIO = _systemParams.MAX_BATCH_SHARES_RATIO();
 
         troveNFT = _addressesRegistry.troveNFT();
         borrowerOperations = _addressesRegistry.borrowerOperations();

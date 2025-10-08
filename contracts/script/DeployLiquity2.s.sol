@@ -11,6 +11,11 @@ import {TransparentUpgradeableProxy} from
 import {IFPMMFactory} from "src/Interfaces/IFPMMFactory.sol";
 import {SystemParams} from "src/SystemParams.sol";
 import {ISystemParams} from "src/Interfaces/ISystemParams.sol";
+import {
+    INTEREST_RATE_ADJ_COOLDOWN,
+    MAX_ANNUAL_INTEREST_RATE,
+    UPFRONT_INTEREST_PERIOD
+} from "src/Dependencies/Constants.sol";
 
 import {IBorrowerOperations} from "src/Interfaces/IBorrowerOperations.sol";
 import {StringFormatting} from "test/Utils/StringFormatting.sol";
@@ -244,21 +249,14 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
             ISystemParams.CollateralParams({ccr: 150 * 1e16, scr: 110 * 1e16, mcr: 110 * 1e16, bcr: 10 * 1e16});
 
         ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: 1e18 / 200,
-            maxAnnualInterestRate: 250 * (1e18 / 100),
-            maxAnnualBatchManagementFee: uint128(1e18 / 10),
-            upfrontInterestPeriod: 7 days,
-            interestRateAdjCooldown: 7 days,
-            minInterestRateChangePeriod: 1 hours,
-            maxBatchSharesRatio: 1e9
+            minAnnualInterestRate: 1e18 / 200
         });
 
         ISystemParams.RedemptionParams memory redemptionParams = ISystemParams.RedemptionParams({
             redemptionFeeFloor: 1e18 / 200,
             initialBaseRate: 1e18,
             redemptionMinuteDecayFactor: 998076443575628800,
-            redemptionBeta: 1,
-            urgentRedemptionBonus: 2 * 1e16
+            redemptionBeta: 1
         });
 
         ISystemParams.StabilityPoolParams memory poolParams =
@@ -456,12 +454,12 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
             "{",
             string.concat(
                 string.concat('"ETH_GAS_COMPENSATION":"', params.ETH_GAS_COMPENSATION().toString(), '",'),
-                string.concat('"INTEREST_RATE_ADJ_COOLDOWN":"', params.INTEREST_RATE_ADJ_COOLDOWN().toString(), '",'),
-                string.concat('"MAX_ANNUAL_INTEREST_RATE":"', params.MAX_ANNUAL_INTEREST_RATE().toString(), '",'),
+                string.concat('"INTEREST_RATE_ADJ_COOLDOWN":"', INTEREST_RATE_ADJ_COOLDOWN.toString(), '",'),
+                string.concat('"MAX_ANNUAL_INTEREST_RATE":"', MAX_ANNUAL_INTEREST_RATE.toString(), '",'),
                 string.concat('"MIN_ANNUAL_INTEREST_RATE":"', params.MIN_ANNUAL_INTEREST_RATE().toString(), '",'),
                 string.concat('"MIN_DEBT":"', params.MIN_DEBT().toString(), '",'),
                 string.concat('"SP_YIELD_SPLIT":"', params.SP_YIELD_SPLIT().toString(), '",'),
-                string.concat('"UPFRONT_INTEREST_PERIOD":"', params.UPFRONT_INTEREST_PERIOD().toString(), '"') // no comma
+                string.concat('"UPFRONT_INTEREST_PERIOD":"', UPFRONT_INTEREST_PERIOD.toString(), '"') // no comma
             ),
             "}"
         );

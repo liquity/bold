@@ -43,9 +43,6 @@ contract ShutdownTest is DevTestSetup {
         
         // Initialize SystemParams-based variables
         systemParams = contractsArray[0].systemParams;
-        UPFRONT_INTEREST_PERIOD = systemParams.UPFRONT_INTEREST_PERIOD();
-        URGENT_REDEMPTION_BONUS = systemParams.URGENT_REDEMPTION_BONUS();
-        MIN_INTEREST_RATE_CHANGE_PERIOD = systemParams.MIN_INTEREST_RATE_CHANGE_PERIOD();
         SP_YIELD_SPLIT = systemParams.SP_YIELD_SPLIT();
         // Set price feeds
         contractsArray[0].priceFeed.setPrice(2000e18);
@@ -84,9 +81,6 @@ contract ShutdownTest is DevTestSetup {
         systemParams = contractsArray[0].systemParams;
         MCR = troveManager.get_MCR();
         SCR = troveManager.get_SCR();
-        UPFRONT_INTEREST_PERIOD = systemParams.UPFRONT_INTEREST_PERIOD();
-        MIN_INTEREST_RATE_CHANGE_PERIOD = systemParams.MIN_INTEREST_RATE_CHANGE_PERIOD();
-        URGENT_REDEMPTION_BONUS = systemParams.URGENT_REDEMPTION_BONUS();
     }
 
     function openMulticollateralTroveNoHints100pctWithIndex(
@@ -432,13 +426,13 @@ contract ShutdownTest is DevTestSetup {
 
         // Min not reached
         vm.startPrank(A);
-        vm.expectRevert(abi.encodeWithSelector(TroveManager.MinCollNotReached.selector, 102e16));
-        troveManager.urgentRedemption(1000e18, uintToArray(troveId), 103e16);
+        vm.expectRevert(abi.encodeWithSelector(TroveManager.MinCollNotReached.selector, 101e16));
+        troveManager.urgentRedemption(1000e18, uintToArray(troveId), 102e16);
         vm.stopPrank();
 
         // Min just reached
         vm.startPrank(A);
-        troveManager.urgentRedemption(1000e18, uintToArray(troveId), 102e16);
+        troveManager.urgentRedemption(1000e18, uintToArray(troveId), 101e16);
         vm.stopPrank();
     }
 

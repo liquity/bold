@@ -31,21 +31,14 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: _1pct / 2, // 0.5%
-            maxAnnualInterestRate: 250 * _1pct,
-            maxAnnualBatchManagementFee: uint128(_100pct / 10), // 10%
-            upfrontInterestPeriod: 7 days,
-            interestRateAdjCooldown: 7 days,
-            minInterestRateChangePeriod: 1 hours,
-            maxBatchSharesRatio: 1e9
+            minAnnualInterestRate: _1pct / 2 // 0.5%
         });
 
         ISystemParams.RedemptionParams memory redemptionParams = ISystemParams.RedemptionParams({
             redemptionFeeFloor: _1pct / 2, // 0.5%
             initialBaseRate: _100pct,
             redemptionMinuteDecayFactor: 998076443575628800,
-            redemptionBeta: 1,
-            urgentRedemptionBonus: 2 * _1pct
+            redemptionBeta: 1
         });
 
         ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
@@ -75,17 +68,10 @@ contract SystemParamsTest is DevTestSetup {
         assertEq(params.MCR(), 110 * _1pct);
         assertEq(params.BCR(), 10 * _1pct);
         assertEq(params.MIN_ANNUAL_INTEREST_RATE(), _1pct / 2);
-        assertEq(params.MAX_ANNUAL_INTEREST_RATE(), 250 * _1pct);
-        assertEq(params.MAX_ANNUAL_BATCH_MANAGEMENT_FEE(), uint128(_100pct / 10));
-        assertEq(params.UPFRONT_INTEREST_PERIOD(), 7 days);
-        assertEq(params.INTEREST_RATE_ADJ_COOLDOWN(), 7 days);
-        assertEq(params.MIN_INTEREST_RATE_CHANGE_PERIOD(), 1 hours);
-        assertEq(params.MAX_BATCH_SHARES_RATIO(), 1e9);
         assertEq(params.REDEMPTION_FEE_FLOOR(), _1pct / 2);
         assertEq(params.INITIAL_BASE_RATE(), _100pct);
         assertEq(params.REDEMPTION_MINUTE_DECAY_FACTOR(), 998076443575628800);
         assertEq(params.REDEMPTION_BETA(), 1);
-        assertEq(params.URGENT_REDEMPTION_BONUS(), 2 * _1pct);
         assertEq(params.SP_YIELD_SPLIT(), 75 * _1pct);
         assertEq(params.MIN_BOLD_IN_SP(), 1e18);
     }
@@ -460,13 +446,7 @@ contract SystemParamsTest is DevTestSetup {
 
     function testConstructorRevertsWhenMinInterestRateGreaterThanMax() public {
         ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: 100 * _1pct,
-            maxAnnualInterestRate: 50 * _1pct, // min > max
-            maxAnnualBatchManagementFee: uint128(_100pct / 10),
-            upfrontInterestPeriod: 7 days,
-            interestRateAdjCooldown: 7 days,
-            minInterestRateChangePeriod: 1 hours,
-            maxBatchSharesRatio: 1e9
+            minAnnualInterestRate: 300 * _1pct // min > MAX (250%)
         });
 
         vm.expectRevert(ISystemParams.MinInterestRateGtMax.selector);
@@ -481,189 +461,6 @@ contract SystemParamsTest is DevTestSetup {
         );
     }
 
-    function testConstructorRevertsWhenMaxInterestRateTooHigh() public {
-        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: _1pct / 2,
-            maxAnnualInterestRate: 1001 * _1pct, // > 1000%
-            maxAnnualBatchManagementFee: uint128(_100pct / 10),
-            upfrontInterestPeriod: 7 days,
-            interestRateAdjCooldown: 7 days,
-            minInterestRateChangePeriod: 1 hours,
-            maxBatchSharesRatio: 1e9
-        });
-
-        vm.expectRevert(ISystemParams.InvalidInterestRateBounds.selector);
-        new SystemParams(
-            _getValidDebtParams(),
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            interestParams,
-            _getValidRedemptionParams(),
-            _getValidPoolParams()
-        );
-    }
-
-    function testConstructorRevertsWhenMaxBatchManagementFeeTooHigh() public {
-        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: _1pct / 2,
-            maxAnnualInterestRate: 250 * _1pct,
-            maxAnnualBatchManagementFee: uint128(_100pct + 1), // > 100%
-            upfrontInterestPeriod: 7 days,
-            interestRateAdjCooldown: 7 days,
-            minInterestRateChangePeriod: 1 hours,
-            maxBatchSharesRatio: 1e9
-        });
-
-        vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
-        new SystemParams(
-            _getValidDebtParams(),
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            interestParams,
-            _getValidRedemptionParams(),
-            _getValidPoolParams()
-        );
-    }
-
-    function testConstructorRevertsWhenUpfrontInterestPeriodZero() public {
-        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: _1pct / 2,
-            maxAnnualInterestRate: 250 * _1pct,
-            maxAnnualBatchManagementFee: uint128(_100pct / 10),
-            upfrontInterestPeriod: 0,
-            interestRateAdjCooldown: 7 days,
-            minInterestRateChangePeriod: 1 hours,
-            maxBatchSharesRatio: 1e9
-        });
-
-        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        new SystemParams(
-            _getValidDebtParams(),
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            interestParams,
-            _getValidRedemptionParams(),
-            _getValidPoolParams()
-        );
-    }
-
-    function testConstructorRevertsWhenUpfrontInterestPeriodTooLong() public {
-        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: _1pct / 2,
-            maxAnnualInterestRate: 250 * _1pct,
-            maxAnnualBatchManagementFee: uint128(_100pct / 10),
-            upfrontInterestPeriod: 366 days,
-            interestRateAdjCooldown: 7 days,
-            minInterestRateChangePeriod: 1 hours,
-            maxBatchSharesRatio: 1e9
-        });
-
-        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        new SystemParams(
-            _getValidDebtParams(),
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            interestParams,
-            _getValidRedemptionParams(),
-            _getValidPoolParams()
-        );
-    }
-
-    function testConstructorRevertsWhenInterestRateAdjCooldownZero() public {
-        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: _1pct / 2,
-            maxAnnualInterestRate: 250 * _1pct,
-            maxAnnualBatchManagementFee: uint128(_100pct / 10),
-            upfrontInterestPeriod: 7 days,
-            interestRateAdjCooldown: 0,
-            minInterestRateChangePeriod: 1 hours,
-            maxBatchSharesRatio: 1e9
-        });
-
-        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        new SystemParams(
-            _getValidDebtParams(),
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            interestParams,
-            _getValidRedemptionParams(),
-            _getValidPoolParams()
-        );
-    }
-
-    function testConstructorRevertsWhenInterestRateAdjCooldownTooLong() public {
-        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: _1pct / 2,
-            maxAnnualInterestRate: 250 * _1pct,
-            maxAnnualBatchManagementFee: uint128(_100pct / 10),
-            upfrontInterestPeriod: 7 days,
-            interestRateAdjCooldown: 366 days,
-            minInterestRateChangePeriod: 1 hours,
-            maxBatchSharesRatio: 1e9
-        });
-
-        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        new SystemParams(
-            _getValidDebtParams(),
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            interestParams,
-            _getValidRedemptionParams(),
-            _getValidPoolParams()
-        );
-    }
-
-    function testConstructorRevertsWhenMinInterestRateChangePeriodZero() public {
-        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: _1pct / 2,
-            maxAnnualInterestRate: 250 * _1pct,
-            maxAnnualBatchManagementFee: uint128(_100pct / 10),
-            upfrontInterestPeriod: 7 days,
-            interestRateAdjCooldown: 7 days,
-            minInterestRateChangePeriod: 0,
-            maxBatchSharesRatio: 1e9
-        });
-
-        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        new SystemParams(
-            _getValidDebtParams(),
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            interestParams,
-            _getValidRedemptionParams(),
-            _getValidPoolParams()
-        );
-    }
-
-    function testConstructorRevertsWhenMinInterestRateChangePeriodTooLong() public {
-        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: _1pct / 2,
-            maxAnnualInterestRate: 250 * _1pct,
-            maxAnnualBatchManagementFee: uint128(_100pct / 10),
-            upfrontInterestPeriod: 7 days,
-            interestRateAdjCooldown: 7 days,
-            minInterestRateChangePeriod: 31 days,
-            maxBatchSharesRatio: 1e9
-        });
-
-        vm.expectRevert(ISystemParams.InvalidTimeValue.selector);
-        new SystemParams(
-            _getValidDebtParams(),
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            interestParams,
-            _getValidRedemptionParams(),
-            _getValidPoolParams()
-        );
-    }
 
     // ========== REDEMPTION VALIDATION TESTS ==========
 
@@ -672,8 +469,7 @@ contract SystemParamsTest is DevTestSetup {
             redemptionFeeFloor: _100pct + 1,
             initialBaseRate: _100pct,
             redemptionMinuteDecayFactor: 998076443575628800,
-            redemptionBeta: 1,
-            urgentRedemptionBonus: 2 * _1pct
+            redemptionBeta: 1
         });
 
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
@@ -693,29 +489,7 @@ contract SystemParamsTest is DevTestSetup {
             redemptionFeeFloor: _1pct / 2,
             initialBaseRate: 1001 * _1pct, // > 1000%
             redemptionMinuteDecayFactor: 998076443575628800,
-            redemptionBeta: 1,
-            urgentRedemptionBonus: 2 * _1pct
-        });
-
-        vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
-        new SystemParams(
-            _getValidDebtParams(),
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            _getValidInterestParams(),
-            redemptionParams,
-            _getValidPoolParams()
-        );
-    }
-
-    function testConstructorRevertsWhenUrgentRedemptionBonusTooHigh() public {
-        ISystemParams.RedemptionParams memory redemptionParams = ISystemParams.RedemptionParams({
-            redemptionFeeFloor: _1pct / 2,
-            initialBaseRate: _100pct,
-            redemptionMinuteDecayFactor: 998076443575628800,
-            redemptionBeta: 1,
-            urgentRedemptionBonus: _100pct + 1
+            redemptionBeta: 1
         });
 
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
@@ -800,13 +574,7 @@ contract SystemParamsTest is DevTestSetup {
 
     function _getValidInterestParams() internal pure returns (ISystemParams.InterestParams memory) {
         return ISystemParams.InterestParams({
-            minAnnualInterestRate: _1pct / 2,
-            maxAnnualInterestRate: 250 * _1pct,
-            maxAnnualBatchManagementFee: uint128(_100pct / 10),
-            upfrontInterestPeriod: 7 days,
-            interestRateAdjCooldown: 7 days,
-            minInterestRateChangePeriod: 1 hours,
-            maxBatchSharesRatio: 1e9
+            minAnnualInterestRate: _1pct / 2
         });
     }
 
@@ -815,8 +583,7 @@ contract SystemParamsTest is DevTestSetup {
             redemptionFeeFloor: _1pct / 2,
             initialBaseRate: _100pct,
             redemptionMinuteDecayFactor: 998076443575628800,
-            redemptionBeta: 1,
-            urgentRedemptionBonus: 2 * _1pct
+            redemptionBeta: 1
         });
     }
 

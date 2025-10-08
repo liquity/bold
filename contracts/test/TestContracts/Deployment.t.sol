@@ -374,21 +374,14 @@ contract TestDeployer is MetadataDeployment {
         });
 
         ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: DECIMAL_PRECISION / 200, // MIN_ANNUAL_INTEREST_RATE (0.5%)
-            maxAnnualInterestRate: 250 * (DECIMAL_PRECISION / 100), // MAX_ANNUAL_INTEREST_RATE (250%)
-            maxAnnualBatchManagementFee: uint128(DECIMAL_PRECISION / 10), // MAX_ANNUAL_BATCH_MANAGEMENT_FEE (10%)
-            upfrontInterestPeriod: 7 days, // UPFRONT_INTEREST_PERIOD
-            interestRateAdjCooldown: 7 days, // INTEREST_RATE_ADJ_COOLDOWN
-            minInterestRateChangePeriod: 1 hours, // MIN_INTEREST_RATE_CHANGE_PERIOD
-            maxBatchSharesRatio: 1e9 // MAX_BATCH_SHARES_RATIO
+            minAnnualInterestRate: DECIMAL_PRECISION / 200 // MIN_ANNUAL_INTEREST_RATE (0.5%)
         });
 
         ISystemParams.RedemptionParams memory redemptionParams = ISystemParams.RedemptionParams({
             redemptionFeeFloor: DECIMAL_PRECISION / 200, // REDEMPTION_FEE_FLOOR (0.5%)
             initialBaseRate: DECIMAL_PRECISION, // INITIAL_BASE_RATE (100%)
             redemptionMinuteDecayFactor: 998076443575628800, // REDEMPTION_MINUTE_DECAY_FACTOR
-            redemptionBeta: 1, // REDEMPTION_BETA
-            urgentRedemptionBonus: 2e16 // URGENT_REDEMPTION_BONUS (2%)
+            redemptionBeta: 1 // REDEMPTION_BETA
         });
 
         ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
