@@ -1,17 +1,20 @@
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
 import { useLiquityStats } from "@/src/liquity-utils";
 import { useTroveCount } from "@/src/subgraph-hooks";
-import { DEMO_MODE, CHAIN_ID } from "@/src/env";
+import { DEMO_MODE, CHAIN_ID, CONTRACT_YUSND } from "@/src/env";
 import { useQuery } from "@tanstack/react-query";
 import { useReadContract } from "wagmi";
 import { getAddress } from "viem";
 // import * as v from "valibot";
 import * as dn from "dnum";
 import { CollateralSymbol } from "@liquity2/uikit";
+import { useEffect, useState } from "react";
+import { useAccount } from "@/src/services/Arbitrum";
 
 // Constants
 const ARBITRUM_CHAIN_ID = 42161;
 const GO_SLOW_NFT_CONTRACT_ADDRESS = "0x6da3c02293c96dfa5747b1739ebb492619222a8a";
+const YUSND_ADDED_KEY = 'yusnd_added_to_wallet';
 
 // DefiLlama API schema for TVL data
 // const DefiLlamaSchema = v.object({
@@ -169,6 +172,76 @@ export function useGoSlowNFTCount() {
   };
 }
 
+export function useYusndWalletStatus() {
+  const account = useAccount();
+  const [hasAddedToWallet, setHasAddedToWallet] = useState(false);
+  
+  useEffect(() => {
+    const addedBefore = localStorage.getItem(YUSND_ADDED_KEY) === 'true';
+    setHasAddedToWallet(addedBefore);
+  }, []);
+
+  const { data: balance, isLoading: isCheckingBalance } = useReadContract({
+    address: CONTRACT_YUSND as `0x${string}` | undefined,
+    abi: [
+      {
+        inputs: [{ name: "account", type: "address" }],
+        name: "balanceOf",
+        outputs: [{ name: "", type: "uint256" }],
+        stateMutability: "view",
+        type: "function",
+      },
+    ] as const,
+    functionName: "balanceOf",
+    args: account.address ? [account.address] : undefined,
+    query: {
+      enabled: !!account.address && !!CONTRACT_YUSND && !hasAddedToWallet,
+    },
+  });
+
+  useEffect(() => {
+    if (balance && balance > 0n && !hasAddedToWallet) {
+      localStorage.setItem(YUSND_ADDED_KEY, 'true');
+      setHasAddedToWallet(true);
+    }
+  }, [balance, hasAddedToWallet]);
+
+  const showYusndPrice = hasAddedToWallet || (balance && balance > 0n);
+  const isLoading = isCheckingBalance && !hasAddedToWallet;
+
+  const handleAddYusndToWallet = async () => {
+    if (!CONTRACT_YUSND || !window.ethereum) return;
+
+    try {
+      const wasAdded = await window.ethereum.request({
+        method: 'wallet_watchAsset',
+        params: {
+          type: 'ERC20',
+          options: {
+            address: CONTRACT_YUSND,
+            symbol: 'yUSND',
+            decimals: 18,
+            image: `${window.location.origin}/yusnd-icon.svg`,
+          },
+        },
+      });
+      
+      if (wasAdded) {
+        localStorage.setItem(YUSND_ADDED_KEY, 'true');
+        setHasAddedToWallet(true);
+      }
+    } catch (error) {
+      console.error('Failed to add yUSND to wallet:', error);
+    }
+  };
+
+  return {
+    showYusndPrice: !!showYusndPrice,
+    isLoading,
+    handleAddYusndToWallet,
+  };
+}
+
 // Combined hook for all landing page statistics
 export function useLandingPageStats() {
   const stats = useLiquityStats();
@@ -176,6 +249,7 @@ export function useLandingPageStats() {
   // const defiLlamaTVL = useDefiLlamaTVL();
   // const vaultCount = useVaultCount();
   const goSlowNFTCount = useGoSlowNFTCount();
+  const yusndStatus = useYusndWalletStatus();
 
   // In demo mode, ignore certain errors since we use mock data
   const relevantError = DEMO_MODE 
@@ -194,5 +268,6 @@ export function useLandingPageStats() {
     goSlowNFTCount: goSlowNFTCount.data,
     isLoading: stabilityPoolAPR.isLoading || goSlowNFTCount.isLoading,
     error: relevantError,
+    yusndStatus,
   };
 }

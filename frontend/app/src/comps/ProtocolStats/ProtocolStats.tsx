@@ -4,7 +4,7 @@ import type { TokenSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Logo } from "@/src/comps/Logo/Logo";
-import { ACCOUNT_SCREEN } from "@/src/env";
+import { ACCOUNT_SCREEN, CONTRACT_YUSND } from "@/src/env";
 import { useAccount } from "@/src/services/Arbitrum";
 import { useLandingPageStats } from "@/src/services/LandingPageStats";
 import { usePrice } from "@/src/services/Prices";
@@ -28,6 +28,7 @@ const DISPLAYED_PRICES = ["USND", "ETH"] as const;
 export function ProtocolStats() {
   const account = useAccount();
   const landingStats = useLandingPageStats();
+  const { showYusndPrice, isLoading: isCheckingYusnd, handleAddYusndToWallet } = landingStats.yusndStatus;
 
   return (
     <div
@@ -94,6 +95,40 @@ export function ProtocolStats() {
           {DISPLAYED_PRICES.map((symbol) => (
             <Price key={symbol} symbol={symbol} />
           ))}
+          {!isCheckingYusnd && showYusndPrice ? (
+            <Price symbol="YUSND" />
+          ) : (
+            <button
+              onClick={handleAddYusndToWallet}
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "2px 8px",
+                fontSize: 12,
+                color: "content",
+                background: "transparent",
+                border: "1px solid token(colors.tableBorder)",
+                borderRadius: 4,
+                cursor: "pointer",
+                _hover: {
+                  opacity: 0.8,
+                  background: "token(colors.secondary)"
+                },
+                _focusVisible: {
+                  outline: "2px solid token(colors.focused)",
+                },
+                _active: {
+                  translate: "0 1px",
+                },
+              })}
+              title="Add yUSND to wallet"
+            >
+              <TokenIcon size={16} symbol="YUSND" title="Yield-bearing USND optimized by Yearn." />
+              <span>yUSND</span>
+              <span style={{ fontSize: 10 }}>+</span>
+            </button>
+          )}
           <Link
             href='https://discord.gg/5h3avBYxcn'
             target='_blank'
