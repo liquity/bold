@@ -479,7 +479,9 @@ contract TestDeployer is MetadataDeployment {
             collToken: _collToken,
             gasToken: _gasToken,
             // TODO: add liquidity strategy
-            liquidityStrategy: makeAddr("liquidityStrategy")
+            liquidityStrategy: makeAddr("liquidityStrategy"),
+            // TODO: add watchdog address
+            watchdogAddress: makeAddr("watchdog")
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
@@ -680,7 +682,9 @@ contract TestDeployer is MetadataDeployment {
             collToken: _params.collToken,
             gasToken: _params.gasToken,
             // TODO: add liquidity strategy
-            liquidityStrategy: makeAddr("liquidityStrategy")
+            liquidityStrategy: makeAddr("liquidityStrategy"),
+            // TODO: add watchdog address
+            watchdogAddress: makeAddr("watchdog")
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 

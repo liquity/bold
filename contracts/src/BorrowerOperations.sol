@@ -349,7 +349,7 @@ contract BorrowerOperations is
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
-        vars.price = _requireOraclesLive();
+        (vars.price, ) = priceFeed.fetchPrice();
 
         // --- Checks ---
 
@@ -671,7 +671,7 @@ contract BorrowerOperations is
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
-        vars.price = _requireOraclesLive();
+        (vars.price,) = priceFeed.fetchPrice();
         vars.isBelowCriticalThreshold = _checkBelowCriticalThreshold(
             vars.price,
             CCR
@@ -1198,7 +1198,7 @@ contract BorrowerOperations is
             block.timestamp <
             batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
         ) {
-            uint256 price = _requireOraclesLive();
+            (uint256 price, ) = priceFeed.fetchPrice();
 
             uint256 avgInterestRate = activePoolCached
                 .getNewApproxAvgInterestRateFromTroveChange(batchChange);
@@ -1529,7 +1529,7 @@ contract BorrowerOperations is
         uint256 _maxUpfrontFee,
         bool _isTroveInBatch
     ) internal returns (uint256) {
-        uint256 price = _requireOraclesLive();
+        (uint256 price, ) = priceFeed.fetchPrice();
 
         uint256 avgInterestRate = activePool
             .getNewApproxAvgInterestRateFromTroveChange(_troveChange);
@@ -1594,9 +1594,7 @@ contract BorrowerOperations is
 
         uint256 totalColl = getEntireBranchColl();
         uint256 totalDebt = getEntireBranchDebt();
-        (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
-        // If the oracle failed, the above call to PriceFeed will have shut this branch down
-        if (newOracleFailureDetected) return;
+        (uint256 price,) = priceFeed.fetchPrice();
 
         // Otherwise, proceed with the TCR check:
         uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);
@@ -2059,15 +2057,6 @@ contract BorrowerOperations is
         if (msg.sender != address(priceFeed)) {
             revert CallerNotPriceFeed();
         }
-    }
-
-    function _requireOraclesLive() internal returns (uint256) {
-        (uint256 price, bool newOracleFailureDetected) = priceFeed.fetchPrice();
-        if (newOracleFailureDetected) {
-            revert NewOracleFailureDetected();
-        }
-
-        return price;
     }
 
     // --- ICR and TCR getters ---
