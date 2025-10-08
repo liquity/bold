@@ -244,7 +244,7 @@ export function PanelUpdate({
               contextual={
                 <InputTokenBadge
                   background={false}
-                  icon={<TokenIcon symbol={mode === "deposit" ? "USND" : "YUSND"} />}
+                  icon={<TokenIcon symbol={mode === "deposit" ? "USND" : "YUSND"} title={mode === "redeem" ? "Yield-bearing USND optimized by Yearn." : undefined} />}
                   label={mode === "deposit" ? "USND" : "yUSND"}
                 />
               }

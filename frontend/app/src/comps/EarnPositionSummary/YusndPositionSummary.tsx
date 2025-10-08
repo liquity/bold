@@ -192,7 +192,7 @@ export function YusndPositionSummary({
                 })}
               >
                 {active && fmtnum(yusndPosition?.yusnd)}
-                <TokenIcon symbol="YUSND" size="mini" title={null} />
+                <TokenIcon symbol="YUSND" size="mini" title="Yield-bearing USND optimized by Yearn." />
               </div>
               {prevYusndPosition && (
                 <div
@@ -208,7 +208,7 @@ export function YusndPositionSummary({
                   })}
                 >
                   {fmtnum(prevYusndPosition.yusnd)}
-                  <TokenIcon symbol="YUSND" size="mini" title={null} />
+                  <TokenIcon symbol="YUSND" size="mini" title="Yield-bearing USND optimized by Yearn." />
                 </div>
               )}
             </>
