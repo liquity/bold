@@ -9,6 +9,7 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
+import { INTEREST_RATE_ADJ_COOLDOWN } from "@/src/constants";
 import content from "@/src/content";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRelativeTime } from "@/src/formatting";
@@ -274,8 +275,8 @@ export function PanelInterestRate({
                 <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
                 <Amount value={collateralRatios.data.ccr} percentage format={0} />. Interest rate adjustments are
                 restricted until either the <abbr title="Total Collateral Ratio">TCR</abbr> rises above{" "}
-                <Amount value={collateralRatios.data.ccr} percentage format={0} />, or 7 days have passed since your
-                last adjustment.
+                <Amount value={collateralRatios.data.ccr} percentage format={0} />, or {INTEREST_RATE_ADJ_COOLDOWN
+                  / (24 * 60 * 60)} days have passed since your last adjustment.
               </div>
               <LinkTextButton
                 href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"

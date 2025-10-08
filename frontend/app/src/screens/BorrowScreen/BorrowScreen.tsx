@@ -495,7 +495,7 @@ export function BorrowScreen() {
                   marginBottom: 12,
                 })}
               >
-                Borrowing Restrictions Apply{" "}
+                Borrowing Restrictions Apply
               </div>
               <div
                 className={css({

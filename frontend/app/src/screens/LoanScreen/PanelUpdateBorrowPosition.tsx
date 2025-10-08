@@ -552,7 +552,7 @@ export function PanelUpdateBorrowPosition({
                           <>
                             When borrowing, your collateral increase must exceed your debt increase.
                           </>
-                        )} Please increase your collateral deposit or reduce your loan amount.
+                        )} Please reduce your loan amount or increase your collateral to proceed.
                     </>
                   )
                   : (
