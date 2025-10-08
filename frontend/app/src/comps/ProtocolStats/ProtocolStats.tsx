@@ -4,7 +4,7 @@ import type { TokenSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Logo } from "@/src/comps/Logo/Logo";
-import { ACCOUNT_SCREEN, CONTRACT_YUSND } from "@/src/env";
+import { ACCOUNT_SCREEN } from "@/src/env";
 import { useAccount } from "@/src/services/Arbitrum";
 import { useLandingPageStats } from "@/src/services/LandingPageStats";
 import { usePrice } from "@/src/services/Prices";
