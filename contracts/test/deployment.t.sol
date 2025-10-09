@@ -3,6 +3,9 @@
 pragma solidity 0.8.24;
 
 import "./TestContracts/DevTestSetup.sol";
+import "../src/PriceFeeds/WETHPriceFeed.sol";
+import "../src/Dependencies/Constants.sol";
+import "./TestContracts/ChainlinkOracleMock.sol";
 
 contract Deployment is DevTestSetup {
     function testContractsDeployed() public view {
@@ -187,4 +190,27 @@ contract Deployment is DevTestSetup {
         assertEq(defaultPoolAddress, recordedDefaultPoolAddress);
     }
     */
+
+    // WETH PriceFeed --- assert 8 or 18 decimals oracle on deployment ---
+
+    function testAssert8Or18DecimalsOracleOnDeploymentWETH() public {
+        ChainlinkOracleMock mockOracle = new ChainlinkOracleMock();
+        mockOracle.setUpdatedAt(block.timestamp);
+        mockOracle.setPrice(4_500e8);
+
+        mockOracle.setDecimals(8);
+        assertEq(mockOracle.decimals(), 8);
+        WETHPriceFeed newWethPriceFeed = new WETHPriceFeed(address(mockOracle), 24 hours, address(borrowerOperations));
+
+        mockOracle.setPrice(4_500e18);
+        mockOracle.setDecimals(18);
+        assertEq(mockOracle.decimals(), 18);
+        newWethPriceFeed = new WETHPriceFeed(address(mockOracle), 24 hours, address(borrowerOperations));
+
+        mockOracle.setPrice(4_500e6);
+        mockOracle.setDecimals(6);
+        assertEq(mockOracle.decimals(), 6);
+        vm.expectRevert();
+        newWethPriceFeed = new WETHPriceFeed(address(mockOracle), 24 hours, address(borrowerOperations));
+    }
 }
