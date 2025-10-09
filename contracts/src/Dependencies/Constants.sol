@@ -41,7 +41,6 @@ uint256 constant BCR_ALL = 10 * _1pct;
 uint256 constant WETH_DEBT_LIMIT = 100_000_000e18;
 uint256 constant RETH_DEBT_LIMIT = 25_000_000e18;
 uint256 constant TBTC_DEBT_LIMIT = 100_000_000e18;
-uint256 constant FBTC_DEBT_LIMIT = 100_000_000e18;
 uint256 constant SAGA_DEBT_LIMIT = 5_000_000e18;
 
 uint256 constant LIQUIDATION_PENALTY_SP_WETH = 5 * _1pct;
