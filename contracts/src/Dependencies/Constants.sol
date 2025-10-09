@@ -52,7 +52,7 @@ uint256 constant LIQUIDATION_PENALTY_SP_SAGA = 5 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_WETH = 10 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SETH = 20 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_BTC = 10 * _1pct;
-uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SAGA = 30 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SAGA = 20 * _1pct;
 
 // Fraction of collateral awarded to liquidator
 uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%
