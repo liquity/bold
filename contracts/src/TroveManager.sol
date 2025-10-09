@@ -660,27 +660,15 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         );
         _updateTroveRewardSnapshots(_singleRedemption.troveId);
 
-        if (_isTroveInBatch) {
-            emit BatchedTroveUpdated({
-                _troveId: _singleRedemption.troveId,
-                _interestBatchManager: _singleRedemption.batchAddress,
-                _batchDebtShares: Troves[_singleRedemption.troveId].batchDebtShares,
-                _coll: newColl,
-                _stake: _singleRedemption.newStake,
-                _snapshotOfTotalCollRedist: L_coll,
-                _snapshotOfTotalDebtRedist: L_boldDebt
-            });
-        } else {
-            emit TroveUpdated({
-                _troveId: _singleRedemption.troveId,
-                _debt: newDebt,
-                _coll: newColl,
-                _stake: _singleRedemption.newStake,
-                _annualInterestRate: _singleRedemption.trove.annualInterestRate,
-                _snapshotOfTotalCollRedist: L_coll,
-                _snapshotOfTotalDebtRedist: L_boldDebt
-            });
-        }
+        emit TroveUpdated({
+            _troveId: _singleRedemption.troveId,
+            _debt: newDebt,
+            _coll: newColl,
+            _stake: _singleRedemption.newStake,
+            _annualInterestRate: _singleRedemption.trove.annualInterestRate,
+            _snapshotOfTotalCollRedist: L_coll,
+            _snapshotOfTotalDebtRedist: L_boldDebt
+        });
 
         emit TroveOperation({
             _troveId: _singleRedemption.troveId,
@@ -1365,16 +1353,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // mint ERC721
         troveNFT.mint(_owner, _troveId);
 
-        emit BatchedTroveUpdated({
-            _troveId: _troveId,
-            _interestBatchManager: _batchAddress,
-            _batchDebtShares: Troves[_troveId].batchDebtShares,
-            _coll: _troveChange.collIncrease,
-            _stake: newStake,
-            _snapshotOfTotalCollRedist: L_coll,
-            _snapshotOfTotalDebtRedist: L_boldDebt
-        });
-
         emit TroveOperation({
             _troveId: _troveId,
             _operation: Operation.openTroveAndJoinBatch,
@@ -1632,16 +1610,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
         );
 
-        emit BatchedTroveUpdated({
-            _troveId: _troveId,
-            _interestBatchManager: _batchAddress,
-            _batchDebtShares: Troves[_troveId].batchDebtShares,
-            _coll: _newTroveColl,
-            _stake: newStake,
-            _snapshotOfTotalCollRedist: L_coll,
-            _snapshotOfTotalDebtRedist: L_boldDebt
-        });
-
         emit TroveOperation({
             _troveId: _troveId,
             _operation: Operation.adjustTrove,
@@ -1836,16 +1804,6 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         _movePendingTroveRewardsToActivePool(
             defaultPool, _troveChange.appliedRedistBoldDebtGain, _troveChange.appliedRedistCollGain
         );
-
-        emit BatchedTroveUpdated({
-            _troveId: _params.troveId,
-            _interestBatchManager: _params.newBatchAddress,
-            _batchDebtShares: Troves[_params.troveId].batchDebtShares,
-            _coll: _params.troveColl,
-            _stake: Troves[_params.troveId].stake,
-            _snapshotOfTotalCollRedist: L_coll,
-            _snapshotOfTotalDebtRedist: L_boldDebt
-        });
 
         emit TroveOperation({
             _troveId: _params.troveId,
