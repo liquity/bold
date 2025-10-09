@@ -46,7 +46,7 @@ async function main() {
   // to get an approx. hint that is close to the right position.
   let numTroves = await sortedTroves.getSize();
   let numTrials = numTroves.mul(toBN("15"));
-  let { 0: approxHint } = await hintHelpers.getApproxHint(NICR, numTrials, 42); // random seed of 42
+  let { 0: approxHint } = await hintHelpers.getApproxHint(0, NICR, numTrials, 42); // random seed of 42
 
   // Use the approximate hint to get the exact upper and lower hints from the deployed SortedTroves contract
   let { 0: upperHint, 1: lowerHint } = await sortedTroves.findInsertPosition(NICR, approxHint, approxHint);
@@ -70,7 +70,8 @@ async function main() {
   // Get an approximate address hint from the deployed HintHelper contract. Use (15 * number of troves) trials
   // to get an approx. hint that is close to the right position.
   numTroves = await sortedTroves.getSize();
-  numTrials = numTroves.mul(toBN("15"))({ 0: approxHint } = await hintHelpers.getApproxHint(NICR, numTrials, 42))// Use the approximate hint to get the exact upper and lower hints from the deployed SortedTroves contract
+  numTrials = numTroves.mul(toBN("15"));
+  ({ 0: approxHint } = await hintHelpers.getApproxHint(0, NICR, numTrials, 42)); // Use the approximate hint to get the exact upper and lower hints from the deployed SortedTroves contract
   ({ 0: upperHint, 1: lowerHint } = await sortedTroves.findInsertPosition(NICR, approxHint, approxHint));
 
   // Call adjustTrove with the exact upperHint and lowerHint
@@ -87,7 +88,7 @@ async function main() {
   const {
     hintAddress: approxPartialRedemptionHint,
     latestRandomSeed,
-  } = await contracts.hintHelpers.getApproxHint(partialRedemptionNewICR, numTrials, 42);
+  } = await contracts.hintHelpers.getApproxHint(0, partialRedemptionNewICR, numTrials, 42);
 
   /* Use the approximate partial redemption hint to get the exact partial redemption hint from the
   * deployed SortedTroves contract

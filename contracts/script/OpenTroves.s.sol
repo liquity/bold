@@ -58,7 +58,7 @@ contract OpenTroves is Script {
     {
         // Find approx hint (off-chain)
         (uint256 approxHint,,) = hintHelpers.getApproxHint({
-            _collIndex: branch,
+            _branchId: branch,
             _interestRate: interestRate,
             _numTrials: sqrt(100 * c.troveManager.getTroveIdsCount()),
             _inputRandomSeed: block.timestamp
