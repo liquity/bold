@@ -460,4 +460,13 @@ contract CollateralRegistry is ICollateralRegistry {
         _permanentlyDeleteFromRemovedCollaterals(_index);
         emit CollateralDeletedForever(_index);
     }
+
+    function setBranchAddressesInBoldToken(
+        address _troveManagerAddress,
+        address _stabilityPoolAddress,
+        address _borrowerOperationsAddress,
+        address _activePoolAddress
+    ) external onlyGovernor {
+        boldToken.setBranchAddresses(_troveManagerAddress, _stabilityPoolAddress, _borrowerOperationsAddress, _activePoolAddress);
+    }
 }

@@ -23,4 +23,11 @@ interface IBoldToken is IERC20Metadata, IERC20Permit, IERC5267 {
     function sendToPool(address _sender, address poolAddress, uint256 _amount) external;
 
     function returnFromPool(address poolAddress, address user, uint256 _amount) external;
+
+    function setBranchAddressesViaCollateralRegistry(
+        address _troveManagerAddress,
+        address _stabilityPoolAddress,
+        address _borrowerOperationsAddress,
+        address _activePoolAddress
+    ) external;
 }
