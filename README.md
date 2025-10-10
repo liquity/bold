@@ -2154,6 +2154,16 @@ Though redemptions are permissionless, they are complicated and MEV-competitive.
 
 As [explained here](https://github.com/liquity/bold?tab=readme-ov-file#closing-the-last-trove-in-the-system), the last Trove in a branch can not be closed unless that branch has been shut down. 
 
+## `MIN_DEBT` parameter choice
+
+The minimum debt should be chosen based on gas costs of redemption (both USD and raw gas). In canonical v2, 2000 BOLD was chosen as the `MIN_DEBT` in order to ensure that, in the wost case where the lower end of the interest-sorted list is filled with minimum debt Troves, redemptions can not be significantly griefed and substantial BOLD volumes can still be redeemed. For chains with cheaper gas costs (in USD), a lower `MIN_DEBT` may be economically viable. It's also worth comparing raw gas costs - though often very similar across EVM chains, opcodes may be priced differently and so raw gas cost may vary. Lower raw gas costs imply more redemptions can be fit into a single block/tx and vice versa.
+
+## `ETH_GAS_COMPENSATION` and `COLL_GAS_COMPENSATION_CAP` parameter choices
+
+The canonical v2 value of `ETH_GAS_COMPENSATION = 0.0375` was chosen based on ETH, WSTETH and RETH collateral. For collateral tokens whereby the market price differs by orders of magnitude, the `ETH_GAS_COMPENSATION` should be adjusted accordingly - the default v2 value may be insufficient if your collateral price is much lower, and too generous if the price is much higher.
+
+Similarly, the `COLL_GAS_COMPENSATION_CAP` may be too low or high depending on order of magnitude of your collateral price.
+
 ## Security and audits
 
 It is advisable to perform one or more security audits for any changes made to the core system contracts or parameters. Even seemingly tiny or trivial changes can have outsized and unintended impacts on system security and economic resilience.
