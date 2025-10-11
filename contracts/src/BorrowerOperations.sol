@@ -404,6 +404,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function withdrawColl(uint256 _troveId, uint256 _collWithdrawal) external override {
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsActive(troveManagerCached, _troveId);
+        require(isBranchActive(), "BorrowerOperations: Branch is not active");
 
         TroveChange memory troveChange;
         troveChange.collDecrease = _collWithdrawal;

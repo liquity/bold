@@ -39,6 +39,15 @@ contract BorrowerOperationsTest is DevTestSetup {
         borrowerOperations.withdrawColl(troveId, 200 ether);
     }
 
+    function testWithdrawingCollateralRevertsIfBranchIsNotActive() public {
+        uint256 troveId = openTroveNoHints100pct(A, 100 ether, 2_000 ether, 0.01 ether);
+        vm.prank(governor);
+        collateralRegistry.removeCollateral(0);
+        vm.prank(A);
+        vm.expectRevert("BorrowerOperations: Branch is not active");
+        borrowerOperations.withdrawColl(troveId, 50 ether);
+    }
+
     function testZeroAdjustmentReverts() public {
         uint256 troveId = openTroveNoHints100pct(A, 100 ether, 2_000 ether, 0.01 ether);
         vm.prank(A);
