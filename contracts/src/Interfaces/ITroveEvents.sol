@@ -87,14 +87,4 @@ interface ITroveEvents {
         uint256 _totalDebtShares,
         uint256 _debtIncreaseFromUpfrontFee
     );
-
-    event BatchedTroveUpdated(
-        uint256 indexed _troveId,
-        address _interestBatchManager,
-        uint256 _batchDebtShares,
-        uint256 _coll,
-        uint256 _stake,
-        uint256 _snapshotOfTotalCollRedist,
-        uint256 _snapshotOfTotalDebtRedist
-    );
 }
