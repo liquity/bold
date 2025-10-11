@@ -56,6 +56,34 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
         emit ActivePoolAddressAdded(_activePoolAddress);
     }
 
+    function setBranchAddressesViaCollateralRegistry(
+        address _troveManagerAddress,
+        address _stabilityPoolAddress,
+        address _borrowerOperationsAddress,
+        address _activePoolAddress
+    ) external {
+        //only collateral registry can call this function
+        _requireCallerIsCollateralRegistry();
+
+        //set branch addresses, but do not allow overriding existing values.
+        require(!troveManagerAddresses[_troveManagerAddress], "BoldToken: TroveManager address already set");
+        require(!stabilityPoolAddresses[_stabilityPoolAddress], "BoldToken: StabilityPool address already set");
+        require(!borrowerOperationsAddresses[_borrowerOperationsAddress], "BoldToken: BorrowerOperations address already set");
+        require(!activePoolAddresses[_activePoolAddress], "BoldToken: ActivePool address already set");
+        
+        troveManagerAddresses[_troveManagerAddress] = true;
+        emit TroveManagerAddressAdded(_troveManagerAddress);
+
+        stabilityPoolAddresses[_stabilityPoolAddress] = true;
+        emit StabilityPoolAddressAdded(_stabilityPoolAddress);
+
+        borrowerOperationsAddresses[_borrowerOperationsAddress] = true;
+        emit BorrowerOperationsAddressAdded(_borrowerOperationsAddress);
+
+        activePoolAddresses[_activePoolAddress] = true;
+        emit ActivePoolAddressAdded(_activePoolAddress);
+    }
+
     function setCollateralRegistry(address _collateralRegistryAddress) external override onlyOwner {
         collateralRegistryAddress = _collateralRegistryAddress;
         emit CollateralRegistryAddressChanged(_collateralRegistryAddress);
@@ -127,6 +155,10 @@ contract BoldToken is Ownable, IBoldToken, ERC20Permit {
 
     function _requireCallerIsStabilityPool() internal view {
         require(stabilityPoolAddresses[msg.sender], "BoldToken: Caller is not the StabilityPool");
+    }
+
+    function _requireCallerIsCollateralRegistry() internal view {
+        require(msg.sender == collateralRegistryAddress, "BoldToken: Caller is not the CollateralRegistry");
     }
 }
 
