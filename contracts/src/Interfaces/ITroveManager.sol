@@ -22,6 +22,8 @@ interface ITroveManager is ILiquityBase {
         zombie
     }
 
+    function updateGasCompensationMaxReward(uint256 _newGasCompensationMaxReward) external;
+
     function shutdownTime() external view returns (uint256);
 
     function branchId() external view returns (uint256);
