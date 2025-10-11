@@ -31,12 +31,12 @@ contract HintHelpers is IHintHelpers {
     Submitting numTrials = k * sqrt(length), with k = 15 makes it very, very likely that the ouput id will
     be <= sqrt(length) positions away from the correct insert position.
     */
-    function getApproxHint(uint256 _collIndex, uint256 _interestRate, uint256 _numTrials, uint256 _inputRandomSeed)
+    function getApproxHint(uint256 _branchId, uint256 _interestRate, uint256 _numTrials, uint256 _inputRandomSeed)
         external
         view
         returns (uint256 hintId, uint256 diff, uint256 latestRandomSeed)
     {
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         ISortedTroves sortedTroves = troveManager.sortedTroves();
 
         uint256 arrayLength = troveManager.getTroveIdsCount();
@@ -74,12 +74,12 @@ contract HintHelpers is IHintHelpers {
         return _debt * _avgInterestRate * UPFRONT_INTEREST_PERIOD / ONE_YEAR / DECIMAL_PRECISION;
     }
 
-    function predictOpenTroveUpfrontFee(uint256 _collIndex, uint256 _borrowedAmount, uint256 _interestRate)
+    function predictOpenTroveUpfrontFee(uint256 _branchId, uint256 _borrowedAmount, uint256 _interestRate)
         external
         view
         returns (uint256)
     {
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         IActivePool activePool = troveManager.activePool();
 
         TroveChange memory openTrove;
@@ -90,12 +90,12 @@ contract HintHelpers is IHintHelpers {
         return _calcUpfrontFee(openTrove.debtIncrease, avgInterestRate);
     }
 
-    function predictAdjustInterestRateUpfrontFee(uint256 _collIndex, uint256 _troveId, uint256 _newInterestRate)
+    function predictAdjustInterestRateUpfrontFee(uint256 _branchId, uint256 _troveId, uint256 _newInterestRate)
         external
         view
         returns (uint256)
     {
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
 
@@ -109,12 +109,12 @@ contract HintHelpers is IHintHelpers {
         return _predictAdjustInterestRateUpfrontFee(activePool, trove, _newInterestRate);
     }
 
-    function forcePredictAdjustInterestRateUpfrontFee(uint256 _collIndex, uint256 _troveId, uint256 _newInterestRate)
+    function forcePredictAdjustInterestRateUpfrontFee(uint256 _branchId, uint256 _troveId, uint256 _newInterestRate)
         external
         view
         returns (uint256)
     {
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
 
@@ -135,14 +135,14 @@ contract HintHelpers is IHintHelpers {
         return _calcUpfrontFee(_trove.entireDebt, avgInterestRate);
     }
 
-    function predictAdjustTroveUpfrontFee(uint256 _collIndex, uint256 _troveId, uint256 _debtIncrease)
+    function predictAdjustTroveUpfrontFee(uint256 _branchId, uint256 _troveId, uint256 _debtIncrease)
         external
         view
         returns (uint256)
     {
         if (_debtIncrease == 0) return 0;
 
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
         (,,,,,,,, address batchManager,) = troveManager.Troves(_troveId);
@@ -168,11 +168,11 @@ contract HintHelpers is IHintHelpers {
     }
 
     function predictAdjustBatchInterestRateUpfrontFee(
-        uint256 _collIndex,
+        uint256 _branchId,
         address _batchAddress,
         uint256 _newInterestRate
     ) external view returns (uint256) {
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         IActivePool activePool = troveManager.activePool();
         LatestBatchData memory batch = troveManager.getLatestBatchData(_batchAddress);
 
@@ -192,12 +192,12 @@ contract HintHelpers is IHintHelpers {
         return _calcUpfrontFee(batch.entireDebtWithoutRedistribution, avgInterestRate);
     }
 
-    function predictOpenTroveAndJoinBatchUpfrontFee(uint256 _collIndex, uint256 _borrowedAmount, address _batchAddress)
+    function predictOpenTroveAndJoinBatchUpfrontFee(uint256 _branchId, uint256 _borrowedAmount, address _batchAddress)
         external
         view
         returns (uint256)
     {
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         IActivePool activePool = troveManager.activePool();
         LatestBatchData memory batch = troveManager.getLatestBatchData(_batchAddress);
 
@@ -212,12 +212,12 @@ contract HintHelpers is IHintHelpers {
         return _calcUpfrontFee(_borrowedAmount, avgInterestRate);
     }
 
-    function predictJoinBatchInterestRateUpfrontFee(uint256 _collIndex, uint256 _troveId, address _batchAddress)
+    function predictJoinBatchInterestRateUpfrontFee(uint256 _branchId, uint256 _troveId, address _batchAddress)
         external
         view
         returns (uint256)
     {
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
         LatestBatchData memory batch = troveManager.getLatestBatchData(_batchAddress);
@@ -233,12 +233,12 @@ contract HintHelpers is IHintHelpers {
         return _calcUpfrontFee(trove.entireDebt, avgInterestRate);
     }
 
-    function predictRemoveFromBatchUpfrontFee(uint256 _collIndex, uint256 _troveId, uint256 _newInterestRate)
+    function predictRemoveFromBatchUpfrontFee(uint256 _branchId, uint256 _troveId, uint256 _newInterestRate)
         external
         view
         returns (uint256)
     {
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         IActivePool activePool = troveManager.activePool();
         LatestTroveData memory trove = troveManager.getLatestTroveData(_troveId);
         (,,,,,,,, address batchManager,) = troveManager.Troves(_troveId);

@@ -18,12 +18,12 @@ contract MultiTroveGetter is IMultiTroveGetter {
         collateralRegistry = _collateralRegistry;
     }
 
-    function getMultipleSortedTroves(uint256 _collIndex, int256 _startIdx, uint256 _count)
+    function getMultipleSortedTroves(uint256 _branchId, int256 _startIdx, uint256 _count)
         external
         view
         returns (CombinedTroveData[] memory _troves)
     {
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         require(address(troveManager) != address(0), "Invalid collateral index");
 
         ISortedTroves sortedTroves = troveManager.sortedTroves();
@@ -129,12 +129,12 @@ contract MultiTroveGetter is IMultiTroveGetter {
         }
     }
 
-    function getDebtPerInterestRateAscending(uint256 _collIndex, uint256 _startId, uint256 _maxIterations)
+    function getDebtPerInterestRateAscending(uint256 _branchId, uint256 _startId, uint256 _maxIterations)
         external
         view
         returns (DebtPerInterestRate[] memory data, uint256 currId)
     {
-        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_collIndex);
+        ITroveManager troveManager = collateralRegistry.allTroveManagerAddresses(_branchId);
         require(address(troveManager) != address(0), "Invalid collateral index");
 
         ISortedTroves sortedTroves = troveManager.sortedTroves();

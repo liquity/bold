@@ -59,6 +59,30 @@ $ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --pri
 $ cast <subcommand>
 ```
 
+## System Architecture
+
+### Branch ID vs Array Index
+
+**Important:** The system uses stable `branchId` identifiers for collateral branches rather than volatile array indices. This ensures correct operation even when branches are added or removed.
+
+#### Key Components:
+- **CollateralRegistry**: Manages collateral branches using `branchId` as the primary key
+- **HintHelpers**: Provides hint calculations for trove operations using `branchId`
+- **MultiTroveGetter**: Retrieves trove data using `branchId`
+
+#### API Changes:
+All functions that previously accepted `_collIndex` (array index) now accept `_branchId` (stable identifier):
+
+```solidity
+// Before (deprecated)
+hintHelpers.getApproxHint(_collIndex, _interestRate, _numTrials, _inputRandomSeed)
+
+// After (current)
+hintHelpers.getApproxHint(_branchId, _interestRate, _numTrials, _inputRandomSeed)
+```
+
+This change prevents incorrect TroveManager lookups when branches are added or removed from the system.
+
 ## Slither
 
 Create a local Python env and activate it:
