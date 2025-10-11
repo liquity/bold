@@ -47,7 +47,7 @@ abstract contract MainnetPriceFeedBase is IMainnetPriceFeed {
 
         borrowerOperations = IBorrowerOperations(_borrowOperationsAddress);
 
-        assert(ethUsdOracle.decimals == 8);
+        assert(ethUsdOracle.decimals == 8 || ethUsdOracle.decimals == 18);
     }
 
     function _getOracleAnswer(Oracle memory _oracle) internal view returns (uint256, bool) {
