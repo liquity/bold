@@ -385,6 +385,7 @@ contract CollateralRegistry is ICollateralRegistry {
         //validate input
         require(address(_token) != address(0), "CollateralRegistry: Token cannot be address(0)");
         require(address(_troveManager) != address(0), "CollateralRegistry: TroveManager cannot be address(0)");
+        require(address(_token) == address(_troveManager.addressesRegistry().collToken()), "CollateralRegistry: Token does not match TroveManager collateral token");
 
         uint256 branchId = _troveManager.branchId();
         require(branchId == branches, "CollateralRegistry: TroveManager branchId does not match master index");
