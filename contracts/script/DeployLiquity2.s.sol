@@ -632,7 +632,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
         addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = vm.computeCreate2Address(
-            SALT, keccak256(getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry), address(GOVERNANCE_ADDRESS)))
+            SALT, keccak256(getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)))
         );
         addresses.stabilityPool = vm.computeCreate2Address(
             SALT, keccak256(getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)))
@@ -679,7 +679,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
         contracts.borrowerOperations = new BorrowerOperations{salt: SALT}(contracts.addressesRegistry);
         contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry, _branchId);
-        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry, GOVERNANCE_ADDRESS);
+        contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: SALT}(contracts.addressesRegistry);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
@@ -942,8 +942,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_RETH);
         } else if (address(_collToken) == TBTC_ADDRESS) {
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_TBTC);
-        } else if (address(_collToken) == FBTC_ADDRESS) {
-            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_FBTC);
+        // } else if (address(_collToken) == FBTC_ADDRESS) {
+        //     _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_FBTC);
         } else if (address(_collToken) == SAGA_ADDRESS) {
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_SAGA);
         } else {
