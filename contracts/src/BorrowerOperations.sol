@@ -474,7 +474,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ) external override {
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsActive(troveManagerCached, _troveId);
-        require(isBranchActive(), "BorrowerOperations: Branch is not active");
+        // Branch must be active if user is issuing more debt and/or withdrawing collateral
+        if (_isDebtIncrease || !_isCollIncrease) {
+            require(isBranchActive(), "BorrowerOperations: Branch is not active");
+        }
 
         TroveChange memory troveChange;
         _initTroveChange(troveChange, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
