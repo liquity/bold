@@ -28,7 +28,6 @@ import "src/PriceFeeds/WETHPriceFeed.sol";
 // import "src/PriceFeeds/WSTETHPriceFeed.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/PriceFeeds/TBTCPriceFeed.sol";
-import "src/PriceFeeds/FBTCPriceFeed.sol";
 import "src/PriceFeeds/SAGAPriceFeed.sol";
 import "src/CollateralRegistry.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
@@ -76,7 +75,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     string constant DEPLOYMENT_MODE_BOLD_ONLY = "bold-only";
     string constant DEPLOYMENT_MODE_USE_EXISTING_BOLD = "use-existing-bold";
 
-    uint256 constant NUM_BRANCHES = 5;
+    uint256 constant NUM_BRANCHES = 4;
 
     address WETH_ADDRESS = 0xeb41D53F14Cb9a67907f2b8b5DBc223944158cCb;
 
@@ -87,14 +86,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // address WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address RETH_ADDRESS = 0x679121f168488185eca6Aaa3871687FF6d38Edb6; // TODO: Change to CORRECT ADDRESS
     address TBTC_ADDRESS = 0xa740E6758e309840ffFfe58f749F018386A3b70b; // TODO: Change to CORRECT ADDRESS
-    address FBTC_ADDRESS = 0xDA54014Ea6B6b56e3e26c6c82aeC1718B4a85099; // TODO: Change to CORRECT ADDRESS
     address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE; // TODO: This is 6 decimals, not 18 decimals. Either delete or get 18 decimals wrapped token of SAGA.
     address ETH_ORACLE_ADDRESS = 0x0cD65ca12F6c9b10254FABC0CC62d273ABbb3d84;
     address RETH_ORACLE_ADDRESS = 0x7B1be2C7B390A1FA29e07504f2a46A8Dc07eD9F4;
     // address STETH_ORACLE_ADDRESS = address(0);
     // TODO: Change these values
     address TBTC_ORACLE_ADDRESS = 0x9494Ed94280E9A8c5b52B1cDa9Ac9D21f6307135;
-    address FBTC_ORACLE_ADDRESS = 0x9fe237b245466A5f088AfE808b27c1305E3027BC;
     address BTC_ORACLE_ADDRESS = 0x4a397383fE5FbE9AB33879869153fF40ea68815F;
     address SAGA_ORACLE_ADDRESS = 0xaA43df021149C34ca3654F387C9aeB9AcABa012a;
     ///////////////////////////////
@@ -103,7 +100,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     uint256 RETH_ETH_STALENESS_THRESHOLD = 25 hours;
     // TODO: Change these values
     uint256 TBTC_ETH_STALENESS_THRESHOLD = 25 hours;
-    uint256 FBTC_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 BTC_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 SAGA_USD_STALENESS_THRESHOLD = 25 hours;
 
@@ -302,20 +298,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
         });
-
-        // FBTC
-        troveManagerParamsArray[3] = TroveManagerParams({
-            CCR: CCR_SETH,
-            MCR: MCR_SETH,
-            SCR: SCR_SETH,
-            BCR: BCR_ALL,
-            debtLimit: FBTC_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
-        });
         
         // SAGA
-        troveManagerParamsArray[4] = TroveManagerParams({
+        troveManagerParamsArray[3] = TroveManagerParams({
             CCR: CCR_SETH,
             MCR: MCR_SETH,
             SCR: SCR_SETH,
@@ -333,10 +318,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collSymbols[0] = "rETH";
         collNames[1] = "Threshold BTC";
         collSymbols[1] = "tBTC";
-        collNames[2] = "Function BTC";
-        collSymbols[2] = "FBTC";
-        collNames[3] = "Saga";
-        collSymbols[3] = "SAGA";
+        collNames[2] = "Saga";
+        collSymbols[2] = "SAGA";
 
         // DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
         //     epochStart: epochStart,
@@ -532,13 +515,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // tBTC
             vars.collaterals[2] = IERC20Metadata(TBTC_ADDRESS);
 
-            // FBTC
-            // vars.collaterals[3] = IERC20Metadata(FBTC_ADDRESS);
-            vars.collaterals[3] = new WrappedToken(IERC20Metadata(FBTC_ADDRESS));
-
             // SAGA
             // vars.collaterals[4] = IERC20Metadata(SAGA_ADDRESS);
-            vars.collaterals[4] = new WrappedToken(IERC20Metadata(SAGA_ADDRESS));
+            vars.collaterals[3] = new WrappedToken(IERC20Metadata(SAGA_ADDRESS));
         } else {
             // Sepolia
             // Use WETH as collateral for the first branch
@@ -756,15 +735,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                     deployer,
                     TBTC_ORACLE_ADDRESS,
                     TBTC_ETH_STALENESS_THRESHOLD,
-                    BTC_ORACLE_ADDRESS,
-                    BTC_USD_STALENESS_THRESHOLD
-                );
-            } else if (_collTokenAddress == FBTC_ADDRESS) {
-                // FBTC
-                return new FBTCPriceFeed(
-                    deployer,
-                    FBTC_ORACLE_ADDRESS,
-                    FBTC_ETH_STALENESS_THRESHOLD,
                     BTC_ORACLE_ADDRESS,
                     BTC_USD_STALENESS_THRESHOLD
                 );
