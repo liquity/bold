@@ -45,14 +45,4 @@ contract WrappedToken is ERC20Wrapper {
         underlying().safeTransfer(account, amount / 10**_decimalDiff);
         return true;
     }
-
-    /**
-     * @dev Mint wrapped token to cover any underlyingTokens that would have been transferred by mistake. Internal
-     * function that can be exposed with access control if desired.
-     */
-    function _recover(address account) internal virtual override returns (uint256) {
-        uint256 value = underlying().balanceOf(address(this)) - totalSupply();
-        _mint(account, value * 10**_decimalDiff);
-        return value;
-    }
 }
