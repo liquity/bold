@@ -17,6 +17,8 @@ contract CollateralRegistry is ICollateralRegistry {
 
     address public governor;
 
+    address public pendingGovernor;
+
     uint256 public branches; // Total number of branches ever added. This value only increments up.
 
     mapping(uint256 branchId => IERC20Metadata collateralToken) public allCollateralTokenAddresses;
@@ -43,6 +45,8 @@ contract CollateralRegistry is ICollateralRegistry {
 
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
+    event GovernorChangeInitiated(address governor, address newPendingGovernor);
+    event GovernorChanged(address oldGovernor, address newGovernor);
 
     modifier onlyGovernor() {
         require(msg.sender == governor, "CollateralRegistry: Only governor can call this function");
@@ -371,6 +375,20 @@ contract CollateralRegistry is ICollateralRegistry {
 
     function updateSCR(uint256 _branchId, uint256 _newSCR) external onlyGovernor {
         allTroveManagerAddresses[_branchId].addressesRegistry().updateSCR(_newSCR);
+    }
+
+    function updateGovernor(address _newGovernor) external onlyGovernor {
+        require(_newGovernor != address(0), "CollateralRegistry: Governor cannot be the zero address");
+        pendingGovernor = _newGovernor;
+        emit GovernorChangeInitiated(governor, _newGovernor);
+    }
+
+    function acceptGovernor() external {
+        require(msg.sender == pendingGovernor, "CollateralRegistry: Caller is not the pending governor");
+        address oldGovernor = governor;
+        governor = pendingGovernor;
+        delete pendingGovernor;
+        emit GovernorChanged(oldGovernor, governor);
     }
 
     // ==== Add a new collateral ==== 
