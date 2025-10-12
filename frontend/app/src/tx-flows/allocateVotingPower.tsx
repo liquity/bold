@@ -270,7 +270,7 @@ function VoteAllocation({
           key="end"
           title={initiative.address}
         >
-          {initiative.protocol ?? <AddressLink address={initiative.address} />}
+          {initiative.group ?? <AddressLink address={initiative.address} />}
         </div>,
       ]}
       value={[
