@@ -33,6 +33,7 @@ import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contrac
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
 import { getRedemptionRisk } from "@/src/liquity-math";
+import { combineStatus } from "@/src/query-utils";
 import { usePrice } from "@/src/services/Prices";
 import {
   getAllInterestRateBrackets,
@@ -1292,24 +1293,6 @@ function useDebtInFrontOfBracket(branchId: BranchId, bracketRate: Dnum) {
       }),
     };
   }, [status, data, bracketRate]);
-}
-
-type QueryStatus = "success" | "error" | "pending";
-
-// function combineStatus(a: "error", b: QueryStatus): "error";
-// function combineStatus(a: QueryStatus, b: "error"): "error";
-// function combineStatus(a: "pending", b: Exclude<QueryStatus, "error">): "pending";
-// function combineStatus(a: Exclude<QueryStatus, "error">, b: "pending"): "pending";
-// function combineStatus(a: "success", b: "success"): "success";
-// function combineStatus(
-//   a: Exclude<QueryStatus, "pending">,
-//   b: Exclude<QueryStatus, "pending">,
-// ): Exclude<QueryStatus, "pending">;
-// function combineStatus(a: QueryStatus, b: QueryStatus): QueryStatus;
-function combineStatus(a: QueryStatus, b: QueryStatus): QueryStatus {
-  if (a === "error" || b === "error") return "error";
-  if (a === "pending" || b === "pending") return "pending";
-  return "success";
 }
 
 export type UseDebtInFrontOfLoanParams = Readonly<

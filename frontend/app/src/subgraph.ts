@@ -5,12 +5,10 @@ import type { Address, BranchId, Dnum, TroveId, TroveStatus } from "@/src/types"
 
 import { ONE_YEAR_D18 } from "@/src/constants";
 import { dnum18, dnum36 } from "@/src/dnum-utils";
-import { LIQUITY_GOVERNANCE_URL, SUBGRAPH_URL } from "@/src/env";
+import { SUBGRAPH_URL } from "@/src/env";
 import { graphql } from "@/src/graphql";
 import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
-import { ApiInitiativesSchema } from "@/src/liquity-governance";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
-import * as v from "valibot";
 
 export type IndexedTrove = {
   id: string;
@@ -309,7 +307,6 @@ const GovernanceGlobalDataQuery = graphql(`
 
 export interface GovernanceGlobalData {
   registeredInitiatives: Address[];
-  bribeInitiatives: Map<Address, Address | null>; // initiative -> bribe token
   totalVotingPower: {
     allocatedLQTY: bigint;
     allocatedOffset: bigint;
@@ -320,34 +317,10 @@ export interface GovernanceGlobalData {
 
 // get all the registered initiatives and total voting power
 export async function getGovernanceGlobalData(): Promise<GovernanceGlobalData> {
-  let registeredInitiatives: Address[];
-  const bribeInitiatives = new Map<Address, Address | null>();
-
-  if (LIQUITY_GOVERNANCE_URL) {
-    try {
-      const response = await fetch(`${LIQUITY_GOVERNANCE_URL}/initiatives.json`);
-      const initiatives = v.parse(ApiInitiativesSchema, await response.json());
-      registeredInitiatives = initiatives.map(i => i.address);
-      
-      initiatives.forEach(i => {
-        if (i.isBribeInitiative) {
-          bribeInitiatives.set(i.address, i.bribeToken);
-        }
-      });
-    } catch {
-      const { governanceInitiatives } = await graphQuery(GovernanceGlobalDataQuery);
-      registeredInitiatives = governanceInitiatives.map(i => i.id as Address);
-    }
-  } else {
-    const { governanceInitiatives } = await graphQuery(GovernanceGlobalDataQuery);
-    registeredInitiatives = governanceInitiatives.map(i => i.id as Address);
-  }
-
-  const { governanceVotingPower } = await graphQuery(GovernanceGlobalDataQuery);
-
+  const { governanceInitiatives, governanceVotingPower } = await graphQuery(GovernanceGlobalDataQuery);
   return {
-    registeredInitiatives,
-    bribeInitiatives,
+    registeredInitiatives: governanceInitiatives.map((initiative) => initiative.id as Address),
+
     totalVotingPower: {
       allocatedLQTY: BigInt(governanceVotingPower?.allocatedLQTY ?? 0),
       allocatedOffset: BigInt(governanceVotingPower?.allocatedOffset ?? 0),
