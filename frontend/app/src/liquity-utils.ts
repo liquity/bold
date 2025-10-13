@@ -1455,6 +1455,47 @@ export function useRedemptionRiskOfLoan(loan: UseDebtInFrontOfLoanParams) {
   }, [status, data]);
 }
 
+export function useCollateralSurplus(accountAddress: Address | null, branchId: BranchId) {
+  return useReadContract({
+    ...getBranchContract(branchId, "CollSurplusPool"),
+    functionName: "getCollateral",
+    args: [accountAddress ?? zeroAddress],
+    query: {
+      enabled: Boolean(accountAddress),
+      select: dnum18,
+    },
+  });
+}
+
+export function useCollateralSurplusByBranches(
+  accountAddress: Address | null,
+  liquidatedBranchIds: BranchId[],
+) {
+  return useReadContracts({
+    contracts: CONTRACTS.branches.map((branch) => ({
+      ...branch.contracts.CollSurplusPool,
+      functionName: "getCollateral" as const,
+      args: [accountAddress ?? zeroAddress],
+    })),
+    query: {
+      enabled: Boolean(accountAddress) && liquidatedBranchIds.length > 0,
+      select: (results) => {
+        return results.map((result, index) => {
+          const branch = CONTRACTS.branches[index];
+          if (!branch) {
+            throw new Error(`Branch at index ${index} not found`);
+          }
+          const surplus = result.result ? dnum18(result.result) : DNUM_0;
+          return {
+            branchId: branch.id,
+            surplus,
+          };
+        });
+      },
+    },
+  });
+}
+
 export function useRedemptionRiskOfInterestRate(
   branchId: BranchId,
   interestRate: Dnum,
