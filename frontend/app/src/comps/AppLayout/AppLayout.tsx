@@ -8,6 +8,7 @@ import { TopBar } from "@/src/comps/TopBar/TopBar";
 import { css } from "@/styled-system/css";
 import { useSubgraphStatus } from "@/src/services/SubgraphStatus";
 import { ErrorBanner } from "@/src/comps/ErrorBanner/ErrorBanner";
+import { APP_VERSION, APP_COMMIT_HASH } from "@/src/env";
 
 export const LAYOUT_WIDTH = 1092;
 export const MIN_WIDTH = 960;
@@ -81,6 +82,20 @@ export function AppLayout({ children }: { children: ReactNode }) {
             })}
           >
             <ProtocolStats />
+          </div>
+          <div
+            className={css({
+              width: "100%",
+              padding: "24px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              color: "contentAlt",
+              fontSize: 14,
+              gap: 8,
+            })}
+          >
+            <span>v{APP_VERSION}-{APP_COMMIT_HASH.slice(0, 8)}</span>
           </div>
         </div>
       </div>
