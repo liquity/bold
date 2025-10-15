@@ -129,6 +129,19 @@ export function getBranches(): Branch[] {
   });
 }
 
+export function getTokenDisplayName(symbol: TokenSymbol) {
+  const token = TOKENS_BY_SYMBOL[symbol];
+
+  switch (symbol) {
+    case "SBOLD":
+      return "sBOLD by K3 Capital";
+    case "YBOLD":
+      return "yBOLD by Yearn";
+    default:
+      return token.name;
+  }
+}
+
 export function getBranchesCount(): number {
   return ENV_BRANCHES.length;
 }
