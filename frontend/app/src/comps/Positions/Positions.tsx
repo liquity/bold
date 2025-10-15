@@ -543,31 +543,33 @@ function PositionsGroup({
           </div>
           {isLiquidatedExpanded && (
             <>
-              <div
-                className={css({
-                  display: "grid",
-                  gap: {
-                    base: 16,
-                    medium: 24,
-                  },
-                  marginTop: 16,
-                  marginBottom: 24,
-                })}
-                style={{
-                  gridTemplateColumns: `repeat(${columns}, 1fr)`,
-                }}
-              >
-                {liquidatedBranchIds.map((branchId) => (
-                  <ClaimCollateralSurplus
-                    key={branchId}
-                    accountAddress={accountAddress}
-                    branchId={branchId}
-                  />
-                ))}
-              </div>
+              {hasClaimableCollateral && (
+                <div
+                  className={css({
+                    display: "grid",
+                    gap: {
+                      base: 16,
+                      medium: 24,
+                    },
+                    marginTop: 16,
+                  })}
+                  style={{
+                    gridTemplateColumns: `repeat(${columns}, 1fr)`,
+                  }}
+                >
+                  {liquidatedBranchIds.map((branchId) => (
+                    <ClaimCollateralSurplus
+                      key={branchId}
+                      accountAddress={accountAddress}
+                      branchId={branchId}
+                    />
+                  ))}
+                </div>
+              )}
               <a.div
                 className={css({
                   position: "relative",
+                  marginTop: 16,
                 })}
                 style={{
                   height: liquidatedContainerHeight,
