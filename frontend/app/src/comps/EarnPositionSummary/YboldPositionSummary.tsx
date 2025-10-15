@@ -91,10 +91,13 @@ export function YboldPositionSummary() {
             <Amount
               fallback="-"
               format="compact"
-              suffix=" BOLD"
+              prefix="$"
               value={stats?.tvl ?? null}
             />
           </div>
+          <InfoTooltip heading="Total Value Locked (TVL)">
+            Total amount of yBOLD deposited in this stability pool.
+          </InfoTooltip>
         </>
       }
       infoItems={[{
