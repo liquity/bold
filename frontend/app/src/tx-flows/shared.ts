@@ -39,7 +39,7 @@ export async function verifyTransaction(
       // safe tx
       ? waitForSafeTransaction(hash).then((txHash) => (
         // return the same object than a non-safe tx
-        (waitForTransactionReceipt(wagmiConfig, { hash: txHash as `0x${string}` }))
+        waitForTransactionReceipt(wagmiConfig, { hash: txHash as `0x${string}` })
       ))
       // normal tx
       : waitForTransactionReceipt(wagmiConfig, {
@@ -56,11 +56,11 @@ export async function verifyTransaction(
 }
 
 export async function verifyBlockNumberIndexation(blockNumber: bigint) {
-  while (true) {
+  for (let i = 0;; ++i) {
     const indexedBlockNumber = await getIndexedBlockNumber();
-    if (indexedBlockNumber >= blockNumber) {
-      break;
-    }
-    await sleep(1000);
+    if (indexedBlockNumber >= blockNumber) break;
+
+    console.log(`Waiting for subgraph to catch up... (${blockNumber - indexedBlockNumber} blocks behind)`);
+    await sleep((2 ** Math.min(i, 4)) * 1000);
   }
 }
