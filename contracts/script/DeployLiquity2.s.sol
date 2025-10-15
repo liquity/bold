@@ -116,6 +116,7 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         ISystemParams systemParams;
         address stabilityPoolImpl;
         address stableTokenV3Impl;
+        address systemParamsImpl;
         address fpmm;
     }
 
@@ -205,7 +206,9 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
     function _deployProxyInfrastructure(DeploymentResult memory r) internal {
         r.proxyAdmin = ProxyAdmin(CONFIG.proxyAdmin);
         r.stableTokenV3Impl = address(new StableTokenV3{salt: SALT}(true));
-        r.stabilityPoolImpl = address(new StabilityPool{salt: SALT}(true));
+        r.stabilityPoolImpl = address(new StabilityPool{salt: SALT}(true, r.systemParams));
+
+        _deploySystemParamsImpl(r);
 
         assert(
             address(r.stableTokenV3Impl)
@@ -216,7 +219,7 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         assert(
             address(r.stabilityPoolImpl)
                 == vm.computeCreate2Address(
-                    SALT, keccak256(bytes.concat(type(StabilityPool).creationCode, abi.encode(true)))
+                    SALT, keccak256(bytes.concat(type(StabilityPool).creationCode, abi.encode(true, r.systemParams)))
                 )
         );
     }
@@ -233,7 +236,7 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         );
     }
 
-    function _deploySystemParams(DeploymentResult memory r) internal {
+    function _deploySystemParamsImpl(DeploymentResult memory r) internal {
         ISystemParams.DebtParams memory debtParams = ISystemParams.DebtParams({minDebt: 2000e18});
 
         ISystemParams.LiquidationParams memory liquidationParams =
@@ -262,19 +265,27 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         ISystemParams.StabilityPoolParams memory poolParams =
             ISystemParams.StabilityPoolParams({spYieldSplit: 75 * (1e18 / 100), minBoldInSP: 1e18});
 
-        r.systemParams = ISystemParams(
-            address(
-                new SystemParams{salt: SALT}(
-                    debtParams,
-                    liquidationParams,
-                    gasCompParams,
-                    collateralParams,
-                    interestParams,
-                    redemptionParams,
-                    poolParams
-                )
+        r.systemParamsImpl = address(
+            new SystemParams{salt: SALT}(
+                true, // disableInitializers for implementation
+                debtParams,
+                liquidationParams,
+                gasCompParams,
+                collateralParams,
+                interestParams,
+                redemptionParams,
+                poolParams
             )
         );
+    }
+
+    function _deploySystemParams(DeploymentResult memory r) internal {
+        address systemParamsProxy = address(
+            new TransparentUpgradeableProxy(address(r.systemParamsImpl), address(r.proxyAdmin), "")
+        );
+
+        r.systemParams = ISystemParams(systemParamsProxy);
+        r.systemParams.initialize();
     }
 
     function _deployAndConnectCollateralContracts(
@@ -326,7 +337,7 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         // Deploy core protocol contracts
         _deployProtocolContracts(contracts, addresses);
 
-        IStabilityPool(stabilityPool).initialize(contracts.addressesRegistry, contracts.systemParams);
+        IStabilityPool(stabilityPool).initialize(contracts.addressesRegistry);
 
         address[] memory minters = new address[](2);
         minters[0] = address(contracts.borrowerOperations);
@@ -484,6 +495,7 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         string memory part2 = string.concat(
             string.concat('"stableTokenV3Impl":"', address(deployed.stableTokenV3Impl).toHexString(), '",'),
             string.concat('"stabilityPoolImpl":"', address(deployed.stabilityPoolImpl).toHexString(), '",'),
+            string.concat('"systemParamsImpl":"', address(deployed.systemParamsImpl).toHexString(), '",'),
             string.concat('"systemParams":"', address(deployed.systemParams).toHexString(), '",'),
             string.concat('"multiTroveGetter":"', address(deployed.multiTroveGetter).toHexString(), '",')
         );

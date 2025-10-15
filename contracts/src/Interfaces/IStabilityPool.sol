@@ -31,7 +31,7 @@ import "./ISystemParams.sol";
  *
 */
 interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
-    function initialize(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) external;
+    function initialize(IAddressesRegistry _addressesRegistry) external;
 
     function boldToken() external view returns (IBoldToken);
     function troveManager() external view returns (ITroveManager);

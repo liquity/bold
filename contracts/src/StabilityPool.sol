@@ -180,9 +180,9 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
     uint256 public currentScale;
 
-    uint256 public MIN_BOLD_IN_SP;
-
     address public liquidityStrategy;
+
+    ISystemParams public immutable systemParams;
 
     /* Coll Gain sum 'S': During its lifetime, each deposit d_t earns an Coll gain of ( d_t * [S - S_t] )/P_t, where S_t
     * is the depositor's snapshot of S taken at the time t when the deposit was made.
@@ -203,21 +203,21 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
      * Call this with disable=false during testing, when used without a proxy.
      */
     /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor(bool disable) {
+    constructor(bool disable, ISystemParams _systemParams) {
         if (disable) {
             _disableInitializers();
         }
+
+        systemParams = _systemParams;
     }
 
-    function initialize(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) external initializer {
+    function initialize(IAddressesRegistry _addressesRegistry) external initializer {
         __LiquityBase_init(_addressesRegistry);
 
         collToken = _addressesRegistry.collToken();
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();
         liquidityStrategy = _addressesRegistry.liquidityStrategy();
-
-        MIN_BOLD_IN_SP = _systemParams.MIN_BOLD_IN_SP();
 
         emit TroveManagerAddressChanged(address(troveManager));
         emit BoldTokenAddressChanged(address(boldToken));
@@ -340,7 +340,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         _sendBoldtoDepositor(msg.sender, boldToWithdraw + yieldGainToSend);
         _sendCollGainToDepositor(collToSend);
 
-        require(newTotalBoldDeposits >= MIN_BOLD_IN_SP, "Withdrawal must leave totalBoldDeposits >= MIN_BOLD_IN_SP");
+        require(newTotalBoldDeposits >= systemParams.MIN_BOLD_IN_SP(), "Withdrawal must leave totalBoldDeposits >= MIN_BOLD_IN_SP");
     }
 
     function _getNewStashedCollAndCollToSend(address _depositor, uint256 _currentCollGain, bool _doClaim)
@@ -386,7 +386,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
 
         // When total deposits is very small, B is not updated. In this case, the BOLD issued is held
         // until the total deposits reach 1 BOLD (remains in the balance of the SP).
-        if (totalBoldDeposits < MIN_BOLD_IN_SP) {
+        if (totalBoldDeposits < systemParams.MIN_BOLD_IN_SP()) {
             yieldGainsPending = accumulatedYieldGains;
             return;
         }
@@ -543,7 +543,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     }
 
     function getDepositorYieldGainWithPending(address _depositor) external view override returns (uint256) {
-        if (totalBoldDeposits < MIN_BOLD_IN_SP) return 0;
+        if (totalBoldDeposits < systemParams.MIN_BOLD_IN_SP()) return 0;
 
         uint256 initialDeposit = deposits[_depositor].initialValue;
         if (initialDeposit == 0) return 0;

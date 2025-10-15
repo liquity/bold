@@ -46,7 +46,7 @@ contract SystemParamsTest is DevTestSetup {
             minBoldInSP: 1e18
         });
 
-        SystemParams params = new SystemParams(
+        SystemParams params = new SystemParams(false, 
             debtParams,
             liquidationParams,
             gasCompParams,
@@ -82,7 +82,7 @@ contract SystemParamsTest is DevTestSetup {
         ISystemParams.DebtParams memory debtParams = ISystemParams.DebtParams({minDebt: 0});
 
         vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
-        new SystemParams(
+        new SystemParams(false, 
             debtParams,
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -97,7 +97,7 @@ contract SystemParamsTest is DevTestSetup {
         ISystemParams.DebtParams memory debtParams = ISystemParams.DebtParams({minDebt: 10001e18});
 
         vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
-        new SystemParams(
+        new SystemParams(false, 
             debtParams,
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -117,7 +117,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.SPPenaltyTooLow.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             liquidationParams,
             _getValidGasCompParams(),
@@ -135,7 +135,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.SPPenaltyGtRedist.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             liquidationParams,
             _getValidGasCompParams(),
@@ -153,7 +153,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.RedistPenaltyTooHigh.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             liquidationParams,
             _getValidGasCompParams(),
@@ -174,7 +174,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             gasCompParams,
@@ -193,7 +193,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             gasCompParams,
@@ -212,7 +212,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             gasCompParams,
@@ -231,7 +231,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             gasCompParams,
@@ -250,7 +250,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             gasCompParams,
@@ -269,7 +269,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidGasCompensation.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             gasCompParams,
@@ -291,7 +291,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidCCR.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -311,7 +311,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidCCR.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -331,7 +331,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidMCR.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -351,7 +351,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidMCR.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -371,7 +371,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidBCR.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -391,7 +391,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidBCR.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -411,7 +411,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidSCR.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -431,7 +431,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidSCR.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -450,7 +450,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.MinInterestRateGtMax.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -473,7 +473,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -493,7 +493,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -513,7 +513,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),
@@ -531,7 +531,7 @@ contract SystemParamsTest is DevTestSetup {
         });
 
         vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
-        new SystemParams(
+        new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
             _getValidGasCompParams(),

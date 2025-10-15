@@ -15,7 +15,6 @@ import "./Interfaces/ICollateralRegistry.sol";
 contract CollateralRegistry is ICollateralRegistry {
     // See: https://github.com/ethereum/solidity/issues/12587
     uint256 public immutable totalCollaterals;
-    address public immutable systemParamsAddress;
 
     IERC20Metadata internal immutable token0;
     IERC20Metadata internal immutable token1;
@@ -39,11 +38,8 @@ contract CollateralRegistry is ICollateralRegistry {
     ITroveManager internal immutable troveManager8;
     ITroveManager internal immutable troveManager9;
 
+    ISystemParams public immutable systemParams;
     IBoldToken public immutable boldToken;
-
-    uint256 public immutable REDEMPTION_BETA;
-    uint256 public immutable REDEMPTION_MINUTE_DECAY_FACTOR;
-    uint256 public immutable REDEMPTION_FEE_FLOOR;
 
     uint256 public baseRate;
 
@@ -58,7 +54,7 @@ contract CollateralRegistry is ICollateralRegistry {
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens <= 10, "Collateral list too long");
         totalCollaterals = numTokens;
-        systemParamsAddress = address(_systemParams);
+        systemParams = _systemParams;
 
         boldToken = _boldToken;
 
@@ -84,13 +80,9 @@ contract CollateralRegistry is ICollateralRegistry {
         troveManager8 = numTokens > 8 ? _troveManagers[8] : ITroveManager(address(0));
         troveManager9 = numTokens > 9 ? _troveManagers[9] : ITroveManager(address(0));
 
-        REDEMPTION_BETA = _systemParams.REDEMPTION_BETA();
-        REDEMPTION_MINUTE_DECAY_FACTOR = _systemParams.REDEMPTION_MINUTE_DECAY_FACTOR();
-        REDEMPTION_FEE_FLOOR = _systemParams.REDEMPTION_FEE_FLOOR();
-
         // Initialize the baseRate state variable
         baseRate = _systemParams.INITIAL_BASE_RATE();
-        emit BaseRateUpdated(_systemParams.INITIAL_BASE_RATE());
+        emit BaseRateUpdated(baseRate);
     }
 
     struct RedemptionTotals {
@@ -231,7 +223,7 @@ contract CollateralRegistry is ICollateralRegistry {
         // get the fraction of total supply that was redeemed
         uint256 redeemedBoldFraction = _redeemAmount * DECIMAL_PRECISION / _totalBoldSupply;
 
-        uint256 newBaseRate = decayedBaseRate + redeemedBoldFraction / REDEMPTION_BETA;
+        uint256 newBaseRate = decayedBaseRate + redeemedBoldFraction / systemParams.REDEMPTION_BETA();
         newBaseRate = LiquityMath._min(newBaseRate, DECIMAL_PRECISION); // cap baseRate at a maximum of 100%
 
         return newBaseRate;
@@ -239,14 +231,14 @@ contract CollateralRegistry is ICollateralRegistry {
 
     function _calcDecayedBaseRate() internal view returns (uint256) {
         uint256 minutesPassed = _minutesPassedSinceLastFeeOp();
-        uint256 decayFactor = LiquityMath._decPow(REDEMPTION_MINUTE_DECAY_FACTOR, minutesPassed);
+        uint256 decayFactor = LiquityMath._decPow(systemParams.REDEMPTION_MINUTE_DECAY_FACTOR(), minutesPassed);
 
         return baseRate * decayFactor / DECIMAL_PRECISION;
     }
 
     function _calcRedemptionRate(uint256 _baseRate) internal view returns (uint256) {
         return LiquityMath._min(
-            REDEMPTION_FEE_FLOOR + _baseRate,
+            systemParams.REDEMPTION_FEE_FLOOR() + _baseRate,
             DECIMAL_PRECISION // cap at a maximum of 100%
         );
     }
@@ -316,7 +308,7 @@ contract CollateralRegistry is ICollateralRegistry {
 
     function _requireValidMaxFeePercentage(uint256 _maxFeePercentage) internal view {
         require(
-            _maxFeePercentage >= REDEMPTION_FEE_FLOOR && _maxFeePercentage <= DECIMAL_PRECISION,
+            _maxFeePercentage >= systemParams.REDEMPTION_FEE_FLOOR() && _maxFeePercentage <= DECIMAL_PRECISION,
             "Max fee percentage must be between 0.5% and 100%"
         );
     }

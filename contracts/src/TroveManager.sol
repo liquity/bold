@@ -30,27 +30,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     ICollateralRegistry internal collateralRegistry;
     // Gas token for liquidation reserve (gas compensation)
     IERC20Metadata internal immutable gasToken;
-    address public immutable systemParamsAddress;
-
-    // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    uint256 public immutable CCR;
-
-    // Minimum collateral ratio for individual troves
-    uint256 internal immutable MCR;
-    // Shutdown system collateral ratio. If the system's total collateral ratio (TCR) for a given collateral falls below the SCR,
-    // the protocol triggers the shutdown of the borrow market and permanently disables all borrowing operations except for closing Troves.
-    uint256 internal immutable SCR;
-
-    // Liquidation penalty for troves offset to the SP
-    uint256 internal immutable LIQUIDATION_PENALTY_SP;
-    // Liquidation penalty for troves redistributed
-    uint256 internal immutable LIQUIDATION_PENALTY_REDISTRIBUTION;
-
-    uint256 internal immutable COLL_GAS_COMPENSATION_DIVISOR;
-    uint256 internal immutable COLL_GAS_COMPENSATION_CAP;
-    uint256 internal immutable MIN_BOLD_IN_SP;
-    uint256 internal immutable ETH_GAS_COMPENSATION;
-    uint256 internal immutable MIN_DEBT;
+    ISystemParams immutable systemParams;
 
     // --- Data structures ---
 
@@ -196,18 +176,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     event CollateralRegistryAddressChanged(address _collateralRegistryAddress);
 
     constructor(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) LiquityBase(_addressesRegistry) {
-        systemParamsAddress = address(_systemParams);
-        
-        CCR = _systemParams.CCR();
-        MCR = _systemParams.MCR();
-        SCR = _systemParams.SCR();
-        LIQUIDATION_PENALTY_SP = _systemParams.LIQUIDATION_PENALTY_SP();
-        LIQUIDATION_PENALTY_REDISTRIBUTION = _systemParams.LIQUIDATION_PENALTY_REDISTRIBUTION();
-        COLL_GAS_COMPENSATION_DIVISOR = _systemParams.COLL_GAS_COMPENSATION_DIVISOR();
-        COLL_GAS_COMPENSATION_CAP = _systemParams.COLL_GAS_COMPENSATION_CAP();
-        MIN_BOLD_IN_SP = _systemParams.MIN_BOLD_IN_SP();
-        ETH_GAS_COMPENSATION = _systemParams.ETH_GAS_COMPENSATION();
-        MIN_DEBT = _systemParams.MIN_DEBT();
+        systemParams = _systemParams;
 
         troveNFT = _addressesRegistry.troveNFT();
         borrowerOperations = _addressesRegistry.borrowerOperations();
@@ -350,7 +319,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     // Return the amount of Coll to be drawn from a trove's collateral and sent as gas compensation.
     function _getCollGasCompensation(uint256 _coll) internal view returns (uint256) {
         // _entireDebt should never be zero, but we add the condition defensively to avoid an unexpected revert
-        return LiquityMath._min(_coll / COLL_GAS_COMPENSATION_DIVISOR, COLL_GAS_COMPENSATION_CAP);
+        return LiquityMath._min(_coll / systemParams.COLL_GAS_COMPENSATION_DIVISOR(), systemParams.COLL_GAS_COMPENSATION_CAP());
     }
 
     /* In a full liquidation, returns the values for a trove's coll and debt to be offset, and coll and debt to be
@@ -392,7 +361,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             uint256 collToOffset = collSPPortion - collGasCompensation;
 
             (collToSendToSP, collSurplus) =
-                _getCollPenaltyAndSurplus(collToOffset, debtToOffset, LIQUIDATION_PENALTY_SP, _price);
+                _getCollPenaltyAndSurplus(collToOffset, debtToOffset, systemParams.LIQUIDATION_PENALTY_SP(), _price);
         }
 
         // Redistribution
@@ -403,7 +372,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
                 (collToRedistribute, collSurplus) = _getCollPenaltyAndSurplus(
                     collRedistributionPortion + collSurplus, // Coll surplus from offset can be eaten up by red. penalty
                     debtToRedistribute,
-                    LIQUIDATION_PENALTY_REDISTRIBUTION, // _penaltyRatio
+                    systemParams.LIQUIDATION_PENALTY_REDISTRIBUTION(), // _penaltyRatio
                     _price
                 );
             }
@@ -447,7 +416,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         // - If the SP has total deposits >= 1e18, we leave 1e18 in it untouched.
         // - If it has 0 < x < 1e18 total deposits, we leave x in it.
         uint256 totalBoldDeposits = stabilityPoolCached.getTotalBoldDeposits();
-        uint256 boldToLeaveInSP = LiquityMath._min(MIN_BOLD_IN_SP, totalBoldDeposits);
+        uint256 boldToLeaveInSP = LiquityMath._min(systemParams.MIN_BOLD_IN_SP(), totalBoldDeposits);
         uint256 boldInSPForOffsets = totalBoldDeposits - boldToLeaveInSP;
 
         // Perform the appropriate liquidation sequence - tally values and obtain their totals.
@@ -513,7 +482,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
 
             uint256 ICR = getCurrentICR(troveId, _price);
 
-            if (ICR < MCR) {
+            if (ICR < systemParams.MCR()) {
                 LiquidationValues memory singleLiquidation;
                 LatestTroveData memory trove;
 
@@ -537,7 +506,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     ) internal view {
         // Tally all the values with their respective running totals
         totals.collGasCompensation += _singleLiquidation.collGasCompensation;
-        totals.ETHGasCompensation += ETH_GAS_COMPENSATION;
+        totals.ETHGasCompensation += systemParams.ETH_GAS_COMPENSATION();
         troveChange.debtDecrease += _trove.entireDebt;
         troveChange.collDecrease += _trove.entireColl;
         troveChange.appliedRedistBoldDebtGain += _trove.redistBoldDebtGain;
@@ -708,7 +677,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 newDebt = _applySingleRedemption(_defaultPool, _singleRedemption, isTroveInBatch);
 
         // Make Trove zombie if it's tiny (and it wasn’t already), in order to prevent griefing future (normal, sequential) redemptions
-        if (newDebt < MIN_DEBT) {
+        if (newDebt < systemParams.MIN_DEBT()) {
             if (!_singleRedemption.isZombieTrove) {
                 Troves[_singleRedemption.troveId].status = Status.zombie;
                 if (isTroveInBatch) {
@@ -726,7 +695,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
             }
         }
         // Note: technically, it could happen that the Trove pointed to by `lastZombieTroveId` ends up with
-        // newDebt >= MIN_DEBT thanks to BOLD debt redistribution, which means it _could_ be made active again,
+        // newDebt >= systemParams.MIN_DEBT() thanks to BOLD debt redistribution, which means it _could_ be made active again,
         // however we don't do that here, as it would require hints for re-insertion into `SortedTroves`.
     }
 
@@ -1238,7 +1207,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         (uint256 price,) = priceFeed.fetchPrice();
         // It's redeemable if the TCR is above the shutdown threshold, and branch has not been shut down.
         // Use the normal price for the TCR check.
-        bool redeemable = _getTCR(price) >= SCR && shutdownTime == 0;
+        bool redeemable = _getTCR(price) >= systemParams.SCR() && shutdownTime == 0;
 
         return (unbackedPortion, price, redeemable);
     }

@@ -40,22 +40,9 @@ contract BorrowerOperations is
     ISortedTroves internal sortedTroves;
     // Wrapped ETH for liquidation reserve (gas compensation)
     IERC20Metadata internal immutable gasToken;
-    ISystemParams internal immutable systemParams;
-
-    // Critical system collateral ratio. If the system's total collateral ratio (TCR) falls below the CCR, some borrowing operation restrictions are applied
-    uint256 public immutable CCR;
+    ISystemParams public immutable systemParams;
 
     bool public hasBeenShutDown;
-
-    // Minimum collateral ratio for individual troves
-    uint256 public immutable MCR;
-
-    // Extra buffer of collateral ratio to join a batch or adjust a trove inside a batch (on top of MCR)
-    uint256 public immutable BCR;
-
-    uint256 public immutable ETH_GAS_COMPENSATION;
-    uint256 public immutable MIN_DEBT;
-    uint256 public immutable MIN_ANNUAL_INTEREST_RATE;
 
     /*
      * Mapping from TroveId to individual delegate for interest rate setting.
@@ -191,14 +178,6 @@ contract BorrowerOperations is
 
         gasToken = _addressesRegistry.gasToken();
 
-        CCR = _systemParams.CCR();
-        MCR = _systemParams.MCR();
-        BCR = _systemParams.BCR();
-
-        ETH_GAS_COMPENSATION = _systemParams.ETH_GAS_COMPENSATION();
-        MIN_DEBT = _systemParams.MIN_DEBT();
-        MIN_ANNUAL_INTEREST_RATE = _systemParams.MIN_ANNUAL_INTEREST_RATE();
-
         troveManager = _addressesRegistry.troveManager();
         gasPoolAddress = _addressesRegistry.gasPoolAddress();
         collSurplusPool = _addressesRegistry.collSurplusPool();
@@ -213,6 +192,14 @@ contract BorrowerOperations is
 
         // Allow funds movements between Liquity contracts
         collToken.approve(address(activePool), type(uint256).max);
+    }
+
+    function CCR() external view override returns (uint256) {
+        return systemParams.CCR();
+    }
+
+    function MCR() external view override returns (uint256) {
+        return systemParams.MCR();
     }
 
     // --- Borrower Trove Operations ---
@@ -425,7 +412,7 @@ contract BorrowerOperations is
 
         // Mint the requested _boldAmount to the borrower and mint the gas comp to the GasPool
         vars.boldToken.mint(msg.sender, _boldAmount);
-        gasToken.transferFrom(msg.sender, gasPoolAddress, ETH_GAS_COMPENSATION);
+        gasToken.transferFrom(msg.sender, gasPoolAddress, systemParams.ETH_GAS_COMPENSATION());
 
         return vars.troveId;
     }
@@ -674,7 +661,7 @@ contract BorrowerOperations is
         (vars.price,) = priceFeed.fetchPrice();
         vars.isBelowCriticalThreshold = _checkBelowCriticalThreshold(
             vars.price,
-            CCR
+            systemParams.CCR()
         );
 
         // --- Checks ---
@@ -702,8 +689,8 @@ contract BorrowerOperations is
 
         // When the adjustment is a debt repayment, check it's a valid amount and that the caller has enough Bold
         if (_troveChange.debtDecrease > 0) {
-            uint256 maxRepayment = vars.trove.entireDebt > MIN_DEBT
-                ? vars.trove.entireDebt - MIN_DEBT
+            uint256 maxRepayment = vars.trove.entireDebt > systemParams.MIN_DEBT()
+                ? vars.trove.entireDebt - systemParams.MIN_DEBT()
                 : 0;
             if (_troveChange.debtDecrease > maxRepayment) {
                 _troveChange.debtDecrease = maxRepayment;
@@ -932,7 +919,7 @@ contract BorrowerOperations is
         );
 
         // Return ETH gas compensation
-        gasToken.transferFrom(gasPoolAddress, receiver, ETH_GAS_COMPENSATION);
+        gasToken.transferFrom(gasPoolAddress, receiver, systemParams.ETH_GAS_COMPENSATION());
         // Burn the remainder of the Trove's entire debt from the user
         boldTokenCached.burn(msg.sender, trove.entireDebt);
 
@@ -1000,10 +987,10 @@ contract BorrowerOperations is
             batchManager
         );
 
-        // If the trove was zombie, and now it’s not anymore, put it back in the list
+        // If the trove was zombie, and now it's not anymore, put it back in the list
         if (
             _checkTroveIsZombie(troveManagerCached, _troveId) &&
-            trove.entireDebt >= MIN_DEBT
+            trove.entireDebt >= systemParams.MIN_DEBT()
         ) {
             troveManagerCached.setTroveStatusToActive(_troveId);
             _reInsertIntoSortedTroves(
@@ -1869,13 +1856,13 @@ contract BorrowerOperations is
     }
 
     function _requireICRisAboveMCR(uint256 _newICR) internal view {
-        if (_newICR < MCR) {
+        if (_newICR < systemParams.MCR()) {
             revert ICRBelowMCR();
         }
     }
 
     function _requireICRisAboveMCRPlusBCR(uint256 _newICR) internal view {
-        if (_newICR < MCR + BCR) {
+        if (_newICR < systemParams.MCR() + systemParams.BCR()) {
             revert ICRBelowMCRPlusBCR();
         }
     }
@@ -1884,7 +1871,7 @@ contract BorrowerOperations is
         uint256 _debtIncrease,
         uint256 _newTCR
     ) internal view {
-        if (_debtIncrease > 0 && _newTCR < CCR) {
+        if (_debtIncrease > 0 && _newTCR < systemParams.CCR()) {
             revert TCRBelowCCR();
         }
     }
@@ -1902,13 +1889,13 @@ contract BorrowerOperations is
     }
 
     function _requireNewTCRisAboveCCR(uint256 _newTCR) internal view {
-        if (_newTCR < CCR) {
+        if (_newTCR < systemParams.CCR()) {
             revert TCRBelowCCR();
         }
     }
 
     function _requireAtLeastMinDebt(uint256 _debt) internal view {
-        if (_debt < MIN_DEBT) {
+        if (_debt < systemParams.MIN_DEBT()) {
             revert DebtBelowMin();
         }
     }
@@ -1935,7 +1922,7 @@ contract BorrowerOperations is
     function _requireValidAnnualInterestRate(
         uint256 _annualInterestRate
     ) internal view {
-        if (_annualInterestRate < MIN_ANNUAL_INTEREST_RATE) {
+        if (_annualInterestRate < systemParams.MIN_ANNUAL_INTEREST_RATE()) {
             revert InterestRateTooLow();
         }
         if (_annualInterestRate > MAX_ANNUAL_INTEREST_RATE) {

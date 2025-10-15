@@ -177,6 +177,10 @@ contract TestDeployer is MetadataDeployment {
         return abi.encodePacked(_creationCode, abi.encode(_disable));
     }
 
+    function getBytecode(bytes memory _creationCode, bool _disable, address _systemParams) public pure returns (bytes memory) {
+        return abi.encodePacked(_creationCode, abi.encode(_disable, _systemParams));
+    }
+
     function getAddress(address _deployer, bytes memory _bytecode, bytes32 _salt) public pure returns (address) {
         bytes32 hash = keccak256(abi.encodePacked(bytes1(0xff), _deployer, _salt, keccak256(_bytecode)));
 
@@ -390,6 +394,7 @@ contract TestDeployer is MetadataDeployment {
         });
 
         SystemParams systemParams = new SystemParams{salt: uniqueSalt}(
+            false,
             debtParams,
             liquidationParams,
             gasCompParams,
@@ -398,6 +403,8 @@ contract TestDeployer is MetadataDeployment {
             redemptionParams,
             poolParams
         );
+
+        systemParams.initialize();
 
         return ISystemParams(systemParams);
     }
@@ -441,7 +448,7 @@ contract TestDeployer is MetadataDeployment {
         );
         bytes32 stabilityPoolSalt = keccak256(abi.encodePacked(address(contracts.addressesRegistry)));
         addresses.stabilityPool =
-            getAddress(address(this), getBytecode(type(StabilityPool).creationCode, bool(false)), stabilityPoolSalt);
+            getAddress(address(this), getBytecode(type(StabilityPool).creationCode, bool(false), address(_systemParams)), stabilityPoolSalt);
         addresses.activePool = getAddress(
             address(this), getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry), address(_systemParams)), SALT
         );
@@ -488,7 +495,7 @@ contract TestDeployer is MetadataDeployment {
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
-        contracts.stabilityPool = new StabilityPool{salt: stabilityPoolSalt}(false);
+        contracts.stabilityPool = new StabilityPool{salt: stabilityPoolSalt}(false, _systemParams);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.pools.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
         contracts.pools.gasPool = new GasPool{salt: SALT}(contracts.addressesRegistry);
@@ -505,7 +512,7 @@ contract TestDeployer is MetadataDeployment {
         assert(address(contracts.pools.collSurplusPool) == addresses.collSurplusPool);
         assert(address(contracts.sortedTroves) == addresses.sortedTroves);
 
-        contracts.stabilityPool.initialize(contracts.addressesRegistry, _systemParams);
+        contracts.stabilityPool.initialize(contracts.addressesRegistry);
 
         // Connect contracts
         _boldToken.setBranchAddresses(
@@ -641,7 +648,7 @@ contract TestDeployer is MetadataDeployment {
             address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
         );
         addresses.stabilityPool =
-            getAddress(address(this), getBytecode(type(StabilityPool).creationCode, false), stabilityPoolSalt);
+            getAddress(address(this), getBytecode(type(StabilityPool).creationCode, false, address(_systemParams)), stabilityPoolSalt);
         addresses.activePool = getAddress(
             address(this), getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry), address(_systemParams)), SALT
         );
@@ -691,7 +698,7 @@ contract TestDeployer is MetadataDeployment {
         contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.troveManager = new TroveManager{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
-        contracts.stabilityPool = new StabilityPool{salt: stabilityPoolSalt}(false);
+        contracts.stabilityPool = new StabilityPool{salt: stabilityPoolSalt}(false, _systemParams);
         contracts.activePool = new ActivePool{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.defaultPool = new DefaultPool{salt: SALT}(contracts.addressesRegistry);
         contracts.gasPool = new GasPool{salt: SALT}(contracts.addressesRegistry);
@@ -708,7 +715,7 @@ contract TestDeployer is MetadataDeployment {
         assert(address(contracts.collSurplusPool) == addresses.collSurplusPool);
         assert(address(contracts.sortedTroves) == addresses.sortedTroves);
 
-        contracts.stabilityPool.initialize(contracts.addressesRegistry, _systemParams);
+        contracts.stabilityPool.initialize(contracts.addressesRegistry);
 
         // Connect contracts
         _params.boldToken.setBranchAddresses(

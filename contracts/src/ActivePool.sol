@@ -29,14 +29,12 @@ contract ActivePool is IActivePool {
     address public immutable borrowerOperationsAddress;
     address public immutable troveManagerAddress;
     address public immutable defaultPoolAddress;
-    address public immutable systemParamsAddress;
 
+    ISystemParams public immutable systemParams;
     IBoldToken public immutable boldToken;
 
     IInterestRouter public immutable interestRouter;
     IBoldRewardsReceiver public immutable stabilityPool;
-
-    uint256 public immutable SP_YIELD_SPLIT;
 
     uint256 internal collBalance; // deposited coll tracker
 
@@ -76,7 +74,7 @@ contract ActivePool is IActivePool {
     event ActivePoolCollBalanceUpdated(uint256 _collBalance);
 
     constructor(IAddressesRegistry _addressesRegistry, ISystemParams _systemParams) {
-        systemParamsAddress = address(_systemParams);
+        systemParams = _systemParams;
         collToken = _addressesRegistry.collToken();
         borrowerOperationsAddress = address(_addressesRegistry.borrowerOperations());
         troveManagerAddress = address(_addressesRegistry.troveManager());
@@ -84,8 +82,6 @@ contract ActivePool is IActivePool {
         defaultPoolAddress = address(_addressesRegistry.defaultPool());
         interestRouter = _addressesRegistry.interestRouter();
         boldToken = _addressesRegistry.boldToken();
-
-        SP_YIELD_SPLIT = _systemParams.SP_YIELD_SPLIT();
 
         emit CollTokenAddressChanged(address(collToken));
         emit BorrowerOperationsAddressChanged(borrowerOperationsAddress);
@@ -120,7 +116,7 @@ contract ActivePool is IActivePool {
     }
 
     function calcPendingSPYield() external view returns (uint256) {
-        return calcPendingAggInterest() * SP_YIELD_SPLIT / DECIMAL_PRECISION;
+        return calcPendingAggInterest() * systemParams.SP_YIELD_SPLIT() / DECIMAL_PRECISION;
     }
 
     function calcPendingAggBatchManagementFee() public view returns (uint256) {
@@ -257,7 +253,7 @@ contract ActivePool is IActivePool {
 
         // Mint part of the BOLD interest to the SP and part to the router for LPs.
         if (mintedAmount > 0) {
-            uint256 spYield = SP_YIELD_SPLIT * mintedAmount / DECIMAL_PRECISION;
+            uint256 spYield = systemParams.SP_YIELD_SPLIT() * mintedAmount / DECIMAL_PRECISION;
             uint256 remainderToLPs = mintedAmount - spYield;
 
             boldToken.mint(address(interestRouter), remainderToLPs);

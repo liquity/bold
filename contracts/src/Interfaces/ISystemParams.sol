@@ -141,4 +141,5 @@ interface ISystemParams {
     /// @notice Minimum BOLD that must remain in Stability Pool to prevent complete drainage.
     function MIN_BOLD_IN_SP() external view returns (uint256);
 
+    function initialize() external;
 }

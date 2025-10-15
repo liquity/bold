@@ -9,13 +9,14 @@ import {
     MAX_LIQUIDATION_PENALTY_REDISTRIBUTION,
     MAX_ANNUAL_INTEREST_RATE
 } from "./Dependencies/Constants.sol";
+import "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 
 /**
  * @title System Parameters
  * @author Mento Labs
  * @notice This contract manages the system-wide parameters for the protocol.
  */
-contract SystemParams is ISystemParams {
+contract SystemParams is ISystemParams, Initializable {
     /* ========== DEBT PARAMETERS ========== */
 
     uint256 immutable public MIN_DEBT;
@@ -57,6 +58,7 @@ contract SystemParams is ISystemParams {
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
+        bool disableInitializers,
         DebtParams memory _debtParams,
         LiquidationParams memory _liquidationParams,
         GasCompParams memory _gasCompParams,
@@ -65,6 +67,10 @@ contract SystemParams is ISystemParams {
         RedemptionParams memory _redemptionParams,
         StabilityPoolParams memory _poolParams
     ) {
+        if (disableInitializers) {
+            _disableInitializers();
+        }
+
         // Validate debt parameters
         if (_debtParams.minDebt == 0 || _debtParams.minDebt > 10000e18) revert InvalidMinDebt();
 
@@ -136,4 +142,11 @@ contract SystemParams is ISystemParams {
         SP_YIELD_SPLIT = _poolParams.spYieldSplit;
         MIN_BOLD_IN_SP = _poolParams.minBoldInSP;
     }
+
+     /*
+     * Initializes proxy storage
+     * All parameters are immutable from constructor. This function
+     * only marks initialization complete for proxy pattern.
+     */
+    function initialize() external initializer {}
 }
