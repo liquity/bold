@@ -40,7 +40,7 @@ contract BorrowerOperationsTester is BorrowerOperations, IBorrowerOperationsTest
         uint256 _price
     ) external view returns (uint256) {
         TroveChange memory troveChange;
-        _initTroveChange(troveChange, _collChange, isCollIncrease, _debtChange, isDebtIncrease);
-        return _getNewTCRFromTroveChange(troveChange, _price);
+        BorrowerOperationsLib.initTroveChange(troveChange, _collChange, isCollIncrease, _debtChange, isDebtIncrease);
+        return BorrowerOperationsLib.getNewTCRFromTroveChange(troveChange, _price, getEntireBranchColl(), getEntireBranchDebt());
     }
 }

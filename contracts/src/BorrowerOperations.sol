@@ -13,6 +13,7 @@ import "./Interfaces/ISortedTroves.sol";
 import "./Interfaces/ISystemParams.sol";
 import "./Dependencies/LiquityBase.sol";
 import "./Dependencies/AddRemoveManagers.sol";
+import "./Dependencies/BorrowerOperationsLib.sol";
 import "./Types/LatestTroveData.sol";
 import "./Types/LatestBatchData.sol";
 
@@ -356,9 +357,10 @@ contract BorrowerOperations is
         vars.avgInterestRate = vars
             .activePool
             .getNewApproxAvgInterestRateFromTroveChange(_change);
-        _change.upfrontFee = _calcUpfrontFee(
+        _change.upfrontFee = BorrowerOperationsLib.calcUpfrontFee(
             _change.debtIncrease,
-            vars.avgInterestRate
+            vars.avgInterestRate,
+            UPFRONT_INTEREST_PERIOD
         );
         _requireUserAcceptsUpfrontFee(_change.upfrontFee, _maxUpfrontFee);
 
@@ -393,7 +395,7 @@ contract BorrowerOperations is
             _requireICRisAboveMCRPlusBCR(vars.ICR);
         }
 
-        vars.newTCR = _getNewTCRFromTroveChange(_change, vars.price);
+        vars.newTCR = BorrowerOperationsLib.getNewTCRFromTroveChange(_change, vars.price, getEntireBranchColl(), getEntireBranchDebt());
         _requireNewTCRisAboveCCR(vars.newTCR);
 
         // --- Effects & interactions ---
@@ -485,25 +487,6 @@ contract BorrowerOperations is
         );
     }
 
-    function _initTroveChange(
-        TroveChange memory _troveChange,
-        uint256 _collChange,
-        bool _isCollIncrease,
-        uint256 _boldChange,
-        bool _isDebtIncrease
-    ) internal pure {
-        if (_isCollIncrease) {
-            _troveChange.collIncrease = _collChange;
-        } else {
-            _troveChange.collDecrease = _collChange;
-        }
-
-        if (_isDebtIncrease) {
-            _troveChange.debtIncrease = _boldChange;
-        } else {
-            _troveChange.debtDecrease = _boldChange;
-        }
-    }
 
     function adjustTrove(
         uint256 _troveId,
@@ -517,7 +500,7 @@ contract BorrowerOperations is
         _requireTroveIsActive(troveManagerCached, _troveId);
 
         TroveChange memory troveChange;
-        _initTroveChange(
+        BorrowerOperationsLib.initTroveChange(
             troveChange,
             _collChange,
             _isCollIncrease,
@@ -541,7 +524,7 @@ contract BorrowerOperations is
         _requireTroveIsZombie(troveManagerCached, _troveId);
 
         TroveChange memory troveChange;
-        _initTroveChange(
+        BorrowerOperationsLib.initTroveChange(
             troveChange,
             _collChange,
             _isCollIncrease,
@@ -766,9 +749,10 @@ contract BorrowerOperations is
             uint256 avgInterestRate = vars
                 .activePool
                 .getNewApproxAvgInterestRateFromTroveChange(_troveChange);
-            _troveChange.upfrontFee = _calcUpfrontFee(
+            _troveChange.upfrontFee = BorrowerOperationsLib.calcUpfrontFee(
                 _troveChange.debtIncrease,
-                avgInterestRate
+                avgInterestRate,
+                UPFRONT_INTEREST_PERIOD
             );
             _requireUserAcceptsUpfrontFee(
                 _troveChange.upfrontFee,
@@ -896,7 +880,7 @@ contract BorrowerOperations is
         }
 
         (uint256 price, ) = priceFeed.fetchPrice();
-        uint256 newTCR = _getNewTCRFromTroveChange(troveChange, price);
+        uint256 newTCR = BorrowerOperationsLib.getNewTCRFromTroveChange(troveChange, price, getEntireBranchColl(), getEntireBranchDebt());
         if (!hasBeenShutDown) _requireNewTCRisAboveCCR(newTCR);
 
         troveManagerCached.onCloseTrove(
@@ -1189,7 +1173,7 @@ contract BorrowerOperations is
 
             uint256 avgInterestRate = activePoolCached
                 .getNewApproxAvgInterestRateFromTroveChange(batchChange);
-            batchChange.upfrontFee = _calcUpfrontFee(newDebt, avgInterestRate);
+            batchChange.upfrontFee = BorrowerOperationsLib.calcUpfrontFee(newDebt, avgInterestRate, UPFRONT_INTEREST_PERIOD);
             _requireUserAcceptsUpfrontFee(
                 batchChange.upfrontFee,
                 _maxUpfrontFee
@@ -1207,7 +1191,7 @@ contract BorrowerOperations is
 
             // Disallow a premature adjustment if it would result in TCR < CCR
             // (which includes the case when TCR is already below CCR before the adjustment).
-            uint256 newTCR = _getNewTCRFromTroveChange(batchChange, price);
+            uint256 newTCR = BorrowerOperationsLib.getNewTCRFromTroveChange(batchChange, price, getEntireBranchColl(), getEntireBranchDebt());
             _requireNewTCRisAboveCCR(newTCR);
         }
 
@@ -1520,9 +1504,10 @@ contract BorrowerOperations is
 
         uint256 avgInterestRate = activePool
             .getNewApproxAvgInterestRateFromTroveChange(_troveChange);
-        _troveChange.upfrontFee = _calcUpfrontFee(
+        _troveChange.upfrontFee = BorrowerOperationsLib.calcUpfrontFee(
             _troveEntireDebt,
-            avgInterestRate
+            avgInterestRate,
+            UPFRONT_INTEREST_PERIOD
         );
         _requireUserAcceptsUpfrontFee(_troveChange.upfrontFee, _maxUpfrontFee);
 
@@ -1542,18 +1527,12 @@ contract BorrowerOperations is
 
         // Disallow a premature adjustment if it would result in TCR < CCR
         // (which includes the case when TCR is already below CCR before the adjustment).
-        uint256 newTCR = _getNewTCRFromTroveChange(_troveChange, price);
+        uint256 newTCR = BorrowerOperationsLib.getNewTCRFromTroveChange(_troveChange, price, getEntireBranchColl(), getEntireBranchDebt());
         _requireNewTCRisAboveCCR(newTCR);
 
         return _troveEntireDebt;
     }
 
-    function _calcUpfrontFee(
-        uint256 _debt,
-        uint256 _avgInterestRate
-    ) internal view returns (uint256) {
-        return _calcInterest(_debt * _avgInterestRate, UPFRONT_INTEREST_PERIOD);
-    }
 
     // Call from TM to clean state here
     function onLiquidateTrove(uint256 _troveId) external {
@@ -1842,7 +1821,7 @@ contract BorrowerOperations is
             _requireICRisAboveMCR(_vars.newICR);
         }
 
-        uint256 newTCR = _getNewTCRFromTroveChange(_troveChange, _vars.price);
+        uint256 newTCR = BorrowerOperationsLib.getNewTCRFromTroveChange(_troveChange, _vars.price, getEntireBranchColl(), getEntireBranchDebt());
         if (_vars.isBelowCriticalThreshold) {
             _requireNoBorrowingUnlessNewTCRisAboveCCR(
                 _troveChange.debtIncrease,
@@ -2046,21 +2025,4 @@ contract BorrowerOperations is
         }
     }
 
-    // --- ICR and TCR getters ---
-
-    function _getNewTCRFromTroveChange(
-        TroveChange memory _troveChange,
-        uint256 _price
-    ) internal view returns (uint256 newTCR) {
-        uint256 totalColl = getEntireBranchColl();
-        totalColl += _troveChange.collIncrease;
-        totalColl -= _troveChange.collDecrease;
-
-        uint256 totalDebt = getEntireBranchDebt();
-        totalDebt += _troveChange.debtIncrease;
-        totalDebt += _troveChange.upfrontFee;
-        totalDebt -= _troveChange.debtDecrease;
-
-        newTCR = LiquityMath._computeCR(totalColl, totalDebt, _price);
-    }
 }
