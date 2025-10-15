@@ -82,6 +82,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // used for gas compensation and as collateral of the first branch
     // tapping disallowed
     IWETH WETH;
+    IERC20Metadata WRAPPED_SAGA;
     // IERC20Metadata USDC;
     // address WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address RETH_ADDRESS = 0x679121f168488185eca6Aaa3871687FF6d38Edb6; // TODO: Change to CORRECT ADDRESS
@@ -517,7 +518,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
             // SAGA
             // vars.collaterals[4] = IERC20Metadata(SAGA_ADDRESS);
-            vars.collaterals[3] = new WrappedToken(IERC20Metadata(SAGA_ADDRESS));
+            WRAPPED_SAGA = new WrappedToken(IERC20Metadata(SAGA_ADDRESS));
+            vars.collaterals[3] = WRAPPED_SAGA;
         } else {
             // Sepolia
             // Use WETH as collateral for the first branch
@@ -542,7 +544,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, address(0)); // TODO: Replace null address with governor address
+        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, GOVERNANCE_ADDRESS); // TODO: Replace null address with governor address
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
 
@@ -706,7 +708,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
 
         // Update gas compensation max reward
-        _updateGasCompensationMaxReward(contracts.troveManager);
+        // TODO: 
+        // Only the governor can update gas compensation max reward
+        // So instead of calling during deployment, we could call it post-deployment as governor.
+        // OR, deploy as governor and call it during deployment.
+
+        // _updateGasCompensationMaxReward(contracts.troveManager);
 
         // deploy zappers
         (contracts.gasCompZapper, contracts.wethZapper, contracts.leverageZapper) =
@@ -738,7 +745,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                     BTC_ORACLE_ADDRESS,
                     BTC_USD_STALENESS_THRESHOLD
                 );
-            } else if (_collTokenAddress == SAGA_ADDRESS) {
+            } else if (_collTokenAddress == address(WRAPPED_SAGA)) {
                 // SAGA
                 return new SAGAPriceFeed(
                     deployer,
@@ -942,9 +949,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_RETH);
         } else if (address(_collToken) == TBTC_ADDRESS) {
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_TBTC);
-        // } else if (address(_collToken) == FBTC_ADDRESS) {
-        //     _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_FBTC);
-        } else if (address(_collToken) == SAGA_ADDRESS) {
+        } else if (address(_collToken) == address(WRAPPED_SAGA)) {
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_SAGA);
         } else {
             revert("Invalid collateral token");
