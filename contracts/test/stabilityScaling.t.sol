@@ -320,4 +320,27 @@ contract StabilityScalingTest is DevTestSetup {
         assertLt(stabilityPool.getCompoundedBoldDeposit(A), previousDeposit);
         assertEq(stabilityPool.getDepositorCollGain(A), previousCollGain);
     }
+
+    function testStabilityScaling_hugeDepositorDoesntLooseBold() public {
+      address depositor = makeAddr("earthUsdReserve");
+      uint256 depositAmount = 2.417 ether * 1e12; // Total USD in circulation: 2.417 T
+      deal(address(boldToken), depositor, depositAmount);
+      makeSPDepositAndClaim(depositor, depositAmount);
+
+      for (uint256 i = 0; i < 9; ++i) {
+        uint256 spBalance = boldToken.balanceOf(address(stabilityPool));
+        uint256 boldOut = spBalance - 1_000e18;
+        uint256 collIn = boldOut / 2000;
+        vm.prank(liquidityStrategy);
+        stabilityPool.swapCollateralForStable(collIn, boldOut);
+        _topUpStabilityPoolBold(boldOut);
+      }
+
+      uint256 collGain = stabilityPool.getDepositorCollGain(depositor);
+      uint256 compoundedBold = stabilityPool.getCompoundedBoldDeposit(depositor);
+      assertEq(stabilityPool.currentScale(), 9);
+
+      assertEq(compoundedBold, 0);
+      assertApproxEqAbs(collGain, depositAmount / 2000, 1);
+    }
 }
