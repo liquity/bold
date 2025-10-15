@@ -15,8 +15,7 @@ export function YboldPositionSummary() {
     <EarnPositionSummaryBase
       action={{
         label: `Deposit to the yBOLD pool`,
-        // Cast to `/${string}` to satisfy the type checker, as this is a special case
-        path: stats?.link as `/${string}`,
+        path: stats.link,
         external: true,
       }}
       active={false}

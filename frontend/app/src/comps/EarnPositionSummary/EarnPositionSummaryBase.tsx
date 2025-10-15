@@ -16,7 +16,8 @@ export function EarnPositionSummaryBase({
 }: {
   action?: null | {
     label: string;
-    path: `/${string}`;
+    // Generic href
+    path: string;
     external?: boolean;
   };
   active: boolean;
