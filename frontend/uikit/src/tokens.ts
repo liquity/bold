@@ -5,6 +5,7 @@ import tokenLusd from "./token-icons/lusd.svg";
 import tokenReth from "./token-icons/reth.svg";
 import tokenSbold from "./token-icons/sbold.svg";
 import tokenSteth from "./token-icons/wsteth.svg";
+import tokenYbold from "./token-icons/ybold.svg";
 
 // any external token, without a known symbol
 export type ExternalToken = {
@@ -27,6 +28,7 @@ export type TokenSymbol =
   | "LUSD"
   | "RETH"
   | "SBOLD"
+  | "YBOLD"
   | "WSTETH";
 
 export type CollateralSymbol =
@@ -45,6 +47,7 @@ export function isTokenSymbol(symbolOrUrl: string): symbolOrUrl is TokenSymbol {
     || symbolOrUrl === "LUSD"
     || symbolOrUrl === "RETH"
     || symbolOrUrl === "SBOLD"
+    || symbolOrUrl === "YBOLD"
     || symbolOrUrl === "WSTETH"
   );
 }
@@ -86,6 +89,12 @@ export const SBOLD: Token = {
   symbol: "SBOLD" as const,
 } as const;
 
+export const YBOLD: Token = {
+  icon: tokenYbold,
+  name: "yBOLD",
+  symbol: "YBOLD" as const,
+} as const;
+
 export const ETH: CollateralToken = {
   collateralRatio: 1.1,
   icon: tokenEth,
@@ -120,5 +129,6 @@ export const TOKENS_BY_SYMBOL = {
   LUSD,
   RETH,
   SBOLD,
+  YBOLD,
   WSTETH,
 } as const;
