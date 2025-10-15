@@ -474,7 +474,7 @@ contract BaseTest is TestAccounts, Logging, TroveId {
         address _batchAddress,
         uint256 _annualInterestRate
     ) internal returns (uint256) {
-        if (!borrowerOperations.checkBatchManagerExists(_batchAddress)) {
+        if (borrowerOperations.getInterestBatchManager(_batchAddress).maxInterestRate == 0) {
             registerBatchManager(
                 _batchAddress,
                 uint128(LiquityMath._min(1e16, _annualInterestRate)),
@@ -518,7 +518,7 @@ contract BaseTest is TestAccounts, Logging, TroveId {
         address _newBatchManager,
         uint256 _annualInterestRate
     ) internal {
-        if (!borrowerOperations.checkBatchManagerExists(_newBatchManager)) {
+        if (borrowerOperations.getInterestBatchManager(_newBatchManager).maxInterestRate == 0) {
             registerBatchManager(
                 _newBatchManager,
                 uint128(1e16),

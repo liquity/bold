@@ -150,7 +150,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     event SortedTrovesAddressChanged(address _sortedTrovesAddress);
     event BoldTokenAddressChanged(address _boldTokenAddress);
 
-    event ShutDown(uint256 _tcr);
+    // event ShutDown(uint256 _tcr);
 
     constructor(IAddressesRegistry _addressesRegistry)
         AddRemoveManagers(_addressesRegistry)
@@ -341,7 +341,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireUserAcceptsUpfrontFee(_change.upfrontFee, _maxUpfrontFee);
 
         vars.entireDebt = _change.debtIncrease + _change.upfrontFee;
-        require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt() + vars.entireDebt, "BorrowerOperations: Debt limit exceeded.");
+        require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt() + vars.entireDebt);
         _requireAtLeastMinDebt(vars.entireDebt);
 
         vars.ICR = LiquityMath._computeCR(_collAmount, vars.entireDebt, vars.price);
@@ -404,7 +404,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function withdrawColl(uint256 _troveId, uint256 _collWithdrawal) external override {
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsActive(troveManagerCached, _troveId);
-        require(isBranchActive(), "BorrowerOperations: Branch is not active");
+        require(isBranchActive());
 
         TroveChange memory troveChange;
         troveChange.collDecrease = _collWithdrawal;
@@ -421,7 +421,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external override {
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsActive(troveManagerCached, _troveId);
-        require(isBranchActive(), "BorrowerOperations: Branch is not active");
+        require(isBranchActive());
         
         TroveChange memory troveChange;
         troveChange.debtIncrease = _boldAmount;
@@ -476,7 +476,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireTroveIsActive(troveManagerCached, _troveId);
         // Branch must be active if user is issuing more debt and/or withdrawing collateral
         if (_isDebtIncrease || !_isCollIncrease) {
-            require(isBranchActive(), "BorrowerOperations: Branch is not active");
+            require(isBranchActive());
         }
 
         TroveChange memory troveChange;
@@ -496,7 +496,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
     ) external override {
         ITroveManager troveManagerCached = troveManager;
         _requireTroveIsZombie(troveManagerCached, _troveId);
-        require(isBranchActive(), "BorrowerOperations: Branch is not active");
+        require(isBranchActive(), "");
 
         TroveChange memory troveChange;
         _initTroveChange(troveChange, _collChange, _isCollIncrease, _boldChange, _isDebtIncrease);
@@ -611,11 +611,20 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             _requireSufficientBoldBalance(vars.boldToken, msg.sender, _troveChange.debtDecrease);
         }
 
-        _requireNonZeroAdjustment(_troveChange);
+        // _requireNonZeroAdjustment(_troveChange);
+        if (
+            _troveChange.collIncrease == 0 && _troveChange.collDecrease == 0 && _troveChange.debtIncrease == 0
+                && _troveChange.debtDecrease == 0
+        ) {
+            revert ZeroAdjustment();
+        }
 
         // When the adjustment is a collateral withdrawal, check that it's no more than the Trove's entire collateral
         if (_troveChange.collDecrease > 0) {
-            _requireValidCollWithdrawal(vars.trove.entireColl, _troveChange.collDecrease);
+            // _requireValidCollWithdrawal(vars.trove.entireColl, _troveChange.collDecrease);
+            if (_troveChange.collDecrease > vars.trove.entireColl) {
+                revert CollWithdrawalTooHigh();
+            }
         }
 
         vars.newColl = vars.trove.entireColl + _troveChange.collIncrease - _troveChange.collDecrease;
@@ -769,7 +778,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _requireTroveIsOpen(troveManagerCached, _troveId);
 
         LatestTroveData memory trove = troveManagerCached.getLatestTroveData(_troveId);
-        _requireNonZeroDebt(trove.entireDebt);
+        // _requireNonZeroDebt(trove.entireDebt);
+        if (trove.entireDebt == 0) {
+            revert TroveWithZeroDebt();
+        }
 
         TroveChange memory change;
         change.appliedRedistBoldDebtGain = trove.redistBoldDebtGain;
@@ -1246,7 +1258,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
 
         _applyShutdown();
 
-        emit ShutDown(TCR);
+        // emit ShutDown(TCR);
     }
 
     // Not technically a "Borrower op", but seems best placed here given current shutdown logic.
@@ -1295,7 +1307,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         IActivePool _activePool
     ) internal {
         if (_troveChange.debtIncrease > 0) {
-            require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt(), "BorrowerOperations: Debt limit exceeded.");
+            require(troveManager.getDebtLimit() >= troveManager.getEntireBranchDebt());
             _boldToken.mint(withdrawalReceiver, _troveChange.debtIncrease);
         } else if (_troveChange.debtDecrease > 0) {
             _boldToken.burn(msg.sender, _troveChange.debtDecrease);
@@ -1317,9 +1329,9 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         _activePool.accountForReceivedColl(_amount);
     }
 
-    function checkBatchManagerExists(address _batchManager) external view returns (bool) {
-        return interestBatchManagers[_batchManager].maxInterestRate > 0;
-    }
+    // function checkBatchManagerExists(address _batchManager) external view returns (bool) {
+    //     return interestBatchManagers[_batchManager].maxInterestRate > 0;
+    // }
 
     // --- 'Require' wrapper functions ---
 
@@ -1329,14 +1341,14 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireNonZeroAdjustment(TroveChange memory _troveChange) internal pure {
-        if (
-            _troveChange.collIncrease == 0 && _troveChange.collDecrease == 0 && _troveChange.debtIncrease == 0
-                && _troveChange.debtDecrease == 0
-        ) {
-            revert ZeroAdjustment();
-        }
-    }
+    // function _requireNonZeroAdjustment(TroveChange memory _troveChange) internal pure {
+    //     if (
+    //         _troveChange.collIncrease == 0 && _troveChange.collDecrease == 0 && _troveChange.debtIncrease == 0
+    //             && _troveChange.debtDecrease == 0
+    //     ) {
+    //         revert ZeroAdjustment();
+    //     }
+    // }
 
     function _requireSenderIsOwnerOrInterestManager(uint256 _troveId) internal view {
         address owner = troveNFT.ownerOf(_troveId);
@@ -1410,11 +1422,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         return status == ITroveManager.Status.zombie;
     }
 
-    function _requireNonZeroDebt(uint256 _troveDebt) internal pure {
-        if (_troveDebt == 0) {
-            revert TroveWithZeroDebt();
-        }
-    }
+    // function _requireNonZeroDebt(uint256 _troveDebt) internal pure {
+    //     if (_troveDebt == 0) {
+    //         revert TroveWithZeroDebt();
+    //     }
+    // }
 
     function _requireUserAcceptsUpfrontFee(uint256 _fee, uint256 _maxFee) internal pure {
         if (_fee > _maxFee) {
@@ -1450,7 +1462,10 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         uint256 newTCR = _getNewTCRFromTroveChange(_troveChange, _vars.price);
         if (_vars.isBelowCriticalThreshold) {
             _requireNoBorrowingUnlessNewTCRisAboveCCR(_troveChange.debtIncrease, newTCR);
-            _requireDebtRepaymentGeCollWithdrawal(_troveChange, _vars.price);
+            // _requireDebtRepaymentGeCollWithdrawal(_troveChange, _vars.price);
+            if ((_troveChange.debtDecrease * DECIMAL_PRECISION < _troveChange.collDecrease * _vars.price)) {
+                revert RepaymentNotMatchingCollWithdrawal();
+            }
         } else {
             // if Normal Mode
             _requireNewTCRisAboveCCR(newTCR);
@@ -1475,11 +1490,11 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
         }
     }
 
-    function _requireDebtRepaymentGeCollWithdrawal(TroveChange memory _troveChange, uint256 _price) internal pure {
-        if ((_troveChange.debtDecrease * DECIMAL_PRECISION < _troveChange.collDecrease * _price)) {
-            revert RepaymentNotMatchingCollWithdrawal();
-        }
-    }
+    // function _requireDebtRepaymentGeCollWithdrawal(TroveChange memory _troveChange, uint256 _price) internal pure {
+    //     if ((_troveChange.debtDecrease * DECIMAL_PRECISION < _troveChange.collDecrease * _price)) {
+    //         revert RepaymentNotMatchingCollWithdrawal();
+    //     }
+    // }
 
     function _requireNewTCRisAboveCCR(uint256 _newTCR) internal view {
         if (_newTCR < CCR()) {

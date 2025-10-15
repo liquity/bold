@@ -96,7 +96,7 @@ interface IBorrowerOperations is ILiquityBase, IAddRemoveManagers {
     function shutdown() external;
     function shutdownFromOracleFailure() external;
 
-    function checkBatchManagerExists(address _batchMananger) external view returns (bool);
+    // function checkBatchManagerExists(address _batchMananger) external view returns (bool);
 
     // -- individual delegation --
     struct InterestIndividualDelegate {
