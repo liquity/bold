@@ -36,35 +36,6 @@ export function YboldPositionSummary() {
             >
               APR
             </div>
-            <div>
-              <span>{stats?.totalApr}</span>
-            </div>
-            <InfoTooltip
-              content={{
-                heading: "Current APR",
-                body: <>The annualized rate yBOLD deposits earned over the last 24 hours.</>,
-                footerLink: {
-                  label: "Check Dune for more details",
-                  href: "https://dune.com/liquity/liquity-v2",
-                },
-              }}
-            />
-          </div>
-          <div
-            className={css({
-              display: "flex",
-              gap: 4,
-              fontSize: 14,
-            })}
-          >
-            <div
-              className={css({
-                whiteSpace: "nowrap",
-                color: "contentAlt2",
-              })}
-            >
-              7d APR
-            </div>
             <Amount
               fallback="-%"
               format="1z"
@@ -74,7 +45,7 @@ export function YboldPositionSummary() {
             <InfoTooltip
               content={{
                 heading: "APR (last 7 days)",
-                body: <>The annualized rate yBOLD deposits earned over the last 7 days.</>,
+                body: <>The annualized rate yBOLD deposits earned over the last 24 hours.</>,
                 footerLink: {
                   label: "Check Dune for more details",
                   href: "https://dune.com/liquity/liquity-v2",
