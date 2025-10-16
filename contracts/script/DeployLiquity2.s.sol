@@ -77,24 +77,21 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     uint256 constant NUM_BRANCHES = 4;
 
-    address WETH_ADDRESS = 0xeb41D53F14Cb9a67907f2b8b5DBc223944158cCb;
-
     // used for gas compensation and as collateral of the first branch
     // tapping disallowed
     IWETH WETH;
     IERC20Metadata WRAPPED_SAGA;
     // IERC20Metadata USDC;
-    // address WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address WETH_ADDRESS = 0xeb41D53F14Cb9a67907f2b8b5DBc223944158cCb;
     address RETH_ADDRESS = 0x679121f168488185eca6Aaa3871687FF6d38Edb6; // TODO: Change to CORRECT ADDRESS
     address TBTC_ADDRESS = 0xa740E6758e309840ffFfe58f749F018386A3b70b; // TODO: Change to CORRECT ADDRESS
     address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE; // TODO: This is 6 decimals, not 18 decimals. Either delete or get 18 decimals wrapped token of SAGA.
-    address ETH_ORACLE_ADDRESS = 0x0cD65ca12F6c9b10254FABC0CC62d273ABbb3d84;
-    address RETH_ORACLE_ADDRESS = 0x7B1be2C7B390A1FA29e07504f2a46A8Dc07eD9F4;
-    // address STETH_ORACLE_ADDRESS = address(0);
     // TODO: Change these values
-    address TBTC_ORACLE_ADDRESS = 0x9494Ed94280E9A8c5b52B1cDa9Ac9D21f6307135;
-    address BTC_ORACLE_ADDRESS = 0x4a397383fE5FbE9AB33879869153fF40ea68815F;
-    address SAGA_ORACLE_ADDRESS = 0xaA43df021149C34ca3654F387C9aeB9AcABa012a;
+    address ETH_ORACLE_ADDRESS = 0xf568a35f0D1D4C0a389bB29033a0f13E02536D62;
+    address RETH_ORACLE_ADDRESS = 0xa2e5E28F3cA88e7Cc4f046dba2029eA8F44A6796;
+    address TBTC_ORACLE_ADDRESS = 0x987fc3b27226427323EFDB73E713669cf87B588c;
+    address BTC_ORACLE_ADDRESS = 0xe7a6046a46ce932CbcD44D284f2B4C4e841457e4;
+    address SAGA_ORACLE_ADDRESS = 0xB4eA7fc3359E390CADcee542bDbd34caB89E64f0;
     ///////////////////////////////
     uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
     // uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
