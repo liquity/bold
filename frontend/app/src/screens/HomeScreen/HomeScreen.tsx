@@ -427,7 +427,7 @@ function EarnRewardsRow({
         }
 
         return {
-          apr: ybold.totalApr,
+          apr: "...",
           apr7d: ybold.weeklyApr,
           totalDeposited: ybold.tvl,
           link: ybold.link,
