@@ -155,7 +155,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         uint256 MCR;
         uint256 SCR;
         uint256 BCR;
-        uint256 debtLimit;
+        uint256 DEBT_LIMIT;
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
     }
@@ -273,42 +273,42 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             MCR: MCR_WETH,
             SCR: SCR_WETH,
             BCR: BCR_ALL,
-            debtLimit: WETH_DEBT_LIMIT,
+            DEBT_LIMIT: WETH_DEBT_LIMIT,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_WETH,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_WETH
         });
 
         // rETH
         troveManagerParamsArray[1] = TroveManagerParams({
-            CCR: CCR_SETH,
-            MCR: MCR_SETH,
-            SCR: SCR_SETH,
+            CCR: CCR_RETH,
+            MCR: MCR_RETH,
+            SCR: SCR_RETH,
             BCR: BCR_ALL,
-            debtLimit: RETH_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+            DEBT_LIMIT: RETH_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_RETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_RETH
         });
 
         // tBTC
         troveManagerParamsArray[2] = TroveManagerParams({
-            CCR: CCR_SETH,
-            MCR: MCR_SETH,
-            SCR: SCR_SETH,
+            CCR: CCR_TBTC,
+            MCR: MCR_TBTC,
+            SCR: SCR_TBTC,
             BCR: BCR_ALL,
-            debtLimit: TBTC_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+            DEBT_LIMIT: TBTC_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_TBTC,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_TBTC
         });
         
         // SAGA
         troveManagerParamsArray[3] = TroveManagerParams({
-            CCR: CCR_SETH,
-            MCR: MCR_SETH,
-            SCR: SCR_SETH,
+            CCR: CCR_SAGA,
+            MCR: MCR_SAGA,
+            SCR: SCR_SAGA,
             BCR: BCR_ALL,
-            debtLimit: SAGA_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+            DEBT_LIMIT: SAGA_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SAGA,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SAGA
         });
 
         string[] memory collNames = new string[](NUM_BRANCHES - 1);
@@ -487,9 +487,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         address _boldToken,
         address _governanceAddress
     ) internal returns (DeploymentResult memory r) {
-        console2.log("DeployLiquity2Script: assert _collNames.length == troveManagerParamsArray.length - 1: %s == %s", _collNames.length, troveManagerParamsArray.length - 1);
         assert(_collNames.length == troveManagerParamsArray.length - 1);
-        console2.log("DeployLiquity2Script: assert _collSymbols.length == troveManagerParamsArray.length - 1: %s == %s", _collSymbols.length, troveManagerParamsArray.length - 1);
         assert(_collSymbols.length == troveManagerParamsArray.length - 1);
 
         DeploymentVars memory vars;
@@ -592,7 +590,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _troveManagerParams.MCR,
             _troveManagerParams.BCR,
             _troveManagerParams.SCR,
-            _troveManagerParams.debtLimit,
+            _troveManagerParams.DEBT_LIMIT,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
