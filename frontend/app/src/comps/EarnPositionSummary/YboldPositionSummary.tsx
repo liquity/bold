@@ -45,7 +45,7 @@ export function YboldPositionSummary() {
             <InfoTooltip
               content={{
                 heading: "APR (last 7 days)",
-                body: <>The annualized rate yBOLD deposits earned over the last 24 hours.</>,
+                body: <>The annualized rate yBOLD deposits earned over the last 7 days.</>,
                 footerLink: {
                   label: "Check Dune for more details",
                   href: "https://dune.com/liquity/liquity-v2",
