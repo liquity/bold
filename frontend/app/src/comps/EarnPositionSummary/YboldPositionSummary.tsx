@@ -34,7 +34,7 @@ export function YboldPositionSummary() {
                 color: "contentAlt2",
               })}
             >
-              APR
+              7d APR
             </div>
             <Amount
               fallback="-%"
