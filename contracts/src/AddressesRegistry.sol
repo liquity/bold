@@ -25,7 +25,6 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     IBoldToken public boldToken;
     IERC20Metadata public gasToken;
     address public liquidityStrategy;
-    address public watchdogAddress;
 
     event CollTokenAddressChanged(address _collTokenAddress);
     event BorrowerOperationsAddressChanged(address _borrowerOperationsAddress);
@@ -46,7 +45,6 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
     event BoldTokenAddressChanged(address _boldTokenAddress);
     event GasTokenAddressChanged(address _gasTokenAddress);
     event LiquidityStrategyAddressChanged(address _liquidityStrategyAddress);
-    event WatchdogAddressChanged(address _watchdogAddress);
 
     constructor(address _owner) Ownable(_owner) {}
 
@@ -70,7 +68,6 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         boldToken = _vars.boldToken;
         gasToken = _vars.gasToken;
         liquidityStrategy = _vars.liquidityStrategy;
-        watchdogAddress = _vars.watchdogAddress;
 
         emit CollTokenAddressChanged(address(_vars.collToken));
         emit BorrowerOperationsAddressChanged(
@@ -95,7 +92,6 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         emit BoldTokenAddressChanged(address(_vars.boldToken));
         emit GasTokenAddressChanged(address(_vars.gasToken));
         emit LiquidityStrategyAddressChanged(address(_vars.liquidityStrategy));
-        emit WatchdogAddressChanged(address(_vars.watchdogAddress));
 
         _renounceOwnership();
     }

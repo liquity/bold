@@ -61,7 +61,7 @@ contract LiquidationsTest is DevTestSetup {
 
         // Price drops
         priceFeed.setPrice(1100e18 - 1);
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
 
         LiquidationsTestVars memory initialValues;
         initialValues.spBoldBalance = stabilityPool.getTotalBoldDeposits();
@@ -166,7 +166,7 @@ contract LiquidationsTest is DevTestSetup {
 
         // Price drops
         priceFeed.setPrice(1030e18);
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
 
         uint256 initialSPBoldBalance = stabilityPool.getTotalBoldDeposits();
         uint256 initialSPCollBalance = stabilityPool.getCollBalance();
@@ -250,7 +250,7 @@ contract LiquidationsTest is DevTestSetup {
 
         // Price drops
         priceFeed.setPrice(1100e18 - 1);
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
 
         uint256 BInitialDebt = troveManager.getTroveEntireDebt(BTroveId);
         uint256 BInitialColl = troveManager.getTroveEntireColl(BTroveId);
@@ -345,7 +345,7 @@ contract LiquidationsTest is DevTestSetup {
 
         // Price drops
         priceFeed.setPrice(1100e18 - 1);
-        (vars.price,) = priceFeed.fetchPrice();
+        vars.price = priceFeed.fetchPrice();
 
         vars.spBoldBalance = stabilityPool.getTotalBoldDeposits();
         vars.spCollBalance = stabilityPool.getCollBalance();

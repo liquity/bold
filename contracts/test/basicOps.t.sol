@@ -42,6 +42,17 @@ contract BasicOps is DevTestSetup {
         assertEq(trovesCount, 1);
     }
 
+    function testOpenTrove_whenNoValidPrice_shouldRevert() public {
+        priceFeed.setValidPrice(false);
+
+        vm.startPrank(A);
+        vm.expectRevert(bytes(priceFeed.REVERT_MSG()));
+        borrowerOperations.openTrove(
+            A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+    }
+
     function testCloseTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
@@ -69,6 +80,34 @@ contract BasicOps is DevTestSetup {
         assertEq(trovesCount, 1);
     }
 
+    function testCloseTrove_whenNoValidPrice_shouldRevert() public {
+        priceFeed.setPrice(2000e18);
+        vm.startPrank(A);
+        borrowerOperations.openTrove(
+            A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
+        );
+        // Transfer some Bold to B so that B can close Trove accounting for interest and upfront fee
+        boldToken.transfer(B, 100e18);
+        vm.stopPrank();
+
+        vm.startPrank(B);
+        uint256 B_Id = borrowerOperations.openTrove(
+            B, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        assertEq(troveManager.getTroveIdsCount(), 2);
+
+        priceFeed.setValidPrice(false);
+
+        vm.startPrank(B);
+        vm.expectRevert(bytes(priceFeed.REVERT_MSG()));
+        borrowerOperations.closeTrove(B_Id);
+        vm.stopPrank();
+
+        assertEq(troveManager.getTroveIdsCount(), 2);
+    }
+
     function testAdjustTrove() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
@@ -90,6 +129,37 @@ contract BasicOps is DevTestSetup {
         assertGt(debt_2, debt_1);
         uint256 coll_2 = troveManager.getTroveColl(A_Id);
         assertGt(coll_2, coll_1);
+    }
+
+    function testAdjustTrove_whenNoValidPrice_shouldRevert() public {
+        priceFeed.setPrice(2000e18);
+        vm.startPrank(A);
+        uint256 A_Id = borrowerOperations.openTrove(
+            A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
+        );
+
+        uint256 initialDebt = troveManager.getTroveDebt(A_Id);
+        assertGt(initialDebt, 0);
+        uint256 initialColl = troveManager.getTroveColl(A_Id);
+        assertGt(initialColl, 0);
+
+        priceFeed.setValidPrice(false);
+
+        vm.startPrank(A);
+        uint256 upfrontFee = predictAdjustTroveUpfrontFee(A_Id, 500e18);
+        vm.expectRevert(bytes(priceFeed.REVERT_MSG()));
+        borrowerOperations.adjustTrove(
+            A_Id,
+            1e18,
+            true,
+            500e18,
+            true,
+            upfrontFee
+        );
+        vm.stopPrank();
+
+        assertEq(troveManager.getTroveDebt(A_Id), initialDebt);
+        assertEq(troveManager.getTroveColl(A_Id), initialColl);
     }
 
     function testRedeem() public {
@@ -130,6 +200,38 @@ contract BasicOps is DevTestSetup {
         assertLt(coll_2, coll_1, "Coll mismatch after");
     }
 
+    function testRedeem_whenNoValidPrice_shouldRevert() public {
+        priceFeed.setPrice(2000e18);
+
+        vm.startPrank(A);
+        borrowerOperations.openTrove(
+            A, 0, 5e18, 5_000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        vm.startPrank(B);
+        uint256 B_Id = borrowerOperations.openTrove(
+            B, 0, 5e18, 4_000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
+        );
+        uint256 debt_1 = troveManager.getTroveDebt(B_Id);
+        assertGt(debt_1, 0, "Debt cannot be zero");
+        uint256 coll_1 = troveManager.getTroveColl(B_Id);
+        assertGt(coll_1, 0, "Coll cannot be zero");
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 7 days);
+
+        priceFeed.setValidPrice(false);
+
+        vm.startPrank(A);
+        vm.expectRevert(bytes(priceFeed.REVERT_MSG()));
+        collateralRegistry.redeemCollateral(1000e18, 10, 1e18);
+        vm.stopPrank();
+
+        assertEq(troveManager.getTroveDebt(B_Id), debt_1, "Debt mismatch after");
+        assertEq(troveManager.getTroveColl(B_Id), coll_1, "Coll mismatch after");
+    }
+
     function testLiquidation() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
@@ -145,7 +247,7 @@ contract BasicOps is DevTestSetup {
 
         // Price drops
         priceFeed.setPrice(1200e18);
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
 
         // Check CR_A < MCR and TCR > CCR
         assertLt(troveManager.getCurrentICR(A_Id, price), MCR);
@@ -161,12 +263,48 @@ contract BasicOps is DevTestSetup {
         assertEq(trovesCount, 1);
     }
 
+    function testLiquidation_whenNoValidPrice_shouldRevert() public {
+        priceFeed.setPrice(2000e18);
+
+        vm.startPrank(A);
+        uint256 A_Id = borrowerOperations.openTrove(
+            A, 0, 2e18, 2200e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        vm.startPrank(B);
+        borrowerOperations.openTrove(
+            B, 0, 10e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
+        );
+        vm.stopPrank();
+
+        assertEq(troveManager.getTroveIdsCount(), 2);
+
+        priceFeed.setPrice(1200e18);
+        uint256 price = priceFeed.fetchPrice();
+
+        assertLt(troveManager.getCurrentICR(A_Id, price), MCR);
+        assertGt(troveManager.getTCR(price), CCR);
+
+        priceFeed.setValidPrice(false);
+
+        vm.startPrank(B);
+        vm.expectRevert(bytes(priceFeed.REVERT_MSG()));
+        troveManager.liquidate(A_Id);
+        vm.stopPrank();
+
+        assertEq(troveManager.getTroveIdsCount(), 2);
+    }
+
     function testSPDeposit() public {
         priceFeed.setPrice(2000e18);
         vm.startPrank(A);
         borrowerOperations.openTrove(
             A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
         );
+
+        // Simulate a revert on the feed which shouldn't matter, as the price is not used for SP deposits
+        priceFeed.setValidPrice(false);
 
         // A makes an SP deposit
         makeSPDepositAndClaim(A, 100e18);
@@ -189,6 +327,9 @@ contract BasicOps is DevTestSetup {
         borrowerOperations.openTrove(
             A, 0, 2e18, 2000e18, 0, 0, MIN_ANNUAL_INTEREST_RATE, 1000e18, address(0), address(0), address(0)
         );
+
+        // Simulate a revert on the feed which shouldn't matter, as the price is not used for SP withdrawals
+        priceFeed.setValidPrice(false);
 
         // A makes an SP deposit
         makeSPDepositAndClaim(A, 100e18);

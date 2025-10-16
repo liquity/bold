@@ -39,7 +39,7 @@ import "src/StabilityPool.sol";
 import "src/CollateralRegistry.sol";
 import "src/tokens/StableTokenV3.sol";
 import "src/Interfaces/IStableTokenV3.sol";
-import "test/TestContracts/PriceFeedTestnet.sol";
+import "test/TestContracts/MockFXPriceFeed.sol";
 import "test/TestContracts/MetadataDeployment.sol";
 import "test/Utils/Logging.sol";
 import "test/Utils/StringEquality.sol";
@@ -125,9 +125,12 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         address proxyAdmin;
         address fpmmFactory;
         address fpmmImplementation;
+        address liquidityStrategy;
+        address oracleAdapter;
         address referenceRateFeedID;
         string stableTokenName;
         string stableTokenSymbol;
+        address watchdog;
     }
 
     DeploymentConfig internal CONFIG = DeploymentConfig({
@@ -135,9 +138,12 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         proxyAdmin: 0xe4DdacCAdb64114215FCe8251B57B2AEB5C2C0E2,
         fpmmFactory: 0xd8098494a749a3fDAD2D2e7Fa5272D8f274D8FF6,
         fpmmImplementation: 0x0292efcB331C6603eaa29D570d12eB336D6c01d6,
+        liquidityStrategy: address(123), // TODO: set liquidity strategy
+        oracleAdapter: address(234), // TODO: set oracle adapter address
         referenceRateFeedID: 0x206B25Ea01E188Ee243131aFdE526bA6E131a016,
         stableTokenName: "EUR.v2 Test",
-        stableTokenSymbol: "EUR.v2"
+        stableTokenSymbol: "EUR.v2",
+        watchdog: address(345) // TODO: set watchdog address
     });
 
     function run() external {
@@ -197,7 +203,8 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         r.hintHelpers = new HintHelpers(r.collateralRegistry, r.systemParams);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
 
-        IPriceFeed priceFeed = new PriceFeedTestnet();
+        // TODO: replace with real price feed
+        IPriceFeed priceFeed = new MockFXPriceFeed();
 
         r.contracts =
             _deployAndConnectCollateralContracts(collToken, priceFeed, addressesRegistry, troveManagerAddress, r);
@@ -387,9 +394,7 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
             collateralRegistry: r.collateralRegistry,
             boldToken: IBoldToken(address(r.stableToken)),
             gasToken: IERC20Metadata(CONFIG.USDm_ALFAJORES_ADDRESS),
-            // TODO: set liquidity strategy
-            liquidityStrategy: address(0),
-            watchdogAddress: address(0)
+            liquidityStrategy: CONFIG.liquidityStrategy
         });
         contracts.addressesRegistry.setAddresses(addressVars);
     }

@@ -411,7 +411,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         TroveChange memory troveChange;
         LiquidationValues memory totals;
 
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
 
         // - If the SP has total deposits >= 1e18, we leave 1e18 in it untouched.
         // - If it has 0 < x < 1e18 total deposits, we leave x in it.
@@ -756,8 +756,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         }
         vars.lastBatchUpdatedInterest = address(0);
 
-        // Get the price to use for the redemption collateral calculations
-        (uint256 redemptionPrice,) = priceFeed.fetchRedemptionPrice();
+        uint256 redemptionPrice = priceFeed.fetchPrice();
 
         // Loop through the Troves starting from the one with lowest interest rate until _amount of Bold is exchanged for collateral
         if (_maxIterations == 0) _maxIterations = type(uint256).max;
@@ -865,7 +864,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         TroveChange memory totalsTroveChange;
 
         // Use the standard fetchPrice here, since if branch has shut down we don't worry about small redemption arbs
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
 
         uint256 remainingBold = _boldAmount;
         for (uint256 i = 0; i < _troveIds.length; i++) {
@@ -1204,7 +1203,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 spSize = stabilityPool.getTotalBoldDeposits();
         uint256 unbackedPortion = totalDebt > spSize ? totalDebt - spSize : 0;
 
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
         // It's redeemable if the TCR is above the shutdown threshold, and branch has not been shut down.
         // Use the normal price for the TCR check.
         bool redeemable = _getTCR(price) >= systemParams.SCR() && shutdownTime == 0;

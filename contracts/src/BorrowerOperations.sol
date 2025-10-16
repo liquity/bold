@@ -336,7 +336,7 @@ contract BorrowerOperations is
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
-        (vars.price, ) = priceFeed.fetchPrice();
+        vars.price = priceFeed.fetchPrice();
 
         // --- Checks ---
 
@@ -658,7 +658,7 @@ contract BorrowerOperations is
         vars.activePool = activePool;
         vars.boldToken = boldToken;
 
-        (vars.price,) = priceFeed.fetchPrice();
+        vars.price = priceFeed.fetchPrice();
         vars.isBelowCriticalThreshold = _checkBelowCriticalThreshold(
             vars.price,
             systemParams.CCR()
@@ -895,7 +895,7 @@ contract BorrowerOperations is
             // troveChange.newWeightedRecordedDebt = 0;
         }
 
-        (uint256 price, ) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
         uint256 newTCR = _getNewTCRFromTroveChange(troveChange, price);
         if (!hasBeenShutDown) _requireNewTCRisAboveCCR(newTCR);
 
@@ -1185,7 +1185,7 @@ contract BorrowerOperations is
             block.timestamp <
             batch.lastInterestRateAdjTime + INTEREST_RATE_ADJ_COOLDOWN
         ) {
-            (uint256 price, ) = priceFeed.fetchPrice();
+            uint256 price = priceFeed.fetchPrice();
 
             uint256 avgInterestRate = activePoolCached
                 .getNewApproxAvgInterestRateFromTroveChange(batchChange);
@@ -1516,7 +1516,7 @@ contract BorrowerOperations is
         uint256 _maxUpfrontFee,
         bool _isTroveInBatch
     ) internal returns (uint256) {
-        (uint256 price, ) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
 
         uint256 avgInterestRate = activePool
             .getNewApproxAvgInterestRateFromTroveChange(_troveChange);
@@ -1581,7 +1581,7 @@ contract BorrowerOperations is
 
         uint256 totalColl = getEntireBranchColl();
         uint256 totalDebt = getEntireBranchDebt();
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
 
         // Otherwise, proceed with the TCR check:
         uint256 TCR = LiquityMath._computeCR(totalColl, totalDebt, price);

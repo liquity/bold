@@ -12,7 +12,7 @@ import "src/Interfaces/IStabilityPool.sol";
 import "./BorrowerOperationsTester.t.sol";
 import "./TroveManagerTester.t.sol";
 import "src/Interfaces/ICollateralRegistry.sol";
-import "./PriceFeedTestnet.sol";
+import "./MockFXPriceFeed.sol";
 import "src/Interfaces/IInterestRouter.sol";
 import "src/GasPool.sol";
 import "src/HintHelpers.sol";
@@ -55,7 +55,7 @@ contract BaseTest is TestAccounts, Logging, TroveId {
     IMetadataNFT metadataNFT;
     IBoldToken boldToken;
     ICollateralRegistry collateralRegistry;
-    IPriceFeedTestnet priceFeed;
+    IMockFXPriceFeed priceFeed;
     GasPool gasPool;
     IInterestRouter mockInterestRouter;
     IERC20 collToken;

@@ -1833,14 +1833,14 @@ contract InterestRateAggregate is DevTestSetup {
     // --- TCR tests ---
 
     function testGetTCRReturnsMaxUint256ForEmptySystem() public {
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
         uint256 TCR = troveManager.getTCR(price);
 
         assertEq(TCR, MAX_UINT256);
     }
 
     function testGetTCRReturnsICRofTroveForSystemWithOneTrove() public {
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
         uint256 troveDebtRequest = 2000e18;
         uint256 coll = 20 ether;
         uint256 interestRate = 25e16;
@@ -1887,13 +1887,13 @@ contract InterestRateAggregate is DevTestSetup {
         rd.B = r.B * debt.B;
         debt.C += calcUpfrontFee(debt.C, (rd.A + rd.B + r.C * debt.C) / (debt.A + debt.B + debt.C));
 
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
         uint256 sizeWeightedCR = (coll.A + coll.B + coll.C) * price / (debt.A + debt.B + debt.C);
         assertEq(sizeWeightedCR, troveManager.getTCR(price));
     }
 
     function testGetTCRIncorporatesTroveInterestForSystemWithSingleTrove() public {
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
         uint256 troveDebtRequest = 2000e18;
         uint256 coll = 20 ether;
         uint256 interestRate = 25e16;
@@ -1967,7 +1967,7 @@ contract InterestRateAggregate is DevTestSetup {
         debt.B += calcInterest(rd.B, interval);
         debt.C += calcInterest(rd.C, interval);
 
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
         uint256 expectedTCR = (coll.A + coll.B + coll.C) * price / (debt.A + debt.B + debt.C);
         assertEq(expectedTCR, troveManager.getTCR(price));
     }
@@ -1977,14 +1977,14 @@ contract InterestRateAggregate is DevTestSetup {
     // - 0 for non-existent Trove
 
     function testGetCurrentICRReturnsInfinityForNonExistentTrove() public {
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
         uint256 ICR = troveManager.getCurrentICR(addressToTroveId(A), price);
 
         assertEq(ICR, MAX_UINT256);
     }
 
     function testGetCurrentICRReturnsCorrectValueForNoInterest() public {
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
         uint256 troveDebtRequest = 2000e18;
         uint256 coll = 20 ether;
         uint256 interestRate = 25e16;
@@ -1999,7 +1999,7 @@ contract InterestRateAggregate is DevTestSetup {
     }
 
     function testGetCurrentICRReturnsCorrectValueWithAccruedInterest() public {
-        (uint256 price,) = priceFeed.fetchPrice();
+        uint256 price = priceFeed.fetchPrice();
         uint256 troveDebtRequest = 2000e18;
         uint256 coll = 20 ether;
         uint256 interestRate = 25e16;

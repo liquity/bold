@@ -39,7 +39,6 @@ interface IAddressesRegistry {
         IBoldToken boldToken;
         IERC20Metadata gasToken;
         address liquidityStrategy;
-        address watchdogAddress;
     }
 
     function collToken() external view returns (IERC20Metadata);
@@ -61,7 +60,6 @@ interface IAddressesRegistry {
     function boldToken() external view returns (IBoldToken);
     function gasToken() external view returns (IERC20Metadata);
     function liquidityStrategy() external view returns (address);
-    function watchdogAddress() external view returns (address);
 
     function setAddresses(AddressVars memory _vars) external;
 }
