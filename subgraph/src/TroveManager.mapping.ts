@@ -182,6 +182,7 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   // Opening
   if (operation === OP_OPEN_TROVE || operation === OP_OPEN_TROVE_AND_JOIN_BATCH) {
     trove.createdAt = timestamp;
+    trove.mightBeLeveraged = inferLeverage(event);
   }
 
   // Closing
@@ -214,11 +215,6 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
     trove.liquidatedDebt = event.params._debtChangeFromOperation.neg();
     trove.collSurplus = getCollSurplusFrom(event);
     trove.priceAtLiquidation = getPriceAtLiquidationFrom(event);
-  }
-
-  // Infer leverage flag on opening & adjustment
-  if (operation === OP_OPEN_TROVE || operation === OP_OPEN_TROVE_AND_JOIN_BATCH || operation === OP_ADJUST_TROVE) {
-    trove.mightBeLeveraged = inferLeverage(event);
   }
 
   trove.save();

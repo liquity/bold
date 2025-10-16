@@ -60,18 +60,11 @@ export function handleCollateralRegistryAddressChanged(event: CollateralRegistry
     let tokenAddress = Address.fromBytes(registry.getToken(BigInt.fromI32(index)));
     let troveManagerAddress = Address.fromBytes(registry.getTroveManager(BigInt.fromI32(index)));
 
-    if (tokenAddress.toHex() === Address.zero().toHex() || troveManagerAddress.toHex() === Address.zero().toHex()) {
-      break;
-    }
-
-    // we use the token address as the id for the collateral
-    if (!Collateral.load(tokenAddress.toHexString())) {
-      addCollateral(
-        index,
-        totalCollaterals,
-        tokenAddress,
-        troveManagerAddress,
-      );
-    }
+    addCollateral(
+      index,
+      totalCollaterals,
+      tokenAddress,
+      troveManagerAddress,
+    );
   }
 }

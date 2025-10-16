@@ -1,4 +1,4 @@
-type Collateral @entity(immutable: false) {
+type Collateral @entity(immutable: true) {
   id: ID! # "collIndex", e.g. "0"
   collIndex: Int!
   minCollRatio: BigInt!
