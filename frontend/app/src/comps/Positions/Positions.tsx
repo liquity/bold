@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import { Field } from "@/src/comps/Field/Field";
-import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import content from "@/src/content";
 import { fmtnum } from "@/src/formatting";
 import {
@@ -20,7 +19,7 @@ import { usePrice } from "@/src/services/Prices";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { isPositionLoan } from "@/src/types";
 import { css } from "@/styled-system/css";
-import { Button, IconChevronSmallUp, IconCross, TokenIcon } from "@liquity2/uikit";
+import { Button, IconChevronSmallUp, TokenIcon } from "@liquity2/uikit";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { useEffect, useRef, useState } from "react";
@@ -120,28 +119,6 @@ export function Positions({
   );
 }
 
-const LIQUIDATION_NOTICE_DISMISSED_KEY = `${LOCAL_STORAGE_PREFIX}liquidation_notice_dismissed`;
-
-const LiquidationNoticeStorage = {
-  getDismissedCount(address: Address | null): number {
-    if (!address) return 0;
-    try {
-      const key = `${LIQUIDATION_NOTICE_DISMISSED_KEY}:${address}`;
-      const value = localStorage.getItem(key);
-      return value ? parseInt(value, 10) || 0 : 0;
-    } catch {
-      return 0;
-    }
-  },
-  setDismissedCount(address: Address, count: number): void {
-    try {
-      const key = `${LIQUIDATION_NOTICE_DISMISSED_KEY}:${address}`;
-      localStorage.setItem(key, count.toString());
-    } catch {
-    }
-  },
-};
-
 function PositionsGroup({
   accountAddress,
   columns,
@@ -161,29 +138,6 @@ function PositionsGroup({
 
   const title_ = title(mode);
   const [isLiquidatedExpanded, setIsLiquidatedExpanded] = useState(false);
-
-  const liquidatedCount = positions.filter(
-    (p) => isPositionLoan(p) && p.status === "liquidated",
-  ).length;
-
-  const [showLiquidationNotice, setShowLiquidationNotice] = useState(false);
-
-  useEffect(() => {
-    if (liquidatedCount === 0) {
-      setShowLiquidationNotice(false);
-      return;
-    }
-
-    const dismissedCount = LiquidationNoticeStorage.getDismissedCount(accountAddress);
-    setShowLiquidationNotice(liquidatedCount > dismissedCount);
-  }, [liquidatedCount, accountAddress]);
-
-  const dismissLiquidationNotice = () => {
-    if (accountAddress) {
-      LiquidationNoticeStorage.setDismissedCount(accountAddress, liquidatedCount);
-      setShowLiquidationNotice(false);
-    }
-  };
 
   const toggleLiquidatedExpanded = () => {
     setIsLiquidatedExpanded(!isLiquidatedExpanded);
@@ -211,17 +165,32 @@ function PositionsGroup({
     return isPositionLoan(position) && position.status === "liquidated";
   });
 
+  const branchHasClaimableCollateral = (branchId: BranchId): boolean => {
+    const branchCollSurplus = collSurplusQueries.data?.find((item) => item.branchId === branchId);
+    return branchCollSurplus ? dn.gt(branchCollSurplus.surplus, 0) : false;
+  };
+
+  const liquidatedWithClaimable = liquidatedPositions.filter((position) =>
+    branchHasClaimableCollateral(position.branchId)
+  );
+
+  const liquidatedWithoutClaimable = liquidatedPositions.filter((position) =>
+    !branchHasClaimableCollateral(position.branchId)
+  );
+
+  const topLevelPositions = [...activePositions, ...liquidatedWithClaimable];
+
   const cards = match(mode)
     .returnType<Array<[number, ReactNode]>>()
     .with("positions", () => {
       let cards: Array<[number, ReactNode]> = [];
 
       if (showNewPositionCard) {
-        cards.push([activePositions.length ?? -1, <NewPositionCard key="new" />]);
+        cards.push([topLevelPositions.length ?? -1, <NewPositionCard key="new" />]);
       }
 
       cards = cards.concat(
-        activePositions.map((position, index) => (
+        topLevelPositions.map((position, index) => (
           match(position)
             .returnType<[number, ReactNode]>()
             .with({ type: P.union("borrow", "multiply") }, (p) => [
@@ -259,7 +228,7 @@ function PositionsGroup({
     ))
     .exhaustive();
 
-  const liquidatedCards = liquidatedPositions.map((position, index) => {
+  const liquidatedCards = liquidatedWithoutClaimable.map((position, index) => {
     return [
       index,
       <PositionCardLoan key={`liquidated-${index}`} {...position} />,
@@ -398,64 +367,6 @@ function PositionsGroup({
             },
           })}
         >
-          {showLiquidationNotice && (
-            <section
-              className={css({
-                position: "relative",
-                display: "flex",
-                flexDirection: "column",
-                gap: 8,
-                padding: "12px 16px",
-                paddingRight: 40,
-                fontSize: 16,
-                color: "negativeInfoSurfaceContentAlt",
-                background: "negativeInfoSurface",
-                border: "1px solid token(colors.negativeInfoSurfaceBorder)",
-                borderRadius: 8,
-                marginBottom: 16,
-              })}
-            >
-              <button
-                onClick={dismissLiquidationNotice}
-                className={css({
-                  position: "absolute",
-                  top: 12,
-                  right: 12,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 24,
-                  height: 24,
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "negativeInfoSurfaceContent",
-                  borderRadius: 4,
-                  _hover: {
-                    background: "rgba(0, 0, 0, 0.1)",
-                  },
-                  _focusVisible: {
-                    outline: "2px solid token(colors.focused)",
-                  },
-                })}
-              >
-                <IconCross size={16} />
-              </button>
-              <h1
-                className={css({
-                  color: "negativeInfoSurfaceContent",
-                })}
-              >
-                You have Liquidated Positions
-              </h1>
-              <div>
-                The collateral has been deducted from {liquidatedCount === 1 ? "this position" : "these positions"}.
-                {hasClaimableCollateral && (
-                  <>You can claim back the excess collateral from your liquidated loans below.</>
-                )}
-              </div>
-            </section>
-          )}
           <div
             className={css({
               display: "flex",
@@ -501,14 +412,6 @@ function PositionsGroup({
                   : "Click to view My Liquidated Positions"}
               </span>
             </button>
-            {hasClaimableCollateral && (
-              <Button
-                mode="primary"
-                size="small"
-                label="You have claimable collateral"
-                onClick={toggleLiquidatedExpanded}
-              />
-            )}
             <button
               onClick={toggleLiquidatedExpanded}
               className={css({
