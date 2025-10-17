@@ -32,12 +32,11 @@ export const LoadingCard: FC<LoadingCardProps> = ({
       .with(P.union("loading", "error", "not-found"), (s) => ({
         cardtransform: "scale3d(0.95, 0.95, 1)",
         // bottom bar 2
-        containerHeight:
-          window.innerHeight -
-          120 - // top bar
-          24 * 2 - // padding
-          48 - // bottom bar 1
-          40,
+        containerHeight: window.innerHeight
+          - 120 // top bar
+          - 24 * 2 // padding
+          - 48 // bottom bar 1
+          - 40,
         cardHeight: s === "error" || s === "not-found" ? 180 : 120,
         cardBackground: token("colors.blue:50"),
         cardColor: token("colors.blue:950"),
@@ -159,9 +158,7 @@ export const LoadingCard: FC<LoadingCardProps> = ({
               />
             </div>
           ))
-          .otherwise(() => (
-            <div>{children}</div>
-          ))}
+          .otherwise(() => <div>{children}</div>)}
       </a.section>
     </a.div>
   );
