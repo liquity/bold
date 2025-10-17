@@ -61,6 +61,8 @@ export function PanelInterestRate({
 
   const updateRateCooldown = useUpdateRateCooldown(loan.branchId, loan.troveId);
 
+  const isZombieTrove = loan.isZombie;
+
   const currentRedemptionRisk = useRedemptionRiskOfLoan(loan);
   const newRedemptionRisk = useRedemptionRiskOfInterestRate(loan.branchId, interestRate, loan);
 
@@ -95,6 +97,7 @@ export function PanelInterestRate({
       account.address,
     ),
   )
+    && !isZombieTrove
     && deposit.parsed && dn.gt(deposit.parsed, 0)
     && debt.parsed && dn.gt(debt.parsed, 0)
     && interestRate && dn.gt(interestRate, 0)
@@ -277,6 +280,14 @@ export function PanelInterestRate({
                 </label>
               </>
             )}
+        </WarningBox>
+      )}
+
+      {isZombieTrove && (
+        <WarningBox>
+          <div>
+            Interest rate can't be adjusted on loans with debt below 2,000 BOLD. Please adjust your debt first.
+          </div>
         </WarningBox>
       )}
 
