@@ -1,13 +1,14 @@
-import { a, useSpring } from "@react-spring/web";
-import { css } from "@/styled-system/css";
-import { TagPreview } from "@/src/comps/TagPreview/TagPreview.tsx";
-import { match, P } from "ts-pattern";
 import { Spinner } from "@/src/comps/Spinner/Spinner.tsx";
+import { TagPreview } from "@/src/comps/TagPreview/TagPreview.tsx";
+import { css } from "@/styled-system/css";
 import { token } from "@/styled-system/tokens";
-import { IconBorrow, IconLeverage, Button } from "@liquity2/uikit";
+import { Button, IconBorrow, IconLeverage } from "@liquity2/uikit";
+import { a, useSpring } from "@react-spring/web";
+import { match, P } from "ts-pattern";
 
-import type { FC, PropsWithChildren } from "react";
+import { TagConfirmed } from "@/src/comps/TagConfirmed/TagConfirmed";
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen.tsx";
+import type { FC, PropsWithChildren } from "react";
 
 interface LoadingCardProps extends PropsWithChildren {
   height: number;
