@@ -27,6 +27,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { maxUint256, parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
+import { useSlippageRefund } from "../liquity-leverage";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -58,7 +59,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
     );
   },
 
-  Details({ request }) {
+  Details({ request, account, steps }) {
     const { loan } = request;
     const collToken = getCollToken(loan.branchId);
     if (!collToken) {
@@ -70,6 +71,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
     const delegateDisplayName = useDelegateDisplayName(loan.batchManager);
     const yearlyBoldInterest = dn.mul(loan.borrowed, loan.interestRate);
     const borrowedWithFee = upfrontFee.data && dn.add(loan.borrowed, upfrontFee.data);
+    const slippageRefund = useSlippageRefund(loan.branchId, account, steps);
 
     return (
       <>
@@ -150,6 +152,52 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
             "Only used in case of liquidation",
           ]}
         />
+        {slippageRefund.data && (
+          <TransactionDetailsRow
+            label={
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                })}
+              >
+                Slippage refund
+                <InfoTooltip heading="Slippage refund">
+                  Excess collateral was needed to create the desired exposure and accommodate for slippage. This is the
+                  left over amount that has been refunded to your wallet.
+                </InfoTooltip>
+              </div>
+            }
+            value={[
+              slippageRefund.data
+                ? (
+                  <Amount
+                    key="start"
+                    value={slippageRefund.data}
+                    suffix={` ${collToken.name}`}
+                    format="4diff"
+                  />
+                )
+                : (
+                  <div key="start">
+                    {fmtnum(0, {
+                      digits: 2,
+                      signDisplay: "exceptZero",
+                    })} {collToken.name}
+                  </div>
+                ),
+              slippageRefund.data && collPrice.data && (
+                <Amount
+                  key="end"
+                  fallback="…"
+                  value={dn.mul(slippageRefund.data, collPrice.data)}
+                  prefix="$"
+                />
+              ),
+            ]}
+          />
+        )}
       </>
     );
   },
