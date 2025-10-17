@@ -493,7 +493,7 @@ function EarnRewardsRow({
                 Earn
                 <TokenIcon.Group size="mini">
                   <TokenIcon symbol="BOLD" />
-                  {symbol === "SBOLD"
+                  {symbol === "SBOLD" || symbol === "YBOLD"
                     ? (
                       <div
                         className={css({
