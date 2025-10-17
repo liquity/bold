@@ -102,6 +102,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
           upfrontFeeData.refetch();
         }}
         txPreviewMode
+        displayAllDifferences={false}
       />
     );
   },

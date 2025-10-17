@@ -42,6 +42,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         prevLoan={request.loan}
         onRetry={() => {}}
         txPreviewMode
+        displayAllDifferences={false}
       />
     );
   },

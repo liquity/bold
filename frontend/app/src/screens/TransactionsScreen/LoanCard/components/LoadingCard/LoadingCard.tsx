@@ -15,6 +15,7 @@ interface LoadingCardProps extends PropsWithChildren {
   loadingState: LoadingState;
   onRetry: () => void;
   txPreviewMode?: boolean;
+  isSuccess?: boolean;
 }
 
 export const LoadingCard: FC<LoadingCardProps> = ({
@@ -24,6 +25,7 @@ export const LoadingCard: FC<LoadingCardProps> = ({
   leverage,
   onRetry,
   children,
+  isSuccess,
 }) => {
   const title = leverage ? "Multiply" : "BOLD loan";
 
@@ -83,7 +85,7 @@ export const LoadingCard: FC<LoadingCardProps> = ({
           willChange: "transform",
         }}
       >
-        {txPreviewMode && loadingState === "success" && <TagPreview />}
+        {txPreviewMode ? isSuccess ? <TagConfirmed /> : loadingState === "success" && <TagPreview /> : null}
         <h1
           className={css({
             display: "flex",

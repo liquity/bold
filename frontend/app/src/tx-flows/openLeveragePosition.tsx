@@ -53,6 +53,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
         loan={request.loan}
         onRetry={noop}
         txPreviewMode
+        displayAllDifferences={false}
       />
     );
   },

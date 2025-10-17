@@ -7,6 +7,7 @@ import { usePrice } from "@/src/services/Prices";
 import { useMemo } from "react";
 
 import type { LoadingState } from "@/src/screens/TransactionsScreen/TransactionsScreen.tsx";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import type { PositionLoan, PositionLoanCommitted } from "@/src/types";
 
 const LOAN_CARD_HEIGHT = 290;
@@ -19,6 +20,7 @@ export function LoanCard({
   onRetry,
   prevLoan,
   txPreviewMode = false,
+  displayAllDifferences = true,
 }: {
   leverageMode: boolean;
   loadingState: LoadingState;
@@ -26,9 +28,19 @@ export function LoanCard({
   onRetry: () => void;
   prevLoan?: PositionLoanCommitted | null;
   txPreviewMode?: boolean;
+  displayAllDifferences?: boolean;
 }) {
   const branchId = loan?.branchId ?? prevLoan?.branchId ?? null;
   const collToken = getCollToken(branchId);
+
+  const {
+    currentStep: step,
+    currentStepIndex,
+    flow,
+  } = useTransactionFlow();
+
+  const isLastStep = flow?.steps && currentStepIndex === flow.steps.length - 1;
+  const isSuccess = isLastStep && step?.status === "confirmed";
 
   if (!collToken) {
     throw new Error(`Collateral token not found: ${branchId}`);
@@ -99,6 +111,7 @@ export function LoanCard({
           leverageMode={leverageMode}
           collToken={collToken}
           loanDetails={loanDetails}
+          isSuccess={!displayAllDifferences && Boolean(isSuccess)}
         />
       );
     }
@@ -106,13 +119,15 @@ export function LoanCard({
     return null;
   }, [
     isLoanClosing,
-    prevLoan,
-    prevLoanDetails,
-    collToken,
     loan,
     loanDetails,
     loanDetailsFilled,
+    prevLoan,
+    collToken,
+    prevLoanDetails,
     leverageMode,
+    displayAllDifferences,
+    isSuccess,
   ]);
 
   return (
@@ -122,6 +137,7 @@ export function LoanCard({
       loadingState={loadingStatus}
       onRetry={onRetry}
       txPreviewMode={txPreviewMode}
+      isSuccess={!displayAllDifferences && Boolean(isSuccess)}
     >
       {content}
     </LoadingCard>
