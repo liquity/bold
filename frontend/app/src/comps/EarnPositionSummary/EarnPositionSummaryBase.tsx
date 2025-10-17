@@ -200,6 +200,7 @@ function OpenLink({
     <Link
       title={title}
       href={path}
+      target={external ? "_blank" : undefined}
       className={css({
         position: "absolute",
         inset: "0 -16px -12px auto",
