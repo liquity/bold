@@ -1,4 +1,4 @@
-import { Address, BigInt, Bytes, dataSource, ethereum } from "@graphprotocol/graph-ts";
+import { BigInt, Bytes, dataSource, ethereum } from "@graphprotocol/graph-ts";
 import { InterestBatch, InterestRateBracket, Trove } from "../generated/schema";
 import {
   BatchedTroveUpdated as BatchedTroveUpdatedEvent,
@@ -6,6 +6,8 @@ import {
   TroveOperation as TroveOperationEvent,
   TroveUpdated as TroveUpdatedEvent,
 } from "../generated/templates/TroveManager/TroveManager";
+import { getCollSurplusFrom } from "./CollSurplusPool.mapping";
+import { decodeAddress, decodeUint256, decodeUint8 } from "./shared/decoding";
 
 // see Operation enum in
 // contracts/src/Interfaces/ITroveEvents.sol
@@ -26,31 +28,10 @@ const FLASH_LOAN_TOPIC = Bytes.fromHexString(
   "0x0d7d75e01ab95780d3cd1c8ec0dd6c2ce19e3a20427eec8bf53283b6fb8e95f0",
 );
 
-function decodeAddress(data: Bytes, i: i32 = 0): ethereum.Value {
-  return ethereum.Value.fromAddress(
-    Address.fromBytes(
-      Bytes.fromUint8Array(
-        data.subarray(i * 32 + 12, i * 32 + 32),
-      ),
-    ),
-  );
-}
-
-function decodeUint8(data: Bytes, i: i32 = 0): ethereum.Value {
-  return ethereum.Value.fromI32(
-    data[i * 32 + 31],
-  );
-}
-
-function decodeUint256(data: Bytes, i: i32 = 0): ethereum.Value {
-  return ethereum.Value.fromUnsignedBigInt(
-    BigInt.fromUnsignedBytes(
-      Bytes.fromUint8Array(
-        data.subarray(i * 32, i * 32 + 32).reverse(),
-      ),
-    ),
-  );
-}
+const LIQUIDATION_TOPIC = Bytes.fromHexString(
+  // keccak256("Liquidation(uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256,uint256)")
+  "0x7243af9a1cff94d3429b2ee00b78c1c10589259f20dc167cb67704f38f9e824e",
+);
 
 function getBatchUpdatedEventFrom(batchedTroveUpdatedEvent: BatchedTroveUpdatedEvent): BatchUpdatedEvent {
   let receipt = batchedTroveUpdatedEvent.receipt;
@@ -93,6 +74,33 @@ function getBatchUpdatedEventFrom(batchedTroveUpdatedEvent: BatchedTroveUpdatedE
     ],
     batchedTroveUpdatedEvent.receipt,
   );
+}
+
+function getPriceAtLiquidationFrom(troveOperationEvent: TroveOperationEvent): BigInt {
+  let receipt = troveOperationEvent.receipt;
+
+  if (!receipt) {
+    throw new Error("Missing TX receipt");
+  }
+
+  let liquidationLogIndex = -1;
+
+  for (let i = 0; i < receipt.logs.length; ++i) {
+    if (
+      receipt.logs[i].logIndex.gt(troveOperationEvent.logIndex)
+      && receipt.logs[i].topics.length > 0
+      && receipt.logs[i].topics[0].equals(LIQUIDATION_TOPIC)
+    ) {
+      liquidationLogIndex = i;
+      break;
+    }
+  }
+
+  if (liquidationLogIndex < 0) {
+    throw new Error("Missing Liquidation log");
+  }
+
+  return decodeUint256(receipt.logs[liquidationLogIndex].data, 9).toBigInt();
 }
 
 export function handleTroveUpdated(event: TroveUpdatedEvent): void {
@@ -174,6 +182,7 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   // Opening
   if (operation === OP_OPEN_TROVE || operation === OP_OPEN_TROVE_AND_JOIN_BATCH) {
     trove.createdAt = timestamp;
+    trove.mightBeLeveraged = inferLeverage(event);
   }
 
   // Closing
@@ -202,11 +211,10 @@ export function handleTroveOperation(event: TroveOperationEvent): void {
   // Liquidation
   if (operation === OP_LIQUIDATE) {
     trove.status = "liquidated";
-  }
-
-  // Infer leverage flag on opening & adjustment
-  if (operation === OP_OPEN_TROVE || operation === OP_OPEN_TROVE_AND_JOIN_BATCH || operation === OP_ADJUST_TROVE) {
-    trove.mightBeLeveraged = inferLeverage(event);
+    trove.liquidatedColl = event.params._collChangeFromOperation.neg();
+    trove.liquidatedDebt = event.params._debtChangeFromOperation.neg();
+    trove.collSurplus = getCollSurplusFrom(event);
+    trove.priceAtLiquidation = getPriceAtLiquidationFrom(event);
   }
 
   trove.save();
