@@ -1409,7 +1409,7 @@ export type TrovesByAccountQueryVariables = Exact<{
 }>;
 
 
-export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: string | null, createdAt: string, lastUserActionAt: string, updatedAt: string, mightBeLeveraged: boolean, status: TroveStatus, debt: string, redemptionCount: number, redeemedColl: string, redeemedDebt: string }> };
+export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: string | null, createdAt: string, lastUserActionAt: string, updatedAt: string, mightBeLeveraged: boolean, status: TroveStatus, debt: string, redemptionCount: number, redeemedColl: string, redeemedDebt: string, liquidatedColl?: string | null, liquidatedDebt?: string | null, collSurplus?: string | null, priceAtLiquidation?: string | null }> };
 
 export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -1502,6 +1502,10 @@ export const TrovesByAccountDocument = new TypedDocumentString(`
     redemptionCount
     redeemedColl
     redeemedDebt
+    liquidatedColl
+    liquidatedDebt
+    collSurplus
+    priceAtLiquidation
   }
 }
     `) as unknown as TypedDocumentString<TrovesByAccountQuery, TrovesByAccountQueryVariables>;

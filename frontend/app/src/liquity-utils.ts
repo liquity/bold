@@ -998,6 +998,10 @@ export async function fetchLoanById(
     redemptionCount: indexedTrove.redemptionCount,
     redeemedColl: indexedTrove.redeemedColl,
     redeemedDebt: indexedTrove.redeemedDebt,
+    liquidatedColl: indexedTrove.liquidatedColl,
+    liquidatedDebt: indexedTrove.liquidatedDebt,
+    collSurplus: indexedTrove.collSurplus,
+    priceAtLiquidation: indexedTrove.priceAtLiquidation,
   };
 }
 
