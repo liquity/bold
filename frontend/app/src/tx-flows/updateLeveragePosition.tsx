@@ -5,6 +5,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { MAX_UPFRONT_FEE } from "@/src/constants";
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
+import { useSlippageRefund } from "@/src/liquity-leverage";
 import { getBranch, getCollToken, usePredictAdjustTroveUpfrontFee } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
@@ -107,7 +108,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
     );
   },
 
-  Details({ request }) {
+  Details({ request, account, steps }) {
     const { loan, depositChange, debtChange, leverageFactorChange } = request;
 
     const branch = getBranch(loan.branchId);
@@ -115,6 +116,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
 
     const collPrice = usePrice(collateral.symbol);
     const upfrontFeeData = useUpfrontFeeData(loan.branchId, loan.troveId, debtChange);
+    const slippageRefund = useSlippageRefund(loan.branchId, account, steps);
 
     const debtChangeWithFee = upfrontFeeData.data?.debtChangeWithFee;
 
@@ -195,6 +197,52 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
             ),
           ]}
         />
+        {slippageRefund.data && (
+          <TransactionDetailsRow
+            label={
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                })}
+              >
+                Slippage refund
+                <InfoTooltip heading="Slippage refund">
+                  Excess collateral was needed to create the desired exposure and accommodate for slippage. This is the
+                  left over amount that has been refunded to your wallet.
+                </InfoTooltip>
+              </div>
+            }
+            value={[
+              slippageRefund.data
+                ? (
+                  <Amount
+                    key="start"
+                    value={slippageRefund.data}
+                    suffix={` ${collateral.name}`}
+                    format="4diff"
+                  />
+                )
+                : (
+                  <div key="start">
+                    {fmtnum(0, {
+                      digits: 2,
+                      signDisplay: "exceptZero",
+                    })} {collateral.name}
+                  </div>
+                ),
+              slippageRefund.data && collPrice.data && (
+                <Amount
+                  key="end"
+                  fallback="…"
+                  value={dn.mul(slippageRefund.data, collPrice.data)}
+                  prefix="$"
+                />
+              ),
+            ]}
+          />
+        )}
       </>
     );
   },
