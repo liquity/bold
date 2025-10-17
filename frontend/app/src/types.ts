@@ -183,12 +183,17 @@ export type Initiative =
   & {
     address: Address;
     name: string | null;
-    protocol: string | null;
+    group: string | null;
     url: string | null;
   }
   & (
-    | { tvl: Dnum; pairVolume: Dnum; votesDistribution: Dnum }
-    | { tvl: null; pairVolume: null; votesDistribution: null }
+    {
+      isBribeInitiative: true;
+      bribeToken: Address;
+    } | {
+      isBribeInitiative: false;
+      bribeToken: null;
+    }
   );
 
 export type Vote = "for" | "against";

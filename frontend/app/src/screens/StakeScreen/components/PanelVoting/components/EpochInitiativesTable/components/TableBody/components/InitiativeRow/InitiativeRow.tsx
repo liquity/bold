@@ -1,13 +1,13 @@
-import { css } from "@/styled-system/css";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
-import { isInitiativeStatusActive } from "@/src/screens/StakeScreen/utils";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { useVotingStateContext } from "@/src/screens/StakeScreen/components/PanelVoting/providers/PanelVotingProvider/hooks";
-import { InitiativeStatusTag } from "./components/InitiativeStatusTag";
-import { shortenAddress, IconExternal } from "@liquity2/uikit";
-import { BribeInfo } from "./components/BribeInfo";
-import { Voting } from "./components/Voting";
+import { isInitiativeStatusActive } from "@/src/screens/StakeScreen/utils";
+import { css } from "@/styled-system/css";
+import { IconExternal, shortenAddress } from "@liquity2/uikit";
 import { AmountPresentation } from "./components/AmountPresentation";
+import { BribeInfo } from "./components/BribeInfo";
+import { InitiativeStatusTag } from "./components/InitiativeStatusTag";
+import { Voting } from "./components/Voting";
 
 import type { Initiative } from "@/src/types";
 import type { FC } from "react";
@@ -49,20 +49,22 @@ export const InitiativeRow: FC<InitiativeRowProps> = ({ initiative }) => {
                 whiteSpace: "nowrap",
               })}
             >
-              {initiative.url ? (
-                <LinkTextButton
-                  external
-                  href={initiative.url}
-                  label={
-                    <>
-                      {initiative.name ?? "Initiative"}
-                      <IconExternal size={16} />
-                    </>
-                  }
-                />
-              ) : (
-                (initiative.name ?? "Initiative")
-              )}
+              {initiative.url
+                ? (
+                  <LinkTextButton
+                    external
+                    href={initiative.url}
+                    label={
+                      <>
+                        {initiative.name ?? "Initiative"}
+                        <IconExternal size={16} />
+                      </>
+                    }
+                  />
+                )
+                : (
+                  initiative.name ?? "Initiative"
+                )}
             </div>
             <InitiativeStatusTag
               initiativesStatus={initiativesStatus}
@@ -74,9 +76,7 @@ export const InitiativeRow: FC<InitiativeRowProps> = ({ initiative }) => {
               external
               href={`${CHAIN_BLOCK_EXPLORER?.url}address/${initiative.address}`}
               title={initiative.address}
-              label={
-                initiative.protocol ?? shortenAddress(initiative.address, 4)
-              }
+              label={initiative.group ?? shortenAddress(initiative.address, 4)}
               className={css({
                 fontSize: 12,
                 color: "contentAlt!",
