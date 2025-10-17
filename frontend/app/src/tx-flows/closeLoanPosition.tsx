@@ -116,23 +116,12 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
               </div>
             }
             value={[
-              slippageRefund.data
-                ? (
-                  <Amount
-                    key="start"
-                    value={slippageRefund.data}
-                    suffix=" BOLD"
-                    format="4diff"
-                  />
-                )
-                : (
-                  <div key="start">
-                    {fmtnum(0, {
-                      digits: 2,
-                      signDisplay: "exceptZero",
-                    })} {collateral.name}
-                  </div>
-                ),
+              <Amount
+                key="start"
+                value={slippageRefund.data}
+                suffix=" BOLD"
+                format="4diff"
+              />,
             ]}
           />
         )}

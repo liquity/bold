@@ -170,24 +170,13 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
               </div>
             }
             value={[
-              slippageRefund.data
-                ? (
-                  <Amount
-                    key="start"
-                    value={slippageRefund.data}
-                    suffix={` ${collToken.name}`}
-                    format="4diff"
-                  />
-                )
-                : (
-                  <div key="start">
-                    {fmtnum(0, {
-                      digits: 2,
-                      signDisplay: "exceptZero",
-                    })} {collToken.name}
-                  </div>
-                ),
-              slippageRefund.data && collPrice.data && (
+              <Amount
+                key="start"
+                value={slippageRefund.data}
+                suffix={` ${collToken.name}`}
+                format="4diff"
+              />,
+              collPrice.data && (
                 <Amount
                   key="end"
                   fallback="…"

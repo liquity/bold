@@ -215,24 +215,13 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
               </div>
             }
             value={[
-              slippageRefund.data
-                ? (
-                  <Amount
-                    key="start"
-                    value={slippageRefund.data}
-                    suffix={` ${collateral.name}`}
-                    format="4diff"
-                  />
-                )
-                : (
-                  <div key="start">
-                    {fmtnum(0, {
-                      digits: 2,
-                      signDisplay: "exceptZero",
-                    })} {collateral.name}
-                  </div>
-                ),
-              slippageRefund.data && collPrice.data && (
+              <Amount
+                key="start"
+                value={slippageRefund.data}
+                suffix={` ${collateral.name}`}
+                format="4diff"
+              />,
+              collPrice.data && (
                 <Amount
                   key="end"
                   fallback="…"
