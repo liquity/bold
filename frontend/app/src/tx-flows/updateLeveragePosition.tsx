@@ -218,7 +218,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
               <Amount
                 key="start"
                 value={slippageRefund.data}
-                suffix={` ${collateral.name}`}
+                suffix={` ${collateral.name === "ETH" ? "WETH" : collateral.name}`}
                 format="4diff"
               />,
               collPrice.data && (
