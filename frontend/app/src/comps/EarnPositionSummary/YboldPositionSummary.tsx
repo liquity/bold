@@ -67,7 +67,7 @@ export function YboldPositionSummary() {
             />
           </div>
           <InfoTooltip heading="Total Value Locked (TVL)">
-            Total amount of yBOLD deposited in this stability pool.
+            Total amount of BOLD deposited in the yBOLD pool.
           </InfoTooltip>
         </>
       }
