@@ -1,6 +1,6 @@
 import { Address, BigInt, DataSourceContext } from "@graphprotocol/graph-ts";
 import {
-  CollateralRegistryAddressChanged as CollateralRegistryAddressChangedEvent,
+  CollateralRegistryAddressChanged as CollateralRegistryAddressChangedEvent
 } from "../generated/BoldToken/BoldToken";
 import { BorrowerOperations as BorrowerOperationsContract } from "../generated/BoldToken/BorrowerOperations";
 import { CollateralRegistry as CollateralRegistryContract } from "../generated/BoldToken/CollateralRegistry";
@@ -12,7 +12,7 @@ function addCollateral(
   collIndex: i32,
   totalCollaterals: i32,
   tokenAddress: Address,
-  troveManagerAddress: Address,
+  troveManagerAddress: Address
 ): void {
   let collId = collIndex.toString();
 
@@ -31,7 +31,7 @@ function addCollateral(
   addresses.troveNft = troveManagerContract.troveNFT();
 
   collateral.minCollRatio = BorrowerOperationsContract.bind(
-    Address.fromBytes(addresses.borrowerOperations),
+    Address.fromBytes(addresses.borrowerOperations)
   ).MCR();
 
   collateral.save();
@@ -70,7 +70,7 @@ export function handleCollateralRegistryAddressChanged(event: CollateralRegistry
         index,
         totalCollaterals,
         tokenAddress,
-        troveManagerAddress,
+        troveManagerAddress
       );
     }
   }

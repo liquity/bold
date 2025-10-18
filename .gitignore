@@ -2,3 +2,4 @@ node_modules/
 /.vercel
 /.idea/
 package-lock.json
+frontend/app/.env*

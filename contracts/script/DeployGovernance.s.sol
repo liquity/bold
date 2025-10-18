@@ -126,7 +126,13 @@ contract DeployGovernance is Script {
             initialInitiatives.push(makeAddr("initiative3"));
         }
 
-        governance.registerInitialInitiatives{gas: 600000}(initialInitiatives);
+        // Increase gas to satisfy SafeCallMinGas checks during initiative hooks on testnets.
+        // On non-mainnet networks, optionally skip initiative hook registration to avoid minGas failures.
+        // Default: skip on testnets (can override with SKIP_GOVERNANCE_INIT=false).
+        bool skipGovInit = block.chainid != 1 && vm.envOr("SKIP_GOVERNANCE_INIT", true);
+        if (!skipGovInit) {
+            governance.registerInitialInitiatives{gas: 1_500_000}(initialInitiatives);
+        }
 
         return (governanceAddress, _getGovernanceManifestJson(p));
     }

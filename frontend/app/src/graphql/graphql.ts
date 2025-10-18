@@ -17,15 +17,9 @@ export type Scalars = {
   BigDecimal: { input: string; output: string; }
   BigInt: { input: string; output: string; }
   Bytes: { input: string; output: string; }
-  /**
-   * 8 bytes signed integer
-   *
-   */
+  /** 8 bytes signed integer */
   Int8: { input: number; output: number; }
-  /**
-   * A string representation of microseconds UNIX timestamp (16 digits)
-   *
-   */
+  /** A string representation of microseconds UNIX timestamp (16 digits) */
   Timestamp: { input: string; output: string; }
 };
 
@@ -1314,7 +1308,6 @@ export type _Meta_ = {
    * will be null if the _meta field has a block constraint that asks for
    * a block number. It will be filled if the _meta field has no block constraint
    * and therefore asks for the latest  block
-   *
    */
   block: _Block_;
   /** The deployment ID */

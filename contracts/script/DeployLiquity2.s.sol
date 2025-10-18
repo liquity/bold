@@ -371,7 +371,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         DeploymentResult memory deployed =
             _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols, deployGovernanceParams);
 
-        if (block.chainid == 11155111) {
+        // Optionally skip Sepolia liquidity/bootstrap steps that call external protocols (Balancer/Uniswap/Curve)
+        // which may fail depending on network conditions or addresses.
+        bool skipBootstrap = vm.envOr("SKIP_BOOTSTRAP", true);
+        if (block.chainid == 11155111 && !skipBootstrap) {
             // Provide liquidity for zaps if we're on Sepolia
             ERC20Faucet monkeyBalls = new ERC20Faucet("MonkeyBalls", "MB", 0, type(uint256).max);
             for (uint256 i = 0; i < deployed.contractsArray.length; ++i) {
@@ -871,12 +874,18 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         internal
         returns (ICurveStableswapNGPool)
     {
+        // local: do not deploy
         if (block.chainid == 31337) {
-            // local
             return ICurveStableswapNGPool(address(0));
         }
 
-        // deploy Curve StableswapNG pool
+        // On non-mainnet networks, allow skipping Curve pool deployment (default: skip)
+        bool skipCurve = block.chainid != 1 && vm.envOr("SKIP_CURVE_DEPLOY", true);
+        if (skipCurve) {
+            return ICurveStableswapNGPool(address(0));
+        }
+
+        // deploy Curve StableswapNG pool (best-effort). If it fails, continue without a pool.
         address[] memory coins = new address[](2);
         coins[BOLD_TOKEN_INDEX] = address(_boldToken);
         coins[OTHER_TOKEN_INDEX] = address(_otherToken);
@@ -884,7 +893,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         bytes4[] memory methodIds = new bytes4[](2);
         address[] memory oracles = new address[](2);
 
-        ICurveStableswapNGPool curvePool = curveStableswapFactory.deploy_plain_pool({
+        try curveStableswapFactory.deploy_plain_pool({
             name: string.concat("BOLD/", _otherToken.symbol(), " Pool"),
             symbol: string.concat("BOLD", _otherToken.symbol()),
             coins: coins,
@@ -896,9 +905,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             asset_types: assetTypes,
             method_ids: methodIds,
             oracles: oracles
-        });
-
-        return curvePool;
+        }) returns (ICurveStableswapNGPool curvePool) {
+            return curvePool;
+        } catch {
+            return ICurveStableswapNGPool(address(0));
+        }
     }
 
     function _provideFlashloanLiquidity(ERC20Faucet _collToken, ERC20Faucet _monkeyBalls) internal {

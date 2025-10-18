@@ -17,7 +17,7 @@ import "./Interfaces/IBoldToken.sol";
  */
 
 contract BoldToken is Ownable, IBoldToken, ERC20Permit {
-    string internal constant _NAME = "BOLD Stablecoin";
+    string internal constant _NAME = "JPYdf";
     string internal constant _SYMBOL = "BOLD";
 
     // --- Addresses ---
