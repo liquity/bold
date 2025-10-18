@@ -240,6 +240,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             require(boldToken.collateralRegistryAddress() == address(0), "Collateral registry already set");
             require(boldToken.owner() == deployer, "Not BOLD owner");
         } else {
+            vm.sleep(3000);
             boldToken = new BoldToken{salt: SALT}(deployer);
             assert(address(boldToken) == boldAddress);
         }
@@ -586,6 +587,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         internal
         returns (IAddressesRegistry, address)
     {
+        vm.sleep(3000);
         IAddressesRegistry addressesRegistry = new AddressesRegistry(
             deployer,
             _troveManagerParams.CCR,
@@ -724,6 +726,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         internal
         returns (IPriceFeed)
     {
+        vm.sleep(3000);
         if (block.chainid == CHAIN_ID && !useTestnetPriceFeeds) {
             // Saga
             // ETH
