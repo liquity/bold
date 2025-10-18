@@ -2171,3 +2171,76 @@ It is advisable to perform one or more security audits for any changes made to t
 ## Code diff with Liquity v2
 
 It’s advisable to publicly showcase the diff between your code and the original Liquity v2 code in your repo, so that all code changes to original smart contracts are surfaced and readily visible. 
+
+## JPYDF development memo
+
+## Summary
+
+- For this deployment, we prioritized completing the **testnet run**, so several external integrations and initialization processes have been made **skippable**.
+- Core features (Trove / Borrow–Repay / Stability Pool / Liquidation–Redemption) remain fully functional.
+    
+    Governance and swap-related features (Zapper / Hybrid Exchange) are disabled or partially limited.
+    
+
+---
+
+### Skipped Operations
+
+- **Sepolia Bootstrap**: Skips all external liquidity provisioning (Uniswap v3 / Balancer / Curve) and test-price overrides.
+    - Control: `SKIP_BOOTSTRAP=true` (default)
+    - Impact: No liquidity available → leverage Zapper / hybrid swap features disabled.
+        
+        PriceFeed remains fixed at the test value (200).
+        
+- **Curve Pool Deployment**: Skips or ignores deployment failure of the Stableswap NG pool.
+    - Control: `SKIP_CURVE_DEPLOY=true` (default) + `try/catch`
+    - Impact: Curve route of `HybridCurveUniV3Exchange` disabled (pool not deployed). Core functions unaffected.
+- **Governance Initial Initiatives**: Skips registration and hook execution of initial initiatives.
+    - Control: `SKIP_GOVERNANCE_INIT=true` (default for non-mainnet)
+    - Impact: Governance UI shows no initiatives; voting / allocation unavailable. Core functions unaffected.
+
+---
+
+### Code Changes
+
+- **`contracts/src/BoldToken.sol`**: `_NAME` changed to `JPYdf` (symbol remains `BOLD`)
+- **`frontend/uikit/src/tokens.ts`**: UI display name changed to `JPYdf` (symbol remains `BOLD`)
+- **`contracts/script/DeployLiquity2.s.sol`**
+    - Added `SKIP_BOOTSTRAP` flag to control Sepolia bootstrap (default: skip)
+    - Added `SKIP_CURVE_DEPLOY` + `try/catch` around `_deployCurvePool` (continue on failure)
+- **`contracts/script/DeployGovernance.s.sol`**
+    - Added `SKIP_GOVERNANCE_INIT` flag for `registerInitialInitiatives` (default skip for non-mainnet)
+    - Increased gas limit (1,500,000) to ensure margin for `minGas` requirement
+
+---
+
+### Impacts
+
+- **Core Functions**: No impact — Trove / Borrow–Repay, Stability Pool, Liquidation, and Redemption all work.
+- **Price**: Testnet PriceFeed remains fixed at 200; can be updated via `PriceFeedTestnet.setPrice` on each branch if needed.
+- **Governance**: No initiatives registered → UI empty; voting/allocation disabled.
+- **Swaps / Zapper**: No external liquidity → leverage & hybrid swap routes disabled or fail.
+- **Verification**: Etherscan verification depends on Foundry update; fallback to Sourcify or post-deployment verification possible.
+
+---
+
+### Re-Enable Later
+
+- **Re-run Bootstrap**: Set `SKIP_BOOTSTRAP=false` during deployment (or run a dedicated script for existing environments).
+- **Curve Pool Creation**: Set `SKIP_CURVE_DEPLOY=false` to redeploy, or call Curve factory directly.
+- **Governance Initialization**: Set `SKIP_GOVERNANCE_INIT=false` and redeploy using existing BOLD with
+    - `-mode use-existing-bold --salt <same SALT>`, or call `registerInitialInitiatives` via a separate script.
+
+---
+
+### Notes
+
+- **SALT**: Used for deterministic CREATE2 addresses.
+    
+    In case of collision, reuse with `--mode use-existing-bold` or redeploy with a new `--salt`.
+    
+- **Subgraph**: Required for app listings and statistics.
+    
+    Deploy your subgraph to Graph Studio with your deployed contract addresses and `startBlock`,
+    
+    then set the URL in `NEXT_PUBLIC_SUBGRAPH_URL`.
