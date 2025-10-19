@@ -40,7 +40,9 @@ export type Block_Height = {
 
 export type BorrowerInfo = {
   __typename?: 'BorrowerInfo';
+  collSurplusBalance: Array<Scalars['BigInt']['output']>;
   id: Scalars['ID']['output'];
+  lastCollSurplusClaimAt: Array<Scalars['BigInt']['output']>;
   nextOwnerIndexes: Array<Scalars['Int']['output']>;
   troves: Scalars['Int']['output'];
   trovesByCollateral: Array<Scalars['Int']['output']>;
@@ -50,6 +52,12 @@ export type BorrowerInfo_Filter = {
   /** Filter for the block changed event. */
   _change_block?: InputMaybe<BlockChangedFilter>;
   and?: InputMaybe<Array<InputMaybe<BorrowerInfo_Filter>>>;
+  collSurplusBalance?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  collSurplusBalance_contains?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  collSurplusBalance_contains_nocase?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  collSurplusBalance_not?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  collSurplusBalance_not_contains?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  collSurplusBalance_not_contains_nocase?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   id?: InputMaybe<Scalars['ID']['input']>;
   id_gt?: InputMaybe<Scalars['ID']['input']>;
   id_gte?: InputMaybe<Scalars['ID']['input']>;
@@ -58,6 +66,12 @@ export type BorrowerInfo_Filter = {
   id_lte?: InputMaybe<Scalars['ID']['input']>;
   id_not?: InputMaybe<Scalars['ID']['input']>;
   id_not_in?: InputMaybe<Array<Scalars['ID']['input']>>;
+  lastCollSurplusClaimAt?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  lastCollSurplusClaimAt_contains?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  lastCollSurplusClaimAt_contains_nocase?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  lastCollSurplusClaimAt_not?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  lastCollSurplusClaimAt_not_contains?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  lastCollSurplusClaimAt_not_contains_nocase?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   nextOwnerIndexes?: InputMaybe<Array<Scalars['Int']['input']>>;
   nextOwnerIndexes_contains?: InputMaybe<Array<Scalars['Int']['input']>>;
   nextOwnerIndexes_contains_nocase?: InputMaybe<Array<Scalars['Int']['input']>>;
@@ -82,7 +96,9 @@ export type BorrowerInfo_Filter = {
 };
 
 export enum BorrowerInfo_OrderBy {
+  CollSurplusBalance = 'collSurplusBalance',
   Id = 'id',
+  LastCollSurplusClaimAt = 'lastCollSurplusClaimAt',
   NextOwnerIndexes = 'nextOwnerIndexes',
   Troves = 'troves',
   TrovesByCollateral = 'trovesByCollateral'
@@ -109,6 +125,7 @@ export type CollateralTrovesArgs = {
 export type CollateralAddresses = {
   __typename?: 'CollateralAddresses';
   borrowerOperations: Scalars['Bytes']['output'];
+  collSurplusPool?: Maybe<Scalars['Bytes']['output']>;
   collateral: Collateral;
   id: Scalars['ID']['output'];
   sortedTroves: Scalars['Bytes']['output'];
@@ -132,6 +149,16 @@ export type CollateralAddresses_Filter = {
   borrowerOperations_not?: InputMaybe<Scalars['Bytes']['input']>;
   borrowerOperations_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
   borrowerOperations_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  collSurplusPool?: InputMaybe<Scalars['Bytes']['input']>;
+  collSurplusPool_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  collSurplusPool_gt?: InputMaybe<Scalars['Bytes']['input']>;
+  collSurplusPool_gte?: InputMaybe<Scalars['Bytes']['input']>;
+  collSurplusPool_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  collSurplusPool_lt?: InputMaybe<Scalars['Bytes']['input']>;
+  collSurplusPool_lte?: InputMaybe<Scalars['Bytes']['input']>;
+  collSurplusPool_not?: InputMaybe<Scalars['Bytes']['input']>;
+  collSurplusPool_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
+  collSurplusPool_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
   collateral?: InputMaybe<Scalars['String']['input']>;
   collateral_?: InputMaybe<Collateral_Filter>;
   collateral_contains?: InputMaybe<Scalars['String']['input']>;
@@ -216,6 +243,7 @@ export type CollateralAddresses_Filter = {
 
 export enum CollateralAddresses_OrderBy {
   BorrowerOperations = 'borrowerOperations',
+  CollSurplusPool = 'collSurplusPool',
   Collateral = 'collateral',
   CollateralCollIndex = 'collateral__collIndex',
   CollateralId = 'collateral__id',
@@ -264,6 +292,7 @@ export type Collateral_Filter = {
 export enum Collateral_OrderBy {
   Addresses = 'addresses',
   AddressesBorrowerOperations = 'addresses__borrowerOperations',
+  AddressesCollSurplusPool = 'addresses__collSurplusPool',
   AddressesId = 'addresses__id',
   AddressesSortedTroves = 'addresses__sortedTroves',
   AddressesStabilityPool = 'addresses__stabilityPool',
@@ -1037,6 +1066,7 @@ export type Trove = {
   __typename?: 'Trove';
   borrower: Scalars['Bytes']['output'];
   closedAt?: Maybe<Scalars['BigInt']['output']>;
+  collSurplus?: Maybe<Scalars['BigInt']['output']>;
   collateral: Collateral;
   createdAt: Scalars['BigInt']['output'];
   debt: Scalars['BigInt']['output'];
@@ -1045,8 +1075,11 @@ export type Trove = {
   interestBatch?: Maybe<InterestBatch>;
   interestRate: Scalars['BigInt']['output'];
   lastUserActionAt: Scalars['BigInt']['output'];
+  liquidatedColl?: Maybe<Scalars['BigInt']['output']>;
+  liquidatedDebt?: Maybe<Scalars['BigInt']['output']>;
   mightBeLeveraged: Scalars['Boolean']['output'];
   previousOwner: Scalars['Bytes']['output'];
+  priceAtLiquidation?: Maybe<Scalars['BigInt']['output']>;
   redeemedColl: Scalars['BigInt']['output'];
   redeemedDebt: Scalars['BigInt']['output'];
   redemptionCount: Scalars['Int']['output'];
@@ -1085,6 +1118,14 @@ export type Trove_Filter = {
   closedAt_lte?: InputMaybe<Scalars['BigInt']['input']>;
   closedAt_not?: InputMaybe<Scalars['BigInt']['input']>;
   closedAt_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  collSurplus?: InputMaybe<Scalars['BigInt']['input']>;
+  collSurplus_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  collSurplus_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  collSurplus_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  collSurplus_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  collSurplus_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  collSurplus_not?: InputMaybe<Scalars['BigInt']['input']>;
+  collSurplus_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   collateral?: InputMaybe<Scalars['String']['input']>;
   collateral_?: InputMaybe<Collateral_Filter>;
   collateral_contains?: InputMaybe<Scalars['String']['input']>;
@@ -1175,6 +1216,22 @@ export type Trove_Filter = {
   lastUserActionAt_lte?: InputMaybe<Scalars['BigInt']['input']>;
   lastUserActionAt_not?: InputMaybe<Scalars['BigInt']['input']>;
   lastUserActionAt_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  liquidatedColl?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedColl_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedColl_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedColl_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  liquidatedColl_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedColl_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedColl_not?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedColl_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  liquidatedDebt?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedDebt_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedDebt_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedDebt_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  liquidatedDebt_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedDebt_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedDebt_not?: InputMaybe<Scalars['BigInt']['input']>;
+  liquidatedDebt_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   mightBeLeveraged?: InputMaybe<Scalars['Boolean']['input']>;
   mightBeLeveraged_in?: InputMaybe<Array<Scalars['Boolean']['input']>>;
   mightBeLeveraged_not?: InputMaybe<Scalars['Boolean']['input']>;
@@ -1190,6 +1247,14 @@ export type Trove_Filter = {
   previousOwner_not?: InputMaybe<Scalars['Bytes']['input']>;
   previousOwner_not_contains?: InputMaybe<Scalars['Bytes']['input']>;
   previousOwner_not_in?: InputMaybe<Array<Scalars['Bytes']['input']>>;
+  priceAtLiquidation?: InputMaybe<Scalars['BigInt']['input']>;
+  priceAtLiquidation_gt?: InputMaybe<Scalars['BigInt']['input']>;
+  priceAtLiquidation_gte?: InputMaybe<Scalars['BigInt']['input']>;
+  priceAtLiquidation_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
+  priceAtLiquidation_lt?: InputMaybe<Scalars['BigInt']['input']>;
+  priceAtLiquidation_lte?: InputMaybe<Scalars['BigInt']['input']>;
+  priceAtLiquidation_not?: InputMaybe<Scalars['BigInt']['input']>;
+  priceAtLiquidation_not_in?: InputMaybe<Array<Scalars['BigInt']['input']>>;
   redeemedColl?: InputMaybe<Scalars['BigInt']['input']>;
   redeemedColl_gt?: InputMaybe<Scalars['BigInt']['input']>;
   redeemedColl_gte?: InputMaybe<Scalars['BigInt']['input']>;
@@ -1259,6 +1324,7 @@ export type Trove_Filter = {
 export enum Trove_OrderBy {
   Borrower = 'borrower',
   ClosedAt = 'closedAt',
+  CollSurplus = 'collSurplus',
   Collateral = 'collateral',
   CollateralCollIndex = 'collateral__collIndex',
   CollateralId = 'collateral__id',
@@ -1277,8 +1343,11 @@ export enum Trove_OrderBy {
   InterestBatchUpdatedAt = 'interestBatch__updatedAt',
   InterestRate = 'interestRate',
   LastUserActionAt = 'lastUserActionAt',
+  LiquidatedColl = 'liquidatedColl',
+  LiquidatedDebt = 'liquidatedDebt',
   MightBeLeveraged = 'mightBeLeveraged',
   PreviousOwner = 'previousOwner',
+  PriceAtLiquidation = 'priceAtLiquidation',
   RedeemedColl = 'redeemedColl',
   RedeemedDebt = 'redeemedDebt',
   RedemptionCount = 'redemptionCount',
