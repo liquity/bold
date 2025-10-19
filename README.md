@@ -2243,4 +2243,4 @@ It’s advisable to publicly showcase the diff between your code and the origina
     
     Deploy your subgraph to Graph Studio with your deployed contract addresses and `startBlock`,
     
-    then set the URL in `NEXT_PUBLIC_SUBGRAPH_URL`.
+    then set the URL in `NEXT_PUBLIC_SUBGRAPH_URL`.trigger vercel deploy Sun Oct 19 11:47:10 JST 2025
