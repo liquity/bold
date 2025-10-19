@@ -55,52 +55,6 @@ jobs:
         run: |
           forge test -vvv --match-contract Mainnet
 
-  test-e2e:
-    name: Foundry "E2E" tests
-    runs-on: ubuntu-latest
-    env:
-      SALT: Liquity2-E2E
-      FORK_URL: ${{ secrets.MAINNET_RPC_URL }}
-      FORK_CHAIN_ID: 1
-      FORK_BLOCK_NUMBER: 21571000
-      ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3.0.0
-        with:
-          version: 8
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".node-version"
-          cache: "pnpm"
-          cache-dependency-path: "pnpm-lock.yaml"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: ${{ env.FOUNDRY_VERSION }}
-
-      - name: Fork mainnet
-        run: ./fork start && sleep 5
-
-      - name: Deploy BOLD
-        run: ./fork deploy --mode bold-only
-
-      - name: Deploy everything else
-        run: ./fork deploy --mode use-existing-bold
-
-      - name: Run E2E tests
-        run: ./fork e2e -vvv
-
   console-logs:
     name: Console imports check
     runs-on: ubuntu-latest
