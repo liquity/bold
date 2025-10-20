@@ -1,4 +1,4 @@
-type Collateral @entity(immutable: false) {
+type Collateral @entity(immutable: true) {
   id: ID! # "collIndex", e.g. "0"
   collIndex: Int!
   minCollRatio: BigInt!
@@ -6,7 +6,7 @@ type Collateral @entity(immutable: false) {
   addresses: CollateralAddresses! @derivedFrom(field: "collateral")
 }
 
-type CollateralAddresses @entity(immutable: true) {
+type CollateralAddresses @entity(immutable: false) {
   id: ID! # "collIndex", e.g. "0"
   collateral: Collateral!
   borrowerOperations: Bytes!
@@ -15,6 +15,7 @@ type CollateralAddresses @entity(immutable: true) {
   token: Bytes!
   troveManager: Bytes!
   troveNft: Bytes!
+  collSurplusPool: Bytes
 }
 
 type InterestRateBracket @entity(immutable: false) {
@@ -54,6 +55,10 @@ type Trove @entity(immutable: false) {
   redemptionCount: Int!
   redeemedColl: BigInt!
   redeemedDebt: BigInt!
+  liquidatedColl: BigInt
+  liquidatedDebt: BigInt
+  collSurplus: BigInt
+  priceAtLiquidation: BigInt
 }
 
 type BorrowerInfo @entity(immutable: false) {
@@ -61,6 +66,8 @@ type BorrowerInfo @entity(immutable: false) {
   nextOwnerIndexes: [Int!]!
   troves: Int!
   trovesByCollateral: [Int!]!
+  collSurplusBalance: [BigInt!]!
+  lastCollSurplusClaimAt: [BigInt!]! # a zero element means a claim has never been made in that branch
 }
 
 type InterestBatch @entity(immutable: false) {

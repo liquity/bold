@@ -6,8 +6,10 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
+import { INTEREST_RATE_ADJ_COOLDOWN } from "@/src/constants";
 import content from "@/src/content";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRelativeTime } from "@/src/formatting";
@@ -15,6 +17,7 @@ import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import {
   getCollToken,
+  useBranchCollateralRatios,
   useRedemptionRiskOfInterestRate,
   useRedemptionRiskOfLoan,
   useTroveRateUpdateCooldown,
@@ -23,7 +26,7 @@ import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, Checkbox, HFlex, IconSuggestion, InfoTooltip, StatusDot } from "@liquity2/uikit";
+import { addressesEqual, Checkbox, HFlex, IconExternal, IconSuggestion, InfoTooltip, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -61,6 +64,9 @@ export function PanelInterestRate({
 
   const updateRateCooldown = useUpdateRateCooldown(loan.branchId, loan.troveId);
 
+  const collateralRatios = useBranchCollateralRatios(loan.branchId);
+  const isZombieTrove = loan.isZombie;
+
   const currentRedemptionRisk = useRedemptionRiskOfLoan(loan);
   const newRedemptionRisk = useRedemptionRiskOfInterestRate(loan.branchId, interestRate, loan);
 
@@ -88,6 +94,12 @@ export function PanelInterestRate({
     && loan.borrowed
     && dn.mul(loan.borrowed, loan.interestRate);
 
+  const isCcrConditionsNotMet = collateralRatios.data?.tcr
+    && collateralRatios.data?.ccr
+    && updateRateCooldown
+    && dn.lt(collateralRatios.data.tcr, collateralRatios.data.ccr)
+    && updateRateCooldown.active;
+
   const isDelegated = interestRateMode === "delegate" && interestRateDelegate;
   const allowSubmit = Boolean(
     account.address && addressesEqual(
@@ -95,6 +107,7 @@ export function PanelInterestRate({
       account.address,
     ),
   )
+    && !isZombieTrove
     && deposit.parsed && dn.gt(deposit.parsed, 0)
     && debt.parsed && dn.gt(debt.parsed, 0)
     && interestRate && dn.gt(interestRate, 0)
@@ -102,6 +115,7 @@ export function PanelInterestRate({
       !dn.eq(interestRate, loan.interestRate)
       || loan.batchManager !== interestRateDelegate
     )
+    && !isCcrConditionsNotMet
     && (newLoanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk));
 
   return (
@@ -239,44 +253,101 @@ export function PanelInterestRate({
         />
       </div>
 
-      {newLoanDetails.status === "at-risk" && (
-        <WarningBox>
-          {isDelegated
-            ? (
-              <div>
-                When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>{" "}
-                must be below{" "}
-                {fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
-                proceed.
+      {isCcrConditionsNotMet && collateralRatios.data
+        ? (
+          <WarningBox>
+            <div>
+              <div
+                className={css({
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: 12,
+                })}
+              >
+                Borrowing Restrictions Apply
               </div>
-            )
-            : (
-              <>
+              <div
+                className={css({
+                  fontSize: 15,
+                  marginBottom: 12,
+                })}
+              >
+                The branch <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+                <Amount value={collateralRatios.data.tcr} percentage format={0} /> is currently below the{" "}
+                <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+                <Amount value={collateralRatios.data.ccr} percentage format={0} />. Interest rate adjustments are
+                restricted until either the <abbr title="Total Collateral Ratio">TCR</abbr> rises above{" "}
+                <Amount value={collateralRatios.data.ccr} percentage format={0} />, or {INTEREST_RATE_ADJ_COOLDOWN
+                  / (24 * 60 * 60)} days have passed since your last adjustment.
+              </div>
+              <LinkTextButton
+                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
+                target="_blank"
+                rel="noopener noreferrer"
+                label={
+                  <span
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      color: "white",
+                    })}
+                  >
+                    <span>Learn more about borrowing restrictions</span>
+                    <IconExternal size={16} />
+                  </span>
+                }
+              />
+            </div>
+          </WarningBox>
+        )
+        : newLoanDetails.status === "at-risk" && (
+          <WarningBox>
+            {isDelegated
+              ? (
                 <div>
-                  Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
-                  {fmtnum(newLoanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
-                  {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
+                  When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>
+                  {" "}
+                  must be below{" "}
+                  {fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
+                  proceed.
                 </div>
-                <label
-                  htmlFor={agreeCheckboxId}
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    cursor: "pointer",
-                  })}
-                >
-                  <Checkbox
-                    id={agreeCheckboxId}
-                    checked={agreeToLiquidationRisk}
-                    onChange={(checked) => {
-                      setAgreeToLiquidationRisk(checked);
-                    }}
-                  />
-                  I understand. Let's continue.
-                </label>
-              </>
-            )}
+              )
+              : (
+                <>
+                  <div>
+                    Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
+                    {fmtnum(newLoanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
+                    {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
+                  </div>
+                  <label
+                    htmlFor={agreeCheckboxId}
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      cursor: "pointer",
+                    })}
+                  >
+                    <Checkbox
+                      id={agreeCheckboxId}
+                      checked={agreeToLiquidationRisk}
+                      onChange={(checked) => {
+                        setAgreeToLiquidationRisk(checked);
+                      }}
+                    />
+                    I understand. Let's continue.
+                  </label>
+                </>
+              )}
+          </WarningBox>
+        )}
+
+      {isZombieTrove && (
+        <WarningBox>
+          <div>
+            Interest rate can't be adjusted on loans with debt below 2,000 BOLD. Please adjust your debt first.
+          </div>
         </WarningBox>
       )}
 

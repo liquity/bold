@@ -15,12 +15,15 @@ import {
   getBranches,
   getCollToken,
   getToken,
+  getTokenDisplayName,
   useAverageInterestRate,
   useBranchDebt,
   useEarnPool,
+  useLiquityStats,
 } from "@/src/liquity-utils";
-import { useSboldStats } from "@/src/sbold";
+import { isSboldEnabled, useSboldStats } from "@/src/sbold";
 import { useAccount } from "@/src/wagmi-utils";
+import { isYboldEnabled } from "@/src/ybold";
 import { css } from "@/styled-system/css";
 import { IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -121,9 +124,7 @@ function BorrowTable({
         subtitle="You can adjust your loans, including your interest rate, at any time"
         icon={<IconBorrow />}
         columns={columns}
-        rows={getBranches().map(({ symbol }) => (
-          <BorrowingRow key={symbol} compact={compact} symbol={symbol} />
-        ))}
+        rows={getBranches().map(({ symbol }) => <BorrowingRow key={symbol} compact={compact} symbol={symbol} />)}
       />
     </div>
   );
@@ -174,7 +175,8 @@ function EarnTable({
           columns={columns}
           rows={[
             ...getBranches(),
-            { symbol: "SBOLD" as const },
+            ...(isSboldEnabled() ? [{ symbol: "SBOLD" as const }] : []),
+            ...(isYboldEnabled() ? [{ symbol: "YBOLD" as const }] : []),
           ].map(({ symbol }) => (
             <EarnRewardsRow
               key={symbol}
@@ -385,12 +387,56 @@ function EarnRewardsRow({
   symbol,
 }: {
   compact: boolean;
-  symbol: CollateralSymbol | "SBOLD";
+  symbol: CollateralSymbol | "SBOLD" | "YBOLD";
 }) {
-  const branch = symbol === "SBOLD" ? null : getBranch(symbol);
+  const branch = symbol === "SBOLD" || symbol === "YBOLD" ? null : getBranch(symbol);
   const token = getToken(symbol);
   const earnPool = useEarnPool(branch?.id ?? null);
+
   const sboldStats = useSboldStats();
+  const liquityStats = useLiquityStats();
+
+  /**
+   * Case-specific stat normalization
+   * for display purposes
+   */
+  const normalizedStats:
+    | {
+      apr: dn.Dnum | string | null;
+      apr7d: dn.Dnum | null;
+      totalDeposited: dn.Dnum | null;
+      link?: string | null;
+    }
+    | null
+    | undefined = useMemo(() => {
+      if (symbol === "SBOLD") {
+        if (!sboldStats.data) {
+          return null;
+        }
+
+        return {
+          apr: sboldStats.data?.apr,
+          apr7d: sboldStats.data?.apr7d,
+          totalDeposited: sboldStats.data?.totalBold,
+        };
+      }
+      if (symbol === "YBOLD") {
+        const ybold = liquityStats.data?.yBOLD;
+
+        if (!ybold) {
+          return null;
+        }
+
+        return {
+          apr: "N/A",
+          apr7d: ybold.weeklyApr,
+          totalDeposited: ybold.tvl,
+          link: ybold.link,
+        };
+      }
+      return earnPool.data;
+    }, [symbol, sboldStats.data, liquityStats.data, earnPool.data]);
+
   return (
     <tr>
       <td>
@@ -402,25 +448,25 @@ function EarnRewardsRow({
           })}
         >
           <TokenIcon symbol={symbol} size="mini" />
-          <span>{symbol === "SBOLD" ? "sBOLD by K3 Capital" : token?.name}</span>
+          <span>{getTokenDisplayName(symbol)}</span>
         </div>
       </td>
       <td>
-        <Amount
-          fallback="…"
-          percentage
-          value={symbol === "SBOLD"
-            ? sboldStats.data?.apr
-            : earnPool.data?.apr}
-        />
+        {typeof normalizedStats?.apr === "string"
+          ? <span>{normalizedStats?.apr}</span>
+          : (
+            <Amount
+              fallback="…"
+              percentage
+              value={normalizedStats?.apr}
+            />
+          )}
       </td>
       <td>
         <Amount
           fallback="…"
           percentage
-          value={symbol === "SBOLD"
-            ? sboldStats.data?.apr7d
-            : earnPool.data?.apr7d}
+          value={normalizedStats?.apr7d}
         />
       </td>
       <td>
@@ -428,15 +474,14 @@ function EarnRewardsRow({
           fallback="…"
           format="compact"
           prefix="$"
-          value={symbol === "SBOLD"
-            ? sboldStats.data?.totalBold
-            : earnPool.data?.totalDeposited}
+          value={normalizedStats?.totalDeposited}
         />
       </td>
       {!compact && (
         <td>
           <LinkTextButton
-            href={`/earn/${symbol.toLowerCase()}`}
+            href={normalizedStats?.link ?? `/earn/${symbol.toLowerCase()}`}
+            target={normalizedStats?.link ? "_blank" : undefined}
             label={
               <div
                 className={css({
@@ -449,7 +494,7 @@ function EarnRewardsRow({
                 Earn
                 <TokenIcon.Group size="mini">
                   <TokenIcon symbol="BOLD" />
-                  {symbol === "SBOLD"
+                  {symbol === "SBOLD" || symbol === "YBOLD"
                     ? (
                       <div
                         className={css({

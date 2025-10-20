@@ -129,6 +129,19 @@ export function getBranches(): Branch[] {
   });
 }
 
+export function getTokenDisplayName(symbol: TokenSymbol) {
+  const token = TOKENS_BY_SYMBOL[symbol];
+
+  switch (symbol) {
+    case "SBOLD":
+      return "sBOLD by K3 Capital";
+    case "YBOLD":
+      return "yBOLD by Yearn";
+    default:
+      return token.name;
+  }
+}
+
 export function getBranchesCount(): number {
   return ENV_BRANCHES.length;
 }
@@ -717,6 +730,14 @@ export const StatsSchema = v.pipe(
         value_locked: v.string(),
       }),
     ),
+    yBOLD: v.nullish(v.object({
+      protocol: v.string(),
+      asset: v.string(),
+      link: v.string(),
+      weekly_apr: v.number(),
+      total_apr: v.string(),
+      tvl: v.number(),
+    })),
   }),
   v.transform((value) => ({
     totalBoldSupply: dnumOrNull(value.total_bold_supply, 18),
@@ -759,6 +780,14 @@ export const StatsSchema = v.pipe(
       link: i.link,
       protocol: i.protocol,
     })),
+    yBOLD: value.yBOLD && {
+      protocol: value.yBOLD.protocol,
+      asset: value.yBOLD.asset,
+      link: value.yBOLD.link,
+      weeklyApr: dnumOrNull(value.yBOLD.weekly_apr, 18),
+      totalApr: value.yBOLD.total_apr,
+      tvl: dnumOrNull(value.yBOLD.tvl, 18),
+    },
   })),
 );
 
