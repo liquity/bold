@@ -2196,3 +2196,5 @@ It is advisable to perform one or more security audits for any changes made to t
 ## Code diff with Liquity v2
 
 It’s advisable to publicly showcase the diff between your code and the original Liquity v2 code in your repo, so that all code changes to original smart contracts are surfaced and readily visible. 
+
+Deploy
