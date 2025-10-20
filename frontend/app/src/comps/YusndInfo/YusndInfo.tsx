@@ -18,7 +18,7 @@ const infoItems = [{
 }] as const;
 
 const iconComponents = {
-  yusnd: () => <TokenIcon symbol="YUSND" size={24} />,
+  yusnd: () => <TokenIcon symbol="YUSND" size={24} title="Yield-bearing USND optimized by Yearn." />,
   managed: ManagedIcon,
   compounding: CompoundingIcon,
 } as const;
