@@ -2,7 +2,7 @@ import type { TokenSymbol } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
-import { IconArrowRight, IconPlus, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
+import { IconArrowRight, IconExternal, IconPlus, TokenIcon, TOKENS_BY_SYMBOL } from "@liquity2/uikit";
 import Link from "next/link";
 
 export function EarnPositionSummaryBase({
@@ -16,7 +16,9 @@ export function EarnPositionSummaryBase({
 }: {
   action?: null | {
     label: string;
-    path: `/${string}`;
+    // Generic href
+    path: string;
+    external?: boolean;
   };
   active: boolean;
   infoItems?: Array<{
@@ -175,6 +177,7 @@ export function EarnPositionSummaryBase({
             active={active}
             path={action.path}
             title={action.label}
+            external={action.external}
           />
         )}
       </div>
@@ -186,15 +189,18 @@ function OpenLink({
   active,
   path,
   title,
+  external,
 }: {
   active: boolean;
   path: string;
   title: string;
+  external?: boolean;
 }) {
   return (
     <Link
       title={title}
       href={path}
+      target={external ? "_blank" : undefined}
       className={css({
         position: "absolute",
         inset: "0 -16px -12px auto",
@@ -238,7 +244,7 @@ function OpenLink({
           borderRadius: "50%",
         })}
       >
-        {active
+        {external ? <IconExternal size={24} /> : active
           ? <IconArrowRight size={24} />
           : <IconPlus size={24} />}
       </div>
