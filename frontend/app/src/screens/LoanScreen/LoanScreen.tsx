@@ -4,20 +4,22 @@ import type { Dnum, PositionLoanCommitted } from "@/src/types";
 
 import { useBreakpoint } from "@/src/breakpoints";
 import { InlineTokenAmount } from "@/src/comps/Amount/InlineTokenAmount";
+import { Field } from "@/src/comps/Field/Field";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { TROVE_EXPLORER_0, TROVE_EXPLORER_1 } from "@/src/env";
-import { formatDate } from "@/src/formatting";
+import { fmtnum, formatDate } from "@/src/formatting";
 import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId, useLoan } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useStoredState } from "@/src/services/StoredState";
+import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { isPrefixedtroveId } from "@/src/types";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, IconExternal, InfoTooltip, Tabs } from "@liquity2/uikit";
+import { addressesEqual, Button, IconExternal, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
@@ -262,6 +264,7 @@ export function LoanScreen() {
               loan.refetch();
             }}
             troveId={troveId}
+            collSurplusOnChain={collSurplus.data ?? null}
           />
           <TroveHistoryLinksDrawer
             collTokenName={collToken?.name ?? ""}
@@ -440,11 +443,17 @@ function ClaimCollateralSurplus({
   collSurplus: null | Dnum;
   loan: PositionLoanCommitted;
 }) {
+  const txFlow = useTransactionFlow();
   const collToken = getCollToken(loan.branchId);
+  const collPriceUsd = usePrice(collToken.symbol);
 
   const isOwner = accountAddress && (
     addressesEqual(accountAddress, loan.borrower)
   );
+
+  const collSurplusUsd = collPriceUsd.data && collSurplus
+    ? dn.mul(collSurplus, collPriceUsd.data)
+    : null;
 
   if (!collSurplus || dn.eq(collSurplus, 0)) {
     return null;
@@ -455,7 +464,7 @@ function ClaimCollateralSurplus({
       className={css({
         display: "flex",
         flexDirection: "column",
-        gap: 40,
+        gap: 16,
       })}
     >
       <section
@@ -479,17 +488,98 @@ function ClaimCollateralSurplus({
           This loan has been liquidated
         </h1>
         <div>
-          <>
-            The collateral has been deducted from this position.
-          </>
+          The collateral has been deducted from this position.
           {isOwner && (
             <>
-              You can claim back the excess collateral across your liquidated {collToken.name} loans on your{" "}
-              <LinkTextButton href="/" label="Dashboard" />.
+              You can claim back the excess collateral from your liquidated {collToken.name}{" "}
+              loan. If you have multiple liquidated positions on the same branch, you can claim the surplus from all of
+              them at once.
             </>
           )}
         </div>
       </section>
+      {isOwner && (
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            gap: 16,
+            padding: 16,
+            background: "fieldSurface",
+            borderRadius: 8,
+          })}
+        >
+          <Field
+            label="Remaining collateral"
+            field={
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  justifyContent: "space-between",
+                })}
+              >
+                <div
+                  className={css({
+                    display: "flex",
+                    gap: 16,
+                    fontSize: 28,
+                    lineHeight: 1,
+                  })}
+                >
+                  <div>{fmtnum(collSurplus)}</div>
+                </div>
+                <div>
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      height: 40,
+                      padding: "0 16px 0 8px",
+                      fontSize: 24,
+                      background: "background",
+                      borderRadius: 20,
+                      userSelect: "none",
+                    })}
+                  >
+                    <TokenIcon symbol={collToken.symbol} />
+                    <div>{collToken.name}</div>
+                  </div>
+                </div>
+              </div>
+            }
+            footer={{
+              start: (
+                <Field.FooterInfo
+                  label={fmtnum(collSurplusUsd, { preset: "2z", prefix: "$" })}
+                  value={null}
+                />
+              ),
+            }}
+          />
+          <Button
+            disabled={!accountAddress || !collSurplus || dn.eq(collSurplus, 0)}
+            mode="primary"
+            size="medium"
+            label="Claim remaining collateral"
+            onClick={() => {
+              if (accountAddress && collSurplus) {
+                txFlow.start({
+                  flowId: "claimCollateralSurplus",
+                  backLink: [`/loan?id=${loan.branchId}:${loan.troveId}`, "Back to loan"],
+                  successLink: ["/", "Go to the dashboard"],
+                  successMessage: "Collateral surplus has been claimed successfully.",
+                  borrower: accountAddress,
+                  branchId: loan.branchId,
+                  collSurplus,
+                });
+              }
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

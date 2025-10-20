@@ -21,6 +21,10 @@ export function PositionCardLoan(
     | "troveId"
     | "recordedDebt"
     | "isZombie"
+    | "liquidatedColl"
+    | "liquidatedDebt"
+    | "collSurplus"
+    | "priceAtLiquidation"
   >,
 ) {
   const storedState = useStoredState();

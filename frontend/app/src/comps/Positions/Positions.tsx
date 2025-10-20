@@ -3,23 +3,17 @@ import type { ReactNode } from "react";
 
 import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
-import { Field } from "@/src/comps/Field/Field";
 import content from "@/src/content";
-import { fmtnum } from "@/src/formatting";
 import {
-  getCollToken,
-  useCollateralSurplus,
   useCollateralSurplusByBranches,
   useEarnPositionsByAccount,
   useLoansByAccount,
   useStakePosition,
 } from "@/src/liquity-utils";
 import { useSboldPosition } from "@/src/sbold";
-import { usePrice } from "@/src/services/Prices";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { isPositionLoan } from "@/src/types";
 import { css } from "@/styled-system/css";
-import { Button, IconChevronSmallUp, TokenIcon } from "@liquity2/uikit";
+import { IconChevronSmallUp } from "@liquity2/uikit";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { useEffect, useRef, useState } from "react";
@@ -446,29 +440,6 @@ function PositionsGroup({
           </div>
           {isLiquidatedExpanded && (
             <>
-              {hasClaimableCollateral && (
-                <div
-                  className={css({
-                    display: "grid",
-                    gap: {
-                      base: 16,
-                      medium: 24,
-                    },
-                    marginTop: 16,
-                  })}
-                  style={{
-                    gridTemplateColumns: `repeat(${columns}, 1fr)`,
-                  }}
-                >
-                  {liquidatedBranchIds.map((branchId) => (
-                    <ClaimCollateralSurplus
-                      key={branchId}
-                      accountAddress={accountAddress}
-                      branchId={branchId}
-                    />
-                  ))}
-                </div>
-              )}
               <a.div
                 className={css({
                   position: "relative",
@@ -508,113 +479,6 @@ function PositionsGroup({
             </>
           )}
         </div>
-      )}
-    </div>
-  );
-}
-
-function ClaimCollateralSurplus({
-  accountAddress,
-  branchId,
-}: {
-  accountAddress: null | Address;
-  branchId: BranchId;
-}) {
-  const txFlow = useTransactionFlow();
-  const collToken = getCollToken(branchId);
-  const collPriceUsd = usePrice(collToken.symbol);
-
-  const collSurplus = useCollateralSurplus(accountAddress, branchId);
-
-  const collSurplusUsd = collPriceUsd.data && collSurplus.data
-    ? dn.mul(collSurplus.data, collPriceUsd.data)
-    : null;
-
-  if (!collSurplus.data || dn.eq(collSurplus.data, 0)) {
-    return null;
-  }
-
-  return (
-    <div
-      className={css({
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-        padding: 16,
-        background: "fieldSurface",
-        borderRadius: 8,
-      })}
-    >
-      <Field
-        label="Remaining collateral"
-        field={
-          <div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-              justifyContent: "space-between",
-            })}
-          >
-            <div
-              className={css({
-                display: "flex",
-                gap: 16,
-                fontSize: 28,
-                lineHeight: 1,
-              })}
-            >
-              <div>{fmtnum(collSurplus.data ?? 0)}</div>
-            </div>
-            <div>
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  height: 40,
-                  padding: "0 16px 0 8px",
-                  fontSize: 24,
-                  background: "background",
-                  borderRadius: 20,
-                  userSelect: "none",
-                })}
-              >
-                <TokenIcon symbol={collToken.symbol} />
-                <div>{collToken.name}</div>
-              </div>
-            </div>
-          </div>
-        }
-        footer={{
-          start: (
-            <Field.FooterInfo
-              label={fmtnum(collSurplusUsd, { preset: "2z", prefix: "$" })}
-              value={null}
-            />
-          ),
-        }}
-      />
-      {accountAddress && (
-        <Button
-          disabled={!collSurplus.data || dn.eq(collSurplus.data, 0)}
-          mode="primary"
-          size="medium"
-          label="Claim remaining collateral"
-          onClick={() => {
-            if (accountAddress && collSurplus.data) {
-              txFlow.start({
-                flowId: "claimCollateralSurplus",
-                backLink: ["/", "Back to the dashboard"],
-                successLink: ["/", "Go to the dashboard"],
-                successMessage: "Collateral surplus has been claimed successfully.",
-                borrower: accountAddress,
-                branchId,
-                collSurplus: collSurplus.data,
-              });
-            }
-          }}
-        />
       )}
     </div>
   );
