@@ -1476,22 +1476,28 @@ export function useCollateralSurplusByBranches(
   liquidatedBranchIds: BranchId[],
 ) {
   return useReadContracts({
-    contracts: CONTRACTS.branches.map((branch) => ({
-      ...branch.contracts.CollSurplusPool,
-      functionName: "getCollateral" as const,
-      args: [accountAddress ?? zeroAddress],
-    })),
+    contracts: liquidatedBranchIds.map((branchId) => {
+      const branch = CONTRACTS.branches[branchId];
+      if (!branch) {
+        throw new Error(`Invalid branch ID: ${branchId}`);
+      }
+      return {
+        ...branch.contracts.CollSurplusPool,
+        functionName: "getCollateral" as const,
+        args: [accountAddress ?? zeroAddress],
+      };
+    }),
     query: {
       enabled: Boolean(accountAddress) && liquidatedBranchIds.length > 0,
       select: (results) => {
         return results.map((result, index) => {
-          const branch = CONTRACTS.branches[index];
-          if (!branch) {
-            throw new Error(`Branch at index ${index} not found`);
+          const branchId = liquidatedBranchIds[index];
+          if (branchId === undefined) {
+            throw new Error(`Branch ID at index ${index} not found`);
           }
           const surplus = result.result ? dnum18(result.result) : DNUM_0;
           return {
-            branchId: branch.id,
+            branchId,
             surplus,
           };
         });

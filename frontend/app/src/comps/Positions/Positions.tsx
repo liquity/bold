@@ -16,7 +16,7 @@ import { css } from "@/styled-system/css";
 import { IconChevronSmallUp } from "@liquity2/uikit";
 import { a, useSpring, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { match, P } from "ts-pattern";
 import { NewPositionCard } from "./NewPositionCard";
 import { PositionCard } from "./PositionCard";
@@ -133,42 +133,61 @@ function PositionsGroup({
   const title_ = title(mode);
   const [isLiquidatedExpanded, setIsLiquidatedExpanded] = useState(false);
 
-  const toggleLiquidatedExpanded = () => {
+  const toggleLiquidatedExpanded = useCallback(() => {
     setIsLiquidatedExpanded(!isLiquidatedExpanded);
-  };
+  }, [isLiquidatedExpanded]);
 
-  const liquidatedBranchIds = Array.from(
-    new Set(
-      positions
-        .filter((p): p is PositionLoanCommitted => isPositionLoan(p) && p.status === "liquidated")
-        .map((p) => p.branchId),
-    ),
+  const { activePositions, liquidatedPositions } = useMemo(() => {
+    const active: Position[] = [];
+    const liquidated: PositionLoanCommitted[] = [];
+
+    for (const position of positions) {
+      if (isPositionLoan(position) && position.status === "liquidated") {
+        liquidated.push(position);
+      } else {
+        active.push(position);
+      }
+    }
+
+    return { activePositions: active, liquidatedPositions: liquidated };
+  }, [positions]);
+
+  const liquidatedBranchIds = useMemo(
+    () => Array.from(new Set(liquidatedPositions.map((p) => p.branchId))),
+    [liquidatedPositions],
   );
 
   const collSurplusQueries = useCollateralSurplusByBranches(accountAddress, liquidatedBranchIds);
 
-  const activePositions = positions.filter((position) => {
-    return !isPositionLoan(position) || position.status !== "liquidated";
-  });
+  const collSurplusMap = useMemo(() => {
+    if (!collSurplusQueries.data) return new Map<BranchId, boolean>();
 
-  const liquidatedPositions = positions.filter((position): position is PositionLoanCommitted => {
-    return isPositionLoan(position) && position.status === "liquidated";
-  });
+    const map = new Map<BranchId, boolean>();
+    for (const item of collSurplusQueries.data) {
+      map.set(item.branchId, dn.gt(item.surplus, 0));
+    }
+    return map;
+  }, [collSurplusQueries.data]);
 
-  const branchHasClaimableCollateral = (branchId: BranchId): boolean => {
-    const branchCollSurplus = collSurplusQueries.data?.find((item) => item.branchId === branchId);
-    return branchCollSurplus ? dn.gt(branchCollSurplus.surplus, 0) : false;
-  };
+  const { liquidatedWithClaimable, liquidatedWithoutClaimable } = useMemo(() => {
+    const withClaimable: PositionLoanCommitted[] = [];
+    const withoutClaimable: PositionLoanCommitted[] = [];
 
-  const liquidatedWithClaimable = liquidatedPositions.filter((position) =>
-    branchHasClaimableCollateral(position.branchId)
+    for (const position of liquidatedPositions) {
+      if (collSurplusMap.get(position.branchId)) {
+        withClaimable.push(position);
+      } else {
+        withoutClaimable.push(position);
+      }
+    }
+
+    return { liquidatedWithClaimable: withClaimable, liquidatedWithoutClaimable: withoutClaimable };
+  }, [liquidatedPositions, collSurplusMap]);
+
+  const topLevelPositions = useMemo(
+    () => [...activePositions, ...liquidatedWithClaimable],
+    [activePositions, liquidatedWithClaimable],
   );
-
-  const liquidatedWithoutClaimable = liquidatedPositions.filter((position) =>
-    !branchHasClaimableCollateral(position.branchId)
-  );
-
-  const topLevelPositions = [...activePositions, ...liquidatedWithClaimable];
 
   const cards = match(mode)
     .returnType<Array<[number, ReactNode]>>()
