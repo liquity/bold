@@ -1,6 +1,7 @@
 import type { Dnum, PositionSbold } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import { fmtnum } from "@/src/formatting";
 import { getBranch } from "@/src/liquity-utils";
@@ -34,12 +35,12 @@ export function SboldPositionSummary({
   return (
     <EarnPositionSummaryBase
       action={!linkToScreen ? null : {
-        label: `${active ? "Manage" : "Deposit to"} the sBOLD pool`,
+        label: `${active ? "Manage" : "Deposit to"} the ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} pool`,
         path: `/earn/sbold`,
       }}
       active={active}
-      poolToken="SBOLD"
-      title="sBOLD by K3 Capital"
+      poolToken={WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}
+      title={`${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} by K3 Capital`}
       poolInfo={txPreviewMode ? <TagPreview /> : (
         <>
           <div
@@ -66,7 +67,7 @@ export function SboldPositionSummary({
             <InfoTooltip
               content={{
                 heading: "Current APR",
-                body: <>The annualized rate sBOLD deposits earned over the last 24 hours.</>,
+                body: <>The annualized rate {WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} deposits earned over the last 24 hours.</>,
                 footerLink: {
                   label: "Check Dune for more details",
                   href: "https://dune.com/liquity/liquity-v2",
@@ -98,7 +99,7 @@ export function SboldPositionSummary({
             <InfoTooltip
               content={{
                 heading: "APR (last 7 days)",
-                body: <>The annualized rate sBOLD deposits earned over the last 7 days.</>,
+                body: <>The annualized rate {WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} deposits earned over the last 7 days.</>,
                 footerLink: {
                   label: "Check Dune for more details",
                   href: "https://dune.com/liquity/liquity-v2",
@@ -115,7 +116,7 @@ export function SboldPositionSummary({
             <Amount
               fallback="-"
               format="compact"
-              suffix=" BOLD"
+              suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
               value={tvl_}
             />
           </div>
@@ -127,7 +128,7 @@ export function SboldPositionSummary({
                 gap: 8,
               })}
             >
-              <div>Total amount of BOLD deposited in the sBOLD pool.</div>
+              <div>Total amount of {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} deposited in the {WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} pool.</div>
               <div
                 className={css({
                   display: "flex",
@@ -169,12 +170,12 @@ export function SboldPositionSummary({
       }
       infoItems={[
         !active ? null : {
-          label: "sBOLD Balance",
+          label: `${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} Balance`,
           content: (
             <>
               <div
                 title={active
-                  ? `${fmtnum(sboldPosition?.sbold, "full")} sBOLD`
+                  ? `${fmtnum(sboldPosition?.sbold, "full")} ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}`
                   : undefined}
                 className={css({
                   display: "flex",
@@ -185,11 +186,11 @@ export function SboldPositionSummary({
                 })}
               >
                 {active && fmtnum(sboldPosition?.sbold)}
-                <TokenIcon symbol="SBOLD" size="mini" title={null} />
+                <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} size="mini" title={null} />
               </div>
               {prevSboldPosition && (
                 <div
-                  title={`${fmtnum(prevSboldPosition.sbold, "full")} sBOLD`}
+                  title={`${fmtnum(prevSboldPosition.sbold, "full")} ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}`}
                   className={css({
                     display: "flex",
                     justifyContent: "flex-start",
@@ -201,19 +202,19 @@ export function SboldPositionSummary({
                   })}
                 >
                   {fmtnum(prevSboldPosition.sbold)}
-                  <TokenIcon symbol="SBOLD" size="mini" title={null} />
+                  <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} size="mini" title={null} />
                 </div>
               )}
             </>
           ),
         },
         {
-          label: "BOLD Deposit",
+          label: `${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} Deposit`,
           content: (
             <>
               <div
                 title={active
-                  ? `${fmtnum(sboldPosition?.bold, "full")} BOLD`
+                  ? `${fmtnum(sboldPosition?.bold, "full")} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`
                   : undefined}
                 className={css({
                   display: "flex",
@@ -224,11 +225,11 @@ export function SboldPositionSummary({
                 })}
               >
                 {active && fmtnum(sboldPosition?.bold)}
-                <TokenIcon symbol="BOLD" size="mini" title={null} />
+                <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} size="mini" title={null} />
               </div>
               {prevSboldPosition && (
                 <div
-                  title={`${fmtnum(prevSboldPosition.bold, "full")} BOLD`}
+                  title={`${fmtnum(prevSboldPosition.bold, "full")} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
                   className={css({
                     display: "flex",
                     justifyContent: "flex-start",
@@ -240,7 +241,7 @@ export function SboldPositionSummary({
                   })}
                 >
                   {fmtnum(prevSboldPosition.bold)}
-                  <TokenIcon symbol="BOLD" size="mini" title={null} />
+                  <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} size="mini" title={null} />
                 </div>
               )}
             </>

@@ -4,12 +4,23 @@ function findSubgraphUrl(envFile: string) {
   const fs = require("fs");
   const path = require("path");
   const envPath = path.resolve(process.cwd(), envFile);
-  const envContent = fs.readFileSync(envPath, "utf-8");
-  for (const line of envContent.split("\n")) {
-    if (line.trim().startsWith("NEXT_PUBLIC_SUBGRAPH_URL=")) {
-      return line.slice("NEXT_PUBLIC_SUBGRAPH_URL=".length);
-    }
+  
+  // Check if file exists before trying to read it
+  if (!fs.existsSync(envPath)) {
+    return null;
   }
+  
+  try {
+    const envContent = fs.readFileSync(envPath, "utf-8");
+    for (const line of envContent.split("\n")) {
+      if (line.trim().startsWith("NEXT_PUBLIC_SUBGRAPH_URL=")) {
+        return line.slice("NEXT_PUBLIC_SUBGRAPH_URL=".length);
+      }
+    }
+  } catch (error) {
+    console.warn(`Could not read ${envFile}:`, (error as Error).message);
+  }
+  
   return null;
 }
 

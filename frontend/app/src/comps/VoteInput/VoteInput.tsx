@@ -138,7 +138,7 @@ export function VoteInput({
         disabled={vote === null}
         className={css({
           display: "block",
-          width: 48,
+          width: 62,
           height: "100%",
           padding: 0,
           paddingRight: 8,

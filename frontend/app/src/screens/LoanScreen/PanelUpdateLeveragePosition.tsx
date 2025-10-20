@@ -3,6 +3,7 @@ import type { PositionLoanCommitted } from "@/src/types";
 import { INFINITY } from "@/src/characters";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
@@ -271,7 +272,7 @@ export function PanelUpdateLeveragePosition({
               drawer={newLoanDetails.debt && dn.lt(newLoanDetails.debt, MIN_DEBT)
                 ? {
                   mode: "error",
-                  message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
+                  message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}.`,
                 }
                 : null}
               {...leverageField}
@@ -339,11 +340,11 @@ export function PanelUpdateLeveragePosition({
                 <ValueUpdate
                   fontSize={14}
                   before={initialLoanDetails.debt && (
-                    `${fmtnum(initialLoanDetails.debt)} BOLD`
+                    `${fmtnum(initialLoanDetails.debt)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`
                   )}
                   after={newLoanDetails.debt && dn.gt(newLoanDetails.debt, 0)
                     ? (
-                      `${fmtnum(newLoanDetails.debt)} BOLD`
+                      `${fmtnum(newLoanDetails.debt)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`
                     )
                     : (
                       `N/A`

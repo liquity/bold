@@ -18,6 +18,7 @@ import { match, P } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
 import { createRequestSchema, verifyTransaction } from "./shared";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 const RequestSchema = createRequestSchema(
   "updateLeveragePosition",
@@ -154,7 +155,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
               key="start"
               fallback="…"
               value={debtChangeWithFee}
-              suffix=" BOLD"
+              suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
             />,
             upfrontFeeData.data?.upfrontFee
             && dn.gt(upfrontFeeData.data.upfrontFee, 0)
@@ -164,7 +165,7 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
                 fallback="…"
                 prefix="Incl. "
                 value={upfrontFeeData.data.upfrontFee}
-                suffix=" BOLD interest rate adjustment fee"
+                suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} interest rate adjustment fee`}
               />
             ),
           ]}

@@ -6,7 +6,6 @@ import type {
   Dnum,
   PositionEarn,
   PositionLoanCommitted,
-  PositionStake,
   PrefixedTroveId,
   RiskLevel,
   Token,
@@ -51,8 +50,12 @@ import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
 import { encodeAbiParameters, erc20Abi, isAddressEqual, keccak256, parseAbiParameters, zeroAddress } from "viem";
-import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
+import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
+
+function isLegacyCheckObject(check: typeof LEGACY_CHECK): check is { BRANCHES: Array<any>; [key: string]: any } {
+  return typeof check === "object" && check !== null && "BRANCHES" in check && Array.isArray(check.BRANCHES);
+}
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
   return troveId.length < chars * 2 + 2
@@ -152,6 +155,24 @@ export function getBranch(
   }
 
   return branch;
+}
+
+export type BoldYield = {
+  asset: string;
+  weeklyApr: Dnum;
+  tvl: Dnum;
+  link: string;
+  protocol: string;
+};
+
+export function useBoldYieldSources() {
+  const { data, isLoading, error } = useLiquityStats();
+
+  return {
+    data: data?.boldYield as BoldYield[],
+    isLoading,
+    error,
+  };
 }
 
 type EarnPool = {
@@ -296,76 +317,6 @@ export function useEarnPositionsByAccount(account: null | Address) {
       );
 
       return depositsPerBranch.filter((position) => position !== null);
-    },
-  });
-}
-
-export function useStakePosition(address: null | Address) {
-  const LqtyStaking = getProtocolContract("LqtyStaking");
-  const LusdToken = getProtocolContract("LusdToken");
-  const Governance = getProtocolContract("Governance");
-
-  const userProxyAddress = useReadContract({
-    ...Governance,
-    functionName: "deriveUserProxyAddress",
-    args: [address ?? "0x"],
-    query: {
-      enabled: Boolean(address),
-    },
-  });
-
-  const userProxyBalance = useBalance({
-    address: userProxyAddress.data ?? "0x",
-    query: {
-      enabled: Boolean(address) && userProxyAddress.isSuccess,
-    },
-  });
-
-  return useReadContracts({
-    contracts: [{
-      ...LqtyStaking,
-      functionName: "stakes",
-      args: [userProxyAddress.data ?? "0x"],
-    }, {
-      ...LqtyStaking,
-      functionName: "getPendingETHGain",
-      args: [userProxyAddress.data ?? "0x"],
-    }, {
-      ...LqtyStaking,
-      functionName: "getPendingLUSDGain",
-      args: [userProxyAddress.data ?? "0x"],
-    }, {
-      ...LusdToken,
-      functionName: "balanceOf",
-      args: [userProxyAddress.data ?? "0x"],
-    }],
-    query: {
-      enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
-      select: ([
-        depositResult,
-        pendingEthGainResult,
-        pendingLusdGainResult,
-        lusdBalanceResult,
-      ]): PositionStake | undefined => {
-        if (
-          depositResult.status === "failure"
-          || pendingEthGainResult.status === "failure"
-          || pendingLusdGainResult.status === "failure"
-          || lusdBalanceResult.status === "failure"
-        ) {
-          return undefined;
-        }
-        const deposit = dnum18(depositResult.result);
-        return {
-          type: "stake",
-          deposit,
-          owner: address ?? "0x",
-          rewards: {
-            eth: dnum18(pendingEthGainResult.result + (userProxyBalance.data?.value ?? 0n)),
-            lusd: dnum18(pendingLusdGainResult.result + lusdBalanceResult.result),
-          },
-        };
-      },
     },
   });
 }
@@ -654,7 +605,15 @@ export async function getTroveOperationHints({
   return { upperHint, lowerHint };
 }
 
-const StatsSchema = v.pipe(
+const BoldYieldItem = v.object({
+  asset: v.string(),
+  weekly_apr: v.union([v.number(), v.string()]),
+  tvl: v.union([v.number(), v.string()]),
+  link: v.string(),
+  protocol: v.string(),
+});
+
+export const StatsSchema = v.pipe(
   v.object({
     total_bold_supply: v.string(),
     total_debt_pending: v.string(),
@@ -666,6 +625,7 @@ const StatsSchema = v.pipe(
       v.string(),
       v.string(),
     ),
+    boldYield: v.optional(v.nullable(v.array(BoldYieldItem))),
     // TODO: phase out in the future, once all frontends update to the "safe" (losely-typed) `prices` schema
     otherPrices: v.optional(v.record(
       v.string(),
@@ -728,6 +688,13 @@ const StatsSchema = v.pipe(
         dnumOrNull(price, 18),
       ]),
     ),
+    boldYield: (value.boldYield ?? []).map((i) => ({
+      asset: i.asset,
+      weeklyApr: dnumOrNull(i.weekly_apr, 18),
+      tvl: dnumOrNull(i.tvl, 18),
+      link: i.link,
+      protocol: i.protocol,
+    })),
   })),
 );
 
@@ -958,12 +925,16 @@ export async function fetchLoanById(
     borrower: indexedTrove.borrower,
     branchId,
     createdAt: indexedTrove.createdAt,
+    lastUserActionAt: indexedTrove.lastUserActionAt,
     indexedDebt: indexedTrove.debt,
     deposit: dnum18(troveData.entireColl),
     interestRate: dnum18(troveData.annualInterestRate),
     status: indexedTrove.status,
     troveId,
     isZombie: troveStatus === TROVE_STATUS_ZOMBIE,
+    redemptionCount: indexedTrove.redemptionCount,
+    redeemedColl: indexedTrove.redeemedColl,
+    redeemedDebt: indexedTrove.redeemedDebt,
   };
 }
 
@@ -1032,7 +1003,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
   const legacyTrovesFromSnapshot = useQuery<PrefixedTroveId[]>({
     queryKey: ["legacyTrovesFromSnapshot", account],
     queryFn: async () => {
-      if (!LEGACY_CHECK || !account) {
+      if (!isLegacyCheckObject(LEGACY_CHECK) || !account) {
         throw new Error("LEGACY_CHECK or account not defined");
       }
       const result = await fetch(LEGACY_CHECK.TROVES_SNAPSHOT_URL);
@@ -1046,8 +1017,8 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
   const legacyTroves = useReadContracts({
     contracts: legacyTrovesFromSnapshot.data?.map((prefixedTroveId) => {
       const { branchId, troveId } = parsePrefixedTroveId(prefixedTroveId);
-      const branch = LEGACY_CHECK?.BRANCHES[branchId as number];
-      const address: Address = branch?.TROVE_MANAGER ?? "0x";
+      const branch = isLegacyCheckObject(LEGACY_CHECK) ? LEGACY_CHECK.BRANCHES[branchId as number] : undefined;
+      const address: Address = branch?.TROVE_MANAGER ?? "0x0000000000000000000000000000000000000000";
       return {
         abi: TroveManager,
         address,
@@ -1067,7 +1038,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
                 throw new Error("Trove ID not found");
               }
               const { branchId, troveId } = parsePrefixedTroveId(prefixedTroveId);
-              const branch = LEGACY_CHECK?.BRANCHES[branchId as number];
+              const branch = isLegacyCheckObject(LEGACY_CHECK) ? LEGACY_CHECK.BRANCHES[branchId as number] : undefined;
               if (!branch) {
                 throw new Error(`Invalid branch ID: ${branchId}`);
               }
@@ -1090,7 +1061,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
   const hasAnyLegacyTrove = (legacyTrovesFromSnapshot.data?.length ?? 0) > 0;
 
   const spDeposits = useReadContracts({
-    contracts: LEGACY_CHECK
+    contracts: isLegacyCheckObject(LEGACY_CHECK)
       ? [
         ...LEGACY_CHECK.BRANCHES.map(({ STABILITY_POOL }) => ({
           abi: StabilityPool,
@@ -1116,7 +1087,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
     query: {
       enabled: checkLegacyPositions,
       select: (results) => {
-        if (!LEGACY_CHECK) {
+        if (!isLegacyCheckObject(LEGACY_CHECK)) {
           throw new Error("LEGACY_CHECK not defined");
         }
         const branchCount = LEGACY_CHECK.BRANCHES.length;
@@ -1143,7 +1114,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
 
   const legacyBoldBalance = useReadContract({
     abi: erc20Abi,
-    address: LEGACY_CHECK?.BOLD_TOKEN,
+    address: isLegacyCheckObject(LEGACY_CHECK) ? LEGACY_CHECK.BOLD_TOKEN : "0x",
     functionName: "balanceOf",
     args: [account ?? "0x"],
     query: {
@@ -1153,7 +1124,7 @@ export function useLegacyPositions(account: Address | null): UseQueryResult<{
 
   const stakedLqty = useReadContract({
     abi: Governance,
-    address: LEGACY_CHECK?.GOVERNANCE,
+    address: isLegacyCheckObject(LEGACY_CHECK) ? LEGACY_CHECK.GOVERNANCE : "0x",
     functionName: "userStates" as const,
     args: [account ?? "0x"],
     query: {

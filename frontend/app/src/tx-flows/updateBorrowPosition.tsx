@@ -14,6 +14,7 @@ import { match, P } from "ts-pattern";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
 import { createRequestSchema, verifyTransaction } from "./shared";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 const RequestSchema = createRequestSchema(
   "updateBorrowPosition",
@@ -109,7 +110,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
                 key="start"
                 fallback="…"
                 value={debtChangeWithFee && dn.abs(debtChangeWithFee)}
-                suffix=" BOLD"
+                suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
               />,
               upfrontFeeData.data?.upfrontFee && dn.gt(upfrontFeeData.data.upfrontFee, 0n) && (
                 <Amount
@@ -117,7 +118,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
                   fallback="…"
                   prefix="Incl. "
                   value={upfrontFeeData.data.upfrontFee}
-                  suffix=" BOLD interest rate adjustment fee"
+                  suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} interest rate adjustment fee`}
                 />
               ),
             ]}
@@ -129,7 +130,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
   steps: {
     approveBold: {
-      name: () => "Approve BOLD",
+      name: () => `Approve ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`,
       Status: (props) => (
         <TransactionStatus
           {...props}
@@ -251,8 +252,8 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) return "Update Position";
         if (dn.gt(collChange, 0)) return "Deposit Collateral";
         if (dn.lt(collChange, 0)) return "Withdraw Collateral";
-        if (dn.gt(debtChange, 0)) return "Borrow BOLD";
-        if (dn.lt(debtChange, 0)) return "Repay BOLD";
+        if (dn.gt(debtChange, 0)) return `Borrow ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`;
+        if (dn.lt(debtChange, 0)) return `Repay ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`;
 
         throw new Error("Invalid request");
       },
@@ -313,7 +314,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     },
 
     depositBold: {
-      name: () => "Repay BOLD",
+      name: () => `Repay ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`,
       Status: TransactionStatus,
 
       async commit(ctx) {
@@ -374,7 +375,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     },
 
     withdrawBold: {
-      name: () => "Borrow BOLD",
+      name: () => `Borrow ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`,
       Status: TransactionStatus,
 
       async commit(ctx) {
@@ -509,10 +510,10 @@ function getFinalStep(
   // coll decreases => withdraw
   if (dn.lt(collChange, 0)) return "withdrawColl";
 
-  // debt increases => withdraw BOLD (borrow)
+  // debt increases => withdraw main token (borrow)
   if (dn.gt(debtChange, 0)) return "withdrawBold";
 
-  // debt decreases => deposit BOLD (repay)
+  // debt decreases => deposit main token (repay)
   if (dn.lt(debtChange, 0)) return "depositBold";
 
   throw new Error("Invalid request");

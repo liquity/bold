@@ -11,6 +11,7 @@ import { vBranchId, vDnum, vPositionEarn } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 const RequestSchema = createRequestSchema(
   "earnUpdate",
@@ -36,7 +37,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
         earnPosition={{
           ...request.earnPosition,
 
-          // compound BOLD rewards if not claiming
+          // compound token rewards if not claiming
           deposit: dn.add(
             request.earnPosition.deposit,
             request.claimRewards
@@ -44,7 +45,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
               : request.earnPosition.rewards.bold,
           ),
           rewards: {
-            // BOLD rewards are claimed or compounded
+            // Token rewards are claimed or compounded
             bold: DNUM_0,
             coll: request.claimRewards
               ? DNUM_0
@@ -67,7 +68,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
 
     const collateral = getCollToken(earnPosition.branchId);
 
-    const boldPrice = usePrice("BOLD");
+    const boldPrice = usePrice(WHITE_LABEL_CONFIG.tokens.mainToken.symbol);
     const collPrice = usePrice(collateral.symbol);
 
     const depositChange = dn.sub(earnPosition.deposit, prevEarnPosition.deposit);
@@ -82,7 +83,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
           value={[
             <Amount
               key="start"
-              suffix=" BOLD"
+              suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
               value={dn.abs(depositChange)}
             />,
             <Amount
@@ -94,12 +95,12 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
         />
         {dn.gt(rewards.bold, 0) && (
           <TransactionDetailsRow
-            label={claimRewards ? "Claim BOLD rewards" : "Compound BOLD rewards"}
+            label={claimRewards ? `Claim ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} rewards` : `Compound ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} rewards`}
             value={[
               <Amount
                 key="start"
                 value={rewards.bold}
-                suffix=" BOLD"
+                suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
               />,
               <Amount
                 key="end"

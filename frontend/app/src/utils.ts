@@ -49,3 +49,7 @@ export function tokenIconUrl(chainId: ChainId, address: Address) {
     .replace(/\{chainId\}/, String(chainId))
     .replace(/\{tokenAddress\}/, address.toLowerCase());
 }
+
+export function panic<T>(errorMessage: string): T {
+  throw new Error(errorMessage);
+}

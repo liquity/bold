@@ -242,9 +242,7 @@ export function Dropdown({
                 padding: "0 10px 0 16px",
                 height: "100%",
                 whiteSpace: "nowrap",
-                borderWidth: "1px 1px 0 1px",
-                borderStyle: "solid",
-                borderColor: "#F5F6F8",
+                border: "none",
                 boxShadow: `
                   0 2px 2px rgba(0, 0, 0, 0.1),
                   0 4px 10px rgba(18, 27, 68, 0.05),
@@ -309,7 +307,11 @@ export function Dropdown({
         {menuVisibility((appearStyles, { groups }) => (
           groups && (
             <a.div
-              ref={floatingRefs.setFloating}
+              ref={(node) => {
+                if (node) {
+                  floatingRefs.setFloating(node);
+                }
+              }}
               id={dropdownId}
               className={css({
                 position: "absolute",

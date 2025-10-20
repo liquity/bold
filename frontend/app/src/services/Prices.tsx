@@ -33,9 +33,6 @@ async function fetchCollateralPrice(
   return dnum18(price);
 }
 
-export function usePrice(symbol: string): UseQueryResult<Dnum>;
-export function usePrice(symbol: null): UseQueryResult<null>;
-export function usePrice(symbol: string | null): UseQueryResult<Dnum | null>;
 export function usePrice(symbol: string | null): UseQueryResult<Dnum | null> {
   const stats = useLiquityStats();
   const config = useWagmiConfig();

@@ -9,6 +9,7 @@ import { vPositionSbold } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 const RequestSchema = createRequestSchema(
   "sboldRedeem",
@@ -55,7 +56,7 @@ export const sboldRedeem: FlowDeclaration<SboldRedeemRequest> = {
           value={[
             <Amount
               key="end"
-              suffix=" BOLD"
+              suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
               value={dn.abs(boldAmount)}
             />,
           ]}

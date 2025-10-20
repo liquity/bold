@@ -2,15 +2,19 @@ import type { Dnum, Token } from "@/src/types";
 import type { Address } from "@liquity2/uikit";
 
 import { dnum18 } from "@/src/dnum-utils";
-import { CONTRACT_BOLD_TOKEN, CONTRACT_LQTY_TOKEN, CONTRACT_LUSD_TOKEN } from "@/src/env";
+import { CONTRACT_MAIN_TOKEN, CONTRACT_LQTY_TOKEN, CONTRACT_LUSD_TOKEN } from "@/src/env";
 import { getBranch } from "@/src/liquity-utils";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { getSafeStatus } from "@/src/safe-utils";
 import { isCollateralSymbol } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import { useModal as useConnectKitModal } from "connectkit";
 import { match } from "ts-pattern";
 import { erc20Abi } from "viem";
-import { useAccount as useWagmiAccount, useBalance as useWagmiBalance, useEnsName, useReadContracts } from "wagmi";
+import { useAccount as useWagmiAccount, useBalance as useWagmiBalance, useEnsName, useReadContracts } from 'wagmi';
+
+import type { Config, UseAccountReturnType } from 'wagmi';
+import type { SafeStatus } from '@/src/safe-utils';
 
 export function useBalance(
   address: Address | undefined,
@@ -39,7 +43,7 @@ export function useBalances(
         },
       )
       .with("LUSD", () => CONTRACT_LUSD_TOKEN)
-      .with("BOLD", () => CONTRACT_BOLD_TOKEN)
+      .with(WHITE_LABEL_CONFIG.tokens.mainToken.symbol, () => CONTRACT_MAIN_TOKEN)
       .with("LQTY", () => CONTRACT_LQTY_TOKEN)
       .otherwise(() => null);
 
@@ -96,14 +100,13 @@ export function useBalances(
   >);
 }
 
-export function useAccount():
-  & Omit<ReturnType<typeof useWagmiAccount>, "connector">
-  & {
-    connect: () => void;
-    ensName: string | undefined;
-    safeStatus: Awaited<ReturnType<typeof getSafeStatus>> | null;
-  }
-{
+export type Account = UseAccountReturnType<Config> & {
+  connect: () => void;
+  ensName?: string;
+  safeStatus: SafeStatus | null;
+}
+
+export function useAccount(): Account {
   const account = useWagmiAccount();
   const ensName = useEnsName({ address: account?.address });
 

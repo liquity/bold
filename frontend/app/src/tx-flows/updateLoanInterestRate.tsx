@@ -3,6 +3,7 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { dnum18 } from "@/src/dnum-utils";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { fmtnum } from "@/src/formatting";
 import {
   getBranch,
@@ -120,7 +121,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                     <Amount
                       format="2z"
                       prefix="~"
-                      suffix=" BOLD per year"
+                      suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} per year`}
                       value={yearlyBoldInterest}
                     />
                   </>
@@ -139,13 +140,13 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
               </div>,
               <div
                 key="end"
-                title={`${fmtnum(yearlyBoldInterest, "full")} BOLD per year`}
+                title={`${fmtnum(yearlyBoldInterest, "full")} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} per year`}
               >
                 {fmtnum(yearlyBoldInterest, {
                   digits: 4,
                   dust: false,
                   prefix: "~",
-                })} BOLD per year
+                })} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} per year
               </div>,
             ]}
           />
@@ -184,7 +185,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                   <Amount
                     format="2z"
                     prefix="~"
-                    suffix=" BOLD per year"
+                    suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} per year`}
                     value={prevYearlyBoldInterest}
                   />
                 </div>,
@@ -223,7 +224,7 @@ export const updateLoanInterestRate: FlowDeclaration<UpdateLoanInterestRateReque
                   key="start"
                   fallback="…"
                   value={upfrontFee.data}
-                  suffix=" BOLD"
+                  suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
                 />,
               ]}
             />

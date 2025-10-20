@@ -1,5 +1,6 @@
 import type { Address, IcStrategy, PrefixedTroveId, TroveId } from "@/src/types";
 import type { Dnum } from "dnum";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 import { isPrefixedtroveId, isTroveId } from "@/src/types";
 import { isDnum } from "dnum";
@@ -161,18 +162,6 @@ export function vEnvCurrency() {
   );
 }
 
-export function vPositionStake() {
-  return v.object({
-    type: v.literal("stake"),
-    owner: vAddress(),
-    deposit: vDnum(),
-    rewards: v.object({
-      lusd: vDnum(),
-      eth: vDnum(),
-    }),
-  });
-}
-
 const VPositionLoanBase = v.object({
   type: v.union([
     v.literal("borrow"),
@@ -198,8 +187,12 @@ export function vPositionLoanCommited() {
     v.object({
       troveId: vTroveId(),
       createdAt: v.number(),
+      lastUserActionAt: v.number(),
       isZombie: v.boolean(),
       indexedDebt: vDnum(),
+      redemptionCount: v.number(),
+      redeemedColl: vDnum(),
+      redeemedDebt: vDnum(),
     }),
   ]);
 }
@@ -261,22 +254,12 @@ export function vVoteAllocations() {
 }
 
 export function vCollateralSymbol() {
-  return v.union([
-    v.literal("ETH"),
-    v.literal("RETH"),
-    v.literal("WSTETH"),
-  ]);
-}
-
-export function vTokenSymbol() {
-  return v.union([
-    vCollateralSymbol(),
-    v.literal("BOLD"),
-    v.literal("LEGACY_BOLD"),
-    v.literal("LQTY"),
-    v.literal("LUSD"),
-    v.literal("SBOLD"),
-  ]);
+  // Generate validation schema from config
+  const collateralLiterals = WHITE_LABEL_CONFIG.tokens.collaterals.map(collateral => 
+    v.literal(collateral.symbol)
+  );
+  
+  return v.union(collateralLiterals as [any, ...any[]]);
 }
 
 export function vEnvLegacyCheck() {
@@ -286,7 +269,7 @@ export function vEnvLegacyCheck() {
       v.string(),
       v.transform((value) => JSON.parse(value)),
       v.object({
-        BOLD_TOKEN: vAddress(),
+        [WHITE_LABEL_CONFIG.tokens.mainToken.symbol + "_TOKEN"]: vAddress(),
         COLLATERAL_REGISTRY: vAddress(),
         GOVERNANCE: vAddress(),
         INITIATIVES_SNAPSHOT_URL: v.string(),

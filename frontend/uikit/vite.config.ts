@@ -32,6 +32,11 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    dts(),
+    dts({
+      outDir: "dist",
+      insertTypesEntry: true,
+      rollupTypes: false,
+      copyDtsFiles: false,
+    }),
   ],
 });

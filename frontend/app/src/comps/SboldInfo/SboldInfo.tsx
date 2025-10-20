@@ -1,6 +1,7 @@
 import type { Dnum } from "@/src/types";
 
 import { TokenAmount } from "@/src/comps/Amount/TokenAmount";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { css } from "@/styled-system/css";
 import { TokenIcon } from "@liquity2/uikit";
@@ -8,7 +9,7 @@ import { a, useInView, useTransition } from "@react-spring/web";
 
 const infoItems = [{
   icon: "sbold",
-  text: "sBOLD is an ERC-20 token",
+  text: `${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} is an ERC-20 token`,
 }, {
   icon: "managed",
   text: "Managed by K3 Capital",
@@ -18,7 +19,7 @@ const infoItems = [{
 }] as const;
 
 const iconComponents = {
-  sbold: () => <TokenIcon symbol="SBOLD" size={24} />,
+  sbold: () => <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} size={24} />,
   managed: ManagedIcon,
   compounding: CompoundingIcon,
 } as const;
@@ -70,21 +71,21 @@ export function SboldInfo({
 
   const bold = (
     <TokenAmount
-      symbol="BOLD"
+      symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol}
       animate={false}
       value={conversion.boldAmount}
-      fallback={loading ? "… BOLD" : "− BOLD"}
-      suffix=" BOLD"
+      fallback={loading ? `… ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}` : `− ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
+      suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
     />
   );
 
   const sbold = (
     <TokenAmount
-      symbol="SBOLD"
+      symbol={WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}
       animate={false}
       value={conversion.sboldAmount}
-      fallback={loading ? "… sBOLD" : "− sBOLD"}
-      suffix=" sBOLD"
+      fallback={loading ? `… ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}` : `− ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}`}
+      suffix={` ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}`}
     />
   );
 

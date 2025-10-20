@@ -13,6 +13,7 @@ import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { DEBT_SUGGESTIONS, ETH_MAX_RESERVE, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
 import content from "@/src/content";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
@@ -66,9 +67,12 @@ export function BorrowScreen() {
   const collaterals = branches.map((b) => getCollToken(b.branchId));
 
   const maxCollDeposit = MAX_COLLATERAL_DEPOSITS[collSymbol];
+  if (!maxCollDeposit) {
+    throw new Error(`No max collateral deposit configured for ${collSymbol}`);
+  }
 
   const deposit = useInputFieldValue(fmtnum, {
-    validate: (parsed, value) => {
+    validate: (parsed, value): { parsed: Dnum | null; value: string } => {
       const isAboveMax = parsed && dn.gt(parsed, maxCollDeposit);
       return {
         parsed: isAboveMax ? maxCollDeposit : parsed,
@@ -195,8 +199,8 @@ export function BorrowScreen() {
                   alignItems: "center",
                 })}
               >
-                <TokenIcon symbol="BOLD" />
-                {NBSP}BOLD
+                <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} />
+                {NBSP}{WHITE_LABEL_CONFIG.tokens.mainToken.symbol}
               </div>,
             )}
           </div>
@@ -276,13 +280,13 @@ export function BorrowScreen() {
             id="input-debt"
             contextual={
               <InputField.Badge
-                icon={<TokenIcon symbol="BOLD" />}
-                label="BOLD"
+                icon={<TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} />}
+                label={WHITE_LABEL_CONFIG.tokens.mainToken.symbol}
               />
             }
             drawer={debt.isFocused || !isBelowMinDebt ? null : {
               mode: "error",
-              message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} BOLD.`,
+              message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}.`,
             }}
             label={content.borrowScreen.borrowField.label}
             placeholder="0.00"

@@ -1,6 +1,7 @@
 import type { BranchId, Delegate } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { fmtnum, formatDuration, formatRedemptionRisk } from "@/src/formatting";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { useDebtPositioning } from "@/src/liquity-utils";
@@ -87,7 +88,7 @@ export function DelegateBox({
               <Amount
                 value={delegate.boldAmount}
                 format="compact"
-                suffix=" BOLD"
+                suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
               />
             </div>
             <div

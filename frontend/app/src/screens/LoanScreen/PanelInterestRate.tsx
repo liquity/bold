@@ -9,6 +9,7 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import content from "@/src/content";
 import { useInputFieldValue } from "@/src/form-utils";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { fmtnum, formatRelativeTime } from "@/src/formatting";
 import { formatRisk } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
@@ -34,7 +35,7 @@ export function PanelInterestRate({
   const deposit = useInputFieldValue((value) => `${fmtnum(value, "full")} ${collToken.symbol}`, {
     defaultValue: dn.toString(loan.deposit),
   });
-  const debt = useInputFieldValue((value) => `${fmtnum(value, "full")} BOLD`, {
+  const debt = useInputFieldValue((value) => `${fmtnum(value, "full")} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`, {
     defaultValue: dn.toString(loan.borrowed),
   });
 
@@ -222,12 +223,12 @@ export function PanelInterestRate({
             {
               label: (
                 <>
-                  <div>BOLD interest per year</div>
+                  <div>{WHITE_LABEL_CONFIG.tokens.mainToken.symbol} interest per year</div>
                   <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
                 </>
               ),
-              before: <Amount value={boldInterestPerYearPrev} suffix=" BOLD" />,
-              after: <Amount value={boldInterestPerYear} suffix=" BOLD" />,
+              before: <Amount value={boldInterestPerYearPrev} suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`} />,
+              after: <Amount value={boldInterestPerYear} suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`} />,
             },
           ]}
         />

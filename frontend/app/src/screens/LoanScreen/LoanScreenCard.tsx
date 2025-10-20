@@ -4,10 +4,10 @@ import type { ReactNode } from "react";
 import type { LoanLoadingState } from "./LoanScreen";
 
 import { useFlashTransition } from "@/src/anim-utils";
-import { useBreakpoint } from "@/src/breakpoints";
 import { INFINITY } from "@/src/characters";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { LoanStatusTag } from "@/src/comps/Tag/LoanStatusTag";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { Value } from "@/src/comps/Value/Value";
 import { CHAIN_BLOCK_EXPLORER } from "@/src/env";
 import { formatRisk } from "@/src/formatting";
@@ -36,7 +36,6 @@ import { a, useTransition } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
-import { useState } from "react";
 import { match, P } from "ts-pattern";
 
 type LoanMode = "borrow" | "multiply";
@@ -90,7 +89,7 @@ export function LoanScreenCard({
   );
 
   const nftUrl = useTroveNftUrl(loan?.branchId ?? null, troveId);
-  const title = mode === "multiply" ? "Multiply" : "BOLD loan";
+  const title = mode === "multiply" ? "Multiply" : `${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} loan`;
 
   const fullyRedeemed = loan && loan.status === "redeemed" && dn.eq(loan.borrowed, 0);
 
@@ -340,11 +339,6 @@ function LoanCard(props: {
   nftUrl: string | null;
   onLeverageModeChange: (mode: LoanMode) => void;
 }) {
-  const [compactMode, setCompactMode] = useState(false);
-  useBreakpoint(({ medium }) => {
-    setCompactMode(!medium);
-  });
-
   const cardTransition = useTransition(props, {
     keys: (props) => props.mode,
     initial: {
@@ -405,7 +399,7 @@ function LoanCard(props: {
         troveId,
         nftUrl,
       }) => {
-        const title = mode === "multiply" ? "Multiply" : "BOLD loan";
+        const title = mode === "multiply" ? "Multiply" : `${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} loan`;
         return (
           <a.div
             className={css({
@@ -448,8 +442,14 @@ function LoanCard(props: {
                     titleFull={`${title}: ${troveId}`}
                     statusTag={loan.status === "liquidated"
                       ? <LoanStatusTag status="liquidated" />
-                      : loan.status === "redeemed"
-                      ? <LoanStatusTag status="redeemed" />
+                      : loan.status === "redeemed" && "indexedDebt" in loan
+                      ? (
+                        <LoanStatusTag
+                          status={dn.eq(loan.indexedDebt, 0)
+                            ? "fully-redeemed"
+                            : "partially-redeemed"}
+                        />
+                      )
                       : null}
                   />
                   <div
@@ -638,7 +638,7 @@ function LoanCard(props: {
                       )
                       : (
                         <div
-                          title={`${fmtnum(loan.borrowed)} BOLD`}
+                          title={`${fmtnum(loan.borrowed)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
                           className={css({
                             display: "flex",
                             alignItems: "center",
@@ -646,7 +646,7 @@ function LoanCard(props: {
                           })}
                         >
                           {fmtnum(loan.borrowed)}
-                          <TokenIcon symbol="BOLD" size={24} />
+                          <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} size={24} />
                         </div>
                       )}
                   </div>
@@ -667,7 +667,7 @@ function LoanCard(props: {
                   gap: 12,
                 })}
                 style={{
-                  gridTemplateColumns: `repeat(${compactMode ? 2 : 3}, 1fr)`,
+                  gridTemplateColumns: 'repeat(2, 1fr)',
                 }}
               >
                 {fullyRedeemed

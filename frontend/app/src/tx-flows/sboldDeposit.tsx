@@ -12,6 +12,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
 import { createRequestSchema, verifyTransaction } from "./shared";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 const RequestSchema = createRequestSchema(
   "sboldDeposit",
@@ -60,7 +61,7 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
           value={[
             <Amount
               key="start"
-              suffix=" BOLD"
+              suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
               value={depositChange}
             />,
             dn.gt(depositFee, 0) && (
@@ -77,13 +78,13 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
                   fallback="…"
                   title={{
                     prefix: "Accounting for ",
-                    suffix: " BOLD (Entry Fee)",
+                    suffix: ` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} (Entry Fee)`,
                   }}
                   value={depositFee}
-                  suffix=" BOLD Entry Fee"
+                  suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} Entry Fee`}
                 />
-                <InfoTooltip heading="sBOLD Entry Fee">
-                  This fee is charged when you deposit BOLD for sBOLD shares, and has been deducted from the deposit
+                <InfoTooltip heading={`${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} Entry Fee`}>
+                  This fee is charged when you deposit ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} for ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} shares, and has been deducted from the deposit
                   amount.
                 </InfoTooltip>
               </div>
@@ -122,7 +123,7 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
 
   steps: {
     approveBold: {
-      name: () => "Approve BOLD",
+      name: () => `Approve ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`,
       Status: (props) => (
         <TransactionStatus
           {...props}

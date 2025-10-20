@@ -30,7 +30,7 @@ export const SboldContract = {
       "function withdraw(uint256 assets, address receiver, address owner) returns (uint256)",
     ]),
   ] as const,
-  address: SBOLD ?? zeroAddress,
+  address: SBOLD || zeroAddress,
 };
 
 export function isSboldEnabled() {

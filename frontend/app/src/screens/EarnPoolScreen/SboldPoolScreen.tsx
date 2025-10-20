@@ -3,6 +3,7 @@
 import type { Dnum, PositionSbold } from "@/src/types";
 
 import { useBreakpointName } from "@/src/breakpoints";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { SboldPositionSummary } from "@/src/comps/EarnPositionSummary/SboldPositionSummary";
 import { Field } from "@/src/comps/Field/Field";
@@ -61,7 +62,7 @@ export function SboldPoolScreen() {
     },
   });
 
-  const boldBalance = useBalance(account.address, "BOLD");
+  const boldBalance = useBalance(account.address, WHITE_LABEL_CONFIG.tokens.mainToken.symbol);
 
   return (
     <Screen
@@ -109,7 +110,7 @@ export function SboldPoolScreen() {
                     <IconEarn size={16} />
                   </div>
                   <HFlex gap={8}>
-                    Fetching sBOLD data…
+                    Fetching {WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} data…
                     <Spinner size={18} />
                   </HFlex>
                 </div>
@@ -231,28 +232,28 @@ export function PanelUpdate({
               drawer={insufficientBalance
                 ? {
                   mode: "error",
-                  message: `Insufficient balance. You have ${fmtnum(boldBalance)} BOLD.`,
+                  message: `Insufficient balance. You have ${fmtnum(boldBalance)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}.`,
                 }
                 : withdrawAboveDeposit
                 ? {
                   mode: "error",
                   message: hasAnyBoldDeposited
                     ? `You can’t withdraw more than you have deposited.`
-                    : `No BOLD deposited.`,
+                    : `No ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} deposited.`,
                 }
                 : null}
               contextual={
                 <InputTokenBadge
                   background={false}
-                  icon={<TokenIcon symbol={mode === "deposit" ? "BOLD" : "SBOLD"} />}
-                  label={mode === "deposit" ? "BOLD" : "sBOLD"}
+                  icon={<TokenIcon symbol={mode === "deposit" ? WHITE_LABEL_CONFIG.tokens.mainToken.symbol : WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} />}
+                  label={mode === "deposit" ? WHITE_LABEL_CONFIG.tokens.mainToken.symbol : WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}
                 />
               }
               id="input-deposit-change"
               label={{
                 start: mode === "redeem"
-                  ? "Redeem sBOLD"
-                  : "Deposit BOLD",
+                  ? `Redeem ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}`
+                  : `Deposit ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`,
                 end: (
                   <Tabs
                     compact
@@ -296,7 +297,7 @@ export function PanelUpdate({
                   ? (
                     dn.gt(boldBalance, 0) && (
                       <TextButton
-                        label={`Max ${fmtnum(boldBalance, 2)} BOLD`}
+                        label={`Max ${fmtnum(boldBalance, 2)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
                         onClick={() => {
                           setValue(dn.toString(boldBalance));
                         }}
@@ -305,7 +306,7 @@ export function PanelUpdate({
                   )
                   : sboldPosition?.sbold && dn.gt(sboldPosition.sbold, 0) && (
                     <TextButton
-                      label={`Max ${fmtnum(sboldPosition.sbold, 2)} sBOLD`}
+                      label={`Max ${fmtnum(sboldPosition.sbold, 2)} ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}`}
                       onClick={() => {
                         setValue(dn.toString(sboldPosition.sbold));
                       }}
@@ -393,8 +394,8 @@ export function PanelUpdate({
               return {
                 flowId: "sboldRedeem",
                 backLink: ["/earn/sbold", "Back to editing"],
-                successLink: ["/earn/sbold", "Go to the sBOLD Pool"],
-                successMessage: "The sBOLD has been redeemed successfully.",
+                successLink: ["/earn/sbold", `Go to the ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} Pool`],
+                successMessage: `The ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} has been redeemed successfully.`,
                 sboldPosition: newSboldPosition,
                 prevSboldPosition,
               };
@@ -403,7 +404,7 @@ export function PanelUpdate({
             return {
               flowId: "sboldDeposit",
               backLink: ["/earn/sbold", "Back to editing"],
-              successLink: ["/earn/sbold", "Go to the sBOLD Pool"],
+              successLink: ["/earn/sbold", `Go to the ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} Pool`],
               successMessage: "The deposit has been processed successfully.",
               depositFee,
               sboldPosition: newSboldPosition,

@@ -4,6 +4,7 @@ import type { ComponentPropsWithoutRef } from "react";
 
 import { LEVERAGE_FACTOR_MIN, LEVERAGE_FACTOR_SUGGESTIONS, LTV_RISK, MAX_LTV_ALLOWED_RATIO } from "@/src/constants";
 import content from "@/src/content";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import {
@@ -91,7 +92,7 @@ export function LeverageField({
                 >
                   {fmtnum(debt)}
                 </span>
-                {" BOLD"}
+                {` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
               </>
             )}
           </div>
