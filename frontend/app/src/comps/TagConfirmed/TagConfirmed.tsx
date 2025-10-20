@@ -1,5 +1,5 @@
 import { css } from "@/styled-system/css";
-import { IconEye } from "@liquity2/uikit";
+import { IconCheckmark } from "@liquity2/uikit";
 
 export function TagConfirmed() {
   return (
@@ -18,7 +18,7 @@ export function TagConfirmed() {
       })}
     >
       Confirmed
-      <IconEye size={16} />
+      <IconCheckmark size={16} />
     </div>
   );
 }
