@@ -24,14 +24,13 @@ export function ActionIcon({
     background: string;
     foreground: string;
   };
-  iconType: "borrow" | "multiply" | "earn" | "stake";
+  iconType: "borrow" | "multiply" | "earn";
   state: IconProps["state"];
 }) {
   const Icon = match(iconType)
     .with("borrow", () => ActionIconBorrow)
     .with("multiply", () => ActionIconLeverage)
     .with("earn", () => ActionIconEarn)
-    .with("stake", () => ActionIconStake)
     .exhaustive();
 
   return (

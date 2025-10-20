@@ -8,6 +8,7 @@ import { useBreakpoint } from "@/src/breakpoints";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Logo } from "@/src/comps/Logo/Logo";
 import * as env from "@/src/env";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { css } from "@/styled-system/css";
 import { Button, Modal } from "@liquity2/uikit";
 import { a, useSpring } from "@react-spring/web";
@@ -289,7 +290,7 @@ export function About({ children }: { children: ReactNode }) {
             <AboutTable
               title={
                 <>
-                  Liquity V2 contracts ({env.CONTRACTS_COMMIT_URL
+                  {WHITE_LABEL_CONFIG.branding.brandName} contracts ({env.CONTRACTS_COMMIT_URL
                     ? (
                       <LinkTextButton
                         external
@@ -377,7 +378,7 @@ function ModalTitle() {
           <Logo size={40} />
         </a.div>
       </a.div>
-      <div>Liquity V2 App</div>
+      <div>{WHITE_LABEL_CONFIG.branding.appName} App</div>
     </div>
   );
 }

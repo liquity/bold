@@ -5,9 +5,9 @@ import type { Config as WagmiConfig } from "wagmi";
 import { BribeInitiative } from "@/src/abi/BribeInitiative";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { KNOWN_INITIATIVES_URL, LIQUITY_GOVERNANCE_URL } from "@/src/env";
+import { CHAIN_CONTRACT_MULTICALL, KNOWN_INITIATIVES_URL, LIQUITY_GOVERNANCE_URL } from "@/src/env";
 import {
-  getIndexedInitiatives,
+  getGovernanceGlobalData,
   getTotalAllocationHistoryFromSubgraph,
   getUserAllocationHistoryFromSubgraph,
 } from "@/src/subgraph";
@@ -16,10 +16,12 @@ import { vAddress } from "@/src/valibot-utils";
 import { useRaf } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
+import { useMemo } from "react";
 import * as v from "valibot";
-import { erc20Abi } from "viem";
+import { erc20Abi, parseAbi } from "viem";
 import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
+import { InferOutput } from 'valibot';
 
 export type InitiativeStatus =
   | "nonexistent"
@@ -43,8 +45,22 @@ export function initiativeStatusFromNumber(status: number): InitiativeStatus {
   return statuses[status] || "nonexistent";
 }
 
+export interface GovernanceState {
+  countedVoteLQTY: bigint;
+  countedVoteOffset: bigint;
+  cutoffStart: bigint;
+  daysLeft: number;
+  daysLeftRounded: number;
+  epoch: bigint;
+  epochEnd: bigint;
+  epochStart: bigint;
+  period: "cutoff" | "voting";
+  secondsWithinEpoch: bigint | undefined;
+}
+
 export function useGovernanceState() {
   const Governance = getProtocolContract("Governance");
+
   return useReadContracts({
     contracts: [{
       ...Governance,
@@ -73,7 +89,7 @@ export function useGovernanceState() {
         secondsWithinEpoch,
         GOVERNANCE_EPOCH_DURATION,
         GOVERNANCE_EPOCH_VOTING_CUTOFF,
-      ]) => {
+      ]): GovernanceState => {
         const epoch = epoch_.result ?? 0n;
         const epochStart = epochStart_.result ?? 0n;
         const epochDuration = GOVERNANCE_EPOCH_DURATION.result ?? 0n;
@@ -88,7 +104,7 @@ export function useGovernanceState() {
         const daysLeft = (Number(epochDuration) - seconds) / (24 * 60 * 60);
         const daysLeftRounded = Math.ceil(daysLeft);
 
-        return {
+        const data: GovernanceState = {
           countedVoteLQTY: globalState.result?.[0] ?? 0n,
           countedVoteOffset: globalState.result?.[1] ?? 0n,
           cutoffStart,
@@ -100,6 +116,8 @@ export function useGovernanceState() {
           period,
           secondsWithinEpoch: secondsWithinEpoch.result,
         };
+
+        return data;
       },
     },
   });
@@ -123,31 +141,46 @@ const KnownInitiativesSchema = v.record(
   ),
 );
 
-export async function getKnownInitiatives(knownInitiativesUrl: string): Promise<
-  | v.InferOutput<typeof KnownInitiativesSchema>
-  | null
-> {
-  try {
-    const response = await fetch(knownInitiativesUrl);
-    const data = await response.json();
-    return v.parse(KnownInitiativesSchema, data);
-  } catch (_) {
-    return null;
-  }
+export type KnownInitiatives = InferOutput<typeof KnownInitiativesSchema>;
+
+function useKnownInitiatives(): UseQueryResult<KnownInitiatives | null> {
+  return useQuery({
+    queryKey: ["knownInitiatives"],
+    queryFn: async () => {
+      if (!KNOWN_INITIATIVES_URL) return null;
+
+      const response = await fetch(KNOWN_INITIATIVES_URL);
+      const data = await response.json();
+      return v.parse(KnownInitiativesSchema, data);
+    },
+  });
+}
+
+function useGovernanceGlobalData() {
+  return useQuery({
+    queryKey: ["governanceGlobalData"],
+    queryFn: getGovernanceGlobalData,
+  });
 }
 
 export function useNamedInitiatives() {
+  const knownInitiatives = useKnownInitiatives();
+  const governanceGlobal = useGovernanceGlobalData();
+
   return useQuery({
-    queryKey: ["useNamedInitiatives"],
-    queryFn: async () => {
-      const [initiatives, knownInitiatives] = await Promise.all([
-        getIndexedInitiatives(),
-        KNOWN_INITIATIVES_URL
-          ? getKnownInitiatives(KNOWN_INITIATIVES_URL)
-          : null,
-      ]);
-      return initiatives.map((address): Initiative => {
-        const ki = knownInitiatives?.[address];
+    queryKey: ["namedInitiatives"],
+    enabled: (
+      knownInitiatives.isSuccess && governanceGlobal.isSuccess
+      || knownInitiatives.isError
+      || governanceGlobal.isError
+    ),
+    queryFn: () => {
+      if (knownInitiatives.isError) throw knownInitiatives.error;
+      if (governanceGlobal.isError) throw governanceGlobal.error;
+      if (knownInitiatives.isPending || governanceGlobal.isPending) throw new Error("should not happen"); // see enabled
+
+      return governanceGlobal.data.registeredInitiatives.map((address): Initiative => {
+        const ki = knownInitiatives.data?.[address];
         return {
           address,
           name: ki?.name ?? null,
@@ -162,31 +195,40 @@ export function useNamedInitiatives() {
   });
 }
 
+export type InitiativeState = Record<Address, {
+  status: InitiativeStatus;
+  lastEpochClaim: bigint;
+  claimableAmount: bigint;
+}>
+
 export function useInitiativesStates(initiatives: Address[]) {
   const wagmiConfig = useWagmiConfig();
 
   const Governance = getProtocolContract("Governance");
 
+  // stabilize the order of addresses (cache improvement and predictable)
+  const sortedAddress = useMemo(
+    () => [...initiatives].filter(Boolean).sort((a, b) => a.localeCompare(b)),
+    [initiatives]
+  );
+
   return useQuery({
-    queryKey: ["initiativesStates", initiatives.join("")],
+    enabled: sortedAddress.length > 0,
+    queryKey: ["initiativesStates", sortedAddress.join("")],
     queryFn: async () => {
       const results = await readContracts(wagmiConfig, {
-        contracts: initiatives.map((address) => ({
+        contracts: sortedAddress.map((address) => ({
           ...Governance,
           functionName: "getInitiativeState",
           args: [address],
         } as const)),
       });
 
-      const initiativesStates: Record<Address, {
-        status: InitiativeStatus;
-        lastEpochClaim: bigint;
-        claimableAmount: bigint;
-      }> = {};
+      const initiativesStates: InitiativeState = {};
 
       for (const [i, { result }] of results.entries()) {
-        if (result && initiatives[i]) {
-          initiativesStates[initiatives[i]] = {
+        if (result && sortedAddress[i]) {
+          initiativesStates[sortedAddress[i]] = {
             status: initiativeStatusFromNumber(result[0]),
             lastEpochClaim: result[1],
             claimableAmount: result[2],
@@ -210,13 +252,19 @@ export function useInitiativesVoteTotals(initiatives: Address[]) {
   const wagmiConfig = useWagmiConfig();
   const Governance = getProtocolContract("Governance");
 
+  // stabilize the order of addresses (cache improvement and predictable)
+  const sortedAddress = useMemo(
+    () => [...initiatives].filter(Boolean).sort((a, b) => a.localeCompare(b)),
+    [initiatives]
+  );
+
   return useQuery({
-    queryKey: ["initiativesVoteTotals", initiatives.join("")],
+    queryKey: ["initiativesVoteTotals", sortedAddress.join("")],
     queryFn: async () => {
       const voteTotals: Record<Address, VoteTotals> = {};
 
       const results = await readContracts(wagmiConfig, {
-        contracts: initiatives.map((address) => ({
+        contracts: sortedAddress.map((address) => ({
           ...Governance,
           functionName: "initiativeStates",
           args: [address],
@@ -224,9 +272,9 @@ export function useInitiativesVoteTotals(initiatives: Address[]) {
       });
 
       for (const [i, { result }] of results.entries()) {
-        if (result && initiatives[i]) {
+        if (result && sortedAddress[i]) {
           const [voteLQTY, voteOffset, vetoLQTY, vetoOffset] = result;
-          voteTotals[initiatives[i]] = {
+          voteTotals[sortedAddress[i]] = {
             voteLQTY,
             voteOffset,
             vetoLQTY,
@@ -240,13 +288,21 @@ export function useInitiativesVoteTotals(initiatives: Address[]) {
   });
 }
 
+export interface UserAllocation {
+  voteLQTY: bigint;
+  voteOffset: bigint;
+  vetoLQTY: bigint;
+  vetoOffset: bigint;
+  initiative: Address;
+}
+
 export async function getUserAllocations(
   wagmiConfig: WagmiConfig,
   account: Address,
   initiatives?: Address[],
-) {
+): Promise<UserAllocation[]> {
   if (!initiatives) {
-    initiatives = await getIndexedInitiatives();
+    initiatives = (await getGovernanceGlobalData()).registeredInitiatives;
   }
 
   const Governance = getProtocolContract("Governance");
@@ -263,8 +319,9 @@ export async function getUserAllocations(
   return allocationsByInitiative.map((allocation, index) => {
     const initiative = initiatives[index];
     if (!initiative) throw new Error(); // should never happen
-    const [voteLQTY, _, vetoLQTY] = allocation;
-    return { vetoLQTY, voteLQTY, initiative };
+
+    const [voteLQTY, voteOffset, vetoLQTY, vetoOffset] = allocation;
+    return { voteLQTY, voteOffset, vetoLQTY, vetoOffset, initiative };
   });
 }
 
@@ -279,10 +336,19 @@ export async function getUserAllocatedInitiatives(
     .map(({ initiative }) => initiative);
 }
 
+export interface UserState {
+  unallocatedLQTY: bigint;
+  unallocatedOffset: bigint;
+  allocatedLQTY: bigint;
+  allocatedOffset: bigint;
+  stakedLQTY: bigint;
+  stakedOffset: bigint;
+}
+
 export async function getUserStates(
   wagmiConfig: WagmiConfig,
   account: Address,
-) {
+): Promise<UserState> {
   const Governance = getProtocolContract("Governance");
   const result = await readContract(wagmiConfig, {
     ...Governance,
@@ -301,12 +367,17 @@ export async function getUserStates(
     allocatedLQTY,
     allocatedOffset,
     stakedLQTY: allocatedLQTY + unallocatedLQTY,
+    stakedOffset: allocatedOffset + unallocatedOffset,
     unallocatedLQTY,
     unallocatedOffset,
   };
 }
 
-export function useGovernanceUser(account: Address | null) {
+export interface GovernanceUserState extends UserState {
+  allocations: UserAllocation[];
+}
+
+export function useGovernanceUser(account: Address | null): UseQueryResult<GovernanceUserState | null> {
   const initiatives = useNamedInitiatives();
   const wagmiConfig = useWagmiConfig();
 
@@ -335,6 +406,15 @@ export function useGovernanceUser(account: Address | null) {
   });
 }
 
+function useLatestBlockTimestampInMilliseconds() {
+  return useReadContract({
+    address: CHAIN_CONTRACT_MULTICALL,
+    abi: parseAbi(["function getCurrentBlockTimestamp() view returns (uint256)"]),
+    functionName: "getCurrentBlockTimestamp",
+    query: { select: (blockTimestamp) => blockTimestamp * 1000n },
+  });
+}
+
 // votingPower(t) = lqty * t - offset
 export function votingPower(
   stakedLQTY: bigint,
@@ -344,6 +424,14 @@ export function votingPower(
   return stakedLQTY * timestampInSeconds - offset;
 }
 
+function votingPowerMs(
+  stakedLQTY: bigint,
+  offset: bigint,
+  timestampInMilliseconds: bigint,
+) {
+  return (stakedLQTY * timestampInMilliseconds - offset * 1000n) / 1000n;
+}
+
 export function useVotingPower(
   account: Address | null,
   callback: (share: Dnum | null) => void,
@@ -351,54 +439,55 @@ export function useVotingPower(
 ) {
   const govStats = useGovernanceStats();
   const govUser = useGovernanceUser(account);
+  const blockTimestamp = useLatestBlockTimestampInMilliseconds();
+  const startTime = useMemo(() => BigInt(Date.now()), []);
 
   useRaf(() => {
-    const { totalLQTYStaked, totalOffset } = govStats.data ?? {};
-    const { allocatedLQTY, allocatedOffset } = govUser.data ?? {};
-
-    if (
-      allocatedLQTY === undefined
-      || allocatedOffset === undefined
-      || totalLQTYStaked === undefined
-      || totalOffset === undefined
-    ) {
+    if (!govStats.data || !govUser.data || !blockTimestamp.data) {
       callback(null);
       return;
     }
 
-    const now = Date.now();
-    const nowInSeconds = BigInt(Math.floor(now / 1000));
+    const { totalLQTYStaked, totalOffset } = govStats.data;
+    const userLQTYStaked = govUser.data.allocatedLQTY + govUser.data.unallocatedLQTY;
+    const userOffset = govUser.data.allocatedOffset + govUser.data.unallocatedOffset;
 
-    const userVp = votingPower(allocatedLQTY, allocatedOffset, nowInSeconds);
-    const userVpNext = votingPower(allocatedLQTY, allocatedOffset, nowInSeconds + 1n);
-    const totalVP = votingPower(totalLQTYStaked, totalOffset, nowInSeconds);
-    const totalVPNext = votingPower(totalLQTYStaked, totalOffset, nowInSeconds + 1n);
-
-    // progress of current second, scaled to 1000
-    const progressScaled = BigInt(Math.floor(((now % 1000) / 1000) * 1000));
-
-    const userVpLive = userVp + (userVpNext - userVp) * progressScaled / 1000n;
-    const totalVpLive = totalVP + (totalVPNext - totalVP) * progressScaled / 1000n;
+    const timeElapsed = BigInt(Date.now()) - startTime;
+    const correctedStartTime = startTime > blockTimestamp.data ? startTime : blockTimestamp.data;
+    const timestamp = correctedStartTime + timeElapsed;
+    const userVp = votingPowerMs(userLQTYStaked, userOffset, timestamp);
+    const totalVP = votingPowerMs(totalLQTYStaked, totalOffset, timestamp);
 
     // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
     callback(
-      totalVpLive === 0n ? DNUM_0 : dn.div(
-        dnum18(userVpLive),
-        dnum18(totalVpLive),
+      totalVP === 0n ? DNUM_0 : dn.div(
+        dnum18(userVp),
+        dnum18(totalVP),
       ),
     );
   }, updatesPerSecond);
 }
 
 export function useGovernanceStats() {
-  return useReadContract({
-    ...getProtocolContract("Governance"),
-    functionName: "globalState",
-    query: {
-      select: ([countedVoteLQTY, countedVoteOffset]) => ({
-        totalLQTYStaked: countedVoteLQTY,
-        totalOffset: countedVoteOffset,
-      }),
+  const governanceGlobal = useGovernanceGlobalData();
+
+  return useQuery({
+    queryKey: ["governanceStats"],
+    enabled: !governanceGlobal.isPending,
+    queryFn: () => {
+      if (governanceGlobal.isError) throw governanceGlobal.error;
+      if (governanceGlobal.isPending) throw new Error("should not happen"); // see enabled
+
+      return {
+        totalLQTYStaked: (
+          governanceGlobal.data.totalVotingPower.allocatedLQTY
+          + governanceGlobal.data.totalVotingPower.unallocatedLQTY
+        ),
+        totalOffset: (
+          governanceGlobal.data.totalVotingPower.allocatedOffset
+          + governanceGlobal.data.totalVotingPower.unallocatedOffset
+        ),
+      };
     },
   });
 }
@@ -427,32 +516,40 @@ type BribeClaim = {
 };
 
 // represents an initiative bribe for a given epoch
-type InitiativeBribe = {
+export type InitiativeBribe = {
   boldAmount: Dnum;
   tokenAmount: Dnum;
   tokenAddress: Address;
   tokenSymbol: string;
 };
 
+export type InitiativeBribeResult = Record<Address, InitiativeBribe>;
+
 export function useCurrentEpochBribes(
   initiatives: Address[],
-): UseQueryResult<Record<Address, InitiativeBribe>> {
+): UseQueryResult<InitiativeBribeResult> {
   const wagmiConfig = useWagmiConfig();
   const govState = useGovernanceState();
+
+  // stabilize the order of addresses (cache improvement and predictable)
+  const sortedAddress = useMemo(
+    () => [...initiatives].filter(Boolean).sort((a, b) => a.localeCompare(b)),
+    [initiatives]
+  );
 
   return useQuery({
     queryKey: [
       "currentEpochBribes",
-      initiatives.join(""),
+      sortedAddress.join(""),
       String(govState.data?.epoch),
     ],
     queryFn: async () => {
-      if (!govState.data || initiatives.length === 0) {
+      if (!govState.data || sortedAddress.length === 0) {
         return {};
       }
 
       const bribeTokens = await readContracts(wagmiConfig, {
-        contracts: initiatives.map((initiative) => ({
+        contracts: sortedAddress.map((initiative) => ({
           abi: BribeInitiative,
           address: initiative,
           functionName: "bribeToken",
@@ -468,9 +565,9 @@ export function useCurrentEpochBribes(
       }> = [];
 
       for (const [index, bribeTokenResult] of bribeTokens.entries()) {
-        if (bribeTokenResult.result && initiatives[index]) {
+        if (bribeTokenResult.result && sortedAddress[index]) {
           bribeInitiatives.push({
-            initiative: initiatives[index],
+            initiative: sortedAddress[index],
             bribeToken: bribeTokenResult.result,
           });
         }

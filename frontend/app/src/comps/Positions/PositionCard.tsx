@@ -82,6 +82,7 @@ export function PositionCard({
           display: "flex",
           flexDirection: "column",
           padding: "12px 16px",
+          border: "1px solid token(colors.fieldBorder)",
           borderRadius: 8,
           outline: "none",
           "--background": "token(colors.position)",

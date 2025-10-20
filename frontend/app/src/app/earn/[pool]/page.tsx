@@ -1,10 +1,7 @@
+import { getEarnPoolSymbols } from "@/src/white-label.config";
+
 export function generateStaticParams() {
-  return [
-    { pool: "eth" },
-    { pool: "reth" },
-    { pool: "wsteth" },
-    { pool: "sbold" },
-  ];
+  return getEarnPoolSymbols().map(pool => ({ pool }));
 }
 
 export default function EarnPoolPage() {

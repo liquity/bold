@@ -1,9 +1,7 @@
+import { getCollateralSymbols } from "@/src/white-label.config";
+
 export function generateStaticParams() {
-  return [
-    { collateral: "eth" },
-    { collateral: "reth" },
-    { collateral: "wsteth" },
-  ];
+  return getCollateralSymbols().map(collateral => ({ collateral }));
 }
 
 export default function LeverageCollateralPage() {

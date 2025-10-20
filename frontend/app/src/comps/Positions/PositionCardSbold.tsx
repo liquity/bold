@@ -1,6 +1,7 @@
 import type { PositionSbold } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, TokenIcon } from "@liquity2/uikit";
 import { PositionCard } from "./PositionCard";
@@ -28,7 +29,7 @@ export function PositionCardSbold({
             color: "positionContent",
           })}
         >
-          sBOLD position
+          {WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} position
         </div>,
       ]}
       contextual={
@@ -48,12 +49,12 @@ export function PositionCardSbold({
               fallback="−"
               format={2}
             />
-            <TokenIcon size="medium" symbol="BOLD" />
+            <TokenIcon size="medium" symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} />
           </HFlex>
         ),
         label: (
           <HFlex gap={4} justifyContent="flex-start">
-            BOLD deposited
+            {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} deposited
           </HFlex>
         ),
       }}
@@ -136,7 +137,7 @@ export function PositionCardSbold({
                     color: "positionContentAlt",
                   })}
                 >
-                  sBOLD balance
+                  {WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} balance
                 </div>
                 <div
                   className={css({
@@ -151,7 +152,7 @@ export function PositionCardSbold({
                     value={sbold}
                     format={2}
                   />
-                  <TokenIcon size="mini" symbol="SBOLD" />
+                  <TokenIcon size="mini" symbol={WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol} />
                 </div>
               </div>
             }

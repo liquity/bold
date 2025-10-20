@@ -1,29 +1,25 @@
 import content from "@/src/content";
 import { css, cx } from "@/styled-system/css";
-import { token } from "@/styled-system/tokens";
 import { a, useSpring } from "@react-spring/web";
 import Link from "next/link";
 import { useState } from "react";
 import { match } from "ts-pattern";
-import { ActionIcon } from "./ActionIcon";
 
 export function ActionCard({
   type,
 }: {
-  type: "borrow" | "multiply" | "earn" | "stake";
+  type: "borrow" | "multiply" | "earn";
 }) {
   const [hint, setHint] = useState(false);
   const [active, setActive] = useState(false);
 
   const hintSpring = useSpring({
     transform: active
-      ? "scale(1.01)"
+      ? "scale(0.98)"
       : hint
       ? "scale(1.02)"
       : "scale(1)",
-    boxShadow: hint && !active
-      ? "0 2px 4px rgba(0, 0, 0, 0.1)"
-      : "0 2px 4px rgba(0, 0, 0, 0)",
+    opacity: hint ? 1 : 0.9,
     immediate: active,
     config: {
       mass: 1,
@@ -33,46 +29,21 @@ export function ActionCard({
   });
 
   const { actions: ac } = content.home;
-  const { description, path, title, colors } = match(type)
+  const { description, path, title } = match(type)
     .with("borrow", () => ({
-      colors: {
-        background: token("colors.brandDarkBlue"),
-        foreground: token("colors.brandDarkBlueContent"),
-        foregroundAlt: token("colors.brandDarkBlueContentAlt"),
-      },
       description: ac.borrow.description,
       path: "/borrow",
       title: ac.borrow.title,
     }))
     .with("multiply", () => ({
-      colors: {
-        background: token("colors.brandGreen"),
-        foreground: token("colors.brandGreenContent"),
-        foregroundAlt: token("colors.brandGreenContentAlt"),
-      },
       description: ac.multiply.description,
       path: "/multiply",
       title: ac.multiply.title,
     }))
     .with("earn", () => ({
-      colors: {
-        background: token("colors.brandBlue"),
-        foreground: token("colors.brandBlueContent"),
-        foregroundAlt: token("colors.brandBlueContentAlt"),
-      },
       description: ac.earn.description,
       path: "/earn",
       title: ac.earn.title,
-    }))
-    .with("stake", () => ({
-      colors: {
-        background: token("colors.brandGolden"),
-        foreground: token("colors.brandGoldenContent"),
-        foregroundAlt: token("colors.brandGoldenContentAlt"),
-      },
-      description: ac.stake.description,
-      path: "/stake",
-      title: ac.stake.title,
     }))
     .exhaustive();
 
@@ -89,60 +60,55 @@ export function ActionCard({
         "group",
         css({
           display: "flex",
-          color: "gray:50",
           outline: 0,
           userSelect: "none",
+          textDecoration: "none",
         }),
       )}
     >
-      <a.section
+      <a.div
         className={css({
-          position: "relative",
+          background: "rgba(0, 0, 0, 0.95)",
+          backdropFilter: "blur(20px)",
+          border: "1px solid token(colors.fieldBorder)",
+          borderRadius: 16,
+          padding: "28px 24px",
+          color: "white",
           display: "flex",
           flexDirection: "column",
           gap: 16,
           width: "100%",
-          padding: "20px 24px",
-          borderRadius: 8,
+          cursor: "pointer",
+          transition: "all 0.2s",
+          minHeight: "160px",
           _groupFocusVisible: {
             outline: "2px solid token(colors.focused)",
             outlineOffset: 2,
           },
-          _groupHover: {
-            transform: "scale(1.05)",
-          },
         })}
-        style={{
-          background: colors.background,
-          color: colors.foreground,
-          ...hintSpring,
-        }}
+        style={hintSpring}
       >
-        <h1>{title}</h1>
+        <h3
+          className={`font-audiowide ${css({
+            fontSize: "24px",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            color: "white",
+          })}`}
+        >
+          {title}
+        </h3>
         <p
           className={css({
-            height: 64,
-            fontSize: 14,
+            fontSize: "16px",
+            opacity: 0.9,
+            lineHeight: 1.6,
+            color: "rgba(255, 255, 255, 0.9)",
           })}
-          style={{
-            color: colors.foregroundAlt,
-          }}
         >
           {description}
         </p>
-        <div
-          className={css({
-            position: "absolute",
-            inset: "20px 24px auto auto",
-          })}
-        >
-          <ActionIcon
-            colors={colors}
-            iconType={type}
-            state={hint ? "active" : "idle"}
-          />
-        </div>
-      </a.section>
+      </a.div>
     </Link>
   );
 }

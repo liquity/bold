@@ -1,6 +1,6 @@
 "use client";
 
-import type { Address, Branch, BranchId, IcStrategy } from "@/src/types";
+import type { Address, Branch } from "@/src/types";
 
 import { DEFAULT_COMMIT_URL, DEFAULT_LEGACY_CHECKS, DEFAULT_STRATEGIES, DEFAULT_VERSION_URL } from "@/src/constants";
 import { isBranchId } from "@/src/types";
@@ -12,31 +12,18 @@ import {
   vEnvLegacyCheck,
   vEnvLink,
   vEnvUrlOrDefault,
-  vIcStrategy,
 } from "@/src/valibot-utils";
-import { isAddress } from "@liquity2/uikit";
 import * as v from "valibot";
+import { WHITE_LABEL_CONFIG } from "./white-label.config";
 
-function isIcStrategyList(value: unknown): value is IcStrategy[] {
-  return Array.isArray(value) && value.every((value) => (
-    typeof value === "object"
-    && value !== null
-    && "address" in value
-    && isAddress(value.address)
-    && "name" in value
-    && typeof value.name === "string"
-  ));
-}
+// Dynamically generate CollateralSymbolSchema from white-label config
+export const CollateralSymbolSchema = v.union(
+  WHITE_LABEL_CONFIG.tokens.collaterals.map(c => v.literal(c.symbol)) as [
+    v.LiteralSchema<string, undefined>,
+    ...v.LiteralSchema<string, undefined>[]
+  ]
+);
 
-export const CollateralSymbolSchema = v.union([
-  v.literal("ETH"),
-  v.literal("RETH"),
-  v.literal("WSTETH"),
-]);
-
-function isCollateralSymbol(value: unknown) {
-  return v.is(CollateralSymbolSchema, value);
-}
 
 const contractsEnvNames = [
   "ACTIVE_POOL",
@@ -57,24 +44,26 @@ type BranchEnv = Omit<Branch, "contracts"> & {
   contracts: Record<ContractEnvName, Address>;
 };
 
-function vBranchEnvVars(branchId: BranchId) {
-  const prefix = `COLL_${branchId}`;
-  return v.object({
-    [`${prefix}_CONTRACT_ACTIVE_POOL`]: v.optional(vAddress()),
-    [`${prefix}_CONTRACT_BORROWER_OPERATIONS`]: v.optional(vAddress()),
-    [`${prefix}_CONTRACT_COLL_SURPLUS_POOL`]: v.optional(vAddress()),
-    [`${prefix}_CONTRACT_COLL_TOKEN`]: v.optional(vAddress()),
-    [`${prefix}_CONTRACT_DEFAULT_POOL`]: v.optional(vAddress()),
-    [`${prefix}_CONTRACT_LEVERAGE_ZAPPER`]: v.optional(vAddress()),
-    [`${prefix}_CONTRACT_PRICE_FEED`]: v.optional(vAddress()),
-    [`${prefix}_CONTRACT_SORTED_TROVES`]: v.optional(vAddress()),
-    [`${prefix}_CONTRACT_STABILITY_POOL`]: v.optional(vAddress()),
-    [`${prefix}_CONTRACT_TROVE_MANAGER`]: v.optional(vAddress()),
-    [`${prefix}_CONTRACT_TROVE_NFT`]: v.optional(vAddress()),
-    [`${prefix}_IC_STRATEGIES`]: v.optional(vIcStrategy(), "true"),
-    [`${prefix}_TOKEN_ID`]: v.optional(CollateralSymbolSchema),
-  });
-}
+
+const vOptionalTroveExplorer = v.pipe(
+  v.optional(v.string()),
+  v.transform((x) => {
+    if (!x) return null;
+    const [name, url] = x.split("|");
+    return {
+      name: v.parse(v.string(), name),
+      url: v.parse(
+        v.pipe(
+          v.string(),
+          v.url(),
+          v.includes("{branch}", "Trove explorer URL must contain {branch}"),
+          v.includes("{troveId}", "Trove explorer URL must contain {troveId}"),
+        ),
+        url,
+      ),
+    };
+  }),
+);
 
 export const EnvSchema = v.pipe(
   v.object({
@@ -159,8 +148,8 @@ export const EnvSchema = v.pipe(
     LEGACY_CHECK: v.optional(vEnvLegacyCheck(), "true"),
     LIQUITY_STATS_URL: v.optional(v.pipe(v.string(), v.url())),
     LIQUITY_GOVERNANCE_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
-    SAFE_API_URL: v.optional(v.pipe(v.string(), v.url())),
-    SBOLD: v.optional(v.union([vAddress(), v.null()]), null),
+    SAFE_API_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
+    SBOLD: v.optional(v.union([vAddress(), v.literal("")])),
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.pipe(
@@ -171,9 +160,12 @@ export const EnvSchema = v.pipe(
         "WALLET_CONNECT_PROJECT_ID must be set",
       ),
     ),
+    TROVE_EXPLORER_0: vOptionalTroveExplorer,
+    TROVE_EXPLORER_1: vOptionalTroveExplorer,
 
-    CONTRACT_BOLD_TOKEN: vAddress(),
+    CONTRACT_MAIN_TOKEN: vAddress(),
     CONTRACT_COLLATERAL_REGISTRY: vAddress(),
+    CONTRACT_DEBT_IN_FRONT_HELPER: vAddress(),
     CONTRACT_EXCHANGE_HELPERS: vAddress(),
     CONTRACT_GOVERNANCE: vAddress(),
     CONTRACT_HINT_HELPERS: vAddress(),
@@ -183,9 +175,7 @@ export const EnvSchema = v.pipe(
     CONTRACT_MULTI_TROVE_GETTER: vAddress(),
     CONTRACT_WETH: vAddress(),
 
-    ...vBranchEnvVars(0).entries,
-    ...vBranchEnvVars(1).entries,
-    ...vBranchEnvVars(2).entries,
+    // Collateral contracts are now loaded directly from white-label.config, not env vars
   }),
   v.transform((data) => {
     const env = { ...data };
@@ -196,45 +186,31 @@ export const EnvSchema = v.pipe(
       ([chainId]) => chainId === env.CHAIN_ID,
     )?.[1] ?? null;
 
-    for (const index of Array(10).keys()) {
-      const collEnvName = `COLL_${index as BranchId}` as const;
-      const contracts: Partial<Record<ContractEnvName, Address>> = {};
-
-      const icStrategiesKey = `${collEnvName}_IC_STRATEGIES` as keyof typeof env;
-      const icStrategies = env[icStrategiesKey] === true
-        ? true
-        : isIcStrategyList(env[icStrategiesKey])
-        ? env[icStrategiesKey]
-        : false;
-
-      const tokenIdKey = `${collEnvName}_TOKEN_ID` as keyof typeof env;
-      const symbol = isCollateralSymbol(env[tokenIdKey])
-        ? env[tokenIdKey]
-        : null;
-
-      for (const name of contractsEnvNames) {
-        const fullKey = `${collEnvName}_CONTRACT_${name}` as keyof typeof env;
-        if (fullKey in env) {
-          contracts[name] = env[fullKey] as Address;
-          delete env[fullKey];
-        }
-      }
-
-      const contractsCount = Object.values(contracts).filter((v) => v).length;
-      if (contractsCount === 0) {
-        break;
-      }
-      if (contractsCount !== contractsEnvNames.length) {
-        throw new Error(`Incomplete contracts for collateral ${index} (${contractsCount}/${contractsEnvNames.length})`);
-      }
-
+    // Generate branches directly from white-label config instead of environment variables
+    WHITE_LABEL_CONFIG.tokens.collaterals.forEach((collateral, index) => {
       if (!isBranchId(index)) {
         throw new Error(`Invalid branch: ${index}`);
       }
 
-      if (!symbol) {
-        throw new Error(`Missing token ID for collateral ${index}`);
+      const deployment = (collateral.deployments as any)[env.CHAIN_ID];
+      if (!deployment) {
+        console.warn(`⚠️  No deployment for ${collateral.symbol} on chain ${env.CHAIN_ID}, skipping...`);
+        return;
       }
+
+      const contracts: Record<ContractEnvName, Address> = {
+        ACTIVE_POOL: deployment.activePool || "0x0000000000000000000000000000000000000000",
+        BORROWER_OPERATIONS: deployment.borrowerOperations || "0x0000000000000000000000000000000000000000",
+        COLL_SURPLUS_POOL: deployment.collSurplusPool || "0x0000000000000000000000000000000000000000",
+        COLL_TOKEN: deployment.collToken || "0x0000000000000000000000000000000000000000",
+        DEFAULT_POOL: deployment.defaultPool || "0x0000000000000000000000000000000000000000",
+        LEVERAGE_ZAPPER: deployment.leverageZapper || "0x0000000000000000000000000000000000000000",
+        PRICE_FEED: deployment.priceFeed || "0x0000000000000000000000000000000000000000",
+        SORTED_TROVES: deployment.sortedTroves || "0x0000000000000000000000000000000000000000",
+        STABILITY_POOL: deployment.stabilityPool || "0x0000000000000000000000000000000000000000",
+        TROVE_MANAGER: deployment.troveManager || "0x0000000000000000000000000000000000000000",
+        TROVE_NFT: deployment.troveNFT || "0x0000000000000000000000000000000000000000",
+      };
 
       const defaultIcStrategies = defaultIcStrategiesForChain?.find(
         ([branchId]) => branchId === index,
@@ -243,25 +219,11 @@ export const EnvSchema = v.pipe(
       envBranches[index] = {
         id: index,
         branchId: index,
-        contracts: contracts as Record<ContractEnvName, Address>,
-        strategies: (
-          icStrategies === true
-            ? defaultIcStrategies ?? []
-            : Array.isArray(icStrategies)
-            ? icStrategies
-            : []
-        ) as Array<{ address: Address; name: string }>,
-        symbol,
+        contracts,
+        strategies: defaultIcStrategies ?? [],
+        symbol: collateral.symbol,
       };
-
-      // delete COLL_${index} env vars
-      if (icStrategiesKey in env) {
-        delete env[icStrategiesKey];
-      }
-      if (tokenIdKey in env) {
-        delete env[tokenIdKey];
-      }
-    }
+    });
 
     const legacyCheck = env.LEGACY_CHECK === true
       ? DEFAULT_LEGACY_CHECKS.get(env.CHAIN_ID) ?? null
@@ -273,11 +235,12 @@ export const EnvSchema = v.pipe(
       ...env,
       ENV_BRANCHES: envBranches,
       LEGACY_CHECK: legacyCheck,
-    };
+    } as typeof env & { ENV_BRANCHES: BranchEnv[]; LEGACY_CHECK: any };
   }),
 );
 
 export type Env = v.InferOutput<typeof EnvSchema>;
+
 
 const parsedEnv = v.safeParse(EnvSchema, {
   ACCOUNT_SCREEN: process.env.NEXT_PUBLIC_ACCOUNT_SCREEN,
@@ -325,9 +288,12 @@ const parsedEnv = v.safeParse(EnvSchema, {
   SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
   VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
+  TROVE_EXPLORER_0: process.env.NEXT_PUBLIC_TROVE_EXPLORER_0,
+  TROVE_EXPLORER_1: process.env.NEXT_PUBLIC_TROVE_EXPLORER_1,
 
-  CONTRACT_BOLD_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_BOLD_TOKEN,
+  CONTRACT_MAIN_TOKEN: process.env.NEXT_PUBLIC_CONTRACT_MAIN_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY: process.env.NEXT_PUBLIC_CONTRACT_COLLATERAL_REGISTRY,
+  CONTRACT_DEBT_IN_FRONT_HELPER: process.env.NEXT_PUBLIC_CONTRACT_DEBT_IN_FRONT_HELPER,
   CONTRACT_EXCHANGE_HELPERS: process.env.NEXT_PUBLIC_CONTRACT_EXCHANGE_HELPERS,
   CONTRACT_GOVERNANCE: process.env.NEXT_PUBLIC_CONTRACT_GOVERNANCE,
   CONTRACT_HINT_HELPERS: process.env.NEXT_PUBLIC_CONTRACT_HINT_HELPERS,
@@ -337,49 +303,6 @@ const parsedEnv = v.safeParse(EnvSchema, {
   CONTRACT_MULTI_TROVE_GETTER: process.env.NEXT_PUBLIC_CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH: process.env.NEXT_PUBLIC_CONTRACT_WETH,
 
-  COLL_0_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_0_TOKEN_ID,
-  COLL_1_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_1_TOKEN_ID,
-  COLL_2_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_2_TOKEN_ID,
-
-  COLL_0_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_0_IC_STRATEGIES,
-  COLL_1_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_1_IC_STRATEGIES,
-  COLL_2_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_2_IC_STRATEGIES,
-
-  COLL_0_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_ACTIVE_POOL,
-  COLL_0_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_BORROWER_OPERATIONS,
-  COLL_0_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_COLL_SURPLUS_POOL,
-  COLL_0_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_COLL_TOKEN,
-  COLL_0_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_DEFAULT_POOL,
-  COLL_0_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_LEVERAGE_ZAPPER,
-  COLL_0_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_PRICE_FEED,
-  COLL_0_CONTRACT_SORTED_TROVES: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_SORTED_TROVES,
-  COLL_0_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_STABILITY_POOL,
-  COLL_0_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_TROVE_MANAGER,
-  COLL_0_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_0_CONTRACT_TROVE_NFT,
-
-  COLL_1_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_ACTIVE_POOL,
-  COLL_1_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_BORROWER_OPERATIONS,
-  COLL_1_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_COLL_SURPLUS_POOL,
-  COLL_1_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_COLL_TOKEN,
-  COLL_1_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_DEFAULT_POOL,
-  COLL_1_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_LEVERAGE_ZAPPER,
-  COLL_1_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_PRICE_FEED,
-  COLL_1_CONTRACT_SORTED_TROVES: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_SORTED_TROVES,
-  COLL_1_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_STABILITY_POOL,
-  COLL_1_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_TROVE_MANAGER,
-  COLL_1_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_1_CONTRACT_TROVE_NFT,
-
-  COLL_2_CONTRACT_ACTIVE_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_ACTIVE_POOL,
-  COLL_2_CONTRACT_BORROWER_OPERATIONS: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_BORROWER_OPERATIONS,
-  COLL_2_CONTRACT_COLL_SURPLUS_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_COLL_SURPLUS_POOL,
-  COLL_2_CONTRACT_COLL_TOKEN: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_COLL_TOKEN,
-  COLL_2_CONTRACT_DEFAULT_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_DEFAULT_POOL,
-  COLL_2_CONTRACT_LEVERAGE_ZAPPER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_LEVERAGE_ZAPPER,
-  COLL_2_CONTRACT_PRICE_FEED: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_PRICE_FEED,
-  COLL_2_CONTRACT_SORTED_TROVES: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_SORTED_TROVES,
-  COLL_2_CONTRACT_STABILITY_POOL: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_STABILITY_POOL,
-  COLL_2_CONTRACT_TROVE_MANAGER: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_MANAGER,
-  COLL_2_CONTRACT_TROVE_NFT: process.env.NEXT_PUBLIC_COLL_2_CONTRACT_TROVE_NFT,
 });
 
 if (!parsedEnv.success) {
@@ -415,8 +338,9 @@ export const {
   ENV_BRANCHES,
   CONTRACTS_COMMIT_HASH,
   CONTRACTS_COMMIT_URL,
-  CONTRACT_BOLD_TOKEN,
+  CONTRACT_MAIN_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
+  CONTRACT_DEBT_IN_FRONT_HELPER,
   CONTRACT_EXCHANGE_HELPERS,
   CONTRACT_GOVERNANCE,
   CONTRACT_HINT_HELPERS,
@@ -435,4 +359,6 @@ export const {
   SUBGRAPH_URL,
   VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,
+  TROVE_EXPLORER_0,
+  TROVE_EXPLORER_1,
 } = parsedEnv.output;

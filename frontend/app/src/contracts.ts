@@ -5,6 +5,7 @@ import { ActivePool } from "@/src/abi/ActivePool";
 import { BorrowerOperations } from "@/src/abi/BorrowerOperations";
 import { CollateralRegistry } from "@/src/abi/CollateralRegistry";
 import { CollSurplusPool } from "@/src/abi/CollSurplusPool";
+import { DebtInFrontHelper } from "@/src/abi/DebtInFrontHelper";
 import { DefaultPool } from "@/src/abi/DefaultPool";
 import { ExchangeHelpers } from "@/src/abi/ExchangeHelpers";
 import { Governance } from "@/src/abi/Governance";
@@ -20,8 +21,9 @@ import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import { TroveNFT } from "@/src/abi/TroveNFT";
 import {
-  CONTRACT_BOLD_TOKEN,
+  CONTRACT_MAIN_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
+  CONTRACT_DEBT_IN_FRONT_HELPER,
   CONTRACT_EXCHANGE_HELPERS,
   CONTRACT_GOVERNANCE,
   CONTRACT_HINT_HELPERS,
@@ -37,6 +39,7 @@ import { erc20Abi, zeroAddress } from "viem";
 const protocolAbis = {
   BoldToken: erc20Abi,
   CollateralRegistry,
+  DebtInFrontHelper,
   ExchangeHelpers,
   Governance,
   HintHelpers,
@@ -112,11 +115,12 @@ export type Contracts = ProtocolContractMap & {
 };
 
 export const CONTRACTS: Contracts = {
-  BoldToken: { abi: abis.BoldToken, address: CONTRACT_BOLD_TOKEN },
+  BoldToken: { abi: abis.BoldToken, address: CONTRACT_MAIN_TOKEN },
   CollateralRegistry: {
     abi: abis.CollateralRegistry,
     address: CONTRACT_COLLATERAL_REGISTRY,
   },
+  DebtInFrontHelper: { abi: abis.DebtInFrontHelper, address: CONTRACT_DEBT_IN_FRONT_HELPER },
   Governance: { abi: abis.Governance, address: CONTRACT_GOVERNANCE },
   ExchangeHelpers: {
     abi: abis.ExchangeHelpers,

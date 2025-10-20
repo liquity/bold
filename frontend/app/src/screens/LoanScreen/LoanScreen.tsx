@@ -3,12 +3,16 @@
 import type { Dnum, PositionLoanCommitted } from "@/src/types";
 
 import { useBreakpoint } from "@/src/breakpoints";
+import { InlineTokenAmount } from "@/src/comps/Amount/InlineTokenAmount";
 import { Field } from "@/src/comps/Field/Field";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { getBranchContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
-import { fmtnum } from "@/src/formatting";
+import { TROVE_EXPLORER_0, TROVE_EXPLORER_1 } from "@/src/env";
+import { fmtnum, formatDate } from "@/src/formatting";
 import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId, useLoan } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useStoredState } from "@/src/services/StoredState";
@@ -16,7 +20,7 @@ import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { isPrefixedtroveId } from "@/src/types";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, Button, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
+import { addressesEqual, Button, IconExternal, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
@@ -29,6 +33,30 @@ import { PanelClosePosition } from "./PanelClosePosition";
 import { PanelInterestRate } from "./PanelInterestRate";
 import { PanelUpdateBorrowPosition } from "./PanelUpdateBorrowPosition";
 import { PanelUpdateLeveragePosition } from "./PanelUpdateLeveragePosition";
+
+const troveExplorers = [
+  ...(TROVE_EXPLORER_0 ? [TROVE_EXPLORER_0] : []),
+  ...(TROVE_EXPLORER_1 ? [TROVE_EXPLORER_1] : []),
+];
+
+function TroveExplorerLink(props: {
+  troveExplorer: { name: string; url: string };
+  collTokenName: string;
+  troveId: bigint;
+  last?: boolean;
+}) {
+  const href = props.troveExplorer.url
+    .replace("{branch}", props.collTokenName)
+    .replace("{troveId}", props.troveId.toString());
+
+  return (
+    <LinkTextButton
+      label={<>{props.troveExplorer.name} {props.last && <IconExternal size={16} />}</>}
+      href={href}
+      external
+    />
+  );
+}
 
 const TABS = [
   {
@@ -79,7 +107,7 @@ export function LoanScreen() {
 
   const fullyRedeemed = loan.data
     && loan.data.status === "redeemed"
-    && dn.eq(loan.data.borrowed, 0);
+    && dn.eq(loan.data.indexedDebt, 0);
 
   const isLiquidated = loan.data?.status === "liquidated";
   const account = useAccount();
@@ -211,25 +239,79 @@ export function LoanScreen() {
                             <div
                               className={css({
                                 display: "flex",
-                                alignItems: "center",
-                                height: 64,
+                                flexDirection: "column",
                                 padding: 16,
+                                gap: 8,
                                 background: "infoSurface",
                                 border: "1px solid token(colors.infoSurfaceBorder)",
                                 borderRadius: 8,
                               })}
                             >
-                              <div
+                              <p
                                 className={css({
                                   display: "flex",
                                   gap: 8,
                                 })}
                               >
                                 {fullyRedeemed
-                                  ? "This loan has been fully redeemed."
-                                  : "This loan has been partially redeemed."}
+                                  ? <>Loan fully redeemed.</>
+                                  : <>Loan partially redeemed.</>}
                                 <InfoTooltip content={content.generalInfotooltips.redeemedLoan} />
-                              </div>
+                              </p>
+
+                              <p>
+                                {loan.data.redemptionCount}{" "}
+                                {loan.data.redemptionCount === 1 ? <>redemption</> : <>redemptions</>}{" "}
+                                since last user action on{" "}
+                                <time
+                                  dateTime={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
+                                  title={formatDate(new Date(loan.data.lastUserActionAt), "iso")}
+                                >
+                                  {formatDate(new Date(loan.data.lastUserActionAt), "short")}
+                                </time>.
+                                <br />
+                                <InlineTokenAmount
+                                  symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol}
+                                  value={loan.data.redeemedDebt}
+                                  suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
+                                />{" "}
+                                repaid in exchange for{" "}
+                                <InlineTokenAmount
+                                  symbol={collToken?.symbol}
+                                  value={loan.data.redeemedColl}
+                                  suffix={` ${collToken?.name}`}
+                                />.
+                              </p>
+
+                              {collToken && troveExplorers.length > 0 && (
+                                <p>
+                                  See Loan History on {troveExplorers[0] && troveExplorers[1]
+                                    ? (
+                                      <>
+                                        <TroveExplorerLink
+                                          troveExplorer={troveExplorers[0]}
+                                          collTokenName={collToken.name}
+                                          troveId={BigInt(troveId)}
+                                        />{" "}
+                                        or{" "}
+                                        <TroveExplorerLink
+                                          troveExplorer={troveExplorers[1]}
+                                          collTokenName={collToken.name}
+                                          troveId={BigInt(troveId)}
+                                          last
+                                        />
+                                      </>
+                                    )
+                                    : troveExplorers[0] && (
+                                      <TroveExplorerLink
+                                        troveExplorer={troveExplorers[0]}
+                                        collTokenName={collToken.name}
+                                        troveId={BigInt(troveId)}
+                                        last
+                                      />
+                                    )}
+                                </p>
+                              )}
                             </div>
                           )}
                           <Tabs

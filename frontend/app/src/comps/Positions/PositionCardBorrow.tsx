@@ -14,6 +14,7 @@ import { HFlex, IconBorrow, StatusDot, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows } from "./shared";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 export function PositionCardBorrow({
   batchManager,
@@ -53,7 +54,7 @@ export function PositionCardBorrow({
   const title = token
     ? [
       `Loan ID: ${shortenTroveId(troveId)}…`,
-      `Debt: ${fmtnum(debt, "full")} BOLD`,
+      `Debt: ${fmtnum(debt, "full")} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`,
       `Collateral: ${fmtnum(deposit, "full")} ${token.name}`,
       `Interest rate: ${fmtnum(interestRate, "pctfull")}%`,
     ]
@@ -73,7 +74,7 @@ export function PositionCardBorrow({
             color: "positionContent",
           })}
         >
-          <div>BOLD loan</div>
+          <div>{WHITE_LABEL_CONFIG.tokens.mainToken.symbol} loan</div>
           {statusTag}
         </div>
       }
@@ -98,7 +99,7 @@ export function PositionCardBorrow({
             </div>
             <TokenIcon
               size={24}
-              symbol="BOLD"
+              symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol}
             />
           </HFlex>
         ),

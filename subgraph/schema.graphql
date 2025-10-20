@@ -22,6 +22,9 @@ type InterestRateBracket @entity(immutable: false) {
   collateral: Collateral!
   rate: BigInt!
   totalDebt: BigInt!
+  sumDebtTimesRateD36: BigInt!
+  pendingDebtTimesOneYearD36: BigInt!
+  updatedAt: BigInt!
 }
 
 enum TroveStatus {
@@ -68,7 +71,23 @@ type InterestBatch @entity(immutable: false) {
   coll: BigInt!
   annualInterestRate: BigInt!
   annualManagementFee: BigInt!
+  updatedAt: BigInt!
   troves: [Trove!]! @derivedFrom(field: "interestBatch")
+}
+
+type GovernanceVotingPower @entity(immutable: false) {
+  id: ID! # userAddress, e.g. "0x0000000000000000000000000000000000000000", or "total"
+  allocatedLQTY: BigInt!
+  allocatedOffset: BigInt!
+  unallocatedLQTY: BigInt!
+  unallocatedOffset: BigInt!
+}
+
+type GovernanceAllocationIndex @entity(immutable: false) {
+  id: ID! # "userAddress:initiativeAddress" or "initiativeAddress"
+  user: String
+  initiative: GovernanceInitiative!
+  latestAllocation: GovernanceAllocation!
 }
 
 type GovernanceAllocation @entity(immutable: false) {

@@ -3,6 +3,7 @@ import type { Preset } from "@pandacss/dev";
 import { liquityUiKitPreset } from "@liquity2/uikit/panda.config";
 import { defineConfig, defineGlobalStyles, definePreset } from "@pandacss/dev";
 import { BREAKPOINTS } from "./src/breakpoints";
+import { WHITE_LABEL_CONFIG } from "./src/white-label.config";
 
 export default defineConfig({
   preflight: true, // CSS reset
@@ -17,6 +18,13 @@ export default defineConfig({
             small: `${BREAKPOINTS.small}px`,
             medium: `${BREAKPOINTS.medium}px`,
             large: `${BREAKPOINTS.large}px`,
+          },
+          tokens: {
+            fonts: {
+              body: {
+                value: WHITE_LABEL_CONFIG.typography.fontFamily,
+              },
+            },
           },
         },
       },

@@ -26,6 +26,7 @@ import * as v from "valibot";
 import { maxUint256, parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 const RequestSchema = createRequestSchema(
   "openBorrowPosition",
@@ -122,7 +123,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
               key="start"
               fallback="…"
               value={boldAmountWithFee}
-              suffix=" BOLD"
+              suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
             />,
             <div
               key="end"
@@ -136,9 +137,9 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                 fallback="…"
                 prefix="Incl. "
                 value={upfrontFee.data}
-                suffix=" BOLD creation fee"
+                suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} creation fee`}
               />
-              <InfoTooltip heading="BOLD Creation Fee">
+              <InfoTooltip heading={`${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} Creation Fee`}>
                 This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of average
                 interest for the respective collateral asset.
               </InfoTooltip>
@@ -176,7 +177,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                         <Amount
                           format="2z"
                           prefix="~"
-                          suffix=" BOLD per year"
+                          suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} per year`}
                           value={yearlyBoldInterest}
                         />
                       </>
@@ -201,7 +202,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
                     boldAmountWithFee,
                     request.annualInterestRate,
                   )}
-                  suffix=" BOLD per year"
+                  suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} per year`}
                 />,
               ]}
             />

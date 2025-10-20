@@ -2,7 +2,7 @@ import type { ComponentPropsWithRef } from "react";
 
 import content from "@/src/content";
 import { css } from "@/styled-system/css";
-import { Button, IconAccount, shortenAddress, ShowAfter } from "@liquity2/uikit";
+import { Button, shortenAddress, ShowAfter } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { ConnectKitButton } from "connectkit";
 import { match, P } from "ts-pattern";
@@ -101,10 +101,10 @@ function ButtonNotConnected({
   const props = {
     mode: "primary",
     label: mode === "connecting"
-      ? "Connecting…"
+      ? "CONNECTING…"
       : mode === "unsupported"
       ? content.accountButton.wrongNetwork
-      : content.accountButton.connectAccount,
+      : "CONNECT",
     onClick: mode === "unsupported"
       ? () => {
         switchChain({ chainId: chains[0].id });
@@ -116,18 +116,43 @@ function ButtonNotConnected({
     <>
       <Button
         {...props}
-        size="medium"
-        className={css({
+        size="small"
+        className={`font-audiowide ${css({
           hideBelow: "medium",
-        })}
+          background: "#A189AB!",
+          color: "black!",
+          height: "32px!",
+          border: "none!",
+          borderRadius: 24,
+          padding: "0px 24px",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          fontSize: "12px",
+          fontWeight: 500,
+          cursor: "pointer",
+          transition: "all 0.2s",
+          "&:hover": {
+            background: "#8A7094!",
+            transform: "translateY(-2px)",
+          },
+        })}`}
       />
       <Button
         {...props}
-        size="medium"
-        className={css({
+        size="small"
+        className={`font-audiowide ${css({
           hideFrom: "medium",
           height: "32px!",
-        })}
+          background: "#A189AB!",
+          color: "black!",
+          border: "none!",
+          borderRadius: 20,
+          padding: "8px 24px",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          fontSize: "12px",
+          fontWeight: 500,
+        })}`}
       />
     </>
   );
@@ -146,67 +171,33 @@ function ButtonConnected({
     <button
       onClick={onClick}
       title={title}
-      className={css({
-        display: "grid",
-        width: "100%",
-        height: "100%",
-        padding: 0,
+      className={`font-audiowide ${css({
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        height: "28px!",
+        padding: "0 24px",
+        background: "#A189AB",
+        color: "black",
+        border: "none",
+        borderRadius: 24,
+        textTransform: "uppercase",
+        letterSpacing: "0.05em",
+        fontSize: "12px",
+        fontWeight: 500,
+        cursor: "pointer",
+        transition: "all 0.2s",
         whiteSpace: "nowrap",
-        textAlign: "center",
         _active: {
           translate: "0 1px",
         },
         _focusVisible: {
-          borderRadius: 4,
           outline: "2px solid token(colors.focused)",
+          outlineOffset: 2,
         },
-      })}
+      })}`}
     >
-      <div
-        className={css({
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          width: "100%",
-          height: "100%",
-          cursor: "pointer",
-          userSelect: "none",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          color: "interactive",
-        })}
-      >
-        <div
-          className={css({
-            display: "grid",
-            placeItems: "center",
-            width: 24,
-            height: 24,
-          })}
-        >
-          <IconAccount />
-        </div>
-        <div
-          className={css({
-            flexShrink: 1,
-            flexGrow: 1,
-            overflow: "hidden",
-            display: "flex",
-            alignItems: "center",
-            height: "100%",
-          })}
-        >
-          <div
-            className={css({
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            })}
-          >
-            {label}
-          </div>
-        </div>
-      </div>
+      {label}
     </button>
   );
 }

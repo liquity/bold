@@ -29,6 +29,10 @@ export function EarnPositionSummaryBase({
   title?: ReactNode;
 }) {
   const token = TOKENS_BY_SYMBOL[poolToken];
+  
+  if (!token) {
+    throw new Error(`Token not found for symbol: ${poolToken}`);
+  }
 
   return (
     <div
@@ -49,16 +53,16 @@ export function EarnPositionSummaryBase({
         "--fg-secondary-active": "token(colors.positionContentAlt)",
         "--fg-secondary-inactive": "token(colors.contentAlt)",
 
-        "--border-active": "color-mix(in srgb, token(colors.secondary) 15%, transparent)",
-        "--border-inactive": "token(colors.infoSurfaceBorder)",
+        "--border-active": "token(colors.fieldBorder)",
+        "--border-inactive": "token(colors.fieldBorder)",
 
-        "--bg-active": "token(colors.position)",
-        "--bg-inactive": "token(colors.infoSurface)",
+        "--bg-active": "rgba(0, 0, 0, 0.95)",
+        "--bg-inactive": "rgba(0, 0, 0, 0.95)",
       })}
       style={{
         color: `var(--fg-primary-${active ? "active" : "inactive"})`,
         background: `var(--bg-${active ? "active" : "inactive"})`,
-        borderColor: active ? "transparent" : "var(--border-inactive)",
+        borderColor: `var(--border-${active ? "active" : "inactive"})`,
       }}
     >
       <div

@@ -1,9 +1,10 @@
+import { panic } from "@/src/utils";
 import { css } from "@/styled-system/css";
 
 export function LoanStatusTag({
   status,
 }: {
-  status: "liquidated" | "redeemed";
+  status: "liquidated" | "partially-redeemed" | "fully-redeemed";
 }) {
   return (
     <div
@@ -22,12 +23,23 @@ export function LoanStatusTag({
         "--color-redeemed": "#121B44",
         "--background-redeemed": "token(colors.warningAlt)",
       })}
-      style={{
-        color: `var(--color-${status})`,
-        background: `var(--background-${status})`,
-      }}
+      style={status === "liquidated"
+        ? {
+          color: `var(--color-liquidated)`,
+          background: `var(--background-liquidated)`,
+        }
+        : {
+          color: `var(--color-redeemed)`,
+          background: `var(--background-redeemed)`,
+        }}
     >
-      {status === "liquidated" ? "Liquidated" : "Redeemed"}
+      {status === "liquidated"
+        ? "Liquidated"
+        : status === "partially-redeemed"
+        ? "Partially Redeemed"
+        : status === "fully-redeemed"
+        ? "Fully Redeemed"
+        : panic("case not considered")}
     </div>
   );
 }

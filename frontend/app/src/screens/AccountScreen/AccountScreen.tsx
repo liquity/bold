@@ -4,9 +4,10 @@ import type { Address, TokenSymbol } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { ERC20Faucet } from "@/src/abi/ERC20Faucet";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { getBranchContract, getProtocolContract } from "@/src/contracts";
+import { getBranchContract } from "@/src/contracts";
 import { CHAIN_ID } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
 import { getBranches } from "@/src/liquity-utils";
@@ -106,19 +107,10 @@ export function AccountScreen({
               gridTemplateColumns: `repeat(3, 1fr)`,
             }}
           >
-            <GridItem label="BOLD balance">
+            <GridItem label={`${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} balance`}>
               <Balance
                 address={address}
-                tokenSymbol="BOLD"
-              />
-            </GridItem>
-            <GridItem label="LQTY balance">
-              <Balance
-                address={address}
-                tokenSymbol="LQTY"
-                tapButton={tapEnabled
-                  && account.address
-                  && addressesEqual(address, account.address)}
+                tokenSymbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol}
               />
             </GridItem>
             <GridItem label="LUSD balance">
@@ -165,7 +157,6 @@ function Balance({
 }) {
   const balance = useBalance(address, tokenSymbol);
 
-  const LqtyToken = getProtocolContract("LqtyToken");
   const CollToken = getBranchContract(
     isCollateralSymbol(tokenSymbol) ? tokenSymbol : null,
     "CollToken",
@@ -207,19 +198,6 @@ function Balance({
                 address: CollToken.address,
                 functionName: "tap",
                 args: [],
-              }, {
-                onError: (error) => {
-                  alert(error.message);
-                },
-              });
-              return;
-            }
-
-            if (tokenSymbol === "LQTY") {
-              writeContract({
-                abi: LqtyToken.abi,
-                address: LqtyToken.address,
-                functionName: "tap",
               }, {
                 onError: (error) => {
                   alert(error.message);

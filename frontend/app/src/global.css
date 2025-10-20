@@ -1,0 +1,61 @@
+html, body {
+  background-color: #090909 !important;
+  color: white !important;
+}
+
+/* NeueMontreal Font Family */
+@font-face {
+  font-family: 'NeueMontreal';
+  src: url('/NeueMontreal/web/PPNeueMontreal-Regular.woff2') format('woff2'),
+       url('/NeueMontreal/web/PPNeueMontreal-Regular.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'NeueMontreal';
+  src: url('/NeueMontreal/web/PPNeueMontreal-Bold.woff2') format('woff2'),
+       url('/NeueMontreal/web/PPNeueMontreal-Bold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'NeueMontreal';
+  src: url('/NeueMontreal/web/PPNeueMontreal-Italic.woff2') format('woff2'),
+       url('/NeueMontreal/web/PPNeueMontreal-Italic.woff') format('woff');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'NeueMontreal';
+  src: url('/NeueMontreal/web/PPNeueMontreal-BoldItalic.woff2') format('woff2'),
+       url('/NeueMontreal/web/PPNeueMontreal-BoldItalic.woff') format('woff');
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* Audiowide Font Family */
+@font-face {
+  font-family: 'Audiowide';
+  src: url('/Audiowide/Audiowide-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.font-audiowide {
+  font-family: 'Audiowide', sans-serif;
+}
+
+.hero-background {
+  background-image: url('/heading.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

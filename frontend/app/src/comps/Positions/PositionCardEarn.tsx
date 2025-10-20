@@ -6,6 +6,7 @@ import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, TokenIcon } from "@liquity2/uikit";
 import { PositionCard } from "./PositionCard";
 import { CardRow, CardRows } from "./shared";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 export function PositionCardEarn({
   branchId,
@@ -53,7 +54,7 @@ export function PositionCardEarn({
               fallback="−"
               format={2}
             />
-            <TokenIcon size="medium" symbol="BOLD" />
+            <TokenIcon size="medium" symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} />
           </HFlex>
         ),
         label: token && (
@@ -156,7 +157,7 @@ export function PositionCardEarn({
                     value={rewards.bold}
                     format={2}
                   />
-                  <TokenIcon size="mini" symbol="BOLD" />
+                  <TokenIcon size="mini" symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} />
                 </div>
                 <div
                   className={css({

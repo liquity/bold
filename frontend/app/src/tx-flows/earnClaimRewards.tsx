@@ -11,6 +11,7 @@ import { vPositionEarn } from "@/src/valibot-utils";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 const RequestSchema = createRequestSchema(
   "earnClaimRewards",
@@ -29,7 +30,7 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
     const { compound = false } = request;
     const earnPool = useEarnPool(request.earnPosition.branchId);
 
-    // when compounding, show the updated position with the BOLD rewards
+    // when compounding, show the updated position with the token rewards
     const updatedEarnPosition = compound
       ? {
         ...request.earnPosition,
@@ -67,7 +68,7 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
     const collateral = getCollToken(request.earnPosition.branchId);
     const { compound = false } = request;
 
-    const boldPrice = usePrice("BOLD");
+    const boldPrice = usePrice(WHITE_LABEL_CONFIG.tokens.mainToken.symbol);
     const collPrice = usePrice(collateral.symbol);
 
     const rewardsBold = request.earnPosition.rewards.bold;
@@ -78,12 +79,12 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
     return (
       <>
         <TransactionDetailsRow
-          label={compound ? "Compound BOLD rewards" : "Claim BOLD rewards"}
+          label={compound ? `Compound ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} rewards` : `Claim ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} rewards`}
           value={[
             <Amount
               key="start"
               value={rewardsBold}
-              suffix=" BOLD"
+              suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
             />,
             <Amount
               key="end"

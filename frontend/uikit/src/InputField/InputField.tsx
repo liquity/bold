@@ -376,7 +376,8 @@ export function InputFieldBadge({
         height: 40,
         padding: "0 16px",
         paddingLeft: icon ? 8 : 16,
-        background: "#FFF",
+        background: "#424242",
+        color: "#FFFFFF",
         borderRadius: 20,
         userSelect: "none",
       }}

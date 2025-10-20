@@ -4,7 +4,8 @@ import type { ReactNode } from "react";
 import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
-import { useEarnPositionsByAccount, useLoansByAccount, useStakePosition } from "@/src/liquity-utils";
+import { useWhiteLabelHeader } from "@/src/hooks/useWhiteLabel";
+import { useEarnPositionsByAccount, useLoansByAccount } from "@/src/liquity-utils";
 import { useSboldPosition } from "@/src/sbold";
 import { css } from "@/styled-system/css";
 import { a, useSpring, useTransition } from "@react-spring/web";
@@ -16,16 +17,10 @@ import { PositionCard } from "./PositionCard";
 import { PositionCardEarn } from "./PositionCardEarn";
 import { PositionCardLoan } from "./PositionCardLoan";
 import { PositionCardSbold } from "./PositionCardSbold";
-import { PositionCardStake } from "./PositionCardStake";
 
 type Mode = "positions" | "loading" | "actions";
 
-const actionCards = [
-  "borrow",
-  // "multiply",
-  "earn",
-  "stake",
-] as const;
+// Move actionCards inside component to make it dynamic
 
 export function Positions({
   address,
@@ -44,27 +39,32 @@ export function Positions({
   showNewPositionCard?: boolean;
   title?: (mode: Mode) => ReactNode;
 }) {
+  const headerConfig = useWhiteLabelHeader();
+  
+  // Dynamic action cards based on configuration
+  const actionCards = [
+    ...(headerConfig.navigation.showBorrow ? ["borrow" as const] : []),
+    ...(headerConfig.navigation.showEarn ? ["earn" as const] : []),
+  ];
+  
   const loans = useLoansByAccount(address);
   const earnPositions = useEarnPositionsByAccount(address);
   const sboldPosition = useSboldPosition(address);
-  const stakePosition = useStakePosition(address);
 
   const isPositionsPending = Boolean(
     address && (
       loans.isPending
       || earnPositions.isPending
       || sboldPosition.isPending
-      || stakePosition.isPending
     ),
   );
+  
 
-  const hasStakePosition = stakePosition.data && dn.gt(stakePosition.data.deposit, 0);
   const hasSboldPosition = sboldPosition.data && dn.gt(sboldPosition.data.sbold, 0);
 
   const positions = isPositionsPending ? [] : [
     ...(loans.data ?? []),
     ...(earnPositions.data ?? []),
-    ...(stakePosition.data && hasStakePosition ? [stakePosition.data] : []),
     ...(sboldPosition.data && hasSboldPosition ? [sboldPosition.data] : []),
   ];
 
@@ -101,6 +101,7 @@ export function Positions({
       positions={positions ?? []}
       showNewPositionCard={showNewPositionCard}
       title={title}
+      actionCards={actionCards}
     />
   );
 }
@@ -111,14 +112,16 @@ function PositionsGroup({
   positions,
   title,
   showNewPositionCard,
+  actionCards,
 }: {
   columns?: number;
   mode: Mode;
   positions: Exclude<Position, PositionLoanUncommitted>[];
   title: (mode: Mode) => ReactNode;
   showNewPositionCard: boolean;
+  actionCards: readonly ("borrow" | "earn" | "multiply")[];
 }) {
-  columns ??= mode === "actions" ? actionCards.length : 3;
+  columns ??= (mode === "actions" || mode === "loading") ? actionCards.length : 3;
 
   const title_ = title(mode);
 
@@ -143,10 +146,6 @@ function PositionsGroup({
               index,
               <PositionCardEarn key={index} {...p} />,
             ])
-            .with({ type: "stake" }, (p) => [
-              index,
-              <PositionCardStake key={index} {...p} />,
-            ])
             .with({ type: "sbold" }, (p) => [
               index,
               <PositionCardSbold key={index} {...p} />,
@@ -157,11 +156,13 @@ function PositionsGroup({
 
       return cards;
     })
-    .with("loading", () => [
-      [0, <PositionCard key="0" loading />],
-      [1, <PositionCard key="1" loading />],
-      [2, <PositionCard key="2" loading />],
-    ])
+    .with("loading", () => 
+      // Generate loading skeletons based on actionCards length
+      Array.from({ length: actionCards.length }, (_, index) => [
+        index, 
+        <PositionCard key={index} loading />
+      ])
+    )
     .with("actions", () => (
       (showNewPositionCard ? actionCards : []).map((type, index) => [
         index,

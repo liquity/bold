@@ -5,6 +5,7 @@ import { ReactNode, useState } from "react";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import content from "@/src/content";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { getCollToken, isEarnPositionActive } from "@/src/liquity-utils";
 import { getBranch } from "@/src/liquity-utils";
@@ -32,7 +33,7 @@ export function PanelClaimRewards({
   }
 
   const ethPrice = usePrice("ETH");
-  const boldPriceUsd = usePrice("BOLD");
+  const boldPriceUsd = usePrice(WHITE_LABEL_CONFIG.tokens.mainToken.symbol as TokenSymbol);
   const collPriceUsd = usePrice(collateral.symbol);
 
   const isActive = isEarnPositionActive(position ?? null);
@@ -83,7 +84,7 @@ export function PanelClaimRewards({
         <Rewards
           amount={position?.rewards?.bold ?? DNUM_0}
           label={content.earnScreen.rewardsPanel.boldRewardsLabel}
-          symbol="BOLD"
+          symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol}
         />
         <Rewards
           amount={position?.rewards?.coll ?? DNUM_0}
@@ -170,14 +171,14 @@ export function PanelClaimRewards({
                   checked={compound}
                   onChange={setCompound}
                 />
-                Compound BOLD rewards
+                Compound {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} rewards
               </label>
               <InfoTooltip
                 content={{
-                  heading: "Compound BOLD rewards",
+                  heading: `Compound ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} rewards`,
                   body: (
                     <>
-                      When enabled, your BOLD rewards will be automatically added back to your stability pool deposit,
+                      When enabled, your {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} rewards will be automatically added back to your stability pool deposit,
                       earning you more rewards over time. Collateral rewards will still be claimed normally.
                     </>
                   ),

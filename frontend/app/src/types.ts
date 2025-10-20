@@ -76,8 +76,12 @@ export type PositionLoanBase = {
 export type PositionLoanCommitted = PositionLoanBase & {
   troveId: TroveId;
   createdAt: number;
+  lastUserActionAt: number;
   isZombie: boolean;
   indexedDebt: Dnum;
+  redemptionCount: number;
+  redeemedColl: Dnum;
+  redeemedDebt: Dnum;
 };
 
 export type PositionLoanUncommitted = PositionLoanBase & {
@@ -111,16 +115,6 @@ export type PositionEarn = {
   };
 };
 
-export type PositionStake = {
-  type: "stake";
-  owner: Address;
-  deposit: Dnum;
-  rewards: {
-    lusd: Dnum;
-    eth: Dnum;
-  };
-};
-
 export type PositionSbold = {
   type: "sbold";
   bold: Dnum;
@@ -131,8 +125,7 @@ export type PositionSbold = {
 export type Position =
   | PositionEarn
   | PositionLoan
-  | PositionSbold
-  | PositionStake;
+  | PositionSbold;
 
 export type Delegate = {
   address: Address;

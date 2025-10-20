@@ -14,9 +14,13 @@ export type IndexedTrove = {
   borrower: Address;
   closedAt: number | null;
   createdAt: number;
+  lastUserActionAt: number;
   mightBeLeveraged: boolean;
   status: TroveStatus;
   debt: Dnum;
+  redemptionCount: number;
+  redeemedColl: Dnum;
+  redeemedDebt: Dnum;
 };
 
 async function tryFetch(...args: Parameters<typeof fetch>) {
@@ -111,9 +115,13 @@ const TrovesByAccountQuery = graphql(`
       id
       closedAt
       createdAt
+      lastUserActionAt
       mightBeLeveraged
       status
       debt
+      redemptionCount
+      redeemedColl
+      redeemedDebt
     }
   }
 `);
@@ -129,9 +137,13 @@ export async function getIndexedTrovesByAccount(account: Address): Promise<Index
       ? null
       : Number(trove.closedAt) * 1000,
     createdAt: Number(trove.createdAt) * 1000,
+    lastUserActionAt: Number(trove.lastUserActionAt) * 1000,
     mightBeLeveraged: trove.mightBeLeveraged,
     status: trove.status,
     debt: dnum18(trove.debt),
+    redemptionCount: trove.redemptionCount,
+    redeemedColl: dnum18(trove.redeemedColl),
+    redeemedDebt: dnum18(trove.redeemedDebt),
   }));
 }
 
@@ -142,10 +154,14 @@ const TroveByIdQuery = graphql(`
       borrower
       closedAt
       createdAt
+      lastUserActionAt
       mightBeLeveraged
       previousOwner
       status
       debt
+      redemptionCount
+      redeemedColl
+      redeemedDebt
     }
   }
 `);
@@ -165,9 +181,13 @@ export async function getIndexedTroveById(
       ? null
       : Number(trove.closedAt) * 1000,
     createdAt: Number(trove.createdAt) * 1000,
+    lastUserActionAt: Number(trove.lastUserActionAt) * 1000,
     mightBeLeveraged: trove.mightBeLeveraged,
     status: trove.status,
     debt: dnum18(trove.debt),
+    redemptionCount: trove.redemptionCount,
+    redeemedColl: dnum18(trove.redeemedColl),
+    redeemedDebt: dnum18(trove.redeemedDebt),
   };
 }
 
@@ -230,18 +250,44 @@ export async function getAllInterestRateBrackets() {
     .sort((a, b) => dn.cmp(a.rate, b.rate));
 }
 
-const GovernanceInitiativesQuery = graphql(`
-  query GovernanceInitiatives {
+const GovernanceGlobalDataQuery = graphql(`
+  query GovernanceGlobalData {
     governanceInitiatives {
       id
+    }
+
+    governanceVotingPower(id: "total") {
+      allocatedLQTY
+      allocatedOffset
+      unallocatedLQTY
+      unallocatedOffset
     }
   }
 `);
 
-// get all the registered initiatives
-export async function getIndexedInitiatives() {
-  const { governanceInitiatives } = await graphQuery(GovernanceInitiativesQuery);
-  return governanceInitiatives.map((initiative) => initiative.id as Address);
+export interface GovernanceGlobalData {
+  registeredInitiatives: Address[];
+  totalVotingPower: {
+    allocatedLQTY: bigint;
+    allocatedOffset: bigint;
+    unallocatedLQTY: bigint;
+    unallocatedOffset: bigint;
+  };
+}
+
+// get all the registered initiatives and total voting power
+export async function getGovernanceGlobalData(): Promise<GovernanceGlobalData> {
+  const { governanceInitiatives, governanceVotingPower } = await graphQuery(GovernanceGlobalDataQuery);
+  return {
+    registeredInitiatives: governanceInitiatives.map((initiative) => initiative.id as Address),
+
+    totalVotingPower: {
+      allocatedLQTY: BigInt(governanceVotingPower?.allocatedLQTY ?? 0),
+      allocatedOffset: BigInt(governanceVotingPower?.allocatedOffset ?? 0),
+      unallocatedLQTY: BigInt(governanceVotingPower?.unallocatedLQTY ?? 0),
+      unallocatedOffset: BigInt(governanceVotingPower?.unallocatedOffset ?? 0),
+    },
+  };
 }
 
 const UserAllocationHistoryQuery = graphql(`

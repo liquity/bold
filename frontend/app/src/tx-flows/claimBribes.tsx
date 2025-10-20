@@ -13,6 +13,7 @@ import { TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 const RequestSchema = createRequestSchema(
   "claimBribes",
@@ -63,11 +64,11 @@ export const claimBribes: FlowDeclaration<ClaimBribesRequest> = {
           epoch{totalEpochs > 1 ? "s" : ""}.
         </div>
         <TransactionDetailsRow
-          label="BOLD rewards"
+          label={`${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} rewards`}
           value={[
             <div
               key="bold"
-              title={`${fmtnum(boldAmount)} BOLD`}
+              title={`${fmtnum(boldAmount)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
               className={css({
                 display: "flex",
                 alignItems: "center",
@@ -82,7 +83,7 @@ export const claimBribes: FlowDeclaration<ClaimBribesRequest> = {
               />
               <TokenIcon
                 size={16}
-                symbol="BOLD"
+                symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol}
                 title={null}
               />
             </div>,

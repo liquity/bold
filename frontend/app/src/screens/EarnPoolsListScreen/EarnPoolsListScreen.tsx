@@ -8,6 +8,7 @@ import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { getBranches, useEarnPosition } from "@/src/liquity-utils";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { isSboldEnabled, useSboldPosition } from "@/src/sbold";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -53,14 +54,14 @@ export function EarnPoolsListScreen() {
           >
             {content.earnHome.headline(
               <TokenIcon.Group>
-                {["BOLD" as const, ...collSymbols].map((symbol) => (
+                {[WHITE_LABEL_CONFIG.tokens.mainToken.symbol, ...collSymbols].map((symbol) => (
                   <TokenIcon
                     key={symbol}
                     symbol={symbol}
                   />
                 ))}
               </TokenIcon.Group>,
-              <TokenIcon symbol="BOLD" />,
+              <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} />,
             )}
           </div>
         ),
