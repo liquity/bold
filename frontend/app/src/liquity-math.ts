@@ -120,6 +120,19 @@ export function getLtv(
   return dn.gt(depositUsd, 0) ? dn.div(debt, depositUsd) : null;
 }
 
+export function getLoanChanges(
+  currentDeposit: Dnum,
+  newDeposit: Dnum,
+  currentDebt: Dnum,
+  newDebt: Dnum,
+  collPrice: Dnum,
+): { loanCollChange: Dnum; loanDebtChange: Dnum } {
+  const loanCollChange = dn.mul(dn.sub(newDeposit, currentDeposit), collPrice);
+  const loanDebtChange = dn.sub(newDebt, currentDebt);
+
+  return { loanCollChange, loanDebtChange };
+}
+
 export function getLoanDetails(
   deposit: Dnum | null,
   debt: Dnum | null,

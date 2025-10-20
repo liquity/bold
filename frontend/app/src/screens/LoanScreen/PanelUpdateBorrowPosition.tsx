@@ -7,14 +7,15 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { ETH_MAX_RESERVE, MIN_DEBT } from "@/src/constants";
 import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
-import { getLoanDetails } from "@/src/liquity-math";
-import { getCollToken } from "@/src/liquity-utils";
+import { getLoanChanges, getLoanDetails } from "@/src/liquity-math";
+import { getCollToken, useBranchCollateralRatios, useBranchDebt } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
@@ -22,6 +23,7 @@ import { css } from "@/styled-system/css";
 import {
   Checkbox,
   HFlex,
+  IconExternal,
   InfoTooltip,
   InputField,
   StatusDot,
@@ -121,6 +123,11 @@ export function PanelUpdateBorrowPosition({
     collPrice.data,
   );
 
+  const insufficientColl = depositMode === "add"
+    && depositChange.parsed
+    && collBalance.data
+    && (dn.gt(depositChange.parsed, collBalance.data));
+
   const maxLtv = dn.div(dn.from(1, 18), collToken.collateralRatio);
 
   const isBelowMinDebt = debtChange.parsed && !debtChange.isEmpty && newDebt
@@ -133,6 +140,53 @@ export function PanelUpdateBorrowPosition({
     && !debtChange.isEmpty
     && boldBalance.data
     && dn.gt(debtChange.parsed, boldBalance.data);
+
+  const branchDebt = useBranchDebt(loan.branchId);
+  const collateralRatios = useBranchCollateralRatios(loan.branchId);
+
+  const loanChanges = newDeposit && newDebt && collPrice.data
+    ? getLoanChanges(loan.deposit, newDeposit, loan.borrowed, newDebt, collPrice.data)
+    : null;
+
+  // expected TCR after the user updates the position
+  const newTcr = branchDebt.data
+      && collateralRatios.data?.tcr
+      && loanChanges
+    ? (() => {
+      const branchColl = dn.mul(collateralRatios.data.tcr, branchDebt.data);
+
+      const totalCollAfter = dn.add(branchColl, loanChanges.loanCollChange);
+      const totalDebtAfter = dn.add(branchDebt.data, loanChanges.loanDebtChange);
+
+      return dn.div(totalCollAfter, totalDebtAfter);
+    })()
+    : null;
+
+  const isNewTcrLtCcr = newTcr
+    && collateralRatios.data?.ccr
+    && dn.lt(newTcr, collateralRatios.data.ccr);
+
+  const isNewTcrLteCcr = newTcr
+    && collateralRatios.data?.ccr
+    && dn.lte(newTcr, collateralRatios.data.ccr);
+
+  const isOldTcrLtCcr = collateralRatios.data?.ccr
+    && collateralRatios.data?.tcr
+    && dn.lt(collateralRatios.data.tcr, collateralRatios.data.ccr);
+
+  const isDebtChangeGteCollChange = dn.gte(
+    loanChanges?.loanDebtChange ?? dnum18(0),
+    loanChanges?.loanCollChange ?? dnum18(0),
+  );
+
+  const isCcrConditionsNotMet = ((depositChange.parsed && dn.gt(depositChange.parsed, 0))
+    || (debtChange.parsed && dn.gt(debtChange.parsed, 0))) && (
+      !isOldTcrLtCcr
+        ? isNewTcrLtCcr
+        : (debtMode === "add" && dn.gt(debtChange.parsed ?? dnum18(0), dnum18(0)))
+        ? isNewTcrLteCcr || isDebtChangeGteCollChange
+        : isDebtChangeGteCollChange
+    );
 
   const allowSubmit = account.isConnected
     // above min. debt
@@ -148,8 +202,12 @@ export function PanelUpdateBorrowPosition({
     )
     // the LTV is not above the maximum
     && !isAboveMaxLtv
+    // TCR must not be below CCR
+    && !isCcrConditionsNotMet
     // at-risk warning agreement (only for non-delegated loans)
-    && (newLoanDetails.status !== "at-risk" || (!loan.batchManager && agreeToLiquidationRisk));
+    && (newLoanDetails.status !== "at-risk" || (!loan.batchManager && agreeToLiquidationRisk))
+    // the account must have enough collateral balance
+    && !insufficientColl;
 
   return (
     <>
@@ -166,6 +224,9 @@ export function PanelUpdateBorrowPosition({
                   label={collToken.name}
                 />
               }
+              drawer={!depositChange.isFocused && insufficientColl
+                ? { mode: "error", message: `Insufficient ${collToken.name} balance.` }
+                : null}
               label={{
                 start: depositMode === "remove"
                   ? "Decrease collateral"
@@ -440,46 +501,138 @@ export function PanelUpdateBorrowPosition({
         </div>
       </VFlex>
 
-      {newLoanDetails.status === "at-risk" && (
-        <WarningBox>
-          {loan.batchManager
-            ? (
-              <div>
-                When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>{" "}
-                must be below{" "}
-                {fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
-                proceed.
+      {isCcrConditionsNotMet && collateralRatios.data
+        ? (
+          <WarningBox>
+            <div>
+              <div
+                className={css({
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: 12,
+                })}
+              >
+                Borrowing Restrictions Apply
               </div>
-            )
-            : (
-              <>
+              <div
+                className={css({
+                  fontSize: 15,
+                  marginBottom: 12,
+                })}
+              >
+                {!isOldTcrLtCcr
+                  ? (
+                    // Case 1: TCR is currently above CCR, but update would push it below
+                    <>
+                      This update to your exising loan would bring the branch{" "}
+                      <abbr title="Total Collateral Ratio">TCR</abbr> to{" "}
+                      <Amount value={newTcr} percentage format={0} />, which is below the{" "}
+                      <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+                      <Amount value={collateralRatios.data.ccr} percentage format={0} />. Please reduce your loan amount
+                      or increase your collateral to proceed.
+                    </>
+                  )
+                  : debtMode === "add" && dn.gt(debtChange.parsed ?? dnum18(0), dnum18(0))
+                  ? (
+                    // Case 2: TCR is below CCR and user is borrowing more
+                    <>
+                      The branch <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+                      <Amount value={collateralRatios.data.tcr} percentage format={0} /> is currently below the{" "}
+                      <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+                      <Amount value={collateralRatios.data.ccr} percentage format={0} />. {isNewTcrLteCcr
+                        ? (
+                          <>
+                            New borrowing must bring the <abbr title="Total Collateral Ratio">TCR</abbr> above{" "}
+                            <Amount value={collateralRatios.data.ccr} percentage format={0} />. Your current loan update
+                            would result in a <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+                            <Amount value={newTcr} percentage format={0} />.
+                          </>
+                        )
+                        : (
+                          <>
+                            When borrowing, your collateral increase must exceed your debt increase.
+                          </>
+                        )} Please reduce your loan amount or increase your collateral to proceed.
+                    </>
+                  )
+                  : (
+                    // Case 3: TCR is below CCR and user is withdrawing collateral
+                    <>
+                      The branch <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+                      <Amount
+                        value={collateralRatios.data.tcr}
+                        percentage
+                        format={0}
+                      />{" "}
+                      is currently below the <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+                      <Amount value={collateralRatios.data.ccr} percentage format={0} />. Collateral withdrawal must be
+                      matched by debt repayment. Please repay debt equal to or greater than the collateral value you
+                      wish to withdraw.
+                    </>
+                  )}
+              </div>
+              <LinkTextButton
+                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
+                target="_blank"
+                rel="noopener noreferrer"
+                label={
+                  <span
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      color: "white",
+                    })}
+                  >
+                    <span>Learn more about borrowing restrictions</span>
+                    <IconExternal size={16} />
+                  </span>
+                }
+              />
+            </div>
+          </WarningBox>
+        )
+        : newLoanDetails.status === "at-risk" && (
+          <WarningBox>
+            {loan.batchManager
+              ? (
                 <div>
-                  Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
-                  {fmtnum(newLoanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
-                  {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
+                  When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>
+                  {" "}
+                  must be below{" "}
+                  {fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
+                  proceed.
                 </div>
-                <label
-                  htmlFor={agreeCheckboxId}
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    cursor: "pointer",
-                  })}
-                >
-                  <Checkbox
-                    id={agreeCheckboxId}
-                    checked={agreeToLiquidationRisk}
-                    onChange={(checked) => {
-                      setAgreeToLiquidationRisk(checked);
-                    }}
-                  />
-                  I understand. Let's continue.
-                </label>
-              </>
-            )}
-        </WarningBox>
-      )}
+              )
+              : (
+                <>
+                  <div>
+                    Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
+                    {fmtnum(newLoanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
+                    {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
+                  </div>
+                  <label
+                    htmlFor={agreeCheckboxId}
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      cursor: "pointer",
+                    })}
+                  >
+                    <Checkbox
+                      id={agreeCheckboxId}
+                      checked={agreeToLiquidationRisk}
+                      onChange={(checked) => {
+                        setAgreeToLiquidationRisk(checked);
+                      }}
+                    />
+                    I understand. Let's continue.
+                  </label>
+                </>
+              )}
+          </WarningBox>
+        )}
 
       <FlowButton
         disabled={!allowSubmit}
