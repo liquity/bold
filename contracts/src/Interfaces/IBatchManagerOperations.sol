@@ -71,11 +71,7 @@ interface IBatchManagerOperations {
         uint256 _maxUpfrontFee
     ) external;
 
-    function kickFromBatch(
-        uint256 _troveId,
-        uint256 _upperHint,
-        uint256 _lowerHint
-    ) external;
+    function kickFromBatch(uint256 _troveId, uint256 _upperHint, uint256 _lowerHint) external;
 
     function removeFromBatch(
         uint256 _troveId,

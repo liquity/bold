@@ -70,10 +70,7 @@ interface ISystemParams {
     function LIQUIDATION_PENALTY_SP() external view returns (uint256);
 
     /// @notice Liquidation penalty for troves redistributed.
-    function LIQUIDATION_PENALTY_REDISTRIBUTION()
-        external
-        view
-        returns (uint256);
+    function LIQUIDATION_PENALTY_REDISTRIBUTION() external view returns (uint256);
 
     /* ========== GAS COMPENSATION PARAMETERS ========== */
 

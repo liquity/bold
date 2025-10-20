@@ -19,41 +19,41 @@ import "openzeppelin-contracts/contracts/proxy/utils/Initializable.sol";
 contract SystemParams is ISystemParams, Initializable {
     /* ========== DEBT PARAMETERS ========== */
 
-    uint256 immutable public MIN_DEBT;
+    uint256 public immutable MIN_DEBT;
 
     /* ========== LIQUIDATION PARAMETERS ========== */
 
-    uint256 immutable public LIQUIDATION_PENALTY_SP;
-    uint256 immutable public LIQUIDATION_PENALTY_REDISTRIBUTION;
+    uint256 public immutable LIQUIDATION_PENALTY_SP;
+    uint256 public immutable LIQUIDATION_PENALTY_REDISTRIBUTION;
 
     /* ========== GAS COMPENSATION PARAMETERS ========== */
 
-    uint256 immutable public COLL_GAS_COMPENSATION_DIVISOR;
-    uint256 immutable public COLL_GAS_COMPENSATION_CAP;
-    uint256 immutable public ETH_GAS_COMPENSATION;
+    uint256 public immutable COLL_GAS_COMPENSATION_DIVISOR;
+    uint256 public immutable COLL_GAS_COMPENSATION_CAP;
+    uint256 public immutable ETH_GAS_COMPENSATION;
 
     /* ========== COLLATERAL PARAMETERS ========== */
 
-    uint256 immutable public CCR;
-    uint256 immutable public SCR;
-    uint256 immutable public MCR;
-    uint256 immutable public BCR;
+    uint256 public immutable CCR;
+    uint256 public immutable SCR;
+    uint256 public immutable MCR;
+    uint256 public immutable BCR;
 
     /* ========== INTEREST PARAMETERS ========== */
 
-    uint256 immutable public MIN_ANNUAL_INTEREST_RATE;
+    uint256 public immutable MIN_ANNUAL_INTEREST_RATE;
 
     /* ========== REDEMPTION PARAMETERS ========== */
 
-    uint256 immutable public REDEMPTION_FEE_FLOOR;
-    uint256 immutable public INITIAL_BASE_RATE;
-    uint256 immutable public REDEMPTION_MINUTE_DECAY_FACTOR;
-    uint256 immutable public REDEMPTION_BETA;
+    uint256 public immutable REDEMPTION_FEE_FLOOR;
+    uint256 public immutable INITIAL_BASE_RATE;
+    uint256 public immutable REDEMPTION_MINUTE_DECAY_FACTOR;
+    uint256 public immutable REDEMPTION_BETA;
 
     /* ========== STABILITY POOL PARAMETERS ========== */
 
-    uint256 immutable public SP_YIELD_SPLIT;
-    uint256 immutable public MIN_BOLD_IN_SP;
+    uint256 public immutable SP_YIELD_SPLIT;
+    uint256 public immutable MIN_BOLD_IN_SP;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -76,22 +76,26 @@ contract SystemParams is ISystemParams, Initializable {
 
         // Validate liquidation parameters
         // Hardcoded validation bounds: MIN_LIQUIDATION_PENALTY_SP = 5%
-        if (_liquidationParams.liquidationPenaltySP < 5 * _1pct)
+        if (_liquidationParams.liquidationPenaltySP < 5 * _1pct) {
             revert SPPenaltyTooLow();
-        if (_liquidationParams.liquidationPenaltySP > _liquidationParams.liquidationPenaltyRedistribution)
+        }
+        if (_liquidationParams.liquidationPenaltySP > _liquidationParams.liquidationPenaltyRedistribution) {
             revert SPPenaltyGtRedist();
-        if (_liquidationParams.liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION)
+        }
+        if (_liquidationParams.liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) {
             revert RedistPenaltyTooHigh();
+        }
 
         // Validate gas compensation parameters
-        if (
-            _gasCompParams.collGasCompensationDivisor == 0 ||
-            _gasCompParams.collGasCompensationDivisor > 1000
-        ) revert InvalidGasCompensation();
-        if (_gasCompParams.collGasCompensationCap == 0 || _gasCompParams.collGasCompensationCap > 10 ether)
+        if (_gasCompParams.collGasCompensationDivisor == 0 || _gasCompParams.collGasCompensationDivisor > 1000) {
             revert InvalidGasCompensation();
-        if (_gasCompParams.ethGasCompensation == 0 || _gasCompParams.ethGasCompensation > 1 ether)
+        }
+        if (_gasCompParams.collGasCompensationCap == 0 || _gasCompParams.collGasCompensationCap > 10 ether) {
             revert InvalidGasCompensation();
+        }
+        if (_gasCompParams.ethGasCompensation == 0 || _gasCompParams.ethGasCompensation > 1 ether) {
+            revert InvalidGasCompensation();
+        }
 
         // Validate collateral parameters
         if (_collateralParams.ccr <= _100pct || _collateralParams.ccr >= 2 * _100pct) revert InvalidCCR();
@@ -100,8 +104,9 @@ contract SystemParams is ISystemParams, Initializable {
         if (_collateralParams.scr <= _100pct || _collateralParams.scr >= 2 * _100pct) revert InvalidSCR();
 
         // Validate interest parameters
-        if (_interestParams.minAnnualInterestRate > MAX_ANNUAL_INTEREST_RATE)
+        if (_interestParams.minAnnualInterestRate > MAX_ANNUAL_INTEREST_RATE) {
             revert MinInterestRateGtMax();
+        }
 
         // Validate redemption parameters
         if (_redemptionParams.redemptionFeeFloor > _100pct) revert InvalidFeeValue();
@@ -143,7 +148,7 @@ contract SystemParams is ISystemParams, Initializable {
         MIN_BOLD_IN_SP = _poolParams.minBoldInSP;
     }
 
-     /*
+    /*
      * Initializes proxy storage
      * All parameters are immutable from constructor. This function
      * only marks initialization complete for proxy pattern.

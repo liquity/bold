@@ -70,9 +70,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         liquidityStrategy = _vars.liquidityStrategy;
 
         emit CollTokenAddressChanged(address(_vars.collToken));
-        emit BorrowerOperationsAddressChanged(
-            address(_vars.borrowerOperations)
-        );
+        emit BorrowerOperationsAddressChanged(address(_vars.borrowerOperations));
         emit TroveManagerAddressChanged(address(_vars.troveManager));
         emit TroveNFTAddressChanged(address(_vars.troveNFT));
         emit MetadataNFTAddressChanged(address(_vars.metadataNFT));
@@ -86,9 +84,7 @@ contract AddressesRegistry is Ownable, IAddressesRegistry {
         emit InterestRouterAddressChanged(address(_vars.interestRouter));
         emit HintHelpersAddressChanged(address(_vars.hintHelpers));
         emit MultiTroveGetterAddressChanged(address(_vars.multiTroveGetter));
-        emit CollateralRegistryAddressChanged(
-            address(_vars.collateralRegistry)
-        );
+        emit CollateralRegistryAddressChanged(address(_vars.collateralRegistry));
         emit BoldTokenAddressChanged(address(_vars.boldToken));
         emit GasTokenAddressChanged(address(_vars.gasToken));
         emit LiquidityStrategyAddressChanged(address(_vars.liquidityStrategy));
