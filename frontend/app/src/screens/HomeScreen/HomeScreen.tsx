@@ -21,8 +21,9 @@ import {
   useEarnPool,
   useLiquityStats,
 } from "@/src/liquity-utils";
-import { useSboldStats } from "@/src/sbold";
+import { isSboldEnabled, useSboldStats } from "@/src/sbold";
 import { useAccount } from "@/src/wagmi-utils";
+import { isYboldEnabled } from "@/src/ybold";
 import { css } from "@/styled-system/css";
 import { IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -174,8 +175,8 @@ function EarnTable({
           columns={columns}
           rows={[
             ...getBranches(),
-            { symbol: "SBOLD" as const },
-            { symbol: "YBOLD" as const },
+            ...(isSboldEnabled() ? [{ symbol: "SBOLD" as const }] : []),
+            ...(isYboldEnabled() ? [{ symbol: "YBOLD" as const }] : []),
           ].map(({ symbol }) => (
             <EarnRewardsRow
               key={symbol}
