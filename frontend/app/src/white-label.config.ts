@@ -111,9 +111,9 @@ export const WHITE_LABEL_CONFIG = {
         symbol: "RETH" as const,
         name: "Rocket Pool ETH", 
         icon: "reth",
-        collateralRatio: 1.1, // 110% MCR for LSTs
+        collateralRatio: 1.2, // 120% MCR for LSTs
         maxDeposit: "25000000", // $25M initial debt limit
-        maxLTV: 0.9091, // 90.91% max LTV
+        maxLTV: 0.8333, // 83.33% max LTV
         deployments: {
           1: {
             collToken: "0xae78736cd615f374d3085123a210448e74fc6393",
