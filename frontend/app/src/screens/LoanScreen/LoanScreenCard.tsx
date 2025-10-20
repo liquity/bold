@@ -370,7 +370,8 @@ function LoanCard(props: {
   });
 
   const copyTransition = useFlashTransition();
-  const closedOrLiquidated = props.loan.status === "liquidated" || props.loan.status === "closed";
+  const liquidated = props.loan.status === "liquidated";
+  const closed = props.loan.status === "closed";
 
   return (
     <div
@@ -441,7 +442,7 @@ function LoanCard(props: {
                     mode={mode}
                     title={title}
                     titleFull={`${title}: ${troveId}`}
-                    statusTag={loan.status === "liquidated"
+                    statusTag={liquidated
                       ? <LoanStatusTag status="liquidated" />
                       : loan.status === "redeemed" && "recordedDebt" in loan
                       ? (
@@ -689,7 +690,7 @@ function LoanCard(props: {
                   gridTemplateColumns: "repeat(2, 1fr)",
                 }}
               >
-                {loan.status === "liquidated" && loan.collSurplus && dn.gt(loan.collSurplus, 0)
+                {liquidated
                   ? (
                     <>
                       <GridItem label="Liquidated collateral">
@@ -706,7 +707,7 @@ function LoanCard(props: {
                       </GridItem>
                     </>
                   )
-                  : closedOrLiquidated
+                  : closed
                   ? (
                     <>
                       <GridItem label={mode === "multiply" ? "Exposure" : "Collateral"}>N/A</GridItem>
