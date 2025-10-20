@@ -49,7 +49,12 @@ contract CollateralRegistry is ICollateralRegistry {
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
 
-    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers, ISystemParams _systemParams) {
+    constructor(
+        IBoldToken _boldToken,
+        IERC20Metadata[] memory _tokens,
+        ITroveManager[] memory _troveManagers,
+        ISystemParams _systemParams
+    ) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
         require(numTokens <= 10, "Collateral list too long");

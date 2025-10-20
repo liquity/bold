@@ -340,7 +340,10 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         _sendBoldtoDepositor(msg.sender, boldToWithdraw + yieldGainToSend);
         _sendCollGainToDepositor(collToSend);
 
-        require(newTotalBoldDeposits >= systemParams.MIN_BOLD_IN_SP(), "Withdrawal must leave totalBoldDeposits >= MIN_BOLD_IN_SP");
+        require(
+            newTotalBoldDeposits >= systemParams.MIN_BOLD_IN_SP(),
+            "Withdrawal must leave totalBoldDeposits >= MIN_BOLD_IN_SP"
+        );
     }
 
     function _getNewStashedCollAndCollToSend(address _depositor, uint256 _currentCollGain, bool _doClaim)
@@ -406,14 +409,16 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     * Removed stable tokens will be factored out from LPs' positions.
     * Added collateral will be added to LPs collateral gain which can be later claimed by the depositor.
     */
-    function swapCollateralForStable(uint256 amountCollIn, uint256 amountStableOut ) external {
+    function swapCollateralForStable(uint256 amountCollIn, uint256 amountStableOut) external {
         _requireCallerIsLiquidityStrategy();
 
         _updateTrackingVariables(amountStableOut, amountCollIn);
 
         _swapCollateralForStable(amountCollIn, amountStableOut);
 
-        require(totalBoldDeposits >= MIN_BOLD_AFTER_REBALANCE, "Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE");
+        require(
+            totalBoldDeposits >= MIN_BOLD_AFTER_REBALANCE, "Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE"
+        );
     }
 
     // --- Liquidation functions ---
@@ -471,7 +476,6 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         collToken.safeTransferFrom(msg.sender, address(this), _amountCollIn);
 
         emit StabilityPoolCollBalanceUpdated(collBalance);
-
     }
 
     function _moveOffsetCollAndDebt(uint256 _collToAdd, uint256 _debtToOffset) internal {

@@ -258,9 +258,8 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         ISystemParams.CollateralParams memory collateralParams =
             ISystemParams.CollateralParams({ccr: 150 * 1e16, scr: 110 * 1e16, mcr: 110 * 1e16, bcr: 10 * 1e16});
 
-        ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
-            minAnnualInterestRate: 1e18 / 200
-        });
+        ISystemParams.InterestParams memory interestParams =
+            ISystemParams.InterestParams({minAnnualInterestRate: 1e18 / 200});
 
         ISystemParams.RedemptionParams memory redemptionParams = ISystemParams.RedemptionParams({
             redemptionFeeFloor: 1e18 / 200,
@@ -287,9 +286,8 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
     }
 
     function _deploySystemParams(DeploymentResult memory r) internal {
-        address systemParamsProxy = address(
-            new TransparentUpgradeableProxy(address(r.systemParamsImpl), address(r.proxyAdmin), "")
-        );
+        address systemParamsProxy =
+            address(new TransparentUpgradeableProxy(address(r.systemParamsImpl), address(r.proxyAdmin), ""));
 
         r.systemParams = ISystemParams(systemParamsProxy);
         r.systemParams.initialize();

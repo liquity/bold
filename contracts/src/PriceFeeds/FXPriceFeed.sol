@@ -6,15 +6,15 @@ import "../Interfaces/IOracleAdapter.sol";
 import "../Interfaces/IPriceFeed.sol";
 import "../Interfaces/IBorrowerOperations.sol";
 
-import { OwnableUpgradeable } from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
+import {OwnableUpgradeable} from "openzeppelin-contracts-upgradeable/contracts/access/OwnableUpgradeable.sol";
 /**
  * @title FXPriceFeed
  * @author Mento Labs
  * @notice A contract that fetches the price of an FX rate from an OracleAdapter.
  *         Implements emergency shutdown functionality to handle oracle failures.
  */
-contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
 
+contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
     /* ==================== State Variables ==================== */
 
     /// @notice The OracleAdapter contract that provides FX rate data
@@ -55,19 +55,19 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
      * @param disableInitializers Boolean to disable initializers for implementation contract
      */
     constructor(bool disableInitializers) {
-      if (disableInitializers) {
-        _disableInitializers();
-      }
+        if (disableInitializers) {
+            _disableInitializers();
+        }
     }
 
     /**
-    * @notice Initializes the FXPriceFeed contract
-    * @param _oracleAdapterAddress The address of the OracleAdapter contract
-    * @param _rateFeedID The address of the rate feed ID
-    * @param _borrowerOperationsAddress The address of the BorrowerOperations contract
-    * @param _watchdogAddress The address of the watchdog contract
-    * @param _initialOwner The address of the initial owner
-    */
+     * @notice Initializes the FXPriceFeed contract
+     * @param _oracleAdapterAddress The address of the OracleAdapter contract
+     * @param _rateFeedID The address of the rate feed ID
+     * @param _borrowerOperationsAddress The address of the BorrowerOperations contract
+     * @param _watchdogAddress The address of the watchdog contract
+     * @param _initialOwner The address of the initial owner
+     */
     function initialize(
         address _oracleAdapterAddress,
         address _rateFeedID,
@@ -92,9 +92,9 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
     }
 
     /**
-    * @notice Sets the watchdog address
-    * @param _newWatchdogAddress The address of the new watchdog contract
-    */
+     * @notice Sets the watchdog address
+     * @param _newWatchdogAddress The address of the new watchdog contract
+     */
     function setWatchdogAddress(address _newWatchdogAddress) external onlyOwner {
         if (_newWatchdogAddress == address(0)) revert ZeroAddress();
 
@@ -105,17 +105,17 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
     }
 
     /**
-    * @notice Fetches the price of the FX rate, if valid
-    * @dev If the contract is shutdown due to oracle failure, the last valid price is returned
-    * @return The price of the FX rate
-    */
+     * @notice Fetches the price of the FX rate, if valid
+     * @dev If the contract is shutdown due to oracle failure, the last valid price is returned
+     * @return The price of the FX rate
+     */
     function fetchPrice() public returns (uint256) {
         if (isShutdown) {
             return lastValidPrice;
         }
 
         // Denominator is always 1e18, so we only use the numerator as the price
-        (uint256 price, ) = oracleAdapter.getFXRateIfValid(rateFeedID);
+        (uint256 price,) = oracleAdapter.getFXRateIfValid(rateFeedID);
 
         lastValidPrice = price;
 
