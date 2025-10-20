@@ -10,10 +10,13 @@ import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionS
 import { getIndexedTroveById } from "@/src/subgraph";
 import { sleep } from "@/src/utils";
 import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
+import { css } from "@/styled-system/css";
+import { InfoTooltip } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { maxUint256 } from "viem";
 import { readContract, readContracts } from "wagmi/actions";
+import { useSlippageRefund } from "../liquity-leverage";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
 const RequestSchema = createRequestSchema(
@@ -42,13 +45,15 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         prevLoan={request.loan}
         onRetry={() => {}}
         txPreviewMode
+        displayAllDifferences={false}
       />
     );
   },
 
-  Details({ request }) {
+  Details({ request, account, steps }) {
     const { loan, repayWithCollateral } = request;
     const collateral = getCollToken(loan.branchId);
+    const slippageRefund = useSlippageRefund(loan.branchId, account, steps);
 
     const amountToRepay = repayWithCollateral
       ? repayWithCollateral.flashLoanAmount
@@ -93,6 +98,33 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
             </div>,
           ]}
         />
+        {slippageRefund.data && (
+          <TransactionDetailsRow
+            label={
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                })}
+              >
+                Slippage refund
+                <InfoTooltip heading="Slippage refund">
+                  Excess collateral was needed to create the desired exposure and accommodate for slippage. This is the
+                  left over amount that has been refunded to your wallet.
+                </InfoTooltip>
+              </div>
+            }
+            value={[
+              <Amount
+                key="start"
+                value={slippageRefund.data}
+                suffix=" BOLD"
+                format="4diff"
+              />,
+            ]}
+          />
+        )}
       </>
     );
   },

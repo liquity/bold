@@ -15,12 +15,14 @@ interface NetValueProps {
   loan: PositionLoan;
   loanDetails: ReturnType<typeof getLoanDetails>;
   prevLoanDetails: null | ReturnType<typeof getLoanDetails>;
+  isSuccess?: boolean;
 }
 
 export const NetValue: FC<NetValueProps> = ({
   loanDetails,
   loan,
   prevLoanDetails,
+  isSuccess,
 }) => {
   const collToken = getCollToken(loan.branchId);
 
@@ -84,7 +86,7 @@ export const NetValue: FC<NetValueProps> = ({
 
             {prevLoanDetails
               && prevLoanDetails.leverageFactor !== null
-              && prevLoanDetails.leverageFactor !== loanDetails.leverageFactor && (
+              && prevLoanDetails.leverageFactor !== loanDetails.leverageFactor && !isSuccess && (
               <CrossedText>
                 {roundToDecimal(prevLoanDetails.leverageFactor, 1)}x
               </CrossedText>

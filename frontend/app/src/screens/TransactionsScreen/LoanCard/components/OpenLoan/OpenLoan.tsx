@@ -25,6 +25,7 @@ interface OpenLoanProps {
   prevLoan?: PositionLoanCommitted | null;
   leverageMode: boolean;
   collToken: CollateralToken;
+  isSuccess?: boolean;
 }
 
 export const OpenLoan: FC<OpenLoanProps> = ({
@@ -34,6 +35,7 @@ export const OpenLoan: FC<OpenLoanProps> = ({
   leverageMode,
   collToken,
   loanDetails,
+  isSuccess,
 }) => {
   const redemptionRisk = useRedemptionRiskOfInterestRate(
     loan.branchId,
@@ -55,7 +57,14 @@ export const OpenLoan: FC<OpenLoanProps> = ({
   return (
     <>
       {leverageMode
-        ? <NetValue loan={loan} loanDetails={loanDetails} prevLoanDetails={prevLoanDetails ?? null} />
+        ? (
+          <NetValue
+            loan={loan}
+            loanDetails={loanDetails}
+            prevLoanDetails={prevLoanDetails ?? null}
+            isSuccess={isSuccess}
+          />
+        )
         : <TotalDebt loan={loan} prevLoan={prevLoan} />}
       <div
         className={css({
@@ -77,7 +86,7 @@ export const OpenLoan: FC<OpenLoanProps> = ({
           </Value>
           {liquidationPrice
             && prevLoanDetails?.liquidationPrice
-            && !dn.eq(prevLoanDetails.liquidationPrice, liquidationPrice) && (
+            && !dn.eq(prevLoanDetails.liquidationPrice, liquidationPrice) && !isSuccess && (
             <CrossedText>
               {fmtnum(prevLoanDetails.liquidationPrice, {
                 preset: "2z",
@@ -103,7 +112,7 @@ export const OpenLoan: FC<OpenLoanProps> = ({
           >
             {fmtnum(ltv, "pct2z")}%
           </div>
-          {ltv && prevLoanDetails?.ltv && !dn.eq(prevLoanDetails.ltv, ltv) && (
+          {ltv && prevLoanDetails?.ltv && !dn.eq(prevLoanDetails.ltv, ltv) && !isSuccess && (
             <CrossedText>{fmtnum(prevLoanDetails.ltv, "pct2z")}%</CrossedText>
           )}
         </GridItemWrapper>
@@ -137,7 +146,7 @@ export const OpenLoan: FC<OpenLoanProps> = ({
             <StatusDot mode={riskLevelToStatusMode(liquidationRisk)} size={8} />
             {formatRisk(liquidationRisk)}
             {prevLoanDetails
-              && liquidationRisk !== prevLoanDetails.liquidationRisk && (
+              && liquidationRisk !== prevLoanDetails.liquidationRisk && !isSuccess && (
               <>
                 <StatusDot
                   mode={riskLevelToStatusMode(
