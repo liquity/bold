@@ -1,5 +1,5 @@
-import { YBOLD } from "@liquity2/uikit";
+import { YBOLD } from "@/src/env";
 
 export function isYboldEnabled() {
-  return Boolean(YBOLD);
+  return YBOLD;
 }

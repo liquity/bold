@@ -9,11 +9,9 @@ export function YboldPositionSummary() {
 
   const stats = rawStats?.yBOLD;
 
-  if (!stats) return;
-
   return (
     <EarnPositionSummaryBase
-      action={{
+      action={stats && {
         label: `Deposit to the yBOLD pool`,
         path: stats.link,
         external: true,
