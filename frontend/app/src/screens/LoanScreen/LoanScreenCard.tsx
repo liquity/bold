@@ -399,9 +399,13 @@ function LoanCard(props: {
       }) => {
         const title = mode === "multiply" ? "Multiply" : "BOLD loan";
 
-        const collateralWasClaimed = loan.collSurplus && dn.gt(loan.collSurplus, 0) && (
-          !collSurplusOnChain || dn.eq(collSurplusOnChain, 0)
-        );
+        const collSurplusFromSubgraph = loan.collSurplus;
+        const collSurplusCurrently = collSurplusOnChain;
+
+        const collateralWasClaimed = collSurplusFromSubgraph && dn.gt(collSurplusFromSubgraph, 0)
+          && collSurplusCurrently !== null
+          && dn.eq(collSurplusCurrently, 0);
+
         return (
           <a.div
             className={css({
