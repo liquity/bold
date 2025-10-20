@@ -147,10 +147,6 @@ function PositionsGroup({
 
   const collSurplusQueries = useCollateralSurplusByBranches(accountAddress, liquidatedBranchIds);
 
-  const hasClaimableCollateral = collSurplusQueries.data?.some((item) => {
-    return liquidatedBranchIds.includes(item.branchId) && dn.gt(item.surplus, 0);
-  }) ?? false;
-
   const activePositions = positions.filter((position) => {
     return !isPositionLoan(position) || position.status !== "liquidated";
   });
