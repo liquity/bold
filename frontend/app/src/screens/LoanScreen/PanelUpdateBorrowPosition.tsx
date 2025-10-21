@@ -11,6 +11,7 @@ import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { ETH_MAX_RESERVE, MIN_DEBT } from "@/src/constants";
+import content from "@/src/content";
 import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
@@ -595,22 +596,13 @@ export function PanelUpdateBorrowPosition({
         : newLoanDetails.status === "at-risk" && (
           <WarningBox>
             {loan.batchManager
-              ? (
-                <div>
-                  When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>
-                  {" "}
-                  must be below{" "}
-                  {fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
-                  proceed.
-                </div>
-              )
+              ? content.atRiskWarning.delegated(`${fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%`)
               : (
                 <>
-                  <div>
-                    Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
-                    {fmtnum(newLoanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
-                    {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
-                  </div>
+                  {content.atRiskWarning.manual(
+                    `${fmtnum(newLoanDetails.ltv, "pct2z")}%`,
+                    `${fmtnum(newLoanDetails.maxLtv, "pct2z")}%`,
+                  ).message}
                   <label
                     htmlFor={agreeCheckboxId}
                     className={css({
@@ -627,7 +619,7 @@ export function PanelUpdateBorrowPosition({
                         setAgreeToLiquidationRisk(checked);
                       }}
                     />
-                    I understand. Let's continue.
+                    {content.atRiskWarning.manual("", "").checkboxLabel}
                   </label>
                 </>
               )}

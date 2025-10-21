@@ -550,22 +550,13 @@ export function BorrowScreen() {
         : loanDetails.status === "at-risk" && (
           <WarningBox>
             {isDelegated
-              ? (
-                <div>
-                  When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>
-                  {" "}
-                  must be below{" "}
-                  {fmtnum(loanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
-                  proceed.
-                </div>
-              )
+              ? content.atRiskWarning.delegated(`${fmtnum(loanDetails.maxLtvAllowed, "pct2z")}%`)
               : (
                 <>
-                  <div>
-                    Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
-                    {fmtnum(loanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
-                    {fmtnum(loanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
-                  </div>
+                  {content.atRiskWarning.manual(
+                    `${fmtnum(loanDetails.ltv, "pct2z")}%`,
+                    `${fmtnum(loanDetails.maxLtv, "pct2z")}%`,
+                  ).message}
                   <label
                     htmlFor={agreeCheckboxId}
                     className={css({
@@ -582,7 +573,7 @@ export function BorrowScreen() {
                         setAgreeToLiquidationRisk(checked);
                       }}
                     />
-                    I understand. Let's continue.
+                    {content.atRiskWarning.manual("", "").checkboxLabel}
                   </label>
                 </>
               )}

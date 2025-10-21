@@ -11,6 +11,7 @@ import { Value } from "@/src/comps/Value/Value";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { ETH_MAX_RESERVE, LEVERAGE_SLIPPAGE_TOLERANCE, MAX_LTV_RESERVE_RATIO } from "@/src/constants";
+import content from "@/src/content";
 import { DNUM_0, dnumNeg } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
@@ -103,7 +104,7 @@ export function PanelUpdateLeveragePosition({
   const agreeCheckboxId = useId();
 
   const allowSubmit = account.isConnected
-    && (newLoanDetails.status !== "at-risk" || agreeToLiquidationRisk)
+    && (newLoanDetails.status !== "at-risk" || (!loan.batchManager && agreeToLiquidationRisk))
     && newLoanDetails.status !== "underwater"
     && newLoanDetails.status !== "liquidatable"
     && (
@@ -349,29 +350,34 @@ export function PanelUpdateLeveragePosition({
             : newLoanDetails.status === "at-risk"
             ? (
               <WarningBox>
-                <div>
-                  The maximum <abbr title="Loan-to-value ratio">LTV</abbr> for the position is{" "}
-                  {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. Your updated position is close and is at risk of being
-                  liquidated.
-                </div>
-                <label
-                  htmlFor={agreeCheckboxId}
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    cursor: "pointer",
-                  })}
-                >
-                  <Checkbox
-                    id={agreeCheckboxId}
-                    checked={agreeToLiquidationRisk}
-                    onChange={(checked) => {
-                      setAgreeToLiquidationRisk(checked);
-                    }}
-                  />
-                  I understand. Let’s continue.
-                </label>
+                {loan.batchManager
+                  ? content.atRiskWarning.delegated(`${fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%`)
+                  : (
+                    <>
+                      {content.atRiskWarning.manual(
+                        `${fmtnum(newLoanDetails.ltv, "pct2z")}%`,
+                        `${fmtnum(newLoanDetails.maxLtv, "pct2z")}%`,
+                      ).message}
+                      <label
+                        htmlFor={agreeCheckboxId}
+                        className={css({
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          cursor: "pointer",
+                        })}
+                      >
+                        <Checkbox
+                          id={agreeCheckboxId}
+                          checked={agreeToLiquidationRisk}
+                          onChange={(checked) => {
+                            setAgreeToLiquidationRisk(checked);
+                          }}
+                        />
+                        {content.atRiskWarning.manual("", "").checkboxLabel}
+                      </label>
+                    </>
+                  )}
               </WarningBox>
             )
             : null}

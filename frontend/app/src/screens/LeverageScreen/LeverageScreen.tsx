@@ -10,11 +10,13 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
+import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { ETH_MAX_RESERVE, LEVERAGE_FACTOR_DEFAULT, MAX_COLLATERAL_DEPOSITS } from "@/src/constants";
 import content from "@/src/content";
 import { dnum18, DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
+import { getLoanDetails } from "@/src/liquity-math";
 import {
   getBranch,
   getBranches,
@@ -28,6 +30,7 @@ import { useAccount, useBalances } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import {
   ADDRESS_ZERO,
+  Checkbox,
   Dropdown,
   HFlex,
   IconSuggestion,
@@ -39,7 +42,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 
 export function LeverageScreen() {
   const branches = getBranches();
@@ -77,6 +80,9 @@ export function LeverageScreen() {
   const [interestRate, setInterestRate] = useState<null | Dnum>(null);
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
   const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(null);
+  const [agreeToLiquidationRisk, setAgreeToLiquidationRisk] = useState(false);
+
+  const agreeCheckboxId = useId();
 
   const setInterestRateRounded = useCallback((averageInterestRate: Dnum, setValue: (value: string) => void) => {
     const rounded = dn.div(dn.round(dn.mul(averageInterestRate, 1e4)), 1e4);
@@ -90,6 +96,14 @@ export function LeverageScreen() {
     collToken: collateral,
     defaultLeverageFactorAdjustment: LEVERAGE_FACTOR_DEFAULT - 1,
   });
+
+  const loanDetails = getLoanDetails(
+    leverageField.deposit,
+    leverageField.debt,
+    interestRate,
+    collateral.collateralRatio,
+    collPrice.data ?? null,
+  );
 
   const redemptionRisk = useRedemptionRiskOfInterestRate(branch.id, interestRate ?? DNUM_0);
   const depositUsd = depositPreLeverage.parsed && collPrice.data && dn.mul(
@@ -119,10 +133,14 @@ export function LeverageScreen() {
   };
 
   const hasDeposit = Boolean(depositPreLeverage.parsed && dn.gt(depositPreLeverage.parsed, 0));
+  const isAboveMaxLtv = loanDetails.ltv && dn.gt(loanDetails.ltv, loanDetails.maxLtv);
 
+  const isDelegated = interestRateMode === "delegate" && interestRateDelegate;
   const allowSubmit = account.isConnected
     && hasDeposit
-    && leverageField.isValid;
+    && leverageField.isValid
+    && !isAboveMaxLtv
+    && (loanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk));
 
   return (
     <Screen
@@ -330,6 +348,39 @@ export function LeverageScreen() {
       />
 
       <RedemptionInfo />
+
+      {loanDetails.status === "at-risk" && (
+        <WarningBox>
+          {isDelegated
+            ? content.atRiskWarning.delegated(`${fmtnum(loanDetails.maxLtvAllowed, "pct2z")}%`)
+            : (
+              <>
+                {content.atRiskWarning.manual(
+                  `${fmtnum(loanDetails.ltv, "pct2z")}%`,
+                  `${fmtnum(loanDetails.maxLtv, "pct2z")}%`,
+                ).message}
+                <label
+                  htmlFor={agreeCheckboxId}
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    cursor: "pointer",
+                  })}
+                >
+                  <Checkbox
+                    id={agreeCheckboxId}
+                    checked={agreeToLiquidationRisk}
+                    onChange={(checked) => {
+                      setAgreeToLiquidationRisk(checked);
+                    }}
+                  />
+                  {content.atRiskWarning.manual("", "").checkboxLabel}
+                </label>
+              </>
+            )}
+        </WarningBox>
+      )}
 
       <div
         className={css({

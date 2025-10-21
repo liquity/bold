@@ -506,6 +506,24 @@ export default {
       ),
     },
   },
+  atRiskWarning: {
+    delegated: (maxLtvAllowed: string) => (
+      <div>
+        When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr> must be below
+        {" "}
+        {maxLtvAllowed}. Please reduce your loan or add more collateral to proceed.
+      </div>
+    ),
+    manual: (ltv: string, maxLtv: string) => ({
+      message: (
+        <div>
+          Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is {ltv}, which is close to the maximum of{" "}
+          {maxLtv}. You are at high risk of liquidation.
+        </div>
+      ),
+      checkboxLabel: "I understand. Let's continue.",
+    }),
+  },
 } as const;
 
 // function Link({
