@@ -495,7 +495,7 @@ export function BorrowScreen() {
                   marginBottom: 12,
                 })}
               >
-                Borrowing Restrictions Apply
+                {content.ccrWarning.title}
               </div>
               <div
                 className={css({
@@ -503,31 +503,15 @@ export function BorrowScreen() {
                   marginBottom: 12,
                 })}
               >
-                {isOldTcrLtCcr && collateralRatios.data.tcr && (
-                  <>
-                    The branch <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
-                    <Amount value={collateralRatios.data.tcr} percentage format={0} /> is currently below the{" "}
-                    <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
-                    <Amount value={collateralRatios.data.ccr} percentage format={0} />.{" "}
-                  </>
-                )}
-                Opening a position must bring the branch <abbr title="Total Collateral Ratio">TCR</abbr> {isOldTcrLtCcr
-                  ? (
-                    <>
-                      above <Amount value={collateralRatios.data.ccr} percentage format={0} />.
-                    </>
-                  )
-                  : (
-                    <>
-                      above the <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
-                      <Amount value={collateralRatios.data.ccr} percentage format={0} />.
-                    </>
-                  )} Opening this loan would result in a <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
-                <Amount value={newTcr} percentage format={0} />. Please reduce your loan amount or increase your
-                collateral to proceed.
+                {content.ccrWarning.openPosition({
+                  tcr: <Amount value={collateralRatios.data.tcr} percentage format={0} />,
+                  ccr: <Amount value={collateralRatios.data.ccr} percentage format={0} />,
+                  newTcr: <Amount value={newTcr} percentage format={0} />,
+                  isOldTcrLtCcr: Boolean(isOldTcrLtCcr),
+                })}
               </div>
               <LinkTextButton
-                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
+                href={content.ccrWarning.learnMoreUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 label={
@@ -539,7 +523,7 @@ export function BorrowScreen() {
                       color: "white",
                     })}
                   >
-                    <span>Learn more about borrowing restrictions</span>
+                    <span>{content.ccrWarning.learnMoreLabel}</span>
                     <IconExternal size={16} />
                   </span>
                 }

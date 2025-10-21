@@ -8,6 +8,7 @@ import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
@@ -21,6 +22,8 @@ import {
   getBranch,
   getBranches,
   getCollToken,
+  useBranchCollateralRatios,
+  useBranchDebt,
   useNextOwnerIndex,
   useRedemptionRiskOfInterestRate,
 } from "@/src/liquity-utils";
@@ -33,6 +36,7 @@ import {
   Checkbox,
   Dropdown,
   HFlex,
+  IconExternal,
   IconSuggestion,
   InfoTooltip,
   InputField,
@@ -105,13 +109,53 @@ export function LeverageScreen() {
     collPrice.data ?? null,
   );
 
+  const collBalance = balances[collateral.symbol]?.data;
+
+  const insufficientColl = depositPreLeverage.parsed
+    && collBalance
+    && (dn.gt(depositPreLeverage.parsed, collBalance));
+
   const redemptionRisk = useRedemptionRiskOfInterestRate(branch.id, interestRate ?? DNUM_0);
   const depositUsd = depositPreLeverage.parsed && collPrice.data && dn.mul(
     depositPreLeverage.parsed,
     collPrice.data,
   );
 
-  const collBalance = balances[collateral.symbol]?.data;
+  const branchDebt = useBranchDebt(branch.id);
+  const collateralRatios = useBranchCollateralRatios(branch.id);
+
+  const newTcr = branchDebt.data
+      && loanDetails.deposit
+      && loanDetails.collPrice
+      && leverageField.debt
+      && dn.gt(leverageField.debt, 0)
+    ? (() => {
+      if (collateralRatios.data?.tcr === null && dn.eq(branchDebt.data, 0)) {
+        const loanColl = dn.mul(loanDetails.deposit, loanDetails.collPrice);
+        return dn.div(loanColl, leverageField.debt);
+      }
+
+      if (!collateralRatios.data?.tcr) {
+        return null;
+      }
+
+      const branchColl = dn.mul(collateralRatios.data.tcr, branchDebt.data);
+      const loanColl = dn.mul(loanDetails.deposit, loanDetails.collPrice);
+
+      const totalCollAfter = dn.add(branchColl, loanColl);
+      const totalDebtAfter = dn.add(branchDebt.data, leverageField.debt);
+
+      return dn.div(totalCollAfter, totalDebtAfter);
+    })()
+    : null;
+
+  const isCcrConditionsNotMet = newTcr
+    && collateralRatios.data?.ccr
+    && dn.lt(newTcr, collateralRatios.data.ccr);
+
+  const isOldTcrLtCcr = collateralRatios.data?.ccr
+    && collateralRatios.data?.tcr
+    && dn.lt(collateralRatios.data.tcr, collateralRatios.data.ccr);
 
   const maxAmount = collBalance && dnumMax(
     dn.sub(collBalance, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0), // Only keep a reserve for ETH, not LSTs
@@ -140,7 +184,9 @@ export function LeverageScreen() {
     && hasDeposit
     && leverageField.isValid
     && !isAboveMaxLtv
-    && (loanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk));
+    && !isCcrConditionsNotMet
+    && (loanDetails.status !== "at-risk" || (!isDelegated && agreeToLiquidationRisk))
+    && !insufficientColl;
 
   return (
     <Screen
@@ -194,6 +240,14 @@ export function LeverageScreen() {
                 selected={branch.id}
               />
             }
+            drawer={depositPreLeverage.isFocused ? null : (
+              insufficientColl
+                ? {
+                  mode: "error",
+                  message: `Insufficient ${collateral.name} balance.`,
+                }
+                : null
+            )}
             label={content.leverageScreen.depositField.label}
             placeholder="0.00"
             secondary={{
@@ -349,7 +403,54 @@ export function LeverageScreen() {
 
       <RedemptionInfo />
 
-      {loanDetails.status === "at-risk" && (
+      {isCcrConditionsNotMet && collateralRatios.data
+        ? (
+          <WarningBox>
+            <div>
+              <div
+                className={css({
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: 12,
+                })}
+              >
+                {content.ccrWarning.title}
+              </div>
+              <div
+                className={css({
+                  fontSize: 15,
+                  marginBottom: 12,
+                })}
+              >
+                {content.ccrWarning.openPosition({
+                  tcr: <Amount value={collateralRatios.data.tcr} percentage format={0} />,
+                  ccr: <Amount value={collateralRatios.data.ccr} percentage format={0} />,
+                  newTcr: <Amount value={newTcr} percentage format={0} />,
+                  isOldTcrLtCcr: Boolean(isOldTcrLtCcr),
+                })}
+              </div>
+              <LinkTextButton
+                href={content.ccrWarning.learnMoreUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                label={
+                  <span
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      color: "white",
+                    })}
+                  >
+                    <span>{content.ccrWarning.learnMoreLabel}</span>
+                    <IconExternal size={16} />
+                  </span>
+                }
+              />
+            </div>
+          </WarningBox>
+        )
+        : loanDetails.status === "at-risk" && (
         <WarningBox>
           {isDelegated
             ? content.atRiskWarning.delegated(`${fmtnum(loanDetails.maxLtvAllowed, "pct2z")}%`)
@@ -380,7 +481,7 @@ export function LeverageScreen() {
               </>
             )}
         </WarningBox>
-      )}
+        )}
 
       <div
         className={css({
