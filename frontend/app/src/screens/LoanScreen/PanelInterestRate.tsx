@@ -86,6 +86,10 @@ export function PanelInterestRate({
     collPrice.data ?? null,
   );
 
+  useEffect(() => {
+    setAgreeToLiquidationRisk(false);
+  }, [newLoanDetails.status]);
+
   const boldInterestPerYear = interestRate
     && debt.parsed
     && dn.mul(debt.parsed, interestRate);

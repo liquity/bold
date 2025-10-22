@@ -37,7 +37,7 @@ import {
 import { maxUint256 } from "viem";
 
 import * as dn from "dnum";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 type ValueUpdateMode = "add" | "remove";
 
@@ -123,6 +123,10 @@ export function PanelUpdateBorrowPosition({
     collToken.collateralRatio,
     collPrice.data,
   );
+
+  useEffect(() => {
+    setAgreeToLiquidationRisk(false);
+  }, [newLoanDetails.status]);
 
   const insufficientColl = depositMode === "add"
     && depositChange.parsed

@@ -46,7 +46,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 
 export function LeverageScreen() {
   const branches = getBranches();
@@ -108,6 +108,10 @@ export function LeverageScreen() {
     collateral.collateralRatio,
     collPrice.data ?? null,
   );
+
+  useEffect(() => {
+    setAgreeToLiquidationRisk(false);
+  }, [loanDetails.status]);
 
   const collBalance = balances[collateral.symbol]?.data;
 

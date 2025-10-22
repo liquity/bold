@@ -47,7 +47,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { maxUint256 } from "viem";
 
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
@@ -114,6 +114,10 @@ export function BorrowScreen() {
     collateral.collateralRatio,
     collPrice.data ?? null,
   );
+
+  useEffect(() => {
+    setAgreeToLiquidationRisk(false);
+  }, [loanDetails.status]);
 
   const insufficientColl = deposit.parsed
     && collBalance.data
