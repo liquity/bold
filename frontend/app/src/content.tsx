@@ -506,6 +506,88 @@ export default {
       ),
     },
   },
+  atRiskWarning: {
+    delegated: (maxLtvAllowed: string) => (
+      <div>
+        When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr> must be below
+        {" "}
+        {maxLtvAllowed}. Please reduce your loan or add more collateral to proceed.
+      </div>
+    ),
+    manual: (ltv: string, maxLtv: string) => ({
+      message: (
+        <div>
+          Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is {ltv}, which is close to the maximum of{" "}
+          {maxLtv}. You are at high risk of liquidation.
+        </div>
+      ),
+      checkboxLabel: "I understand. Let's continue.",
+    }),
+  },
+  ccrWarning: {
+    title: "Borrowing Restrictions Apply",
+    learnMoreUrl:
+      "https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222",
+    learnMoreLabel: "Learn more about borrowing restrictions",
+    openPosition: (params: { tcr: N; ccr: N; newTcr: N; isOldTcrLtCcr: boolean }) => (
+      <>
+        {params.isOldTcrLtCcr && (
+          <>
+            The branch <abbr title="Total Collateral Ratio">TCR</abbr> of {params.tcr} is currently below the{" "}
+            <abbr title="Critical Collateral Ratio">CCR</abbr> of {params.ccr}.{" "}
+          </>
+        )}
+        Opening a position must bring the branch <abbr title="Total Collateral Ratio">TCR</abbr> {params.isOldTcrLtCcr
+          ? <>above {params.ccr}.</>
+          : (
+            <>
+              above the <abbr title="Critical Collateral Ratio">CCR</abbr> of {params.ccr}.
+            </>
+          )} Opening this loan would result in a <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
+        {params.newTcr}. Please reduce your loan amount or increase your collateral to proceed.
+      </>
+    ),
+    updatePushBelow: (params: { newTcr: N; ccr: N }) => (
+      <>
+        This update to your existing loan would bring the branch <abbr title="Total Collateral Ratio">TCR</abbr> to{" "}
+        {params.newTcr}, which is below the <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+        {params.ccr}. Please reduce your loan amount or increase your collateral to proceed.
+      </>
+    ),
+    updateBorrowMore: (params: { tcr: N; ccr: N; newTcr: N; isNewTcrLteCcr: boolean }) => (
+      <>
+        The branch <abbr title="Total Collateral Ratio">TCR</abbr> of {params.tcr} is currently below the{" "}
+        <abbr title="Critical Collateral Ratio">CCR</abbr> of {params.ccr}. {params.isNewTcrLteCcr
+          ? (
+            <>
+              New borrowing must bring the <abbr title="Total Collateral Ratio">TCR</abbr> above{" "}
+              {params.ccr}. Your current loan update would result in a <abbr title="Total Collateral Ratio">TCR</abbr>
+              {" "}
+              of {params.newTcr}.
+            </>
+          )
+          : <>When borrowing, your collateral increase must exceed your debt increase.</>}{" "}
+        Please reduce your loan amount or increase your collateral to proceed.
+      </>
+    ),
+    updateWithdrawColl: (params: { tcr: N; ccr: N }) => (
+      <>
+        The branch <abbr title="Total Collateral Ratio">TCR</abbr> of {params.tcr} is currently below the{" "}
+        <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+        {params.ccr}. Collateral withdrawal must be matched by debt repayment. Please repay debt equal to or greater
+        than the collateral value you wish to withdraw.
+      </>
+    ),
+    interestRateAdjustment: (params: { tcr: N; ccr: N; cooldownDays: number }) => (
+      <>
+        The branch <abbr title="Total Collateral Ratio">TCR</abbr> of {params.tcr} is currently below the{" "}
+        <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
+        {params.ccr}. Interest rate adjustments are restricted until either the{" "}
+        <abbr title="Total Collateral Ratio">TCR</abbr> rises above {params.ccr}, or {params.cooldownDays}{" "}
+        days have passed since your last adjustment.
+      </>
+    ),
+  },
 } as const;
 
 // function Link({

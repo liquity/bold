@@ -6,21 +6,33 @@ import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { Value } from "@/src/comps/Value/Value";
 import { ValueUpdate } from "@/src/comps/ValueUpdate/ValueUpdate";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { ETH_MAX_RESERVE, LEVERAGE_SLIPPAGE_TOLERANCE, MAX_LTV_RESERVE_RATIO } from "@/src/constants";
-import { DNUM_0, dnumNeg } from "@/src/dnum-utils";
+import content from "@/src/content";
+import { dnum18, DNUM_0, dnumNeg } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
-import { getLiquidationPriceFromLeverage, getLoanDetails } from "@/src/liquity-math";
-import { getCollToken } from "@/src/liquity-utils";
+import { getLiquidationPriceFromLeverage, getLoanChanges, getLoanDetails } from "@/src/liquity-math";
+import { getCollToken, useBranchCollateralRatios, useBranchDebt } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Checkbox, HFlex, InputField, StatusDot, Tabs, TextButton, TokenIcon, VFlex } from "@liquity2/uikit";
+import {
+  Checkbox,
+  HFlex,
+  IconExternal,
+  InputField,
+  StatusDot,
+  Tabs,
+  TextButton,
+  TokenIcon,
+  VFlex,
+} from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useEffect, useId, useState } from "react";
 
@@ -102,8 +114,59 @@ export function PanelUpdateLeveragePosition({
 
   const agreeCheckboxId = useId();
 
+  const insufficientColl = depositMode === "add"
+    && depositChange.parsed
+    && collBalance.data
+    && (dn.gt(depositChange.parsed, collBalance.data));
+
+  const branchDebt = useBranchDebt(loan.branchId);
+  const collateralRatios = useBranchCollateralRatios(loan.branchId);
+
+  const loanChanges = newDeposit && leverageField.debt && collPrice.data
+    ? getLoanChanges(loan.deposit, newDeposit, loan.borrowed, leverageField.debt, collPrice.data)
+    : null;
+
+  const newTcr = branchDebt.data
+      && collateralRatios.data?.tcr
+      && loanChanges
+    ? (() => {
+      const branchColl = dn.mul(collateralRatios.data.tcr, branchDebt.data);
+
+      const totalCollAfter = dn.add(branchColl, loanChanges.loanCollChange);
+      const totalDebtAfter = dn.add(branchDebt.data, loanChanges.loanDebtChange);
+
+      return dn.div(totalCollAfter, totalDebtAfter);
+    })()
+    : null;
+
+  const isNewTcrLtCcr = newTcr
+    && collateralRatios.data?.ccr
+    && dn.lt(newTcr, collateralRatios.data.ccr);
+
+  const isNewTcrLteCcr = newTcr
+    && collateralRatios.data?.ccr
+    && dn.lte(newTcr, collateralRatios.data.ccr);
+
+  const isOldTcrLtCcr = collateralRatios.data?.ccr
+    && collateralRatios.data?.tcr
+    && dn.lt(collateralRatios.data.tcr, collateralRatios.data.ccr);
+
+  const isDebtChangeGteCollChange = dn.gte(
+    loanChanges?.loanDebtChange ?? dnum18(0),
+    loanChanges?.loanCollChange ?? dnum18(0),
+  );
+
+  const isCcrConditionsNotMet = ((depositChange.parsed && dn.gt(depositChange.parsed, 0))
+    || (leverageField.leverageFactorChange && leverageField.leverageFactorChange !== 0)) && (
+      !isOldTcrLtCcr
+        ? isNewTcrLtCcr
+        : (leverageField.leverageFactorChange && leverageField.leverageFactorChange > 0)
+        ? isNewTcrLteCcr || isDebtChangeGteCollChange
+        : isDebtChangeGteCollChange
+    );
+
   const allowSubmit = account.isConnected
-    && (newLoanDetails.status !== "at-risk" || agreeToLiquidationRisk)
+    && (newLoanDetails.status !== "at-risk" || (!loan.batchManager && agreeToLiquidationRisk))
     && newLoanDetails.status !== "underwater"
     && newLoanDetails.status !== "liquidatable"
     && (
@@ -111,7 +174,9 @@ export function PanelUpdateLeveragePosition({
       !dn.eq(initialLoanDetails.deposit ?? DNUM_0, newLoanDetails.deposit ?? DNUM_0)
       || initialLoanDetails.leverageFactor !== newLoanDetails.leverageFactor
     )
-    && leverageField.isValid;
+    && leverageField.isValid
+    && !isCcrConditionsNotMet
+    && !insufficientColl;
 
   return (
     <>
@@ -128,6 +193,9 @@ export function PanelUpdateLeveragePosition({
                   label={collToken.name}
                 />
               }
+              drawer={!depositChange.isFocused && insufficientColl
+                ? { mode: "error", message: `Insufficient ${collToken.name} balance.` }
+                : null}
               label={{
                 start: depositMode === "remove"
                   ? "Decrease deposit"
@@ -334,7 +402,64 @@ export function PanelUpdateLeveragePosition({
             ]}
           />
 
-          {newLoanDetails.status === "underwater" || newLoanDetails.status === "liquidatable"
+          {isCcrConditionsNotMet && collateralRatios.data
+            ? (
+              <WarningBox>
+                <div>
+                  <div
+                    className={css({
+                      fontSize: 16,
+                      fontWeight: 600,
+                      marginBottom: 12,
+                    })}
+                  >
+                    {content.ccrWarning.title}
+                  </div>
+                  <div
+                    className={css({
+                      fontSize: 15,
+                      marginBottom: 12,
+                    })}
+                  >
+                    {!isOldTcrLtCcr
+                      ? content.ccrWarning.updatePushBelow({
+                        newTcr: <Amount value={newTcr} percentage format={0} />,
+                        ccr: <Amount value={collateralRatios.data.ccr} percentage format={0} />,
+                      })
+                      : leverageField.leverageFactorChange && leverageField.leverageFactorChange > 0
+                      ? content.ccrWarning.updateBorrowMore({
+                        tcr: <Amount value={collateralRatios.data.tcr} percentage format={0} />,
+                        ccr: <Amount value={collateralRatios.data.ccr} percentage format={0} />,
+                        newTcr: <Amount value={newTcr} percentage format={0} />,
+                        isNewTcrLteCcr: Boolean(isNewTcrLteCcr),
+                      })
+                      : content.ccrWarning.updateWithdrawColl({
+                        tcr: <Amount value={collateralRatios.data.tcr} percentage format={0} />,
+                        ccr: <Amount value={collateralRatios.data.ccr} percentage format={0} />,
+                      })}
+                  </div>
+                  <LinkTextButton
+                    href={content.ccrWarning.learnMoreUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    label={
+                      <span
+                        className={css({
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          color: "white",
+                        })}
+                      >
+                        <span>{content.ccrWarning.learnMoreLabel}</span>
+                        <IconExternal size={16} />
+                      </span>
+                    }
+                  />
+                </div>
+              </WarningBox>
+            )
+            : newLoanDetails.status === "underwater" || newLoanDetails.status === "liquidatable"
             ? (
               <WarningBox>
                 <div>
@@ -349,29 +474,34 @@ export function PanelUpdateLeveragePosition({
             : newLoanDetails.status === "at-risk"
             ? (
               <WarningBox>
-                <div>
-                  The maximum <abbr title="Loan-to-value ratio">LTV</abbr> for the position is{" "}
-                  {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. Your updated position is close and is at risk of being
-                  liquidated.
-                </div>
-                <label
-                  htmlFor={agreeCheckboxId}
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    cursor: "pointer",
-                  })}
-                >
-                  <Checkbox
-                    id={agreeCheckboxId}
-                    checked={agreeToLiquidationRisk}
-                    onChange={(checked) => {
-                      setAgreeToLiquidationRisk(checked);
-                    }}
-                  />
-                  I understand. Let’s continue.
-                </label>
+                {loan.batchManager
+                  ? content.atRiskWarning.delegated(`${fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%`)
+                  : (
+                    <>
+                      {content.atRiskWarning.manual(
+                        `${fmtnum(newLoanDetails.ltv, "pct2z")}%`,
+                        `${fmtnum(newLoanDetails.maxLtv, "pct2z")}%`,
+                      ).message}
+                      <label
+                        htmlFor={agreeCheckboxId}
+                        className={css({
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 12,
+                          cursor: "pointer",
+                        })}
+                      >
+                        <Checkbox
+                          id={agreeCheckboxId}
+                          checked={agreeToLiquidationRisk}
+                          onChange={(checked) => {
+                            setAgreeToLiquidationRisk(checked);
+                          }}
+                        />
+                        {content.atRiskWarning.manual("", "").checkboxLabel}
+                      </label>
+                    </>
+                  )}
               </WarningBox>
             )
             : null}
