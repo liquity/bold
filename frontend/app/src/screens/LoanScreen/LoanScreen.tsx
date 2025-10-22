@@ -8,11 +8,15 @@ import { Field } from "@/src/comps/Field/Field";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { getBranchContract } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
 import { TROVE_EXPLORER_0, TROVE_EXPLORER_1 } from "@/src/env";
 import { fmtnum, formatDate } from "@/src/formatting";
-import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId, useLoan } from "@/src/liquity-utils";
+import {
+  getCollToken,
+  getPrefixedTroveId,
+  parsePrefixedTroveId,
+  useCollateralSurplus,
+  useLoan,
+} from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useStoredState } from "@/src/services/StoredState";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -25,8 +29,6 @@ import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
 import { useState } from "react";
 import { match, P } from "ts-pattern";
-import { zeroAddress } from "viem";
-import { useReadContract } from "wagmi";
 import { LoanScreenCard } from "./LoanScreenCard";
 import { PanelClosePosition } from "./PanelClosePosition";
 import { PanelInterestRate } from "./PanelInterestRate";
@@ -179,15 +181,10 @@ export function LoanScreen() {
   const isLiquidated = loan.data?.status === "liquidated";
   const account = useAccount();
 
-  const collSurplus = useReadContract({
-    ...getBranchContract(branchId, "CollSurplusPool"),
-    functionName: "getCollateral",
-    args: [loan.data?.borrower ?? zeroAddress],
-    query: {
-      enabled: Boolean(loan.data?.borrower && isLiquidated),
-      select: dnum18,
-    },
-  });
+  const collSurplus = useCollateralSurplus(
+    loan.data?.borrower ?? null,
+    branchId,
+  );
 
   const loadingState = match([
     loan,
