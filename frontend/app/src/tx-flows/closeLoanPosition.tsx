@@ -53,7 +53,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
   Details({ request, account, steps }) {
     const { loan, repayWithCollateral } = request;
     const collateral = getCollToken(loan.branchId);
-    const slippageRefund = useSlippageRefund(loan.branchId, account, steps);
+    const slippageRefund = useSlippageRefund(loan.branchId, account, steps, !!repayWithCollateral);
 
     const amountToRepay = repayWithCollateral
       ? repayWithCollateral.flashLoanAmount
