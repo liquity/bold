@@ -110,8 +110,8 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
               >
                 Slippage refund
                 <InfoTooltip heading="Slippage refund">
-                  Excess collateral was needed to create the desired exposure and accommodate for slippage. This is the
-                  left over amount that has been refunded to your wallet.
+                  Excess BOLD was acquired to repay your debt and accommodate for slippage. This is the left over amount
+                  that has been refunded to your wallet.
                 </InfoTooltip>
               </div>
             }
