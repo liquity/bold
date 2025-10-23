@@ -81,21 +81,19 @@ export function AppLayout({ children }: { children: ReactNode }) {
               padding: "48px 24px 0",
             })}
           >
+            <div
+              className={css({
+                width: "100%",
+                display: "flex",
+                justifyContent: "end",
+                color: "contentAlt",
+                fontSize: 14,
+                paddingBottom: 8,
+              })}
+            >
+              <span>v{APP_VERSION}-{APP_COMMIT_HASH.slice(0, 8)}</span>
+            </div>
             <ProtocolStats />
-          </div>
-          <div
-            className={css({
-              width: "100%",
-              padding: "24px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              color: "contentAlt",
-              fontSize: 14,
-              gap: 8,
-            })}
-          >
-            <span>v{APP_VERSION}-{APP_COMMIT_HASH.slice(0, 8)}</span>
           </div>
         </div>
       </div>
