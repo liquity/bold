@@ -378,8 +378,8 @@ export default {
       rewardsLabel: "My rewards",
     },
     tabs: {
-      deposit: "Deposit",
-      claim: "Claim rewards",
+      deposit: "Deposit & Withdraw",
+      claim: "Claim Rewards",
     },
     depositPanel: {
       label: "Increase deposit",
