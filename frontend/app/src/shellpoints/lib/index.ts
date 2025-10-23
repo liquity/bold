@@ -6,8 +6,8 @@ import { getGoSlowNftHolders } from "./go-slow-nft"
 // import { getAllHistoricalStabilityPoolDepositors } from "./stability-pool"
 import { getAssetTransfers, getRecipientsFromAssetTransfers, getStabilityPoolDepositsFromAssetTransfers, getTokenHoldersViaAlchemyAPI } from "./tokenholders"
 import { GRAPH_TOKEN_API_TOKEN } from "../utils/env"
-import { queryTrovesServerSide } from "./troves"
 import { NULL_ADDRESS } from "../utils/constants"
+import { queryTroves } from "./troves"
 
 const addresses = {
   usnd: getAddress(CONTRACT_ADDRESSES.BoldToken),
@@ -48,7 +48,7 @@ export async function queryShellpointsAndActivity() {
       camelot: holders.filter((lp: Holder) => isAddressEqual(lp.token, addresses.camelot) && isValidHolder(lp.address, lp.amount)),
       spectra: holders.filter((lp: Holder) => isAddressEqual(lp.token, addresses.spectra) && isValidHolder(lp.address, lp.amount)),
       goSlowNft: await getGoSlowNftHolders(),
-      troves: await queryTrovesServerSide(),
+      troves: await queryTroves(),
       stabilityPoolDeposits: depositors,
     }
   }
@@ -140,7 +140,7 @@ export async function getHolders() {
 }
 
 export async function getProtocolUsers() {
-  const troves = await queryTrovesServerSide();
+  const troves = await queryTroves();
   console.log("Retrieved troves:", troves.length);
   // console.log("Getting protocol users");
   // const troves = await getTrovesAndOwners();

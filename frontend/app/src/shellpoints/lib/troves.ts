@@ -12,16 +12,7 @@
 // import { getCollToken, getPrefixedTroveId, parsePrefixedTroveId } from "@/src/shellpoints/utils/formatting";
 // import { getPublicClient } from "@/src/shellpoints/utils/client";
 // import { getContracts } from "@/src/contracts";
-import { graphQuery, graphQueryServerSide, TrovesQuery } from "@/src/subgraph-queries";
-
-export async function queryTrovesServerSide(params?: {fromTimestamp?: number, toTimestamp?: number}) {
-  const { troves } = await graphQueryServerSide(TrovesQuery);
-  if (!params) return troves;
-  return troves.filter((trove) => {
-    const { createdAt, closedAt } = trove
-    return (closedAt ? Number(closedAt) >= (params?.fromTimestamp ?? 0) : true) && (Number(createdAt) >= (params?.fromTimestamp ?? 0)) && (params?.toTimestamp ? Number(createdAt) <= params.toTimestamp : true)
-  });
-}
+import { graphQuery, TrovesQuery } from "@/src/subgraph-queries";
 
 export async function queryTroves(params?: {fromTimestamp?: number, toTimestamp?: number}) {
   const { troves } = await graphQuery(TrovesQuery);

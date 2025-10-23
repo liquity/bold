@@ -1,6 +1,6 @@
 import type { TypedDocumentString } from "@/src/graphql/graphql";
 
-import { SUBGRAPH_URL, SUBGRAPH_URL_SERVER } from "@/src/env";
+import { SUBGRAPH_URL } from "@/src/env";
 import { graphql } from "@/src/graphql";
 
 export async function graphQuery<TResult, TVariables>(
@@ -8,35 +8,6 @@ export async function graphQuery<TResult, TVariables>(
   ...[variables]: TVariables extends Record<string, never> ? [] : [TVariables]
 ) {
   const response = await fetch(SUBGRAPH_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/graphql-response+json",
-    },
-    body: JSON.stringify(
-      { query, variables },
-      (_, value) => typeof value === "bigint" ? String(value) : value,
-    ),
-  });
-
-  if (!response.ok) {
-    throw new Error("Error while fetching data from the subgraph");
-  }
-
-  const result = await response.json();
-
-  if (!result.data) {
-    throw new Error("Invalid response from the subgraph");
-  }
-
-  return result.data as TResult;
-}
-
-export async function graphQueryServerSide<TResult, TVariables>(
-  query: TypedDocumentString<TResult, TVariables>,
-  ...[variables]: TVariables extends Record<string, never> ? [] : [TVariables]
-) {
-  const response = await fetch(SUBGRAPH_URL_SERVER, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
