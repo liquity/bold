@@ -174,7 +174,7 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
                 key="start"
                 value={slippageRefund.data}
                 suffix={` ${collToken.name}`}
-                format="4diff"
+                format="4z"
               />,
               collPrice.data && (
                 <Amount

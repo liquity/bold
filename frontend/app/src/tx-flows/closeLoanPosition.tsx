@@ -120,7 +120,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
                 key="start"
                 value={slippageRefund.data}
                 suffix=" BOLD"
-                format="4diff"
+                format="2z"
               />,
             ]}
           />
