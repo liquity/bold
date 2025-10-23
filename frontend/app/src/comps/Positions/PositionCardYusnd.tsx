@@ -158,7 +158,7 @@ export function PositionCardYusnd({
                       value={yusnd}
                       format={2}
                     />
-                    <TokenIcon size="mini" symbol="YUSND" />
+                    <TokenIcon size="mini" symbol="YUSND" title="Yield-bearing USND optimized by Yearn." />
                   </div>
                 </div>
               }
