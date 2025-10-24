@@ -8,6 +8,7 @@ import "./TestContracts/CollateralRegistryTester.sol";
 import "../src/MultiTroveGetter.sol";
 import "../src/Interfaces/IMultiTroveGetter.sol";
 import "../src/HintHelpers.sol";
+import {BoldToken} from "../src/BoldToken.sol";
 
 contract BasicOps is DevTestSetup {
     function testOpenTroveFailsWithoutAllowance() public {
@@ -378,5 +379,36 @@ contract BasicOps is DevTestSetup {
 
         vm.expectRevert();
         hintHelpers.predictOpenTroveUpfrontFee(2, 100e18, 1000e18);
+    }
+
+    function testUpdateBranchAddressesInBoldToken() public {
+        IERC20Metadata[] memory tokens = new IERC20Metadata[](2);
+        tokens[0] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        tokens[1] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        ITroveManager[] memory troveManagers = new ITroveManager[](2);
+        troveManagers[0] = new TroveManager(addressesRegistry, 0);
+        troveManagers[1] = new TroveManager(addressesRegistry, 1);
+
+        ITroveManager newTroveManager = new TroveManager(addressesRegistry, 2);
+
+        // Deploy a new collateral registry
+        BoldToken newBoldToken = new BoldToken(address(0x123));
+        CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(newBoldToken, tokens, troveManagers, address(0x123));
+
+        vm.startPrank(address(0x123));
+        newBoldToken.setCollateralRegistry(address(myCollateralRegistry));
+        vm.stopPrank();
+
+        vm.startPrank(address(0x123));
+        vm.expectEmit();
+        emit BoldToken.TroveManagerAddressAdded(address(newTroveManager));
+
+        myCollateralRegistry.setBranchAddressesInBoldToken(
+            address(newTroveManager), 
+            address(stabilityPool), 
+            address(borrowerOperations), 
+            address(activePool)
+        );
+        vm.stopPrank();
     }
 }
