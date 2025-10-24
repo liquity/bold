@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {MIN_DEBT} from "../src/Dependencies/Constants.sol";
 import {IAddressesRegistry} from "../src/Interfaces/IAddressesRegistry.sol";
 import {IRedemptionHelper} from "../src/Interfaces/IRedemptionHelper.sol";
@@ -20,6 +21,8 @@ function array(uint256 a, uint256 b, uint256 c) pure returns (uint256[] memory r
 }
 
 contract RedemptionHelperTest is DevTestSetup {
+    using Strings for *;
+
     struct TroveParams {
         uint256 branchIdx;
         uint256 collRatio;
@@ -172,17 +175,18 @@ contract RedemptionHelperTest is DevTestSetup {
         TroveParams[NUM_TROVES] memory troves,
         uint256[NUM_BRANCHES] memory spBold,
         uint256[NUM_BRANCHES] memory totalCollRatio,
-        uint256 redeem,
+        uint256 attemptedRedeemedBold,
         uint256 maxIterations
     ) external {
         openTroves(A, troves);
         provideToSPs(A, spBold);
         setTotalCollRatio(totalCollRatio);
 
-        redeem = _bound(redeem, 1, boldToken.balanceOf(A));
+        attemptedRedeemedBold = _bound(attemptedRedeemedBold, 1, boldToken.balanceOf(A));
         maxIterations = _bound(maxIterations, 0, NUM_TROVES);
 
-        (IRedemptionHelper.SimulationContext[] memory sim,) = redemptionHelper.simulateRedemption(redeem, maxIterations);
+        (IRedemptionHelper.SimulationContext[] memory sim,) =
+            redemptionHelper.simulateRedemption(attemptedRedeemedBold, maxIterations);
 
         uint256 expectedRedeemedBold = 0;
         uint256 expectedMaxIterations = 0;
@@ -192,12 +196,12 @@ contract RedemptionHelperTest is DevTestSetup {
             expectedMaxIterations = Math.max(expectedMaxIterations, sim[i].iterations);
         }
 
-        assertLeDecimal(expectedRedeemedBold, redeem, 18, "expectedRedeemedBold > redeem");
+        assertLeDecimal(expectedRedeemedBold, attemptedRedeemedBold, 18, "expectedRedeemedBold > attemptedRedeemedBold");
         if (maxIterations != 0) assertLe(expectedMaxIterations, maxIterations, "expectedMaxIterations > maxIterations");
 
         uint256 boldBalanceBefore = boldToken.balanceOf(A);
         vm.prank(A);
-        collateralRegistry.redeemCollateral(redeem, expectedMaxIterations, 1 ether);
+        collateralRegistry.redeemCollateral(attemptedRedeemedBold, expectedMaxIterations, 1 ether);
         uint256 actualRedeemedBold = boldBalanceBefore - boldToken.balanceOf(A);
 
         // There can be a tiny difference between the simulated and actually redeemed BOLD amounts,
@@ -209,5 +213,53 @@ contract RedemptionHelperTest is DevTestSetup {
         assertApproxEqAbsDecimal(
             actualRedeemedBold, expectedRedeemedBold, 2, 18, "actualRedeemedBold != expectedRedeemedBold"
         );
+    }
+
+    function test_TruncateRedemption(
+        TroveParams[NUM_TROVES] memory troves,
+        uint256[NUM_BRANCHES] memory spBold,
+        uint256[NUM_BRANCHES] memory totalCollRatio,
+        uint256 attemptedRedeemedBold,
+        uint256 maxIterations
+    ) external {
+        openTroves(A, troves);
+        provideToSPs(A, spBold);
+        setTotalCollRatio(totalCollRatio);
+
+        attemptedRedeemedBold = _bound(attemptedRedeemedBold, 1, boldToken.balanceOf(A));
+        maxIterations = _bound(maxIterations, 0, NUM_TROVES);
+
+        (uint256 truncatedRedeemedBold, uint256 feePct, IRedemptionHelper.Redeemed[] memory expectedRedeemed) =
+            redemptionHelper.truncateRedemption(attemptedRedeemedBold, maxIterations);
+        vm.assume(truncatedRedeemedBold > 0);
+
+        assertLeDecimal(
+            truncatedRedeemedBold, attemptedRedeemedBold, 18, "truncatedRedeemedBold > attemptedRedeemedBold"
+        );
+
+        uint256 boldBalanceBefore = boldToken.balanceOf(A);
+        uint256[] memory collBalanceBefore = new uint256[](branch.length);
+        for (uint256 i = 0; i < branch.length; ++i) {
+            collBalanceBefore[i] = branch[i].collToken.balanceOf(A);
+        }
+
+        vm.prank(A);
+        collateralRegistry.redeemCollateral(truncatedRedeemedBold, maxIterations, feePct);
+
+        uint256 actualRedeemedBold = boldBalanceBefore - boldToken.balanceOf(A);
+        assertApproxEqAbsDecimal(
+            actualRedeemedBold, truncatedRedeemedBold, 1, 18, "actualRedeemedBold != truncatedRedeemedBold"
+        );
+
+        for (uint256 i = 0; i < branch.length; ++i) {
+            uint256 actualRedeemedColl = branch[i].collToken.balanceOf(A) - collBalanceBefore[i];
+
+            assertEqDecimal(
+                actualRedeemedColl,
+                expectedRedeemed[i].coll,
+                18,
+                string.concat("actualRedeemedColl != expectedRedeemed[", i.toString(), "].coll")
+            );
+        }
     }
 }
