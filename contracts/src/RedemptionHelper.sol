@@ -59,6 +59,9 @@ contract RedemptionHelper is IRedemptionHelper {
             if (branch[i].redeemable) totalProportions += branch[i].proportion;
         }
 
+        // CS-BOLD-013: truncate redemption if it would exceed total unbacked debt
+        if (0 < totalProportions && totalProportions < _bold) _bold = totalProportions;
+
         // Fallback: proportional to total debt
         if (totalProportions == 0) {
             for (uint256 i = 0; i < numBranches; ++i) {
