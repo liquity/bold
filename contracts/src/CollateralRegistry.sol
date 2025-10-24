@@ -486,6 +486,6 @@ contract CollateralRegistry is ICollateralRegistry {
         address _borrowerOperationsAddress,
         address _activePoolAddress
     ) external onlyGovernor {
-        boldToken.setBranchAddresses(_troveManagerAddress, _stabilityPoolAddress, _borrowerOperationsAddress, _activePoolAddress);
+        boldToken.setBranchAddressesViaCollateralRegistry(_troveManagerAddress, _stabilityPoolAddress, _borrowerOperationsAddress, _activePoolAddress);
     }
 }
