@@ -389,22 +389,36 @@ contract BasicOps is DevTestSetup {
         troveManagers[0] = new TroveManager(addressesRegistry, 0);
         troveManagers[1] = new TroveManager(addressesRegistry, 1);
 
+        address governor = makeAddr("governor");
+
         ITroveManager newTroveManager = new TroveManager(addressesRegistry, 2);
 
         // Deploy a new collateral registry
-        BoldToken newBoldToken = new BoldToken(address(0x123));
-        CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(newBoldToken, tokens, troveManagers, address(0x123));
+        BoldToken newBoldToken = new BoldToken(governor);
+        CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(newBoldToken, tokens, troveManagers, governor);
 
-        vm.startPrank(address(0x123));
+        vm.startPrank(governor);
         newBoldToken.setCollateralRegistry(address(myCollateralRegistry));
         vm.stopPrank();
 
-        vm.startPrank(address(0x123));
+        vm.startPrank(governor);
         vm.expectEmit();
         emit BoldToken.TroveManagerAddressAdded(address(newTroveManager));
 
         myCollateralRegistry.setBranchAddressesInBoldToken(
             address(newTroveManager), 
+            address(stabilityPool), 
+            address(borrowerOperations), 
+            address(activePool)
+        );
+        vm.stopPrank();
+
+        ITroveManager newTroveManager2 = new TroveManager(addressesRegistry, 3);
+
+        vm.startPrank(makeAddr("notCollateralRegistry"));
+        vm.expectRevert("BoldToken: Caller is not the CollateralRegistry");
+        newBoldToken.setBranchAddressesViaCollateralRegistry(
+            address(newTroveManager2), 
             address(stabilityPool), 
             address(borrowerOperations), 
             address(activePool)
