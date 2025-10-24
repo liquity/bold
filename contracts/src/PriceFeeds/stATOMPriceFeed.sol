@@ -1,13 +1,12 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity 0.8.24;
 
-
 import "./TokenPriceFeedBase.sol";
 
-contract SAGAPriceFeed is TokenPriceFeedBase {
-   constructor(address _owner, address _sagaUsdOracleAddress, uint256 _sagaUsdStalenessThreshold)
-        TokenPriceFeedBase(_owner, _sagaUsdOracleAddress, _sagaUsdStalenessThreshold)
+contract stATOMPriceFeed is TokenPriceFeedBase {
+    constructor(address _owner, address _stAtomUsdOracleAddress, uint256 _stAtomUsdStalenessThreshold)
+        TokenPriceFeedBase(_owner, _stAtomUsdOracleAddress, _stAtomUsdStalenessThreshold)
     {
         _fetchPricePrimary();
 
@@ -25,7 +24,7 @@ contract SAGAPriceFeed is TokenPriceFeedBase {
     }
 
     function fetchRedemptionPrice() external returns (uint256, bool) {
-        // Use same price for redemption as all other ops in SAGA branch
+        // Use same price for redemption as all other ops in stATOM branch
         return fetchPrice();
     }
 
@@ -40,12 +39,10 @@ contract SAGAPriceFeed is TokenPriceFeedBase {
         assert(priceSource == PriceSource.primary);
         (uint256 tokenUsdPrice, bool tokenUsdOracleDown) = _getOracleAnswer(tokenUsdOracle);
 
-        // If the SAGA-USD Chainlink response was invalid in this transaction, return the last good SAGA-USD price calculated
+        // If the stATOM-USD tellor response was invalid in this transaction, return the last good price calculated
         if (tokenUsdOracleDown) return (_shutDownAndSwitchToLastGoodPrice(address(tokenUsdOracle.aggregator)), true);
 
         lastGoodPrice = tokenUsdPrice;
         return (tokenUsdPrice, false);
     }
-}   
-
-
+}

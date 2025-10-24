@@ -29,6 +29,7 @@ import "src/PriceFeeds/WETHPriceFeed.sol";
 import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/PriceFeeds/TBTCPriceFeed.sol";
 import "src/PriceFeeds/SAGAPriceFeed.sol";
+import "src/PriceFeeds/stATOMPriceFeed.sol";
 import "src/CollateralRegistry.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "test/TestContracts/MetadataDeployment.sol";
@@ -83,26 +84,32 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // tapping disallowed
     IWETH WETH;
     IERC20Metadata WRAPPED_SAGA;
+    IERC20Metadata WRAPPED_STATOM;
     // IERC20Metadata USDC;
     // address WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address RETH_ADDRESS = 0x679121f168488185eca6Aaa3871687FF6d38Edb6; // TODO: Change to CORRECT ADDRESS
     address TBTC_ADDRESS = 0xa740E6758e309840ffFfe58f749F018386A3b70b; // TODO: Change to CORRECT ADDRESS
     address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE; // TODO: This is 6 decimals, not 18 decimals. Either delete or get 18 decimals wrapped token of SAGA.
+    address STATOM_ADDRESS = 0xDaF9d9032b5d5C92528d6aFf6a215514B7c21056; //18 decimals.
+
+    //oracles
     address ETH_ORACLE_ADDRESS = 0x0cD65ca12F6c9b10254FABC0CC62d273ABbb3d84;
     address RETH_ORACLE_ADDRESS = 0x7B1be2C7B390A1FA29e07504f2a46A8Dc07eD9F4;
-    // address STETH_ORACLE_ADDRESS = address(0);
-    // TODO: Change these values
     address TBTC_ORACLE_ADDRESS = 0x9494Ed94280E9A8c5b52B1cDa9Ac9D21f6307135;
     address BTC_ORACLE_ADDRESS = 0x4a397383fE5FbE9AB33879869153fF40ea68815F;
     address SAGA_ORACLE_ADDRESS = 0xaA43df021149C34ca3654F387C9aeB9AcABa012a;
+    address STATOM_ORACLE_ADDRESS = 0x457fC8f0D3E7319eb078E076afD3F49120Bd0c4a; //18 decimals.
+    
     ///////////////////////////////
+    //staleness thresholds
     uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
     // uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
     uint256 RETH_ETH_STALENESS_THRESHOLD = 25 hours;
-    // TODO: Change these values
     uint256 TBTC_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 BTC_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 SAGA_USD_STALENESS_THRESHOLD = 25 hours;
+    uint256 STATOM_USD_STALENESS_THRESHOLD = 25 hours;
+
 
     bytes32 SALT;
     address deployer;
@@ -297,8 +304,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             SCR: SCR_SETH,
             BCR: BCR_ALL,
             debtLimit: TBTC_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_BTC,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_BTC
         });
         
         // SAGA
@@ -308,8 +315,19 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             SCR: SCR_SETH,
             BCR: BCR_ALL,
             debtLimit: SAGA_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SAGA,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SAGA
+        });
+
+        // stATOM
+        troveManagerParamsArray[4] = TroveManagerParams({
+            CCR: CCR_SETH,
+            MCR: MCR_SETH,
+            SCR: SCR_SETH,
+            BCR: BCR_ALL,
+            debtLimit: STATOM_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_STATOM,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_STATOM
         });
 
         string[] memory collNames = new string[](NUM_BRANCHES - 1);
@@ -322,6 +340,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collSymbols[1] = "tBTC";
         collNames[2] = "Saga";
         collSymbols[2] = "SAGA";
+        collNames[3] = "stATOM";
+        collSymbols[3] = "stATOM";
 
         // DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
         //     epochStart: epochStart,
@@ -521,6 +541,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // vars.collaterals[4] = IERC20Metadata(SAGA_ADDRESS);
             WRAPPED_SAGA = new WrappedToken(IERC20Metadata(SAGA_ADDRESS));
             vars.collaterals[3] = WRAPPED_SAGA;
+
+            // stATOM
+            vars.collaterals[4] = IERC20Metadata(STATOM_ADDRESS);
+
         } else {
             // Sepolia
             // Use WETH as collateral for the first branch
@@ -755,7 +779,16 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                     SAGA_ORACLE_ADDRESS,
                     SAGA_USD_STALENESS_THRESHOLD
                 );
-            } else {
+            }  else if (_collTokenAddress == STATOM_ADDRESS) {
+                // stATOM
+                return new stATOMPriceFeed(
+                    deployer,
+                    STATOM_ORACLE_ADDRESS,
+                    STATOM_USD_STALENESS_THRESHOLD
+                );
+            }
+            
+            else {
                 revert("Invalid collateral token");
             }
         }
@@ -954,6 +987,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_TBTC);
         } else if (address(_collToken) == address(WRAPPED_SAGA)) {
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_SAGA);
+        } else if (address(_collToken) == STATOM_ADDRESS) {
+            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_STATOM);
         } else {
             revert("Invalid collateral token");
         }
