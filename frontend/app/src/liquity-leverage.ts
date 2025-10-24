@@ -157,12 +157,10 @@ export function useSlippageRefund(
   branchId: BranchId,
   account: string,
   steps: FlowStep[] | null,
+  isCloseLoanToCollateral = false,
 ) {
   const wagmiConfig = useWagmiConfig();
   const branch = getBranch(branchId);
-
-  // Used when checking with "closeLoanPosition" to see if the loan is being closed to collateral and thus does not require approval of BOLD
-  const isCloseLoanToCollateral = !steps?.some((step) => step.id === "approveBold");
 
   // Find the last confirmed step that might have a slippage refund
   const relevantStep = steps

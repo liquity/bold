@@ -53,7 +53,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
   Details({ request, account, steps }) {
     const { loan, repayWithCollateral } = request;
     const collateral = getCollToken(loan.branchId);
-    const slippageRefund = useSlippageRefund(loan.branchId, account, steps);
+    const slippageRefund = useSlippageRefund(loan.branchId, account, steps, !!repayWithCollateral);
 
     const amountToRepay = repayWithCollateral
       ? repayWithCollateral.flashLoanAmount
@@ -110,8 +110,8 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
               >
                 Slippage refund
                 <InfoTooltip heading="Slippage refund">
-                  Excess collateral was needed to create the desired exposure and accommodate for slippage. This is the
-                  left over amount that has been refunded to your wallet.
+                  Excess BOLD was acquired to repay your debt and accommodate for slippage. This is the left over amount
+                  that has been refunded to your wallet.
                 </InfoTooltip>
               </div>
             }
@@ -120,7 +120,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
                 key="start"
                 value={slippageRefund.data}
                 suffix=" BOLD"
-                format="4diff"
+                format="2z"
               />,
             ]}
           />
