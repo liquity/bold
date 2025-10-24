@@ -434,7 +434,7 @@ contract TestDeployer is MetadataDeployment {
         );
         addresses.troveManager = _troveManagerAddress;
         addresses.troveNFT = getAddress(
-            address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry), GOVERNANCE_ADDRESS), SALT
+            address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
         );
         addresses.stabilityPool = getAddress(
             address(this), getBytecode(type(StabilityPool).creationCode, address(contracts.addressesRegistry)), SALT
