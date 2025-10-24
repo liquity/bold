@@ -110,12 +110,14 @@ contract RedemptionHelper is IRedemptionHelper {
         external
         returns (uint256 truncatedBold, uint256 feePct, Redeemed[] memory redeemed)
     {
-        truncatedBold = _bold;
         (SimulationContext[] memory branch, uint256 totalProportions) =
             simulateRedemption(_bold, _maxIterationsPerCollateral);
 
+        if (totalProportions == 0) return (0, 0, redeemed);
+
+        truncatedBold = _bold;
         for (uint256 i = 0; i < numBranches; ++i) {
-            if (branch[i].redeemedBold < branch[i].attemptedBold) {
+            if (branch[i].redeemable && branch[i].proportion > 0) {
                 uint256 extrapolatedBold = branch[i].redeemedBold * totalProportions / branch[i].proportion;
                 if (extrapolatedBold < truncatedBold) truncatedBold = extrapolatedBold;
             }
