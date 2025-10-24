@@ -552,6 +552,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             r.contractsArray[vars.i] = vars.contracts;
         }
 
+        //also calls renounceOwnership
         r.boldToken.setCollateralRegistry(address(r.collateralRegistry));
 
         // exchange helpers
