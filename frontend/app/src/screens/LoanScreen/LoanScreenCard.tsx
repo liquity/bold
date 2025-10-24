@@ -706,8 +706,9 @@ function LoanCard(props: {
                       <GridItem label="Liquidation price">
                         {loan.priceAtLiquidation ? `$${fmtnum(loan.priceAtLiquidation)}` : "−"}
                       </GridItem>
-                      <GridItem label={collateralWasClaimed ? "Surplus collateral (claimed)" : "Claimable collateral"}>
-                        {loan.collSurplus ? fmtnum(loan.collSurplus) : "−"} {collateral.name}
+                      <GridItem label="Remaining collateral">
+                        {collateralWasClaimed ? "0" : loan.collSurplus ? fmtnum(loan.collSurplus) : "−"}{" "}
+                        {collateral.name}
                       </GridItem>
                     </>
                   )

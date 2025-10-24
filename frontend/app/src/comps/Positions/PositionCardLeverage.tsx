@@ -29,6 +29,7 @@ export function PositionCardLeverage({
   liquidatedDebt,
   collSurplus,
   priceAtLiquidation,
+  collSurplusOnChain,
 }:
   & Pick<
     PositionLoanCommitted,
@@ -45,7 +46,7 @@ export function PositionCardLeverage({
     | "collSurplus"
     | "priceAtLiquidation"
   >
-  & { statusTag?: ReactNode })
+  & { statusTag?: ReactNode; collSurplusOnChain: dn.Dnum | null })
 {
   const token = getCollToken(branchId);
   if (!token) {
@@ -118,6 +119,7 @@ export function PositionCardLeverage({
         <PositionCardSecondaryContent
           status={status}
           collSurplus={collSurplus}
+          collSurplusOnChain={collSurplusOnChain}
           liquidatedColl={liquidatedColl}
           liquidatedDebt={liquidatedDebt}
           priceAtLiquidation={priceAtLiquidation}

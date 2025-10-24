@@ -12,6 +12,7 @@ import { CardRow, CardRows } from "./shared";
 type PositionCardSecondaryContentProps = {
   status: TroveStatus;
   collSurplus: Dnum | null;
+  collSurplusOnChain: Dnum | null;
   liquidatedColl: Dnum | null;
   liquidatedDebt: Dnum | null;
   priceAtLiquidation: Dnum | null;
@@ -29,6 +30,7 @@ type PositionCardSecondaryContentProps = {
 export function PositionCardSecondaryContent({
   status,
   collSurplus,
+  collSurplusOnChain,
   liquidatedColl,
   liquidatedDebt,
   priceAtLiquidation,
@@ -43,7 +45,7 @@ export function PositionCardSecondaryContent({
     liquidatedColl: "Liq. coll.",
     liquidatedDebt: "Liq. debt",
     liquidationPrice: "Liq. price",
-    claimableCollateral: "Surplus coll.",
+    claimableCollateral: "Remaining coll.",
   };
 
   const {
@@ -54,6 +56,10 @@ export function PositionCardSecondaryContent({
   } = labels;
 
   if (status === "liquidated" && collSurplus && dn.gt(collSurplus, 0)) {
+    const collateralWasClaimed = collSurplus && dn.gt(collSurplus, 0)
+      && collSurplusOnChain !== null
+      && dn.eq(collSurplusOnChain, 0);
+
     return (
       <CardRows>
         <CardRow
@@ -151,7 +157,7 @@ export function PositionCardSecondaryContent({
                   color: "positionContent",
                 })}
               >
-                {collSurplus ? fmtnum(collSurplus) : "−"} {token.name}
+                {collateralWasClaimed ? "0" : collSurplus ? fmtnum(collSurplus) : "−"} {token.name}
               </div>
             </div>
           }

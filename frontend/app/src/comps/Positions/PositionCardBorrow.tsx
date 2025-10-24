@@ -27,6 +27,7 @@ export function PositionCardBorrow({
   liquidatedDebt,
   collSurplus,
   priceAtLiquidation,
+  collSurplusOnChain,
 }:
   & Pick<
     PositionLoanCommitted,
@@ -43,7 +44,7 @@ export function PositionCardBorrow({
     | "collSurplus"
     | "priceAtLiquidation"
   >
-  & { statusTag?: ReactNode })
+  & { statusTag?: ReactNode; collSurplusOnChain: dn.Dnum | null })
 {
   const token = getCollToken(branchId);
   const collateralPriceUsd = usePrice(token?.symbol ?? null);
@@ -114,6 +115,7 @@ export function PositionCardBorrow({
         <PositionCardSecondaryContent
           status={status}
           collSurplus={collSurplus}
+          collSurplusOnChain={collSurplusOnChain}
           liquidatedColl={liquidatedColl}
           liquidatedDebt={liquidatedDebt}
           priceAtLiquidation={priceAtLiquidation}

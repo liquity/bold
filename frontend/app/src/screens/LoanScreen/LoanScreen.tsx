@@ -488,9 +488,9 @@ function ClaimCollateralSurplus({
           The collateral has been deducted from this position.
           {isOwner && (
             <>
-              You can claim back the excess collateral from your liquidated {collToken.name}{" "}
-              loan. If you have multiple liquidated positions on the same branch, you can claim the surplus from all of
-              them at once.
+              You can claim back the remaining collateral from your liquidated {collToken.name}{" "}
+              loan. If you have multiple liquidated positions on the same branch, you can claim the remaining collateral
+              from all of them at once.
             </>
           )}
         </div>
@@ -567,7 +567,7 @@ function ClaimCollateralSurplus({
                   flowId: "claimCollateralSurplus",
                   backLink: [`/loan?id=${loan.branchId}:${loan.troveId}`, "Back to loan"],
                   successLink: ["/", "Go to the dashboard"],
-                  successMessage: "Collateral surplus has been claimed successfully.",
+                  successMessage: "Remaining collateral has been claimed successfully.",
                   borrower: accountAddress,
                   branchId: loan.branchId,
                   collSurplus,

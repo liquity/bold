@@ -160,11 +160,11 @@ function PositionsGroup({
   const collSurplusQueries = useCollateralSurplusByBranches(accountAddress, liquidatedBranchIds);
 
   const collSurplusMap = useMemo(() => {
-    if (!collSurplusQueries.data) return new Map<BranchId, boolean>();
+    if (!collSurplusQueries.data) return new Map<BranchId, dn.Dnum>();
 
-    const map = new Map<BranchId, boolean>();
+    const map = new Map<BranchId, dn.Dnum>();
     for (const item of collSurplusQueries.data) {
-      map.set(item.branchId, dn.gt(item.surplus, 0));
+      map.set(item.branchId, item.surplus);
     }
     return map;
   }, [collSurplusQueries.data]);
@@ -174,7 +174,8 @@ function PositionsGroup({
     const withoutClaimable: PositionLoanCommitted[] = [];
 
     for (const position of liquidatedPositions) {
-      if (collSurplusMap.get(position.branchId)) {
+      const surplus = collSurplusMap.get(position.branchId);
+      if (surplus && dn.gt(surplus, 0)) {
         withClaimable.push(position);
       } else {
         withoutClaimable.push(position);
@@ -202,10 +203,19 @@ function PositionsGroup({
         topLevelPositions.map((position, index) => (
           match(position)
             .returnType<[number, ReactNode]>()
-            .with({ type: P.union("borrow", "multiply") }, (p) => [
-              index,
-              <PositionCardLoan key={index} {...p} />,
-            ])
+            .with({ type: P.union("borrow", "multiply") }, (p) => {
+              if (p.troveId !== null) {
+                return [
+                  index,
+                  <PositionCardLoan
+                    key={index}
+                    {...p}
+                    collSurplusOnChain={collSurplusMap.get(p.branchId) ?? null}
+                  />,
+                ];
+              }
+              return [index, null];
+            })
             .with({ type: "earn" }, (p) => [
               index,
               <PositionCardEarn key={index} {...p} />,
@@ -240,7 +250,11 @@ function PositionsGroup({
   const liquidatedCards = liquidatedWithoutClaimable.map((position, index) => {
     return [
       index,
-      <PositionCardLoan key={`liquidated-${index}`} {...position} />,
+      <PositionCardLoan
+        key={`liquidated-${index}`}
+        {...position}
+        collSurplusOnChain={collSurplusMap.get(position.branchId) ?? null}
+      />,
     ] as [number, ReactNode];
   });
 
