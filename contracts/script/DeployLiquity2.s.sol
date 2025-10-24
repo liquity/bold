@@ -539,7 +539,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, GOVERNANCE_ADDRESS); // TODO: Replace null address with governor address
+        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, GOVERNANCE_ADDRESS); 
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
 
@@ -726,27 +726,33 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 return new WETHPriceFeed(ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD, _borroweOperationsAddress);
             } else if (_collTokenAddress == RETH_ADDRESS) {
                 // rETH
-                return new RETHPriceFeed(
+                RETHPriceFeed feed = new RETHPriceFeed(
                     deployer,
                     RETH_ORACLE_ADDRESS,
                     RETH_ETH_STALENESS_THRESHOLD
                 );
+                feed.setBorrowerOperations(_borroweOperationsAddress); //This also renounces the ownership of the feed.
+                return feed;
             } else if (_collTokenAddress == TBTC_ADDRESS) {
                 // tBTC
-                return new TBTCPriceFeed(
+                TBTCPriceFeed feed = new TBTCPriceFeed(
                     deployer,
                     TBTC_ORACLE_ADDRESS,
                     TBTC_ETH_STALENESS_THRESHOLD,
                     BTC_ORACLE_ADDRESS,
                     BTC_USD_STALENESS_THRESHOLD
                 );
+                feed.setBorrowerOperations(_borroweOperationsAddress);
+                return feed;
             } else if (_collTokenAddress == address(WRAPPED_SAGA)) {
                 // SAGA
-                return new SAGAPriceFeed(
+                SAGAPriceFeed feed = new SAGAPriceFeed(
                     deployer,
                     SAGA_ORACLE_ADDRESS,
                     SAGA_USD_STALENESS_THRESHOLD
                 );
+                feed.setBorrowerOperations(_borroweOperationsAddress);
+                return feed;
             } else {
                 revert("Invalid collateral token");
             }
