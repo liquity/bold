@@ -47,6 +47,7 @@ export function LoanScreenCard({
   onLeverageModeChange,
   onRetry,
   troveId,
+  collSurplusOnChain,
 }: {
   collateral: CollateralToken | null;
   collPriceUsd: Dnum | null;
@@ -56,6 +57,7 @@ export function LoanScreenCard({
   onLeverageModeChange: (mode: LoanMode) => void;
   onRetry: () => void;
   troveId: TroveId;
+  collSurplusOnChain: Dnum | null;
 }) {
   if (loadingState === "success" && !collPriceUsd) {
     loadingState = "loading";
@@ -209,6 +211,7 @@ export function LoanScreenCard({
               onLeverageModeChange={onLeverageModeChange}
               redemptionRisk={redemptionRisk.data ?? null}
               troveId={troveId}
+              collSurplusOnChain={collSurplusOnChain}
             />
           );
         })}
@@ -331,6 +334,7 @@ function LoanCard(props: {
   troveId: TroveId;
   nftUrl: string | null;
   onLeverageModeChange: (mode: LoanMode) => void;
+  collSurplusOnChain: Dnum | null;
 }) {
   const cardTransition = useTransition(props, {
     keys: (props) => props.mode,
@@ -366,7 +370,8 @@ function LoanCard(props: {
   });
 
   const copyTransition = useFlashTransition();
-  const closedOrLiquidated = props.loan.status === "liquidated" || props.loan.status === "closed";
+  const liquidated = props.loan.status === "liquidated";
+  const closed = props.loan.status === "closed";
 
   return (
     <div
@@ -390,8 +395,17 @@ function LoanCard(props: {
         redemptionRisk,
         troveId,
         nftUrl,
+        collSurplusOnChain,
       }) => {
         const title = mode === "multiply" ? "Multiply" : "BOLD loan";
+
+        const collSurplusFromSubgraph = loan.collSurplus;
+        const collSurplusCurrently = collSurplusOnChain;
+
+        const collateralWasClaimed = collSurplusFromSubgraph && dn.gt(collSurplusFromSubgraph, 0)
+          && collSurplusCurrently !== null
+          && dn.eq(collSurplusCurrently, 0);
+
         return (
           <a.div
             className={css({
@@ -432,7 +446,7 @@ function LoanCard(props: {
                     mode={mode}
                     title={title}
                     titleFull={`${title}: ${troveId}`}
-                    statusTag={loan.status === "liquidated"
+                    statusTag={liquidated
                       ? <LoanStatusTag status="liquidated" />
                       : loan.status === "redeemed" && "recordedDebt" in loan
                       ? (
@@ -680,7 +694,25 @@ function LoanCard(props: {
                   gridTemplateColumns: "repeat(2, 1fr)",
                 }}
               >
-                {closedOrLiquidated
+                {liquidated
+                  ? (
+                    <>
+                      <GridItem label="Liquidated collateral">
+                        {loan.liquidatedColl ? fmtnum(loan.liquidatedColl) : "−"} {collateral.name}
+                      </GridItem>
+                      <GridItem label="Liquidated debt">
+                        {loan.liquidatedDebt ? fmtnum(loan.liquidatedDebt) : "−"} BOLD
+                      </GridItem>
+                      <GridItem label="Liquidation price">
+                        {loan.priceAtLiquidation ? `$${fmtnum(loan.priceAtLiquidation)}` : "−"}
+                      </GridItem>
+                      <GridItem label="Remaining collateral">
+                        {collateralWasClaimed ? "0" : loan.collSurplus ? fmtnum(loan.collSurplus) : "−"}{" "}
+                        {collateral.name}
+                      </GridItem>
+                    </>
+                  )
+                  : closed
                   ? (
                     <>
                       <GridItem label={mode === "multiply" ? "Exposure" : "Collateral"}>N/A</GridItem>
