@@ -15,11 +15,6 @@ import {DevTestSetup} from "./TestContracts/DevTestSetup.sol";
 uint256 constant NUM_BRANCHES = 3;
 uint256 constant NUM_TROVES = 20;
 
-function array(uint256 a, uint256 b, uint256 c) pure returns (uint256[] memory r) {
-    r = new uint256[](3);
-    (r[0], r[1], r[2]) = (a, b, c);
-}
-
 contract RedemptionHelperTest is DevTestSetup {
     using Strings for *;
 
@@ -268,5 +263,104 @@ contract RedemptionHelperTest is DevTestSetup {
                 string.concat("actualRedeemedColl != expectedRedeemed[", i.toString(), "].coll")
             );
         }
+    }
+
+    function test_RedeemCollateral_RefundsRemainingBold() external {
+        skip(100 days);
+
+        for (uint256 i = 0; i < branch.length - 1; ++i) {
+            openTrove(i, A, 0, 2 ether, 10_000 ether, 0.05 ether);
+        }
+
+        // All branches have the same unbacked portions,
+        // but on the last branch only 2K can be redeemed in 1 iteration
+        openTrove(branch.length - 1, A, 0, 2 ether, 2_000 ether, 0.05 ether);
+        openTrove(branch.length - 1, A, 1, 2 ether, 8_000 ether, 0.06 ether);
+
+        uint256 boldBalanceBefore = boldToken.balanceOf(A);
+        uint256 attemptedRedeemedBold = branch.length * 3_000 ether;
+
+        vm.startPrank(A);
+        boldToken.approve(address(redemptionHelper), attemptedRedeemedBold);
+        redemptionHelper.redeemCollateral(attemptedRedeemedBold, 1, 1 ether, new uint256[](branch.length));
+        vm.stopPrank();
+
+        uint256 actualRedeemedBold = boldBalanceBefore - boldToken.balanceOf(A);
+        assertEqDecimal(actualRedeemedBold, attemptedRedeemedBold - 1_000 ether, 18, "actualRedeemedBold");
+        assertEqDecimal(boldToken.balanceOf(address(redemptionHelper)), 0, 18, "boldToken.balanceOf(redemptionHelper)");
+    }
+
+    function test_RedeemCollateral_ForwardsRedeemedColl() external {
+        skip(100 days);
+
+        for (uint256 i = 0; i < branch.length; ++i) {
+            openTrove(i, A, 0, 2 ether, 10_000 ether, 0.05 ether);
+        }
+
+        uint256[] memory collBalanceBefore = new uint256[](branch.length);
+        for (uint256 i = 0; i < branch.length; ++i) {
+            collBalanceBefore[i] = branch[i].collToken.balanceOf(A);
+        }
+
+        uint256 redeemedBold = branch.length * 1_000 ether; // a tenth of the supply
+
+        vm.startPrank(A);
+        boldToken.approve(address(redemptionHelper), redeemedBold);
+        redemptionHelper.redeemCollateral(redeemedBold, 1, 1 ether, new uint256[](branch.length));
+        vm.stopPrank();
+
+        for (uint256 i = 0; i < branch.length; ++i) {
+            uint256 actualRedeemedColl = branch[i].collToken.balanceOf(A) - collBalanceBefore[i];
+
+            assertApproxEqAbsDecimal(
+                actualRedeemedColl,
+                1_000 ether * 0.895 ether / branch[i].priceFeed.getPrice(),
+                1,
+                18,
+                "actualRedeemedColl"
+            );
+
+            assertEqDecimal(
+                branch[i].collToken.balanceOf(address(redemptionHelper)), 0, 18, "collToken.balanceOf(redemptionHelper)"
+            );
+        }
+    }
+
+    function test_RedeemCollateral_RevertsWhenRedeemedCollLtMin() external {
+        skip(100 days);
+
+        for (uint256 i = 0; i < branch.length; ++i) {
+            // Use the same price on each branch for simplicity
+            branch[i].priceFeed.setPrice(1_000 ether);
+            openTrove(i, A, 0, 2 ether, 10_000 ether, 0.05 ether);
+        }
+
+        uint256 redeemedBold = branch.length * 1_000 ether; // a tenth of the supply
+
+        uint256[] memory minCollRedeemed = new uint256[](branch.length);
+        for (uint256 i = 0; i < branch.length; ++i) {
+            minCollRedeemed[i] = 0.895 ether;
+        }
+
+        vm.startPrank(A);
+        {
+            boldToken.approve(address(redemptionHelper), redeemedBold);
+
+            for (uint256 i = 0; i < branch.length; ++i) {
+                // Make one of the parameters too high
+                ++minCollRedeemed[i];
+
+                // This should cause the redemption to revert
+                vm.expectRevert("Insufficient collateral redeemed");
+                redemptionHelper.redeemCollateral(redeemedBold, 1, 1 ether, minCollRedeemed);
+
+                // Fix the parameter that was made too high
+                --minCollRedeemed[i];
+            }
+
+            // Should succeed now that all parameters are fixed
+            redemptionHelper.redeemCollateral(redeemedBold, 1, 1 ether, minCollRedeemed);
+        }
+        vm.stopPrank();
     }
 }
