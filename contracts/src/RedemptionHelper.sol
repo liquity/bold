@@ -118,7 +118,15 @@ contract RedemptionHelper is IRedemptionHelper {
         truncatedBold = _bold;
         for (uint256 i = 0; i < numBranches; ++i) {
             if (branch[i].redeemable && branch[i].proportion > 0) {
+                // Extrapolate how much the entire redeemed BOLD would
+                // have been if this branch was redeemed proportionally.
                 uint256 extrapolatedBold = branch[i].redeemedBold * totalProportions / branch[i].proportion;
+
+                // Normally this is no different from `_bold`, but can be less if the redemption on this branch
+                // terminated due to hitting the iteration limit. We're looking for the smallest extrapolated value,
+                // since that is the maximum amount of BOLD that can be redeemed proportionally within the given
+                // iteration limit. Any attempt to redeem more than this would result in a partial redemption, thus
+                // paying a higher redemption fee than necessary — since the fee is based on the attempted amount.
                 if (extrapolatedBold < truncatedBold) truncatedBold = extrapolatedBold;
             }
         }
