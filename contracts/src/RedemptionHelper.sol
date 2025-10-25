@@ -154,9 +154,9 @@ contract RedemptionHelper is IRedemptionHelper {
         collateralRegistry.redeemCollateral(_bold, _maxIterationsPerCollateral, _maxFeePct);
 
         for (uint256 i = 0; i < numBranches; ++i) {
-            branch[i].collRedeemed = branch[i].collToken.balanceOf(address(this)) - branch[i].collBalanceBefore;
-            require(branch[i].collRedeemed >= _minCollRedeemed[i], "Insufficient collateral redeemed");
-            if (branch[i].collRedeemed > 0) branch[i].collToken.safeTransfer(msg.sender, branch[i].collRedeemed);
+            uint256 collRedeemed = branch[i].collToken.balanceOf(address(this)) - branch[i].collBalanceBefore;
+            require(collRedeemed >= _minCollRedeemed[i], "Insufficient collateral redeemed");
+            if (collRedeemed > 0) branch[i].collToken.safeTransfer(msg.sender, collRedeemed);
         }
 
         uint256 boldRemaining = boldToken.balanceOf(address(this)) - boldBalanceBefore;
