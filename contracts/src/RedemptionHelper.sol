@@ -20,7 +20,6 @@ contract RedemptionHelper is IRedemptionHelper {
     struct RedemptionContext {
         IERC20 collToken;
         uint256 collBalanceBefore;
-        uint256 collRedeemed;
     }
 
     uint256 public immutable numBranches;
