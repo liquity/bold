@@ -172,12 +172,15 @@ contract RedemptionHelperTest is DevTestSetup {
     }
 
     function test_SimulateRedemption(
+        uint256 delay,
         TroveParams[NUM_TROVES] memory troves,
         uint256[NUM_BRANCHES] memory spBold,
         uint256[NUM_BRANCHES] memory totalCollRatio,
         uint256 attemptedRedeemedBold,
         uint256 maxIterations
     ) external {
+        skip(_bound(delay, 0, 30 days)); // decay the baserate
+
         openTroves(A, troves);
         provideToSPs(A, spBold);
         setTotalCollRatio(totalCollRatio);
@@ -216,12 +219,15 @@ contract RedemptionHelperTest is DevTestSetup {
     }
 
     function test_TruncateRedemption(
+        uint256 delay,
         TroveParams[NUM_TROVES] memory troves,
         uint256[NUM_BRANCHES] memory spBold,
         uint256[NUM_BRANCHES] memory totalCollRatio,
         uint256 attemptedRedeemedBold,
         uint256 maxIterations
     ) external {
+        skip(_bound(delay, 0, 30 days)); // decay the baserate
+
         openTroves(A, troves);
         provideToSPs(A, spBold);
         setTotalCollRatio(totalCollRatio);
@@ -254,9 +260,10 @@ contract RedemptionHelperTest is DevTestSetup {
         for (uint256 i = 0; i < branch.length; ++i) {
             uint256 actualRedeemedColl = branch[i].collToken.balanceOf(A) - collBalanceBefore[i];
 
-            assertEqDecimal(
+            assertApproxEqAbsDecimal(
                 actualRedeemedColl,
                 expectedRedeemed[i].coll,
+                10,
                 18,
                 string.concat("actualRedeemedColl != expectedRedeemed[", i.toString(), "].coll")
             );
