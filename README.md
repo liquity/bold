@@ -4,7 +4,7 @@ https://must.finance
 Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals and security features.
 
 ## Changes between Must Finance and Liquity:
-1. New collateral types and pricefeeds: FBTC, tBTC, SAGA, WETH, rETH.
+1. New collateral types and pricefeeds: tBTC, SAGA, WETH, stATOM.
 2. Ability to add and remove collateral branches via new admin funtions in the Collateral Registry.
 3. Governoring of more protocol parameters, such as fees, LTV requirements, minimum debt, minimum interest rate, and more.
 4. Removal of Liquity Governance in favor of a more manual incentive direction system.
@@ -12,10 +12,9 @@ Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals 
 
 ## PriceFeeds
 1. WETH
-2. rETH
-3. tBTC
-4. FBTC
-5. SAGA
+2. tBTC
+3. SAGA
+4. stATOM
 
 ## Branch Creation and Deletion
 1. Only governor is able to create and remove branches
@@ -165,7 +164,7 @@ Each collateral branch has a unique `uint branchId` that is used to get correct 
 
 - **Multi-collateral system.** The system now consists of a CollateralRegistry and multiple collateral branches. Each collateral branch is parameterized separately with its own Minimum Collateral Ratio (MCR), Critical Collateral Ratio (CCR) and Shutdown Collateral Ratio (SCR). Each collateral branch contains its own TroveManager and StabilityPool. Troves in a given branch only accept a single collateral (never mixed collateral). Liquidations of Troves in a given branch via SP offset are offset purely against the SP for that branch, and liquidation gains for SP depositors are always paid in a single collateral. Similarly, liquidations via redistribution split the collateral and debt across purely active Troves in that branch.
  
-- **Collateral choices.** The system will contain collateral branches for WETH and two LSTs: rETH and wstETH. It does not accept native ETH as collateral.
+- **Collateral choices.** The system contains collateral branches for WETH, tBTC, SAGA, and stATOM. It does not accept native ETH as collateral.
 
 - **User-set interest rates.** When a borrower opens a Trove, they choose their own annual interest rate. They may change their annual interest rate at any point. Simple (non-compounding) interest accrues on their debt continuously, and gets compounded discretely every time the Trove is touched. Aggregate accrued Trove debt is periodically minted as BOLD. 
 
@@ -307,7 +306,6 @@ Different PriceFeed contracts are needed for pricing collaterals on different br
 
 - `WSTETHPriceFeed` - Inherits `MainnetPriceFeedBase`. Fetches the STETH-USD price from a Chainlink push oracle, and computes WSTETH-USD price from the STETH-USD price the WSTETH-STETH exchange rate from the LST contract. Used to price collateral on a WSTETH branch.
 
-- `RETHPriceFeed` - Inherits `CompositePriceFeed` and fetches the specific RETH-ETH exchange rate from RocketPool’s RETHToken. Used to price collateral on a RETH branch.
 
 ## Public state-changing functions
 
@@ -987,7 +985,7 @@ If the borrower closes their Trove, this WETH is refunded.
 
 The collateral portion of the gas compensation is calculated at liquidation. It is the lesser of: 0.5% of the Trove’s collateral, or 2 units of the LST.
 
-That is, the max collateral that can be paid is 2 stETH on the stETH branch, 2 rETH on the rETH branch, etc.
+That is, the max collateral that can be paid is 2 units of the collateral token per branch (e.g., 2 tBTC on the tBTC branch, 2 stATOM on the stATOM branch, etc.).
 
 These two components are termed the **WETH gas compensation** and the **collateral gas compensation**, respectively.
 
@@ -1273,7 +1271,6 @@ Provisionally, v2 has been developed with the following collateral assets in min
 
 - WETH
 - WSTETH
-- RETH
 
 ## Oracles in Liquity v2
 
@@ -1296,14 +1293,11 @@ Otherwise, composite market oracles have been created which utilise the ETH-USD 
 
 LST-ETH canonical exchange rates are also used as sanity checks for the more vulnerable LSTs (i.e. lower liquidity/volume).
 
-Here are the oracles and price calculations for each PriceFeed during normal functioning. Note that for WSTETH and RETH, redemptions have separate price calculations from other operations.
 
 
 | Collateral | Primary Price                                    | Rationale                                                                                                                                                                                                                                   | Redemption Price                                                                                     | Rationale                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 |------------|--------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | WETH       | ETH-USD                                          | The closest there is to a WETH-USD price                                                                                                                                                                                                   | ETH-USD                                                                                             | The closest there is to a WETH-USD price                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| WSTETH     | STETH-USD * WSTETH-STETH_exrate                 | Converts the market STETH-USD price to a WSTETH-USD price. _(Assumes STETH-USD liquidity / market price manipulation is much less of a risk than RETH-ETH market or exchange rate risks, based on discussion with Chainlink.)_                | **if** STETH-USD and ETH-USD within 1%: max(STETH-USD, ETH-USD) * WSTETH-STETH_exrate **else**: STETH-USD * WSTETH-STETH_exrate | Prevent redemption arbs by taking the max of STETH-USD and ETH-USD if STETH-USD is within 1% of ETH-USD. Taking the max prevents oracle lag arbs by giving redeemers the "worst" price. If the oracle prices are >1% apart, then we assume the difference is due to legitimate market price difference between STETH and ETH, so use the STETH price.                                                                                                                                                                                     |
-| RETH       | min(RETH-ETH, RETH-ETH_exrate) * ETH-USD        | Converts a RETH-ETH price to a RETH-USD price. Takes the min of the market and exchange rate RETH-ETH prices in order to mitigate against upward price manipulation which would be bad for the system, e.g. could result in excess BOLD minting, undercollateralized Troves and branch insolvency. | **if** RETH-ETH and RETH-ETH_exrate within 2%: max(RETH-ETH, RETH-ETH_exrate) * ETH-USD **else**: min(RETH-ETH, RETH-ETH_exrate) * ETH-USD | Prevent redemption arbs by taking the max of RETH-ETH market price and RETH-ETH exchange rate if the market price is within 2% of the exchange rate. Taking the max prevents oracle lag arbs by giving redeemers the "worst" price. If the oracle prices are >2% apart, then we assume the difference is due to a "legitimate" market price difference (i.e., non-oracle lag at least) between the RETH-ETH market price and the exchange rate. Since this could be due to one being manipulated upward, we take the minimum (as per the normal primary price calculation), which should ensure legitimately profitable redemptions remain so in this case. |
 
 ### Mitigating redemption arbitrages / oracle frontrunning
 
@@ -1319,11 +1313,9 @@ Since market oracles have update thresholds, they will inevitably lag the "true"
 
 The value extracted is excessive, i.e. above and beyond the arbitrage profit expected from BOLD peg restoration. In fact, oracle frontrunning can even be performed when BOLD is trading >= $1.
 
-To mitigate this value extraction on RETH and WSTETH branches, the system uses the maximum of a market price and a canonical price in redemptions. This mitigates oracle lag arbitrages by giving the redeemer the "worst" price at any given moment.
 
 The trade-off of this solution that redemptions may sometimes be unprofitable during volatile periods with high oracle lag. However, as long as redemptions do happen eventually and in the long term, then peg maintenance will hold.
 
-However, this "worst price" solution only applies if the delta between market price and canonical price is within the oracle deviation threshold (1% for WSTETH, 2% for RETH). If the difference is greater, then the normal primary pricing calculation is used - a large delta is assumed to reflect a legitimate difference between market price and canonical rate.
 
 ### Is the “worst price” approach sufficient to mitigate front-running?
 
@@ -1333,17 +1325,12 @@ An assumption of the v2 system is that adverse redemption arbs from oracle front
 
 The WETH branch uses only the ETH-USD oracle, thus the adverse arb risks are the same as v1.
 
-### RETH branch
 
-RETH redemption price logic compares the RETH-ETH market oracle with the RETH-ETH LST exchange rate. When the delta between these is <2%, the system takes the max of the two for its RETH-ETH value, and otherwise, takes the min. The RETH-ETH value is multiplied by the ETH-USD market oracle price to derive a RETH-USD price.
 
-Here is RETH-ETH data for 07-2024 to 05-2025, for the latest Chainlink aggregator:
 https://docs.google.com/spreadsheets/d/1LxaKZwipSWmre2YxS_0AHT0cDd97yVae_DuJwKbejkQ/edit?usp=sharing
 
-Empirically, the relative market oracle deltas - i.e. the percentage difference between update `i` and update `i + 1` - are small. The largest was 0.46% in the dataset. Assuming no depeg (i.e.that the true RETH-ETH price equals the LST exchange rate), this implies the deltas between market oracle and exchange rate were always well under 2%. Thus usage of the min price for redemptions should be very rare, if it ever happens. In nearly all cases, it will use the “worst” price.
 
 
-Thus, the RETH branch just inherits the adverse arb risks of the ETH-USD oracle.
 
 ### STETH branch
 
@@ -1406,7 +1393,6 @@ This is intended to catch some obvious oracle and canonical rate failure modes, 
 |------------|----------------------------------|-----------------------------------------------------------------|
 | WETH       | N/A                              | N/A                                                             |
 | WSTETH     | lastGoodPrice                    | The exchange rate is necessary for all primary and fallback price calculations |
-| RETH       | lastGoodPrice                    | The exchange rate is necessary for all primary and fallback price calculations |
 
 
 If a canonical exchange rate has failed, then the best the LST branch can do is use the last good price seen by the system. 
@@ -1419,8 +1405,6 @@ Similarly, if the ETH-USD price fails, all branches are eligible to be shut down
 | Collateral | Fallback if ETH-USD Market Oracle Fails | Rationale                                                                                                                                                                                                                      |
 |------------|------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | WETH       | lastGoodPrice                            | Cannot price WETH without it                                                                                                                                                                                                  |
-| WSTETH     | lastGoodPrice                            | ETH-USD is necessary for the primary redemption calculation. Also, ETH-USD Chainlink oracle failing would wreck much of DeFi and necessarily shut down both WETH and RETH branches, so it seems safest to also shut down the WSTETH branch too. |
-| RETH       | lastGoodPrice                            | ETH-USD is necessary for all primary calculations.                                                                                                                                                                            |
 
 Using an out-of-date price obviously has undesirable consequences, but it’s the best that can be done in this extreme scenario. The impacts are addressed in [Known Issue 4](https://github.com/liquity/bold/blob/main/README.md#4---oracle-failure-and-urgent-redemptions-with-the-frozen-last-good-price).
 
@@ -1430,7 +1414,6 @@ Using an out-of-date price obviously has undesirable consequences, but it’s th
 |------------|-----------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | WETH       | N/A                                           | N/A                                                                                                                                                                                                                        |
 | WSTETH     | min(lastGoodPrice, ETH-USD * WSTETH-STETH_exrate) | We substitute the ETH-USD market price if the latter oracle fails. We take the min with the lastGoodPrice to ensure the system always gives the best redemption price, even if it gives "too much" collateral away to the redeemer. The goal is to clear debt from the shutdown branch ASAP. |
-| RETH       | min(lastGoodPrice, ETH-USD * RETH-ETH_exrate) | We substitute the RETH-ETH_exrate for the RETH-ETH market price if the latter oracle fails. As above, take the min to clear debt from the branch ASAP.                                                                     |
 
 If a branch is using a primary price calculation and the LST market oracle fails, then the system attempts to create a composite price from the ETH-USD market oracle and the exchange rate.
 
@@ -1438,13 +1421,11 @@ Note that in all failure cases when a branch shuts down, there is thereafter no 
 
 ### Protection against upward market price manipulation
 
-The smaller LST i.e. RETH has lower liquidity and thus it is cheaper for a malicious actor to manipulate their market price.
 
 The impacts of downward market manipulation are bounded - it could result in excessive liquidations and branch shutdown, but should not affect other branches nor BOLD stability.
 
 However, upward market manipulation could be catastrophic as it would allow excessive BOLD minting from Troves, which could cause a depeg.
 
-The system mitigates this by taking the minimum of the LST-USD prices derived from market and canonical rates on the RETHPriceFeed. As such, to manipulate the system price upward, an attacker would need to manipulate both the market oracle _and_ the canonical rate which would be much more difficult.
 
 
 However this is not the only LST/oracle risk scenario. There are several to consider - see the [LST oracle risks section](#9---lst-oracle-risks).
@@ -1470,7 +1451,6 @@ The value extracted is excessive, i.e. above and beyond the arbitrage profit exp
 
 In Liquity v1, this issue was largely mitigated by the 0.5% minimum redemption fee which matched Chainlink’s ETH-USD oracle update threshold of 0.5%.
 
-In v2, some oracles used for LSTs have larger update thresholds - e.g. Chainlink’s RETH-ETH, at 2%.
 
 However, we don’t expect oracle frontrunning to be a significant issue since these LST-ETH feeds are historically not volatile and rarely deviate by significant amounts: they usually update based on the heartbeat (mininum update frequency) rather than the threshold.
 
@@ -1487,9 +1467,7 @@ However, we don’t expect oracle frontrunning to be a significant issue since t
 
 #### Solution 
 
-To mitigate this value extraction on RETH and WSTETH branches, the system uses the maximum of a market price and a canonical price in redemptions. This mitigates oracle lag arbitrages by giving the redeemer the "worst" price at any given moment. 
 
-However, this only applies if the delta between market price and canonical price is within the oracle deviation threshold (1% for WSTETH, 2% for RETH). If the difference is greater, then the normal primary pricing calculation is used - a large delta is assumed to reflect a legitimate difference between market price and canonical rate.
 
 
 ### 2 - Bypassing redemption routing logic via temporary SP deposits
@@ -1579,7 +1557,6 @@ Provisionally, the preset staleness thresholds in Liquity v2 as follows, though 
 |---------------------------------------------------------|------------------|----------------------------------------------|
 | Chainlink ETH-USD                                       | 1 hour           | 24 hours                                     |
 | Chainlink stETH-USD                                     | 1 hour           | 24 hours                                     |
-| Chainlink rETH-ETH                                      | 24 hours         | 48 hours                                     |
 
 
 ### 6 - Discrepancy between aggregate and sum of individual debts
@@ -2040,7 +2017,6 @@ Thus, fork collateral and oracles should be evaluated and chosen very carefully.
 
 ## Collateral choices
 
-In the original v2, LST collateral was selected conservatively. STETH and RETH were chosen for their track records of security and liquidity, and newer, less liquid LSTs were rejected.
 
 The following dimensions should be considered:
 
@@ -2167,7 +2143,6 @@ For example, in Liquity v2 the oracle heartbeats and staleness thresholds are as
 |---------------|-----------|-------------------|
 | ETH-USD | 1 hour | 24 hours |
 | STETH-USD | 1 hour | 24 hours |
-| RETH-ETH | 24 hours | 48 hours |
 
 
 ### Redemption floor fee and oracle update thresholds
