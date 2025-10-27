@@ -26,8 +26,6 @@ import "src/MultiTroveGetter.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
-// import "src/PriceFeeds/WSTETHPriceFeed.sol";
-import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/PriceFeeds/TBTCPriceFeed.sol";
 import "src/PriceFeeds/SAGAPriceFeed.sol";
 import "src/PriceFeeds/stATOMPriceFeed.sol";
@@ -359,6 +357,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_YUSD
         });
 
+        //TODO double check the order of these at the end
         string[] memory collNames = new string[](NUM_BRANCHES - 1);
         string[] memory collSymbols = new string[](NUM_BRANCHES - 1);
         // collNames[0] = "Wrapped Ether";
@@ -567,7 +566,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
             // tBTC
             vars.collaterals[2] = IERC20Metadata(TBTC_ADDRESS);
-
             // SAGA
             WRAPPED_SAGA = new WrappedToken(IERC20Metadata(SAGA_ADDRESS));
             vars.collaterals[3] = WRAPPED_SAGA;
@@ -605,8 +603,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
-
-        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, GOVERNANCE_ADDRESS); 
+        //loog collaterals and print the symbol for each
+        for(uint i = 0; i < vars.collaterals.length; i++) {
+            console2.log("DeployLiquity2Script: vars.collaterals[%s].symbol(): %s", i, vars.collaterals[i].symbol());
+        }
+        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, GOVERNANCE_ADDRESS); // TODO: Replace null address with governor address
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
 
@@ -628,6 +629,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             r.contractsArray[vars.i] = vars.contracts;
         }
 
+        //also calls renounceOwnership
         r.boldToken.setCollateralRegistry(address(r.collateralRegistry));
 
         // exchange helpers
@@ -1051,8 +1053,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IERC20Metadata _collToken = _troveManager.addressesRegistry().collToken();
         if (address(_collToken) == WETH_ADDRESS) {
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_WETH);
-        } else if (address(_collToken) == RETH_ADDRESS) {
-            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_RETH);
+        // } else if (address(_collToken) == RETH_ADDRESS) {
+        //     _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_RETH);
         } else if (address(_collToken) == TBTC_ADDRESS) {
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_TBTC);
         } else if (address(_collToken) == address(WRAPPED_SAGA)) {

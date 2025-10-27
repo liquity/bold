@@ -8,6 +8,7 @@ import "./TestContracts/CollateralRegistryTester.sol";
 import "../src/MultiTroveGetter.sol";
 import "../src/Interfaces/IMultiTroveGetter.sol";
 import "../src/HintHelpers.sol";
+import {BoldToken} from "../src/BoldToken.sol";
 
 contract BasicOps is DevTestSetup {
     function testOpenTroveFailsWithoutAllowance() public {
@@ -378,5 +379,50 @@ contract BasicOps is DevTestSetup {
 
         vm.expectRevert();
         hintHelpers.predictOpenTroveUpfrontFee(2, 100e18, 1000e18);
+    }
+
+    function testUpdateBranchAddressesInBoldToken() public {
+        IERC20Metadata[] memory tokens = new IERC20Metadata[](2);
+        tokens[0] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        tokens[1] = new ERC20Faucet("Test", "TEST", 100 ether, 1 days);
+        ITroveManager[] memory troveManagers = new ITroveManager[](2);
+        troveManagers[0] = new TroveManager(addressesRegistry, 0);
+        troveManagers[1] = new TroveManager(addressesRegistry, 1);
+
+        address governor = makeAddr("governor");
+
+        ITroveManager newTroveManager = new TroveManager(addressesRegistry, 2);
+
+        // Deploy a new collateral registry
+        BoldToken newBoldToken = new BoldToken(governor);
+        CollateralRegistry myCollateralRegistry = new CollateralRegistryTester(newBoldToken, tokens, troveManagers, governor);
+
+        vm.startPrank(governor);
+        newBoldToken.setCollateralRegistry(address(myCollateralRegistry));
+        vm.stopPrank();
+
+        vm.startPrank(governor);
+        vm.expectEmit();
+        emit BoldToken.TroveManagerAddressAdded(address(newTroveManager));
+
+        myCollateralRegistry.setBranchAddressesInBoldToken(
+            address(newTroveManager), 
+            address(stabilityPool), 
+            address(borrowerOperations), 
+            address(activePool)
+        );
+        vm.stopPrank();
+
+        ITroveManager newTroveManager2 = new TroveManager(addressesRegistry, 3);
+
+        vm.startPrank(makeAddr("notCollateralRegistry"));
+        vm.expectRevert("BoldToken: Caller is not the CollateralRegistry");
+        newBoldToken.setBranchAddressesViaCollateralRegistry(
+            address(newTroveManager2), 
+            address(stabilityPool), 
+            address(borrowerOperations), 
+            address(activePool)
+        );
+        vm.stopPrank();
     }
 }
