@@ -67,7 +67,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     using StringEquality for string;
 
     // TODO: Change these values
-    address GOVERNANCE_ADDRESS = 0x0000000000000000000000000000000000000001;
+    address GOVERNANCE_ADDRESS = 0x92A857b519F73783E27642c0f4A5DBAc8953e66B;
     string GOVERNANCE_MANIFEST = "";
     uint256 CHAIN_ID = 5464; // Saga EVM Chain ID: 5464
 
