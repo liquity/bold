@@ -75,8 +75,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
 
     uint256 constant NUM_BRANCHES = 4;
 
-    address WETH_ADDRESS = 0xeb41D53F14Cb9a67907f2b8b5DBc223944158cCb;
-
     // used for gas compensation and as collateral of the first branch
     // tapping disallowed
     IWETH WETH;
@@ -89,9 +87,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     address ETH_ORACLE_ADDRESS = 0x0cD65ca12F6c9b10254FABC0CC62d273ABbb3d84;
     // address STETH_ORACLE_ADDRESS = address(0);
     // TODO: Change these values
-    address TBTC_ORACLE_ADDRESS = 0x9494Ed94280E9A8c5b52B1cDa9Ac9D21f6307135;
-    address BTC_ORACLE_ADDRESS = 0x4a397383fE5FbE9AB33879869153fF40ea68815F;
-    address SAGA_ORACLE_ADDRESS = 0xaA43df021149C34ca3654F387C9aeB9AcABa012a;
+    address ETH_ORACLE_ADDRESS = 0xf568a35f0D1D4C0a389bB29033a0f13E02536D62;
+    address RETH_ORACLE_ADDRESS = 0xa2e5E28F3cA88e7Cc4f046dba2029eA8F44A6796;
+    address TBTC_ORACLE_ADDRESS = 0x987fc3b27226427323EFDB73E713669cf87B588c;
+    address BTC_ORACLE_ADDRESS = 0xe7a6046a46ce932CbcD44D284f2B4C4e841457e4;
+    address SAGA_ORACLE_ADDRESS = 0xB4eA7fc3359E390CADcee542bDbd34caB89E64f0;
     ///////////////////////////////
     uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
     // uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
@@ -150,7 +150,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         uint256 MCR;
         uint256 SCR;
         uint256 BCR;
-        uint256 debtLimit;
+        uint256 DEBT_LIMIT;
         uint256 LIQUIDATION_PENALTY_SP;
         uint256 LIQUIDATION_PENALTY_REDISTRIBUTION;
     }
@@ -269,31 +269,31 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             MCR: MCR_WETH,
             SCR: SCR_WETH,
             BCR: BCR_ALL,
-            debtLimit: WETH_DEBT_LIMIT,
+            DEBT_LIMIT: WETH_DEBT_LIMIT,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_WETH,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_WETH
         });
 
         // tBTC
         troveManagerParamsArray[2] = TroveManagerParams({
-            CCR: CCR_SETH,
-            MCR: MCR_SETH,
-            SCR: SCR_SETH,
+            CCR: CCR_TBTC,
+            MCR: MCR_TBTC,
+            SCR: SCR_TBTC,
             BCR: BCR_ALL,
-            debtLimit: TBTC_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+            DEBT_LIMIT: TBTC_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_TBTC,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_TBTC
         });
         
         // SAGA
         troveManagerParamsArray[3] = TroveManagerParams({
-            CCR: CCR_SETH,
-            MCR: MCR_SETH,
-            SCR: SCR_SETH,
+            CCR: CCR_SAGA,
+            MCR: MCR_SAGA,
+            SCR: SCR_SAGA,
             BCR: BCR_ALL,
-            debtLimit: SAGA_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SETH
+            DEBT_LIMIT: SAGA_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_SAGA,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SAGA
         });
 
         //TODO double check the order of these at the end
@@ -473,9 +473,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         address _boldToken,
         address _governanceAddress
     ) internal returns (DeploymentResult memory r) {
-        console2.log("DeployLiquity2Script: assert _collNames.length == troveManagerParamsArray.length - 1: %s == %s", _collNames.length, troveManagerParamsArray.length - 1);
         assert(_collNames.length == troveManagerParamsArray.length - 1);
-        console2.log("DeployLiquity2Script: assert _collSymbols.length == troveManagerParamsArray.length - 1: %s == %s", _collSymbols.length, troveManagerParamsArray.length - 1);
         assert(_collSymbols.length == troveManagerParamsArray.length - 1);
 
         DeploymentVars memory vars;
@@ -580,7 +578,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _troveManagerParams.MCR,
             _troveManagerParams.BCR,
             _troveManagerParams.SCR,
-            _troveManagerParams.debtLimit,
+            _troveManagerParams.DEBT_LIMIT,
             _troveManagerParams.LIQUIDATION_PENALTY_SP,
             _troveManagerParams.LIQUIDATION_PENALTY_REDISTRIBUTION
         );
@@ -727,20 +725,24 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             //     );
             } else if (_collTokenAddress == TBTC_ADDRESS) {
                 // tBTC
-                return new TBTCPriceFeed(
+                TBTCPriceFeed feed = new TBTCPriceFeed(
                     deployer,
                     TBTC_ORACLE_ADDRESS,
                     TBTC_ETH_STALENESS_THRESHOLD,
                     BTC_ORACLE_ADDRESS,
                     BTC_USD_STALENESS_THRESHOLD
                 );
+                feed.setBorrowerOperations(_borroweOperationsAddress);
+                return feed;
             } else if (_collTokenAddress == address(WRAPPED_SAGA)) {
                 // SAGA
-                return new SAGAPriceFeed(
+                SAGAPriceFeed feed = new SAGAPriceFeed(
                     deployer,
                     SAGA_ORACLE_ADDRESS,
                     SAGA_USD_STALENESS_THRESHOLD
                 );
+                feed.setBorrowerOperations(_borroweOperationsAddress);
+                return feed;
             } else {
                 revert("Invalid collateral token");
             }

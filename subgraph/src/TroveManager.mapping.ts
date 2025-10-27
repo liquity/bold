@@ -1,7 +1,7 @@
 import { Address, BigInt, Bytes, dataSource, ethereum } from "@graphprotocol/graph-ts";
 import { InterestBatch, InterestRateBracket, Trove } from "../generated/schema";
 import {
-  BatchedTroveUpdated as BatchedTroveUpdatedEvent,
+  // BatchedTroveUpdated as BatchedTroveUpdatedEvent,
   BatchUpdated as BatchUpdatedEvent,
   TroveOperation as TroveOperationEvent,
   TroveUpdated as TroveUpdatedEvent,
@@ -52,48 +52,48 @@ function decodeUint256(data: Bytes, i: i32 = 0): ethereum.Value {
   );
 }
 
-function getBatchUpdatedEventFrom(batchedTroveUpdatedEvent: BatchedTroveUpdatedEvent): BatchUpdatedEvent {
-  let receipt = batchedTroveUpdatedEvent.receipt;
+// function getBatchUpdatedEventFrom(batchedTroveUpdatedEvent: BatchedTroveUpdatedEvent): BatchUpdatedEvent {
+//   let receipt = batchedTroveUpdatedEvent.receipt;
 
-  if (!receipt) {
-    throw new Error("Missing TX receipt");
-  }
+//   if (!receipt) {
+//     throw new Error("Missing TX receipt");
+//   }
 
-  let batchUpdatedLogIndex = -1;
+//   let batchUpdatedLogIndex = -1;
 
-  for (let i = 0; i < receipt.logs.length; ++i) {
-    if (receipt.logs[i].logIndex.equals(batchedTroveUpdatedEvent.logIndex.plus(BigInt.fromI32(2)))) {
-      batchUpdatedLogIndex = i;
-      break;
-    }
-  }
+//   for (let i = 0; i < receipt.logs.length; ++i) {
+//     if (receipt.logs[i].logIndex.equals(batchedTroveUpdatedEvent.logIndex.plus(BigInt.fromI32(2)))) {
+//       batchUpdatedLogIndex = i;
+//       break;
+//     }
+//   }
 
-  if (batchUpdatedLogIndex < 0) {
-    throw new Error("Missing BatchUpdated log");
-  }
+//   if (batchUpdatedLogIndex < 0) {
+//     throw new Error("Missing BatchUpdated log");
+//   }
 
-  let batchUpdatedLog = receipt.logs[batchUpdatedLogIndex];
+//   let batchUpdatedLog = receipt.logs[batchUpdatedLogIndex];
 
-  return new BatchUpdatedEvent(
-    batchUpdatedLog.address,
-    batchUpdatedLog.logIndex,
-    batchUpdatedLog.transactionLogIndex,
-    batchUpdatedLog.logType,
-    batchedTroveUpdatedEvent.block,
-    batchedTroveUpdatedEvent.transaction,
-    [
-      new ethereum.EventParam("_interestBatchManager", decodeAddress(batchUpdatedLog.topics[1])),
-      new ethereum.EventParam("_operation", decodeUint8(batchUpdatedLog.data, 0)),
-      new ethereum.EventParam("_debt", decodeUint256(batchUpdatedLog.data, 1)),
-      new ethereum.EventParam("_coll", decodeUint256(batchUpdatedLog.data, 2)),
-      new ethereum.EventParam("_annualInterestRate", decodeUint256(batchUpdatedLog.data, 3)),
-      new ethereum.EventParam("_annualManagementFee", decodeUint256(batchUpdatedLog.data, 4)),
-      new ethereum.EventParam("_totalDebtShares", decodeUint256(batchUpdatedLog.data, 5)),
-      new ethereum.EventParam("_debtIncreaseFromUpfrontFee", decodeUint256(batchUpdatedLog.data, 6)),
-    ],
-    batchedTroveUpdatedEvent.receipt,
-  );
-}
+//   return new BatchUpdatedEvent(
+//     batchUpdatedLog.address,
+//     batchUpdatedLog.logIndex,
+//     batchUpdatedLog.transactionLogIndex,
+//     batchUpdatedLog.logType,
+//     batchedTroveUpdatedEvent.block,
+//     batchedTroveUpdatedEvent.transaction,
+//     [
+//       new ethereum.EventParam("_interestBatchManager", decodeAddress(batchUpdatedLog.topics[1])),
+//       new ethereum.EventParam("_operation", decodeUint8(batchUpdatedLog.data, 0)),
+//       new ethereum.EventParam("_debt", decodeUint256(batchUpdatedLog.data, 1)),
+//       new ethereum.EventParam("_coll", decodeUint256(batchUpdatedLog.data, 2)),
+//       new ethereum.EventParam("_annualInterestRate", decodeUint256(batchUpdatedLog.data, 3)),
+//       new ethereum.EventParam("_annualManagementFee", decodeUint256(batchUpdatedLog.data, 4)),
+//       new ethereum.EventParam("_totalDebtShares", decodeUint256(batchUpdatedLog.data, 5)),
+//       new ethereum.EventParam("_debtIncreaseFromUpfrontFee", decodeUint256(batchUpdatedLog.data, 6)),
+//     ],
+//     batchedTroveUpdatedEvent.receipt,
+//   );
+// }
 
 export function handleTroveUpdated(event: TroveUpdatedEvent): void {
   let collId = dataSource.context().getString("collId");
@@ -124,39 +124,39 @@ export function handleTroveUpdated(event: TroveUpdatedEvent): void {
   trove.save();
 }
 
-export function handleBatchedTroveUpdated(batchedTroveUpdatedEvent: BatchedTroveUpdatedEvent): void {
-  let batchUpdatedEvent = getBatchUpdatedEventFrom(batchedTroveUpdatedEvent);
-  let collId = dataSource.context().getString("collId");
-  let troveId = batchedTroveUpdatedEvent.params._troveId;
-  let troveFullId = collId + ":" + troveId.toHexString();
-  let trove = Trove.load(troveFullId);
+// export function handleBatchedTroveUpdated(batchedTroveUpdatedEvent: BatchedTroveUpdatedEvent): void {
+//   let batchUpdatedEvent = getBatchUpdatedEventFrom(batchedTroveUpdatedEvent);
+//   let collId = dataSource.context().getString("collId");
+//   let troveId = batchedTroveUpdatedEvent.params._troveId;
+//   let troveFullId = collId + ":" + troveId.toHexString();
+//   let trove = Trove.load(troveFullId);
 
-  if (!trove) {
-    throw new Error("Trove not found: " + troveFullId);
-  }
+//   if (!trove) {
+//     throw new Error("Trove not found: " + troveFullId);
+//   }
 
-  updateRateBracketDebt(
-    collId,
-    trove.interestRate,
-    BigInt.zero(),
-    trove.debt,
-    BigInt.zero(), // batched debt handled at batch level
-    trove.updatedAt,
-    batchedTroveUpdatedEvent.block.timestamp,
-  );
+//   updateRateBracketDebt(
+//     collId,
+//     trove.interestRate,
+//     BigInt.zero(),
+//     trove.debt,
+//     BigInt.zero(), // batched debt handled at batch level
+//     trove.updatedAt,
+//     batchedTroveUpdatedEvent.block.timestamp,
+//   );
 
-  trove.debt = batchUpdatedEvent.params._totalDebtShares.notEqual(BigInt.zero())
-    ? batchUpdatedEvent.params._debt
-      .times(batchedTroveUpdatedEvent.params._batchDebtShares)
-      .div(batchUpdatedEvent.params._totalDebtShares)
-    : BigInt.zero();
-  trove.deposit = batchedTroveUpdatedEvent.params._coll;
-  trove.stake = batchedTroveUpdatedEvent.params._stake;
-  trove.interestRate = BigInt.zero();
-  trove.interestBatch = collId + ":" + batchedTroveUpdatedEvent.params._interestBatchManager.toHexString();
-  trove.updatedAt = batchedTroveUpdatedEvent.block.timestamp;
-  trove.save();
-}
+//   trove.debt = batchUpdatedEvent.params._totalDebtShares.notEqual(BigInt.zero())
+//     ? batchUpdatedEvent.params._debt
+//       .times(batchedTroveUpdatedEvent.params._batchDebtShares)
+//       .div(batchUpdatedEvent.params._totalDebtShares)
+//     : BigInt.zero();
+//   trove.deposit = batchedTroveUpdatedEvent.params._coll;
+//   trove.stake = batchedTroveUpdatedEvent.params._stake;
+//   trove.interestRate = BigInt.zero();
+//   trove.interestBatch = collId + ":" + batchedTroveUpdatedEvent.params._interestBatchManager.toHexString();
+//   trove.updatedAt = batchedTroveUpdatedEvent.block.timestamp;
+//   trove.save();
+// }
 
 export function handleTroveOperation(event: TroveOperationEvent): void {
   let collId = dataSource.context().getString("collId");

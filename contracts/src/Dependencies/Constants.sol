@@ -19,18 +19,18 @@ uint256 constant MAX_LIQUIDATION_PENALTY_REDISTRIBUTION = 20e16; // 20%
 
 // Collateral branch parameters (SETH = staked ETH, i.e. wstETH / rETH)
 uint256 constant CCR_WETH = 150 * _1pct;
-uint256 constant CCR_SETH = 160 * _1pct;
-uint256 constant CCR_BTC = 160 * _1pct;
+uint256 constant CCR_RETH = 160 * _1pct;
+uint256 constant CCR_TBTC = 160 * _1pct;
 uint256 constant CCR_SAGA = 170 * _1pct;
 
 uint256 constant MCR_WETH = 110 * _1pct;
-uint256 constant MCR_SETH = 120 * _1pct;
-uint256 constant MCR_BTC = 110 * _1pct;
+uint256 constant MCR_RETH = 110 * _1pct;
+uint256 constant MCR_TBTC = 110 * _1pct;
 uint256 constant MCR_SAGA = 140 * _1pct;
 
 uint256 constant SCR_WETH = 110 * _1pct;
-uint256 constant SCR_SETH = 120 * _1pct;
-uint256 constant SCR_BTC = 110 * _1pct;
+uint256 constant SCR_RETH = 110 * _1pct;
+uint256 constant SCR_TBTC = 110 * _1pct;
 uint256 constant SCR_SAGA = 140 * _1pct;
 
 // Batch CR buffer (same for all branches for now)
@@ -44,13 +44,13 @@ uint256 constant TBTC_DEBT_LIMIT = 100_000_000e18;
 uint256 constant SAGA_DEBT_LIMIT = 5_000_000e18;
 
 uint256 constant LIQUIDATION_PENALTY_SP_WETH = 5 * _1pct;
-uint256 constant LIQUIDATION_PENALTY_SP_SETH = 5 * _1pct;
-uint256 constant LIQUIDATION_PENALTY_SP_BTC = 5 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_SP_RETH = 5 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_SP_TBTC = 5 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_SP_SAGA = 5 * _1pct;
 
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_WETH = 10 * _1pct;
-uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SETH = 20 * _1pct;
-uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_BTC = 10 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_RETH = 10 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_TBTC = 10 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SAGA = 20 * _1pct;
 
 // Fraction of collateral awarded to liquidator
@@ -59,11 +59,10 @@ uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 
 uint256 constant COLL_GAS_COMPENSATION_CAP = 500 ether; // Max coll gas compensation capped at 2 ETH
 
 // Recommended value for COLL_GAS_COMPENSATION_CAP for each collateral type
-uint256 constant COLL_GAS_COMPENSATION_CAP_WETH = 500 ether; // TODO: Change this value
-uint256 constant COLL_GAS_COMPENSATION_CAP_RETH = 500 ether; // TODO: Change this value
-uint256 constant COLL_GAS_COMPENSATION_CAP_TBTC = 500 ether; // TODO: Change this value
-uint256 constant COLL_GAS_COMPENSATION_CAP_FBTC = 500 ether; // TODO: Change this value
-uint256 constant COLL_GAS_COMPENSATION_CAP_SAGA = 500 ether; // TODO: Change this value
+uint256 constant COLL_GAS_COMPENSATION_CAP_WETH = 15e15;
+uint256 constant COLL_GAS_COMPENSATION_CAP_RETH = 1e16;
+uint256 constant COLL_GAS_COMPENSATION_CAP_TBTC = 6e14;
+uint256 constant COLL_GAS_COMPENSATION_CAP_SAGA = 500e18;
 
 // Minimum amount of net Bold debt a trove must have
 uint256 constant MIN_DEBT = 200e18;
