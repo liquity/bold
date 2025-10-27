@@ -25,8 +25,6 @@ import "src/MultiTroveGetter.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
-// import "src/PriceFeeds/WSTETHPriceFeed.sol";
-import "src/PriceFeeds/RETHPriceFeed.sol";
 import "src/PriceFeeds/TBTCPriceFeed.sol";
 import "src/PriceFeeds/SAGAPriceFeed.sol";
 import "src/CollateralRegistry.sol";
@@ -82,10 +80,12 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     IWETH WETH;
     IERC20Metadata WRAPPED_SAGA;
     // IERC20Metadata USDC;
-    address WETH_ADDRESS = 0xeb41D53F14Cb9a67907f2b8b5DBc223944158cCb;
-    address RETH_ADDRESS = 0x679121f168488185eca6Aaa3871687FF6d38Edb6; // TODO: Change to CORRECT ADDRESS
+    // address WSTETH_ADDRESS = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address YETH_ADDRESS = 0x0000000000000000000000000000000000000000;
     address TBTC_ADDRESS = 0xa740E6758e309840ffFfe58f749F018386A3b70b; // TODO: Change to CORRECT ADDRESS
     address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE; // TODO: This is 6 decimals, not 18 decimals. Either delete or get 18 decimals wrapped token of SAGA.
+    address ETH_ORACLE_ADDRESS = 0x0cD65ca12F6c9b10254FABC0CC62d273ABbb3d84;
+    // address STETH_ORACLE_ADDRESS = address(0);
     // TODO: Change these values
     address ETH_ORACLE_ADDRESS = 0xf568a35f0D1D4C0a389bB29033a0f13E02536D62;
     address RETH_ORACLE_ADDRESS = 0xa2e5E28F3cA88e7Cc4f046dba2029eA8F44A6796;
@@ -95,8 +95,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     ///////////////////////////////
     uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
     // uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
-    uint256 RETH_ETH_STALENESS_THRESHOLD = 25 hours;
-    // TODO: Change these values
     uint256 TBTC_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 BTC_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 SAGA_USD_STALENESS_THRESHOLD = 25 hours;
@@ -276,17 +274,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_WETH
         });
 
-        // rETH
-        troveManagerParamsArray[1] = TroveManagerParams({
-            CCR: CCR_RETH,
-            MCR: MCR_RETH,
-            SCR: SCR_RETH,
-            BCR: BCR_ALL,
-            DEBT_LIMIT: RETH_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_RETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_RETH
-        });
-
         // tBTC
         troveManagerParamsArray[2] = TroveManagerParams({
             CCR: CCR_TBTC,
@@ -309,12 +296,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SAGA
         });
 
+        //TODO double check the order of these at the end
         string[] memory collNames = new string[](NUM_BRANCHES - 1);
         string[] memory collSymbols = new string[](NUM_BRANCHES - 1);
         // collNames[0] = "Wrapped Ether";
         // collSymbols[0] = "WETH";
-        collNames[0] = "Rocket Pool ETH";
-        collSymbols[0] = "rETH";
+        collNames[0] = "YieldFi ETH";
+        collSymbols[0] = "yETH";
         collNames[1] = "Threshold BTC";
         collSymbols[1] = "tBTC";
         collNames[2] = "Saga";
@@ -505,13 +493,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // mainnet
             // ETH
             vars.collaterals[0] = IERC20Metadata(WETH);
-
-            // rETH
-            vars.collaterals[1] = IERC20Metadata(RETH_ADDRESS);
-
+            // YETH
+            vars.collaterals[1] = IERC20Metadata(YETH_ADDRESS);
             // tBTC
             vars.collaterals[2] = IERC20Metadata(TBTC_ADDRESS);
-
             // SAGA
             // vars.collaterals[4] = IERC20Metadata(SAGA_ADDRESS);
             WRAPPED_SAGA = new WrappedToken(IERC20Metadata(SAGA_ADDRESS));
@@ -539,8 +524,11 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             vars.addressesRegistries[vars.i] = addressesRegistry;
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
-
-        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, GOVERNANCE_ADDRESS); 
+        //loog collaterals and print the symbol for each
+        for(uint i = 0; i < vars.collaterals.length; i++) {
+            console2.log("DeployLiquity2Script: vars.collaterals[%s].symbol(): %s", i, vars.collaterals[i].symbol());
+        }
+        r.collateralRegistry = new CollateralRegistry(r.boldToken, vars.collaterals, vars.troveManagers, GOVERNANCE_ADDRESS); // TODO: Replace null address with governor address
         r.hintHelpers = new HintHelpers(r.collateralRegistry);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
 
@@ -562,6 +550,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             r.contractsArray[vars.i] = vars.contracts;
         }
 
+        //also calls renounceOwnership
         r.boldToken.setCollateralRegistry(address(r.collateralRegistry));
 
         // exchange helpers
@@ -727,15 +716,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // ETH
             if (_collTokenAddress == address(WETH)) {
                 return new WETHPriceFeed(ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD, _borroweOperationsAddress);
-            } else if (_collTokenAddress == RETH_ADDRESS) {
-                // rETH
-                RETHPriceFeed feed = new RETHPriceFeed(
-                    deployer,
-                    RETH_ORACLE_ADDRESS,
-                    RETH_ETH_STALENESS_THRESHOLD
-                );
-                feed.setBorrowerOperations(_borroweOperationsAddress); //This also renounces the ownership of the feed.
-                return feed;
+            // } else if (_collTokenAddress == RETH_ADDRESS) {
+            //     // rETH
+            //     return new RETHPriceFeed(
+            //         deployer,
+            //         RETH_ORACLE_ADDRESS,
+            //         RETH_ETH_STALENESS_THRESHOLD
+            //     );
             } else if (_collTokenAddress == TBTC_ADDRESS) {
                 // tBTC
                 TBTCPriceFeed feed = new TBTCPriceFeed(
@@ -949,8 +936,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IERC20Metadata _collToken = _troveManager.addressesRegistry().collToken();
         if (address(_collToken) == WETH_ADDRESS) {
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_WETH);
-        } else if (address(_collToken) == RETH_ADDRESS) {
-            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_RETH);
+        // } else if (address(_collToken) == RETH_ADDRESS) {
+        //     _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_RETH);
         } else if (address(_collToken) == TBTC_ADDRESS) {
             _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_TBTC);
         } else if (address(_collToken) == address(WRAPPED_SAGA)) {

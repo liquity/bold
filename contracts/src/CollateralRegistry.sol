@@ -480,6 +480,7 @@ contract CollateralRegistry is ICollateralRegistry {
         emit CollateralDeletedForever(_index);
     }
 
+    //Set branches in BoldToken via CollateralRegistry when adding new collateral
     function setBranchAddressesInBoldToken(
         address _troveManagerAddress,
         address _stabilityPoolAddress,
