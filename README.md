@@ -15,6 +15,8 @@ Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals 
 2. tBTC
 3. SAGA
 4. stATOM
+5. KING
+6. yETH
 
 ## Branch Creation and Deletion
 1. Only governor is able to create and remove branches
