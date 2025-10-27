@@ -43,7 +43,6 @@ import {ERC20Faucet} from "./ERC20Faucet.sol";
 
 import "src/PriceFeeds/WETHPriceFeed.sol";
 // import "src/PriceFeeds/WSTETHPriceFeed.sol";
-import "src/PriceFeeds/RETHPriceFeed.sol";
 
 import "forge-std/console2.sol";
 import "forge-std/Test.sol";
@@ -197,15 +196,12 @@ contract TestDeployer is MetadataDeployment {
     struct ExternalAddresses {
         address ETHOracle;
         address STETHOracle;
-        address RETHOracle;
         address WSTETHToken;
-        address RETHToken;
     }
 
     struct OracleParams {
         uint256 ethUsdStalenessThreshold;
         uint256 stEthUsdStalenessThreshold;
-        uint256 rEthEthStalenessThreshold;
     }
 
     // See: https://solidity-by-example.org/app/create2/
@@ -529,15 +525,12 @@ contract TestDeployer is MetadataDeployment {
         DeploymentVarsMainnet memory vars;
 
         result.externalAddresses.ETHOracle = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
-        result.externalAddresses.RETHOracle = 0x536218f9E9Eb48863970252233c8F271f554C2d0;
         result.externalAddresses.STETHOracle = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8;
         result.externalAddresses.WSTETHToken = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 
-        result.externalAddresses.RETHToken = 0xae78736Cd615f374D3085123A210448E74Fc6393;
 
         vars.oracleParams.ethUsdStalenessThreshold = _24_HOURS;
         vars.oracleParams.stEthUsdStalenessThreshold = _24_HOURS;
-        vars.oracleParams.rEthEthStalenessThreshold = _48_HOURS;
 
         // Colls: WETH, WSTETH, RETH
         vars.numCollaterals = 3;
@@ -560,12 +553,6 @@ contract TestDeployer is MetadataDeployment {
         (vars.addressesRegistries[0], troveManagerAddress) =
             _deployAddressesRegistryMainnet(_troveManagerParamsArray[0]);
         vars.troveManagers[0] = ITroveManager(troveManagerAddress);
-
-        // RETH
-        vars.collaterals[1] = IERC20Metadata(0xae78736Cd615f374D3085123A210448E74Fc6393);
-        (vars.addressesRegistries[1], troveManagerAddress) =
-            _deployAddressesRegistryMainnet(_troveManagerParamsArray[1]);
-        vars.troveManagers[1] = ITroveManager(troveManagerAddress);
 
         // WSTETH
         vars.collaterals[2] = IERC20Metadata(0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0);
@@ -751,30 +738,7 @@ contract TestDeployer is MetadataDeployment {
             return new WETHPriceFeed(
                 _externalAddresses.ETHOracle, _oracleParams.ethUsdStalenessThreshold, _borrowerOperationsAddress
             );
-        } else if (_branch == 1) {
-            // RETH
-            return IPriceFeed(address(new RETHPriceFeed(
-                address(0x123),
-                _externalAddresses.RETHOracle,
-                _oracleParams.rEthEthStalenessThreshold
-            )));
-        }
-
-        // // wstETH
-        // return new WSTETHPriceFeed(
-        //     _externalAddresses.ETHOracle,
-        //     _externalAddresses.STETHOracle,
-        //     _externalAddresses.WSTETHToken,
-        //     _oracleParams.ethUsdStalenessThreshold,
-        //     _oracleParams.stEthUsdStalenessThreshold,
-        //     _borrowerOperationsAddress
-        // );
-
-        return IPriceFeed(address(new RETHPriceFeed(
-            address(0x123),
-            _externalAddresses.RETHOracle,
-            _oracleParams.rEthEthStalenessThreshold
-        )));
+        } 
     }
 
     function _deployZappers(

@@ -137,11 +137,6 @@ export const DEFAULT_STRATEGIES: Array<[
       name: "Conservative Strategy",
       address: "0x8869a6FB59a8Df330F90D9Fbf46eBfaFf6D4BC14",
     }]],
-    // RETH
-    [2, [{
-      name: "Conservative Strategy",
-      address: "0x7700B2D305f47aE82e9598BAb6D7CCb57299A82b",
-    }]],
   ]],
 ];
 

@@ -2,10 +2,9 @@
 
 pragma solidity 0.8.24;
 
-import "src/Interfaces/IRETHToken.sol";
 import "lib/forge-std/src/console2.sol";
 
-contract RETHTokenMock is IRETHToken {
+contract RETHTokenMock {
     uint256 ethPerReth;
 
     function getExchangeRate() external view returns (uint256) {
