@@ -23,18 +23,27 @@ uint256 constant CCR_RETH = 160 * _1pct;
 uint256 constant CCR_TBTC = 160 * _1pct;
 uint256 constant CCR_SAGA = 170 * _1pct;
 uint256 constant CCR_STATOM = 160 * _1pct;
+uint256 constant CCR_KING = 160 * _1pct;
+uint256 constant CCR_YUSD = 160 * _1pct;
+uint256 constant CCR_YETH = 160 * _1pct;
 
 uint256 constant MCR_WETH = 110 * _1pct;
 uint256 constant MCR_RETH = 110 * _1pct;
 uint256 constant MCR_TBTC = 110 * _1pct;
 uint256 constant MCR_SAGA = 140 * _1pct;
 uint256 constant MCR_STATOM = 125 * _1pct;
+uint256 constant MCR_KING = 125 * _1pct;
+uint256 constant MCR_YUSD = 125 * _1pct;
+uint256 constant MCR_YETH = 125 * _1pct;
 
 uint256 constant SCR_WETH = 110 * _1pct;
 uint256 constant SCR_RETH = 110 * _1pct;
 uint256 constant SCR_TBTC = 110 * _1pct;
 uint256 constant SCR_SAGA = 140 * _1pct;
 uint256 constant SCR_STATOM = 125 * _1pct;
+uint256 constant SCR_KING = 125 * _1pct;
+uint256 constant SCR_YUSD = 125 * _1pct;
+uint256 constant SCR_YETH = 125 * _1pct;
 
 // Batch CR buffer (same for all branches for now)
 // On top of MCR to join a batch, or adjust inside a batch
@@ -42,22 +51,28 @@ uint256 constant BCR_ALL = 10 * _1pct;
 
 // Debt limit for each branch of initial collateral types
 uint256 constant WETH_DEBT_LIMIT = 100_000_000e18;
-uint256 constant RETH_DEBT_LIMIT = 25_000_000e18;
+uint256 constant YETH_DEBT_LIMIT = 25_000_000e18;
 uint256 constant TBTC_DEBT_LIMIT = 100_000_000e18;
 uint256 constant SAGA_DEBT_LIMIT = 5_000_000e18;
-uint256 constant STATOM_DEBT_LIMIT = 500_000e18;
+uint256 constant KING_DEBT_LIMIT = 500_000e18;
+uint256 constant STATOM_DEBT_LIMIT = 1_000_000e18;
+uint256 constant YUSD_DEBT_LIMIT = 1_000_000e18;
 
 uint256 constant LIQUIDATION_PENALTY_SP_WETH = 5 * _1pct;
-uint256 constant LIQUIDATION_PENALTY_SP_RETH = 5 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_SP_YETH = 5 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_SP_TBTC = 5 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_SP_SAGA = 5 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_SP_STATOM = 5 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_SP_KING = 5 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_SP_YUSD = 5 * _1pct;
 
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_WETH = 10 * _1pct;
-uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_RETH = 10 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_YETH = 10 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_TBTC = 10 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_SAGA = 20 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_STATOM = 15 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_KING = 10 * _1pct;
+uint256 constant LIQUIDATION_PENALTY_REDISTRIBUTION_YUSD = 10 * _1pct;
 
 // Fraction of collateral awarded to liquidator
 uint256 constant COLL_GAS_COMPENSATION_DIVISOR = 200; // dividing by 200 yields 0.5%
@@ -66,10 +81,12 @@ uint256 constant COLL_GAS_COMPENSATION_CAP = 500 ether; // Max coll gas compensa
 
 // Recommended value for COLL_GAS_COMPENSATION_CAP for each collateral type
 uint256 constant COLL_GAS_COMPENSATION_CAP_WETH = 15e15;
-uint256 constant COLL_GAS_COMPENSATION_CAP_RETH = 1e16;
+uint256 constant COLL_GAS_COMPENSATION_CAP_YETH = 1e16;
 uint256 constant COLL_GAS_COMPENSATION_CAP_TBTC = 6e14;
 uint256 constant COLL_GAS_COMPENSATION_CAP_SAGA = 500e18;
 uint256 constant COLL_GAS_COMPENSATION_CAP_STATOM = 100e18;
+uint256 constant COLL_GAS_COMPENSATION_CAP_KING = 500e18;
+uint256 constant COLL_GAS_COMPENSATION_CAP_YUSD = 60e18;
 
 // Minimum amount of net Bold debt a trove must have
 uint256 constant MIN_DEBT = 200e18;

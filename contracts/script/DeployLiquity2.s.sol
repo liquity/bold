@@ -11,6 +11,7 @@ import {Accounts} from "test/TestContracts/Accounts.sol";
 import {ERC20Faucet} from "test/TestContracts/ERC20Faucet.sol";
 import {ETH_GAS_COMPENSATION} from "src/Dependencies/Constants.sol";
 import {IBorrowerOperations} from "src/Interfaces/IBorrowerOperations.sol";
+import {IWrappedToken} from "src/Interfaces/IWrappedToken.sol";
 import "src/AddressesRegistry.sol";
 import "src/ActivePool.sol";
 import "src/BoldToken.sol";
@@ -37,6 +38,7 @@ import "test/Utils/Logging.sol";
 import "test/Utils/StringEquality.sol";
 import "src/Zappers/WETHZapper.sol";
 import "src/Zappers/GasCompZapper.sol";
+import "src/Zappers/WrappedTokenZapper.sol";
 import "src/Zappers/LeverageLSTZapper.sol";
 import "src/Zappers/LeverageWETHZapper.sol";
 import "src/Zappers/Modules/Exchanges/HybridCurveUniV3ExchangeHelpers.sol";
@@ -85,28 +87,34 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     IERC20Metadata WRAPPED_STATOM;
     // IERC20Metadata USDC;
     address WETH_ADDRESS = 0xeb41D53F14Cb9a67907f2b8b5DBc223944158cCb;
-    address RETH_ADDRESS = 0x679121f168488185eca6Aaa3871687FF6d38Edb6; // TODO: Change to CORRECT ADDRESS
+    address YETH_ADDRESS = 0xA6F89de43315B444114258f6E6700765D08bcd56;
     address TBTC_ADDRESS = 0xa740E6758e309840ffFfe58f749F018386A3b70b; // TODO: Change to CORRECT ADDRESS
     address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE; // TODO: This is 6 decimals, not 18 decimals. Either delete or get 18 decimals wrapped token of SAGA.
     address STATOM_ADDRESS = 0xDaF9d9032b5d5C92528d6aFf6a215514B7c21056; //18 decimals.
+    address KING_ADDRESS = 0x58d9fbBc6037dedfBA99cAfA28e4C371b795ad97;
+    address YUSD_ADDRESS = 0x839e7e610108Cf3DCc9b40329db33b6E6bc9baCE;
 
     //oracles
     address ETH_ORACLE_ADDRESS = 0xf568a35f0D1D4C0a389bB29033a0f13E02536D62;
-    address RETH_ORACLE_ADDRESS = 0xa2e5E28F3cA88e7Cc4f046dba2029eA8F44A6796;
+    address YETH_ORACLE_ADDRESS = 0xE087D1936257444ec4bc34caD95cA58EE0129a7e;
     address TBTC_ORACLE_ADDRESS = 0x987fc3b27226427323EFDB73E713669cf87B588c;
     address BTC_ORACLE_ADDRESS = 0xe7a6046a46ce932CbcD44D284f2B4C4e841457e4;
     address SAGA_ORACLE_ADDRESS = 0xB4eA7fc3359E390CADcee542bDbd34caB89E64f0;
     address STATOM_ORACLE_ADDRESS = 0x457fC8f0D3E7319eb078E076afD3F49120Bd0c4a; //18 decimals.
-    
+    address KING_ORACLE_ADDRESS = 0x54cb7d1c225100B05720d37735316BF16D885496;
+    address YUSD_ORACLE_ADDRESS = 0xB3EF672462111BF0a487f62D2A8C405B430bdeDF;
+
     ///////////////////////////////
     //staleness thresholds
     uint256 ETH_USD_STALENESS_THRESHOLD = 25 hours;
     // uint256 STETH_USD_STALENESS_THRESHOLD = 24 hours;
-    uint256 RETH_ETH_STALENESS_THRESHOLD = 25 hours;
+    uint256 YETH_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 TBTC_ETH_STALENESS_THRESHOLD = 25 hours;
     uint256 BTC_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 SAGA_USD_STALENESS_THRESHOLD = 25 hours;
     uint256 STATOM_USD_STALENESS_THRESHOLD = 25 hours;
+    uint256 KING_USD_STALENESS_THRESHOLD = 25 hours;
+    uint256 YUSD_USD_STALENESS_THRESHOLD = 25 hours;
 
 
     bytes32 SALT;
@@ -133,6 +141,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         WETHZapper wethZapper;
         GasCompZapper gasCompZapper;
         ILeverageZapper leverageZapper;
+        WrappedTokenZapper wrappedTokenZapper;
     }
 
     struct LiquityContractAddresses {
@@ -284,15 +293,15 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_WETH
         });
 
-        // rETH
+        // yETH
         troveManagerParamsArray[1] = TroveManagerParams({
-            CCR: CCR_RETH,
-            MCR: MCR_RETH,
-            SCR: SCR_RETH,
+            CCR: CCR_YETH,
+            MCR: MCR_YETH,
+            SCR: SCR_YETH,
             BCR: BCR_ALL,
-            DEBT_LIMIT: RETH_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_RETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_RETH
+            DEBT_LIMIT: YETH_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_YETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_YETH
         });
 
         // tBTC
@@ -317,18 +326,55 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_SAGA
         });
 
+        // stATOM
+        troveManagerParamsArray[4] = TroveManagerParams({
+            CCR: CCR_STATOM,
+            MCR: MCR_STATOM,
+            SCR: SCR_STATOM,
+            BCR: BCR_ALL,
+            DEBT_LIMIT: STATOM_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_STATOM,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_STATOM
+        });
+
+        // KING
+        troveManagerParamsArray[5] = TroveManagerParams({
+            CCR: CCR_KING,
+            MCR: MCR_KING,
+            SCR: SCR_KING,
+            BCR: BCR_ALL,
+            DEBT_LIMIT: KING_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_KING,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_KING
+        });
+
+        // yUSD
+        troveManagerParamsArray[6] = TroveManagerParams({
+            CCR: CCR_YUSD,
+            MCR: MCR_YUSD,
+            SCR: SCR_YUSD,
+            BCR: BCR_ALL,
+            DEBT_LIMIT: YUSD_DEBT_LIMIT,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_YUSD,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_YUSD
+        });
+
         string[] memory collNames = new string[](NUM_BRANCHES - 1);
         string[] memory collSymbols = new string[](NUM_BRANCHES - 1);
         // collNames[0] = "Wrapped Ether";
         // collSymbols[0] = "WETH";
-        collNames[0] = "Rocket Pool ETH";
-        collSymbols[0] = "rETH";
+        collNames[0] = "YieldFi ETH";
+        collSymbols[0] = "yETH";
         collNames[1] = "Threshold BTC";
         collSymbols[1] = "tBTC";
         collNames[2] = "Saga";
         collSymbols[2] = "SAGA";
-        collNames[3] = "stATOM";
+        collNames[3] = "Staked ATOM";
         collSymbols[3] = "stATOM";
+        collNames[4] = "KING";
+        collSymbols[4] = "KING";
+        collNames[5] = "YieldFi USD";
+        collSymbols[5] = "yUSD";
 
         // DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
         //     epochStart: epochStart,
@@ -516,19 +562,25 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // ETH
             vars.collaterals[0] = IERC20Metadata(WETH);
 
-            // rETH
-            vars.collaterals[1] = IERC20Metadata(RETH_ADDRESS);
+            // yETH
+            vars.collaterals[1] = IERC20Metadata(YETH_ADDRESS);
 
             // tBTC
             vars.collaterals[2] = IERC20Metadata(TBTC_ADDRESS);
 
             // SAGA
-            // vars.collaterals[4] = IERC20Metadata(SAGA_ADDRESS);
             WRAPPED_SAGA = new WrappedToken(IERC20Metadata(SAGA_ADDRESS));
             vars.collaterals[3] = WRAPPED_SAGA;
 
             // stATOM
-            vars.collaterals[4] = IERC20Metadata(STATOM_ADDRESS);
+            WRAPPED_STATOM = new WrappedToken(IERC20Metadata(STATOM_ADDRESS));
+            vars.collaterals[4] = WRAPPED_STATOM;
+
+            // KING
+            vars.collaterals[5] = IERC20Metadata(KING_ADDRESS);
+
+            // yUSD
+            vars.collaterals[6] = IERC20Metadata(YUSD_ADDRESS);
 
         } else {
             // Sepolia
@@ -727,7 +779,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         // _updateGasCompensationMaxReward(contracts.troveManager);
 
         // deploy zappers
-        (contracts.gasCompZapper, contracts.wethZapper, contracts.leverageZapper) =
+        (contracts.gasCompZapper, contracts.wethZapper, contracts.leverageZapper, contracts.wrappedTokenZapper) =
             _deployZappers(contracts.addressesRegistry, contracts.collToken, _boldToken, _usdcCurvePool);
     }
 
@@ -741,14 +793,14 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             // ETH
             if (_collTokenAddress == address(WETH)) {
                 return new WETHPriceFeed(ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD, _borroweOperationsAddress);
-            } else if (_collTokenAddress == RETH_ADDRESS) {
-                // rETH
-                RETHPriceFeed feed = new RETHPriceFeed(
+            } else if (_collTokenAddress == YETH_ADDRESS) {
+                // yETH
+                RETHPriceFeed feed = new RETHPriceFeed( // TODO: Change to YETHPriceFeed
                     deployer,
-                    RETH_ORACLE_ADDRESS,
-                    RETH_ETH_STALENESS_THRESHOLD
+                    YETH_ORACLE_ADDRESS,
+                    YETH_USD_STALENESS_THRESHOLD
                 );
-                feed.setBorrowerOperations(_borroweOperationsAddress); //This also renounces the ownership of the feed.
+                feed.setAddresses(_borroweOperationsAddress); //This also renounces the ownership of the feed.
                 return feed;
             } else if (_collTokenAddress == TBTC_ADDRESS) {
                 // tBTC
@@ -759,7 +811,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                     BTC_ORACLE_ADDRESS,
                     BTC_USD_STALENESS_THRESHOLD
                 );
-                feed.setBorrowerOperations(_borroweOperationsAddress);
+                feed.setAddresses(_borroweOperationsAddress);
                 return feed;
             } else if (_collTokenAddress == address(WRAPPED_SAGA)) {
                 // SAGA
@@ -768,15 +820,35 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                     SAGA_ORACLE_ADDRESS,
                     SAGA_USD_STALENESS_THRESHOLD
                 );
-                feed.setBorrowerOperations(_borroweOperationsAddress);
+                feed.setAddresses(_borroweOperationsAddress);
                 return feed;
             } else if (_collTokenAddress == STATOM_ADDRESS) {
                 // stATOM
-                return new stATOMPriceFeed(
+                stATOMPriceFeed feed = new stATOMPriceFeed(
                     deployer,
                     STATOM_ORACLE_ADDRESS,
                     STATOM_USD_STALENESS_THRESHOLD
                 );
+                feed.setAddresses(_borroweOperationsAddress);
+                return feed;
+            } else if (_collTokenAddress == KING_ADDRESS) {
+                // KING
+                KINGPriceFeed feed = new KINGPriceFeed(
+                    deployer,
+                    KING_ORACLE_ADDRESS,
+                    KING_USD_STALENESS_THRESHOLD
+                );
+                feed.setAddresses(_borroweOperationsAddress);
+                return feed;
+            } else if (_collTokenAddress == YUSD_ADDRESS) {
+                // yUSD
+                YUSDPriceFeed feed = new YUSDPriceFeed(
+                    deployer,
+                    YUSD_ORACLE_ADDRESS,
+                    YUSD_USD_STALENESS_THRESHOLD
+                );
+                feed.setAddresses(_borroweOperationsAddress);
+                return feed;
             } else {
                 revert("Invalid collateral token");
             }
@@ -793,7 +865,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IBoldToken,
         // ICurveStableswapNGPool _usdcCurvePool
         ICurveStableswapNGPool
-    ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper) {
+    ) internal returns (GasCompZapper gasCompZapper, WETHZapper wethZapper, ILeverageZapper leverageZapper, WrappedTokenZapper wrappedTokenZapper) {
         // IFlashLoanProvider flashLoanProvider = new BalancerFlashLoan();
 
         // IExchange hybridExchange = new HybridCurveUniV3Exchange(
@@ -811,12 +883,21 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IFlashLoanProvider flashLoanProvider = IFlashLoanProvider(address(0));
         IExchange hybridExchange = IExchange(address(0));
 
-        bool lst = _collToken != WETH;
-        if (lst) {
-            gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
-        } else {
+        // bool lst = _collToken != WETH;
+        if (_collToken == WRAPPED_SAGA) {
+            wrappedTokenZapper = new WrappedTokenZapper(IWrappedToken(address(_collToken)), _addressesRegistry, flashLoanProvider, hybridExchange);
+        } else if (_collToken == WRAPPED_STATOM) {
+            wrappedTokenZapper = new WrappedTokenZapper(IWrappedToken(address(_collToken)), _addressesRegistry, flashLoanProvider, hybridExchange);
+        } else if (_collToken == WETH) {
             wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
+        } else {
+            gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
         }
+        // if (lst) {
+        //     gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
+        // } else {
+        //     wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
+        // }
         // leverageZapper = _deployHybridLeverageZapper(_addressesRegistry, flashLoanProvider, hybridExchange, lst);
         leverageZapper = ILeverageZapper(address(0)); // Not using leverage zapper at the moment
     }
