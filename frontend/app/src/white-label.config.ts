@@ -107,42 +107,14 @@ export const WHITE_LABEL_CONFIG = {
           },
         },
       },
-      {
-        symbol: "RETH" as const,
-        name: "Rocket Pool ETH", 
-        icon: "reth",
-        collateralRatio: 1.2, // 120% MCR for LSTs
-        maxDeposit: "25000000", // $25M initial debt limit
-        maxLTV: 0.8333, // 83.33% max LTV
-        deployments: {
-          1: {
-            collToken: "0xae78736cd615f374d3085123a210448e74fc6393",
-            leverageZapper: "0x7d5f19a1e48479a95c4eb40fd1a534585026e7e5",
-            stabilityPool: "0xc4463b26be1a6064000558a84ef9b6a58abe4f7a",
-            troveManager: "0xde026433882a9dded65cac4fff8402fafff40fca",
-          },
-          11155111: {
-            collToken: "0xbdb72f78302e6174e48aa5872f0dd986ed6d98d9",
-            leverageZapper: "0x251dfe2078a910c644289f2344fac96bffea7c02",
-            stabilityPool: "0x8492ad1df9f89e4b6c54c81149058172592e1c94",
-            troveManager: "0x310fa1d1d711c75da45952029861bcf0d330aa81",
-          },
-          5464: { // Saga EVM
-            collToken: "0x679121f168488185eca6Aaa3871687FF6d38Edb6", // rETH on Saga EVM
-            leverageZapper: "0x069ba7cb9ca94cde694387b206abd30e890d7528",
-            stabilityPool: "0x91252D2f16689D65cc11829904DD530df6598306",
-            troveManager: "0x9f479824316c5454529Dcf200D3Ee31e3Ce6eB09",
-          },
-        },
-      },
-      // === BTC-based collaterals (110% MCR, 90.91% max LTV) ===
+      // === BTC-based collaterals (120% MCR, 83.33% max LTV) ===
       {
         symbol: "TBTC" as const,
         name: "tBTC",
-        icon: "btc", // Need to add BTC icon
-        collateralRatio: 1.1, // 110% MCR
+        icon: "btc",
+        collateralRatio: 1.2, // 120% MCR
         maxDeposit: "100000000", // $100M initial debt limit
-        maxLTV: 0.9091, // 90.91% max LTV
+        maxLTV: 0.8333, // 83.33% max LTV
         deployments: {
           1: {
             collToken: "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
@@ -191,120 +163,91 @@ export const WHITE_LABEL_CONFIG = {
             troveManager: "0x0000000000000000000000000000000000000000",
           },
         },
-      },      // {
-      //   symbol: "FBTC" as const,
-      //   name: "FBTC",
-      //   icon: "btc", // Reuse BTC icon
-      //   collateralRatio: 1.1, // 110% MCR
-      //   maxDeposit: "100000000", // $100M initial debt limit
-      //   maxLTV: 0.9091, // 90.91% max LTV
-      //   deployments: {
-      //     646: { // Ronin
-      //       collToken: "0xC96dE26018A54D51c097160568752c4E3BD6C364",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000", // TBD
-      //       stabilityPool: "0x0000000000000000000000000000000000000000", // TBD
-      //       troveManager: "0x0000000000000000000000000000000000000000", // TBD
-      //     },
-      //     1: { // Placeholder
-      //       collToken: "0x0000000000000000000000000000000000000000",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000",
-      //       stabilityPool: "0x0000000000000000000000000000000000000000",
-      //       troveManager: "0x0000000000000000000000000000000000000000",
-      //     },
-      //     11155111: { // Placeholder
-      //       collToken: "0x0000000000000000000000000000000000000000",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000",
-      //       stabilityPool: "0x0000000000000000000000000000000000000000",
-      //       troveManager: "0x0000000000000000000000000000000000000000",
-      //     },
-      //   },
-      // },
-      // // === Native/Platform tokens (higher collateral ratios) ===
-      // {
-      //   symbol: "SAGA" as const,
-      //   name: "SAGA",
-      //   icon: "saga", // Need to add SAGA icon
-      //   collateralRatio: 1.4, // 140% MCR
-      //   maxDeposit: "5000000", // $5M initial debt limit
-      //   maxLTV: 0.7143, // 71.43% max LTV
-      //   deployments: {
-      //     646: { // Ronin
-      //       collToken: "0xA19377761FED745723B90993988E04d641c2CfFE",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000", // TBD
-      //       stabilityPool: "0x0000000000000000000000000000000000000000", // TBD
-      //       troveManager: "0x0000000000000000000000000000000000000000", // TBD
-      //     },
-      //     1: { // Placeholder
-      //       collToken: "0x0000000000000000000000000000000000000000",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000",
-      //       stabilityPool: "0x0000000000000000000000000000000000000000",
-      //       troveManager: "0x0000000000000000000000000000000000000000",
-      //     },
-      //     11155111: { // Placeholder
-      //       collToken: "0x0000000000000000000000000000000000000000",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000",
-      //       stabilityPool: "0x0000000000000000000000000000000000000000",
-      //       troveManager: "0x0000000000000000000000000000000000000000",
-      //     },
-      //   },
-      // },
-      // {
-      //   symbol: "SUI" as const,
-      //   name: "SUI",
-      //   icon: "sui", // Need to add SUI icon
-      //   collateralRatio: 1.4, // 140% MCR
-      //   maxDeposit: "5000000", // $5M initial debt limit
-      //   maxLTV: 0.7143, // 71.43% max LTV
-      //   deployments: {
-      //     646: { // Ronin (TBD - SUI bridge/wrapper)
-      //       collToken: "0x0000000000000000000000000000000000000002::sui::SUI", // From your data (needs bridge)
-      //       leverageZapper: "0x0000000000000000000000000000000000000000", // TBD
-      //       stabilityPool: "0x0000000000000000000000000000000000000000", // TBD
-      //       troveManager: "0x0000000000000000000000000000000000000000", // TBD
-      //     },
-      //     // Placeholder deployments for build compatibility
-      //     1: { // Placeholder
-      //       collToken: "0x0000000000000000000000000000000000000000",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000",
-      //       stabilityPool: "0x0000000000000000000000000000000000000000",
-      //       troveManager: "0x0000000000000000000000000000000000000000",
-      //     },
-      //     11155111: { // Placeholder
-      //       collToken: "0x0000000000000000000000000000000000000000",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000",
-      //       stabilityPool: "0x0000000000000000000000000000000000000000",
-      //       troveManager: "0x0000000000000000000000000000000000000000",
-      //     },
-      //   },
-      // },
-      // {
-      //   symbol: "KING" as const,
-      //   name: "KING",
-      //   icon: "king", // Need to add KING icon
-      //   collateralRatio: 2.0, // 200% MCR (high volatility asset)
-      //   maxDeposit: "500000", // $500K initial debt limit
-      //   maxLTV: 0.5, // 50% max LTV
-      //   deployments: {
-      //     646: { // Ronin
-      //       collToken: "0x8f08b70456eb22f6109f57b8fafe862ed28e6040",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000", // TBD
-      //       stabilityPool: "0x0000000000000000000000000000000000000000", // TBD
-      //       troveManager: "0x0000000000000000000000000000000000000000", // TBD
-      //     },
-      //     1: { // Placeholder
-      //       collToken: "0x0000000000000000000000000000000000000000",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000",
-      //       stabilityPool: "0x0000000000000000000000000000000000000000",
-      //       troveManager: "0x0000000000000000000000000000000000000000",
-      //     },
-      //     11155111: { // Placeholder
-      //       collToken: "0x0000000000000000000000000000000000000000",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000",
-      //       stabilityPool: "0x0000000000000000000000000000000000000000",
-      //       troveManager: "0x0000000000000000000000000000000000000000",
-      //     },
-      //   },
-      // },
+      },
+      {
+        symbol: "STATOM" as const,
+        name: "stATOM",
+        icon: "statom",
+        collateralRatio: 1.2, // 120% MCR
+        maxDeposit: "25000000", // $25M initial debt limit (placeholder)
+        maxLTV: 0.8333, // 83.33% max LTV
+        deployments: {
+          5464: { // Saga EVM - will be deployed in upcoming PR
+            collToken: "0xDaF9d9032b5d5C92528d6aFf6a215514B7c21056",
+            leverageZapper: "0x0000000000000000000000000000000000000000", // TBD
+            stabilityPool: "0x0000000000000000000000000000000000000000", // TBD
+            troveManager: "0x0000000000000000000000000000000000000000", // TBD
+          },
+          1: {
+            collToken: "0x0000000000000000000000000000000000000000",
+            leverageZapper: "0x0000000000000000000000000000000000000000",
+            stabilityPool: "0x0000000000000000000000000000000000000000",
+            troveManager: "0x0000000000000000000000000000000000000000",
+          },
+          11155111: {
+            collToken: "0x0000000000000000000000000000000000000000",
+            leverageZapper: "0x0000000000000000000000000000000000000000",
+            stabilityPool: "0x0000000000000000000000000000000000000000",
+            troveManager: "0x0000000000000000000000000000000000000000",
+          },
+        },
+      },
+      {
+        symbol: "KING" as const,
+        name: "KING",
+        icon: "king",
+        collateralRatio: 1.6, // 160% MCR (higher volatility)
+        maxDeposit: "10000000", // $10M initial debt limit (placeholder)
+        maxLTV: 0.625, // 62.5% max LTV
+        deployments: {
+          5464: { // Saga EVM - placeholder for future deployment
+            collToken: "0x0000000000000000000000000000000000000000", // TBD
+            leverageZapper: "0x0000000000000000000000000000000000000000", // TBD
+            stabilityPool: "0x0000000000000000000000000000000000000000", // TBD
+            troveManager: "0x0000000000000000000000000000000000000000", // TBD
+          },
+          1: {
+            collToken: "0x8f08b70456eb22f6109f57b8fafe862ed28e6040", // Ethereum KING address from spreadsheet
+            leverageZapper: "0x0000000000000000000000000000000000000000",
+            stabilityPool: "0x0000000000000000000000000000000000000000",
+            troveManager: "0x0000000000000000000000000000000000000000",
+          },
+          11155111: {
+            collToken: "0x0000000000000000000000000000000000000000",
+            leverageZapper: "0x0000000000000000000000000000000000000000",
+            stabilityPool: "0x0000000000000000000000000000000000000000",
+            troveManager: "0x0000000000000000000000000000000000000000",
+          },
+        },
+      },
+      {
+        symbol: "YETH" as const,
+        name: "yETH",
+        icon: "yeth",
+        collateralRatio: 1.2, // 120% MCR
+        maxDeposit: "50000000", // $50M initial debt limit (placeholder)
+        maxLTV: 0.8333, // 83.33% max LTV
+        deployments: {
+          5464: { // Saga EVM - placeholder for future deployment
+            collToken: "0x0000000000000000000000000000000000000000", // TBD
+            leverageZapper: "0x0000000000000000000000000000000000000000", // TBD
+            stabilityPool: "0x0000000000000000000000000000000000000000", // TBD
+            troveManager: "0x0000000000000000000000000000000000000000", // TBD
+          },
+          1: {
+            collToken: "0x8464f6ecae1ea58ec816c13f964030eab8ec123a", // Ethereum yETH address from spreadsheet
+            leverageZapper: "0x0000000000000000000000000000000000000000",
+            stabilityPool: "0x0000000000000000000000000000000000000000",
+            troveManager: "0x0000000000000000000000000000000000000000",
+          },
+          11155111: {
+            collToken: "0x0000000000000000000000000000000000000000",
+            leverageZapper: "0x0000000000000000000000000000000000000000",
+            stabilityPool: "0x0000000000000000000000000000000000000000",
+            troveManager: "0x0000000000000000000000000000000000000000",
+          },
+        },
+      },   
     ],
 
     // Other tokens in the protocol

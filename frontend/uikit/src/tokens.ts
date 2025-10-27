@@ -6,11 +6,12 @@ import { WHITE_LABEL_CONFIG } from "../../app/src/white-label.config";
 
 // Import all available collateral icons
 import tokenEth from "./token-icons/eth.svg";
-import tokenReth from "./token-icons/reth.svg";
 import tokenWsteth from "./token-icons/wsteth.svg";
 import tokenBtc from "./token-icons/btc.svg";
 import tokenSaga from "./token-icons/saga.png";
-import tokenSui from "./token-icons/sui.svg";
+import tokenStatom from "./token-icons/statom.webp";
+import tokenKing from "./token-icons/king.svg";
+import tokenYeth from "./token-icons/yeth.svg";
 
 // Map of available token icons by icon name from config
 const tokenIconMap: Record<string, string> = {
@@ -19,11 +20,12 @@ const tokenIconMap: Record<string, string> = {
   "legacy-stablecoin": tokenLusd,
   "staked-main-token": tokenSbold,
   "eth": tokenEth,
-  "reth": tokenReth,
   "wsteth": tokenWsteth,
   "btc": tokenBtc,
   "saga": tokenSaga,
-  "sui": tokenSui,
+  "statom": tokenStatom,
+  "king": tokenKing,
+  "yeth": tokenYeth,
 };
 
 // any external token, without a known symbol
