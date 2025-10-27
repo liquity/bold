@@ -45,8 +45,8 @@ export function YboldPositionSummary() {
                 heading: "APR (last 7 days)",
                 body: <>The annualized rate yBOLD deposits earned over the last 7 days.</>,
                 footerLink: {
-                  label: "Check Dune for more details",
-                  href: "https://dune.com/liquity/liquity-v2",
+                  label: "Check Yearn for more details",
+                  href: "https://yearn.fi/v3/1/0x9F4330700a36B29952869fac9b33f45EEdd8A3d8",
                 },
               }}
             />
