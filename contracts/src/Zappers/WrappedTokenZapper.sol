@@ -28,6 +28,8 @@ contract WrappedTokenZapper is BaseZapper {
         IERC20Metadata _underlyingToken = IERC20Metadata(_wrappedToken.underlying());
         _decimalDiff = _wrappedToken.decimals() - _underlyingToken.decimals();
 
+        wrappedToken = _wrappedToken;
+
         // Approve coll to BorrowerOperations
         _wrappedToken.approve(address(borrowerOperations), type(uint256).max);
         // Approve Coll to exchange module (for closeTroveFromCollateral)
