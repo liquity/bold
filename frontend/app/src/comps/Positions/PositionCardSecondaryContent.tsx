@@ -55,7 +55,7 @@ export function PositionCardSecondaryContent({
     claimableCollateral: claimableCollateralLabel,
   } = labels;
 
-  if (status === "liquidated" && collSurplus && dn.gt(collSurplus, 0)) {
+  if (status === "liquidated") {
     const collateralWasClaimed = collSurplus && dn.gt(collSurplus, 0)
       && collSurplusOnChain !== null
       && dn.eq(collSurplusOnChain, 0);
@@ -184,9 +184,7 @@ export function PositionCardSecondaryContent({
             >
               LTV
             </div>
-            {status === "liquidated"
-              ? "N/A"
-              : ltv
+            {ltv
               ? (
                 <div
                   className={css({
@@ -254,9 +252,7 @@ export function PositionCardSecondaryContent({
                 color: "positionContent",
               })}
             >
-              {status === "liquidated"
-                ? "N/A"
-                : fmtnum(interestRate, { preset: "pct2", suffix: "%" })}
+              {fmtnum(interestRate, { preset: "pct2", suffix: "%" })}
             </div>
             {batchManager && (
               <div
