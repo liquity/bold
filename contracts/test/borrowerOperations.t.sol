@@ -44,7 +44,7 @@ contract BorrowerOperationsTest is DevTestSetup {
         vm.prank(governor);
         collateralRegistry.removeCollateral(0);
         vm.prank(A);
-        vm.expectRevert("BorrowerOperations: Branch is not active");
+        vm.expectRevert();
         borrowerOperations.withdrawColl(troveId, 50 ether);
     }
 

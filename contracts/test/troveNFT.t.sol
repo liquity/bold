@@ -199,11 +199,11 @@ contract troveNFTTest is DevTestSetup {
         string memory decodedUri = string(Base64.decode(uriSplit));
 
         // Check for expected attributes
-        assertTrue(LibString.contains(decodedUri, '"name": "Liquity V2 - '), "NFT Name attribute missing");
+        assertTrue(LibString.contains(decodedUri, '"name": "Mustang - '), "NFT Name attribute missing");
 
         assertTrue(
             LibString.contains(
-                decodedUri, '"description": "Liquity V2 is a collateralized debt platform. Users can lock up'
+                decodedUri, '"description": "Mustang is a collateralized debt platform.'
             ),
             "NFT description attribute missing"
         );

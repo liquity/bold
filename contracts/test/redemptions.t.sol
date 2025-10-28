@@ -987,7 +987,7 @@ contract Redemptions is DevTestSetup {
         assertGt(stabilityPool.getTotalBoldDeposits(), troveManager.getTroveEntireDebt(troveIDs.B));
 
         // Price drops, B becomes liquidateable
-        uint256 price = 10e18;
+        uint256 price = 10e16;
         priceFeed.setPrice(price);
 
         // assertFalse(troveManager.checkBelowCriticalThreshold(price));
