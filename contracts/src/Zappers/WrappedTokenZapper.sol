@@ -10,8 +10,11 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.s
 
 contract WrappedTokenZapper is BaseZapper {
     using SafeERC20 for IERC20;
+    using SafeERC20 for IWrappedToken;
 
     IWrappedToken public immutable wrappedToken;
+
+    IERC20 internal immutable _underlyingToken;
 
     uint256 internal immutable _decimalDiff;
 
@@ -25,8 +28,9 @@ contract WrappedTokenZapper is BaseZapper {
     {
         require(address(_wrappedToken) == address(_addressesRegistry.collToken()), "WTZ: Wrong coll branch");
 
-        IERC20Metadata _underlyingToken = IERC20Metadata(_wrappedToken.underlying());
-        _decimalDiff = _wrappedToken.decimals() - _underlyingToken.decimals();
+        _underlyingToken = _wrappedToken.underlying();
+
+        _decimalDiff = _wrappedToken.decimals() - IERC20Metadata(address(_underlyingToken)).decimals();
 
         wrappedToken = _wrappedToken;
 
@@ -36,17 +40,18 @@ contract WrappedTokenZapper is BaseZapper {
         // _wrappedToken.approve(address(_exchange), type(uint256).max); // Not using exchange at the moment
     }
 
-    function convertUnderlyingToWrapped(uint256 _amount) public pure returns (uint256) {
+    function convertUnderlyingToWrapped(uint256 _amount) public view returns (uint256) {
         return _amount * 10**_decimalDiff;
     }
     
-    function convertWrappedToUnderlying(uint256 _wrappedAmount) public pure returns (uint256) {
+    function convertWrappedToUnderlying(uint256 _wrappedAmount) public view returns (uint256) {
         return _wrappedAmount / 10**_decimalDiff;
     }
 
     // The collAmount is the amount of underlying token. Its decimals will be converted to the wrapped token decimals.
-    function openTroveWithRawETH(OpenTroveParams calldata _params) external returns (uint256) {
+    function openTroveWithRawETH(OpenTroveParams calldata _params) external payable returns (uint256) {
         // No need to check ETH_GAS_COMPENSATION as there is no gas on transactions on Saga EVM
+        require(msg.value == 0, "WTZ: ETH not allowed");
         require(
             _params.batchManager == address(0) || _params.annualInterestRate == 0,
             "WTZ: Cannot choose interest if joining a batch"
@@ -56,6 +61,7 @@ contract WrappedTokenZapper is BaseZapper {
         _underlyingToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
 
         // Wrap underlying token to wrapped token
+        _underlyingToken.approve(address(wrappedToken), _params.collAmount);
         wrappedToken.depositFor(address(this), _params.collAmount);
         
         uint256 wrappedCollAmount = convertUnderlyingToWrapped(_params.collAmount);
@@ -123,6 +129,7 @@ contract WrappedTokenZapper is BaseZapper {
         _underlyingToken.safeTransferFrom(msg.sender, address(this), _amount);
 
         // Wrap underlying token to wrapped token
+        _underlyingToken.approve(address(wrappedToken), _amount);
         wrappedToken.depositFor(address(this), _amount);
 
         uint256 wrappedCollAmount = convertUnderlyingToWrapped(_amount);
@@ -133,17 +140,18 @@ contract WrappedTokenZapper is BaseZapper {
     /**
      * 
      * @param _troveId The trove ID
-     * @param _amount The amount of wrapped token to withdraw. Its decimals will be converted to the underlying token decimals.
+     * @param _amount The amount of underlying token to withdraw. Its decimals will be converted to the wrapped token decimals.
      */
-    function withdrawCollToRawETH(uint256 _troveId, uint256 _wrappedAmount) external {
+    function withdrawCollToRawETH(uint256 _troveId, uint256 _amount) external {
         address owner = troveNFT.ownerOf(_troveId);
-        address payable receiver = payable(_requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner));
+        address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
         _requireZapperIsReceiver(_troveId);
 
-        borrowerOperations.withdrawColl(_troveId, _wrappedAmount);
+        uint256 wrappedAmount = convertUnderlyingToWrapped(_amount);
+        borrowerOperations.withdrawColl(_troveId, wrappedAmount);
 
         // Unwrap and send underlying token to receiver
-        wrappedToken.withdrawTo(receiver, _wrappedAmount);
+        wrappedToken.withdrawTo(receiver, wrappedAmount);
     }
 
     function withdrawBold(uint256 _troveId, uint256 _boldAmount, uint256 _maxUpfrontFee) external {
@@ -227,11 +235,11 @@ contract WrappedTokenZapper is BaseZapper {
 
         // ETH -> WETH
         if (_isCollIncrease) {
-            // WETH.deposit{value: _collChange}();
             // Transfer underlying token from user to this contract        
             _underlyingToken.safeTransferFrom(msg.sender, address(this), _collChange);
 
             // Wrap underlying token to wrapped token
+            _underlyingToken.approve(address(wrappedToken), _collChange);
             wrappedToken.depositFor(address(this), _collChange);
         }
 
@@ -240,7 +248,7 @@ contract WrappedTokenZapper is BaseZapper {
             boldToken.transferFrom(msg.sender, address(this), _boldChange);
         }
 
-        return receiver;
+        return (receiver, wrappedCollChange);
     }
 
     function _adjustTrovePost(
