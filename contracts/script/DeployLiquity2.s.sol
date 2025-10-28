@@ -79,7 +79,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     string constant DEPLOYMENT_MODE_BOLD_ONLY = "bold-only";
     string constant DEPLOYMENT_MODE_USE_EXISTING_BOLD = "use-existing-bold";
 
-    uint256 constant NUM_BRANCHES = 4;
+    uint256 constant NUM_BRANCHES = 7;
 
     // used for gas compensation and as collateral of the first branch
     // tapping disallowed
