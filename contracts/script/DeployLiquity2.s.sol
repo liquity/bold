@@ -334,6 +334,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_STATOM,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_STATOM
         });
+        
 
         // KING
         troveManagerParamsArray[5] = TroveManagerParams({
