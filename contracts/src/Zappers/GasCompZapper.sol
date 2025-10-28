@@ -16,7 +16,7 @@ contract GasCompZapper is BaseZapper {
         BaseZapper(_addressesRegistry, _flashLoanProvider, _exchange)
     {
         collToken = _addressesRegistry.collToken();
-        require(address(WETH) != address(collToken), "GCZ: Wrong coll branch");
+        //require(address(WETH) != address(collToken), "GCZ: Wrong coll branch");
 
         // Approve WETH to BorrowerOperations
         WETH.approve(address(borrowerOperations), type(uint256).max);
