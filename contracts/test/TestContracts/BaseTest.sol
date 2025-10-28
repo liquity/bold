@@ -18,6 +18,7 @@ import "src/GasPool.sol";
 import "src/HintHelpers.sol";
 import "src/Zappers/WETHZapper.sol";
 import "src/Zappers/GasCompZapper.sol";
+import "src/Zappers/WrappedTokenZapper.sol";
 import "src/Zappers/LeverageLSTZapper.sol";
 import {mulDivCeil} from "../Utils/Math.sol";
 import {Logging} from "../Utils/Logging.sol";
@@ -60,6 +61,7 @@ contract BaseTest is TestAccounts, Logging, TroveId {
     IWETH WETH; // used for gas compensation
     WETHZapper wethZapper;
     GasCompZapper gasCompZapper;
+    WrappedTokenZapper wrappedTokenZapper;
     ILeverageZapper leverageZapperCurve;
     ILeverageZapper leverageZapperUniV3;
 
