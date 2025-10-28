@@ -1,10 +1,15 @@
-import type { CollateralSymbol, Dnum } from "@/src/types";
+import type { FlowStep } from "@/src/services/TransactionFlow";
+import type { BranchId, CollateralSymbol, Dnum } from "@/src/types";
 
 import { getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
+import { getBranch } from "@/src/liquity-utils";
+import { useQuery } from "@tanstack/react-query";
 import * as dn from "dnum";
 import { useMemo } from "react";
-import { useReadContracts } from "wagmi";
+import { parseEventLogs } from "viem";
+import { useConfig as useWagmiConfig, useReadContracts } from "wagmi";
+import { getTransactionReceipt } from "wagmi/actions";
 import { useDebounced } from "./react-utils";
 
 const MARGINAL_AMOUNT_DIVIDER = 1_000n;
@@ -134,6 +139,75 @@ export function useQuoteExactOutput(params: QuoteExactOutputParams) {
               debounced.outputAmountMarginal,
             ),
           }),
+    },
+  });
+}
+
+/**
+ * Extracts the slippage refund amount from a leverage or close position transaction receipt.
+ * The slippage refund is a Transfer event from the zapper contract to the user's wallet.
+ *
+ * Supported transaction types:
+ * - openLeveragedTrove: Opening a leverage position
+ * - leverUpTrove: Increasing leverage
+ * - leverDownTrove: Decreasing leverage
+ * - closeLoanPosition: Closing position (when repaying with collateral)
+ */
+export function useSlippageRefund(
+  branchId: BranchId,
+  account: string,
+  steps: FlowStep[] | null,
+  isCloseLoanToCollateral = false,
+) {
+  const wagmiConfig = useWagmiConfig();
+  const branch = getBranch(branchId);
+
+  // Find the last confirmed step that might have a slippage refund
+  const relevantStep = steps
+    ?.slice()
+    .reverse()
+    .find(
+      (step) =>
+        (
+          step.id === "leverUpTrove"
+          || step.id === "leverDownTrove"
+          || (step.id === "closeLoanPosition" && isCloseLoanToCollateral)
+          || step.id === "openLeveragedTrove"
+        )
+        && step.status === "confirmed"
+        && step.artifact,
+    );
+
+  return useQuery({
+    enabled: Boolean(relevantStep?.artifact),
+    queryKey: ["slippage-refund", relevantStep?.artifact],
+    queryFn: async () => {
+      if (!relevantStep?.artifact) return null;
+
+      const receipt = await getTransactionReceipt(wagmiConfig, {
+        hash: relevantStep.artifact as `0x${string}`,
+      });
+
+      const transferEvents = parseEventLogs({
+        abi: branch.contracts.CollToken.abi,
+        logs: receipt.logs,
+        eventName: "Transfer",
+      });
+
+      // Find transfer from zapper to user (slippage refund)
+      const zapperAddress = branch.symbol === "ETH"
+        ? branch.contracts.LeverageWETHZapper.address.toLowerCase()
+        : branch.contracts.LeverageLSTZapper.address.toLowerCase();
+
+      const slippageTransfer = transferEvents.find(
+        (event) =>
+          event.args.from?.toLowerCase() === zapperAddress
+          && event.args.to?.toLowerCase() === account.toLowerCase(),
+      );
+
+      return slippageTransfer?.args.value
+        ? dnum18(slippageTransfer.args.value)
+        : null;
     },
   });
 }
