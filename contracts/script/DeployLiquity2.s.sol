@@ -26,9 +26,12 @@ import "src/MultiTroveGetter.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
+import "src/PriceFeeds/yETHPriceFeed.sol";
 import "src/PriceFeeds/TBTCPriceFeed.sol";
 import "src/PriceFeeds/SAGAPriceFeed.sol";
 import "src/PriceFeeds/stATOMPriceFeed.sol";
+import "src/PriceFeeds/KINGPriceFeed.sol";
+import "src/PriceFeeds/yUSDPriceFeed.sol";
 import "src/CollateralRegistry.sol";
 import "test/TestContracts/PriceFeedTestnet.sol";
 import "test/TestContracts/MetadataDeployment.sol";
@@ -798,7 +801,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 return new WETHPriceFeed(ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD, _borroweOperationsAddress);
             } else if (_collTokenAddress == YETH_ADDRESS) {
                 // yETH
-                RETHPriceFeed feed = new RETHPriceFeed( // TODO: Change to YETHPriceFeed
+                yETHPriceFeed feed = new yETHPriceFeed(
                     deployer,
                     YETH_ORACLE_ADDRESS,
                     YETH_USD_STALENESS_THRESHOLD
@@ -845,7 +848,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 return feed;
             } else if (_collTokenAddress == YUSD_ADDRESS) {
                 // yUSD
-                YUSDPriceFeed feed = new YUSDPriceFeed(
+                yUSDPriceFeed feed = new yUSDPriceFeed(
                     deployer,
                     YUSD_ORACLE_ADDRESS,
                     YUSD_USD_STALENESS_THRESHOLD
