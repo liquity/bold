@@ -789,9 +789,9 @@ contract CsBold013 is TestAccounts {
 
         // wstETH
         params[1] = TestDeployer.TroveManagerParams({
-            CCR: CCR_SETH,
-            MCR: MCR_SETH,
-            SCR: SCR_SETH,
+            CCR: CCR_YETH,
+            MCR: MCR_YETH,
+            SCR: SCR_YETH,
             BCR: BCR_ALL,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_YETH,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_YETH,
@@ -799,11 +799,11 @@ contract CsBold013 is TestAccounts {
             branchId: 1
         });
 
-        // rETH (same as wstETH)
+        // yETH (same as wstETH in risk preference)
         params[2] = TestDeployer.TroveManagerParams({
-            CCR: CCR_SETH,
-            MCR: MCR_SETH,
-            SCR: SCR_SETH,
+            CCR: CCR_YETH,
+            MCR: MCR_YETH,
+            SCR: SCR_YETH,
             BCR: BCR_ALL,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_YETH,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_YETH,
