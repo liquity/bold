@@ -19,22 +19,24 @@ uint256 constant MAX_LIQUIDATION_PENALTY_REDISTRIBUTION = 20e16; // 20%
 
 // Collateral branch parameters (SETH = staked ETH, i.e. wstETH / rETH)
 uint256 constant CCR_WETH = 150 * _1pct;
-uint256 constant CCR_RETH = 160 * _1pct;
+uint256 constant CCR_SETH = 160 * _1pct;
 uint256 constant CCR_TBTC = 160 * _1pct;
 uint256 constant CCR_SAGA = 170 * _1pct;
 uint256 constant CCR_STATOM = 160 * _1pct;
 
 uint256 constant MCR_WETH = 110 * _1pct;
-uint256 constant MCR_RETH = 110 * _1pct;
+uint256 constant MCR_SETH = 120 * _1pct; //yeth 
 uint256 constant MCR_TBTC = 110 * _1pct;
-uint256 constant MCR_SAGA = 140 * _1pct;
+uint256 constant MCR_SAGA = 150 * _1pct; // saga and king
 uint256 constant MCR_STATOM = 125 * _1pct;
+uint256 constant MCR_YUSD = 115 * _1pct; //yusd
 
 uint256 constant SCR_WETH = 110 * _1pct;
-uint256 constant SCR_RETH = 110 * _1pct;
+uint256 constant SCR_SETH = 110 * _1pct;
 uint256 constant SCR_TBTC = 110 * _1pct;
 uint256 constant SCR_SAGA = 140 * _1pct;
 uint256 constant SCR_STATOM = 125 * _1pct;
+uint256 constant SCR_YUSD = 115 * _1pct; //yusd
 
 // Batch CR buffer (same for all branches for now)
 // On top of MCR to join a batch, or adjust inside a batch
@@ -44,8 +46,12 @@ uint256 constant BCR_ALL = 10 * _1pct;
 uint256 constant WETH_DEBT_LIMIT = 100_000_000e18;
 uint256 constant RETH_DEBT_LIMIT = 25_000_000e18;
 uint256 constant TBTC_DEBT_LIMIT = 100_000_000e18;
-uint256 constant SAGA_DEBT_LIMIT = 5_000_000e18;
-uint256 constant STATOM_DEBT_LIMIT = 500_000e18;
+uint256 constant SAGA_DEBT_LIMIT = 1_000_000e18;
+uint256 constant STATOM_DEBT_LIMIT = 1_000_000e18;
+uint256 constant KING_DEBT_LIMIT = 500_000e18;
+uint256 constant YUSD_DEBT_LIMIT = 5_000_000e18;
+uint256 constant YETH_DEBT_LIMIT = 5_000_000e18;
+
 
 uint256 constant LIQUIDATION_PENALTY_SP_WETH = 5 * _1pct;
 uint256 constant LIQUIDATION_PENALTY_SP_RETH = 5 * _1pct;

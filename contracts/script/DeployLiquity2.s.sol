@@ -289,7 +289,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             SCR: SCR_TBTC,
             BCR: BCR_ALL,
             debtLimit: TBTC_DEBT_LIMIT,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_BTC,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_TBTC,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_BTC
         });
         
@@ -314,6 +314,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_STATOM,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_STATOM
         });
+        
 
         //TODO double check the order of these at the end
         string[] memory collNames = new string[](NUM_BRANCHES - 1);
