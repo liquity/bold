@@ -361,7 +361,6 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_YUSD
         });
 
-        //TODO double check the order of these at the end
         string[] memory collNames = new string[](NUM_BRANCHES - 1);
         string[] memory collSymbols = new string[](NUM_BRANCHES - 1);
         // collNames[0] = "Wrapped Ether";
@@ -372,22 +371,13 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         collSymbols[1] = "tBTC";
         collNames[2] = "Saga";
         collSymbols[2] = "SAGA";
-        collNames[3] = "Staked ATOM";
+        collNames[3] = "Stride Staked ATOM";
         collSymbols[3] = "stATOM";
-        collNames[4] = "KING";
+        collNames[4] = "King";
         collSymbols[4] = "KING";
         collNames[5] = "YieldFi USD";
         collSymbols[5] = "yUSD";
 
-        // DeployGovernanceParams memory deployGovernanceParams = DeployGovernanceParams({
-        //     epochStart: epochStart,
-        //     deployer: deployer,
-        //     salt: SALT,
-        //     stakingV1: stakingV1,
-        //     lqty: lqty,
-        //     lusd: lusd,
-        //     bold: boldAddress
-        // });
 
         DeploymentResult memory deployed =
             // _deployAndConnectContracts(troveManagerParamsArray, collNames, collSymbols, deployGovernanceParams);
@@ -777,7 +767,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
 
         // Update gas compensation max reward
-        // TODO: 
+        // note:
         // Only the governor can update gas compensation max reward
         // So instead of calling during deployment, we could call it post-deployment as governor.
         // OR, deploy as governor and call it during deployment.
@@ -794,9 +784,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         returns (IPriceFeed)
     {
         vm.sleep(3000);
-        if (block.chainid == CHAIN_ID && !useTestnetPriceFeeds) {
-            // Saga
-            // ETH
+        if (block.chainid == CHAIN_ID && !useTestnetPriceFeeds) { //saga chain
             if (_collTokenAddress == address(WETH)) {
                 return new WETHPriceFeed(ETH_ORACLE_ADDRESS, ETH_USD_STALENESS_THRESHOLD, _borroweOperationsAddress);
             } else if (_collTokenAddress == YETH_ADDRESS) {
@@ -828,7 +816,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 );
                 feed.setAddresses(_borroweOperationsAddress);
                 return feed;
-            } else if (_collTokenAddress == STATOM_ADDRESS) {
+            } else if (_collTokenAddress == address(WRAPPED_STATOM)) {
                 // stATOM
                 stATOMPriceFeed feed = new stATOMPriceFeed(
                     deployer,
@@ -894,10 +882,10 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             wrappedTokenZapper = new WrappedTokenZapper(IWrappedToken(address(_collToken)), _addressesRegistry, flashLoanProvider, hybridExchange);
         } else if (_collToken == WRAPPED_STATOM) {
             wrappedTokenZapper = new WrappedTokenZapper(IWrappedToken(address(_collToken)), _addressesRegistry, flashLoanProvider, hybridExchange);
-        } else if (_collToken == WETH) {
-            wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
+        // } else if (_collToken == WETH) { //not using weth zapper because ETH is not the native token.
+        //     wethZapper = new WETHZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
         } else {
-            gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
+            gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, hybridExchange); //weth gets the normal gas comp zapper
         }
         // if (lst) {
         //     gasCompZapper = new GasCompZapper(_addressesRegistry, flashLoanProvider, hybridExchange);
@@ -1053,20 +1041,20 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         );
     }
 
-    function _updateGasCompensationMaxReward(ITroveManager _troveManager) internal {
-        IERC20Metadata _collToken = _troveManager.addressesRegistry().collToken();
-        if (address(_collToken) == WETH_ADDRESS) {
-            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_WETH);
-        // } else if (address(_collToken) == RETH_ADDRESS) {
-        //     _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_RETH);
-        } else if (address(_collToken) == TBTC_ADDRESS) {
-            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_TBTC);
-        } else if (address(_collToken) == address(WRAPPED_SAGA)) {
-            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_SAGA);
-        } else if (address(_collToken) == STATOM_ADDRESS) {
-            _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_STATOM);
-        } else {
-            revert("Invalid collateral token");
-        }
-    }
+    // function _updateGasCompensationMaxReward(ITroveManager _troveManager) internal {
+    //     IERC20Metadata _collToken = _troveManager.addressesRegistry().collToken();
+    //     if (address(_collToken) == WETH_ADDRESS) {
+    //         _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_WETH);
+    //     // } else if (address(_collToken) == RETH_ADDRESS) {
+    //     //     _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_RETH);
+    //     } else if (address(_collToken) == TBTC_ADDRESS) {
+    //         _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_TBTC);
+    //     } else if (address(_collToken) == address(WRAPPED_SAGA)) {
+    //         _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_SAGA);
+    //     } else if (address(_collToken) == STATOM_ADDRESS) {
+    //         _troveManager.updateGasCompensationMaxReward(COLL_GAS_COMPENSATION_CAP_STATOM);
+    //     } else {
+    //         revert("Invalid collateral token");
+    //     }
+    // }
 }
