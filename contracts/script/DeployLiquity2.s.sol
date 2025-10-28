@@ -89,9 +89,9 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
     // IERC20Metadata USDC;
     address WETH_ADDRESS = 0xeb41D53F14Cb9a67907f2b8b5DBc223944158cCb;
     address YETH_ADDRESS = 0xA6F89de43315B444114258f6E6700765D08bcd56;
-    address TBTC_ADDRESS = 0xa740E6758e309840ffFfe58f749F018386A3b70b; // TODO: Change to CORRECT ADDRESS
-    address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE; // TODO: This is 6 decimals, not 18 decimals. Either delete or get 18 decimals wrapped token of SAGA.
-    address STATOM_ADDRESS = 0xDaF9d9032b5d5C92528d6aFf6a215514B7c21056; //18 decimals.
+    address TBTC_ADDRESS = 0xa740E6758e309840ffFfe58f749F018386A3b70b; 
+    address SAGA_ADDRESS = 0xA19377761FED745723B90993988E04d641c2CfFE; //6 decimals, so we use a wrapper
+    address STATOM_ADDRESS = 0xDaF9d9032b5d5C92528d6aFf6a215514B7c21056; //6 decimals, so we use a wrapper
     address KING_ADDRESS = 0x58d9fbBc6037dedfBA99cAfA28e4C371b795ad97;
     address YUSD_ADDRESS = 0x839e7e610108Cf3DCc9b40329db33b6E6bc9baCE;
 
