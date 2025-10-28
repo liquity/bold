@@ -789,24 +789,24 @@ contract CsBold013 is TestAccounts {
 
         // wstETH
         params[1] = TestDeployer.TroveManagerParams({
-            CCR: CCR_RETH,
-            MCR: MCR_RETH,
-            SCR: SCR_RETH,
+            CCR: CCR_SETH,
+            MCR: MCR_SETH,
+            SCR: SCR_SETH,
             BCR: BCR_ALL,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_RETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_RETH,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_YETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_YETH,
             debtLimit: MAX_INT/2,
             branchId: 1
         });
 
         // rETH (same as wstETH)
         params[2] = TestDeployer.TroveManagerParams({
-            CCR: CCR_RETH,
-            MCR: MCR_RETH,
-            SCR: SCR_RETH,
+            CCR: CCR_SETH,
+            MCR: MCR_SETH,
+            SCR: SCR_SETH,
             BCR: BCR_ALL,
-            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_RETH,
-            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_RETH,
+            LIQUIDATION_PENALTY_SP: LIQUIDATION_PENALTY_SP_YETH,
+            LIQUIDATION_PENALTY_REDISTRIBUTION: LIQUIDATION_PENALTY_REDISTRIBUTION_YETH,
             debtLimit: MAX_INT/2,
             branchId: 2
         });
