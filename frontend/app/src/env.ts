@@ -222,6 +222,7 @@ export const EnvSchema = v.pipe(
         contracts,
         strategies: defaultIcStrategies ?? [],
         symbol: collateral.symbol,
+        decimals: collateral.decimals,
       };
     });
 

@@ -52,7 +52,6 @@ import * as v from "valibot";
 import { encodeAbiParameters, erc20Abi, isAddressEqual, keccak256, parseAbiParameters, zeroAddress } from "viem";
 import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
-import { WHITE_LABEL_CONFIG } from "./white-label.config";
 
 function isLegacyCheckObject(check: typeof LEGACY_CHECK): check is { BRANCHES: Array<any>; [key: string]: any } {
   return typeof check === "object" && check !== null && "BRANCHES" in check && Array.isArray(check.BRANCHES);
