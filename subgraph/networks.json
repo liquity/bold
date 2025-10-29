@@ -9,8 +9,8 @@
   },
   "saga-evm": {
     "BoldToken": {
-      "address": "0x6afc1dc17a4dac310e84100578fa8f0699cd43b9",
-      "startBlock": 5063018
+      "address": "0xf4e4f7b7a09c50d3cc710151536b88b48422f48b",
+      "startBlock": 5236533
     }
   },
   "mainnet": {
