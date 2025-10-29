@@ -111,6 +111,7 @@ export type Contracts = ProtocolContractMap & {
     branchId: BranchId;
     contracts: BranchContracts;
     symbol: CollateralSymbol;
+    decimals: number;
   }>;
 };
 
@@ -141,6 +142,7 @@ export const CONTRACTS: Contracts = {
     id: branch.branchId,
     branchId: branch.branchId,
     symbol: branch.symbol,
+    decimals: branch.decimals,
     contracts: {
       ActivePool: { address: branch.ACTIVE_POOL, abi: abis.ActivePool },
       BorrowerOperations: {

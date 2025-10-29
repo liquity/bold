@@ -80,10 +80,11 @@ export function PanelUpdateBorrowPosition({
 
   const collMax = depositMode === "remove" ? null : (
     collBalance.data && dnumMax(
-      dn.sub(
-        collBalance.data,
-        collToken.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
-      ),
+      collBalance.data,
+      // dn.sub(
+      //   collBalance.data,
+      //   collToken.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
+      // ),
       dnum18(0),
     )
   );

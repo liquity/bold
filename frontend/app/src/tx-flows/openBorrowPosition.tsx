@@ -42,6 +42,10 @@ const RequestSchema = createRequestSchema(
   },
 );
 
+export function convert18ToDecimals(amount: bigint, decimals: number): bigint {
+  return amount / (10n ** BigInt(18 - decimals));
+}
+
 export type OpenBorrowPositionRequest = v.InferOutput<typeof RequestSchema>;
 
 export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
@@ -238,16 +242,16 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
       ),
       async commit(ctx) {
         const branch = getBranch(ctx.request.branchId);
-        const { LeverageLSTZapper, CollToken } = branch.contracts;
+        const { LeverageLSTZapper, LeverageWrappedTokenZapper, CollToken } = branch.contracts;
 
         return ctx.writeContract({
           ...CollToken,
           functionName: "approve",
           args: [
-            LeverageLSTZapper.address,
+            branch.decimals < 18 ? LeverageWrappedTokenZapper.address : LeverageLSTZapper.address,
             ctx.preferredApproveMethod === "approve-infinite"
               ? maxUint256 // infinite approval
-              : ctx.request.collAmount[0], // exact amount
+              : (branch.decimals < 18 ? convert18ToDecimals(ctx.request.collAmount[0], branch.decimals) : ctx.request.collAmount[0]), // exact amount
           ],
         });
       },
@@ -271,12 +275,12 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
 
         const branch = getBranch(ctx.request.branchId);
         return ctx.writeContract({
-          ...branch.contracts.LeverageLSTZapper,
+          ...(branch.decimals < 18 ? branch.contracts.LeverageWrappedTokenZapper : branch.contracts.LeverageLSTZapper),
           functionName: "openTroveWithRawETH" as const,
           args: [{
             owner: ctx.request.owner,
             ownerIndex: BigInt(ctx.request.ownerIndex),
-            collAmount: ctx.request.collAmount[0],
+            collAmount: branch.decimals < 18 ? convert18ToDecimals(ctx.request.collAmount[0], branch.decimals) : ctx.request.collAmount[0],
             boldAmount: ctx.request.boldAmount[0],
             upperHint,
             lowerHint,
@@ -379,15 +383,16 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
     // }
 
     // Check if approval is needed
+    const zapperAddress = branch.decimals < 18 ? branch.contracts.LeverageWrappedTokenZapper.address : branch.contracts.LeverageLSTZapper.address;
     const allowance = await readContract(ctx.wagmiConfig, {
       ...branch.contracts.CollToken,
       functionName: "allowance",
-      args: [ctx.account, branch.contracts.LeverageLSTZapper.address],
+      args: [ctx.account, zapperAddress],
     });
 
     const steps: string[] = [];
 
-    if (allowance < ctx.request.collAmount[0]) {
+    if (allowance < (branch.decimals < 18 ? convert18ToDecimals(ctx.request.collAmount[0], branch.decimals) : ctx.request.collAmount[0])) {
       steps.push("approveLst");
     }
 

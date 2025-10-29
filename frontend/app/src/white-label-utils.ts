@@ -59,6 +59,7 @@ export function getDeploymentInfo(chainId: number) {
         branchId: index as BranchId,
         symbol: collateral.symbol,
         name: collateral.name,
+        decimals: collateral.decimals,
         COLL_TOKEN: deployment.collToken as Address,
         ADDRESSES_REGISTRY: deployment.addressesRegistry as Address,
         ACTIVE_POOL: deployment.activePool as Address,
