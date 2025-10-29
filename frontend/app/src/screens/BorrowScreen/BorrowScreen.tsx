@@ -192,7 +192,6 @@ export function BorrowScreen() {
                     />
                   ))}
                 </TokenIcon.Group>
-                {NBSP}ETH
               </div>,
               <div
                 className={css({

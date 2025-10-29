@@ -3,9 +3,7 @@
 import type { CollateralSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Positions } from "@/src/comps/Positions/Positions";
-import { FORKS_INFO } from "@/src/constants";
 import content from "@/src/content";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { DNUM_1 } from "@/src/dnum-utils";
@@ -23,11 +21,7 @@ import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { TokenIcon, Button } from "@liquity2/uikit";
 import * as dn from "dnum";
-import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
-
-type ForkInfo = (typeof FORKS_INFO)[number];
 
 export function HomeScreen() {
   const account = useAccount();
@@ -141,7 +135,7 @@ export function HomeScreen() {
                 marginBottom: 8,
               })}`}
             >
-              Borrow {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} against ETH and staked ETH
+              Borrow {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} against multiple collaterals
             </h2>
             <p
               className={css({
@@ -340,41 +334,6 @@ export function HomeScreen() {
             </tbody>
           </table>
 
-          <div
-            className={css({
-              marginTop: 20,
-              padding: "16px",
-              background: "rgba(255, 255, 255, 0.05)",
-              borderRadius: 8,
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-            })}
-          >
-            <ForksInfoIcons />
-            <span
-              className={css({
-                color: "rgba(255, 255, 255, 0.7)",
-                fontSize: "13px",
-                flex: 1,
-              })}
-            >
-              SP depositors earn additional rewards from forks.
-            </span>
-            <LinkTextButton
-              external
-              href={content.home.earnTable.forksInfo.learnMore.url}
-              label="Learn more"
-              title={content.home.earnTable.forksInfo.learnMore.title}
-              className={css({
-                fontSize: 13,
-                color: "white",
-                textDecoration: "underline",
-              })}
-            >
-              Learn more
-            </LinkTextButton>
-          </div>
         </div>
       </div>
     </div>
@@ -639,63 +598,4 @@ function EarnRow({
       </td>
     </tr>
   );
-}
-
-function ForksInfoIcons() {
-  const pickedForkIcons = useMemo(() => pickRandomForks(2), []);
-  
-  return (
-    <div
-      className={css({
-        flexShrink: 0,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: 0,
-      })}
-    >
-      {pickedForkIcons.map(([name, icon], index) => (
-        <div
-          key={name}
-          className={css({
-            display: "grid",
-            placeItems: "center",
-            background: "white",
-            borderRadius: "50%",
-            width: 22,
-            height: 22,
-          })}
-          style={{
-            marginLeft: index > 0 ? -6 : 0,
-          }}
-        >
-          <Image
-            loading="eager"
-            unoptimized
-            alt={name}
-            title={name}
-            height={18}
-            src={icon}
-            width={18}
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function pickRandomForks(count: number): ForkInfo[] {
-  const forks = [...FORKS_INFO];
-  if (forks.length < count) {
-    return forks;
-  }
-  const picked: ForkInfo[] = [];
-  for (let i = 0; i < count; i++) {
-    const [info] = forks.splice(
-      Math.floor(Math.random() * forks.length),
-      1,
-    );
-    if (info) picked.push(info);
-  }
-  return picked;
 }

@@ -8,6 +8,7 @@ import { WHITE_LABEL_CONFIG } from "../../app/src/white-label.config";
 import tokenEth from "./token-icons/eth.svg";
 import tokenWsteth from "./token-icons/wsteth.svg";
 import tokenBtc from "./token-icons/btc.svg";
+import tokentBtc from "./token-icons/tbtc.svg";
 import tokenSaga from "./token-icons/saga.png";
 import tokenStatom from "./token-icons/statom.webp";
 import tokenKing from "./token-icons/king.svg";
@@ -23,6 +24,7 @@ const tokenIconMap: Record<string, string> = {
   "eth": tokenEth,
   "wsteth": tokenWsteth,
   "btc": tokenBtc,
+  "tbtc": tokentBtc,
   "saga": tokenSaga,
   "statom": tokenStatom,
   "king": tokenKing,

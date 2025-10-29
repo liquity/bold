@@ -141,11 +141,11 @@ export const WHITE_LABEL_CONFIG = {
       {
         symbol: "TBTC" as const,
         name: "tBTC",
-        icon: "btc",
+        icon: "tbtc",
         decimals: 18,
-        collateralRatio: 1.2, // 120% MCR
+        collateralRatio: 1.1, // 110% MCR
         maxDeposit: "100000000", // $100M initial debt limit
-        maxLTV: 0.8333, // 83.33% max LTV
+        maxLTV: 0.9091, // 90.91% max LTV
         deployments: {
           5464: { // Saga EVM
             collToken: "0xa740E6758e309840ffFfe58f749F018386A3b70b",
@@ -172,9 +172,9 @@ export const WHITE_LABEL_CONFIG = {
         name: "SAGA",
         icon: "saga",
         decimals: 6,
-        collateralRatio: 1.4, // 140% MCR (higher volatility)
-        maxDeposit: "5000000", // $5M initial debt limit
-        maxLTV: 0.7143, // 71.43% max LTV
+        collateralRatio: 1.5, // 150% MCR (higher volatility)
+        maxDeposit: "1000000", // $1M initial debt limit
+        maxLTV: 0.6667, // 66.67% max LTV
         deployments: {
           5464: { // Saga EVM
             collToken: "0xA19377761FED745723B90993988E04d641c2CfFE", // Wrapped SAGA token on Saga EVM
@@ -201,9 +201,9 @@ export const WHITE_LABEL_CONFIG = {
         name: "stATOM",
         icon: "statom",
         decimals: 6,
-        collateralRatio: 1.2, // 120% MCR
-        maxDeposit: "25000000", // $25M initial debt limit (placeholder)
-        maxLTV: 0.8333, // 83.33% max LTV
+        collateralRatio: 1.25, // 125% MCR
+        maxDeposit: "1000000", // $1M initial debt limit
+        maxLTV: 0.8, // 80.00% max LTV
         deployments: {
           5464: { // Saga EVM - will be deployed in upcoming PR
             collToken: "0xDaF9d9032b5d5C92528d6aFf6a215514B7c21056",
@@ -230,9 +230,9 @@ export const WHITE_LABEL_CONFIG = {
         name: "KING",
         icon: "king",
         decimals: 18,
-        collateralRatio: 1.6, // 160% MCR (higher volatility)
-        maxDeposit: "10000000", // $10M initial debt limit (placeholder)
-        maxLTV: 0.625, // 62.5% max LTV
+        collateralRatio: 1.5, // 150% MCR (higher volatility)
+        maxDeposit: "500000", // $500K initial debt limit
+        maxLTV: 0.6667, // 66.67% max LTV
         deployments: {
           5464: { // Saga EVM - placeholder for future deployment
             collToken: "0x58d9fbBc6037dedfBA99cAfA28e4C371b795ad97", // TBD
@@ -259,9 +259,9 @@ export const WHITE_LABEL_CONFIG = {
         name: "yUSD",
         icon: "yusd",
         decimals: 18,
-        collateralRatio: 1.2, // 120% MCR
-        maxDeposit: "50000000", // $50M initial debt limit (placeholder)
-        maxLTV: 0.8333, // 83.33% max LTV
+        collateralRatio: 1.15, // 115% MCR
+        maxDeposit: "5000000", // $5M initial debt limit
+        maxLTV: 0.8696, // 86.96% max LTV
         deployments: {
           5464: { // Saga EVM - placeholder for future deployment
             collToken: "0x839e7e610108Cf3DCc9b40329db33b6E6bc9baCE", // TBD
