@@ -37,8 +37,6 @@ contract RedemptionHelper is IRedemptionHelper {
             require(_collateralRegistry.getTroveManager(i) == _addresses[i].troveManager(), "TroveManager mismatch");
             addresses.push(_addresses[i]);
         }
-
-        boldToken.approve(address(_collateralRegistry), type(uint256).max);
     }
 
     // Meant to be called off-chain
