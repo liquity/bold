@@ -37,7 +37,10 @@ export function DelegateModal({
     const strategies: Array<{ groupName: string; strategy: any }> = [];
     knownDelegatesQuery.data.forEach((group) => {
       group.strategies.forEach((strategy) => {
-        if (strategy.branches.some((branch) => branch.toLowerCase() === branchSymbol.toLowerCase())) {
+        if (
+          strategy.branches.some((branch) => branch.toLowerCase() === branchSymbol.toLowerCase()) &&
+          !strategy.hide
+        ) {
           strategies.push({
             groupName: group.name,
             strategy,

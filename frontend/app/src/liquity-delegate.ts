@@ -14,6 +14,7 @@ const KnownDelegatesSchema = v.array(
         name: v.string(),
         address: v.string(),
         branches: v.array(v.string()),
+        hide: v.optional(v.boolean(), false),
       }),
     ),
   }),
