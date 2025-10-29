@@ -38,7 +38,7 @@ export const MAX_LTV_RESERVE_RATIO = 0.04; // ratio of the max LTV in non-limite
 
 export const ETH_MAX_RESERVE = dn.from(0.1, 18); // leave 0.1 ETH when users click on "max" to deposit from their account
 
-export const ETH_GAS_COMPENSATION = dn.from(0.0375, 18); // see contracts/src/Dependencies/Constants.sol
+export const ETH_GAS_COMPENSATION = dn.from(0, 18); // see contracts/src/Dependencies/Constants.sol
 
 export const INTEREST_RATE_ADJ_COOLDOWN = 7 * 24 * 60 * 60; // 7 days in seconds
 
