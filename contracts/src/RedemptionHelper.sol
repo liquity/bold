@@ -146,6 +146,7 @@ contract RedemptionHelper is IRedemptionHelper {
         uint256 _maxFeePct,
         uint256[] memory _minCollRedeemed
     ) external {
+        require(_bold > 0, "Redeemed amount must be non-zero");
         require(_minCollRedeemed.length == numBranches, "Wrong _minCollRedeemed length");
 
         RedemptionContext[] memory branch = new RedemptionContext[](numBranches);
