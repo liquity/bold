@@ -1,4 +1,4 @@
-import type { Address } from "@/src/types";
+import type { Address, BranchId } from "@/src/types";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 
 type SupportedChainId = keyof typeof WHITE_LABEL_CONFIG.tokens.mainToken.deployments;
@@ -14,9 +14,19 @@ type MainTokenDeployment = {
 
 type CollateralDeployment = {
   collToken: string;
-  leverageZapper: string;
+  addressesRegistry: string;
+  activePool: string;
+  borrowerOperations: string;
+  collSurplusPool: string;
+  defaultPool: string;
+  sortedTroves: string;
   stabilityPool: string;
   troveManager: string;
+  troveNFT: string;
+  metadataNFT: string;
+  priceFeed: string;
+  gasPool: string;
+  leverageZapper: string;
 };
 
 // Get deployment info for current chain
@@ -46,13 +56,23 @@ export function getDeploymentInfo(chainId: number) {
       
       const deployment: CollateralDeployment = collateral.deployments[typedChainId];
       return {
-        branchId: index,
+        branchId: index as BranchId,
         symbol: collateral.symbol,
         name: collateral.name,
         COLL_TOKEN: deployment.collToken as Address,
-        LEVERAGE_ZAPPER: deployment.leverageZapper as Address,
+        ADDRESSES_REGISTRY: deployment.addressesRegistry as Address,
+        ACTIVE_POOL: deployment.activePool as Address,
+        BORROWER_OPERATIONS: deployment.borrowerOperations as Address,
+        COLL_SURPLUS_POOL: deployment.collSurplusPool as Address,
+        DEFAULT_POOL: deployment.defaultPool as Address,
+        SORTED_TROVES: deployment.sortedTroves as Address,
         STABILITY_POOL: deployment.stabilityPool as Address,
         TROVE_MANAGER: deployment.troveManager as Address,
+        TROVE_NFT: deployment.troveNFT as Address,
+        METADATA_NFT: deployment.metadataNFT as Address,
+        PRICE_FEED: deployment.priceFeed as Address,
+        GAS_POOL: deployment.gasPool as Address,
+        LEVERAGE_ZAPPER: deployment.leverageZapper as Address,
       };
     }),
   };

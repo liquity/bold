@@ -21,20 +21,16 @@ import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import { TroveNFT } from "@/src/abi/TroveNFT";
 import {
-  CONTRACT_MAIN_TOKEN,
-  CONTRACT_COLLATERAL_REGISTRY,
   CONTRACT_DEBT_IN_FRONT_HELPER,
-  CONTRACT_EXCHANGE_HELPERS,
-  CONTRACT_GOVERNANCE,
-  CONTRACT_HINT_HELPERS,
   CONTRACT_LQTY_STAKING,
   CONTRACT_LQTY_TOKEN,
   CONTRACT_LUSD_TOKEN,
-  CONTRACT_MULTI_TROVE_GETTER,
   CONTRACT_WETH,
-  ENV_BRANCHES,
+  CHAIN_ID,
 } from "@/src/env";
 import { erc20Abi, zeroAddress } from "viem";
+import { LeverageWrappedTokenZapper } from "./abi/LeverageWrappedTokenZapper";
+import { getDeploymentInfo } from "./white-label-utils";
 
 const protocolAbis = {
   BoldToken: erc20Abi,
@@ -66,6 +62,10 @@ const collateralAbis = {
   ],
   LeverageWETHZapper: [
     ...LeverageWETHZapper,
+    ...BorrowerOperationsErrorsAbi,
+  ],
+  LeverageWrappedTokenZapper: [
+    ...LeverageWrappedTokenZapper,
     ...BorrowerOperationsErrorsAbi,
   ],
   PriceFeed: PriceFeed.map((f) => (
@@ -114,59 +114,65 @@ export type Contracts = ProtocolContractMap & {
   }>;
 };
 
+const deployments = getDeploymentInfo(CHAIN_ID);
+
 export const CONTRACTS: Contracts = {
-  BoldToken: { abi: abis.BoldToken, address: CONTRACT_MAIN_TOKEN },
+  BoldToken: { abi: abis.BoldToken, address: deployments.BOLD_TOKEN },
   CollateralRegistry: {
     abi: abis.CollateralRegistry,
-    address: CONTRACT_COLLATERAL_REGISTRY,
+    address: deployments.COLLATERAL_REGISTRY,
   },
   DebtInFrontHelper: { abi: abis.DebtInFrontHelper, address: CONTRACT_DEBT_IN_FRONT_HELPER },
-  Governance: { abi: abis.Governance, address: CONTRACT_GOVERNANCE },
+  Governance: { abi: abis.Governance, address: deployments.GOVERNANCE },
   ExchangeHelpers: {
     abi: abis.ExchangeHelpers,
-    address: CONTRACT_EXCHANGE_HELPERS,
+    address: deployments.EXCHANGE_HELPERS,
   },
-  HintHelpers: { abi: abis.HintHelpers, address: CONTRACT_HINT_HELPERS },
+  HintHelpers: { abi: abis.HintHelpers, address: deployments.HINT_HELPERS },
   LqtyStaking: { abi: abis.LqtyStaking, address: CONTRACT_LQTY_STAKING },
   LqtyToken: { abi: abis.LqtyToken, address: CONTRACT_LQTY_TOKEN },
   LusdToken: { abi: abis.LusdToken, address: CONTRACT_LUSD_TOKEN },
   MultiTroveGetter: {
     abi: abis.MultiTroveGetter,
-    address: CONTRACT_MULTI_TROVE_GETTER,
+    address: deployments.MULTI_TROVE_GETTER,
   },
   WETH: { abi: abis.WETH, address: CONTRACT_WETH },
-  branches: ENV_BRANCHES.map(({ branchId, symbol, contracts }) => ({
-    id: branchId,
-    branchId,
-    symbol,
+  branches: deployments.BRANCHES.map((branch) => ({
+    id: branch.branchId,
+    branchId: branch.branchId,
+    symbol: branch.symbol,
     contracts: {
-      ActivePool: { address: contracts.ACTIVE_POOL, abi: abis.ActivePool },
+      ActivePool: { address: branch.ACTIVE_POOL, abi: abis.ActivePool },
       BorrowerOperations: {
-        address: contracts.BORROWER_OPERATIONS,
+        address: branch.BORROWER_OPERATIONS,
         abi: abis.BorrowerOperations,
       },
       CollSurplusPool: {
-        address: contracts.COLL_SURPLUS_POOL,
+        address: branch.COLL_SURPLUS_POOL,
         abi: abis.CollSurplusPool,
       },
-      CollToken: { address: contracts.COLL_TOKEN, abi: abis.CollToken },
-      DefaultPool: { address: contracts.DEFAULT_POOL, abi: abis.DefaultPool },
+      CollToken: { address: branch.COLL_TOKEN, abi: abis.CollToken },
+      DefaultPool: { address: branch.DEFAULT_POOL, abi: abis.DefaultPool },
       LeverageLSTZapper: {
-        address: symbol === "ETH" ? zeroAddress : contracts.LEVERAGE_ZAPPER,
+        address: branch.symbol === "STATOM" || branch.symbol === "SAGA" ? zeroAddress : branch.LEVERAGE_ZAPPER,
         abi: abis.LeverageLSTZapper,
       },
       LeverageWETHZapper: {
-        address: symbol === "ETH" ? contracts.LEVERAGE_ZAPPER : zeroAddress,
+        address: zeroAddress,
         abi: abis.LeverageWETHZapper,
       },
-      PriceFeed: { address: contracts.PRICE_FEED, abi: abis.PriceFeed },
-      SortedTroves: { address: contracts.SORTED_TROVES, abi: abis.SortedTroves },
+      LeverageWrappedTokenZapper: {
+        address: branch.symbol === "STATOM" || branch.symbol === "SAGA" ? branch.LEVERAGE_ZAPPER : zeroAddress,
+        abi: abis.LeverageWrappedTokenZapper,
+      },
+      PriceFeed: { address: branch.PRICE_FEED, abi: abis.PriceFeed },
+      SortedTroves: { address: branch.SORTED_TROVES, abi: abis.SortedTroves },
       StabilityPool: {
-        address: contracts.STABILITY_POOL,
+        address: branch.STABILITY_POOL,
         abi: abis.StabilityPool,
       },
-      TroveManager: { address: contracts.TROVE_MANAGER, abi: abis.TroveManager },
-      TroveNFT: { address: contracts.TROVE_NFT, abi: abis.TroveNFT },
+      TroveManager: { address: branch.TROVE_MANAGER, abi: abis.TroveManager },
+      TroveNFT: { address: branch.TROVE_NFT, abi: abis.TroveNFT },
     },
   })),
 };
