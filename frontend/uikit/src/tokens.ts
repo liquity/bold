@@ -12,6 +12,7 @@ import tokenSaga from "./token-icons/saga.png";
 import tokenStatom from "./token-icons/statom.webp";
 import tokenKing from "./token-icons/king.svg";
 import tokenYeth from "./token-icons/yeth.svg";
+import tokenYusd from "./token-icons/yusd.svg";
 
 // Map of available token icons by icon name from config
 const tokenIconMap: Record<string, string> = {
@@ -26,6 +27,7 @@ const tokenIconMap: Record<string, string> = {
   "statom": tokenStatom,
   "king": tokenKing,
   "yeth": tokenYeth,
+  "yusd": tokenYusd,
 };
 
 // any external token, without a known symbol

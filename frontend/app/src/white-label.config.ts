@@ -79,8 +79,8 @@ export const WHITE_LABEL_CONFIG = {
     collaterals: [
       // === ETH-based collaterals (110% MCR, 90.91% max LTV) ===
       {
-        symbol: "ETH" as const,
-        name: "ETH",
+        symbol: "WETH" as const,
+        name: "WETH",
         icon: "eth",
         decimals: 18,
         collateralRatio: 1.1, // 110% MCR
