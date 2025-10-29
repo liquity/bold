@@ -188,7 +188,7 @@ function RedemptionIcon() {
           + "a9.326 9.326 0 0 1-14.747 7.6l-1.893 1.92"
           + "A12.002 12.002 0 0 0 27.87 10.24 12 12 0 0 0 16 0Z"}
       />
-      <circle cx="16" cy="12" r="3" fill="#1C1D4F" />
+      <circle cx="16" cy="12" r="3" fill="white" />
     </svg>
   );
 }
@@ -201,10 +201,10 @@ function InterestIcon() {
         d={"M10 0 0 4.364v6.545C0 16.964 4.267 22.625 10 24"
           + "c5.733-1.375 10-7.036 10-13.09V4.363L10 0Z"}
       />
-      <circle cx="6" cy="9" r="2" fill="#1C1D4F" />
-      <circle cx="14" cy="15" r="2" fill="#1C1D4F" />
+      <circle cx="6" cy="9" r="2" fill="white" />
+      <circle cx="14" cy="15" r="2" fill="white" />
       <path
-        fill="#1C1D4F"
+        fill="white"
         d="m14.447 6.037 1.414 1.414-10.41 10.41-1.414-1.414z"
       />
     </svg>
