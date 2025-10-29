@@ -325,58 +325,58 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
     },
 
     // LeverageWETHZapper mode
-    openTroveEth: {
-      name: () => "Open Position",
-      Status: TransactionStatus,
+    // openTroveEth: {
+    //   name: () => "Open Position",
+    //   Status: TransactionStatus,
 
-      async commit(ctx) {
-        const { upperHint, lowerHint } = await getTroveOperationHints({
-          wagmiConfig: ctx.wagmiConfig,
-          contracts: ctx.contracts,
-          branchId: ctx.request.branchId,
-          interestRate: ctx.request.annualInterestRate[0],
-        });
+    //   async commit(ctx) {
+    //     const { upperHint, lowerHint } = await getTroveOperationHints({
+    //       wagmiConfig: ctx.wagmiConfig,
+    //       contracts: ctx.contracts,
+    //       branchId: ctx.request.branchId,
+    //       interestRate: ctx.request.annualInterestRate[0],
+    //     });
 
-        const branch = getBranch(ctx.request.branchId);
-        return ctx.writeContract({
-          ...branch.contracts.LeverageWETHZapper,
-          functionName: "openTroveWithRawETH",
-          args: [{
-            owner: ctx.request.owner,
-            ownerIndex: BigInt(ctx.request.ownerIndex),
-            collAmount: 0n,
-            boldAmount: ctx.request.boldAmount[0],
-            upperHint,
-            lowerHint,
-            annualInterestRate: ctx.request.interestRateDelegate
-              ? 0n
-              : ctx.request.annualInterestRate[0],
-            batchManager: ctx.request.interestRateDelegate
-              ? ctx.request.interestRateDelegate
-              : ADDRESS_ZERO,
-            maxUpfrontFee: ctx.request.maxUpfrontFee[0],
-            addManager: ADDRESS_ZERO,
-            removeManager: ADDRESS_ZERO,
-            receiver: ADDRESS_ZERO,
-          }],
-          value: ctx.request.collAmount[0] + ETH_GAS_COMPENSATION[0],
-        });
-      },
+    //     const branch = getBranch(ctx.request.branchId);
+    //     return ctx.writeContract({
+    //       ...branch.contracts.LeverageWETHZapper,
+    //       functionName: "openTroveWithRawETH",
+    //       args: [{
+    //         owner: ctx.request.owner,
+    //         ownerIndex: BigInt(ctx.request.ownerIndex),
+    //         collAmount: 0n,
+    //         boldAmount: ctx.request.boldAmount[0],
+    //         upperHint,
+    //         lowerHint,
+    //         annualInterestRate: ctx.request.interestRateDelegate
+    //           ? 0n
+    //           : ctx.request.annualInterestRate[0],
+    //         batchManager: ctx.request.interestRateDelegate
+    //           ? ctx.request.interestRateDelegate
+    //           : ADDRESS_ZERO,
+    //         maxUpfrontFee: ctx.request.maxUpfrontFee[0],
+    //         addManager: ADDRESS_ZERO,
+    //         removeManager: ADDRESS_ZERO,
+    //         receiver: ADDRESS_ZERO,
+    //       }],
+    //       value: ctx.request.collAmount[0] + ETH_GAS_COMPENSATION[0],
+    //     });
+    //   },
 
-      async verify(...args) {
-        // same verification as openTroveLst
-        return openBorrowPosition.steps.openTroveLst?.verify(...args);
-      },
-    },
+    //   async verify(...args) {
+    //     // same verification as openTroveLst
+    //     return openBorrowPosition.steps.openTroveLst?.verify(...args);
+    //   },
+    // },
   },
 
   async getSteps(ctx) {
     const branch = getBranch(ctx.request.branchId);
 
-    // ETH doesn't need approval
-    if (branch.symbol === "ETH") {
-      return ["openTroveEth"];
-    }
+    // // ETH doesn't need approval
+    // if (branch.symbol === "ETH") {
+    //   return ["openTroveEth"];
+    // }
 
     // Check if approval is needed
     const allowance = await readContract(ctx.wagmiConfig, {

@@ -277,7 +277,7 @@ export default {
     action: "Next: Summary",
     infoTooltips: {
       interestRateSuggestions: [
-        "Positions with lower interest rates are the first to be redeemed by ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} holders.",
+        `Positions with lower interest rates are the first to be redeemed by ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} holders.`,
       ],
     },
   },

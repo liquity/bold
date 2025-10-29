@@ -11,7 +11,7 @@ import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateFie
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { DEBT_SUGGESTIONS, ETH_MAX_RESERVE, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
+import { DEBT_SUGGESTIONS, MAX_COLLATERAL_DEPOSITS, MIN_DEBT } from "@/src/constants";
 import content from "@/src/content";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
@@ -147,7 +147,8 @@ export function BorrowScreen() {
     maxCollDeposit,
     dnumMax(
       // Only keep a reserve for ETH, not LSTs
-      dn.sub(collBalance.data, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0),
+      // dn.sub(collBalance.data, collSymbol === "ETH" ? ETH_MAX_RESERVE : 0),
+      collBalance.data,
       dnum18(0),
     ),
   );
