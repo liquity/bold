@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { LoanLoadingState } from "./LoanScreen";
 
 import { useFlashTransition } from "@/src/anim-utils";
+import { CrossedText } from "@/src/comps/CrossedText/CrossedText";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { LoanStatusTag } from "@/src/comps/Tag/LoanStatusTag";
 import { Value } from "@/src/comps/Value/Value";
@@ -662,14 +663,16 @@ function LoanCard(props: {
                       )
                       : (
                         <div
-                          title={`${fmtnum(loan.borrowed)} BOLD`}
+                          title={`${fmtnum(liquidated ? (loan.liquidatedDebt ?? loan.borrowed) : loan.borrowed)} BOLD`}
                           className={css({
                             display: "flex",
                             alignItems: "center",
                             gap: 8,
                           })}
                         >
-                          {fmtnum(loan.borrowed)}
+                          {liquidated
+                            ? <CrossedText>{fmtnum(loan.liquidatedDebt ?? loan.borrowed)}</CrossedText>
+                            : fmtnum(loan.borrowed)}
                           <TokenIcon symbol="BOLD" size={24} />
                         </div>
                       )}
@@ -681,7 +684,15 @@ function LoanCard(props: {
                       color: "positionContentAlt",
                     })}
                   >
-                    {mode === "multiply" ? "Net value" : "Total debt"}
+                    {liquidated
+                      ? `Was backed by ${
+                        loan.liquidatedColl
+                          ? fmtnum(loan.liquidatedColl)
+                          : "−"
+                      } ${collateral.name}`
+                      : mode === "multiply"
+                      ? "Net value"
+                      : "Total debt"}
                   </div>
                 </div>
               </div>
@@ -698,7 +709,16 @@ function LoanCard(props: {
                   ? (
                     <>
                       <GridItem label="Liquidated collateral">
-                        {loan.liquidatedColl ? fmtnum(loan.liquidatedColl) : "−"} {collateral.name}
+                        {loan.liquidatedColl && loan.collSurplus
+                          ? fmtnum(dn.sub(loan.liquidatedColl, loan.collSurplus))
+                          : loan.liquidatedColl
+                          ? fmtnum(loan.liquidatedColl)
+                          : "−"} {collateral.name}
+                      </GridItem>
+                      <GridItem label="Claimed remaining collateral">
+                        {collateralWasClaimed && loan.collSurplus && !dn.eq(loan.collSurplus, 0)
+                          ? fmtnum(loan.collSurplus)
+                          : "−"} {collateral.name}
                       </GridItem>
                       <GridItem label="Liquidated debt">
                         {loan.liquidatedDebt ? fmtnum(loan.liquidatedDebt) : "−"} BOLD
@@ -707,8 +727,11 @@ function LoanCard(props: {
                         {loan.priceAtLiquidation ? `$${fmtnum(loan.priceAtLiquidation)}` : "−"}
                       </GridItem>
                       <GridItem label="Remaining collateral">
-                        {collateralWasClaimed ? "0" : loan.collSurplus ? fmtnum(loan.collSurplus) : "−"}{" "}
-                        {collateral.name}
+                        {collateralWasClaimed || (loan.collSurplus && dn.eq(loan.collSurplus, 0))
+                          ? "-"
+                          : loan.collSurplus
+                          ? fmtnum(loan.collSurplus)
+                          : "−"} {collateral.name}
                       </GridItem>
                     </>
                   )
