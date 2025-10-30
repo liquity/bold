@@ -47,7 +47,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { maxUint256 } from "viem";
 
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
@@ -114,6 +114,10 @@ export function BorrowScreen() {
     collateral.collateralRatio,
     collPrice.data ?? null,
   );
+
+  useEffect(() => {
+    setAgreeToLiquidationRisk(false);
+  }, [loanDetails.status]);
 
   const insufficientColl = deposit.parsed
     && collBalance.data
@@ -495,7 +499,7 @@ export function BorrowScreen() {
                   marginBottom: 12,
                 })}
               >
-                Borrowing Restrictions Apply
+                {content.ccrWarning.title}
               </div>
               <div
                 className={css({
@@ -503,31 +507,15 @@ export function BorrowScreen() {
                   marginBottom: 12,
                 })}
               >
-                {isOldTcrLtCcr && collateralRatios.data.tcr && (
-                  <>
-                    The branch <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
-                    <Amount value={collateralRatios.data.tcr} percentage format={0} /> is currently below the{" "}
-                    <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
-                    <Amount value={collateralRatios.data.ccr} percentage format={0} />.{" "}
-                  </>
-                )}
-                Opening a position must bring the branch <abbr title="Total Collateral Ratio">TCR</abbr> {isOldTcrLtCcr
-                  ? (
-                    <>
-                      above <Amount value={collateralRatios.data.ccr} percentage format={0} />.
-                    </>
-                  )
-                  : (
-                    <>
-                      above the <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
-                      <Amount value={collateralRatios.data.ccr} percentage format={0} />.
-                    </>
-                  )} Opening this loan would result in a <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
-                <Amount value={newTcr} percentage format={0} />. Please reduce your loan amount or increase your
-                collateral to proceed.
+                {content.ccrWarning.openPosition({
+                  tcr: <Amount value={collateralRatios.data.tcr} percentage format={0} />,
+                  ccr: <Amount value={collateralRatios.data.ccr} percentage format={0} />,
+                  newTcr: <Amount value={newTcr} percentage format={0} />,
+                  isOldTcrLtCcr: Boolean(isOldTcrLtCcr),
+                })}
               </div>
               <LinkTextButton
-                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
+                href={content.ccrWarning.learnMoreUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 label={
@@ -539,7 +527,7 @@ export function BorrowScreen() {
                       color: "white",
                     })}
                   >
-                    <span>Learn more about borrowing restrictions</span>
+                    <span>{content.ccrWarning.learnMoreLabel}</span>
                     <IconExternal size={16} />
                   </span>
                 }
@@ -550,22 +538,13 @@ export function BorrowScreen() {
         : loanDetails.status === "at-risk" && (
           <WarningBox>
             {isDelegated
-              ? (
-                <div>
-                  When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>
-                  {" "}
-                  must be below{" "}
-                  {fmtnum(loanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
-                  proceed.
-                </div>
-              )
+              ? content.atRiskWarning.delegated(`${fmtnum(loanDetails.maxLtvAllowed, "pct2z")}%`)
               : (
                 <>
-                  <div>
-                    Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
-                    {fmtnum(loanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
-                    {fmtnum(loanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
-                  </div>
+                  {content.atRiskWarning.manual(
+                    `${fmtnum(loanDetails.ltv, "pct2z")}%`,
+                    `${fmtnum(loanDetails.maxLtv, "pct2z")}%`,
+                  ).message}
                   <label
                     htmlFor={agreeCheckboxId}
                     className={css({
@@ -582,7 +561,7 @@ export function BorrowScreen() {
                         setAgreeToLiquidationRisk(checked);
                       }}
                     />
-                    I understand. Let's continue.
+                    {content.atRiskWarning.manual("", "").checkboxLabel}
                   </label>
                 </>
               )}

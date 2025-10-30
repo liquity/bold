@@ -86,6 +86,10 @@ export function PanelInterestRate({
     collPrice.data ?? null,
   );
 
+  useEffect(() => {
+    setAgreeToLiquidationRisk(false);
+  }, [newLoanDetails.status]);
+
   const boldInterestPerYear = interestRate
     && debt.parsed
     && dn.mul(debt.parsed, interestRate);
@@ -264,7 +268,7 @@ export function PanelInterestRate({
                   marginBottom: 12,
                 })}
               >
-                Borrowing Restrictions Apply
+                {content.ccrWarning.title}
               </div>
               <div
                 className={css({
@@ -272,16 +276,14 @@ export function PanelInterestRate({
                   marginBottom: 12,
                 })}
               >
-                The branch <abbr title="Total Collateral Ratio">TCR</abbr> of{" "}
-                <Amount value={collateralRatios.data.tcr} percentage format={0} /> is currently below the{" "}
-                <abbr title="Critical Collateral Ratio">CCR</abbr> of{" "}
-                <Amount value={collateralRatios.data.ccr} percentage format={0} />. Interest rate adjustments are
-                restricted until either the <abbr title="Total Collateral Ratio">TCR</abbr> rises above{" "}
-                <Amount value={collateralRatios.data.ccr} percentage format={0} />, or {INTEREST_RATE_ADJ_COOLDOWN
-                  / (24 * 60 * 60)} days have passed since your last adjustment.
+                {content.ccrWarning.interestRateAdjustment({
+                  tcr: <Amount value={collateralRatios.data.tcr} percentage format={0} />,
+                  ccr: <Amount value={collateralRatios.data.ccr} percentage format={0} />,
+                  cooldownDays: INTEREST_RATE_ADJ_COOLDOWN / (24 * 60 * 60),
+                })}
               </div>
               <LinkTextButton
-                href="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
+                href={content.ccrWarning.learnMoreUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 label={
@@ -293,7 +295,7 @@ export function PanelInterestRate({
                       color: "white",
                     })}
                   >
-                    <span>Learn more about borrowing restrictions</span>
+                    <span>{content.ccrWarning.learnMoreLabel}</span>
                     <IconExternal size={16} />
                   </span>
                 }
@@ -304,22 +306,13 @@ export function PanelInterestRate({
         : newLoanDetails.status === "at-risk" && (
           <WarningBox>
             {isDelegated
-              ? (
-                <div>
-                  When you delegate your interest rate management, your <abbr title="Loan-to-value ratio">LTV</abbr>
-                  {" "}
-                  must be below{" "}
-                  {fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%. Please reduce your loan or add more collateral to
-                  proceed.
-                </div>
-              )
+              ? content.atRiskWarning.delegated(`${fmtnum(newLoanDetails.maxLtvAllowed, "pct2z")}%`)
               : (
                 <>
-                  <div>
-                    Your position's <abbr title="Loan-to-value ratio">LTV</abbr> is{" "}
-                    {fmtnum(newLoanDetails.ltv, "pct2z")}%, which is close to the maximum of{" "}
-                    {fmtnum(newLoanDetails.maxLtv, "pct2z")}%. You are at high risk of liquidation.
-                  </div>
+                  {content.atRiskWarning.manual(
+                    `${fmtnum(newLoanDetails.ltv, "pct2z")}%`,
+                    `${fmtnum(newLoanDetails.maxLtv, "pct2z")}%`,
+                  ).message}
                   <label
                     htmlFor={agreeCheckboxId}
                     className={css({
@@ -336,7 +329,7 @@ export function PanelInterestRate({
                         setAgreeToLiquidationRisk(checked);
                       }}
                     />
-                    I understand. Let's continue.
+                    {content.atRiskWarning.manual("", "").checkboxLabel}
                   </label>
                 </>
               )}
