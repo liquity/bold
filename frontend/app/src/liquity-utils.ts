@@ -116,7 +116,7 @@ export function getToken(symbol: TokenSymbol): Token {
 }
 
 export function getBranches(): Branch[] {
-  return ENV_BRANCHES.map((branch) => {
+  return CONTRACTS.branches.map((branch) => {
     const contracts = CONTRACTS.branches.find((b) => b.id === branch.id);
     if (!contracts) {
       throw new Error(`Contracts not found for branch: ${branch.id}`);
@@ -124,9 +124,11 @@ export function getBranches(): Branch[] {
     return {
       id: branch.id,
       branchId: branch.id,
+      decimals: branch.decimals,
       contracts: contracts.contracts,
       symbol: branch.symbol,
-      strategies: branch.strategies,
+      // strategies: branch.strategies,
+      strategies: [],
     };
   });
 }

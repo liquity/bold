@@ -9,7 +9,7 @@ import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InputTokenBadge } from "@/src/comps/InputTokenBadge/InputTokenBadge";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
-import { ETH_MAX_RESERVE, MIN_DEBT } from "@/src/constants";
+import { MIN_DEBT } from "@/src/constants";
 import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum, formatRisk } from "@/src/formatting";
@@ -80,10 +80,11 @@ export function PanelUpdateBorrowPosition({
 
   const collMax = depositMode === "remove" ? null : (
     collBalance.data && dnumMax(
-      dn.sub(
-        collBalance.data,
-        collToken.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
-      ),
+      collBalance.data,
+      // dn.sub(
+      //   collBalance.data,
+      //   collToken.symbol === "ETH" ? ETH_MAX_RESERVE : 0, // Only keep a reserve for ETH, not LSTs
+      // ),
       dnum18(0),
     )
   );

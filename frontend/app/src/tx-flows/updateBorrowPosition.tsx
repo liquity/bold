@@ -15,6 +15,7 @@ import * as v from "valibot";
 import { maxUint256 } from "viem";
 import { createRequestSchema, verifyTransaction } from "./shared";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
+import { convert18ToDecimals } from "./openBorrowPosition";
 
 const RequestSchema = createRequestSchema(
   "updateBorrowPosition",
@@ -323,9 +324,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
         const branch = getBranch(loan.branchId);
 
-        if (branch.symbol === "ETH") {
+        if (branch.decimals < 18) {
           return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
+            ...branch.contracts.LeverageWrappedTokenZapper,
             functionName: "repayBold",
             args: [BigInt(loan.troveId), dn.abs(debtChange)[0]],
           });
@@ -353,12 +354,11 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
         const branch = getBranch(loan.branchId);
 
-        if (branch.symbol === "ETH") {
+        if (branch.decimals < 18) {
           return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
+            ...branch.contracts.LeverageWrappedTokenZapper,
             functionName: "addCollWithRawETH",
-            args: [BigInt(loan.troveId)],
-            value: dn.abs(collChange)[0],
+            args: [BigInt(loan.troveId), convert18ToDecimals(dn.abs(collChange)[0], branch.decimals)],
           });
         }
 
@@ -383,9 +383,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         const debtChange = getDebtChange(loan, ctx.request.prevLoan);
         const branch = getBranch(loan.branchId);
 
-        if (branch.symbol === "ETH") {
+        if (branch.decimals < 18) {
           return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
+            ...branch.contracts.LeverageWrappedTokenZapper,
             functionName: "withdrawBold",
             args: [BigInt(loan.troveId), dn.abs(debtChange)[0], maxUpfrontFee[0]],
           });
@@ -412,11 +412,11 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         const collChange = getCollChange(loan, ctx.request.prevLoan);
         const branch = getBranch(loan.branchId);
 
-        if (branch.symbol === "ETH") {
+        if (branch.decimals < 18) {
           return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
+            ...branch.contracts.LeverageWrappedTokenZapper,
             functionName: "withdrawCollToRawETH",
-            args: [BigInt(loan.troveId), dn.abs(collChange)[0]],
+            args: [BigInt(loan.troveId), convert18ToDecimals(dn.abs(collChange)[0], branch.decimals)],
           });
         }
 
@@ -439,8 +439,8 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
     const branch = getBranch(ctx.request.loan.branchId);
 
-    const Controller = branch.symbol === "ETH"
-      ? branch.contracts.LeverageWETHZapper
+    const Controller = branch.decimals < 18
+      ? branch.contracts.LeverageWrappedTokenZapper
       : branch.contracts.LeverageLSTZapper;
 
     const isBoldApproved = !dn.lt(debtChange, 0) || !dn.gt(
@@ -456,13 +456,13 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     );
 
     // Collateral token needs to be approved if collChange > 0 and collToken != "ETH" (no LeverageWETHZapper)
-    const isCollApproved = branch.symbol === "ETH" || !dn.gt(collChange, 0) || !dn.gt(collChange, [
+    const isCollApproved = !dn.gt(collChange, 0) || !dn.gt(collChange, [
       (await ctx.readContract({
         ...branch.contracts.CollToken,
         functionName: "allowance",
         args: [ctx.account, Controller.address],
       })) ?? 0n,
-      18,
+      branch.decimals,
     ]);
 
     const steps: string[] = [];

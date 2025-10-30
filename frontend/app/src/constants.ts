@@ -71,7 +71,7 @@ export const TROVE_STATUS_ZOMBIE = 4;
 export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = Object.fromEntries(
   WHITE_LABEL_CONFIG.tokens.collaterals.map(collateral => [
     collateral.symbol,
-    dn.from(BigInt(collateral.maxDeposit), 18),
+    dn.from(BigInt(collateral.maxDeposit), collateral.decimals),
   ])
 ) as Record<CollateralSymbol, dn.Dnum>;
 
