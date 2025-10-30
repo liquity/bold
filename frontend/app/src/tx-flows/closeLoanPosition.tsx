@@ -119,8 +119,8 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
           args: [BigInt(loan.troveId)],
         });
 
-        const Zapper = branch.symbol === "ETH"
-          ? branch.contracts.LeverageWETHZapper
+        const Zapper = branch.decimals < 18
+          ? branch.contracts.LeverageWrappedTokenZapper
           : branch.contracts.LeverageLSTZapper;
 
         return ctx.writeContract({
@@ -149,9 +149,9 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         const branch = getBranch(loan.branchId);
 
         // repay with ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} => get ETH
-        if (!ctx.request.repayWithCollateral && branch.symbol === "ETH") {
+        if (!ctx.request.repayWithCollateral && branch.decimals < 18) {
           return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
+            ...branch.contracts.LeverageWrappedTokenZapper,
             functionName: "closeTroveToRawETH",
             args: [BigInt(loan.troveId)],
           });
@@ -179,9 +179,9 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         }
 
         // repay with collateral => get ETH
-        if (branch.symbol === "ETH") {
+        if (branch.decimals < 18) {
           return ctx.writeContract({
-            ...branch.contracts.LeverageWETHZapper,
+            ...branch.contracts.LeverageWrappedTokenZapper,
             functionName: "closeTroveFromCollateral",
             args: [BigInt(loan.troveId), closeFlashLoanAmount],
           });
@@ -217,8 +217,8 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
     const { loan } = ctx.request;
     const branch = getBranch(loan.branchId);
 
-    const Zapper = branch.symbol === "ETH"
-      ? branch.contracts.LeverageWETHZapper
+    const Zapper = branch.decimals < 18
+      ? branch.contracts.LeverageWrappedTokenZapper
       : branch.contracts.LeverageLSTZapper;
 
     const [{ entireDebt }, boldAllowance] = await readContracts(ctx.wagmiConfig, {
