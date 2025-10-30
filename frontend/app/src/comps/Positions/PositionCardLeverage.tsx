@@ -3,6 +3,7 @@ import * as dn from "dnum";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { CrossedText } from "@/src/comps/CrossedText/CrossedText";
 import { Value } from "@/src/comps/Value/Value";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
@@ -92,28 +93,43 @@ export function PositionCardLeverage({
         </div>
       }
       main={{
-        value: (
-          <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-            <Value negative={loanDetails.status === "underwater"}>
-              <Amount value={loanDetails.depositPreLeverage ?? 0} />
-            </Value>
+        value: status === "liquidated"
+          ? (
+            <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+              <CrossedText>
+                <Amount value={liquidatedDebt ?? borrowed} fallback="−" />
+              </CrossedText>
+              <TokenIcon size={24} symbol="BOLD" />
+            </HFlex>
+          )
+          : (
+            <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+              <Value negative={loanDetails.status === "underwater"}>
+                <Amount value={loanDetails.depositPreLeverage ?? 0} />
+              </Value>
 
-            <TokenIcon size={24} symbol={token.symbol} />
+              <TokenIcon size={24} symbol={token.symbol} />
 
-            {loanDetails.leverageFactor !== null && (
-              <div className={css({ display: "flex", flexDirection: "column", gap: 4 })}>
-                <Value
-                  negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
-                  title={`Multiply: ${roundToDecimal(loanDetails.leverageFactor, 1)}x`}
-                  className={css({ fontSize: 16 })}
-                >
-                  {roundToDecimal(loanDetails.leverageFactor, 1)}x
-                </Value>
-              </div>
-            )}
-          </HFlex>
-        ),
-        label: <>Exposure {!dn.eq(deposit, DNUM_0) ? fmtnum(deposit) : "−"} {token.name}</>,
+              {loanDetails.leverageFactor !== null && (
+                <div className={css({ display: "flex", flexDirection: "column", gap: 4 })}>
+                  <Value
+                    negative={loanDetails.status === "underwater" || loanDetails.status === "liquidatable"}
+                    title={`Multiply: ${roundToDecimal(loanDetails.leverageFactor, 1)}x`}
+                    className={css({ fontSize: 16 })}
+                  >
+                    {roundToDecimal(loanDetails.leverageFactor, 1)}x
+                  </Value>
+                </div>
+              )}
+            </HFlex>
+          ),
+        label: status === "liquidated"
+          ? (
+            <>
+              Was backed by {liquidatedColl ? fmtnum(liquidatedColl) : "−"} {token.name}
+            </>
+          )
+          : <>Exposure {!dn.eq(deposit, DNUM_0) ? fmtnum(deposit) : "−"} {token.name}</>,
       }}
       secondary={
         <PositionCardSecondaryContent

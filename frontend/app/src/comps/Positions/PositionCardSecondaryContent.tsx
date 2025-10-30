@@ -31,8 +31,6 @@ export function PositionCardSecondaryContent({
   status,
   collSurplus,
   collSurplusOnChain,
-  liquidatedColl,
-  liquidatedDebt,
   priceAtLiquidation,
   token,
   ltv,
@@ -41,20 +39,6 @@ export function PositionCardSecondaryContent({
   batchManager,
   redemptionRisk,
 }: PositionCardSecondaryContentProps): ReactNode {
-  const labels = {
-    liquidatedColl: "Liq. coll.",
-    liquidatedDebt: "Liq. debt",
-    liquidationPrice: "Liq. price",
-    claimableCollateral: "Remaining coll.",
-  };
-
-  const {
-    liquidatedColl: liquidatedCollLabel,
-    liquidatedDebt: liquidatedDebtLabel,
-    liquidationPrice: liquidationPriceLabel,
-    claimableCollateral: claimableCollateralLabel,
-  } = labels;
-
   if (status === "liquidated") {
     const collateralWasClaimed = collSurplus && dn.gt(collSurplus, 0)
       && collSurplusOnChain !== null
@@ -76,41 +60,22 @@ export function PositionCardSecondaryContent({
                   color: "positionContentAlt",
                 })}
               >
-                {liquidatedCollLabel}
+                Remaining collateral
               </div>
               <div
                 className={css({
                   color: "positionContent",
                 })}
               >
-                {liquidatedColl ? fmtnum(liquidatedColl) : "−"} {token.name}
+                {collateralWasClaimed || (collSurplus && dn.eq(collSurplus, 0))
+                  ? "0"
+                  : collSurplus
+                  ? fmtnum(collSurplus)
+                  : "−"} {token.name}
               </div>
             </div>
           }
-          end={
-            <div
-              className={css({
-                display: "flex",
-                gap: 8,
-                fontSize: 14,
-              })}
-            >
-              <div
-                className={css({
-                  color: "positionContentAlt",
-                })}
-              >
-                {liquidatedDebtLabel}
-              </div>
-              <div
-                className={css({
-                  color: "positionContent",
-                })}
-              >
-                {liquidatedDebt ? fmtnum(liquidatedDebt) : "−"} BOLD
-              </div>
-            </div>
-          }
+          end={null}
         />
         <CardRow
           start={
@@ -126,7 +91,7 @@ export function PositionCardSecondaryContent({
                   color: "positionContentAlt",
                 })}
               >
-                {liquidationPriceLabel}
+                Liquidation price
               </div>
               <div
                 className={css({
@@ -137,30 +102,7 @@ export function PositionCardSecondaryContent({
               </div>
             </div>
           }
-          end={
-            <div
-              className={css({
-                display: "flex",
-                gap: 8,
-                fontSize: 14,
-              })}
-            >
-              <div
-                className={css({
-                  color: "positionContentAlt",
-                })}
-              >
-                {claimableCollateralLabel}
-              </div>
-              <div
-                className={css({
-                  color: "positionContent",
-                })}
-              >
-                {collateralWasClaimed ? "0" : collSurplus ? fmtnum(collSurplus) : "−"} {token.name}
-              </div>
-            </div>
-          }
+          end={null}
         />
       </CardRows>
     );

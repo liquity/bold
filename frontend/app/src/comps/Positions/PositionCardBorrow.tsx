@@ -3,6 +3,7 @@ import * as dn from "dnum";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { CrossedText } from "@/src/comps/CrossedText/CrossedText";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv } from "@/src/liquity-math";
@@ -92,24 +93,46 @@ export function PositionCardBorrow({
         </div>
       }
       main={{
-        value: (
-          <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-            <Amount value={borrowed} fallback="−" />
-            <TokenIcon size={24} symbol="BOLD" />
-          </HFlex>
-        ),
-        label: (
-          <div
-            className={css({
-              display: "flex",
-              gap: 8,
-              alignItems: "cente",
-            })}
-          >
-            Backed by {!dn.eq(deposit, DNUM_0) ? fmtnum(deposit) : "−"} {token.name}
-            <TokenIcon size="small" symbol={token.symbol} />
-          </div>
-        ),
+        value: status === "liquidated"
+          ? (
+            <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+              <CrossedText>
+                <Amount value={liquidatedDebt ?? borrowed} fallback="−" />
+              </CrossedText>
+              <TokenIcon size={24} symbol="BOLD" />
+            </HFlex>
+          )
+          : (
+            <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+              <Amount value={borrowed} fallback="−" />
+              <TokenIcon size={24} symbol="BOLD" />
+            </HFlex>
+          ),
+        label: status === "liquidated"
+          ? (
+            <div
+              className={css({
+                display: "flex",
+                gap: 8,
+                alignItems: "cente",
+              })}
+            >
+              Was backed by {liquidatedColl ? fmtnum(liquidatedColl) : "−"} {token.name}
+              <TokenIcon size="small" symbol={token.symbol} />
+            </div>
+          )
+          : (
+            <div
+              className={css({
+                display: "flex",
+                gap: 8,
+                alignItems: "cente",
+              })}
+            >
+              Backed by {!dn.eq(deposit, DNUM_0) ? fmtnum(deposit) : "−"} {token.name}
+              <TokenIcon size="small" symbol={token.symbol} />
+            </div>
+          ),
       }}
       secondary={
         <PositionCardSecondaryContent
