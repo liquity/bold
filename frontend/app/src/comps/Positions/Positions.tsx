@@ -47,7 +47,7 @@ export function Positions({
   const loans = useLoansByAccount(address);
   const earnPositions = useEarnPositionsByAccount(address);
   const sboldPosition = useSboldPosition(address);
-  const stakePosition = useStakePosition(address);
+  const stakePosition = useStakePosition(address, "v2");
 
   const isPositionsPending = Boolean(
     address && (

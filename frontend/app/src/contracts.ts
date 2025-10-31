@@ -16,6 +16,7 @@ import { LeverageWETHZapper } from "@/src/abi/LeverageWETHZapper";
 import { LqtyStaking } from "@/src/abi/LqtyStaking";
 import { LqtyToken } from "@/src/abi/LqtyToken";
 import { MultiTroveGetter } from "@/src/abi/MultiTroveGetter";
+import { V1StabilityPoolAbi } from "@/src/abi/V1StabilityPool";
 import { PriceFeed } from "@/src/abi/PriceFeed";
 import { SortedTroves } from "@/src/abi/SortedTroves";
 import { StabilityPool } from "@/src/abi/StabilityPool";
@@ -33,6 +34,7 @@ import {
   CONTRACT_LQTY_TOKEN,
   CONTRACT_LUSD_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
+  CONTRACT_V1_STABILITY_POOL,
   CONTRACT_WETH,
   ENV_BRANCHES,
 } from "@/src/env";
@@ -50,6 +52,7 @@ const protocolAbis = {
   LqtyToken,
   LusdToken: erc20Abi,
   MultiTroveGetter,
+  V1StabilityPool: V1StabilityPoolAbi,
   WETH: erc20Abi,
 } as const;
 
@@ -141,6 +144,7 @@ export const CONTRACTS: Contracts = {
     abi: abis.MultiTroveGetter,
     address: CONTRACT_MULTI_TROVE_GETTER,
   },
+  V1StabilityPool: { abi: abis.V1StabilityPool, address: CONTRACT_V1_STABILITY_POOL },
   WETH: { abi: abis.WETH, address: CONTRACT_WETH },
   branches: ENV_BRANCHES.map(({ branchId, symbol, contracts }) => ({
     id: branchId,
