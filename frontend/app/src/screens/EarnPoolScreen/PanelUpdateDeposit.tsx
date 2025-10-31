@@ -34,7 +34,7 @@ export function PanelUpdateDeposit({
   const [mode, setMode] = useState<ValueUpdateMode>("add");
   const [value, setValue] = useState("");
   const [focused, setFocused] = useState(false);
-  const [claimRewards, setClaimRewards] = useState(true);
+  const [claimRewardsState, setClaimRewardsState] = useState(true);
 
   const hasDeposit = dn.gt(position?.deposit ?? DNUM_0, 0);
   const isActive = isEarnPositionActive(position ?? null);
@@ -64,6 +64,12 @@ export function PanelUpdateDeposit({
   const withdrawAboveDeposit = mode === "remove"
     && parsedValue
     && dn.gt(parsedValue, position?.deposit ?? DNUM_0);
+
+  const fullyWithdrawing = mode === "remove" && parsedValue
+    ? dn.eq(parsedValue, position?.deposit ?? DNUM_0)
+    : false;
+
+  const claimRewards = fullyWithdrawing ? true : claimRewardsState;
 
   const allowSubmit = account.isConnected
     && parsedValue
@@ -166,7 +172,6 @@ export function PanelUpdateDeposit({
                     label={`Max ${fmtnum(position.deposit, 2)} BOLD`}
                     onClick={() => {
                       setValue(dn.toString(position.deposit));
-                      setClaimRewards(true);
                     }}
                   />
                 ),
@@ -205,15 +210,16 @@ export function PanelUpdateDeposit({
                 <Checkbox
                   id="checkbox-claim-rewards"
                   checked={claimRewards}
-                  onChange={setClaimRewards}
+                  disabled={fullyWithdrawing}
+                  onChange={setClaimRewardsState}
                 />
                 {content.earnScreen.depositPanel.claimCheckbox}
               </label>
               <InfoTooltip
                 {...infoTooltipProps(
                   mode === "remove"
-                    ? content.earnScreen.infoTooltips.alsoClaimRewardsWithdraw
-                    : content.earnScreen.infoTooltips.alsoClaimRewardsDeposit,
+                    ? content.earnScreen.infoTooltips.alsoClaimRewardsWithdraw(collateral.name)
+                    : content.earnScreen.infoTooltips.alsoClaimRewardsDeposit(collateral.name),
                 )}
               />
             </div>
@@ -251,6 +257,7 @@ export function PanelUpdateDeposit({
 
         <FlowButton
           disabled={!allowSubmit}
+          label={mode === "add" ? content.earnScreen.depositPanel.action : content.earnScreen.withdrawPanel.action}
           request={() => {
             if (!account.address || (mode === "remove" && !position)) {
               return null;
