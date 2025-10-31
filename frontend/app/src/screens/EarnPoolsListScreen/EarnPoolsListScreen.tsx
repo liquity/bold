@@ -18,7 +18,8 @@ import { a, useTransition } from "@react-spring/web";
 type PoolId = BranchId | "sbold";
 
 export function EarnPoolsListScreen() {
-  const branches = getBranches();
+  const branches = getBranches()
+    .filter((b) => b.symbol.toLowerCase() !== "tbtc"); // TODO: remove this once tBTC is supported
   const collSymbols = branches.map((b) => b.symbol);
 
   const pools: PoolId[] = branches.map((b) => b.branchId);
