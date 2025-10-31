@@ -23,6 +23,7 @@ import "src/GasPool.sol";
 import "src/HintHelpers.sol";
 import "src/MultiTroveGetter.sol";
 import {DebtInFrontHelper, IDebtInFrontHelper} from "src/DebtInFrontHelper.sol";
+import {RedemptionHelper, IRedemptionHelper} from "src/RedemptionHelper.sol";
 import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
 import "src/PriceFeeds/WETHPriceFeed.sol";
@@ -227,6 +228,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
         IDebtInFrontHelper debtInFrontHelper;
         IExchangeHelpers exchangeHelpers;
         IExchangeHelpersV2 exchangeHelpersV2;
+        IRedemptionHelper redemptionHelper;
     }
 
     function run() external {
@@ -655,6 +657,8 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
             _feeWethColl: UNIV3_FEE_WETH_COLL,
             _uniV3Quoter: uniV3Quoter
         });
+
+        r.redemptionHelper = new RedemptionHelper(r.collateralRegistry, vars.addressesRegistries);
     }
 
     function _deployAddressesRegistry(TroveManagerParams memory _troveManagerParams)
@@ -1180,6 +1184,7 @@ contract DeployLiquity2Script is DeployGovernance, UniPriceConverter, StdCheats,
                 string.concat('"exchangeHelpersV2":"', address(deployed.exchangeHelpersV2).toHexString(), '",')
             ),
             string.concat(
+                string.concat('"redemptionHelper":"', address(deployed.redemptionHelper).toHexString(), '",'),
                 string.concat('"branches":[', branches.join(","), "],"),
                 string.concat('"governance":', _governanceManifest, "") // no comma
             ),

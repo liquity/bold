@@ -106,11 +106,12 @@ export const BribeInitiative = [
       "type": "uint256",
       "internalType": "uint256",
     }],
-    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }, {
-      "name": "",
-      "type": "uint256",
-      "internalType": "uint256",
-    }],
+    "outputs": [
+      { "name": "", "type": "uint256", "internalType": "uint256" },
+      { "name": "", "type": "uint256", "internalType": "uint256" },
+      { "name": "", "type": "uint256", "internalType": "uint256" },
+      { "name": "", "type": "uint256", "internalType": "uint256" },
+    ],
     "stateMutability": "view",
   },
   {
@@ -185,11 +186,12 @@ export const BribeInitiative = [
     "type": "function",
     "name": "totalLQTYAllocatedByEpoch",
     "inputs": [{ "name": "_epoch", "type": "uint256", "internalType": "uint256" }],
-    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }, {
-      "name": "",
-      "type": "uint256",
-      "internalType": "uint256",
-    }],
+    "outputs": [
+      { "name": "", "type": "uint256", "internalType": "uint256" },
+      { "name": "", "type": "uint256", "internalType": "uint256" },
+      { "name": "", "type": "uint256", "internalType": "uint256" },
+      { "name": "", "type": "uint256", "internalType": "uint256" },
+    ],
     "stateMutability": "view",
   },
   {
