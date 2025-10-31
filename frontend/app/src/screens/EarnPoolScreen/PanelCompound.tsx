@@ -14,7 +14,7 @@ import { encodeFunctionData } from "viem";
 import { useEstimateGas, useGasPrice } from "wagmi";
 import { Rewards } from "./components/Rewards";
 
-export function PanelClaimRewards({
+export function PanelCompound({
   branchId,
   position,
 }: {
@@ -41,7 +41,7 @@ export function PanelClaimRewards({
     data: encodeFunctionData({
       abi: branch.contracts.StabilityPool.abi,
       functionName: "withdrawFromSP",
-      args: [0n, true], // withdraw 0, claim
+      args: [0n, false], // withdraw 0, don't claim
     }),
     to: branch.contracts.StabilityPool.address,
   });
@@ -55,10 +55,7 @@ export function PanelClaimRewards({
   const txGasPriceUsd = gasPriceEth && ethPrice.data
     && dn.mul(gasPriceEth, ethPrice.data);
 
-  const allowSubmit = account.isConnected && (
-    dn.gt(position?.rewards?.bold ?? DNUM_0, DNUM_0)
-    || dn.gt(position?.rewards?.coll ?? DNUM_0, DNUM_0)
-  );
+  const allowSubmit = account.isConnected && dn.gt(position?.rewards?.bold ?? DNUM_0, DNUM_0);
 
   return (
     <div
@@ -79,13 +76,13 @@ export function PanelClaimRewards({
         <Rewards
           amount={position?.rewards?.bold ?? DNUM_0}
           amountUsd={boldRewardsUsd ?? DNUM_0}
-          label={content.earnScreen.rewardsPanel.boldRewardsLabel(collateral.name)}
+          label={content.earnScreen.compoundPanel.boldRewardsLabel(collateral.name)}
           symbol="BOLD"
         />
         <Rewards
           amount={position?.rewards?.coll ?? DNUM_0}
           amountUsd={collRewardsUsd ?? DNUM_0}
-          label={content.earnScreen.rewardsPanel.collRewardsLabel(collateral.name)}
+          label={content.earnScreen.compoundPanel.collRewardsLabel(collateral.name)}
           symbol={collateral.symbol}
         />
 
@@ -105,7 +102,7 @@ export function PanelClaimRewards({
               gap: 24,
             }}
           >
-            <div>{content.earnScreen.rewardsPanel.expectedGasFeeLabel}</div>
+            <div>{content.earnScreen.compoundPanel.expectedGasFeeLabel}</div>
             <Amount
               dust={false}
               format="2z"
@@ -128,7 +125,7 @@ export function PanelClaimRewards({
       >
         <FlowButton
           disabled={!allowSubmit}
-          label={content.earnScreen.rewardsPanel.action}
+          label={content.earnScreen.compoundPanel.action}
           request={position && {
             flowId: "earnClaimRewards",
             backLink: [
@@ -136,9 +133,9 @@ export function PanelClaimRewards({
               "Back to earn position",
             ],
             successLink: ["/", "Go to the Dashboard"],
-            successMessage: "The rewards have been successfully claimed.",
+            successMessage: "The BOLD rewards have been successfully compounded.",
             earnPosition: position,
-            compound: false,
+            compound: true,
           }}
         />
       </div>

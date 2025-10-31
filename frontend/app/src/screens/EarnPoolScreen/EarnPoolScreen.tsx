@@ -16,11 +16,13 @@ import { a, useTransition } from "@react-spring/web";
 import { useParams, useRouter } from "next/navigation";
 import { match } from "ts-pattern";
 import { PanelClaimRewards } from "./PanelClaimRewards";
+import { PanelCompound } from "./PanelCompound";
 import { PanelUpdateDeposit } from "./PanelUpdateDeposit";
 
 const TABS = [
   { action: "deposit", label: content.earnScreen.tabs.deposit },
   { action: "claim", label: content.earnScreen.tabs.claim },
+  { action: "compound", label: content.earnScreen.tabs.compound },
 ] as const;
 
 export function EarnPoolScreen() {
@@ -157,6 +159,12 @@ export function EarnPoolScreen() {
             )}
             {tab.action === "claim" && (
               <PanelClaimRewards
+                branchId={branch.id}
+                position={earnPosition.data ?? undefined}
+              />
+            )}
+            {tab.action === "compound" && (
+              <PanelCompound
                 branchId={branch.id}
                 position={earnPosition.data ?? undefined}
               />

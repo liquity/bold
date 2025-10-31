@@ -56,7 +56,7 @@ export function Radio({
     firstRender.current = false;
   }, [checked, inRadioGroup]);
 
-  const checkTransition = useTransition(checked, {
+  const checkTransition = useTransition([checked, disabled], {
     config: {
       mass: 1,
       tension: 2400,
