@@ -185,7 +185,9 @@ export function BorrowScreen() {
                 })}
               >
                 <TokenIcon.Group>
-                  {collaterals.map(({ symbol }) => (
+                  {collaterals
+                    .filter(({ symbol }) => symbol.toLowerCase() !== "tbtc") // TODO: remove this once tBTC is supported
+                    .map(({ symbol }) => (
                     <TokenIcon
                       key={symbol}
                       symbol={symbol}
@@ -214,7 +216,9 @@ export function BorrowScreen() {
             id="input-deposit"
             contextual={
               <Dropdown
-                items={collaterals.map(({ symbol, name }) => ({
+                items={collaterals
+                  .filter(({ symbol }) => symbol.toLowerCase() !== "tbtc") // TODO: remove this once tBTC is supported
+                  .map(({ symbol, name }) => ({
                   icon: <TokenIcon symbol={symbol} />,
                   label: name,
                   value: account.isConnected
@@ -224,7 +228,9 @@ export function BorrowScreen() {
                 menuPlacement="end"
                 menuWidth={300}
                 onSelect={(index) => {
-                  const coll = collaterals[index];
+                  const coll = collaterals
+                    .filter(({ symbol }) => symbol.toLowerCase() !== "tbtc") // TODO: remove this once tBTC is supported
+                    [index];
                   if (!coll) {
                     throw new Error(`Unknown branch: ${index}`);
                   }

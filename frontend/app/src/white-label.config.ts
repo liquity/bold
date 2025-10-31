@@ -632,7 +632,8 @@ export function getAvailableEarnPools() {
     }
   });
   
-  return pools;
+  return pools
+    .filter((pool) => pool.symbol.toLowerCase() !== "tbtc") // TODO: remove this once tBTC is supported
 }
 
 export function getEarnPoolSymbols() {
