@@ -15,7 +15,7 @@
   "debtInFrontHelper": "0x99d799D62611849D4D1dA5FF770147164873Eb99",
   "exchangeHelpers": "0x2b50462f3026446fa9f6e618f3f08a67aae96317",
   "exchangeHelpersV2": "0x3fff2e6b2f7fb3121d966c1d67fa8f3ab5a99f3f",
-  "redemptionHelper": "0x0000000000000000000000000000000000000000",
+  "redemptionHelper": "0xf299f3c504904c5f0b67f0ea0caf745d8912dc45",
   "branches": [
     {
       "collSymbol": "WETH",
