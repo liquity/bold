@@ -332,7 +332,7 @@ export function useEarnPositionsByAccount(account: null | Address) {
   });
 }
 
-export function useStakePosition(address: null | Address) {
+export function useStakePosition(address: null | Address, version: "v1" | "v2" = "v2") {
   const LqtyStaking = getProtocolContract("LqtyStaking");
   const LusdToken = getProtocolContract("LusdToken");
   const Governance = getProtocolContract("Governance");
@@ -353,23 +353,28 @@ export function useStakePosition(address: null | Address) {
     },
   });
 
+  let userStakingAddress = address ?? "0x";
+  if (version === "v2") {
+    userStakingAddress = userProxyAddress.data ?? "0x";
+  }
+
   return useReadContracts({
     contracts: [{
       ...LqtyStaking,
       functionName: "stakes",
-      args: [userProxyAddress.data ?? "0x"],
+      args: [userStakingAddress],
     }, {
       ...LqtyStaking,
       functionName: "getPendingETHGain",
-      args: [userProxyAddress.data ?? "0x"],
+      args: [userStakingAddress],
     }, {
       ...LqtyStaking,
       functionName: "getPendingLUSDGain",
-      args: [userProxyAddress.data ?? "0x"],
+      args: [userStakingAddress],
     }, {
       ...LusdToken,
       functionName: "balanceOf",
-      args: [userProxyAddress.data ?? "0x"],
+      args: [userStakingAddress],
     }],
     query: {
       enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
@@ -398,6 +403,20 @@ export function useStakePosition(address: null | Address) {
           },
         };
       },
+    },
+  });
+}
+
+export function useV1StabilityPoolLqtyGain(address: null | Address) {
+  const V1StabilityPool = getProtocolContract("V1StabilityPool");
+
+  return useReadContract({
+    ...V1StabilityPool,
+    functionName: "getDepositorLQTYGain",
+    args: [address ?? "0x"],
+    query: {
+      enabled: Boolean(address),
+      select: (result) => dnum18(result),
     },
   });
 }

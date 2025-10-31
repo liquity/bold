@@ -82,6 +82,12 @@ function getEnvGroups() {
         if (key === "LEGACY_CHECK") {
           return [key, value ? JSON.stringify(value) : false];
         }
+        if (key === "V1_STAKING_CHECK") {
+          return [key, value];
+        }
+        if (key === "V1_STABILITY_POOL_CHECK") {
+          return [key, value];
+        }
         return [
           key,
           value === null || value === undefined
