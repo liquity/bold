@@ -37,8 +37,6 @@ contract RedemptionHelper is IRedemptionHelper {
             require(_collateralRegistry.getTroveManager(i) == _addresses[i].troveManager(), "TroveManager mismatch");
             addresses.push(_addresses[i]);
         }
-
-        boldToken.approve(address(_collateralRegistry), type(uint256).max);
     }
 
     // Meant to be called off-chain
@@ -148,6 +146,7 @@ contract RedemptionHelper is IRedemptionHelper {
         uint256 _maxFeePct,
         uint256[] memory _minCollRedeemed
     ) external {
+        require(_bold > 0, "Redeemed amount must be non-zero");
         require(_minCollRedeemed.length == numBranches, "Wrong _minCollRedeemed length");
 
         RedemptionContext[] memory branch = new RedemptionContext[](numBranches);
