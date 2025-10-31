@@ -4,7 +4,7 @@ import { css } from "@/styled-system/css";
 export function LoanStatusTag({
   status,
 }: {
-  status: "liquidated" | "partially-redeemed" | "fully-redeemed";
+  status: "liquidated" | "partially-redeemed" | "fully-redeemed" | "unclaimed" | "claimed";
 }) {
   return (
     <div
@@ -22,11 +22,27 @@ export function LoanStatusTag({
 
         "--color-redeemed": "#121B44",
         "--background-redeemed": "token(colors.warningAlt)",
+
+        "--color-unclaimed": "#121B44",
+        "--background-unclaimed": "token(colors.brandGolden)",
+
+        "--color-claimed": "#121B44",
+        "--background-claimed": "token(colors.brandGreen)",
       })}
       style={status === "liquidated"
         ? {
           color: `var(--color-liquidated)`,
           background: `var(--background-liquidated)`,
+        }
+        : status === "unclaimed"
+        ? {
+          color: `var(--color-redeemed)`,
+          background: `var(--background-unclaimed)`,
+        }
+        : status === "claimed"
+        ? {
+          color: `var(--color-redeemed)`,
+          background: `var(--background-claimed)`,
         }
         : {
           color: `var(--color-redeemed)`,
@@ -39,6 +55,10 @@ export function LoanStatusTag({
         ? "Partially Redeemed"
         : status === "fully-redeemed"
         ? "Fully Redeemed"
+        : status === "unclaimed"
+        ? "UNCLAIMED"
+        : status === "claimed"
+        ? "CLAIMED"
         : panic("case not considered")}
     </div>
   );
