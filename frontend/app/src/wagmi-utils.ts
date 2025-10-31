@@ -32,9 +32,7 @@ export function useBalances(
   address: Address | undefined,
   tokens: Token["symbol"][],
 ) {
-  const symbols = tokens.filter((token) => token.toLowerCase() !== "tbtc"); // TODO: remove this once tBTC is supported
-  // const tokenConfigs = tokens.map((token) => {
-  const tokenConfigs = symbols.map((token) => {
+  const tokenConfigs = tokens.map((token) => {
     const tokenAddress = match(token)
       .when(
         (symbol) => Boolean(symbol && isCollateralSymbol(symbol) && symbol !== "ETH"),

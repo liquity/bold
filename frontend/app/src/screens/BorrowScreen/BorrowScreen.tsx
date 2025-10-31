@@ -48,7 +48,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { maxUint256 } from "viem";
 
-const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
+const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol).filter((symbol) => symbol.toLowerCase() !== "tbtc"); // TODO: remove this once tBTC is supported
 
 export function BorrowScreen() {
   const branches = getBranches();
