@@ -11,7 +11,7 @@ import { isCollateralSymbol } from "@liquity2/uikit";
 import { useQuery } from "@tanstack/react-query";
 import { useModal as useConnectKitModal } from "connectkit";
 import { match } from "ts-pattern";
-import { erc20Abi } from "viem";
+import { erc20Abi, formatUnits } from "viem";
 import { useAccount as useWagmiAccount, useBalance as useWagmiBalance, useEnsName, useReadContracts } from 'wagmi';
 
 import type { Config, UseAccountReturnType } from 'wagmi';
@@ -51,7 +51,7 @@ export function useBalances(
     return {
       token,
       tokenAddress,
-      decimals: token === "SAGA" || token === "STATOM" ? 6 : 18,
+      decimals: isCollateralSymbol(token) ? getBranch(token).decimals : 18,
       isEth: token === "ETH",
     };
   });
@@ -91,7 +91,7 @@ export function useBalances(
         const balance = erc20Balances.data?.[erc20Index];
         const config = erc20Tokens[erc20Index];
         result[token] = {
-          data: balance?.result !== undefined ? dn.from(balance.result, config!.decimals) : undefined,
+          data: balance?.result !== undefined ? dn.from(formatUnits(balance.result, config!.decimals)) : undefined,
           isLoading: erc20Balances.isLoading,
         };
       }
