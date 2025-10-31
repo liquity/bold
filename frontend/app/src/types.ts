@@ -83,6 +83,10 @@ export type PositionLoanCommitted = PositionLoanBase & {
   redemptionCount: number;
   redeemedColl: Dnum;
   redeemedDebt: Dnum;
+  liquidatedColl: Dnum | null;
+  liquidatedDebt: Dnum | null;
+  collSurplus: Dnum | null;
+  priceAtLiquidation: Dnum | null;
 };
 
 export type PositionLoanUncommitted = PositionLoanBase & {

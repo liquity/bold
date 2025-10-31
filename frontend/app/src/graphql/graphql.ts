@@ -1409,14 +1409,14 @@ export type TrovesByAccountQueryVariables = Exact<{
 }>;
 
 
-export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: string | null, createdAt: string, lastUserActionAt: string, updatedAt: string, mightBeLeveraged: boolean, status: TroveStatus, debt: string, redemptionCount: number, redeemedColl: string, redeemedDebt: string }> };
+export type TrovesByAccountQuery = { __typename?: 'Query', troves: Array<{ __typename?: 'Trove', id: string, closedAt?: string | null, createdAt: string, lastUserActionAt: string, updatedAt: string, mightBeLeveraged: boolean, status: TroveStatus, debt: string, redemptionCount: number, redeemedColl: string, redeemedDebt: string, liquidatedColl?: string | null, liquidatedDebt?: string | null, collSurplus?: string | null, priceAtLiquidation?: string | null }> };
 
 export type TroveByIdQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 
-export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, lastUserActionAt: string, updatedAt: string, mightBeLeveraged: boolean, previousOwner: string, status: TroveStatus, debt: string, redemptionCount: number, redeemedColl: string, redeemedDebt: string } | null };
+export type TroveByIdQuery = { __typename?: 'Query', trove?: { __typename?: 'Trove', id: string, borrower: string, closedAt?: string | null, createdAt: string, lastUserActionAt: string, updatedAt: string, mightBeLeveraged: boolean, previousOwner: string, status: TroveStatus, debt: string, redemptionCount: number, redeemedColl: string, redeemedDebt: string, liquidatedColl?: string | null, liquidatedDebt?: string | null, collSurplus?: string | null, priceAtLiquidation?: string | null } | null };
 
 export type InterestBatchesQueryVariables = Exact<{
   ids: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
@@ -1502,6 +1502,10 @@ export const TrovesByAccountDocument = new TypedDocumentString(`
     redemptionCount
     redeemedColl
     redeemedDebt
+    liquidatedColl
+    liquidatedDebt
+    collSurplus
+    priceAtLiquidation
   }
 }
     `) as unknown as TypedDocumentString<TrovesByAccountQuery, TrovesByAccountQueryVariables>;
@@ -1521,6 +1525,10 @@ export const TroveByIdDocument = new TypedDocumentString(`
     redemptionCount
     redeemedColl
     redeemedDebt
+    liquidatedColl
+    liquidatedDebt
+    collSurplus
+    priceAtLiquidation
   }
 }
     `) as unknown as TypedDocumentString<TroveByIdQuery, TroveByIdQueryVariables>;

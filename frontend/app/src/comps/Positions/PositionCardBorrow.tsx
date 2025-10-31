@@ -3,17 +3,16 @@ import * as dn from "dnum";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { CrossedText } from "@/src/comps/CrossedText/CrossedText";
 import { DNUM_0 } from "@/src/dnum-utils";
-import { formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { fmtnum } from "@/src/formatting";
 import { getLiquidationRisk, getLtv } from "@/src/liquity-math";
 import { getCollToken, shortenTroveId, useRedemptionRiskOfLoan } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconBorrow, StatusDot, TokenIcon } from "@liquity2/uikit";
+import { HFlex, IconBorrow, TokenIcon } from "@liquity2/uikit";
 import { PositionCard } from "./PositionCard";
-import { CardRow, CardRows } from "./shared";
+import { PositionCardSecondaryContent } from "./PositionCardSecondaryContent";
 
 export function PositionCardBorrow({
   batchManager,
@@ -25,6 +24,11 @@ export function PositionCardBorrow({
   status,
   statusTag,
   troveId,
+  liquidatedColl,
+  liquidatedDebt,
+  collSurplus,
+  priceAtLiquidation,
+  collSurplusOnChain,
 }:
   & Pick<
     PositionLoanCommitted,
@@ -36,8 +40,12 @@ export function PositionCardBorrow({
     | "isZombie"
     | "status"
     | "troveId"
+    | "liquidatedColl"
+    | "liquidatedDebt"
+    | "collSurplus"
+    | "priceAtLiquidation"
   >
-  & { statusTag?: ReactNode })
+  & { statusTag?: ReactNode; collSurplusOnChain: dn.Dnum | null })
 {
   const token = getCollToken(branchId);
   const collateralPriceUsd = usePrice(token?.symbol ?? null);
@@ -85,167 +93,62 @@ export function PositionCardBorrow({
         </div>
       }
       main={{
-        value: (
-          <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-            <Amount value={borrowed} fallback="−" />
-            <TokenIcon size={24} symbol="BOLD" />
-          </HFlex>
-        ),
-        label: (
-          <div
-            className={css({
-              display: "flex",
-              gap: 8,
-              alignItems: "cente",
-            })}
-          >
-            Backed by {!dn.eq(deposit, DNUM_0) ? fmtnum(deposit) : "−"} {token.name}
-            <TokenIcon size="small" symbol={token.symbol} />
-          </div>
-        ),
+        value: status === "liquidated"
+          ? (
+            <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+              <CrossedText>
+                <Amount value={liquidatedDebt ?? borrowed} fallback="−" />
+              </CrossedText>
+              <TokenIcon size={24} symbol="BOLD" />
+            </HFlex>
+          )
+          : (
+            <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+              <Amount value={borrowed} fallback="−" />
+              <TokenIcon size={24} symbol="BOLD" />
+            </HFlex>
+          ),
+        label: status === "liquidated"
+          ? (
+            <div
+              className={css({
+                display: "flex",
+                gap: 8,
+                alignItems: "cente",
+              })}
+            >
+              Was backed by {liquidatedColl ? fmtnum(liquidatedColl) : "−"} {token.name}
+              <TokenIcon size="small" symbol={token.symbol} />
+            </div>
+          )
+          : (
+            <div
+              className={css({
+                display: "flex",
+                gap: 8,
+                alignItems: "cente",
+              })}
+            >
+              Backed by {!dn.eq(deposit, DNUM_0) ? fmtnum(deposit) : "−"} {token.name}
+              <TokenIcon size="small" symbol={token.symbol} />
+            </div>
+          ),
       }}
       secondary={
-        <CardRows>
-          <CardRow
-            start={
-              <div
-                className={css({
-                  display: "flex",
-                  gap: 8,
-                  fontSize: 14,
-                })}
-              >
-                <div
-                  className={css({
-                    color: "positionContentAlt",
-                  })}
-                >
-                  LTV
-                </div>
-                {status === "liquidated"
-                  ? "N/A"
-                  : ltv
-                  ? (
-                    <div
-                      className={css({
-                        "--status-positive": "token(colors.positiveAlt)",
-                        "--status-warning": "token(colors.warning)",
-                        "--status-negative": "token(colors.negative)",
-                      })}
-                      style={{
-                        color: liquidationRisk === "high"
-                          ? "var(--status-negative)"
-                          : liquidationRisk === "medium"
-                          ? "var(--status-warning)"
-                          : "var(--status-positive)",
-                      }}
-                    >
-                      {fmtnum(ltv, "pct2")}%
-                    </div>
-                  )
-                  : "−"}
-              </div>
-            }
-            end={
-              <div
-                className={css({
-                  display: "grid",
-                  gridAutoFlow: "column",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: 14,
-                })}
-              >
-                <div
-                  className={css({
-                    color: "positionContent",
-                  })}
-                >
-                  {formatLiquidationRisk(liquidationRisk ?? "not-applicable")}
-                </div>
-                <StatusDot
-                  mode={riskLevelToStatusMode(liquidationRisk)}
-                  size={8}
-                />
-              </div>
-            }
-          />
-          <CardRow
-            start={
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: 14,
-                })}
-              >
-                <div
-                  className={css({
-                    color: "positionContentAlt",
-                  })}
-                >
-                  {batchManager ? "Int. rate" : "Interest rate"}
-                </div>
-                <div
-                  className={css({
-                    color: "positionContent",
-                  })}
-                >
-                  {status === "liquidated"
-                    ? "N/A"
-                    : fmtnum(interestRate, { preset: "pct2", suffix: "%" })}
-                </div>
-                {batchManager && (
-                  <div
-                    title={`Interest rate delegate: ${batchManager}`}
-                    className={css({
-                      display: "grid",
-                      placeItems: "center",
-                      width: 16,
-                      height: 16,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: "content",
-                      background: "brandCyan",
-                      borderRadius: "50%",
-                    })}
-                  >
-                    D
-                  </div>
-                )}
-              </div>
-            }
-            end={
-              <div
-                className={css({
-                  display: "grid",
-                  gridAutoFlow: "column",
-                  alignItems: "center",
-                  gap: 8,
-                  fontSize: 14,
-                })}
-              >
-                {
-                  <div
-                    className={css({
-                      flexShrink: 1,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      color: "positionContent",
-                    })}
-                  >
-                    {formatRedemptionRisk(redemptionRisk.data ?? null)}
-                  </div>
-                }
-                <StatusDot
-                  mode={riskLevelToStatusMode(redemptionRisk.data)}
-                  size={8}
-                />
-              </div>
-            }
-          />
-        </CardRows>
+        <PositionCardSecondaryContent
+          status={status}
+          collSurplus={collSurplus}
+          collSurplusOnChain={collSurplusOnChain}
+          liquidatedColl={liquidatedColl}
+          liquidatedDebt={liquidatedDebt}
+          priceAtLiquidation={priceAtLiquidation}
+          token={token}
+          ltv={ltv}
+          liquidationRisk={liquidationRisk}
+          interestRate={interestRate}
+          batchManager={batchManager}
+          redemptionRisk={redemptionRisk}
+        />
       }
     />
   );
