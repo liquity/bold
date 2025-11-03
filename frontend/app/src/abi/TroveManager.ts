@@ -3,12 +3,30 @@
 export const TroveManager = [
   {
     "type": "constructor",
-    "inputs": [{ "name": "_addressesRegistry", "type": "address", "internalType": "contract IAddressesRegistry" }],
+    "inputs": [{ "name": "_addressesRegistry", "type": "address", "internalType": "contract IAddressesRegistry" }, {
+      "name": "_branchId",
+      "type": "uint256",
+      "internalType": "uint256",
+    }],
     "stateMutability": "nonpayable",
   },
   {
     "type": "function",
     "name": "CCR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "MCR",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "SCR",
     "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
@@ -40,6 +58,13 @@ export const TroveManager = [
   },
   {
     "type": "function",
+    "name": "addressesRegistry",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "contract IAddressesRegistry" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
     "name": "batchIds",
     "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
@@ -61,12 +86,40 @@ export const TroveManager = [
   },
   {
     "type": "function",
+    "name": "branchId",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "debtLimit",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "gasCompensationMaxReward",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
     "name": "getCurrentICR",
     "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }, {
       "name": "_price",
       "type": "uint256",
       "internalType": "uint256",
     }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "getDebtLimit",
+    "inputs": [],
     "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
@@ -82,6 +135,13 @@ export const TroveManager = [
     "name": "getEntireBranchDebt",
     "inputs": [],
     "outputs": [{ "name": "entireSystemDebt", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "getInitialDebtLimit",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
   {
@@ -170,6 +230,20 @@ export const TroveManager = [
       "internalType": "uint256",
     }, { "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
+    "name": "initialDebtLimit",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "isActive",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
+    "stateMutability": "view",
   },
   {
     "type": "function",
@@ -531,6 +605,13 @@ export const TroveManager = [
   },
   {
     "type": "function",
+    "name": "setDebtLimit",
+    "inputs": [{ "name": "_newDebtLimit", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
     "name": "setTroveStatusToActive",
     "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }],
     "outputs": [],
@@ -567,6 +648,13 @@ export const TroveManager = [
   },
   {
     "type": "function",
+    "name": "updateGasCompensationMaxReward",
+    "inputs": [{ "name": "_newGasCompensationMaxReward", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [],
+    "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
     "name": "urgentRedemption",
     "inputs": [{ "name": "_boldAmount", "type": "uint256", "internalType": "uint256" }, {
       "name": "_troveIds",
@@ -594,20 +682,6 @@ export const TroveManager = [
       { "name": "_annualManagementFee", "type": "uint256", "indexed": false, "internalType": "uint256" },
       { "name": "_totalDebtShares", "type": "uint256", "indexed": false, "internalType": "uint256" },
       { "name": "_debtIncreaseFromUpfrontFee", "type": "uint256", "indexed": false, "internalType": "uint256" },
-    ],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "BatchedTroveUpdated",
-    "inputs": [
-      { "name": "_troveId", "type": "uint256", "indexed": true, "internalType": "uint256" },
-      { "name": "_interestBatchManager", "type": "address", "indexed": false, "internalType": "address" },
-      { "name": "_batchDebtShares", "type": "uint256", "indexed": false, "internalType": "uint256" },
-      { "name": "_coll", "type": "uint256", "indexed": false, "internalType": "uint256" },
-      { "name": "_stake", "type": "uint256", "indexed": false, "internalType": "uint256" },
-      { "name": "_snapshotOfTotalCollRedist", "type": "uint256", "indexed": false, "internalType": "uint256" },
-      { "name": "_snapshotOfTotalDebtRedist", "type": "uint256", "indexed": false, "internalType": "uint256" },
     ],
     "anonymous": false,
   },

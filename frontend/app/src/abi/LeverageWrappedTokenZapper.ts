@@ -3,11 +3,12 @@
 export const LeverageWrappedTokenZapper = [
   {
     "type": "constructor",
-    "inputs": [{ "name": "_addressesRegistry", "type": "address", "internalType": "contract IAddressesRegistry" }, {
-      "name": "_flashLoanProvider",
-      "type": "address",
-      "internalType": "contract IFlashLoanProvider",
-    }, { "name": "_exchange", "type": "address", "internalType": "contract IExchange" }],
+    "inputs": [
+      { "name": "_wrappedToken", "type": "address", "internalType": "contract IWrappedToken" },
+      { "name": "_addressesRegistry", "type": "address", "internalType": "contract IAddressesRegistry" },
+      { "name": "_flashLoanProvider", "type": "address", "internalType": "contract IFlashLoanProvider" },
+      { "name": "_exchange", "type": "address", "internalType": "contract IExchange" },
+    ],
     "stateMutability": "nonpayable",
   },
   { "type": "receive", "stateMutability": "payable" },
@@ -20,14 +21,7 @@ export const LeverageWrappedTokenZapper = [
   },
   {
     "type": "function",
-    "name": "wrappedToken",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "contract IWrappedToken" }],
-    "stateMutability": "view",
-  },
-  {
-    "type": "function",
-    "name": "addColl",
+    "name": "addCollWithRawETH",
     "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }, {
       "name": "_amount",
       "type": "uint256",
@@ -45,7 +39,7 @@ export const LeverageWrappedTokenZapper = [
   },
   {
     "type": "function",
-    "name": "adjustTrove",
+    "name": "adjustTroveWithRawETH",
     "inputs": [
       { "name": "_troveId", "type": "uint256", "internalType": "uint256" },
       { "name": "_collChange", "type": "uint256", "internalType": "uint256" },
@@ -55,11 +49,11 @@ export const LeverageWrappedTokenZapper = [
       { "name": "_maxUpfrontFee", "type": "uint256", "internalType": "uint256" },
     ],
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
   },
   {
     "type": "function",
-    "name": "adjustZombieTrove",
+    "name": "adjustZombieTroveWithRawETH",
     "inputs": [
       { "name": "_troveId", "type": "uint256", "internalType": "uint256" },
       { "name": "_collChange", "type": "uint256", "internalType": "uint256" },
@@ -71,7 +65,7 @@ export const LeverageWrappedTokenZapper = [
       { "name": "_maxUpfrontFee", "type": "uint256", "internalType": "uint256" },
     ],
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
   },
   {
     "type": "function",
@@ -107,9 +101,16 @@ export const LeverageWrappedTokenZapper = [
   },
   {
     "type": "function",
-    "name": "collToken",
-    "inputs": [],
-    "outputs": [{ "name": "", "type": "address", "internalType": "contract IERC20" }],
+    "name": "convertUnderlyingToWrapped",
+    "inputs": [{ "name": "_amount", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "convertWrappedToUnderlying",
+    "inputs": [{ "name": "_wrappedAmount", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "stateMutability": "view",
   },
   {
@@ -125,72 +126,6 @@ export const LeverageWrappedTokenZapper = [
     "inputs": [],
     "outputs": [{ "name": "", "type": "address", "internalType": "contract IFlashLoanProvider" }],
     "stateMutability": "view",
-  },
-  {
-    "type": "function",
-    "name": "leverDownTrove",
-    "inputs": [{
-      "name": "_params",
-      "type": "tuple",
-      "internalType": "struct ILeverageZapper.LeverDownTroveParams",
-      "components": [{ "name": "troveId", "type": "uint256", "internalType": "uint256" }, {
-        "name": "flashLoanAmount",
-        "type": "uint256",
-        "internalType": "uint256",
-      }, { "name": "minBoldAmount", "type": "uint256", "internalType": "uint256" }],
-    }],
-    "outputs": [],
-    "stateMutability": "nonpayable",
-  },
-  {
-    "type": "function",
-    "name": "leverUpTrove",
-    "inputs": [{
-      "name": "_params",
-      "type": "tuple",
-      "internalType": "struct ILeverageZapper.LeverUpTroveParams",
-      "components": [
-        { "name": "troveId", "type": "uint256", "internalType": "uint256" },
-        { "name": "flashLoanAmount", "type": "uint256", "internalType": "uint256" },
-        { "name": "boldAmount", "type": "uint256", "internalType": "uint256" },
-        { "name": "maxUpfrontFee", "type": "uint256", "internalType": "uint256" },
-      ],
-    }],
-    "outputs": [],
-    "stateMutability": "nonpayable",
-  },
-  {
-    "type": "function",
-    "name": "leverageRatioToCollateralRatio",
-    "inputs": [{ "name": "_inputRatio", "type": "uint256", "internalType": "uint256" }],
-    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
-    "stateMutability": "pure",
-  },
-  {
-    "type": "function",
-    "name": "openLeveragedTroveWithRawETH",
-    "inputs": [{
-      "name": "_params",
-      "type": "tuple",
-      "internalType": "struct ILeverageZapper.OpenLeveragedTroveParams",
-      "components": [
-        { "name": "owner", "type": "address", "internalType": "address" },
-        { "name": "ownerIndex", "type": "uint256", "internalType": "uint256" },
-        { "name": "collAmount", "type": "uint256", "internalType": "uint256" },
-        { "name": "flashLoanAmount", "type": "uint256", "internalType": "uint256" },
-        { "name": "boldAmount", "type": "uint256", "internalType": "uint256" },
-        { "name": "upperHint", "type": "uint256", "internalType": "uint256" },
-        { "name": "lowerHint", "type": "uint256", "internalType": "uint256" },
-        { "name": "annualInterestRate", "type": "uint256", "internalType": "uint256" },
-        { "name": "batchManager", "type": "address", "internalType": "address" },
-        { "name": "maxUpfrontFee", "type": "uint256", "internalType": "uint256" },
-        { "name": "addManager", "type": "address", "internalType": "address" },
-        { "name": "removeManager", "type": "address", "internalType": "address" },
-        { "name": "receiver", "type": "address", "internalType": "address" },
-      ],
-    }],
-    "outputs": [],
-    "stateMutability": "payable",
   },
   {
     "type": "function",
@@ -368,7 +303,7 @@ export const LeverageWrappedTokenZapper = [
   },
   {
     "type": "function",
-    "name": "withdrawColl",
+    "name": "withdrawCollToRawETH",
     "inputs": [{ "name": "_troveId", "type": "uint256", "internalType": "uint256" }, {
       "name": "_amount",
       "type": "uint256",
@@ -376,6 +311,13 @@ export const LeverageWrappedTokenZapper = [
     }],
     "outputs": [],
     "stateMutability": "nonpayable",
+  },
+  {
+    "type": "function",
+    "name": "wrappedToken",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "address", "internalType": "contract IWrappedToken" }],
+    "stateMutability": "view",
   },
   {
     "type": "event",

@@ -28,6 +28,12 @@ export const TroveNFT = [{
   "stateMutability": "nonpayable",
 }, {
   "type": "function",
+  "name": "externalURIgetter",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
   "name": "getApproved",
   "inputs": [{ "name": "tokenId", "type": "uint256", "internalType": "uint256" }],
   "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
@@ -134,6 +140,18 @@ export const TroveNFT = [{
   "name": "troveManager",
   "inputs": [],
   "outputs": [{ "name": "", "type": "address", "internalType": "contract ITroveManager" }],
+  "stateMutability": "view",
+}, {
+  "type": "function",
+  "name": "updateUri",
+  "inputs": [{ "name": "_externalURIgetter", "type": "address", "internalType": "address" }],
+  "outputs": [],
+  "stateMutability": "nonpayable",
+}, {
+  "type": "function",
+  "name": "uriUpdated",
+  "inputs": [],
+  "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
   "stateMutability": "view",
 }, {
   "type": "event",
