@@ -3,6 +3,7 @@
 import type { BranchId } from "@/src/types";
 
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
+import { PartnerStrategySummary } from "@/src/comps/EarnPositionSummary/PartnerStrategySummary";
 import { SboldPositionSummary } from "@/src/comps/EarnPositionSummary/SboldPositionSummary";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
@@ -16,6 +17,7 @@ import { TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 
 type PoolId = BranchId | "sbold";
+type EcosystemId = "steer" | "saga" | "tellor";
 
 export function EarnPoolsListScreen() {
   const branches = getBranches()
@@ -40,8 +42,23 @@ export function EarnPoolsListScreen() {
     },
   });
 
+  const ecosystemPartners: EcosystemId[] = ["steer", "saga", "tellor"];
+
+  const ecosystemTransition = useTransition(ecosystemPartners, {
+    from: { opacity: 0, transform: "scale(1.1) translateY(64px)" },
+    enter: { opacity: 1, transform: "scale(1) translateY(0px)" },
+    leave: { opacity: 0, transform: "scale(1) translateY(0px)" },
+    trail: 80,
+    config: {
+      mass: 1,
+      tension: 1800,
+      friction: 140,
+    },
+  });
+
   return (
     <Screen
+      width="100%"
       heading={{
         title: (
           <div
@@ -81,16 +98,80 @@ export function EarnPoolsListScreen() {
       <div
         className={css({
           display: "grid",
+          gridTemplateColumns: {
+            base: "1fr",
+            medium: "repeat(2, 1fr)",
+          },
           gap: 16,
         })}
       >
         {poolsTransition((style, poolId) => (
-          <a.div style={style}>
+          <a.div style={{ ...style, width: "100%" }}>
             {poolId === "sbold"
               ? <SboldPool />
               : <EarnPool branchId={poolId} />}
           </a.div>
         ))}
+      </div>
+
+      <div
+        className={css({
+          display: "flex",
+          flexDirection: "column",
+          gap: 24,
+          paddingTop: 48,
+        })}
+      >
+        <header
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 12,
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexFlow: "wrap",
+              gap: "0 8px",
+              fontSize: {
+                base: 20,
+                medium: 28,
+              },
+            })}
+          >
+            Ecosystem
+            <PartnerIconGroup />
+          </div>
+          <p
+            className={css({
+              textAlign: "center",
+              color: "contentAlt",
+            })}
+          >
+            Partner protocols integrated with Must
+          </p>
+        </header>
+
+        <div
+          className={css({
+            display: "grid",
+            gridTemplateColumns: {
+              base: "1fr",
+              medium: "repeat(3, 1fr)",
+            },
+            gap: 16,
+          })}
+        >
+          {ecosystemTransition((style, partnerId) => (
+            <a.div style={{ ...style, width: "100%" }}>
+              <EcosystemPartner partnerId={partnerId} />
+            </a.div>
+          ))}
+        </div>
       </div>
     </Screen>
   );
@@ -121,4 +202,56 @@ function SboldPool() {
       sboldPosition={sboldPosition.data ?? null}
     />
   );
+}
+
+function EcosystemPartner({ partnerId }: { partnerId: EcosystemId }) {
+  return <PartnerStrategySummary strategy={partnerId} />;
+}
+
+function PartnerIconGroup() {
+  const partners: EcosystemId[] = ["steer", "saga", "tellor"];
+  
+  return (
+    <div
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        "& > *:not(:first-child)": {
+          marginLeft: "-8px",
+        },
+      })}
+    >
+      {partners.map((partnerId) => (
+        <div
+          key={partnerId}
+          className={css({
+            width: 24,
+            height: 24,
+            borderRadius: "50%",
+            overflow: "hidden",
+            border: "2px solid black",
+          })}
+        >
+          <img
+            src={getPartnerLogoPath(partnerId)}
+            alt={partnerId}
+            className={css({
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            })}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function getPartnerLogoPath(partnerId: EcosystemId): string {
+  const logos: Record<EcosystemId, string> = {
+    steer: "/images/partners/steer.webp",
+    saga: "/images/partners/uniswap.png",
+    tellor: "/images/partners/tellor.svg",
+  };
+  return logos[partnerId];
 }
