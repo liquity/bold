@@ -4,7 +4,7 @@ import { css } from "@/styled-system/css";
 import { IconExternal } from "@liquity2/uikit";
 import Link from "next/link";
 
-type PartnerId = "steer" | "saga" | "tellor";
+type PartnerId = "steer" | "saga" | "uniswap" | "tellor";
 
 const PARTNER_DATA: Record<PartnerId, {
   name: string;
@@ -19,8 +19,14 @@ const PARTNER_DATA: Record<PartnerId, {
     logo: "/images/partners/steer.webp",
   },
   saga: {
+    name: "Saga",
+    description: "Layer 1 protocol enabling gasless transactions",
+    url: "https://www.saga.xyz",
+    logo: "/images/partners/saga.png",
+  },
+  uniswap: {
     name: "Uniswap V3",
-    description: "Gasless AMM on Saga",
+    description: "First gasless Uniswap deployment on Saga",
     url: "https://app.uniswap.org",
     logo: "/images/partners/uniswap.svg",
   },

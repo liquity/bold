@@ -17,7 +17,7 @@ import { TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 
 type PoolId = BranchId | "sbold";
-type EcosystemId = "steer" | "saga" | "tellor";
+type EcosystemId = "steer" | "saga" | "uniswap" | "tellor";
 
 export function EarnPoolsListScreen() {
   const branches = getBranches()
@@ -42,7 +42,7 @@ export function EarnPoolsListScreen() {
     },
   });
 
-  const ecosystemPartners: EcosystemId[] = ["steer", "saga", "tellor"];
+  const ecosystemPartners: EcosystemId[] = ["steer", "saga", "uniswap", "tellor"];
 
   const ecosystemTransition = useTransition(ecosystemPartners, {
     from: { opacity: 0, transform: "scale(1.1) translateY(64px)" },
@@ -161,7 +161,7 @@ export function EarnPoolsListScreen() {
             display: "grid",
             gridTemplateColumns: {
               base: "1fr",
-              medium: "repeat(3, 1fr)",
+              medium: "repeat(4, 1fr)",
             },
             gap: 16,
           })}
@@ -209,7 +209,7 @@ function EcosystemPartner({ partnerId }: { partnerId: EcosystemId }) {
 }
 
 function PartnerIconGroup() {
-  const partners: EcosystemId[] = ["steer", "saga", "tellor"];
+  const partners: EcosystemId[] = ["steer", "saga", "uniswap", "tellor"];
   
   return (
     <div
@@ -250,7 +250,8 @@ function PartnerIconGroup() {
 function getPartnerLogoPath(partnerId: EcosystemId): string {
   const logos: Record<EcosystemId, string> = {
     steer: "/images/partners/steer.webp",
-    saga: "/images/partners/uniswap.png",
+    saga: "/images/partners/saga.png",
+    uniswap: "/images/partners/uniswap.svg",
     tellor: "/images/partners/tellor.svg",
   };
   return logos[partnerId];
