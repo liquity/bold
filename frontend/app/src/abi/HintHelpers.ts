@@ -19,7 +19,7 @@ export const HintHelpers = [{
 }, {
   "type": "function",
   "name": "forcePredictAdjustInterestRateUpfrontFee",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_branchId", "type": "uint256", "internalType": "uint256" }, {
     "name": "_troveId",
     "type": "uint256",
     "internalType": "uint256",
@@ -30,7 +30,7 @@ export const HintHelpers = [{
   "type": "function",
   "name": "getApproxHint",
   "inputs": [
-    { "name": "_collIndex", "type": "uint256", "internalType": "uint256" },
+    { "name": "_branchId", "type": "uint256", "internalType": "uint256" },
     { "name": "_interestRate", "type": "uint256", "internalType": "uint256" },
     { "name": "_numTrials", "type": "uint256", "internalType": "uint256" },
     { "name": "_inputRandomSeed", "type": "uint256", "internalType": "uint256" },
@@ -44,7 +44,7 @@ export const HintHelpers = [{
 }, {
   "type": "function",
   "name": "predictAdjustBatchInterestRateUpfrontFee",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_branchId", "type": "uint256", "internalType": "uint256" }, {
     "name": "_batchAddress",
     "type": "address",
     "internalType": "address",
@@ -54,7 +54,7 @@ export const HintHelpers = [{
 }, {
   "type": "function",
   "name": "predictAdjustInterestRateUpfrontFee",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_branchId", "type": "uint256", "internalType": "uint256" }, {
     "name": "_troveId",
     "type": "uint256",
     "internalType": "uint256",
@@ -64,7 +64,7 @@ export const HintHelpers = [{
 }, {
   "type": "function",
   "name": "predictAdjustTroveUpfrontFee",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_branchId", "type": "uint256", "internalType": "uint256" }, {
     "name": "_troveId",
     "type": "uint256",
     "internalType": "uint256",
@@ -74,7 +74,7 @@ export const HintHelpers = [{
 }, {
   "type": "function",
   "name": "predictJoinBatchInterestRateUpfrontFee",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_branchId", "type": "uint256", "internalType": "uint256" }, {
     "name": "_troveId",
     "type": "uint256",
     "internalType": "uint256",
@@ -84,7 +84,7 @@ export const HintHelpers = [{
 }, {
   "type": "function",
   "name": "predictOpenTroveAndJoinBatchUpfrontFee",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_branchId", "type": "uint256", "internalType": "uint256" }, {
     "name": "_borrowedAmount",
     "type": "uint256",
     "internalType": "uint256",
@@ -94,7 +94,7 @@ export const HintHelpers = [{
 }, {
   "type": "function",
   "name": "predictOpenTroveUpfrontFee",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_branchId", "type": "uint256", "internalType": "uint256" }, {
     "name": "_borrowedAmount",
     "type": "uint256",
     "internalType": "uint256",
@@ -104,7 +104,7 @@ export const HintHelpers = [{
 }, {
   "type": "function",
   "name": "predictRemoveFromBatchUpfrontFee",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_branchId", "type": "uint256", "internalType": "uint256" }, {
     "name": "_troveId",
     "type": "uint256",
     "internalType": "uint256",

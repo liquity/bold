@@ -7,7 +7,7 @@ import { css } from "@/styled-system/css";
 import { BottomBar } from "./BottomBar";
 import { TopBar } from "./TopBar";
 
-export const LAYOUT_WIDTH = 1092;
+export const LAYOUT_WIDTH = 1192;
 
 export function AppLayout({
   children,

@@ -15,7 +15,7 @@ const ABIS = [
   ["CollateralRegistry"],
   ["HintHelpers"],
   ["MultiTroveGetter"],
-  ["DebtInFrontHelper"],
+  // ["DebtInFrontHelper"],
 
   // Governance (V2-gov lib)
   ["Governance"],
@@ -29,6 +29,7 @@ const ABIS = [
   ["GasPool"],
   ["LeverageLSTZapper"],
   ["LeverageWETHZapper"],
+  ["WrappedTokenZapper"],
   ["PriceFeed", "PriceFeedTestNet", "PriceFeedMock"],
   ["SortedTroves"],
   ["StabilityPool"],
@@ -92,7 +93,7 @@ async function main() {
   console.log("1/3 Building Liquity contracts…");
   console.log("");
 
-  await $`forge build --root ${contractsDir} --out ${artifactsTmpDir}`;
+  await $`forge build --root ${contractsDir}/src --out ${artifactsTmpDir}`;
 
   console.log("");
   console.log("2/3 Writing ABIs…\n");
