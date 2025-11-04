@@ -75,6 +75,17 @@ export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = Object
   ])
 ) as Record<CollateralSymbol, dn.Dnum>;
 
+// Debt limits for each collateral (hardcoded based on protocol deployment)
+export const MAX_DEBT_LIMITS: Record<CollateralSymbol, dn.Dnum> = {
+  WETH: dn.from(100_000_000n, 18),
+  TBTC: dn.from(100_000_000n, 18),
+  YETH: dn.from(5_000_000n, 18),
+  YUSD: dn.from(5_000_000n, 18),
+  SAGA: dn.from(1_000_000n, 18),
+  STATOM: dn.from(1_000_000n, 18),
+  KING: dn.from(500_000n, 18),
+};
+
 // LTV factor suggestions, as ratios of the multiply factor range
 export const LEVERAGE_FACTOR_SUGGESTIONS = [
   norm(1.5, 1.1, 11), // 1.5x multiply with a 1.1x => 11x range
