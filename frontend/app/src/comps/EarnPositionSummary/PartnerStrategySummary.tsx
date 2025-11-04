@@ -28,7 +28,7 @@ const PARTNER_DATA: Record<PartnerId, {
     name: "Oku",
     description: "DEX built on Uniswap v3",
     url: "https://oku.trade/swap?inputChain=saga",
-    logo: "/images/partners/uniswap.svg",
+    logo: "/images/partners/oku.svg",
   },
   tellor: {
     name: "Tellor",

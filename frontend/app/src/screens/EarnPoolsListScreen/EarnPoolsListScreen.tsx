@@ -273,7 +273,7 @@ function getPartnerLogoPath(partnerId: EcosystemId): string {
   const logos: Record<EcosystemId, string> = {
     steer: "/images/partners/steer.webp",
     saga: "/images/partners/saga.png",
-    oku: "/images/partners/uniswap.svg",
+    oku: "/images/partners/oku.svg",
     yeth: "yeth",
     yusd: "yusd",
     statom: "statom",
