@@ -13,7 +13,7 @@ export const MultiTroveGetter = [{
 }, {
   "type": "function",
   "name": "getDebtPerInterestRateAscending",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_branchId", "type": "uint256", "internalType": "uint256" }, {
     "name": "_startId",
     "type": "uint256",
     "internalType": "uint256",
@@ -32,7 +32,7 @@ export const MultiTroveGetter = [{
 }, {
   "type": "function",
   "name": "getMultipleSortedTroves",
-  "inputs": [{ "name": "_collIndex", "type": "uint256", "internalType": "uint256" }, {
+  "inputs": [{ "name": "_branchId", "type": "uint256", "internalType": "uint256" }, {
     "name": "_startIdx",
     "type": "int256",
     "internalType": "int256",

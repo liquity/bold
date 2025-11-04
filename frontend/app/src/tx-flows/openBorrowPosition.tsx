@@ -295,7 +295,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
             removeManager: ADDRESS_ZERO,
             receiver: ADDRESS_ZERO,
           }],
-          value: ETH_GAS_COMPENSATION[0],
+          // value: ETH_GAS_COMPENSATION[0],
         });
       },
 

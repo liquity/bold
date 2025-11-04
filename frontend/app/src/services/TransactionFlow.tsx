@@ -7,7 +7,7 @@ import type { Abi, ContractFunctionArgs, ContractFunctionName, ReadContractRetur
 import type { Config as WagmiConfig } from "wagmi";
 import type { ReadContractOptions } from "wagmi/query";
 
-import { GAS_MIN_HEADROOM, GAS_RELATIVE_HEADROOM, LOCAL_STORAGE_PREFIX } from "@/src/constants";
+import { LOCAL_STORAGE_PREFIX } from "@/src/constants";
 import { CONTRACTS } from "@/src/contracts";
 import { jsonParseWithDnum, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { useStoredState } from "@/src/services/StoredState";
@@ -18,9 +18,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import * as v from "valibot";
-import { encodeFunctionData } from "viem";
 import { useConfig as useWagmiConfig } from "wagmi";
-import { estimateGas, readContract, writeContract } from "wagmi/actions";
+import { readContract, simulateContract, writeContract } from "wagmi/actions";
 
 /* flows registration */
 
@@ -192,25 +191,30 @@ function getWriteContract(config: WagmiConfig, account: Address) {
     params: Omit<Parameters<typeof writeContract>[1], "value"> & {
       value?: bigint;
     },
-    gasMinHeadroom: number = GAS_MIN_HEADROOM,
+    // gasMinHeadroom: number = GAS_MIN_HEADROOM,
   ) => {
-    const gasEstimate = Number(
-      await estimateGas(config, {
-        account,
-        data: encodeFunctionData({
-          abi: params.abi,
-          functionName: params.functionName,
-          args: params.args,
-        }),
-        to: params.address,
-        value: params.value,
-      }),
-    );
-    const gas = BigInt(
-      Math.ceil(gasEstimate + Math.max(gasMinHeadroom, gasEstimate * GAS_RELATIVE_HEADROOM)),
-    );
+    // const gasEstimate = Number(
+    //   await estimateGas(config, {
+    //     account,
+    //     data: encodeFunctionData({
+    //       abi: params.abi,
+    //       functionName: params.functionName,
+    //       args: params.args,
+    //     }),
+    //     to: params.address,
+    //     value: params.value,
+    //   }),
+    // );
+    // const gas = BigInt(
+    //   Math.ceil(gasEstimate + Math.max(gasMinHeadroom, gasEstimate * GAS_RELATIVE_HEADROOM)),
+    // );
 
-    return writeContract(config, { ...params, gas } as any);
+    const { request } = await simulateContract(config, {
+      account: account.toLowerCase() as Address,
+      ...params
+    } as any);
+
+    return writeContract(config, request);
   };
 }
 

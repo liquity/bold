@@ -113,13 +113,6 @@ export const BorrowerOperations = [
     "outputs": [],
     "stateMutability": "nonpayable",
   },
-  {
-    "type": "function",
-    "name": "checkBatchManagerExists",
-    "inputs": [{ "name": "_batchManager", "type": "address", "internalType": "address" }],
-    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
-    "stateMutability": "view",
-  },
   { "type": "function", "name": "claimCollateral", "inputs": [], "outputs": [], "stateMutability": "nonpayable" },
   {
     "type": "function",
@@ -187,6 +180,13 @@ export const BorrowerOperations = [
     "name": "interestBatchManagerOf",
     "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
     "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
+    "stateMutability": "view",
+  },
+  {
+    "type": "function",
+    "name": "isBranchActive",
+    "inputs": [],
+    "outputs": [{ "name": "", "type": "bool", "internalType": "bool" }],
     "stateMutability": "view",
   },
   {
@@ -488,12 +488,6 @@ export const BorrowerOperations = [
       "indexed": false,
       "internalType": "address",
     }, { "name": "_newReceiver", "type": "address", "indexed": false, "internalType": "address" }],
-    "anonymous": false,
-  },
-  {
-    "type": "event",
-    "name": "ShutDown",
-    "inputs": [{ "name": "_tcr", "type": "uint256", "indexed": false, "internalType": "uint256" }],
     "anonymous": false,
   },
   {
