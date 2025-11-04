@@ -730,6 +730,14 @@ export const StatsSchema = v.pipe(
         value_locked: v.string(),
       }),
     ),
+    sBOLD: v.nullish(v.object({
+      protocol: v.string(),
+      asset: v.string(),
+      link: v.string(),
+      weekly_apr: v.number(),
+      total_apr: v.string(),
+      tvl: v.number(),
+    })),
     yBOLD: v.nullish(v.object({
       protocol: v.string(),
       asset: v.string(),
@@ -780,6 +788,14 @@ export const StatsSchema = v.pipe(
       link: i.link,
       protocol: i.protocol,
     })),
+    sBOLD: value.sBOLD && {
+      protocol: value.sBOLD.protocol,
+      asset: value.sBOLD.asset,
+      link: value.sBOLD.link,
+      weeklyApr: dnumOrNull(value.sBOLD.weekly_apr, 18),
+      totalApr: value.sBOLD.total_apr,
+      tvl: dnumOrNull(value.sBOLD.tvl, 18),
+    },
     yBOLD: value.yBOLD && {
       protocol: value.yBOLD.protocol,
       asset: value.yBOLD.asset,
