@@ -5,6 +5,7 @@ import type { CollateralSymbol } from "@/src/types";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Positions } from "@/src/comps/Positions/Positions";
 import content from "@/src/content";
+import { MAX_DEBT_LIMITS } from "@/src/constants";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { DNUM_1 } from "@/src/dnum-utils";
 import {
@@ -198,9 +199,10 @@ export function HomeScreen() {
                     color: "rgba(255, 255, 255, 0.5)",
                     fontSize: "12px",
                     fontWeight: 500,
+                    width: "140px",
                   })}
                 >
-                  Total Debt
+                  Debt Issued
                 </th>
                 <th
                   className={css({
@@ -432,12 +434,33 @@ function BorrowRow({
           textAlign: "center",
         })}
       >
-        <Amount
-          format="compact"
-          prefix="$"
-          fallback="…"
-          value={branchDebt.data}
-        />
+        <div
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "4px",
+          })}
+        >
+          <Amount
+            format="compact"
+            prefix="$"
+            fallback="…"
+            value={branchDebt.data}
+          />
+          <span
+            className={css({
+              color: "rgba(255, 255, 255, 0.3)",
+            })}
+          >
+            /
+          </span>
+          <Amount
+            format="compact"
+            prefix="$"
+            value={MAX_DEBT_LIMITS[symbol]}
+          />
+        </div>
       </td>
 
       <td
@@ -576,26 +599,35 @@ function EarnRow({
         })}
       >
         <Link href={`/earn/${symbol.toLowerCase()}`}>
-          <Button
-            label="EARN"
+          <button
             className={`font-audiowide ${css({
               background: "#A189AB",
               color: "black",
-              height: "24px!",
+              height: "24px",
               border: "none",
               borderRadius: 16,
-              padding: "0px 16px",
+              padding: "0px 12px",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
-              fontSize: "11px!",
+              fontSize: "11px",
               fontWeight: 500,
               transition: "all 0.2s",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              cursor: "pointer",
               "&:hover": {
                 background: "#8A7094",
                 transform: "translateY(-1px)",
               },
             })}`}
-          />
+          >
+            EARN
+            <TokenIcon.Group size="mini">
+              <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} />
+              <TokenIcon symbol={symbol} />
+            </TokenIcon.Group>
+          </button>
         </Link>
       </td>
     </tr>
