@@ -45,7 +45,7 @@ const PARTNER_DATA: Record<PartnerId, {
   yusd: {
     name: "yUSD",
     description: "Yield-bearing USD stablecoin",
-    url: "https://yield.fi/yeth",
+    url: "https://yield.fi/yusd",
     logo: "yusd",
   },
   statom: {
