@@ -5,7 +5,7 @@ pragma solidity 0.8.24;
 import { ERC20PermitUpgradeable } from "./patched/ERC20PermitUpgradeable.sol";
 import { ERC20Upgradeable } from "./patched/ERC20Upgradeable.sol";
 
-import { IStableTokenV3 } from "src/interfaces/IStableTokenV3.sol";
+import { IStableTokenV3 } from "src/Interfaces/IStableTokenV3.sol";
 
 
 contract CalledByVm {
