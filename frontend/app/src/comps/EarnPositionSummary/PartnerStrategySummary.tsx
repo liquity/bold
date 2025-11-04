@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 
 import { css } from "@/styled-system/css";
-import { IconExternal } from "@liquity2/uikit";
+import { IconExternal, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
 
-type PartnerId = "steer" | "saga" | "uniswap" | "tellor";
+type PartnerId = "steer" | "saga" | "oku" | "tellor" | "yeth" | "yusd" | "statom";
 
 const PARTNER_DATA: Record<PartnerId, {
   name: string;
@@ -24,10 +24,10 @@ const PARTNER_DATA: Record<PartnerId, {
     url: "https://www.saga.xyz",
     logo: "/images/partners/saga.png",
   },
-  uniswap: {
-    name: "Uniswap V3",
-    description: "First gasless Uniswap deployment on Saga",
-    url: "https://app.uniswap.org",
+  oku: {
+    name: "Oku",
+    description: "DEX built on Uniswap v3",
+    url: "https://oku.trade/swap?inputChain=saga",
     logo: "/images/partners/uniswap.svg",
   },
   tellor: {
@@ -35,6 +35,24 @@ const PARTNER_DATA: Record<PartnerId, {
     description: "Decentralized oracle network",
     url: "https://tellor.io",
     logo: "/images/partners/tellor.svg",
+  },
+  yeth: {
+    name: "yETH",
+    description: "Yield-bearing ETH token",
+    url: "https://yield.fi/yeth",
+    logo: "yeth",
+  },
+  yusd: {
+    name: "yUSD",
+    description: "Yield-bearing USD stablecoin",
+    url: "https://yield.fi/yeth",
+    logo: "yusd",
+  },
+  statom: {
+    name: "stATOM",
+    description: "Staked ATOM via Stride",
+    url: "https://app.stride.zone/",
+    logo: "statom",
   },
 };
 
@@ -244,6 +262,12 @@ function PartnerIcon({
   logo: string;
   size?: number;
 }) {
+  const isTokenIcon = ["yeth", "yusd", "statom"].includes(id);
+  
+  if (isTokenIcon) {
+    return <TokenIcon symbol={logo.toUpperCase() as any} size={size} />;
+  }
+  
   return (
     <div
       className={css({
