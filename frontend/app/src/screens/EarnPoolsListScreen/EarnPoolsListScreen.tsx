@@ -17,7 +17,7 @@ import { TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 
 type PoolId = BranchId | "sbold";
-type EcosystemId = "steer" | "saga" | "oku" | "tellor" | "yeth" | "yusd" | "statom";
+type EcosystemId = "steer" | "saga" | "oku" | "tellor" | "yield" | "statom";
 
 export function EarnPoolsListScreen() {
   const branches = getBranches()
@@ -42,7 +42,7 @@ export function EarnPoolsListScreen() {
     },
   });
 
-  const ecosystemPartners: EcosystemId[] = ["steer", "saga", "oku", "tellor", "yeth", "yusd", "statom"];
+  const ecosystemPartners: EcosystemId[] = ["steer", "saga", "oku", "tellor", "yield", "statom"];
 
   const ecosystemTransition = useTransition(ecosystemPartners, {
     from: { opacity: 0, transform: "scale(1.1) translateY(64px)" },
@@ -161,7 +161,7 @@ export function EarnPoolsListScreen() {
             display: "grid",
             gridTemplateColumns: {
               base: "1fr",
-              medium: "repeat(4, 1fr)",
+              medium: "repeat(3, 1fr)",
             },
             gap: 16,
           })}
@@ -209,7 +209,7 @@ function EcosystemPartner({ partnerId }: { partnerId: EcosystemId }) {
 }
 
 function PartnerIconGroup() {
-  const partners: EcosystemId[] = ["steer", "saga", "oku", "tellor", "yeth", "yusd", "statom"];
+  const partners: EcosystemId[] = ["steer", "saga", "oku", "tellor", "yield", "statom"];
   
   return (
     <div
@@ -223,21 +223,22 @@ function PartnerIconGroup() {
     >
       {partners.map((partnerId) => {
         const logoPath = getPartnerLogoPath(partnerId);
-        const isTokenIcon = ["yeth", "yusd", "statom"].includes(partnerId);
+        const isTokenIcon = ["statom"].includes(partnerId);
         
         if (isTokenIcon) {
           return (
             <div
               key={partnerId}
               className={css({
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 width: 24,
                 height: 24,
                 borderRadius: "50%",
-                overflow: "hidden",
-                border: "2px solid black",
               })}
             >
-              <TokenIcon symbol={logoPath.toUpperCase() as any} size={24} />
+              <TokenIcon symbol={logoPath.toUpperCase() as any} size={20} />
             </div>
           );
         }
@@ -250,8 +251,10 @@ function PartnerIconGroup() {
               height: 24,
               borderRadius: "50%",
               overflow: "hidden",
-              border: "2px solid black",
             })}
+            style={{
+              background: partnerId === "oku" ? "black" : undefined,
+            }}
           >
             <img
               src={logoPath}
@@ -274,8 +277,7 @@ function getPartnerLogoPath(partnerId: EcosystemId): string {
     steer: "/images/partners/steer.webp",
     saga: "/images/partners/saga.png",
     oku: "/images/partners/oku.svg",
-    yeth: "yeth",
-    yusd: "yusd",
+    yield: "/images/partners/yieldfi.svg",
     statom: "statom",
     tellor: "/images/partners/tellor.svg",
   };

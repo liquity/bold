@@ -4,7 +4,7 @@ import { css } from "@/styled-system/css";
 import { IconExternal, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
 
-type PartnerId = "steer" | "saga" | "oku" | "tellor" | "yeth" | "yusd" | "statom";
+type PartnerId = "steer" | "saga" | "oku" | "tellor" | "yield" | "statom";
 
 const PARTNER_DATA: Record<PartnerId, {
   name: string;
@@ -36,17 +36,11 @@ const PARTNER_DATA: Record<PartnerId, {
     url: "https://tellor.io",
     logo: "/images/partners/tellor.svg",
   },
-  yeth: {
-    name: "yETH",
-    description: "Yield-bearing ETH token",
+  yield: {
+    name: "YieldFi",
+    description: "yETH and yUSD yield-bearing tokens",
     url: "https://yield.fi/yeth",
-    logo: "yeth",
-  },
-  yusd: {
-    name: "yUSD",
-    description: "Yield-bearing USD stablecoin",
-    url: "https://yield.fi/yusd",
-    logo: "yusd",
+    logo: "/images/partners/yieldfi.svg",
   },
   statom: {
     name: "stATOM",
@@ -63,6 +57,15 @@ export function PartnerStrategySummary({
 }) {
   const partner = PARTNER_DATA[strategy];
 
+  const subtitle = strategy === "yield" ? (
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <TokenIcon symbol="YETH" size={16} />
+      <span>yETH and</span>
+      <TokenIcon symbol="YUSD" size={16} />
+      <span>yUSD yield-bearing tokens</span>
+    </div>
+  ) : partner.description;
+
   return (
     <PartnerStrategySummaryBase
       action={{
@@ -73,7 +76,7 @@ export function PartnerStrategySummary({
       active={false}
       partnerId={strategy}
       title={partner.name}
-      subtitle={partner.description}
+      subtitle={subtitle}
       infoItems={[]}
     />
   );
@@ -262,7 +265,7 @@ function PartnerIcon({
   logo: string;
   size?: number;
 }) {
-  const isTokenIcon = ["yeth", "yusd", "statom"].includes(id);
+  const isTokenIcon = ["statom"].includes(id);
   
   if (isTokenIcon) {
     return <TokenIcon symbol={logo.toUpperCase() as any} size={size} />;
