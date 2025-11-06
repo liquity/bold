@@ -79,7 +79,7 @@ export function BottomBar() {
             >
               <Image src={SagaIcon} alt="SAGA" width={16} height={16} />
               <span>SAGA</span>
-              <Amount prefix="$" fallback="…" value={sagaPrice.data} format="2z" />
+              <Amount prefix="$" fallback="…" value={sagaPrice.data} format={3} />
             </div>
           </div>
           <div
