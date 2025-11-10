@@ -1,8 +1,18 @@
+"use client";
 
-import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
+import { Amount } from "@/src/comps/Amount/Amount";
+import { usePrice } from "@/src/services/Prices";
 import { css } from "@/styled-system/css";
+import Image from "next/image";
+import Link from "next/link";
+import XIcon from "@/src/assets/x.svg";
+import DiscordIcon from "@/src/assets/discord.svg";
+import MustIcon from "@/src/assets/must.svg";
+import SagaIcon from "@/src/assets/saga.png";
 
 export function BottomBar() {
+  const sagaPrice = usePrice("SAGA");
+  
   return (
     <div
       className={css({
@@ -44,34 +54,33 @@ export function BottomBar() {
             className={css({
               display: "flex",
               alignItems: "center",
+              gap: 16,
             })}
           >
-            <LinkTextButton
-              external
-              href="https://x.com/mustangfinance"
-              label={
-                <div
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                  })}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                  </svg>
-                  <span style={{ color: "white", fontSize: 14 }}>Twitter (X)</span>
-                </div>
-              }
+            <div
               className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
                 color: "rgba(255, 255, 255, 0.7)",
-                fontSize: "12px",
-                _hover: {
-                  color: "white",
-                  textDecoration: "underline",
-                },
               })}
-            />
+            >
+              <Image src={MustIcon} alt="MUST" width={16} height={16} />
+              <span>MUST</span>
+              <span>$1.00</span>
+            </div>
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                color: "rgba(255, 255, 255, 0.7)",
+              })}
+            >
+              <Image src={SagaIcon} alt="SAGA" width={16} height={16} />
+              <span>SAGA</span>
+              <Amount prefix="$" fallback="…" value={sagaPrice.data} format={3} />
+            </div>
           </div>
           <div
             className={css({
@@ -82,20 +91,77 @@ export function BottomBar() {
               fontSize: "12px",
             })}
           >
-            <span>© Saga Stablecoin 2025 All rights reserved</span>
-            <LinkTextButton
-              external
-              href="#"
-              label="Privacy Policy"
+            <Link
+              href="https://discord.com/invite/UCRsTy82Ub"
+              target="_blank"
+              rel="noopener noreferrer"
               className={css({
+                display: "flex",
+                alignItems: "center",
                 color: "rgba(255, 255, 255, 0.7)",
-                fontSize: "12px",
-                _hover: {
+                _hover: { 
+                  color: "white",
+                },
+                _focusVisible: {
+                  outline: "2px solid rgba(255, 255, 255, 0.5)",
+                },
+                _active: {
+                  translate: "0 1px",
+                },
+              })}
+            >
+              <Image src={DiscordIcon} alt="Discord" width={16} height={16} style={{ filter: 'brightness(0) invert(1)' }} />
+            </Link>
+            <Link
+              href="https://x.com/mustangfinance"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                color: "rgba(255, 255, 255, 0.7)",
+                _hover: { 
+                  color: "white",
+                },
+                _focusVisible: {
+                  outline: "2px solid rgba(255, 255, 255, 0.5)",
+                },
+                _active: {
+                  translate: "0 1px",
+                },
+              })}
+            >
+              <Image src={XIcon} alt="X" width={16} height={16} style={{ filter: 'brightness(0) invert(1)' }} />
+            </Link>
+            <Link
+              href="https://docs.must.finance/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                color: "rgba(255, 255, 255, 0.7)",
+                _hover: { 
                   color: "white",
                   textDecoration: "underline",
                 },
+                _focusVisible: {
+                  outline: "2px solid rgba(255, 255, 255, 0.5)",
+                },
+                _active: {
+                  translate: "0 1px",
+                },
               })}
-            />
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <polyline points="15 3 21 3 21 9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <line x1="10" y1="14" x2="21" y2="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>Docs</span>
+            </Link>
+            <span>© Saga Stablecoin 2025 All rights reserved</span>
           </div>
         </div>
       </div>
