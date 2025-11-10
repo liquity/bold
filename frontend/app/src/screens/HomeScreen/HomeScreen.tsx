@@ -213,7 +213,7 @@ export function HomeScreen() {
             </thead>
             <tbody>
               {getBranches()
-                .filter((branch) => branch.symbol.toLowerCase() !== "tbtc") // TODO: remove this once tBTC is supported
+                // .filter((branch) => branch.symbol.toLowerCase() !== "tbtc") // TODO: remove this once tBTC is supported
                 .map(({ symbol }) => (
                 <BorrowRow
                   key={symbol}

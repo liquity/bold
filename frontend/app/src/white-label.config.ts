@@ -198,65 +198,65 @@ export const WHITE_LABEL_CONFIG = {
         },
       },   
       // === BTC-based collaterals (120% MCR, 83.33% max LTV) ===
-      // {
-      //   symbol: "TBTC" as const,
-      //   name: "tBTC",
-      //   icon: "tbtc",
-      //   decimals: 18,
-      //   collateralRatio: 1.1, // 110% MCR
-      //   maxDeposit: "100000000", // $100M initial debt limit
-      //   maxLTV: 0.9091, // 90.91% max LTV
-      //   deployments: {
-      //     5464: { // Saga EVM
-      //       collToken: "0xa740E6758e309840ffFfe58f749F018386A3b70b",
-      //       addressesRegistry: "0xb7a736bfcb095193fbfe1c1a63db85e4b05bd8bc",
-      //       activePool: "0x5b1ea033ced0fd440473756eff8afd1c18232438",
-      //       borrowerOperations: "0xf5b44b09c4db928b189d67d6ed608ef9bd3c81fe",
-      //       collSurplusPool: "0xfde8f40b62c3461d5247d8955eda0d3e6ba548de",
-      //       defaultPool: "0x9134681170d93e540b5e388f990e9f26b5fdc91b",
-      //       sortedTroves: "0xb9ea6aa59f377cda5d4244531537c2ddff02d6f2",
-      //       stabilityPool: "0xdddd9e64ffd57bfdbe67f94fff55ba3492a00ee8",
-      //       troveManager: "0xd4311c2bdcfa4ee91640765d9f388b7f9cdfbc56",
-      //       troveNFT: "0x66bb25c553b65e95b16bcd999b86ded7b20fc71e",
-      //       metadataNFT: "0x63606ce1b16fe27c0ed156dfe8358cfb9f5601bf",
-      //       priceFeed: "0x3fa3b50e0e4f15978abeb93a59d26202dd13f8c5",
-      //       gasPool: "0xc7c1c86c817ea69611e80819c7fb681dc1931d28",
-      //       leverageZapper: "0x1Fc3C7bC9812FD9DF88D7A3cC32eE634821c22C7",
-      //     },
-      //     1: {
-      //       collToken: "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
-      //       addressesRegistry: "0x0000000000000000000000000000000000000000",
-      //       activePool: "0x0000000000000000000000000000000000000000",
-      //       borrowerOperations: "0x0000000000000000000000000000000000000000",
-      //       collSurplusPool: "0x0000000000000000000000000000000000000000",
-      //       defaultPool: "0x0000000000000000000000000000000000000000",
-      //       sortedTroves: "0x0000000000000000000000000000000000000000",
-      //       stabilityPool: "0x0000000000000000000000000000000000000000",
-      //       troveManager: "0x0000000000000000000000000000000000000000",
-      //       troveNFT: "0x0000000000000000000000000000000000000000",
-      //       metadataNFT: "0x0000000000000000000000000000000000000000",
-      //       priceFeed: "0x0000000000000000000000000000000000000000",
-      //       gasPool: "0x0000000000000000000000000000000000000000",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000",
-      //     },
-      //     11155111: {
-      //       collToken: "0xff9f477b09c6937ff6313ae90e79022609851a9c",
-      //       addressesRegistry: "0x0000000000000000000000000000000000000000",
-      //       activePool: "0x0000000000000000000000000000000000000000",
-      //       borrowerOperations: "0x0000000000000000000000000000000000000000",
-      //       collSurplusPool: "0x0000000000000000000000000000000000000000",
-      //       defaultPool: "0x0000000000000000000000000000000000000000",
-      //       sortedTroves: "0x0000000000000000000000000000000000000000",
-      //       stabilityPool: "0x0000000000000000000000000000000000000000",
-      //       troveManager: "0x0000000000000000000000000000000000000000",
-      //       troveNFT: "0x0000000000000000000000000000000000000000",
-      //       metadataNFT: "0x0000000000000000000000000000000000000000",
-      //       priceFeed: "0x0000000000000000000000000000000000000000",
-      //       gasPool: "0x0000000000000000000000000000000000000000",
-      //       leverageZapper: "0x0000000000000000000000000000000000000000",
-      //     },
-      //   },
-      // },
+      {
+        symbol: "TBTC" as const,
+        name: "tBTC",
+        icon: "tbtc",
+        decimals: 18,
+        collateralRatio: 1.1, // 110% MCR
+        maxDeposit: "100000000", // $100M initial debt limit
+        maxLTV: 0.9091, // 90.91% max LTV
+        deployments: {
+          5464: { // Saga EVM
+            collToken: "0xa740E6758e309840ffFfe58f749F018386A3b70b",
+            addressesRegistry: "0xb7a736bfcb095193fbfe1c1a63db85e4b05bd8bc",
+            activePool: "0x5b1ea033ced0fd440473756eff8afd1c18232438",
+            borrowerOperations: "0xf5b44b09c4db928b189d67d6ed608ef9bd3c81fe",
+            collSurplusPool: "0xfde8f40b62c3461d5247d8955eda0d3e6ba548de",
+            defaultPool: "0x9134681170d93e540b5e388f990e9f26b5fdc91b",
+            sortedTroves: "0xb9ea6aa59f377cda5d4244531537c2ddff02d6f2",
+            stabilityPool: "0xdddd9e64ffd57bfdbe67f94fff55ba3492a00ee8",
+            troveManager: "0xd4311c2bdcfa4ee91640765d9f388b7f9cdfbc56",
+            troveNFT: "0x66bb25c553b65e95b16bcd999b86ded7b20fc71e",
+            metadataNFT: "0x63606ce1b16fe27c0ed156dfe8358cfb9f5601bf",
+            priceFeed: "0x3fa3b50e0e4f15978abeb93a59d26202dd13f8c5",
+            gasPool: "0xc7c1c86c817ea69611e80819c7fb681dc1931d28",
+            leverageZapper: "0x1Fc3C7bC9812FD9DF88D7A3cC32eE634821c22C7",
+          },
+          1: {
+            collToken: "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+            addressesRegistry: "0x0000000000000000000000000000000000000000",
+            activePool: "0x0000000000000000000000000000000000000000",
+            borrowerOperations: "0x0000000000000000000000000000000000000000",
+            collSurplusPool: "0x0000000000000000000000000000000000000000",
+            defaultPool: "0x0000000000000000000000000000000000000000",
+            sortedTroves: "0x0000000000000000000000000000000000000000",
+            stabilityPool: "0x0000000000000000000000000000000000000000",
+            troveManager: "0x0000000000000000000000000000000000000000",
+            troveNFT: "0x0000000000000000000000000000000000000000",
+            metadataNFT: "0x0000000000000000000000000000000000000000",
+            priceFeed: "0x0000000000000000000000000000000000000000",
+            gasPool: "0x0000000000000000000000000000000000000000",
+            leverageZapper: "0x0000000000000000000000000000000000000000",
+          },
+          11155111: {
+            collToken: "0xff9f477b09c6937ff6313ae90e79022609851a9c",
+            addressesRegistry: "0x0000000000000000000000000000000000000000",
+            activePool: "0x0000000000000000000000000000000000000000",
+            borrowerOperations: "0x0000000000000000000000000000000000000000",
+            collSurplusPool: "0x0000000000000000000000000000000000000000",
+            defaultPool: "0x0000000000000000000000000000000000000000",
+            sortedTroves: "0x0000000000000000000000000000000000000000",
+            stabilityPool: "0x0000000000000000000000000000000000000000",
+            troveManager: "0x0000000000000000000000000000000000000000",
+            troveNFT: "0x0000000000000000000000000000000000000000",
+            metadataNFT: "0x0000000000000000000000000000000000000000",
+            priceFeed: "0x0000000000000000000000000000000000000000",
+            gasPool: "0x0000000000000000000000000000000000000000",
+            leverageZapper: "0x0000000000000000000000000000000000000000",
+          },
+        },
+      },
       {
         symbol: "SAGA" as const,
         name: "SAGA",
@@ -633,7 +633,7 @@ export function getAvailableEarnPools() {
   });
   
   return pools
-    .filter((pool) => pool.symbol.toLowerCase() !== "tbtc") // TODO: remove this once tBTC is supported
+    // .filter((pool) => pool.symbol.toLowerCase() !== "tbtc") // TODO: remove this once tBTC is supported
 }
 
 export function getEarnPoolSymbols() {
