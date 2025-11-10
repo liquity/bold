@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.24;
-
-import {ROOT_NODE_ID} from "../SortedTroves.sol";
+pragma solidity 0.8.23;
 
 type TroveId is uint256;
 
@@ -13,7 +11,7 @@ function equals(TroveId a, TroveId b) pure returns (bool) {
 }
 
 function notEquals(TroveId a, TroveId b) pure returns (bool) {
-    return !(a == b);
+    return TroveId.unwrap(a) != TroveId.unwrap(b);
 }
 
 function isEndOfList(TroveId x) pure returns (bool) {
@@ -25,4 +23,4 @@ function isNotEndOfList(TroveId x) pure returns (bool) {
 }
 
 TroveId constant TROVE_ID_ZERO = TroveId.wrap(0);
-TroveId constant TROVE_ID_END_OF_LIST = TroveId.wrap(ROOT_NODE_ID);
+TroveId constant TROVE_ID_END_OF_LIST = TroveId.wrap(0);

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity 0.8.24;
+pragma solidity 0.8.23;
 
 type BatchId is address;
 
@@ -11,7 +11,7 @@ function equals(BatchId a, BatchId b) pure returns (bool) {
 }
 
 function notEquals(BatchId a, BatchId b) pure returns (bool) {
-    return !(a == b);
+    return BatchId.unwrap(a) != BatchId.unwrap(b);
 }
 
 function isZero(BatchId x) pure returns (bool) {
