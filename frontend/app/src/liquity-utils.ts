@@ -34,6 +34,7 @@ import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-ut
 import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { combineStatus } from "@/src/query-utils";
+import { useDebounced } from "@/src/react-utils";
 import { usePrice } from "@/src/services/Prices";
 import {
   getAllInterestRateBrackets,
@@ -52,7 +53,7 @@ import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
 import { encodeAbiParameters, erc20Abi, isAddressEqual, keccak256, parseAbiParameters, zeroAddress } from "viem";
-import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
+import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts, useSimulateContract } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
@@ -1478,4 +1479,43 @@ export function useRedemptionRiskOfInterestRate(
     if (!data) return { status, data };
     return { status, data: getRedemptionRisk(data.debtInFront, data.totalDebt) };
   }, [status, data]);
+}
+
+export interface RedemptionSimulationParams {
+  boldAmount: Dnum;
+  maxIterationsPerCollateral: number;
+}
+
+export function useRedemptionSimulation(params: RedemptionSimulationParams) {
+  const boldAmount = dn.from(params.boldAmount, 18)[0];
+  const maxIterationsPerCollateral = BigInt(params.maxIterationsPerCollateral);
+
+  const values = useMemo(() => ({
+    boldAmount,
+    maxIterationsPerCollateral,
+  }), [boldAmount, maxIterationsPerCollateral]);
+
+  const [debounced, bouncing] = useDebounced(values);
+  const RedemptionHelper = getProtocolContract("RedemptionHelper");
+
+  // We'd love to use `useReadContract()` for this, but wagmi/viem won't let us
+  // do that for mutating functions, even though it's a perfectly valid use case.
+  // We could hack the ABI, but that's yucky.
+  return useSimulateContract({
+    ...RedemptionHelper,
+    functionName: "truncateRedemption",
+    args: [debounced.boldAmount, debounced.maxIterationsPerCollateral],
+
+    query: {
+      refetchInterval: 12_000,
+      enabled: !bouncing,
+
+      select: ({ result: [truncatedBold, feePct, output] }) => ({
+        bouncing,
+        truncatedBold: dnum18(truncatedBold),
+        feePct: dnum18(feePct),
+        collRedeemed: output.map(({ coll }) => dnum18(coll)),
+      }),
+    },
+  });
 }
