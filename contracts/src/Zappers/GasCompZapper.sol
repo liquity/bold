@@ -34,7 +34,7 @@ contract GasCompZapper is BaseZapper {
         );
 
         // Convert ETH to WETH
-        WETH.deposit{value: msg.value}();
+       //WETH.deposit{value: msg.value}();
 
         // Pull coll
         collToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
@@ -239,9 +239,9 @@ contract GasCompZapper is BaseZapper {
         collToken.safeTransfer(receiver, trove.entireColl);
 
         // Send gas compensation
-        WETH.withdraw(ETH_GAS_COMPENSATION);
-        (bool success,) = receiver.call{value: ETH_GAS_COMPENSATION}("");
-        require(success, "GCZ: Sending ETH failed");
+        //WETH.withdraw(ETH_GAS_COMPENSATION);
+        //(bool success,) = receiver.call{value: ETH_GAS_COMPENSATION}("");
+        //require(success, "GCZ: Sending ETH failed");
     }
 
     function closeTroveFromCollateral(uint256 _troveId, uint256 _flashLoanAmount, uint256 _minExpectedCollateral)
@@ -301,9 +301,9 @@ contract GasCompZapper is BaseZapper {
         collToken.safeTransfer(_params.receiver, collLeft);
 
         // Send gas compensation
-        WETH.withdraw(ETH_GAS_COMPENSATION);
-        (bool success,) = _params.receiver.call{value: ETH_GAS_COMPENSATION}("");
-        require(success, "GCZ: Sending ETH failed");
+       // WETH.withdraw(ETH_GAS_COMPENSATION);
+       // (bool success,) = _params.receiver.call{value: ETH_GAS_COMPENSATION}("");
+       // require(success, "GCZ: Sending ETH failed");
     }
 
     receive() external payable {}
