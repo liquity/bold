@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity 0.8.23;
 
 import "./Utils/E2EHelpers.sol";
 import "forge-std/console2.sol";

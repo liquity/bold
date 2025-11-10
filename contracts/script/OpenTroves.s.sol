@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity 0.8.23;
 
 import {Script} from "forge-std/Script.sol";
 import {Clones} from "openzeppelin-contracts/contracts/proxy/Clones.sol";

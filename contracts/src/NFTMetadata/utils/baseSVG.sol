@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity 0.8.23;
 
 import {svg} from "./SVG.sol";
 import {utils, LibString, numUtils} from "./Utils.sol";

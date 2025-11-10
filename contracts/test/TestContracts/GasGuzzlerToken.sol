@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.8.24;
+pragma solidity 0.8.23;
 
 // Mock token that uses all available gas on exchange rate calls.
 // This contract code is etched over LST token addresses in mainnet fork tests.
