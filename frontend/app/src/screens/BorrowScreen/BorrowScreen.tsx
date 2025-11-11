@@ -47,6 +47,7 @@ import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { maxUint256 } from "viem";
+import { useBreakpointName } from "@/src/breakpoints";
 
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol)
   // .filter((symbol) => symbol.toLowerCase() !== "tbtc"); // TODO: remove this once tBTC is supported
@@ -62,6 +63,8 @@ export function BorrowScreen() {
 
   const router = useRouter();
   const account = useAccount();
+  const breakpoint = useBreakpointName();
+  const isMobile = breakpoint === "small";
 
   const branch = getBranch(collSymbol);
   const collateral = getCollToken(branch.id);
@@ -215,7 +218,7 @@ export function BorrowScreen() {
           <h1
             className={`font-audiowide ${css({
               color: "white",
-              fontSize: '37px',
+              fontSize: { base: '28px', medium: '37px' },
               textAlign: "center",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
@@ -230,7 +233,7 @@ export function BorrowScreen() {
                 whiteSpace: "nowrap",
               })}
             >
-              {WHITE_LABEL_CONFIG.tokens.mainToken.symbol}{NBSP}<TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} size={46} />
+              {WHITE_LABEL_CONFIG.tokens.mainToken.symbol}{NBSP}<TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} size={isMobile ? 32 : 46} />
             </span>
             <br />
             <span
@@ -238,7 +241,7 @@ export function BorrowScreen() {
                 display: "inline-flex",
                 alignItems: "center",
                 whiteSpace: "nowrap",
-                fontSize: "20px",
+                fontSize: { base: '17px', medium: '20px' },
                 gap: "8px",
               })}
             >
