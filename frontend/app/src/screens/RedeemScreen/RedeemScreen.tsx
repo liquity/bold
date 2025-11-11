@@ -140,7 +140,7 @@ export function RedeemScreen() {
               label="You pay"
               placeholder="0.00"
               secondary={{
-                start: fmtnum(boldRedeemedUsd, { prefix: "$", preset: "2z" }),
+                start: fmtnum(boldRedeemedUsd, { prefix: "$", preset: "2z" }) || " ",
                 end: (
                   boldBalance.data && dn.gt(boldBalance.data, 0) && (
                     <TextButton
