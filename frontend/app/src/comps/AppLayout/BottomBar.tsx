@@ -66,7 +66,7 @@ export function BottomBar() {
               })}
             >
               <Image src={MustIcon} alt="MUST" width={16} height={16} />
-              <span>MUST</span>
+              <span className={css({ hideBelow: "medium" })}>MUST</span>
               <span>$1.00</span>
             </div>
             <div
@@ -78,19 +78,9 @@ export function BottomBar() {
               })}
             >
               <Image src={SagaIcon} alt="SAGA" width={16} height={16} />
-              <span>SAGA</span>
+              <span className={css({ hideBelow: "medium" })}>SAGA</span>
               <Amount prefix="$" fallback="…" value={sagaPrice.data} format={3} />
             </div>
-          </div>
-          <div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              gap: 16,
-              color: "rgba(255, 255, 255, 0.7)",
-              fontSize: "12px",
-            })}
-          >
             <Link
               href="https://discord.com/invite/UCRsTy82Ub"
               target="_blank"
@@ -154,14 +144,76 @@ export function BottomBar() {
                 },
               })}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <svg 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor"
+                className={css({ hideBelow: "medium" })}
+              >
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <polyline points="15 3 21 3 21 9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <line x1="10" y1="14" x2="21" y2="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span>Docs</span>
+              <span className={css({ hideBelow: "medium" })}>Docs</span>
             </Link>
-            <span>© Saga Stablecoin 2025 All rights reserved</span>
+          </div>
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: {
+                base: 8,
+                medium: 16,
+              },
+              color: "rgba(255, 255, 255, 0.7)",
+              fontSize: "12px",
+            })}
+          >
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: {
+                  base: "column",
+                  medium: "row",
+                },
+                alignItems: {
+                  base: "flex-end",
+                  medium: "center",
+                },
+                gap: {
+                  base: 2,
+                  medium: 8,
+                },
+                fontSize: {
+                  base: "10px",
+                  medium: "12px",
+                },
+              })}
+            >
+              <Link
+                href="https://docs.must.finance/privacy-policy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={css({
+                  color: "rgba(255, 255, 255, 0.7)",
+                  _hover: { 
+                    color: "white",
+                    textDecoration: "underline",
+                  },
+                  _focusVisible: {
+                    outline: "2px solid rgba(255, 255, 255, 0.5)",
+                  },
+                  _active: {
+                    translate: "0 1px",
+                  },
+                })}
+              >
+                Privacy Policy
+              </Link>
+              <span>© Saga Stablecoin 2025</span>
+            </div>
           </div>
         </div>
       </div>

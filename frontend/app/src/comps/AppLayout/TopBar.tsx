@@ -64,13 +64,38 @@ export function TopBar() {
             },
           })}
         >
-          <Image
-            src="/logo.svg"
-            alt={headerConfig.appName}
-            width={180}
-            height={40}
-            style={{ objectFit: "contain" }}
-          />
+          {/* Desktop Logo */}
+          <span
+            className={css({
+              display: "inline-flex",
+              alignItems: "center",
+              hideBelow: "medium",
+            })}
+          >
+            <Image
+              src="/logo.svg"
+              alt={headerConfig.appName}
+              width={180}
+              height={40}
+              style={{ objectFit: "contain" }}
+            />
+          </span>
+          {/* Mobile Logo */}
+          <span
+            className={css({
+              display: "inline-flex",
+              alignItems: "center",
+              hideFrom: "medium",
+            })}
+          >
+            <Image
+              src="/logo.svg"
+              alt={headerConfig.appName}
+              width={140}
+              height={32}
+              style={{ objectFit: "contain" }}
+            />
+          </span>
           {DEPLOYMENT_FLAVOR && (
             <div
               className={css({
@@ -169,13 +194,7 @@ export function TopBar() {
               gap: 16,
             })}
           >
-            <div
-              className={css({
-                hideBelow: "medium",
-              })}
-            >
-              <AccountButton />
-            </div>
+            <AccountButton />
             
             {/* Mobile Menu Button */}
             <div

@@ -1,20 +1,12 @@
-import type { ReactNode } from "react";
 import type { MenuItem } from "./Menu";
 
-import { Logo } from "@/src/comps/Logo/Logo";
-import content from "@/src/content";
 import { css } from "@/styled-system/css";
-import { token } from "@/styled-system/tokens";
-import { Root } from "@liquity2/uikit";
+import { Root, IconCross } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import FocusTrap from "focus-trap-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { AboutButton } from "./AboutButton";
-
-const DRAWER_WIDTH = 180;
-const DRAWER_SAFE_SPACING = 20; // prevent a gap to appear during the transition
+import { AccountButton } from "./AccountButton";
 
 function MenuDrawer({
   menuItems,
@@ -28,15 +20,15 @@ function MenuDrawer({
   const transition = useTransition(opened, {
     from: {
       progress: 0,
-      drawerX: DRAWER_WIDTH + DRAWER_SAFE_SPACING * 2,
+      drawerY: -400,
     },
     enter: {
       progress: 1,
-      drawerX: DRAWER_SAFE_SPACING,
+      drawerY: 0,
     },
     leave: {
       progress: 0,
-      drawerX: DRAWER_WIDTH + DRAWER_SAFE_SPACING * 2,
+      drawerY: -400,
     },
     config: { mass: 1, tension: 1400, friction: 100 },
   });
@@ -74,7 +66,7 @@ function MenuDrawer({
                   className={css({
                     position: "absolute",
                     inset: 0,
-                    background: "rgba(18, 27, 68, 0.7)",
+                    background: "rgba(0, 0, 0, 0.4)",
                   })}
                   style={{
                     opacity: styles.progress,
@@ -83,78 +75,67 @@ function MenuDrawer({
                 <a.div
                   className={css({
                     position: "absolute",
-                    inset: "0 0 0 auto",
-                    background: "background",
+                    top: 24,
+                    left: "50%",
+                    maxWidth: "calc(100vw - 48px)",
+                    width: "100%",
+                    borderRadius: 16,
+                    background: "rgba(255, 255, 255, 0.20)",
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "flex-end",
+                    gap: 0,
                   })}
                   style={{
-                    width: DRAWER_WIDTH + DRAWER_SAFE_SPACING,
-                    transform: styles.drawerX.to((x) => `translateX(${x}px)`),
+                    transform: styles.drawerY.to((y) => `translate(-50%, ${y}px)`),
+                    backdropFilter: "blur(25px)",
+                    WebkitBackdropFilter: "blur(25px)",
                   }}
                 >
-                  <a.div
+                  {/* Header with X and Connect */}
+                  <div
                     className={css({
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
                       display: "flex",
-                      flexDirection: "column",
-                      paddingTop: 16,
-                      paddingLeft: 8,
-                      paddingRight: 8,
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: 8,
                     })}
-                    style={{
-                      width: DRAWER_WIDTH,
-                    }}
                   >
-                    <a.div
+                    <button
+                      onClick={onClose}
                       className={css({
-                        position: "relative",
+                        width: 15,
+                        height: 15,
+                        padding: 0,
+                        background: "transparent",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "white",
                         display: "flex",
                         alignItems: "center",
-                        gap: 8,
-                        height: 48,
-                        paddingLeft: 16,
-                        paddingRight: 8,
-                        userSelect: "none",
+                        justifyContent: "center",
                       })}
-                      style={{
-                        opacity: styles.progress,
-                        transform: styles.progress
-                          .to([0, 1], [40, 0])
-                          .to((x) => `translateX(${x}px`),
-                      }}
                     >
-                      <div
-                        className={css({
-                          flexShrink: 0,
-                        })}
-                      >
-                        <Logo size={20} />
-                      </div>
-                      <div
-                        className={css({
-                          flexShrink: 0,
-                          fontSize: 15,
-                          whiteSpace: "nowrap",
-                        })}
-                      >
-                        {content.appName}
-                      </div>
-                    </a.div>
+                      <IconCross size={15} />
+                    </button>
+
+                    <AccountButton />
+                  </div>
+
+                  {/* Navigation Items */}
+                  <div
+                    className={css({
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 24,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "40px 0 80px",
+                    })}
+                  >
                     <NavItems
                       menuItems={menuItems}
                       onClose={onClose}
                     />
-                  </a.div>
-                  <div
-                    className={css({
-                      padding: 24,
-                    })}
-                  >
-                    <AboutButton onClick={onClose} />
                   </div>
                 </a.div>
               </a.div>
@@ -172,76 +153,32 @@ function NavItems({
   menuItems: MenuItem[];
   onClose: () => void;
 }) {
-  const pathname = usePathname();
-
-  const transition = useTransition(menuItems, {
-    keys: (item) => item[1],
-    initial: {
-      opacity: 0,
-      transform: "translateX(40px)",
-    },
-    enter: {
-      opacity: 1,
-      transform: "translateX(0)",
-    },
-    delay: 100,
-    trail: 30,
-    config: {
-      mass: 1,
-      tension: 2400,
-      friction: 120,
-    },
-  });
-
   return (
-    <nav>
-      <ul
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-        })}
-      >
-        {transition((styles, [label, href, Icon]) => {
-          const selected = href === "/"
-            ? pathname === "/"
-            : pathname.startsWith(href);
-          return (
-            <a.li
-              key={label + href}
-              style={styles}
+    <>
+      {menuItems.map(([label, href]) => {
+        return (
+          <div key={label + href}>
+            <Link
+              href={href}
+              onClick={onClose}
+              className={`font-audiowide ${css({
+                fontSize: 36,
+                fontWeight: 400,
+                color: "white",
+                textTransform: "uppercase",
+                textDecoration: "none",
+                transition: "all 0.2s",
+                "&:hover": {
+                  opacity: 0.8,
+                },
+              })}`}
             >
-              <Link
-                href={href}
-                onClick={onClose}
-                className={css({
-                  display: "block",
-                  width: "100%",
-                  padding: "0 16px",
-                  _active: {
-                    translate: "0 1px",
-                  },
-                  _focusVisible: {
-                    outline: "2px solid token(colors.focused)",
-                    borderRadius: 4,
-                  },
-                })}
-                style={{
-                  color: token(
-                    `colors.${selected ? "selected" : "interactive"}`,
-                  ),
-                }}
-              >
-                <Item
-                  icon={<Icon />}
-                  label={label}
-                  selected={selected}
-                />
-              </Link>
-            </a.li>
-          );
-        })}
-      </ul>
-    </nav>
+              {label}
+            </Link>
+          </div>
+        );
+      })}
+    </>
   );
 }
 
@@ -298,67 +235,5 @@ export function MenuDrawerButton({
         opened={opened}
       />
     </>
-  );
-}
-
-function Item({
-  icon,
-  label,
-  selected,
-}: {
-  icon: ReactNode;
-  label: ReactNode;
-  selected?: boolean;
-}) {
-  return (
-    <div
-      aria-selected={selected}
-      className={css({
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        width: "100%",
-        height: 48,
-        color: "content",
-        cursor: "pointer",
-        userSelect: "none",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-      })}
-      style={{
-        color: token(`colors.${selected ? "selected" : "interactive"}`),
-      }}
-    >
-      <div
-        className={css({
-          display: "grid",
-          placeItems: "center",
-          width: 24,
-          height: 24,
-          marginLeft: -2, // icons ~20x20 inside the 24x24 box
-        })}
-      >
-        {icon}
-      </div>
-      <div
-        className={css({
-          flexShrink: 1,
-          flexGrow: 1,
-          overflow: "hidden",
-          display: "flex",
-          alignItems: "center",
-        })}
-      >
-        <div
-          className={css({
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          })}
-        >
-          {label}
-        </div>
-      </div>
-    </div>
   );
 }
