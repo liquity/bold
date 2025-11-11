@@ -1,20 +1,18 @@
 "use client";
 
+import { NBSP } from "@/src/characters";
 import { useBreakpointName } from "@/src/breakpoints";
-import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { Screen } from "@/src/comps/Screen/Screen";
-import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
-import { Spinner } from "@/src/comps/Spinner/Spinner";
+import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
-import { getBranch, getCollToken, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
+import { getBranch, useEarnPool, useEarnPosition } from "@/src/liquity-utils";
 import { useWait } from "@/src/react-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { HFlex, IconEarn, isCollateralSymbol, Tabs } from "@liquity2/uikit";
+import { isCollateralSymbol, Tabs, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { useParams, useRouter } from "next/navigation";
-import { match } from "ts-pattern";
 import { PanelClaimRewards } from "./PanelClaimRewards";
 import { PanelUpdateDeposit } from "./PanelUpdateDeposit";
 
@@ -40,7 +38,6 @@ export function EarnPoolScreen() {
   const account = useAccount();
 
   const branch = getBranch(collateralSymbol);
-  const collToken = getCollToken(branch.id);
   const earnPosition = useEarnPosition(branch.id, account.address ?? null);
   const earnPool = useEarnPool(branch.id);
   const ready = useWait(500);
@@ -59,65 +56,103 @@ export function EarnPoolScreen() {
   });
 
   const breakpointName = useBreakpointName();
+  const isMobile = breakpointName === "small";
 
   return (
-    <Screen
-      ready={loadingState === "success"}
-      back={{
-        href: "/earn",
-        label: content.earnScreen.backButton,
-      }}
-      heading={
-        <ScreenCard
-          mode={match(loadingState)
-            .returnType<"ready" | "loading">()
-            .with("success", () => "ready")
-            .with("loading", () => "loading")
-            .exhaustive()}
-          finalHeight={breakpointName === "large" ? 140 : 248}
+    <>
+      <div
+        className={css({
+          position: "relative",
+          width: "100%",
+          marginTop: -96,
+          paddingTop: 96,
+          marginBottom: -180,
+        })}
+      >
+        <div
+          className={`borrow-heading-background ${css({
+            position: "absolute",
+            top: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "100vw",
+            height: "100%",
+            zIndex: -1,
+            backgroundPosition: "center top",
+            _after: {
+              content: '""',
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "50%",
+              background: "linear-gradient(to bottom, transparent, black)",
+            },
+          })}`}
+        />
+        
+        <div
+          className={css({
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px 0 80px",
+            minHeight: "420px",
+            maxWidth: "1200px",
+            margin: "0 auto",
+            width: "100%",
+          })}
         >
-          {loadingState === "success"
-            ? (
-              <EarnPositionSummary
-                earnPosition={earnPosition.data ?? null}
-                branchId={branch.id}
-              />
-            )
-            : (
-              <>
-                <div
-                  className={css({
-                    position: "absolute",
-                    top: 16,
-                    left: 16,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 8,
-                    textTransform: "uppercase",
-                    userSelect: "none",
-                    fontSize: 12,
-                  })}
-                >
-                  <div
-                    className={css({
-                      display: "flex",
-                    })}
-                  >
-                    <IconEarn size={16} />
-                  </div>
-                  <HFlex gap={8}>
-                    Fetching {collToken.name} Stability Pool…
-                    <Spinner size={18} />
-                  </HFlex>
-                </div>
-              </>
-            )}
-        </ScreenCard>
-      }
-      className={css({
-        position: "relative",
-      })}
-    >
+          <h1
+            className={`font-audiowide ${css({
+              color: "white",
+              fontSize: { base: '28px', medium: '37px' },
+              textAlign: "center",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              marginBottom: 0,
+            })}`}
+          >
+            Deposit{" "}
+            <span
+              className={css({
+                display: "inline-flex",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+              })}
+            >
+              {WHITE_LABEL_CONFIG.tokens.mainToken.symbol}{NBSP}<TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} size={isMobile ? 32 : 46} />
+            </span>
+            <br />
+            <span
+              className={css({
+                display: "inline-flex",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+                fontSize: { base: '17px', medium: '20px' },
+                gap: "8px",
+              })}
+            >
+              with
+              <TokenIcon symbol={collateralSymbol} />
+            </span>
+          </h1>
+        </div>
+      </div>
+
+      <Screen
+        ready={loadingState === "success"}
+        back={{
+          href: "/earn",
+          label: content.earnScreen.backButton,
+        }}
+        heading={null}
+        className={css({
+          position: "relative",
+        })}
+      >
       {tabsTransition((style, item) => (
         item === "success" && (
           <a.div
@@ -165,5 +200,6 @@ export function EarnPoolScreen() {
         )
       ))}
     </Screen>
+    </>
   );
 }

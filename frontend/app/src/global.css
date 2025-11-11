@@ -66,3 +66,9 @@ html, body {
   background-position: center top;
   background-repeat: no-repeat;
 }
+
+@media (max-width: 1023px) {
+  .borrow-heading-background {
+    background-image: url('/heading-earn-mobile.png');
+  }
+}
