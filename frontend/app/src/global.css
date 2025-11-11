@@ -1,5 +1,5 @@
 html, body {
-  background-color: #090909 !important;
+  background-color: black !important;
   color: white !important;
 }
 
@@ -56,6 +56,6 @@ html, body {
 .hero-background {
   background-image: url('/heading.png');
   background-size: cover;
-  background-position: center;
+  background-position: center top;
   background-repeat: no-repeat;
 }

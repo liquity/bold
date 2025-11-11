@@ -65,7 +65,7 @@ export function TopBar() {
           })}
         >
           <Image
-            src="/logo.png"
+            src="/logo.svg"
             alt={headerConfig.appName}
             width={180}
             height={40}
@@ -107,13 +107,13 @@ export function TopBar() {
           className={css({
             display: "flex",
             alignItems: "center",
-            gap: 32,
+            gap: 28,
           })}
           style={{
             backdropFilter: "blur(10px)",
             background: "rgba(255, 255, 255, 0.1)",
             borderRadius: "20px",
-            padding: "6px 6px 6px 20px",
+            padding: "3px 3px 3px 11px",
           }}
         >
           {/* Desktop Navigation */}
@@ -121,7 +121,7 @@ export function TopBar() {
             className={css({
               display: "flex",
               alignItems: "center",
-              gap: 32,
+              gap: 28,
               hideBelow: "medium",
             })}
           >
@@ -132,13 +132,13 @@ export function TopBar() {
                 <Link
                   key={href}
                   href={href}
-                  className={css({
+                  className={`font-audiowide ${css({
                     color: isActive ? "white" : "rgba(255, 255, 255, 0.7)",
                     textDecoration: "none",
                     fontSize: "12px",
                     textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    fontWeight: 500,
+                    fontWeight: 400,
+                    lineHeight: "112%",
                     transition: "all 0.2s",
                     position: "relative",
                     "&:hover": {
@@ -153,7 +153,7 @@ export function TopBar() {
                       height: "2px",
                       transition: "background 0.2s",
                     },
-                  })}
+                  })}`}
                 >
                   {label}
                 </Link>

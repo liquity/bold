@@ -35,17 +35,16 @@ export function HomeScreen() {
         width: "100%",
       })}
     >
-      {/* Hero Section Container */}
+      {/* Hero Section */}
       <div
         className={css({
           position: "relative",
           width: "100%",
-          marginTop: "-96px", // Pull up to overlap with header
-          paddingTop: "96px", // Add back padding for header space
-          marginBottom: 0, // Remove margin since cards will overlap
+          marginTop: -96,
+          paddingTop: 96,
+          marginBottom: -180,
         })}
       >
-        {/* Hero Background - Absolute positioned */}
         <div
           className={`hero-background ${css({
             position: "absolute",
@@ -55,6 +54,16 @@ export function HomeScreen() {
             width: "100vw",
             height: "100%",
             zIndex: -1,
+            backgroundPosition: "center top",
+            _after: {
+              content: '""',
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "50%",
+              background: "linear-gradient(to bottom, transparent, black)",
+            },
           })}`}
         />
         
@@ -63,10 +72,10 @@ export function HomeScreen() {
             position: "relative",
             display: "flex",
             flexDirection: "column",
-            alignItems: "flex-start",
+            alignItems: "center",
             justifyContent: "center",
-            padding: "60px 0 80px",
-            minHeight: "320px",
+            padding: "20px 0 80px",
+            minHeight: "420px",
             maxWidth: "1200px",
             margin: "0 auto",
             width: "100%",
@@ -76,7 +85,7 @@ export function HomeScreen() {
             className={`font-audiowide ${css({
               color: "white",
               fontSize: { base: "32px", medium: "48px", large: "48px" },
-              textAlign: "left",
+              textAlign: "center",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginBottom: 0,
@@ -87,11 +96,10 @@ export function HomeScreen() {
         </div>
       </div>
 
-      {/* Positions Component - Overlapping with hero */}
+      {/* Positions Component */}
       <div
         className={css({
           position: "relative",
-          marginTop: "-80px", // Pull up to overlap with hero
           zIndex: 5,
         })}
       >
@@ -475,7 +483,7 @@ function BorrowRow({
             label="BORROW"
             className={`font-audiowide ${css({
               background: "#A189AB",
-              color: "black",
+              color: "white!",
               height: "24px!",
               border: "none",
               borderRadius: 16,
@@ -602,7 +610,7 @@ function EarnRow({
           <button
             className={`font-audiowide ${css({
               background: "#A189AB",
-              color: "black",
+              color: "white",
               height: "24px",
               border: "none",
               borderRadius: 16,
