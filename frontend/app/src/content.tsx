@@ -368,13 +368,13 @@ export default {
       action: "Next: Summary",
     },
     rewardsPanel: {
-      boldRewardsLabel: (collateral: N) => <>Your BOLD rewards will be paid out</>,
+      boldRewardsLabel: "Your BOLD rewards will be paid out",
       collRewardsLabel: (collateral: N) => <>Your {collateral} rewards will be paid out</>,
       expectedGasFeeLabel: "Expected gas fee",
       action: "Next: Summary",
     },
     compoundPanel: {
-      boldRewardsLabel: (collateral: N) => <>Your BOLD rewards will be used to top-up your deposit</>,
+      boldRewardsLabel: "Your BOLD rewards will be used to top-up your deposit",
       collRewardsLabel: (collateral: N) => <>Your {collateral} rewards will remain in your deposit</>,
       expectedGasFeeLabel: "Expected gas fee",
       action: "Next: Summary",

@@ -53,3 +53,6 @@ export function tokenIconUrl(chainId: ChainId, address: Address) {
 export function panic<T>(errorMessage: string): T {
   throw new Error(errorMessage);
 }
+
+export const zipWith = <T, U, V>(f: (t: T, u: U) => V) => (ts: T[], us: U[]) =>
+  ts.slice(0, us.length).map((t, i) => f(t, us[i]!));

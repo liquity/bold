@@ -76,7 +76,7 @@ export function PanelCompound({
         <Rewards
           amount={position?.rewards?.bold ?? DNUM_0}
           amountUsd={boldRewardsUsd ?? DNUM_0}
-          label={content.earnScreen.compoundPanel.boldRewardsLabel(collateral.name)}
+          label={content.earnScreen.compoundPanel.boldRewardsLabel}
           symbol="BOLD"
         />
         <Rewards

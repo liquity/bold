@@ -79,7 +79,7 @@ export function PanelClaimRewards({
         <Rewards
           amount={position?.rewards?.bold ?? DNUM_0}
           amountUsd={boldRewardsUsd ?? DNUM_0}
-          label={content.earnScreen.rewardsPanel.boldRewardsLabel(collateral.name)}
+          label={content.earnScreen.rewardsPanel.boldRewardsLabel}
           symbol="BOLD"
         />
         <Rewards
