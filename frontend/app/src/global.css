@@ -59,3 +59,10 @@ html, body {
   background-position: center top;
   background-repeat: no-repeat;
 }
+
+.borrow-heading-background {
+  background-image: url('/heading-borrow.png');
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+}

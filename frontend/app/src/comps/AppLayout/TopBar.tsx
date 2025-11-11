@@ -191,20 +191,19 @@ export function TopBar() {
             className={css({
               display: "flex",
               alignItems: "center",
-              gap: 16,
+              gap: 4,
             })}
           >
-            <AccountButton />
-            
-            {/* Mobile Menu Button */}
             <div
               className={css({
                 display: "grid",
                 hideFrom: "medium",
+                paddingLeft: 4,
               })}
             >
               <MenuDrawerButton menuItems={menuItems} />
             </div>
+            <AccountButton />
           </div>
         </div>
       </div>

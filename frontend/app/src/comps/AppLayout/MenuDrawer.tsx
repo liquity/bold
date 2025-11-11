@@ -201,9 +201,9 @@ export function MenuDrawerButton({
           alignItems: "center",
           height: "100%",
           cursor: "pointer",
-          color: "interactive",
+          color: "white",
           padding: "0 8px",
-          marginRight: -12,
+          marginLeft: -12,
           borderRadius: 4,
           _focusVisible: {
             outline: "2px solid token(colors.focused)",
@@ -218,7 +218,7 @@ export function MenuDrawerButton({
           width={24}
           height={24}
           className={css({
-            stroke: "interactive",
+            stroke: "white",
             strokeWidth: 2,
           })}
         >
