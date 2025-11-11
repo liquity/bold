@@ -24,7 +24,7 @@ export function AppLayout({
         minHeight: "100vh",
         minWidth: "fit-content",
         height: "100%",
-        background: "#090909",
+        background: "black",
       })}
     >
       <div

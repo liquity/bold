@@ -259,7 +259,9 @@ export default {
   borrowScreen: {
     headline: (eth: N, bold: N) => (
       <>
-        Borrow {bold} with {eth}
+        Borrow <NoWrap>{bold}</NoWrap>
+        <br />
+        with <NoWrap>{eth}</NoWrap>
       </>
     ),
     depositField: {

@@ -1,10 +1,8 @@
 import type { ReactNode } from "react";
 
-import { useBreakpointName } from "@/src/breakpoints";
 import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
-import { Button } from "@liquity2/uikit";
 
 type FlowRequest = Parameters<
   ReturnType<typeof useTransactionFlow>["start"]
@@ -17,16 +15,15 @@ export function FlowButton({
   footnote,
   label,
   request,
-  size = "large",
 }: {
   disabled?: boolean;
   footnote?: ReactNode;
   label?: string;
   request?: (() => FlowRequestParam) | FlowRequestParam;
-  size?: "medium" | "large" | "small" | "mini";
 }) {
   const txFlow = useTransactionFlow();
-  const breakpointName = useBreakpointName();
+  const isDisabled = disabled || !request;
+
   return (
     <>
       <div
@@ -37,20 +34,9 @@ export function FlowButton({
         })}
       >
         <ConnectWarningBox />
-        <Button
-          className="flow-button"
-          disabled={disabled || !request}
-          label={label ?? "Next: Summary"}
-          mode="primary"
-          size={size === "large" && breakpointName === "small" ? "medium" : size}
-          wide
-          style={size === "large"
-            ? {
-              height: breakpointName === "small" ? 56 : 72,
-              fontSize: breakpointName === "small" ? 20 : 24,
-              borderRadius: breakpointName === "small" ? 56 : 120,
-            }
-            : {}}
+        <button
+          type="button"
+          disabled={isDisabled}
           onClick={() => {
             if (typeof request === "function") {
               request = request();
@@ -59,7 +45,49 @@ export function FlowButton({
               txFlow.start(request);
             }
           }}
-        />
+          className={`font-audiowide ${css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            padding: "12px 14px",
+            background: "#a189ab",
+            color: "white",
+            border: "none",
+            borderRadius: "50px",
+            textTransform: "uppercase",
+            fontSize: "12px",
+            fontWeight: 400,
+            lineHeight: "1.12",
+            textAlign: "center",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            _focusVisible: {
+              outline: "2px solid token(colors.focused)",
+              outlineOffset: 2,
+            },
+            _active: {
+              _enabled: {
+                transform: "translateY(1px)",
+                opacity: 0.9,
+              },
+            },
+            _hover: {
+              _enabled: {
+                opacity: 0.9,
+              },
+            },
+            _disabled: {
+              background: "token(colors.disabledSurface)",
+              color: "token(colors.disabledContent)",
+              border: "1px solid token(colors.disabledBorder)",
+              cursor: "not-allowed",
+              opacity: 1,
+            },
+          })}`}
+        >
+          {label ?? "Next: Summary"}
+        </button>
       </div>
       {footnote && (
         <div

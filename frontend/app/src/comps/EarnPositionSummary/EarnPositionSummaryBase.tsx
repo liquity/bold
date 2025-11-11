@@ -56,8 +56,8 @@ export function EarnPositionSummaryBase({
         "--border-active": "token(colors.fieldBorder)",
         "--border-inactive": "token(colors.fieldBorder)",
 
-        "--bg-active": "rgba(167, 147, 175, 0.08)",
-        "--bg-inactive": "rgba(167, 147, 175, 0.08)",
+        "--bg-active": "rgba(0, 0, 0, 0.95)",
+        "--bg-inactive": "rgba(0, 0, 0, 0.95)",
       })}
       style={{
         color: `var(--fg-primary-${active ? "active" : "inactive"})`,

@@ -4,6 +4,7 @@ import type { CollateralSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Positions } from "@/src/comps/Positions/Positions";
+import { useBreakpointName } from "@/src/breakpoints";
 import content from "@/src/content";
 import { MAX_DEBT_LIMITS } from "@/src/constants";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
@@ -20,7 +21,7 @@ import {
 import { getAvailableEarnPools } from "@/src/white-label.config";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { TokenIcon, Button } from "@liquity2/uikit";
+import { TokenIcon, Button, IconExternal } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 
@@ -35,17 +36,16 @@ export function HomeScreen() {
         width: "100%",
       })}
     >
-      {/* Hero Section Container */}
+      {/* Hero Section */}
       <div
         className={css({
           position: "relative",
           width: "100%",
-          marginTop: "-96px", // Pull up to overlap with header
-          paddingTop: "96px", // Add back padding for header space
-          marginBottom: 0, // Remove margin since cards will overlap
+          marginTop: -96,
+          paddingTop: 96,
+          marginBottom: -180,
         })}
       >
-        {/* Hero Background - Absolute positioned */}
         <div
           className={`hero-background ${css({
             position: "absolute",
@@ -55,6 +55,16 @@ export function HomeScreen() {
             width: "100vw",
             height: "100%",
             zIndex: -1,
+            backgroundPosition: "center top",
+            _after: {
+              content: '""',
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "50%",
+              background: "linear-gradient(to bottom, transparent, black)",
+            },
           })}`}
         />
         
@@ -63,10 +73,10 @@ export function HomeScreen() {
             position: "relative",
             display: "flex",
             flexDirection: "column",
-            alignItems: "flex-start",
+            alignItems: "center",
             justifyContent: "center",
-            padding: "60px 0 80px",
-            minHeight: "320px",
+            padding: "20px 0 80px",
+            minHeight: "420px",
             maxWidth: "1200px",
             margin: "0 auto",
             width: "100%",
@@ -76,7 +86,7 @@ export function HomeScreen() {
             className={`font-audiowide ${css({
               color: "white",
               fontSize: { base: "32px", medium: "48px", large: "48px" },
-              textAlign: "left",
+              textAlign: "center",
               textTransform: "uppercase",
               letterSpacing: "0.05em",
               marginBottom: 0,
@@ -87,11 +97,10 @@ export function HomeScreen() {
         </div>
       </div>
 
-      {/* Positions Component - Overlapping with hero */}
+      {/* Positions Component */}
       <div
         className={css({
           position: "relative",
-          marginTop: "-80px", // Pull up to overlap with hero
           zIndex: 5,
         })}
       >
@@ -353,6 +362,8 @@ function BorrowRow({
   const collateral = getCollToken(branch.id);
   const avgInterestRate = useAverageInterestRate(branch.id);
   const branchDebt = useBranchDebt(branch.id);
+  const breakpoint = useBreakpointName();
+  const isMobile = breakpoint === "small";
 
   const maxLtv = collateral?.collateralRatio && dn.gt(collateral.collateralRatio, 0)
     ? dn.div(DNUM_1, collateral.collateralRatio)
@@ -471,26 +482,50 @@ function BorrowRow({
         })}
       >
         <Link href={`/borrow/${symbol.toLowerCase()}`}>
-          <Button
-            label="BORROW"
-            className={`font-audiowide ${css({
-              background: "#A189AB",
-              color: "black",
-              height: "24px!",
-              border: "none",
-              borderRadius: 16,
-              padding: "0px 16px",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              fontSize: "11px!",
-              fontWeight: 500,
-              transition: "all 0.2s",
-              "&:hover": {
-                background: "#8A7094",
-                transform: "translateY(-1px)",
-              },
-            })}`}
-          />
+          {isMobile ? (
+            <button
+              className={css({
+                background: "#A189AB",
+                color: "white",
+                height: "32px",
+                width: "32px",
+                border: "none",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                "&:hover": {
+                  background: "#8A7094",
+                  transform: "translateY(-1px)",
+                },
+              })}
+            >
+              <IconExternal size={16} />
+            </button>
+          ) : (
+            <Button
+              label="BORROW"
+              className={`font-audiowide ${css({
+                background: "#A189AB",
+                color: "white!",
+                height: "24px!",
+                border: "none",
+                borderRadius: 16,
+                padding: "0px 16px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                fontSize: "11px!",
+                fontWeight: 500,
+                transition: "all 0.2s",
+                "&:hover": {
+                  background: "#8A7094",
+                  transform: "translateY(-1px)",
+                },
+              })}`}
+            />
+          )}
         </Link>
       </td>
     </tr>
@@ -505,6 +540,8 @@ function EarnRow({
   const branch = getBranch(symbol);
   const token = getToken(symbol);
   const earnPool = useEarnPool(branch?.id ?? null);
+  const breakpoint = useBreakpointName();
+  const isMobile = breakpoint === "small";
   
   return (
     <tr
@@ -599,35 +636,59 @@ function EarnRow({
         })}
       >
         <Link href={`/earn/${symbol.toLowerCase()}`}>
-          <button
-            className={`font-audiowide ${css({
-              background: "#A189AB",
-              color: "black",
-              height: "24px",
-              border: "none",
-              borderRadius: 16,
-              padding: "0px 12px",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              fontSize: "11px",
-              fontWeight: 500,
-              transition: "all 0.2s",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              cursor: "pointer",
-              "&:hover": {
-                background: "#8A7094",
-                transform: "translateY(-1px)",
-              },
-            })}`}
-          >
-            EARN
-            <TokenIcon.Group size="mini">
-              <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} />
-              <TokenIcon symbol={symbol} />
-            </TokenIcon.Group>
-          </button>
+          {isMobile ? (
+            <button
+              className={css({
+                background: "#A189AB",
+                color: "white",
+                height: "32px",
+                width: "32px",
+                border: "none",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                transition: "all 0.2s",
+                "&:hover": {
+                  background: "#8A7094",
+                  transform: "translateY(-1px)",
+                },
+              })}
+            >
+              <IconExternal size={16} />
+            </button>
+          ) : (
+            <button
+              className={`font-audiowide ${css({
+                background: "#A189AB",
+                color: "white",
+                height: "24px",
+                border: "none",
+                borderRadius: 16,
+                padding: "0px 12px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                fontSize: "11px",
+                fontWeight: 500,
+                transition: "all 0.2s",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                cursor: "pointer",
+                "&:hover": {
+                  background: "#8A7094",
+                  transform: "translateY(-1px)",
+                },
+              })}`}
+            >
+              EARN
+              <TokenIcon.Group size="mini">
+                <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} />
+                <TokenIcon symbol={symbol} />
+              </TokenIcon.Group>
+            </button>
+          )}
         </Link>
       </td>
     </tr>

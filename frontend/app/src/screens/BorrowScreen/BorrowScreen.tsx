@@ -47,6 +47,7 @@ import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { maxUint256 } from "viem";
+import { useBreakpointName } from "@/src/breakpoints";
 
 const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol)
   // .filter((symbol) => symbol.toLowerCase() !== "tbtc"); // TODO: remove this once tBTC is supported
@@ -62,6 +63,8 @@ export function BorrowScreen() {
 
   const router = useRouter();
   const account = useAccount();
+  const breakpoint = useBreakpointName();
+  const isMobile = breakpoint === "small";
 
   const branch = getBranch(collSymbol);
   const collateral = getCollToken(branch.id);
@@ -166,50 +169,99 @@ export function BorrowScreen() {
     && !isBelowMinDebt;
 
   return (
-    <Screen
-      heading={{
-        title: (
-          <div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexFlow: "wrap",
-              gap: "0 8px",
-            })}
+    <>
+      <div
+        className={css({
+          position: "relative",
+          width: "100%",
+          marginTop: -96,
+          paddingTop: 96,
+          marginBottom: -180,
+        })}
+      >
+        <div
+          className={`borrow-heading-background ${css({
+            position: "absolute",
+            top: 0,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "100vw",
+            height: "100%",
+            zIndex: -1,
+            backgroundPosition: "center top",
+            _after: {
+              content: '""',
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "50%",
+              background: "linear-gradient(to bottom, transparent, black)",
+            },
+          })}`}
+        />
+        
+        <div
+          className={css({
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px 0 80px",
+            minHeight: "420px",
+            maxWidth: "1200px",
+            margin: "0 auto",
+            width: "100%",
+          })}
+        >
+          <h1
+            className={`font-audiowide ${css({
+              color: "white",
+              fontSize: { base: '28px', medium: '37px' },
+              textAlign: "center",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              marginBottom: 0,
+            })}`}
           >
-            {content.borrowScreen.headline(
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                })}
-              >
-                <TokenIcon.Group>
-                  {collaterals
-                    // .filter(({ symbol }) => symbol.toLowerCase() !== "tbtc") // TODO: remove this once tBTC is supported
-                    .map(({ symbol }) => (
-                    <TokenIcon
-                      key={symbol}
-                      symbol={symbol}
-                    />
-                  ))}
-                </TokenIcon.Group>
-              </div>,
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                })}
-              >
-                <TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} />
-                {NBSP}{WHITE_LABEL_CONFIG.tokens.mainToken.symbol}
-              </div>,
-            )}
-          </div>
-        ),
-      }}
-    >
+            Borrow{" "}
+            <span
+              className={css({
+                display: "inline-flex",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+              })}
+            >
+              {WHITE_LABEL_CONFIG.tokens.mainToken.symbol}{NBSP}<TokenIcon symbol={WHITE_LABEL_CONFIG.tokens.mainToken.symbol} size={isMobile ? 32 : 46} />
+            </span>
+            <br />
+            <span
+              className={css({
+                display: "inline-flex",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+                fontSize: { base: '17px', medium: '20px' },
+                gap: "8px",
+              })}
+            >
+              with
+              <TokenIcon.Group>
+                {collaterals.map(({ symbol }) => (
+                  <TokenIcon
+                    key={symbol}
+                    symbol={symbol}
+                  />
+                ))}
+              </TokenIcon.Group>
+            </span>
+          </h1>
+        </div>
+      </div>
+
+      <Screen
+        heading={null}
+      >
       <Field
         id="field-deposit"
         field={
@@ -608,5 +660,6 @@ export function BorrowScreen() {
           : undefined}
       />
     </Screen>
+    </>
   );
 }

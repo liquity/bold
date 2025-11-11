@@ -253,7 +253,7 @@ function PositionsGroup({
           className={css({
             display: "grid",
             gap: {
-              base: 16,
+              base: 30,
               medium: 24,
             },
           })}

@@ -1,33 +1,45 @@
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { TextButton } from "@liquity2/uikit";
 
 export function ConnectWarningBox() {
   const account = useAccount();
 
   return !account.isConnected && (
-    <div
-      className={css({
-        paddingTop: 16,
-      })}
+    <button
+      type="button"
+      onClick={() => {
+        account.connect();
+      }}
+      className={`font-audiowide ${css({
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "100%",
+        padding: "12px 14px",
+        background: "#ef8a6a",
+        color: "white",
+        border: "none",
+        borderRadius: "50px",
+        textTransform: "uppercase",
+        fontSize: "12px",
+        fontWeight: 400,
+        lineHeight: "1.12",
+        textAlign: "center",
+        cursor: "pointer",
+        transition: "all 0.2s",
+        _focusVisible: {
+          outline: "2px solid token(colors.focused)",
+          outlineOffset: 2,
+        },
+        _active: {
+          transform: "translateY(1px)",
+        },
+        _hover: {
+          opacity: 0.9,
+        },
+      })}`}
     >
-      <div
-        className={css({
-          padding: "20px 24px",
-          textAlign: "center",
-          background: "secondary",
-          borderRadius: 8,
-        })}
-      >
-        Please{" "}
-        <TextButton
-          label="connect"
-          onClick={() => {
-            account.connect();
-          }}
-        />{" "}
-        your wallet to continue.
-      </div>
-    </div>
+      please connect your wallet to continue
+    </button>
   );
 }
