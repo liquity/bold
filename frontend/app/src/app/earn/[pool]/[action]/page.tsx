@@ -2,6 +2,7 @@ export function generateStaticParams() {
   return [
     { action: "deposit" },
     { action: "claim" },
+    { action: "compound" },
   ];
 }
 

@@ -353,8 +353,9 @@ export default {
       rewardsLabel: "My rewards",
     },
     tabs: {
-      deposit: "Deposit",
+      deposit: "Update",
       claim: "Claim rewards",
+      compound: "Compound",
     },
     depositPanel: {
       label: "Increase deposit",
@@ -364,13 +365,17 @@ export default {
     },
     withdrawPanel: {
       label: "Decrease deposit",
-      claimCheckbox: "Claim rewards",
       action: "Next: Summary",
     },
     rewardsPanel: {
-      boldRewardsLabel: "Your earnings from protocol revenue distributions to this stability pool",
-      collRewardsLabel: "Your proceeds from liquidations conducted by this stability pool",
-      totalUsdLabel: "Total in USD",
+      boldRewardsLabel: "Your BOLD rewards will be paid out",
+      collRewardsLabel: (collateral: N) => <>Your {collateral} rewards will be paid out</>,
+      expectedGasFeeLabel: "Expected gas fee",
+      action: "Next: Summary",
+    },
+    compoundPanel: {
+      boldRewardsLabel: "Your BOLD rewards will be used to top-up your deposit",
+      collRewardsLabel: (collateral: N) => <>Your {collateral} rewards will remain in your deposit</>,
       expectedGasFeeLabel: "Expected gas fee",
       action: "Next: Summary",
     },
@@ -381,16 +386,21 @@ export default {
       depositPoolShare: [
         "Percentage of your BOLD deposit compared to the total deposited in this stability pool.",
       ],
-      alsoClaimRewardsDeposit: [
+      alsoClaimRewardsDeposit: (collateral: N) => [
         <>
-          If checked, rewards are paid out as part of the update transaction. Otherwise rewards will be compounded into
-          your deposit.
+          If checked, rewards will be paid out as part of the deposit transaction. Otherwise, BOLD rewards will be
+          compounded and {collateral} rewards will remain claimable.
         </>,
       ],
-      alsoClaimRewardsWithdraw: [
+      alsoClaimRewardsWithdraw: (collateral: N) => [
         <>
-          If checked, rewards are paid out as part of the update transaction.<br />
-          Note: This needs to be checked to fully withdraw from the Stability Pool.
+          <div>
+            If checked, rewards will be paid out as part of the withdrawal transaction. Otherwise, BOLD rewards will be
+            compounded and {collateral} rewards will remain claimable.
+          </div>
+          <div className={css({ color: "content" })}>
+            Rewards will always be claimed when fully withdrawing from the Stability Pool.
+          </div>
         </>,
       ],
       currentApr: [

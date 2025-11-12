@@ -15,7 +15,7 @@ import Image from "next/image";
 import { AboutButton } from "./AboutButton";
 
 const DISPLAYED_PRICES = ["LQTY", "BOLD", "ETH"] as const;
-const ENABLE_REDEEM = false;
+const ENABLE_REDEEM = true;
 
 export function BottomBar() {
   const account = useAccount();

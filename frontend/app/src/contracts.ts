@@ -16,12 +16,13 @@ import { LeverageWETHZapper } from "@/src/abi/LeverageWETHZapper";
 import { LqtyStaking } from "@/src/abi/LqtyStaking";
 import { LqtyToken } from "@/src/abi/LqtyToken";
 import { MultiTroveGetter } from "@/src/abi/MultiTroveGetter";
-import { V1StabilityPoolAbi } from "@/src/abi/V1StabilityPool";
 import { PriceFeed } from "@/src/abi/PriceFeed";
+import { RedemptionHelper } from "@/src/abi/RedemptionHelper";
 import { SortedTroves } from "@/src/abi/SortedTroves";
 import { StabilityPool } from "@/src/abi/StabilityPool";
 import { TroveManager } from "@/src/abi/TroveManager";
 import { TroveNFT } from "@/src/abi/TroveNFT";
+import { V1StabilityPoolAbi } from "@/src/abi/V1StabilityPool";
 import {
   CONTRACT_BOLD_TOKEN,
   CONTRACT_COLLATERAL_REGISTRY,
@@ -34,6 +35,7 @@ import {
   CONTRACT_LQTY_TOKEN,
   CONTRACT_LUSD_TOKEN,
   CONTRACT_MULTI_TROVE_GETTER,
+  CONTRACT_REDEMPTION_HELPER,
   CONTRACT_V1_STABILITY_POOL,
   CONTRACT_WETH,
   ENV_BRANCHES,
@@ -52,6 +54,7 @@ const protocolAbis = {
   LqtyToken,
   LusdToken: erc20Abi,
   MultiTroveGetter,
+  RedemptionHelper,
   V1StabilityPool: V1StabilityPoolAbi,
   WETH: erc20Abi,
 } as const;
@@ -143,6 +146,10 @@ export const CONTRACTS: Contracts = {
   MultiTroveGetter: {
     abi: abis.MultiTroveGetter,
     address: CONTRACT_MULTI_TROVE_GETTER,
+  },
+  RedemptionHelper: {
+    abi: abis.RedemptionHelper,
+    address: CONTRACT_REDEMPTION_HELPER,
   },
   V1StabilityPool: { abi: abis.V1StabilityPool, address: CONTRACT_V1_STABILITY_POOL },
   WETH: { abi: abis.WETH, address: CONTRACT_WETH },

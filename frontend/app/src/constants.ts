@@ -69,6 +69,10 @@ export const TROVE_STATUS_CLOSED_BY_OWNER = 2;
 export const TROVE_STATUS_CLOSED_BY_LIQUIDATION = 3;
 export const TROVE_STATUS_ZOMBIE = 4;
 
+export const REDEMPTION_MAX_ITERATIONS_PER_COLL = 25;
+export const REDEMPTION_FEE_HIGH = 0.01; // 1%
+export const REDEMPTION_SLIPPAGE_TOLERANCE = 0.001; // 0.1%
+
 // XXX what is the point of this?
 export const MAX_COLLATERAL_DEPOSITS: Record<CollateralSymbol, dn.Dnum> = {
   ETH: dn.from(100_000_000n, 18),
