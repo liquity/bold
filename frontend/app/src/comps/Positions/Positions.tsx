@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 
 import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
+import { ManualLoanIdInput } from "@/src/comps/ManualLoanIdInput";
 import content from "@/src/content";
+import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import {
   getBranches,
   useCollateralSurplusByBranches,
@@ -348,6 +350,8 @@ function PositionsGroup({
           {title_}
         </h1>
       )}
+      {subgraphIndicator.hasError() && <ManualLoanIdInput />}
+
       <a.div
         className={css({
           position: "relative",

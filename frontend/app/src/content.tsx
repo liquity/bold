@@ -598,6 +598,45 @@ export default {
       </>
     ),
   },
+  manualLoanIdInput: {
+    title: "Subgraph Error Detected",
+    description: "Cannot load Loan positions from Subgraph. Enter your Loan ID manually to view it.",
+    inputLabel: "Loan ID",
+    inputPlaceholder: "0x...",
+    branchDetected: (branchId: number) => `(Branch ${branchId} detected)`,
+    buttonLabel: "View Loan",
+    buttonDetecting: "Detecting...",
+    errorInvalidFormat: "Invalid Loan ID format. Please enter a valid hexadecimal address starting with 0x.",
+    errorNotFound: "Loan ID not found. Please check the ID and try again.",
+    tooltip: {
+      heading: "How to get your Loan IDs",
+      body: (address: string) => (
+        <>
+          Checkout{" "}
+          <a
+            href={`https://liquityv2.defiexplore.com/owner/${address}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            DefiExplore
+          </a>{" "}
+          or{" "}
+          <a
+            href={`https://rails.finance/troves?ownerAddress=${address}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Rails
+          </a>{" "}
+          to get your Loan IDs.
+        </>
+      ),
+      footerLink: {
+        label: "Check the docs for more details",
+        href: "https://docs.liquity.org/",
+      },
+    },
+  },
 } as const;
 
 // function Link({
