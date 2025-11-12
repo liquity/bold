@@ -1,89 +1,131 @@
 "use client";
 
+import type { BranchId } from "@/src/types";
+import type { Dnum } from "dnum";
+import type { ReactNode } from "react";
+
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
+import { Value } from "@/src/comps/Value/Value";
+import {
+  REDEMPTION_FEE_HIGH,
+  REDEMPTION_MAX_ITERATIONS_PER_COLL,
+  REDEMPTION_SLIPPAGE_TOLERANCE,
+} from "@/src/constants";
 import content from "@/src/content";
-import { getProtocolContract } from "@/src/contracts";
-import { dnum18 } from "@/src/dnum-utils";
-import { parseInputPercentage, useInputFieldValue } from "@/src/form-utils";
+import { dnum18, DNUM_0 } from "@/src/dnum-utils";
+import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { getBranches, getCollToken } from "@/src/liquity-utils";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
+import { getBranches, getCollToken, useRedemptionSimulation } from "@/src/liquity-utils";
+import { useCollateralPrices, usePrice } from "@/src/services/Prices";
+import { zipWith } from "@/src/utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
+import { HFlex, IconExternal, InfoTooltip, InputField, TextButton, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import Link from "next/link";
-import { useRef } from "react";
-import { useReadContract } from "wagmi";
+
+const TRUNCATED_THRESHOLD = dnum18(100); // wei
+const maxIterationsPerCollateral = REDEMPTION_MAX_ITERATIONS_PER_COLL;
+const slippageTolerance = dn.from(REDEMPTION_SLIPPAGE_TOLERANCE);
+
+const branches = getBranches();
+const collTokens = branches.map((b) => getCollToken(b.branchId));
+const collTokenNames = collTokens.map((collToken) => collToken.name.replace(/^ETH$/, "WETH"));
+
+const listOfCollTokenNames = [
+  ...(
+    collTokenNames.length > 1
+      ? [collTokenNames.slice(0, -1).join(", ")]
+      : []
+  ),
+  ...collTokenNames.slice(-1),
+].join(" and ");
+
+const zipWithMul = zipWith(dn.mul);
 
 export function RedeemScreen() {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
-
   const boldBalance = useBalance(account.address, "BOLD");
+  const boldPrice = usePrice("BOLD");
+  const collPrices = useCollateralPrices(branches.map((b) => b.symbol));
+  const boldRedeemed = useInputFieldValue(fmtnum);
 
-  const CollateralRegistry = getProtocolContract("CollateralRegistry");
-  const redemptionRate = useReadContract({
-    ...CollateralRegistry,
-    functionName: "getRedemptionRateWithDecay",
+  const simulation = useRedemptionSimulation({
+    boldAmount: boldRedeemed.parsed ?? DNUM_0,
+    maxIterationsPerCollateral,
   });
 
-  const amount = useInputFieldValue(fmtnum);
-  const maxFee = useInputFieldValue((value) => `${fmtnum(value, "pct2z")}%`, {
-    parse: parseInputPercentage,
-  });
+  const boldRedeemedUsd = simulation.data && boldPrice.data
+    && dn.mul(simulation.data.truncatedBold, boldPrice.data);
 
-  const hasUpdatedRedemptionRate = useRef(false);
-  if (!hasUpdatedRedemptionRate.current && redemptionRate.data) {
-    if (maxFee.isEmpty) {
-      maxFee.setValue(
-        fmtnum(
-          dn.mul(dnum18(redemptionRate.data), 1.1),
-          "pct2z",
-        ),
-      );
+  const collRedeemedUsd = simulation.data && collPrices.data
+    && zipWithMul(simulation.data.collRedeemed, collPrices.data);
+
+  const totalCollRedeemedUsd = collRedeemedUsd
+    && collRedeemedUsd.reduce((a, b) => dn.add(a, b));
+
+  const profitLoss = totalCollRedeemedUsd && boldRedeemedUsd
+    && dn.sub(totalCollRedeemedUsd, boldRedeemedUsd);
+
+  const isLoss = profitLoss
+    && dn.lt(profitLoss, DNUM_0);
+
+  const truncatedAmount = boldRedeemed.parsed && simulation.data?.bouncing === false
+      && dn.gt(dn.sub(boldRedeemed.parsed, simulation.data.truncatedBold), TRUNCATED_THRESHOLD)
+    ? simulation.data.truncatedBold
+    : null;
+
+  const amount = truncatedAmount ?? boldRedeemed.parsed;
+  const amountNonZero = amount && dn.gt(amount, DNUM_0);
+  const balanceSufficient = amount && boldBalance.data && dn.lte(amount, boldBalance.data);
+  const allowSubmit = account.isConnected && amountNonZero && balanceSufficient;
+
+  const drawer = boldRedeemed.isFocused
+    ? null
+    : !balanceSufficient
+    ? {
+      mode: "error" as const,
+      message: `Insufficient BOLD balance. You have ${fmtnum(boldBalance.data)} BOLD.`,
     }
-    hasUpdatedRedemptionRate.current = true;
-  }
-
-  const branches = getBranches();
-
-  const allowSubmit = account.isConnected
-    && amount.parsed
-    && maxFee.parsed
-    && boldBalance.data
-    && dn.gte(boldBalance.data, amount.parsed);
+    : truncatedAmount
+    ? {
+      mode: "warning" as const,
+      message: (
+        <HFlex gap={4}>
+          Amount capped to avoid excessive costs.
+          <InfoTooltip>
+            The number of loans you redeem from will be capped at {maxIterationsPerCollateral}{" "}
+            per collateral branch. This is to avoid a transaction with unusually large gas usage, which might delay the
+            execution of your redemption.
+            <br />
+            <br />
+            You will be able to redeem the rest of your BOLD in a follow-up transaction.
+          </InfoTooltip>
+        </HFlex>
+      ),
+    }
+    : null;
 
   return (
     <Screen
       heading={{
         title: (
           <HFlex>
-            Redeem <TokenIcon symbol="BOLD" /> BOLD for
+            Redeem
+            <TokenIcon symbol="BOLD" />
+            BOLD for
             <TokenIcon.Group>
-              {branches.map((b) => getCollToken(b.branchId)).map(({ symbol }) => (
-                <TokenIcon
-                  key={symbol}
-                  symbol={symbol}
-                />
-              ))}
-            </TokenIcon.Group>{" "}
+              {collTokens.map(({ symbol }) => <TokenIcon key={symbol} symbol={symbol} />)}
+            </TokenIcon.Group>
             ETH
           </HFlex>
         ),
       }}
     >
-      <div
-        className={css({
-          display: "flex",
-          flexDirection: "column",
-          gap: 48,
-          width: 534,
-        })}
-      >
+      <VFlex gap={48}>
         <Field
           field={
             <InputField
@@ -94,184 +136,211 @@ export function RedeemScreen() {
                   label="BOLD"
                 />
               }
-              drawer={amount.isFocused
-                ? null
-                : boldBalance.data
-                    && amount.parsed
-                    && dn.gt(amount.parsed, boldBalance.data)
-                ? {
-                  mode: "error",
-                  message: `Insufficient BOLD balance. You have ${fmtnum(boldBalance.data)} BOLD.`,
-                }
-                : null}
-              label="Redeeming"
+              drawer={drawer}
+              label="You pay"
               placeholder="0.00"
               secondary={{
-                start: `$${
-                  amount.parsed
-                    ? fmtnum(amount.parsed)
-                    : "0.00"
-                }`,
+                start: fmtnum(boldRedeemedUsd, { prefix: "$", preset: "2z" }) || " ",
                 end: (
                   boldBalance.data && dn.gt(boldBalance.data, 0) && (
                     <TextButton
                       label={`Max ${fmtnum(boldBalance.data)} BOLD`}
                       onClick={() => {
                         if (boldBalance.data) {
-                          amount.setValue(dn.toString(boldBalance.data));
+                          boldRedeemed.setValue(dn.toString(boldBalance.data));
                         }
                       }}
                     />
                   )
                 ),
               }}
-              {...amount.inputFieldProps}
+              {...boldRedeemed.inputFieldProps}
+              // Show trucated amount when input field is not focused
+              value={!boldRedeemed.isFocused && truncatedAmount
+                ? fmtnum(truncatedAmount)
+                : boldRedeemed.inputFieldProps.value}
             />
           }
-        />
+          footer={{
+            end: (
+              <Field.FooterInfo
+                label="Redemption fee"
+                value={
+                  <HFlex gap={4}>
+                    <Value negative={simulation.data?.feePct && dn.gte(simulation.data.feePct, REDEMPTION_FEE_HIGH)}>
+                      <Amount value={simulation.data?.feePct} percentage />
+                    </Value>
 
-        <Field
-          field={
-            <InputField
-              id="input-max-fee"
-              drawer={maxFee.isFocused
-                ? null
-                : maxFee.parsed && dn.gt(maxFee.parsed, 0.01)
-                ? {
-                  mode: "warning",
-                  message: `A high percentage will result in a higher fee.`,
-                }
-                : null}
-              label="Max redemption fee"
-              placeholder="0.00"
-              {...maxFee.inputFieldProps}
-            />
-          }
-          footer={[
-            {
-              end: (
-                <span
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                    fontSize: 14,
-                  })}
-                >
-                  <>
-                    Current redemption rate:
-                    <Amount
-                      percentage
-                      suffix="%"
-                      value={redemptionRate.data ? dnum18(redemptionRate.data) : null}
-                      format="pct1z"
+                    <InfoTooltip
+                      content={{
+                        heading: "Redemption fee",
+                        body: (
+                          <>
+                            You will be charged a dynamic redemption fee — the more redemptions, the higher the fee.
+                            During periods of no redemption activity, the fee slowly decreases towards a minimum of
+                            0.5%. If you see a fee significantly higher than this, it might make sense to try redeeming
+                            at a later time, or to break up your redemption into several smaller ones.
+                          </>
+                        ),
+                        footerLink: {
+                          label: "Learn more about the fee",
+                          href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation#is-there-a-redemption-fee",
+                        },
+                      }}
                     />
-                  </>
-                  <InfoTooltip
-                    content={{
-                      heading: "Maximum redemption fee",
-                      body: (
-                        <>
-                          This is the maximum redemption fee you are willing to pay. The redemption fee is a percentage
-                          of the redeemed amount that is paid to the protocol. The redemption fee must be higher than
-                          the current fee.
-                        </>
-                      ),
-                      footerLink: {
-                        href: "https://dune.com/queries/4641717/7730245",
-                        label: "Redemption fee on Dune",
-                      },
-                    }}
-                  />
-                </span>
-              ),
-            },
-          ]}
+                  </HFlex>
+                }
+              />
+            ),
+          }}
         />
 
-        <section
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            padding: 16,
-            color: "infoSurfaceContent",
-            background: "infoSurface",
-            border: "1px solid token(colors.infoSurfaceBorder)",
-            borderRadius: 8,
-          })}
-        >
-          <header
-            className={css({
-              display: "flex",
-              flexDirection: "column",
-              fontSize: 16,
-            })}
-          >
-            <h1
-              className={css({
-                fontWeight: 600,
-              })}
-            >
-              Important note
-            </h1>
-          </header>
-          <p
-            className={css({
-              fontSize: 15,
-              "& a": {
-                color: "accent",
-                textDecoration: "underline",
-              },
-            })}
-          >
-            You will be charged a dynamic redemption fee (the more redemptions, the higher the fee). Trading BOLD on an
-            exchange could be more favorable.{" "}
-            <Link
-              href="https://docs.liquity.org/v2-faq/redemptions-and-delegation"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learn more about redemptions.
-            </Link>
-          </p>
-        </section>
+        <VFlex gap={24}>
+          <div>
+            <div className={css({ color: "contentAlt" })}>You receive</div>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: 32,
-            width: "100%",
-          }}
-        >
-          <ConnectWarningBox />
-          <Button
-            disabled={!allowSubmit}
-            label={content.borrowScreen.action}
-            mode="primary"
-            size="large"
-            wide
-            onClick={() => {
-              if (
-                amount.parsed
-                && maxFee.parsed
-              ) {
-                txFlow.start({
-                  flowId: "redeemCollateral",
-                  backLink: ["/redeem", "Back"],
-                  successLink: ["/", "Go to the Dashboard"],
-                  successMessage: "The redemption was successful.",
+            {branches.map((b) => (
+              <RedemptionOutput
+                key={b.symbol}
+                branchId={b.branchId}
+                amount={simulation.data?.collRedeemed[b.branchId]}
+                amountUsd={collRedeemedUsd?.[b.branchId]}
+              />
+            ))}
+          </div>
 
-                  amount: amount.parsed,
-                  maxFee: maxFee.parsed,
-                });
-              }
-            }}
+          <VFlex gap={8}>
+            <HFlex justifyContent="space-between" gap={24}>
+              <div className={css({ color: "contentAlt" })}>Total in USD</div>
+              <Amount format="2z" prefix="$" value={totalCollRedeemedUsd} fallback="−" />
+            </HFlex>
+
+            <HFlex justifyContent="space-between" gap={24}>
+              <HFlex gap={4} className={css({ color: "contentAlt" })}>
+                Profit/loss
+                <InfoTooltip>
+                  This is the estimated USD value of all the tokens you will receive minus the value of the BOLD you are
+                  paying.
+                </InfoTooltip>
+              </HFlex>
+
+              <Value negative={isLoss}>
+                <Amount
+                  format="2z"
+                  prefix={isLoss ? "-$" : "$"}
+                  value={profitLoss && dn.abs(profitLoss)}
+                  fallback="−"
+                />
+              </Value>
+            </HFlex>
+          </VFlex>
+        </VFlex>
+
+        <InfoBox title="Important note">
+          Your BOLD will be taken at face value and converted to a mix of{" "}
+          {listOfCollTokenNames}, minus the redemption fee. Unless BOLD is trading significantly below $1, you will get
+          a better rate by swapping on an exchange.
+
+          <LinkTextButton
+            href="https://docs.liquity.org/v2-faq/redemptions-and-delegation"
+            target="_blank"
+            rel="noopener noreferrer"
+            label={
+              <HFlex gap={4}>
+                Learn more about redemptions <IconExternal size={16} />
+              </HFlex>
+            }
           />
-        </div>
-      </div>
+        </InfoBox>
+
+        <FlowButton
+          disabled={!allowSubmit}
+          label={content.borrowScreen.action}
+          request={{
+            flowId: "redeemCollateral",
+            backLink: ["/redeem", "Back"],
+            successLink: ["/", "Go to the Dashboard"],
+            successMessage: "The redemption was successful.",
+
+            amount: amount ?? DNUM_0,
+            maxIterationsPerCollateral,
+            feePct: simulation.data?.feePct ?? DNUM_0,
+            collRedeemed: simulation.data?.collRedeemed ?? [],
+            slippageTolerance,
+          }}
+        />
+      </VFlex>
     </Screen>
+  );
+}
+
+function RedemptionOutput(props: {
+  branchId: BranchId;
+  amount: Dnum | null | undefined;
+  amountUsd: Dnum | null | undefined;
+}) {
+  const collateralToken = getCollToken(props.branchId);
+  const collateralTokenName = collateralToken.symbol === "ETH" ? "WETH" : collateralToken.name;
+
+  return (
+    <HFlex
+      gap={24}
+      alignItems="start"
+      justifyContent="space-between"
+      className={css({
+        paddingY: 18,
+        borderBottom: "1px solid token(colors.separator)",
+      })}
+    >
+      <HFlex gap={4} className={css({ paddingTop: 8, fontSize: 20 })}>
+        {collateralTokenName}
+        {collateralTokenName === "WETH" && (
+          <InfoTooltip heading="Wrapped Ether">
+            You will receive{" "}
+            <abbr title="Wrapped Ether">WETH</abbr>, which is an ERC-20 tokenized version of ETH that is equivalent in
+            value.
+          </InfoTooltip>
+        )}
+      </HFlex>
+
+      <VFlex>
+        <HFlex gap={8} alignItems="center" className={css({ fontSize: 28 })}>
+          <Amount format="4z" value={props.amount} fallback="−" title={{ suffix: ` ${collateralTokenName}` }} />
+          <TokenIcon symbol={collateralToken.symbol} size={24} />
+        </HFlex>
+
+        <div className={css({ color: "contentAlt", textAlign: "right", paddingRight: 34 })}>
+          <Amount prefix="$" value={props.amountUsd} fallback="−" />
+        </div>
+      </VFlex>
+    </HFlex>
+  );
+}
+
+function InfoBox(props: {
+  title?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <section
+      className={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+        padding: 16,
+        color: "infoSurfaceContent",
+        background: "infoSurface",
+        border: "1px solid token(colors.infoSurfaceBorder)",
+        borderRadius: 8,
+      })}
+    >
+      {props.title && (
+        <header className={css({ display: "flex", flexDirection: "column", fontSize: 16 })}>
+          <h1 className={css({ fontWeight: 600 })}>{props.title}</h1>
+        </header>
+      )}
+
+      {props.children}
+    </section>
   );
 }

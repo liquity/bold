@@ -205,6 +205,10 @@ export function vPositionLoanCommited() {
       redemptionCount: v.number(),
       redeemedColl: vDnum(),
       redeemedDebt: vDnum(),
+      liquidatedColl: v.nullish(vDnum(), null),
+      liquidatedDebt: v.nullish(vDnum(), null),
+      collSurplus: v.nullish(vDnum(), null),
+      priceAtLiquidation: v.nullish(vDnum(), null),
     }),
   ]);
 }

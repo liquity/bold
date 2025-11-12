@@ -21,7 +21,13 @@ export function PositionCardLoan(
     | "troveId"
     | "recordedDebt"
     | "isZombie"
-  >,
+    | "liquidatedColl"
+    | "liquidatedDebt"
+    | "collSurplus"
+    | "priceAtLiquidation"
+  > & {
+    collSurplusOnChain: dn.Dnum | null;
+  },
 ) {
   const storedState = useStoredState();
   const prefixedTroveId = getPrefixedTroveId(props.branchId, props.troveId);

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type { LoanLoadingState } from "./LoanScreen";
 
 import { useFlashTransition } from "@/src/anim-utils";
+import { CrossedText } from "@/src/comps/CrossedText/CrossedText";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { LoanStatusTag } from "@/src/comps/Tag/LoanStatusTag";
 import { Value } from "@/src/comps/Value/Value";
@@ -25,6 +26,7 @@ import {
   IconExternal,
   IconLeverage,
   IconNft,
+  InfoTooltip,
   shortenAddress,
   StatusDot,
   TokenIcon,
@@ -47,6 +49,7 @@ export function LoanScreenCard({
   onLeverageModeChange,
   onRetry,
   troveId,
+  collSurplusOnChain,
 }: {
   collateral: CollateralToken | null;
   collPriceUsd: Dnum | null;
@@ -56,6 +59,7 @@ export function LoanScreenCard({
   onLeverageModeChange: (mode: LoanMode) => void;
   onRetry: () => void;
   troveId: TroveId;
+  collSurplusOnChain: Dnum | null;
 }) {
   if (loadingState === "success" && !collPriceUsd) {
     loadingState = "loading";
@@ -209,6 +213,7 @@ export function LoanScreenCard({
               onLeverageModeChange={onLeverageModeChange}
               redemptionRisk={redemptionRisk.data ?? null}
               troveId={troveId}
+              collSurplusOnChain={collSurplusOnChain}
             />
           );
         })}
@@ -278,7 +283,7 @@ function GridItem({
   title,
 }: {
   children: ReactNode;
-  label: string;
+  label: ReactNode;
   title?: string;
 }) {
   return (
@@ -331,6 +336,7 @@ function LoanCard(props: {
   troveId: TroveId;
   nftUrl: string | null;
   onLeverageModeChange: (mode: LoanMode) => void;
+  collSurplusOnChain: Dnum | null;
 }) {
   const cardTransition = useTransition(props, {
     keys: (props) => props.mode,
@@ -366,7 +372,8 @@ function LoanCard(props: {
   });
 
   const copyTransition = useFlashTransition();
-  const closedOrLiquidated = props.loan.status === "liquidated" || props.loan.status === "closed";
+  const liquidated = props.loan.status === "liquidated";
+  const closed = props.loan.status === "closed";
 
   return (
     <div
@@ -390,8 +397,17 @@ function LoanCard(props: {
         redemptionRisk,
         troveId,
         nftUrl,
+        collSurplusOnChain,
       }) => {
         const title = mode === "multiply" ? "Multiply" : "BOLD loan";
+
+        const collSurplusFromSubgraph = loan.collSurplus;
+        const collSurplusCurrently = collSurplusOnChain;
+
+        const collateralWasClaimed = collSurplusFromSubgraph && dn.gt(collSurplusFromSubgraph, 0)
+          && collSurplusCurrently !== null
+          && dn.eq(collSurplusCurrently, 0);
+
         return (
           <a.div
             className={css({
@@ -432,7 +448,7 @@ function LoanCard(props: {
                     mode={mode}
                     title={title}
                     titleFull={`${title}: ${troveId}`}
-                    statusTag={loan.status === "liquidated"
+                    statusTag={liquidated
                       ? <LoanStatusTag status="liquidated" />
                       : loan.status === "redeemed" && "recordedDebt" in loan
                       ? (
@@ -648,14 +664,16 @@ function LoanCard(props: {
                       )
                       : (
                         <div
-                          title={`${fmtnum(loan.borrowed)} BOLD`}
+                          title={`${fmtnum(liquidated ? (loan.liquidatedDebt ?? loan.borrowed) : loan.borrowed)} BOLD`}
                           className={css({
                             display: "flex",
                             alignItems: "center",
                             gap: 8,
                           })}
                         >
-                          {fmtnum(loan.borrowed)}
+                          {liquidated
+                            ? <CrossedText>{fmtnum(loan.liquidatedDebt ?? loan.borrowed)}</CrossedText>
+                            : fmtnum(loan.borrowed)}
                           <TokenIcon symbol="BOLD" size={24} />
                         </div>
                       )}
@@ -667,7 +685,7 @@ function LoanCard(props: {
                       color: "positionContentAlt",
                     })}
                   >
-                    {mode === "multiply" ? "Net value" : "Total debt"}
+                    {mode === "multiply" ? "Net value" : liquidated ? "Liquidated debt" : "Total debt"}
                   </div>
                 </div>
               </div>
@@ -677,10 +695,51 @@ function LoanCard(props: {
                   gap: 12,
                 })}
                 style={{
-                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gridTemplateColumns: liquidated ? "repeat(1, 1fr)" : "repeat(2, 1fr)",
                 }}
               >
-                {closedOrLiquidated
+                {liquidated
+                  ? (
+                    <>
+                      <GridItem label="Liquidated collateral">
+                        {loan.liquidatedColl && loan.collSurplus
+                          ? fmtnum(dn.sub(loan.liquidatedColl, loan.collSurplus))
+                          : loan.liquidatedColl
+                          ? fmtnum(loan.liquidatedColl)
+                          : "−"} {collateral.name}
+                      </GridItem>
+                      <GridItem
+                        label={
+                          <HFlex gap={4}>
+                            Remaining collateral
+                            <InfoTooltip
+                              content={{
+                                heading: "Remaining collateral",
+                                body:
+                                  "This is the amount of collateral remaining in the loan after the liquidation event.",
+                                footerLink: {
+                                  label: "Liquity v2 Liquidation docs",
+                                  href:
+                                    "https://docs.liquity.org/v2-faq/borrowing-and-liquidations#how-do-liquidations-work-in-liquity-v2",
+                                },
+                              }}
+                            />
+                          </HFlex>
+                        }
+                      >
+                        {loan.collSurplus
+                          ? fmtnum(loan.collSurplus)
+                          : "−"} {collateral.name}
+                        {collateralWasClaimed
+                          ? <LoanStatusTag status="claimed" />
+                          : <LoanStatusTag status="unclaimed" />}
+                      </GridItem>
+                      <GridItem label="Liquidation price">
+                        {loan.priceAtLiquidation ? `$${fmtnum(loan.priceAtLiquidation)}` : "−"}
+                      </GridItem>
+                    </>
+                  )
+                  : closed
                   ? (
                     <>
                       <GridItem label={mode === "multiply" ? "Exposure" : "Collateral"}>N/A</GridItem>

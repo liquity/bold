@@ -23,6 +23,10 @@ export type IndexedTrove = {
   redemptionCount: number;
   redeemedColl: Dnum;
   redeemedDebt: Dnum;
+  liquidatedColl: Dnum | null;
+  liquidatedDebt: Dnum | null;
+  collSurplus: Dnum | null;
+  priceAtLiquidation: Dnum | null;
 };
 
 async function tryFetch(...args: Parameters<typeof fetch>) {
@@ -125,6 +129,10 @@ const TrovesByAccountQuery = graphql(`
       redemptionCount
       redeemedColl
       redeemedDebt
+      liquidatedColl
+      liquidatedDebt
+      collSurplus
+      priceAtLiquidation
     }
   }
 `);
@@ -149,6 +157,10 @@ export async function getIndexedTrovesByAccount(account: Address): Promise<Index
     redemptionCount: trove.redemptionCount,
     redeemedColl: dnum18(trove.redeemedColl),
     redeemedDebt: dnum18(trove.redeemedDebt),
+    liquidatedColl: dnum18(trove.liquidatedColl),
+    liquidatedDebt: dnum18(trove.liquidatedDebt),
+    collSurplus: dnum18(trove.collSurplus),
+    priceAtLiquidation: dnum18(trove.priceAtLiquidation),
   }));
 }
 
@@ -168,6 +180,10 @@ const TroveByIdQuery = graphql(`
       redemptionCount
       redeemedColl
       redeemedDebt
+      liquidatedColl
+      liquidatedDebt
+      collSurplus
+      priceAtLiquidation
     }
   }
 `);
@@ -195,6 +211,10 @@ export async function getIndexedTroveById(
     redemptionCount: trove.redemptionCount,
     redeemedColl: dnum18(trove.redeemedColl),
     redeemedDebt: dnum18(trove.redeemedDebt),
+    liquidatedColl: dnum18(trove.liquidatedColl),
+    liquidatedDebt: dnum18(trove.liquidatedDebt),
+    collSurplus: dnum18(trove.collSurplus),
+    priceAtLiquidation: dnum18(trove.priceAtLiquidation),
   };
 }
 

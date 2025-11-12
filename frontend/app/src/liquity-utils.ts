@@ -40,6 +40,7 @@ import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } f
 import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { combineStatus } from "@/src/query-utils";
+import { useDebounced } from "@/src/react-utils";
 import { usePrice } from "@/src/services/Prices";
 import {
   getAllInterestRateBrackets,
@@ -58,7 +59,7 @@ import * as dn from "dnum";
 import { useMemo } from "react";
 import * as v from "valibot";
 import { encodeAbiParameters, erc20Abi, isAddressEqual, keccak256, parseAbiParameters, zeroAddress } from "viem";
-import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
+import { useBalance, useConfig as useWagmiConfig, useReadContract, useReadContracts, useSimulateContract } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 
 export function shortenTroveId(troveId: TroveId, chars = 8) {
@@ -367,7 +368,7 @@ export function useEarnPositionsByAccount(account: null | Address) {
   });
 }
 
-export function useStakePosition(address: null | Address) {
+export function useStakePosition(address: null | Address, version: "v1" | "v2" = "v2") {
   const LqtyStaking = getProtocolContract("LqtyStaking");
   const LusdToken = getProtocolContract("LusdToken");
   const Governance = getProtocolContract("Governance");
@@ -388,23 +389,28 @@ export function useStakePosition(address: null | Address) {
     },
   });
 
+  let userStakingAddress = address ?? "0x";
+  if (version === "v2") {
+    userStakingAddress = userProxyAddress.data ?? "0x";
+  }
+
   return useReadContracts({
     contracts: [{
       ...LqtyStaking,
       functionName: "stakes",
-      args: [userProxyAddress.data ?? "0x"],
+      args: [userStakingAddress],
     }, {
       ...LqtyStaking,
       functionName: "getPendingETHGain",
-      args: [userProxyAddress.data ?? "0x"],
+      args: [userStakingAddress],
     }, {
       ...LqtyStaking,
       functionName: "getPendingLUSDGain",
-      args: [userProxyAddress.data ?? "0x"],
+      args: [userStakingAddress],
     }, {
       ...LusdToken,
       functionName: "balanceOf",
-      args: [userProxyAddress.data ?? "0x"],
+      args: [userStakingAddress],
     }],
     query: {
       enabled: Boolean(address) && userProxyAddress.isSuccess && userProxyBalance.isSuccess,
@@ -433,6 +439,20 @@ export function useStakePosition(address: null | Address) {
           },
         };
       },
+    },
+  });
+}
+
+export function useV1StabilityPoolLqtyGain(address: null | Address) {
+  const V1StabilityPool = getProtocolContract("V1StabilityPool");
+
+  return useReadContract({
+    ...V1StabilityPool,
+    functionName: "getDepositorLQTYGain",
+    args: [address ?? "0x"],
+    query: {
+      enabled: Boolean(address),
+      select: (result) => dnum18(result),
     },
   });
 }
@@ -1146,6 +1166,10 @@ export async function fetchLoanById(
       redemptionCount: indexedTrove.redemptionCount,
       redeemedColl: indexedTrove.redeemedColl,
       redeemedDebt: indexedTrove.redeemedDebt,
+      liquidatedColl: indexedTrove.liquidatedColl,
+      liquidatedDebt: indexedTrove.liquidatedDebt,
+      collSurplus: indexedTrove.collSurplus,
+      priceAtLiquidation: indexedTrove.priceAtLiquidation,
     };
   } else {
     return fetchLoanByIdRpcOnly(wagmiConfig, fullId);
@@ -1588,6 +1612,53 @@ export function useRedemptionRiskOfLoan(loan: UseDebtInFrontOfLoanParams) {
   }, [status, data]);
 }
 
+export function useCollateralSurplus(accountAddress: Address | null, branchId: BranchId) {
+  return useReadContract({
+    ...getBranchContract(branchId, "CollSurplusPool"),
+    functionName: "getCollateral",
+    args: [accountAddress ?? zeroAddress],
+    query: {
+      enabled: Boolean(accountAddress),
+      select: dnum18,
+    },
+  });
+}
+
+export function useCollateralSurplusByBranches(
+  accountAddress: Address | null,
+  liquidatedBranchIds: BranchId[],
+) {
+  return useReadContracts({
+    contracts: liquidatedBranchIds.map((branchId) => {
+      const branch = CONTRACTS.branches[branchId];
+      if (!branch) {
+        throw new Error(`Invalid branch ID: ${branchId}`);
+      }
+      return {
+        ...branch.contracts.CollSurplusPool,
+        functionName: "getCollateral" as const,
+        args: [accountAddress ?? zeroAddress],
+      };
+    }),
+    query: {
+      enabled: Boolean(accountAddress) && liquidatedBranchIds.length > 0,
+      select: (results) => {
+        return results.map((result, index) => {
+          const branchId = liquidatedBranchIds[index];
+          if (branchId === undefined) {
+            throw new Error(`Branch ID at index ${index} not found`);
+          }
+          const surplus = result.result ? dnum18(result.result) : DNUM_0;
+          return {
+            branchId,
+            surplus,
+          };
+        });
+      },
+    },
+  });
+}
+
 export function useRedemptionRiskOfInterestRate(
   branchId: BranchId,
   interestRate: Dnum,
@@ -1599,4 +1670,43 @@ export function useRedemptionRiskOfInterestRate(
     if (!data) return { status, data };
     return { status, data: getRedemptionRisk(data.debtInFront, data.totalDebt) };
   }, [status, data]);
+}
+
+export interface RedemptionSimulationParams {
+  boldAmount: Dnum;
+  maxIterationsPerCollateral: number;
+}
+
+export function useRedemptionSimulation(params: RedemptionSimulationParams) {
+  const boldAmount = dn.from(params.boldAmount, 18)[0];
+  const maxIterationsPerCollateral = BigInt(params.maxIterationsPerCollateral);
+
+  const values = useMemo(() => ({
+    boldAmount,
+    maxIterationsPerCollateral,
+  }), [boldAmount, maxIterationsPerCollateral]);
+
+  const [debounced, bouncing] = useDebounced(values);
+  const RedemptionHelper = getProtocolContract("RedemptionHelper");
+
+  // We'd love to use `useReadContract()` for this, but wagmi/viem won't let us
+  // do that for mutating functions, even though it's a perfectly valid use case.
+  // We could hack the ABI, but that's yucky.
+  return useSimulateContract({
+    ...RedemptionHelper,
+    functionName: "truncateRedemption",
+    args: [debounced.boldAmount, debounced.maxIterationsPerCollateral],
+
+    query: {
+      refetchInterval: 12_000,
+      enabled: !bouncing,
+
+      select: ({ result: [truncatedBold, feePct, output] }) => ({
+        bouncing,
+        truncatedBold: dnum18(truncatedBold),
+        feePct: dnum18(feePct),
+        collRedeemed: output.map(({ coll }) => dnum18(coll)),
+      }),
+    },
+  });
 }
