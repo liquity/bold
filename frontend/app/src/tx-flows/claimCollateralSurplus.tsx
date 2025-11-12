@@ -152,7 +152,7 @@ export const claimCollateralSurplus: FlowDeclaration<ClaimCollateralSurplusReque
     return (
       <div className="p-4">
         <p>
-          This will claim all available collateral surplus from your unclaimed liquidated positions for the{" "}
+          This will claim all available remaining collateral from your unclaimed liquidated positions for the{" "}
           {collateral?.name} collateral. The total amount will be sent to your wallet.
         </p>
       </div>

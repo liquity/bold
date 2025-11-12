@@ -1029,6 +1029,10 @@ export async function fetchLoanById(
     redemptionCount: indexedTrove.redemptionCount,
     redeemedColl: indexedTrove.redeemedColl,
     redeemedDebt: indexedTrove.redeemedDebt,
+    liquidatedColl: indexedTrove.liquidatedColl,
+    liquidatedDebt: indexedTrove.liquidatedDebt,
+    collSurplus: indexedTrove.collSurplus,
+    priceAtLiquidation: indexedTrove.priceAtLiquidation,
   };
 }
 
@@ -1466,6 +1470,53 @@ export function useRedemptionRiskOfLoan(loan: UseDebtInFrontOfLoanParams) {
     if (data.debtInFront === null) return { status, data: "not-applicable" as const };
     return { status, data: getRedemptionRisk(data.debtInFront, data.totalDebt) };
   }, [status, data]);
+}
+
+export function useCollateralSurplus(accountAddress: Address | null, branchId: BranchId) {
+  return useReadContract({
+    ...getBranchContract(branchId, "CollSurplusPool"),
+    functionName: "getCollateral",
+    args: [accountAddress ?? zeroAddress],
+    query: {
+      enabled: Boolean(accountAddress),
+      select: dnum18,
+    },
+  });
+}
+
+export function useCollateralSurplusByBranches(
+  accountAddress: Address | null,
+  liquidatedBranchIds: BranchId[],
+) {
+  return useReadContracts({
+    contracts: liquidatedBranchIds.map((branchId) => {
+      const branch = CONTRACTS.branches[branchId];
+      if (!branch) {
+        throw new Error(`Invalid branch ID: ${branchId}`);
+      }
+      return {
+        ...branch.contracts.CollSurplusPool,
+        functionName: "getCollateral" as const,
+        args: [accountAddress ?? zeroAddress],
+      };
+    }),
+    query: {
+      enabled: Boolean(accountAddress) && liquidatedBranchIds.length > 0,
+      select: (results) => {
+        return results.map((result, index) => {
+          const branchId = liquidatedBranchIds[index];
+          if (branchId === undefined) {
+            throw new Error(`Branch ID at index ${index} not found`);
+          }
+          const surplus = result.result ? dnum18(result.result) : DNUM_0;
+          return {
+            branchId,
+            surplus,
+          };
+        });
+      },
+    },
+  });
 }
 
 export function useRedemptionRiskOfInterestRate(
