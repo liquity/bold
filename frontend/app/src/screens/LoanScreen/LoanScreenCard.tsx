@@ -283,7 +283,7 @@ function GridItem({
   title,
 }: {
   children: ReactNode;
-  label: string;
+  label: ReactNode;
   title?: string;
 }) {
   return (
@@ -695,7 +695,7 @@ function LoanCard(props: {
                   gap: 12,
                 })}
                 style={{
-                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gridTemplateColumns: liquidated ? "repeat(1, 1fr)" : "repeat(2, 1fr)",
                 }}
               >
                 {liquidated
@@ -708,27 +708,34 @@ function LoanCard(props: {
                           ? fmtnum(loan.liquidatedColl)
                           : "−"} {collateral.name}
                       </GridItem>
-                      <GridItem label="Liquidation price">
-                        {loan.priceAtLiquidation ? `$${fmtnum(loan.priceAtLiquidation)}` : "−"}
-                      </GridItem>
-                      <GridItem label="Remaining collateral">
+                      <GridItem
+                        label={
+                          <HFlex gap={4}>
+                            Remaining collateral
+                            <InfoTooltip
+                              content={{
+                                heading: "Remaining collateral",
+                                body:
+                                  "This is the amount of collateral remaining in the loan after the liquidation event.",
+                                footerLink: {
+                                  label: "Liquity v2 Liquidation docs",
+                                  href:
+                                    "https://docs.liquity.org/v2-faq/borrowing-and-liquidations#how-do-liquidations-work-in-liquity-v2",
+                                },
+                              }}
+                            />
+                          </HFlex>
+                        }
+                      >
                         {loan.collSurplus
                           ? fmtnum(loan.collSurplus)
                           : "−"} {collateral.name}
                         {collateralWasClaimed
                           ? <LoanStatusTag status="claimed" />
                           : <LoanStatusTag status="unclaimed" />}
-                        <InfoTooltip
-                          content={{
-                            heading: "Remaining collateral",
-                            body: "This is the amount of collateral remaining in the loan after the liquidation event.",
-                            footerLink: {
-                              label: "Liquity v2 Liquidation docs",
-                              href:
-                                "https://docs.liquity.org/v2-faq/borrowing-and-liquidations#how-do-liquidations-work-in-liquity-v2",
-                            },
-                          }}
-                        />
+                      </GridItem>
+                      <GridItem label="Liquidation price">
+                        {loan.priceAtLiquidation ? `$${fmtnum(loan.priceAtLiquidation)}` : "−"}
                       </GridItem>
                     </>
                   )

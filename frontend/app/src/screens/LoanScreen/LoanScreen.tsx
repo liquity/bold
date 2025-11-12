@@ -5,6 +5,7 @@ import type { Dnum, PositionLoanCommitted } from "@/src/types";
 import { useBreakpoint } from "@/src/breakpoints";
 import { InlineTokenAmount } from "@/src/comps/Amount/InlineTokenAmount";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
@@ -19,11 +20,10 @@ import {
 } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useStoredState } from "@/src/services/StoredState";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { isPrefixedtroveId } from "@/src/types";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { addressesEqual, Button, IconExternal, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
+import { addressesEqual, IconExternal, InfoTooltip, Tabs, TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
@@ -440,7 +440,6 @@ function ClaimCollateralSurplus({
   collSurplus: null | Dnum;
   loan: PositionLoanCommitted;
 }) {
-  const txFlow = useTransactionFlow();
   const collToken = getCollToken(loan.branchId);
   const collPriceUsd = usePrice(collToken.symbol);
 
@@ -457,13 +456,7 @@ function ClaimCollateralSurplus({
   }
 
   return (
-    <div
-      className={css({
-        display: "flex",
-        flexDirection: "column",
-        gap: 16,
-      })}
-    >
+    <>
       <section
         className={css({
           display: "flex",
@@ -556,27 +549,21 @@ function ClaimCollateralSurplus({
               ),
             }}
           />
-          <Button
-            disabled={!accountAddress || !collSurplus || dn.eq(collSurplus, 0)}
-            mode="primary"
+          <FlowButton
             size="medium"
             label="Claim remaining collateral"
-            onClick={() => {
-              if (accountAddress && collSurplus) {
-                txFlow.start({
-                  flowId: "claimCollateralSurplus",
-                  backLink: [`/loan?id=${loan.branchId}:${loan.troveId}`, "Back to loan"],
-                  successLink: ["/", "Go to the dashboard"],
-                  successMessage: "Remaining collateral has been claimed successfully.",
-                  borrower: accountAddress,
-                  branchId: loan.branchId,
-                  collSurplus,
-                });
-              }
+            request={{
+              flowId: "claimCollateralSurplus",
+              backLink: [`/loan?id=${loan.branchId}:${loan.troveId}`, "Back to loan"],
+              successLink: ["/", "Go to the dashboard"],
+              successMessage: "Remaining collateral has been claimed successfully.",
+              borrower: accountAddress,
+              branchId: loan.branchId,
+              collSurplus,
             }}
           />
         </div>
       )}
-    </div>
+    </>
   );
 }

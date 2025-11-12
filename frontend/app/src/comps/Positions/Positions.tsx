@@ -1,10 +1,12 @@
 import type { Address, BranchId, Position, PositionLoanCommitted, PositionLoanUncommitted } from "@/src/types";
+import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
 import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import content from "@/src/content";
 import {
+  getBranches,
   useCollateralSurplusByBranches,
   useEarnPositionsByAccount,
   useLoansByAccount,
@@ -34,6 +36,8 @@ const actionCards = [
   "stake",
 ] as const;
 
+const branchIds = getBranches().map((b) => b.branchId);
+
 export function Positions({
   address,
   columns,
@@ -55,6 +59,17 @@ export function Positions({
   const earnPositions = useEarnPositionsByAccount(address);
   const sboldPosition = useSboldPosition(address);
   const stakePosition = useStakePosition(address);
+  const collSurplusQueries = useCollateralSurplusByBranches(address, branchIds);
+
+  const collSurplusMap = useMemo(() => {
+    if (!collSurplusQueries.data) return null;
+
+    const map = new Map<BranchId, dn.Dnum>();
+    for (const item of collSurplusQueries.data) {
+      map.set(item.branchId, item.surplus);
+    }
+    return map;
+  }, [collSurplusQueries.data]);
 
   const isPositionsPending = Boolean(
     address && (
@@ -62,6 +77,7 @@ export function Positions({
       || earnPositions.isPending
       || sboldPosition.isPending
       || stakePosition.isPending
+      || !collSurplusMap
     ),
   );
 
@@ -99,7 +115,6 @@ export function Positions({
 
   return (
     <PositionsGroup
-      accountAddress={address}
       columns={breakpoint === "small"
         ? 1
         : breakpoint === "medium"
@@ -109,24 +124,25 @@ export function Positions({
       positions={positions ?? []}
       showNewPositionCard={showNewPositionCard}
       title={title}
+      collSurplusMap={collSurplusMap}
     />
   );
 }
 
 function PositionsGroup({
-  accountAddress,
   columns,
   mode,
   positions,
   title,
   showNewPositionCard,
+  collSurplusMap,
 }: {
-  accountAddress: null | Address;
   columns?: number;
   mode: Mode;
   positions: Exclude<Position, PositionLoanUncommitted>[];
   title: (mode: Mode) => ReactNode;
   showNewPositionCard: boolean;
+  collSurplusMap: Map<BranchId, Dnum> | null;
 }) {
   columns ??= mode === "actions" ? actionCards.length : 3;
 
@@ -152,26 +168,13 @@ function PositionsGroup({
     return { activePositions: active, liquidatedPositions: liquidated };
   }, [positions]);
 
-  const liquidatedBranchIds = useMemo(
-    () => Array.from(new Set(liquidatedPositions.map((p) => p.branchId))),
-    [liquidatedPositions],
-  );
-
-  const collSurplusQueries = useCollateralSurplusByBranches(accountAddress, liquidatedBranchIds);
-
-  const collSurplusMap = useMemo(() => {
-    if (!collSurplusQueries.data) return new Map<BranchId, dn.Dnum>();
-
-    const map = new Map<BranchId, dn.Dnum>();
-    for (const item of collSurplusQueries.data) {
-      map.set(item.branchId, item.surplus);
-    }
-    return map;
-  }, [collSurplusQueries.data]);
-
   const { liquidatedWithClaimable, liquidatedWithoutClaimable } = useMemo(() => {
     const withClaimable: PositionLoanCommitted[] = [];
     const withoutClaimable: PositionLoanCommitted[] = [];
+
+    if (!collSurplusMap) {
+      return { liquidatedWithClaimable: withClaimable, liquidatedWithoutClaimable: withoutClaimable };
+    }
 
     for (const position of liquidatedPositions) {
       const surplus = collSurplusMap.get(position.branchId);
@@ -210,7 +213,7 @@ function PositionsGroup({
                   <PositionCardLoan
                     key={index}
                     {...p}
-                    collSurplusOnChain={collSurplusMap.get(p.branchId) ?? null}
+                    collSurplusOnChain={collSurplusMap?.get(p.branchId) ?? null}
                   />,
                 ];
               }
@@ -253,7 +256,7 @@ function PositionsGroup({
       <PositionCardLoan
         key={`liquidated-${index}`}
         {...position}
-        collSurplusOnChain={collSurplusMap.get(position.branchId) ?? null}
+        collSurplusOnChain={collSurplusMap?.get(position.branchId) ?? null}
       />,
     ] as [number, ReactNode];
   });

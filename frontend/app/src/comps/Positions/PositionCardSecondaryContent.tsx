@@ -2,10 +2,11 @@ import type { Dnum, RiskLevel, TroveStatus } from "@/src/types";
 import type { CollateralToken } from "@liquity2/uikit";
 import type { ReactNode } from "react";
 
+import { LoanStatusTag } from "@/src/comps/Tag/LoanStatusTag";
 import { fmtnum, formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
-import { StatusDot } from "@liquity2/uikit";
+import { HFlex, StatusDot } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { CardRow, CardRows } from "./shared";
 
@@ -40,42 +41,34 @@ export function PositionCardSecondaryContent({
   redemptionRisk,
 }: PositionCardSecondaryContentProps): ReactNode {
   if (status === "liquidated") {
-    const collateralWasClaimed = collSurplus && dn.gt(collSurplus, 0)
-      && collSurplusOnChain !== null
+    const collateralWasClaimed = collSurplus && collSurplusOnChain
+      && dn.gt(collSurplus, 0)
       && dn.eq(collSurplusOnChain, 0);
 
     return (
       <CardRows>
         <CardRow
           start={
-            <div
-              className={css({
-                display: "flex",
-                gap: 8,
-                fontSize: 14,
-              })}
-            >
+            <HFlex className={css({ fontSize: 14 })}>
               <div
                 className={css({
                   color: "positionContentAlt",
                 })}
               >
-                Remaining collateral
+                Remaining coll.
               </div>
               <div
                 className={css({
                   color: "positionContent",
                 })}
               >
-                {collateralWasClaimed || (collSurplus && dn.eq(collSurplus, 0))
-                  ? "0"
-                  : collSurplus
-                  ? fmtnum(collSurplus)
-                  : "−"} {token.name}
+                {fmtnum(collSurplus) || "−"} {token.name}
               </div>
-            </div>
+              {collateralWasClaimed !== null && (
+                <LoanStatusTag size="small" status={collateralWasClaimed ? "claimed" : "unclaimed"} />
+              )}
+            </HFlex>
           }
-          end={null}
         />
         <CardRow
           start={
@@ -102,7 +95,6 @@ export function PositionCardSecondaryContent({
               </div>
             </div>
           }
-          end={null}
         />
       </CardRows>
     );

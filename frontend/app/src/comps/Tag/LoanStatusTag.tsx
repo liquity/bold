@@ -3,19 +3,22 @@ import { css } from "@/styled-system/css";
 
 export function LoanStatusTag({
   status,
+  size = "normal",
 }: {
   status: "liquidated" | "partially-redeemed" | "fully-redeemed" | "unclaimed" | "claimed";
+  size?: "normal" | "small";
 }) {
   return (
     <div
       className={css({
         display: "inline-flex",
         alignItems: "center",
-        height: 16,
+        height: size === "small" ? 14 : 16,
         padding: "0 4px 1px",
-        fontSize: 12,
-        borderRadius: 8,
+        fontSize: size === "small" ? 10 : 12,
+        borderRadius: size === "small" ? 7 : 8,
         userSelect: "none",
+        textTransform: "uppercase",
 
         "--color-liquidated": "token(colors.negativeContent)",
         "--background-liquidated": "token(colors.negative)",
@@ -56,9 +59,9 @@ export function LoanStatusTag({
         : status === "fully-redeemed"
         ? "Fully Redeemed"
         : status === "unclaimed"
-        ? "UNCLAIMED"
+        ? "Unclaimed"
         : status === "claimed"
-        ? "CLAIMED"
+        ? "Claimed"
         : panic("case not considered")}
     </div>
   );
