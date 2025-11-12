@@ -16,6 +16,7 @@ export default {
     stake: "Stake",
     buy: "Buy USND",
     stream: "Stream",
+    ecosystem: "Ecosystem",
   },
 
   accountButton: {
@@ -444,6 +445,20 @@ export default {
     ),
     subheading: <>Buy USND</>,
     learnMore: ["https://docs.nerite.org/docs/user-docs/NERI-staking-and-voting", "Learn more"],
+  },
+
+  ecosystemScreen: {
+    headline: (ecosystemIcon: N) => (
+      <>
+        Ecosystem {ecosystemIcon}
+      </>
+    ),
+    subheading: (
+      <>
+        Partnered Protocols with other USND strategies. 
+        Earn additional yield or find other opportunities from these third party protocols.
+      </>
+    ),
   },
 
   stakeScreen: {
