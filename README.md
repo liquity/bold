@@ -3,6 +3,9 @@ https://must.finance
 
 Must Finance is a liquity V2 fork for the Saga EVM, with additional collaterals and security features.
 
+## Versioning
+This repo is updated to Solidity 0.8.23, but some dependencies are still 0.8.24 for governance and testing, which are not used in the core contracts, and so can be safely ignored. 
+
 ## Changes between Must Finance and Liquity:
 1. New collateral types and pricefeeds: tBTC, SAGA, WETH, stATOM.
 2. Ability to add and remove collateral branches via new admin funtions in the Collateral Registry.
