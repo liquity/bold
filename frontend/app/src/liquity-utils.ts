@@ -11,6 +11,7 @@ import type {
   Token,
   TokenSymbol,
   TroveId,
+  TroveStatus,
 } from "@/src/types";
 import type { Address, CollateralSymbol, CollateralToken } from "@liquity2/uikit";
 import type { UseQueryResult } from "@tanstack/react-query";
@@ -27,11 +28,16 @@ import {
   INTEREST_RATE_PRECISE_UNTIL,
   INTEREST_RATE_START,
   ONE_YEAR_D18,
+  TROVE_STATUS_ACTIVE,
+  TROVE_STATUS_CLOSED_BY_LIQUIDATION,
+  TROVE_STATUS_CLOSED_BY_OWNER,
+  TROVE_STATUS_NONEXISTENT,
   TROVE_STATUS_ZOMBIE,
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
+import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { combineStatus } from "@/src/query-utils";
 import { usePrice } from "@/src/services/Prices";
@@ -144,6 +150,35 @@ export function getTokenDisplayName(symbol: TokenSymbol) {
 
 export function getBranchesCount(): number {
   return ENV_BRANCHES.length;
+}
+
+// Detect which branch a trove ID belongs to by checking TroveNFT ownership
+export async function detectTroveBranch(
+  wagmiConfig: WagmiConfig,
+  troveId: TroveId,
+): Promise<BranchId | null> {
+  const branches = getBranches();
+
+  // Try each branch's TroveNFT contract
+  for (const branch of branches) {
+    try {
+      const owner = await readContract(wagmiConfig, {
+        ...branch.contracts.TroveNFT,
+        functionName: "ownerOf",
+        args: [BigInt(troveId)],
+      });
+
+      // If ownerOf succeeds, this is the correct branch
+      if (owner) {
+        return branch.branchId;
+      }
+    } catch (error) {
+      // ownerOf reverts if trove doesn't exist in this branch, continue to next
+      continue;
+    }
+  }
+
+  return null; // Trove not found in any branch
 }
 
 export function getBranch(idOrSymbol: null): null;
@@ -976,23 +1011,26 @@ export function useTroveRateUpdateCooldown(branchId: BranchId, troveId: TroveId)
   });
 }
 
-export async function fetchLoanById(
+/**
+ * Fetches loan data using only RPC calls.
+ * This is a fallback for when the subgraph is unavailable or returns errors
+ *
+ * Missing data (not available via RPC): createdAt, lastUserActionAt, updatedAt,
+ * redemptionCount, redeemedColl, redeemedDebt, type, status
+ */
+export async function fetchLoanByIdRpcOnly(
   wagmiConfig: WagmiConfig,
   fullId: null | PrefixedTroveId,
-  maybeIndexedTrove?: IndexedTrove,
 ): Promise<PositionLoanCommitted | null> {
   if (!isPrefixedtroveId(fullId)) return null;
 
   const { branchId, troveId } = parsePrefixedTroveId(fullId);
   const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
   const TroveManager = getBranchContract(branchId, "TroveManager");
+  const TroveNFT = getBranchContract(branchId, "TroveNFT");
 
-  const [
-    indexedTrove,
-    [batchManager, troveData, troveStatus],
-  ] = await Promise.all([
-    maybeIndexedTrove ?? getIndexedTroveById(branchId, troveId),
-    readContracts(wagmiConfig, {
+  try {
+    const [batchManager, troveData, troveStatus, borrower] = await readContracts(wagmiConfig, {
       allowFailure: false,
       contracts: [{
         ...BorrowerOperations,
@@ -1006,29 +1044,112 @@ export async function fetchLoanById(
         ...TroveManager,
         functionName: "getTroveStatus",
         args: [BigInt(troveId)],
+      }, {
+        ...TroveNFT,
+        functionName: "ownerOf",
+        args: [BigInt(troveId)],
       }],
-    }),
-  ]);
+    });
 
-  return !indexedTrove ? null : {
-    type: indexedTrove.mightBeLeveraged ? "multiply" : "borrow",
-    batchManager: isAddressEqual(batchManager, zeroAddress) ? null : batchManager,
-    borrowed: dnum18(troveData.entireDebt),
-    borrower: indexedTrove.borrower,
-    branchId,
-    createdAt: indexedTrove.createdAt,
-    lastUserActionAt: indexedTrove.lastUserActionAt,
-    updatedAt: indexedTrove.updatedAt,
-    recordedDebt: indexedTrove.debt,
-    deposit: dnum18(troveData.entireColl),
-    interestRate: dnum18(troveData.annualInterestRate),
-    status: indexedTrove.status,
-    troveId,
-    isZombie: troveStatus === TROVE_STATUS_ZOMBIE,
-    redemptionCount: indexedTrove.redemptionCount,
-    redeemedColl: indexedTrove.redeemedColl,
-    redeemedDebt: indexedTrove.redeemedDebt,
-  };
+    if (troveStatus === TROVE_STATUS_NONEXISTENT) {
+      return null;
+    }
+
+    let status: TroveStatus;
+    if (troveStatus === TROVE_STATUS_ACTIVE || troveStatus === TROVE_STATUS_ZOMBIE) {
+      status = "active";
+    } else if (troveStatus === TROVE_STATUS_CLOSED_BY_OWNER) {
+      status = "closed";
+    } else if (troveStatus === TROVE_STATUS_CLOSED_BY_LIQUIDATION) {
+      status = "liquidated";
+    } else {
+      status = "closed";
+    }
+
+    const now = Date.now();
+
+    return {
+      type: "borrow",
+      batchManager: isAddressEqual(batchManager, zeroAddress) ? null : batchManager,
+      borrowed: dnum18(troveData.entireDebt),
+      borrower,
+      branchId,
+      createdAt: now, // Missing
+      lastUserActionAt: now, // Missing
+      updatedAt: now, // Missing
+      recordedDebt: dnum18(troveData.recordedDebt),
+      deposit: dnum18(troveData.entireColl),
+      interestRate: dnum18(troveData.annualInterestRate),
+      status,
+      troveId,
+      isZombie: troveStatus === TROVE_STATUS_ZOMBIE,
+      redemptionCount: 0, // Missing
+      redeemedColl: dnum18(0n), // Missing
+      redeemedDebt: dnum18(0n), // Missing
+    };
+  } catch (error) {
+    console.error("Error fetching loan via RPC:", error);
+    return null;
+  }
+}
+
+export async function fetchLoanById(
+  wagmiConfig: WagmiConfig,
+  fullId: null | PrefixedTroveId,
+  maybeIndexedTrove?: IndexedTrove,
+): Promise<PositionLoanCommitted | null> {
+  if (!isPrefixedtroveId(fullId)) return null;
+
+  if (!subgraphIndicator.hasError()) {
+    const { branchId, troveId } = parsePrefixedTroveId(fullId);
+    const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
+    const TroveManager = getBranchContract(branchId, "TroveManager");
+
+    const [
+      indexedTrove,
+      [batchManager, troveData, troveStatus],
+    ] = await Promise.all([
+      maybeIndexedTrove ?? getIndexedTroveById(branchId, troveId),
+      readContracts(wagmiConfig, {
+        allowFailure: false,
+        contracts: [{
+          ...BorrowerOperations,
+          functionName: "interestBatchManagerOf",
+          args: [BigInt(troveId)],
+        }, {
+          ...TroveManager,
+          functionName: "getLatestTroveData",
+          args: [BigInt(troveId)],
+        }, {
+          ...TroveManager,
+          functionName: "getTroveStatus",
+          args: [BigInt(troveId)],
+        }],
+      }),
+    ]);
+
+    return !indexedTrove ? null : {
+      type: indexedTrove.mightBeLeveraged ? "multiply" : "borrow",
+      batchManager: isAddressEqual(batchManager, zeroAddress) ? null : batchManager,
+      borrowed: dnum18(troveData.entireDebt),
+      borrower: indexedTrove.borrower,
+      branchId,
+      createdAt: indexedTrove.createdAt,
+      lastUserActionAt: indexedTrove.lastUserActionAt,
+      updatedAt: indexedTrove.updatedAt,
+      recordedDebt: indexedTrove.debt,
+      deposit: dnum18(troveData.entireColl),
+      interestRate: dnum18(troveData.annualInterestRate),
+      status: indexedTrove.status,
+      troveId,
+      isZombie: troveStatus === TROVE_STATUS_ZOMBIE,
+      redemptionCount: indexedTrove.redemptionCount,
+      redeemedColl: indexedTrove.redeemedColl,
+      redeemedDebt: indexedTrove.redeemedDebt,
+    };
+  } else {
+    return fetchLoanByIdRpcOnly(wagmiConfig, fullId);
+  }
 }
 
 export async function fetchLoansByAccount(

@@ -3,7 +3,9 @@ import type { ReactNode } from "react";
 
 import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
+import { ManualLoanIdInput } from "@/src/comps/ManualLoanIdInput";
 import content from "@/src/content";
+import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { useEarnPositionsByAccount, useLoansByAccount, useStakePosition } from "@/src/liquity-utils";
 import { useSboldPosition } from "@/src/sbold";
 import { css } from "@/styled-system/css";
@@ -240,6 +242,8 @@ function PositionsGroup({
           {title_}
         </h1>
       )}
+      {subgraphIndicator.hasError() && <ManualLoanIdInput />}
+
       <a.div
         className={css({
           position: "relative",
