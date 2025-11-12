@@ -7,7 +7,6 @@ import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import { ManualLoanIdInput } from "@/src/comps/ManualLoanIdInput";
 import content from "@/src/content";
 import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
-import { useEarnPositionsByAccount, useLoansByAccount, useStakePosition } from "@/src/liquity-utils";
 import {
   getBranches,
   useCollateralSurplusByBranches,

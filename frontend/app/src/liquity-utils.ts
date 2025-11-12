@@ -1036,7 +1036,8 @@ export function useTroveRateUpdateCooldown(branchId: BranchId, troveId: TroveId)
  * This is a fallback for when the subgraph is unavailable or returns errors
  *
  * Missing data (not available via RPC): createdAt, lastUserActionAt, updatedAt,
- * redemptionCount, redeemedColl, redeemedDebt, type, status
+ * redemptionCount, redeemedColl, redeemedDebt, type, status, liquidatedColl,
+ * liquidatedDebt, collSurplus, priceAtLiquidation
  */
 export async function fetchLoanByIdRpcOnly(
   wagmiConfig: WagmiConfig,
@@ -1106,6 +1107,10 @@ export async function fetchLoanByIdRpcOnly(
       redemptionCount: 0, // Missing
       redeemedColl: dnum18(0n), // Missing
       redeemedDebt: dnum18(0n), // Missing
+      liquidatedColl: dnum18(0n), // Missing
+      liquidatedDebt: dnum18(0n), // Missing
+      collSurplus: dnum18(0n), // Missing
+      priceAtLiquidation: dnum18(0n), // Missing
     };
   } catch (error) {
     console.error("Error fetching loan via RPC:", error);
