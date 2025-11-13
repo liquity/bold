@@ -1,7 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 
-const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY;
-
 const COINGECKO_IDS: Record<string, string> = {
   WETH: "ethereum",
   TBTC: "tbtc",
