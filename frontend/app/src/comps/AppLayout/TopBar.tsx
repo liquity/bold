@@ -6,7 +6,7 @@ import { Tag } from "@/src/comps/Tag/Tag";
 import { DEPLOYMENT_FLAVOR } from "@/src/env";
 import { useWhiteLabelHeader } from "@/src/hooks/useWhiteLabel";
 import { css } from "@/styled-system/css";
-import { IconBorrow, IconDashboard, IconEarn } from "@liquity2/uikit";
+import { IconAccount, IconBorrow, IconDashboard, IconEarn } from "@liquity2/uikit";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -23,6 +23,7 @@ export function TopBar() {
     ...(headerConfig.navigation.showBorrow ? [[headerConfig.navigation.items.borrow, "/borrow", IconBorrow] as MenuItem] : []),
     ...(headerConfig.navigation.showEarn ? [[headerConfig.navigation.items.earn, "/earn", IconEarn] as MenuItem] : []),
     // ...(headerConfig.navigation.showStake ? [[headerConfig.navigation.items.stake, "/stake", IconStake] as MenuItem] : []),
+    ["Tokens", "/tokens", IconAccount],
   ];
 
   return (
