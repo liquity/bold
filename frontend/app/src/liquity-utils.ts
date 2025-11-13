@@ -153,14 +153,12 @@ export function getBranchesCount(): number {
   return ENV_BRANCHES.length;
 }
 
-// Detect which branch a trove ID belongs to by checking TroveNFT ownership
 export async function detectTroveBranch(
   wagmiConfig: WagmiConfig,
   troveId: TroveId,
 ): Promise<BranchId | null> {
   const branches = getBranches();
 
-  // Try each branch's TroveNFT contract
   for (const branch of branches) {
     try {
       const owner = await readContract(wagmiConfig, {
@@ -169,17 +167,15 @@ export async function detectTroveBranch(
         args: [BigInt(troveId)],
       });
 
-      // If ownerOf succeeds, this is the correct branch
       if (owner) {
         return branch.branchId;
       }
     } catch (error) {
-      // ownerOf reverts if trove doesn't exist in this branch, continue to next
       continue;
     }
   }
 
-  return null; // Trove not found in any branch
+  return null;
 }
 
 export function getBranch(idOrSymbol: null): null;

@@ -164,7 +164,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
         });
       },
       async verify(ctx, hash) {
-        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe, !subgraphIndicator.hasError());
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
 
@@ -218,7 +218,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       },
 
       async verify(ctx, hash) {
-        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe, !subgraphIndicator.hasError());
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
 
         // wait for the trove to be seen as closed in the subgraph
         if (!subgraphIndicator.hasError()) {
