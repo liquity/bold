@@ -80,7 +80,7 @@ export const WHITE_LABEL_CONFIG = {
       // === ETH-based collaterals (110% MCR, 90.91% max LTV) ===
       {
         symbol: "WETH" as const,
-        name: "WETH",
+        name: "Wrapped Ether",
         icon: "eth",
         branchId: 0,
         decimals: 18,
@@ -141,7 +141,7 @@ export const WHITE_LABEL_CONFIG = {
       },
       {
         symbol: "YETH" as const,
-        name: "yETH",
+        name: "YieldFi yETH",
         icon: "yeth",
         branchId: 1,
         decimals: 18,
@@ -322,7 +322,7 @@ export const WHITE_LABEL_CONFIG = {
       },
       {
         symbol: "STATOM" as const,
-        name: "stATOM",
+        name: "Stride Staked Atom",
         icon: "statom",
         branchId: 4,
         decimals: 6,
@@ -382,7 +382,7 @@ export const WHITE_LABEL_CONFIG = {
       },
       {
         symbol: "KING" as const,
-        name: "KING",
+        name: "King Protocol",
         icon: "king",
         branchId: 5,
         decimals: 18,
@@ -442,7 +442,7 @@ export const WHITE_LABEL_CONFIG = {
       },
       {
         symbol: "YUSD" as const,
-        name: "yUSD",
+        name: "YieldFi yUSD",
         icon: "yusd",
         branchId: 6,
         decimals: 18,

@@ -13,7 +13,7 @@ type ErrorState = {
   timestamp: number;
 };
 
-const SUCCESS_MESSAGE_DURATION = 400;
+const SUCCESS_MESSAGE_DURATION = 3000;
 
 const IndicatorContext = createContext<{
   clearError:
@@ -22,19 +22,23 @@ const IndicatorContext = createContext<{
   setError:
     | ((id: string, message: ReactNode, successMessage?: string) => void)
     | null;
+  showSuccess:
+    | ((message: string) => void)
+    | null;
 }>({
   clearError: null,
   setError: null,
+  showSuccess: null,
 });
 
 export function useIndicator() {
-  const { setError, clearError } = useContext(IndicatorContext);
-  if (!setError || !clearError) {
+  const { setError, clearError, showSuccess } = useContext(IndicatorContext);
+  if (!setError || !clearError || !showSuccess) {
     throw new Error("useIndicator must be used within IndicatorProvider");
   }
   return useMemo(() => (
-    { clearError, setError }
-  ), [clearError, setError]);
+    { clearError, setError, showSuccess }
+  ), [clearError, setError, showSuccess]);
 }
 
 function AllIndicators() {
@@ -120,7 +124,7 @@ export function IndicatorManager({
   }, []);
 
   return (
-    <IndicatorContext.Provider value={{ setError, clearError }}>
+    <IndicatorContext.Provider value={{ setError, clearError, showSuccess }}>
       <AllIndicators />
       {children}
       <Indicator message={currentMessage} />
