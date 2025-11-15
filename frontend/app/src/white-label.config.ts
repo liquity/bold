@@ -211,7 +211,7 @@ export const WHITE_LABEL_CONFIG = {
         maxLTV: 0.9091, // 90.91% max LTV
         deployments: {
           5464: { // Saga EVM
-            collToken: "0x08503D385062Fc141dB08F95B09FcE8ce3a34AC4",
+            collToken: "0x7cF468a019C5bf734311D10C3a429bB504CAF3ce",
             addressesRegistry: "0x08503d385062fc141db08f95b09fce8ce3a34ac4",
             activePool: "0xf94cf42e4ad9c49854a0009e6eac8282be868ca1",
             borrowerOperations: "0x95db55721754afb448fc480267a8143785a6fc29",
