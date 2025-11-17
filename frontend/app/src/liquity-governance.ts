@@ -288,13 +288,24 @@ export interface UserAllocation {
   initiative: Address;
 }
 
+async function getRegisteredInitiatives(): Promise<Address[]> {
+  if (LIQUITY_GOVERNANCE_URL) {
+    const response = await fetch(`${LIQUITY_GOVERNANCE_URL}/initiatives.json`);
+    const parsed = v.parse(InitiativeInfoSchema, await response.json());
+    return Object.keys(parsed) as Address[];
+  }
+
+  const data = await getGovernanceGlobalData();
+  return data.registeredInitiatives;
+}
+
 export async function getUserAllocations(
   wagmiConfig: WagmiConfig,
   account: Address,
   initiatives?: Address[],
 ): Promise<UserAllocation[]> {
   if (!initiatives) {
-    initiatives = (await getGovernanceGlobalData()).registeredInitiatives;
+    initiatives = await getRegisteredInitiatives();
   }
 
   const Governance = getProtocolContract("Governance");
@@ -321,7 +332,7 @@ export async function getUserAllocatedInitiatives(
   wagmiConfig: WagmiConfig,
   account: Address,
   initiatives?: Address[],
-) {
+): Promise<Address[]> {
   const allocations = await getUserAllocations(wagmiConfig, account, initiatives);
   return allocations
     .filter(({ voteLQTY, vetoLQTY }) => (voteLQTY + vetoLQTY) > 0n)
@@ -374,16 +385,16 @@ export function useGovernanceUser(account: Address | null): UseQueryResult<Gover
   const wagmiConfig = useWagmiConfig();
 
   let queryFn = async () => {
-    if (!account || !initiatives.data) return null;
+    if (!account) return null;
 
-    const [userState, allocations] = await Promise.all([
-      getUserStates(wagmiConfig, account),
-      getUserAllocations(
+    const userState = await getUserStates(wagmiConfig, account);
+    const allocations = initiatives.data
+      ? await getUserAllocations(
         wagmiConfig,
         account,
         initiatives.data.map((i) => i.address),
-      ),
-    ]);
+      )
+      : [];
 
     return { ...userState, allocations };
   };
