@@ -54,6 +54,7 @@ contract SystemParams is ISystemParams, Initializable {
 
     uint256 public immutable SP_YIELD_SPLIT;
     uint256 public immutable MIN_BOLD_IN_SP;
+    uint256 public immutable MIN_BOLD_AFTER_REBALANCE;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -115,6 +116,7 @@ contract SystemParams is ISystemParams, Initializable {
         // Validate stability pool parameters
         if (_poolParams.spYieldSplit > _100pct) revert InvalidFeeValue();
         if (_poolParams.minBoldInSP == 0) revert InvalidMinDebt();
+        if (_poolParams.minBoldAfterRebalance < _poolParams.minBoldInSP) revert InvalidMinDebt();
 
         // Set debt parameters
         MIN_DEBT = _debtParams.minDebt;
@@ -146,6 +148,7 @@ contract SystemParams is ISystemParams, Initializable {
         // Set stability pool parameters
         SP_YIELD_SPLIT = _poolParams.spYieldSplit;
         MIN_BOLD_IN_SP = _poolParams.minBoldInSP;
+        MIN_BOLD_AFTER_REBALANCE = _poolParams.minBoldAfterRebalance;
     }
 
     /*

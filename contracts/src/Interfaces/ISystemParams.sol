@@ -41,6 +41,7 @@ interface ISystemParams {
     struct StabilityPoolParams {
         uint256 spYieldSplit;
         uint256 minBoldInSP;
+        uint256 minBoldAfterRebalance;
     }
 
     /* ========== ERRORS ========== */
@@ -137,6 +138,9 @@ interface ISystemParams {
 
     /// @notice Minimum BOLD that must remain in Stability Pool to prevent complete drainage.
     function MIN_BOLD_IN_SP() external view returns (uint256);
+
+    /// @notice Minimum BOLD that must remain in Stability Pool after a rebalance operation.
+    function MIN_BOLD_AFTER_REBALANCE() external view returns (uint256);
 
     function initialize() external;
 }

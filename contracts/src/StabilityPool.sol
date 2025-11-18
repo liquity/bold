@@ -173,10 +173,6 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     // The number of scale changes after which an untouched deposit stops receiving yield / coll gains
     uint256 public constant SCALE_SPAN = 2;
 
-    // The minimum amount of Bold in the SP after a rebalance
-    // Introduced to avoid higher rate of scale changes
-    uint256 public constant MIN_BOLD_AFTER_REBALANCE = 1_000e18;
-
     // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
     uint256 public currentScale;
 
@@ -417,7 +413,8 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         _swapCollateralForStable(amountCollIn, amountStableOut);
 
         require(
-            totalBoldDeposits >= MIN_BOLD_AFTER_REBALANCE, "Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE"
+            totalBoldDeposits >= systemParams.MIN_BOLD_AFTER_REBALANCE(),
+            "Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE"
         );
     }
 

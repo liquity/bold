@@ -349,7 +349,8 @@ contract TestDeployer is MetadataDeployment {
 
         ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
             spYieldSplit: 75 * (DECIMAL_PRECISION / 100), // SP_YIELD_SPLIT (75%)
-            minBoldInSP: 1e18 // MIN_BOLD_IN_SP
+            minBoldInSP: 1e18, // MIN_BOLD_IN_SP
+            minBoldAfterRebalance: 1_000e18 // MIN_BOLD_AFTER_REBALANCE
         });
 
         SystemParams systemParams = new SystemParams{salt: uniqueSalt}(

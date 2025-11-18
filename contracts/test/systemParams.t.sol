@@ -43,7 +43,8 @@ contract SystemParamsTest is DevTestSetup {
 
         ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
             spYieldSplit: 75 * _1pct,
-            minBoldInSP: 1e18
+            minBoldInSP: 1e18,
+            minBoldAfterRebalance: 1_000e18
         });
 
         SystemParams params = new SystemParams(false, 
@@ -509,7 +510,8 @@ contract SystemParamsTest is DevTestSetup {
     function testConstructorRevertsWhenSPYieldSplitTooHigh() public {
         ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
             spYieldSplit: _100pct + 1,
-            minBoldInSP: 1e18
+            minBoldInSP: 1e18,
+            minBoldAfterRebalance: 1_000e18
         });
 
         vm.expectRevert(ISystemParams.InvalidFeeValue.selector);
@@ -527,7 +529,27 @@ contract SystemParamsTest is DevTestSetup {
     function testConstructorRevertsWhenMinBoldInSPZero() public {
         ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
             spYieldSplit: 75 * _1pct,
-            minBoldInSP: 0
+            minBoldInSP: 0,
+            minBoldAfterRebalance: 1_000e18
+        });
+
+        vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
+        new SystemParams(false, 
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            poolParams
+        );
+    }
+
+    function testConstructorRevertsWhenMinBoldAfterRebalanceIsLessThanMinBoldInSP() public {
+        ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
+            spYieldSplit: 75 * _1pct,
+            minBoldInSP: 1e18,
+            minBoldAfterRebalance: 1e18 - 1 // < 1e18
         });
 
         vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
@@ -590,7 +612,8 @@ contract SystemParamsTest is DevTestSetup {
     function _getValidPoolParams() internal pure returns (ISystemParams.StabilityPoolParams memory) {
         return ISystemParams.StabilityPoolParams({
             spYieldSplit: 75 * _1pct,
-            minBoldInSP: 1e18
+            minBoldInSP: 1e18,
+            minBoldAfterRebalance: 1_000e18
         });
     }
 }
