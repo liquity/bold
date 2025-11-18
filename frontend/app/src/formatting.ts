@@ -1,9 +1,23 @@
-import type { Dnum, RiskLevel } from "@/src/types";
+import type { Dnum, RiskLevel, CollateralSymbol } from "@/src/types";
 
 import { ONE_DAY, ONE_HOUR, ONE_MINUTE, ONE_SECOND } from "@/src/constants";
 import { DNUM_0, DNUM_1 } from "@/src/dnum-utils";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
+
+export function getTokenDisplayDecimals(symbol: CollateralSymbol | string): number {
+  const upperSymbol = symbol.toUpperCase();
+  
+  if (upperSymbol === "TBTC" || upperSymbol === "BTC") {
+    return 4;
+  }
+  
+  if (upperSymbol === "WETH" || upperSymbol === "ETH" || upperSymbol === "YETH") {
+    return 3;
+  }
+  
+  return 2;
+}
 
 // formatting presets
 const fmtnumPresets = {

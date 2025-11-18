@@ -12,7 +12,7 @@ import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { MIN_DEBT } from "@/src/constants";
 import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
-import { fmtnum, formatRisk } from "@/src/formatting";
+import { fmtnum, formatRisk, getTokenDisplayDecimals } from "@/src/formatting";
 import { getLoanDetails } from "@/src/liquity-math";
 import { getCollToken } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
@@ -197,7 +197,7 @@ export function PanelUpdateBorrowPosition({
                 ),
                 end: collMax && dn.gt(collMax, 0) && (
                   <TextButton
-                    label={`Max ${fmtnum(collMax, 2)} ${TOKENS_BY_SYMBOL[collToken.symbol]?.name ?? collToken.symbol}`}
+                    label={`Max ${fmtnum(collMax, getTokenDisplayDecimals(collToken.symbol))} ${TOKENS_BY_SYMBOL[collToken.symbol]?.name ?? collToken.symbol}`}
                     onClick={() => {
                       depositChange.setValue(dn.toString(collMax));
                     }}

@@ -14,7 +14,7 @@ import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import { ETH_MAX_RESERVE, MAX_LTV_RESERVE_RATIO, MIN_DEBT } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
-import { fmtnum, formatRisk } from "@/src/formatting";
+import { fmtnum, formatRisk, getTokenDisplayDecimals } from "@/src/formatting";
 import { getLiquidationPriceFromLeverage, getLoanDetails } from "@/src/liquity-math";
 import { getCollToken } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
@@ -213,7 +213,7 @@ export function PanelUpdateLeveragePosition({
                 ),
                 end: collMax && dn.gt(collMax, 0) && (
                   <TextButton
-                    label={`Max ${fmtnum(collMax, 2)} ${collToken.name}`}
+                    label={`Max ${fmtnum(collMax, getTokenDisplayDecimals(collToken.symbol))} ${collToken.name}`}
                     onClick={() => {
                       depositChange.setValue(dn.toString(collMax));
                     }}
