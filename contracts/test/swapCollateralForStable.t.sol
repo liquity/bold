@@ -48,6 +48,20 @@ contract SwapCollateralForStableTest is DevTestSetup {
         stabilityPool.swapCollateralForStable(1e18, 1e18);
     }
 
+    function testSwapCollateralForStableRevertsWhenSystemIsShutDown() public {
+        vm.mockCall(
+            address(troveManager),
+            abi.encodeWithSelector(ITroveManager.shutdownTime.selector),
+            abi.encode(block.timestamp - 1)
+        );
+
+
+        vm.expectRevert("StabilityPool: System is shut down");
+        vm.startPrank(liquidityStrategy);
+        stabilityPool.swapCollateralForStable(1e18, 1e18);
+        vm.stopPrank();
+    }
+
     function testSwapCollateralForStableRevertsWithInsufficientStableLiquidity() public {
         uint256 stableAmount = 1000e18;
         
