@@ -412,6 +412,8 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     function swapCollateralForStable(uint256 amountCollIn, uint256 amountStableOut) external {
         _requireCallerIsLiquidityStrategy();
 
+        activePool.mintAggInterest();
+
         _updateTrackingVariables(amountStableOut, amountCollIn);
 
         _swapCollateralForStable(amountCollIn, amountStableOut);

@@ -461,4 +461,55 @@ contract SwapCollateralForStableTest is DevTestSetup {
         assertEq(stabilityPool.getTotalBoldDeposits(), 1_000e18);
         assertEq(stabilityPool.getCollBalance(), collSwapAmount);
     }
+
+    function testSwapCollateralForStableWithYieldGains() public {
+        uint256 stableAmount = 2000e18;
+        uint256 yieldAmount = 100e18;
+        uint256 collSwapAmount = 1e18;
+        uint256 stableSwapAmount = 1000e18;
+
+        // Setup initial deposits
+        deal(address(boldToken), A, stableAmount);
+        makeSPDepositAndClaim(A, stableAmount);
+
+        deal(address(boldToken), B, stableAmount);
+        makeSPDepositAndClaim(B, stableAmount);
+
+        // Generate some yield gains
+        vm.prank(address(activePool));
+        stabilityPool.triggerBoldRewards(yieldAmount);
+
+        uint256 initialYieldGainA = stabilityPool.getDepositorYieldGain(A);
+        assertEq(initialYieldGainA, yieldAmount / 2);
+
+        uint256 initialYieldGainB = stabilityPool.getDepositorYieldGain(B);
+        assertEq(initialYieldGainB, yieldAmount / 2);
+
+        // Perform rebalance
+        vm.prank(liquidityStrategy);
+        stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount);
+
+        // Verify yield gain is preserved after swap
+        uint256 finalYieldGainA = stabilityPool.getDepositorYieldGain(A);
+        assertEq(finalYieldGainA, initialYieldGainA);
+
+        uint256 finalYieldGainB = stabilityPool.getDepositorYieldGain(B);
+        assertEq(finalYieldGainB, initialYieldGainB);
+
+        // Verify depositors can still claim yield gains
+        uint256 preBoldBalance = boldToken.balanceOf(A);
+        vm.prank(A);
+        stabilityPool.withdrawFromSP(0, true);
+        
+        uint256 postBoldBalance = boldToken.balanceOf(A);
+        assertEq(postBoldBalance - preBoldBalance, initialYieldGainA);
+
+
+        preBoldBalance = boldToken.balanceOf(B);
+        vm.prank(B);
+        stabilityPool.withdrawFromSP(0, true);
+        postBoldBalance = boldToken.balanceOf(B);
+        
+        assertEq(postBoldBalance - preBoldBalance, initialYieldGainB);
+    }
 }
