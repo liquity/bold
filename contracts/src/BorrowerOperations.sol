@@ -925,6 +925,7 @@ contract BorrowerOperations is LiquityBase, AddRemoveManagers, IBorrowerOperatio
             abi.encodeWithSignature("kickFromBatch(uint256,uint256,uint256)", _troveId, _upperHint, _lowerHint)
         );
         _requireDelegateCallSucceeded(success, data);
+        delete interestBatchManagerOf[_troveId];
     }
 
     function removeFromBatch(
