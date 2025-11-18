@@ -42,6 +42,11 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
     /// @notice Thrown when a zero address is provided as a parameter
     error ZeroAddress();
 
+    /// @notice Emitted when the rate feed ID is updated
+    /// @param _oldRateFeedID The previous rate feed ID
+    /// @param _newRateFeedID The new rate feed ID
+    event RateFeedIDUpdated(address indexed _oldRateFeedID, address indexed _newRateFeedID);
+
     /// @notice Emitted when the watchdog address is updated
     /// @param _oldWatchdogAddress The previous watchdog address
     /// @param _newWatchdogAddress The new watchdog address
@@ -89,6 +94,15 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
         fetchPrice();
 
         _transferOwnership(_initialOwner);
+    }
+
+    function setRateFeedID(address _newRateFeedID) external onlyOwner {
+        if (_newRateFeedID == address(0)) revert ZeroAddress();
+
+        address oldRateFeedID = rateFeedID;
+        rateFeedID = _newRateFeedID;
+
+        emit RateFeedIDUpdated(oldRateFeedID, _newRateFeedID);
     }
 
     /**
