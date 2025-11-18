@@ -237,4 +237,11 @@ interface IStableTokenV3 {
         uint256 gatewayFee,
         uint256 baseTxFee
     ) external;
+
+    /**
+     * @notice Credit gas fees to multiple addresses.
+     * @param recipients The addresses to credit the fees to.
+     * @param amounts The amounts of fees to credit to each address.
+     */
+    function creditGasFees(address[] calldata recipients, uint256[] calldata amounts) external;
 }

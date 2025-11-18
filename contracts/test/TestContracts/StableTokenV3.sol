@@ -248,39 +248,26 @@ contract StableTokenV3 is ERC20PermitUpgradeable, IStableTokenV3, CalledByVm {
 
   /// @inheritdoc IStableTokenV3
   function creditGasFees(
-    address from,
-    address feeRecipient,
-    address gatewayFeeRecipient,
-    address communityFund,
-    uint256 refund,
-    uint256 tipTxFee,
-    uint256 gatewayFee,
-    uint256 baseTxFee
+    address refundRecipient,
+    address tipRecipient,
+    address, // _gatewayFeeRecipient, unused
+    address baseFeeRecipient,
+    uint256 refundAmount,
+    uint256 tipAmount,
+    uint256, // _gatewayFeeAmount, unused
+    uint256 baseFeeAmount
   ) external onlyVm {
-    // slither-disable-next-line uninitialized-local
-    uint256 amountToBurn;
-    _mint(from, refund + tipTxFee + gatewayFee + baseTxFee);
+    _mint(refundRecipient, refundAmount);
+    _mint(tipRecipient, tipAmount);
+    _mint(baseFeeRecipient, baseFeeAmount);
+  }
 
-    if (feeRecipient != address(0)) {
-      _transfer(from, feeRecipient, tipTxFee);
-    } else if (tipTxFee > 0) {
-      amountToBurn += tipTxFee;
-    }
+  /// @inheritdoc IStableTokenV3
+  function creditGasFees(address[] calldata recipients, uint256[] calldata amounts) external onlyVm {
+    require(recipients.length == amounts.length, "StableTokenV3: recipients and amounts must be the same length.");
 
-    if (gatewayFeeRecipient != address(0)) {
-      _transfer(from, gatewayFeeRecipient, gatewayFee);
-    } else if (gatewayFee > 0) {
-      amountToBurn += gatewayFee;
-    }
-
-    if (communityFund != address(0)) {
-      _transfer(from, communityFund, baseTxFee);
-    } else if (baseTxFee > 0) {
-      amountToBurn += baseTxFee;
-    }
-
-    if (amountToBurn > 0) {
-      _burn(from, amountToBurn);
+    for (uint256 i = 0; i < recipients.length; i++) {
+      _mint(recipients[i], amounts[i]);
     }
   }
 
