@@ -209,6 +209,7 @@ export function HomeScreen() {
                     fontSize: "12px",
                     fontWeight: 500,
                     width: "140px",
+                    display: { base: "none", medium: "table-cell" },
                   })}
                 >
                   Debt Issued
@@ -216,6 +217,7 @@ export function HomeScreen() {
                 <th
                   className={css({
                     padding: "4px 8px",
+                    textAlign: "right",
                   })}
                 ></th>
               </tr>
@@ -328,6 +330,7 @@ export function HomeScreen() {
                 <th
                   className={css({
                     padding: "4px 8px",
+                    textAlign: "right",
                   })}
                 ></th>
               </tr>
@@ -443,6 +446,7 @@ function BorrowRow({
         className={css({
           padding: "6px 8px",
           textAlign: "center",
+          display: { base: "none", medium: "table-cell" },
         })}
       >
         <div
@@ -478,10 +482,9 @@ function BorrowRow({
         className={css({
           padding: "6px 8px",
           borderRadius: "0 8px 8px 0",
-          textAlign: "right",
         })}
       >
-        <Link href={`/borrow/${symbol.toLowerCase()}`}>
+        <Link href={`/borrow/${symbol.toLowerCase()}`} className={css({ display: "flex", justifyContent: "flex-end" })}>
           {isMobile ? (
             <button
               className={css({
@@ -632,10 +635,9 @@ function EarnRow({
         className={css({
           padding: "6px 8px",
           borderRadius: "0 8px 8px 0",
-          textAlign: "right",
         })}
       >
-        <Link href={`/earn/${symbol.toLowerCase()}`}>
+        <Link href={`/earn/${symbol.toLowerCase()}`} className={css({ display: "flex", justifyContent: "flex-end" })}>
           {isMobile ? (
             <button
               className={css({
