@@ -15,7 +15,7 @@ import { ETH_MAX_RESERVE, LEVERAGE_MAX_SLIPPAGE, MAX_COLLATERAL_DEPOSITS, MIN_DE
 import content from "@/src/content";
 import { dnum18, dnumMax } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
-import { fmtnum } from "@/src/formatting";
+import { fmtnum, getTokenDisplayDecimals } from "@/src/formatting";
 import { useCheckLeverageSlippage } from "@/src/liquity-leverage";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { getBranch, getBranches, getCollToken, useNextOwnerIndex, useDebtPositioning } from "@/src/liquity-utils";
@@ -185,7 +185,7 @@ export function LeverageScreen() {
                     icon: <TokenIcon symbol={symbol} />,
                     label: name,
                     value: account.isConnected
-                      ? fmtnum(balances[symbol]?.data ?? 0)
+                      ? fmtnum(balances[symbol]?.data ?? 0, getTokenDisplayDecimals(symbol))
                       : "−",
                   }))}
                   menuPlacement="end"
@@ -215,7 +215,7 @@ export function LeverageScreen() {
                 end: maxAmount
                   ? (
                     <TextButton
-                      label={`Max ${fmtnum(maxAmount)} ${collateral.name}`}
+                      label={`Max ${fmtnum(maxAmount, getTokenDisplayDecimals(collateral.symbol))} ${collateral.name}`}
                       onClick={() => {
                         depositPreLeverage.setValue(dn.toString(maxAmount));
                       }}

@@ -16,7 +16,7 @@ import content from "@/src/content";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { dnum18, dnumMax, dnumMin } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
-import { fmtnum } from "@/src/formatting";
+import { fmtnum, getTokenDisplayDecimals } from "@/src/formatting";
 import { getLiquidationRisk, getLoanDetails, getLtv } from "@/src/liquity-math";
 import {
   getBranch,
@@ -275,7 +275,7 @@ export function BorrowScreen() {
                   icon: <TokenIcon symbol={symbol} />,
                   label: name,
                   value: account.isConnected
-                    ? fmtnum(balances[symbol]?.data ?? 0)
+                    ? fmtnum(balances[symbol]?.data ?? 0, getTokenDisplayDecimals(symbol))
                     : "−",
                 }))}
                 menuPlacement="end"
@@ -307,7 +307,7 @@ export function BorrowScreen() {
               }`,
               end: maxAmount && dn.gt(maxAmount, 0) && (
                 <TextButton
-                  label={`Max ${fmtnum(maxAmount)} ${collateral.name}`}
+                  label={`Max ${fmtnum(maxAmount, getTokenDisplayDecimals(collateral.symbol))} ${collateral.name}`}
                   onClick={() => {
                     deposit.setValue(dn.toString(maxAmount));
                   }}
