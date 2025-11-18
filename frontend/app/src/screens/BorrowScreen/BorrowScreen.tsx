@@ -25,6 +25,7 @@ import {
   useBranchCollateralRatios,
   useBranchDebt,
   useNextOwnerIndex,
+  usePredictOpenTroveUpfrontFee,
   useRedemptionRiskOfInterestRate,
 } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
@@ -107,9 +108,19 @@ export function BorrowScreen() {
   const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, branch.id);
   const redemptionRisk = useRedemptionRiskOfInterestRate(branch.id, interestRate ?? DNUM_0);
 
+  const upfrontFee = usePredictOpenTroveUpfrontFee(
+    branch.id,
+    debt.parsed ?? DNUM_0,
+    interestRateDelegate ?? interestRate ?? DNUM_0,
+  );
+
+  const debtWithFee = debt.parsed && upfrontFee.data
+    ? dn.add(debt.parsed, upfrontFee.data)
+    : debt.parsed;
+
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
-    debt.isEmpty ? null : debt.parsed,
+    debtWithFee ?? (debt.isEmpty ? null : debt.parsed),
     interestRate,
     collateral.collateralRatio,
     collPrice.data ?? null,
@@ -409,6 +420,29 @@ export function BorrowScreen() {
             ),
           },
           {
+            start: upfrontFee.data && dn.gt(upfrontFee.data, 0) && (
+              <div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                  color: "contentAlt",
+                  fontSize: 14,
+                })}
+              >
+                <Amount
+                  key="end"
+                  fallback="…"
+                  prefix="+ "
+                  value={upfrontFee.data}
+                  suffix=" BOLD creation fee"
+                />
+                <InfoTooltip heading="BOLD creation fee">
+                  This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of
+                  average interest for the respective collateral asset.
+                </InfoTooltip>
+              </div>
+            ),
             end: (
               <Field.FooterInfoLoanToValue
                 ltvRatio={loanDetails.ltv}
