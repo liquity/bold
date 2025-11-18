@@ -197,6 +197,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event BoldTokenAddressChanged(address _newBoldTokenAddress);
+    event RebalanceExecuted(uint256 amountCollIn, uint256 amountStableOut);
 
     /**
      * @dev Should be called with disable=true in deployments when it's accessed through a Proxy.
@@ -421,6 +422,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         require(
             totalBoldDeposits >= MIN_BOLD_AFTER_REBALANCE, "Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE"
         );
+        emit RebalanceExecuted(amountCollIn, amountStableOut);
     }
 
     // --- Liquidation functions ---
