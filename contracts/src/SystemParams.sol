@@ -82,9 +82,6 @@ contract SystemParams is ISystemParams, Initializable {
         if (_liquidationParams.liquidationPenaltySP > _liquidationParams.liquidationPenaltyRedistribution) {
             revert SPPenaltyGtRedist();
         }
-        if (_liquidationParams.liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) {
-            revert RedistPenaltyTooHigh();
-        }
 
         // Validate gas compensation parameters
         if (_gasCompParams.collGasCompensationDivisor == 0 || _gasCompParams.collGasCompensationDivisor > 1000) {
@@ -102,6 +99,14 @@ contract SystemParams is ISystemParams, Initializable {
         if (_collateralParams.mcr <= _100pct || _collateralParams.mcr >= 2 * _100pct) revert InvalidMCR();
         if (_collateralParams.bcr < 5 * _1pct || _collateralParams.bcr >= 50 * _1pct) revert InvalidBCR();
         if (_collateralParams.scr <= _100pct || _collateralParams.scr >= 2 * _100pct) revert InvalidSCR();
+
+        // The redistribution penalty must not exceed the overcollateralization buffer (MCR - 100%)
+        if (
+            _liquidationParams.liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION
+                || _liquidationParams.liquidationPenaltyRedistribution > _collateralParams.mcr - _100pct
+        ) {
+            revert RedistPenaltyTooHigh();
+        }
 
         // Validate interest parameters
         if (_interestParams.minAnnualInterestRate > MAX_ANNUAL_INTEREST_RATE) {

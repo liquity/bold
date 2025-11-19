@@ -164,6 +164,87 @@ contract SystemParamsTest is DevTestSetup {
         );
     }
 
+    function testConstructorRevertsWhenRedistPenaltyExceedsMCRBuffer() public {
+        // MCR = 110%, so buffer = 10%. Set redistribution penalty to 11% (exceeds buffer)
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16,
+            liquidationPenaltyRedistribution: 11 * _1pct // 11% > (110% - 100%)
+        });
+
+        vm.expectRevert(ISystemParams.RedistPenaltyTooHigh.selector);
+        new SystemParams(false, 
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
+
+    function testConstructorAllowsRedistPenaltyEqualToMCRBuffer() public {
+        // MCR = 110%, so buffer = 10%. Set redistribution penalty to exactly 10%
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16,
+            liquidationPenaltyRedistribution: 10 * _1pct // 10% == (110% - 100%)
+        });
+
+        // Should not revert
+        SystemParams params = new SystemParams(false, 
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+
+        assertEq(params.LIQUIDATION_PENALTY_REDISTRIBUTION(), 10 * _1pct);
+    }
+
+    function testConstructorRevertsWhenRedistPenaltyExceedsMCRBufferWithDifferentMCR() public {
+        // MCR = 115%, so buffer = 15%. Set redistribution penalty to 16% (exceeds buffer)
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: 150 * _1pct,
+            scr: 115 * _1pct,
+            mcr: 115 * _1pct,
+            bcr: 10 * _1pct
+        });
+
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16,
+            liquidationPenaltyRedistribution: 16 * _1pct // 16% > (115% - 100%)
+        });
+
+        vm.expectRevert(ISystemParams.RedistPenaltyTooHigh.selector);
+        new SystemParams(false, 
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+
+        liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16,
+            liquidationPenaltyRedistribution: 15 * _1pct // 15%
+        });
+
+        new SystemParams(false, 
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
+
     // ========== GAS COMPENSATION VALIDATION TESTS ==========
 
     function testConstructorRevertsWhenGasCompDivisorZero() public {
