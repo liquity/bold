@@ -600,9 +600,9 @@ export default {
   },
   manualLoanIdInput: {
     title: "Subgraph Error Detected",
-    description: "Cannot load Loan positions from Subgraph. Enter your Loan ID manually to view it.",
-    inputLabel: "Loan ID",
-    inputPlaceholder: "0x...",
+    description:
+      "The list of loans below could be incomplete. If one of your loans doesn't appear, please enter your Loan ID manually below to view it.",
+    inputPlaceholder: "Loan ID (0x...)",
     branchDetected: (branchId: number) => `(Branch ${branchId} detected)`,
     buttonLabel: "View Loan",
     buttonDetecting: "Detecting...",

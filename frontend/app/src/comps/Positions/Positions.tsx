@@ -9,12 +9,14 @@ import content from "@/src/content";
 import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import {
   getBranches,
+  getPrefixedTroveId,
   useCollateralSurplusByBranches,
   useEarnPositionsByAccount,
   useLoansByAccount,
   useStakePosition,
 } from "@/src/liquity-utils";
 import { useSboldPosition } from "@/src/sbold";
+import { addPrefixedTroveIdsToStoredState, useStoredState } from "@/src/services/StoredState";
 import { isPositionLoan } from "@/src/types";
 import { css } from "@/styled-system/css";
 import { IconChevronSmallUp } from "@liquity2/uikit";
@@ -57,11 +59,22 @@ export function Positions({
   showNewPositionCard?: boolean;
   title?: (mode: Mode) => ReactNode;
 }) {
-  const loans = useLoansByAccount(address);
+  const storedState = useStoredState();
+  const loans = useLoansByAccount(address, storedState.prefixedTroveIds);
   const earnPositions = useEarnPositionsByAccount(address);
   const sboldPosition = useSboldPosition(address);
   const stakePosition = useStakePosition(address, "v2");
   const collSurplusQueries = useCollateralSurplusByBranches(address, branchIds);
+
+  useEffect(() => {
+    if (!loans.data || loans.data.length === 0) return;
+
+    const prefixedTroveIds = loans.data
+      .filter((loan) => loan.troveId !== null && loan.branchId !== null)
+      .map((loan) => getPrefixedTroveId(loan.branchId, loan.troveId));
+
+    addPrefixedTroveIdsToStoredState(storedState, prefixedTroveIds);
+  }, []);
 
   const collSurplusMap = useMemo(() => {
     if (!collSurplusQueries.data) return null;

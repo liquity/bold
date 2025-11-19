@@ -22,6 +22,7 @@ export const StoredStateSchema = v.object({
     v.literal("approve-amount"),
     v.literal("approve-infinite"),
   ]),
+  prefixedTroveIds: v.array(v.string()),
 });
 
 type StoredStateType = v.InferOutput<typeof StoredStateSchema>;
@@ -29,6 +30,7 @@ type StoredStateType = v.InferOutput<typeof StoredStateSchema>;
 const defaultState: StoredStateType = {
   loanModes: {},
   preferredApproveMethod: "permit",
+  prefixedTroveIds: [],
 };
 
 type StoredStateContext = StoredStateType & {
@@ -110,4 +112,25 @@ export function StoredState({
 
 export function useStoredState() {
   return useContext(StoredStateContext);
+}
+
+export function addPrefixedTroveIdsToStoredState(
+  storedState: {
+    setState: (update: (state: { prefixedTroveIds?: string[] }) => Partial<{ prefixedTroveIds?: string[] }>) => void;
+  },
+  prefixedTroveIds: string[],
+) {
+  if (prefixedTroveIds.length === 0) return;
+
+  storedState.setState((state) => {
+    const existingIds = state.prefixedTroveIds || [];
+    const newIds = prefixedTroveIds.filter((id) => !existingIds.includes(id));
+
+    if (newIds.length > 0) {
+      const allIds = [...existingIds, ...newIds];
+      const uniqueIds = Array.from(new Set(allIds));
+      return { prefixedTroveIds: uniqueIds };
+    }
+    return {};
+  });
 }

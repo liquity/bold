@@ -1177,29 +1177,63 @@ export async function fetchLoanById(
   }
 }
 
+export async function fetchLoansByStoredTroveIds(
+  wagmiConfig: WagmiConfig,
+  account: Address,
+  storedTroveIds: string[],
+): Promise<PositionLoanCommitted[]> {
+  if (storedTroveIds.length === 0) return [];
+
+  const results = await Promise.all(
+    storedTroveIds.map(async (prefixedId) => {
+      if (!isPrefixedtroveId(prefixedId)) {
+        return null;
+      }
+
+      const loan = await fetchLoanByIdRpcOnly(wagmiConfig, prefixedId);
+
+      if (loan && isAddressEqual(loan.borrower, account)) {
+        return loan;
+      }
+      return null;
+    }),
+  );
+
+  return results.filter((result): result is PositionLoanCommitted => result !== null);
+}
+
 export async function fetchLoansByAccount(
   wagmiConfig: WagmiConfig,
   account?: Address | null,
+  storedTroveIds?: string[],
 ): Promise<PositionLoanCommitted[] | null> {
   if (!account) return null;
 
-  const troves = await getIndexedTrovesByAccount(account);
+  if (!subgraphIndicator.hasError()) {
+    const troves = await getIndexedTrovesByAccount(account);
 
-  const results = await Promise.all(troves.map((trove) => {
-    if (!isPrefixedtroveId(trove.id)) {
-      throw new Error(`Invalid prefixed trove ID: ${trove.id}`);
-    }
-    return fetchLoanById(wagmiConfig, trove.id, trove);
-  }));
+    const results = await Promise.all(troves.map((trove) => {
+      if (!isPrefixedtroveId(trove.id)) {
+        throw new Error(`Invalid prefixed trove ID: ${trove.id}`);
+      }
+      return fetchLoanById(wagmiConfig, trove.id, trove);
+    }));
 
-  return results.filter((result) => result !== null);
+    return results.filter((result) => result !== null);
+  }
+
+  if (storedTroveIds && storedTroveIds.length > 0) {
+    return fetchLoansByStoredTroveIds(wagmiConfig, account, storedTroveIds);
+  }
+
+  return [];
 }
 
-export function useLoansByAccount(account?: Address | null) {
+export function useLoansByAccount(account?: Address | null, storedTroveIds?: string[]) {
   const wagmiConfig = useWagmiConfig();
   return useQuery<PositionLoanCommitted[] | null>({
-    queryKey: ["TrovesByAccount", account],
-    queryFn: () => fetchLoansByAccount(wagmiConfig, account),
+    queryKey: ["TrovesByAccount", account, storedTroveIds],
+    queryFn: () => fetchLoansByAccount(wagmiConfig, account, storedTroveIds),
   });
 }
 

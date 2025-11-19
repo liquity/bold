@@ -122,14 +122,6 @@ export function ManualLoanIdInput() {
             minWidth: 200,
           })}
         >
-          <label
-            className={css({
-              fontSize: 14,
-              fontWeight: 500,
-            })}
-          >
-            {content.manualLoanIdInput.inputLabel}
-          </label>
           <div
             className={css({
               display: "flex",
