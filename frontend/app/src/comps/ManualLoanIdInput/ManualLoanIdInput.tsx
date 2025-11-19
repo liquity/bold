@@ -1,9 +1,10 @@
 import content from "@/src/content";
-import { detectTroveBranch } from "@/src/liquity-utils";
+import { detectTroveBranches, getCollToken } from "@/src/liquity-utils";
+import type { BranchId } from "@/src/types";
 import { isTroveId } from "@/src/types";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { Button, InfoTooltip, TextInput } from "@liquity2/uikit";
+import { Button, InfoTooltip, TextInput, TokenIcon } from "@liquity2/uikit";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useConfig as useWagmiConfig } from "wagmi";
@@ -14,18 +15,18 @@ export function ManualLoanIdInput() {
   const account = useAccount();
   const [troveId, setTroveId] = useState("");
   const [detecting, setDetecting] = useState(false);
-  const [detectedBranch, setDetectedBranch] = useState<number | null>(null);
+  const [detectedBranches, setDetectedBranches] = useState<BranchId[]>([]);
   const [error, setError] = useState<"invalid-format" | "not-found" | null>(null);
 
   useEffect(() => {
     if (!troveId) {
-      setDetectedBranch(null);
+      setDetectedBranches([]);
       setError(null);
       return;
     }
 
     if (!isTroveId(troveId)) {
-      setDetectedBranch(null);
+      setDetectedBranches([]);
       setError("invalid-format");
       return;
     }
@@ -34,17 +35,17 @@ export function ManualLoanIdInput() {
     setDetecting(true);
     setError(null);
 
-    detectTroveBranch(wagmiConfig, troveId)
-      .then((detectedId) => {
+    detectTroveBranches(wagmiConfig, troveId)
+      .then((branches) => {
         if (!cancelled) {
-          setDetectedBranch(detectedId);
+          setDetectedBranches(branches);
           setDetecting(false);
-          setError(detectedId === null ? "not-found" : null);
+          setError(branches.length === 0 ? "not-found" : null);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setDetectedBranch(null);
+          setDetectedBranches([]);
           setDetecting(false);
           setError("not-found");
         }
@@ -59,10 +60,11 @@ export function ManualLoanIdInput() {
     return null;
   }
 
-  const handleNavigate = () => {
-    if (!troveId || detectedBranch === null) return;
+  const handleNavigate = (branchId?: BranchId) => {
+    if (!troveId || detectedBranches.length === 0) return;
 
-    const prefixedId = `${detectedBranch}:${troveId}`;
+    const selectedBranch = branchId ?? detectedBranches[0];
+    const prefixedId = `${selectedBranch}:${troveId}`;
     router.push(`/loan?id=${encodeURIComponent(prefixedId)}`);
   };
 
@@ -137,13 +139,15 @@ export function ManualLoanIdInput() {
                 flexGrow: 1,
               })}
             />
-            <Button
-              label={detecting ? content.manualLoanIdInput.buttonDetecting : content.manualLoanIdInput.buttonLabel}
-              mode="primary"
-              size="medium"
-              disabled={!troveId || detecting || detectedBranch === null}
-              onClick={handleNavigate}
-            />
+            {detectedBranches.length === 1 && (
+              <Button
+                label={detecting ? content.manualLoanIdInput.buttonDetecting : content.manualLoanIdInput.buttonLabel}
+                mode="primary"
+                size="medium"
+                disabled={!troveId || detecting}
+                onClick={() => handleNavigate()}
+              />
+            )}
           </div>
           {error && (
             <div
@@ -155,6 +159,62 @@ export function ManualLoanIdInput() {
               {error === "invalid-format"
                 ? content.manualLoanIdInput.errorInvalidFormat
                 : content.manualLoanIdInput.errorNotFound}
+            </div>
+          )}
+          {detectedBranches.length > 1 && (
+            <div
+              className={css({
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                fontSize: 14,
+                color: "token(colors.contentAlt)",
+              })}
+            >
+              <div>{content.manualLoanIdInput.foundMultipleBranches}</div>
+              <div
+                className={css({
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                })}
+              >
+                {detectedBranches.map((branchId) => {
+                  const token = getCollToken(branchId);
+                  return (
+                    <button
+                      key={branchId}
+                      type="button"
+                      onClick={() => handleNavigate(branchId)}
+                      className={css({
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        height: 40,
+                        padding: "0 16px 0 8px",
+                        fontSize: 18,
+                        fontWeight: 500,
+                        background: "background",
+                        border: "1px solid token(colors.border)",
+                        borderRadius: 20,
+                        cursor: "pointer",
+                        userSelect: "none",
+                        transition: "all 80ms",
+                        _hover: {
+                          background: "token(colors.controlSurfaceHover)",
+                          borderColor: "token(colors.borderHover)",
+                        },
+                        _active: {
+                          transform: "scale(0.98)",
+                        },
+                      })}
+                    >
+                      <TokenIcon symbol={token.symbol} size={24} />
+                      <div>{token.name}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

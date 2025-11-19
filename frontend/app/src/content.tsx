@@ -608,6 +608,7 @@ export default {
     buttonDetecting: "Detecting...",
     errorInvalidFormat: "Invalid Loan ID format. Please enter a valid hexadecimal address starting with 0x.",
     errorNotFound: "Loan ID not found. Please check the ID and try again.",
+    foundMultipleBranches: "Found on multiple collaterals. Select one to view:",
     tooltip: {
       heading: "How to get your Loan IDs",
       body: (address: string) => (

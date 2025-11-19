@@ -153,29 +153,32 @@ export function getBranchesCount(): number {
   return ENV_BRANCHES.length;
 }
 
-export async function detectTroveBranch(
+export async function detectTroveBranches(
   wagmiConfig: WagmiConfig,
   troveId: TroveId,
-): Promise<BranchId | null> {
+): Promise<BranchId[]> {
   const branches = getBranches();
 
-  for (const branch of branches) {
-    try {
-      const owner = await readContract(wagmiConfig, {
-        ...branch.contracts.TroveNFT,
-        functionName: "ownerOf",
-        args: [BigInt(troveId)],
-      });
+  const results = await Promise.all(
+    branches.map(async (branch) => {
+      try {
+        const owner = await readContract(wagmiConfig, {
+          ...branch.contracts.TroveNFT,
+          functionName: "ownerOf",
+          args: [BigInt(troveId)],
+        });
 
-      if (owner) {
-        return branch.branchId;
+        if (owner) {
+          return branch.branchId;
+        }
+      } catch (error) {
+        // Trove doesn't exist on this branch
       }
-    } catch (error) {
-      continue;
-    }
-  }
+      return null;
+    }),
+  );
 
-  return null;
+  return results.filter((branchId): branchId is BranchId => branchId !== null);
 }
 
 export function getBranch(idOrSymbol: null): null;
