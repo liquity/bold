@@ -114,7 +114,7 @@ contract SystemParams is ISystemParams, Initializable {
 
         // Validate stability pool parameters
         if (_poolParams.spYieldSplit > _100pct) revert InvalidFeeValue();
-        if (_poolParams.minBoldInSP == 0) revert InvalidMinDebt();
+        if (_poolParams.minBoldInSP < 1e18) revert InvalidMinBoldInSP();
 
         // Set debt parameters
         MIN_DEBT = _debtParams.minDebt;

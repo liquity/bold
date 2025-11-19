@@ -524,13 +524,13 @@ contract SystemParamsTest is DevTestSetup {
         );
     }
 
-    function testConstructorRevertsWhenMinBoldInSPZero() public {
+    function testConstructorRevertsWhenMinBoldInSPLessThan1e18() public {
         ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
             spYieldSplit: 75 * _1pct,
-            minBoldInSP: 0
+            minBoldInSP: 1e18 - 1 // < 1e18
         });
 
-        vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
+        vm.expectRevert(ISystemParams.InvalidMinBoldInSP.selector);
         new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),
