@@ -93,21 +93,6 @@ contract SystemParamsTest is DevTestSetup {
         );
     }
 
-    function testConstructorRevertsWhenMinDebtTooHigh() public {
-        ISystemParams.DebtParams memory debtParams = ISystemParams.DebtParams({minDebt: 10001e18});
-
-        vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
-        new SystemParams(false, 
-            debtParams,
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            _getValidInterestParams(),
-            _getValidRedemptionParams(),
-            _getValidPoolParams()
-        );
-    }
-
     // ========== LIQUIDATION VALIDATION TESTS ==========
 
     function testConstructorRevertsWhenSPPenaltyTooLow() public {

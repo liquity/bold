@@ -71,8 +71,8 @@ contract SystemParams is ISystemParams, Initializable {
             _disableInitializers();
         }
 
-        // Validate debt parameters
-        if (_debtParams.minDebt == 0 || _debtParams.minDebt > 10000e18) revert InvalidMinDebt();
+        // minDebt should be choosen depending on the debt currency
+        if (_debtParams.minDebt == 0) revert InvalidMinDebt();
 
         // Validate liquidation parameters
         // Hardcoded validation bounds: MIN_LIQUIDATION_PENALTY_SP = 5%
