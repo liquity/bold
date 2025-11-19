@@ -413,6 +413,9 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         _requireCallerIsLiquidityStrategy();
         _requireNoShutdown();
         
+
+        activePool.mintAggInterest();
+
         _updateTrackingVariables(amountStableOut, amountCollIn);
 
         _swapCollateralForStable(amountCollIn, amountStableOut);

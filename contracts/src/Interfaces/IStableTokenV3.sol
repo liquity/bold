@@ -7,9 +7,29 @@ pragma solidity 0.8.24;
  */
 interface IStableTokenV3 {
     /**
+     * @notice Checks if an address is a minter.
+     * @param account The address to check.
+     * @return bool True if the address is a minter, false otherwise.
+     */
+    function isMinter(address account) external view returns (bool);
+    /**
+     * @notice Checks if an address is a burner.
+     * @param account The address to check.
+     * @return bool True if the address is a burner, false otherwise.
+     */
+    function isBurner(address account) external view returns (bool);
+    /**
+     * @notice Checks if an address is an operator.
+     * @param account The address to check.
+     * @return bool True if the address is an operator, false otherwise.
+     */
+    function isOperator(address account) external view returns (bool);
+
+    /**
      * @notice Initializes a StableTokenV3.
      * @param _name The name of the stable token (English)
      * @param _symbol A short symbol identifying the token (e.g. "cUSD")
+     * @param _initialOwner The address that will be the owner of the contract.
      * @param initialBalanceAddresses Array of addresses with an initial balance.
      * @param initialBalanceValues Array of balance values corresponding to initialBalanceAddresses.
      * @param _minters The addresses that are allowed to mint.
@@ -19,6 +39,7 @@ interface IStableTokenV3 {
     function initialize(
         string calldata _name,
         string calldata _symbol,
+        address _initialOwner,
         address[] calldata initialBalanceAddresses,
         uint256[] calldata initialBalanceValues,
         address[] calldata _minters,
@@ -134,6 +155,13 @@ interface IStableTokenV3 {
     function burn(uint256 value) external returns (bool);
 
     /**
+     * @notice Burns StableToken from the balance of an account.
+     * @param account The account to burn from.
+     * @param value The amount of StableToken to burn.
+     */
+    function burn(address account, uint256 value) external returns (bool);
+
+    /**
      * From openzeppelin's IERC20PermitUpgradeable.sol
      * @dev Sets `value` as the allowance of `spender` over ``owner``'s tokens,
      * given ``owner``'s signed approval.
@@ -209,4 +237,11 @@ interface IStableTokenV3 {
         uint256 gatewayFee,
         uint256 baseTxFee
     ) external;
+
+    /**
+     * @notice Credit gas fees to multiple addresses.
+     * @param recipients The addresses to credit the fees to.
+     * @param amounts The amounts of fees to credit to each address.
+     */
+    function creditGasFees(address[] calldata recipients, uint256[] calldata amounts) external;
 }
