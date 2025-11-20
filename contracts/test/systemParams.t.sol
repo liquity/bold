@@ -595,7 +595,27 @@ contract SystemParamsTest is DevTestSetup {
     function testConstructorRevertsWhenMinBoldInSPLessThan1e18() public {
         ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
             spYieldSplit: 75 * _1pct,
-            minBoldInSP: 1e18 - 1 // < 1e18
+            minBoldInSP: 1e18 - 1, // < 1e18
+            minBoldAfterRebalance: 1_000e18
+        });
+
+        vm.expectRevert(ISystemParams.InvalidMinBoldInSP.selector);
+        new SystemParams(false, 
+            _getValidDebtParams(),
+            _getValidLiquidationParams(),
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            poolParams
+        );
+    }
+
+    function testConstructorRevertsWhenMinBoldAfterRebalanceLessThanMinBoldInSP() public {
+        ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
+            spYieldSplit: 75 * _1pct,
+            minBoldInSP: 1e18,
+            minBoldAfterRebalance: 1e18 - 1 // < 1e18
         });
 
         vm.expectRevert(ISystemParams.InvalidMinBoldInSP.selector);
