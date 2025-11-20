@@ -47,7 +47,7 @@ export const LoadingCard: FC<LoadingCardProps> = ({
         cardtransform: "scale3d(1, 1, 1)",
         containerHeight: height,
         cardHeight: height,
-        cardBackground: token("colors.position"),
+        cardBackground: "#212121",
         cardColor: token("colors.white"),
       })),
     config: {
@@ -74,6 +74,7 @@ export const LoadingCard: FC<LoadingCardProps> = ({
           overflow: "hidden",
           width: "100%",
           padding: "16px 16px 0",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
           borderRadius: 8,
           userSelect: "none",
         })}

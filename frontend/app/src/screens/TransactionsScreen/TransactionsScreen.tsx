@@ -122,13 +122,34 @@ export function TransactionsScreen() {
     .exhaustive();
 
   return (
-    <Screen
-      back={!showBackLink || !flow.request.backLink ? null : {
-        href: flow.request.backLink[0],
-        label: "Back",
-      }}
-      heading={fd.Summary && <fd.Summary {...flow} />}
-    >
+    <>
+      <div
+        className={`loan-heading-background ${css({
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "500px",
+          zIndex: -1,
+          backgroundPosition: "center top",
+          _after: {
+            content: '""',
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "250px",
+            background: "linear-gradient(to bottom, transparent, black)",
+          },
+        })}`}
+      />
+      <Screen
+        back={!showBackLink || !flow.request.backLink ? null : {
+          href: flow.request.backLink[0],
+          label: "Back",
+        }}
+        heading={fd.Summary && <fd.Summary {...flow} />}
+      >
       <header
         className={css({
           display: "flex",
@@ -159,6 +180,10 @@ export function TransactionsScreen() {
           display: "flex",
           flexDirection: "column",
           gap: 32,
+          padding: 24,
+          background: "#212121",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: 8,
         })}
       >
         <fd.Details {...flow} />
@@ -281,6 +306,7 @@ export function TransactionsScreen() {
         ))}
       </div>
     </Screen>
+    </>
   );
 }
 
