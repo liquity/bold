@@ -159,6 +159,14 @@ export function BorrowScreen() {
 
   const isBelowMinDebt = debt.parsed && !debt.isEmpty && dn.lt(debt.parsed, MIN_DEBT);
 
+  // Check if position would violate CCR (Critical Collateral Ratio)
+  const wouldViolateCcr = collateralRatios.data && loanDetails && deposit.parsed && debt.parsed && collPrice.data && dn.gt(debt.parsed, 0)
+    ? dn.lt(
+        dn.div(dn.mul(deposit.parsed, collPrice.data), debt.parsed),
+        collateralRatios.data.ccr
+      )
+    : false;
+
   const allowSubmit = account.isConnected
     && deposit.parsed
     && dn.gt(deposit.parsed, 0)
@@ -166,7 +174,8 @@ export function BorrowScreen() {
     && dn.gt(debt.parsed, 0)
     && interestRate
     && dn.gt(interestRate, 0)
-    && !isBelowMinDebt;
+    && !isBelowMinDebt
+    && !wouldViolateCcr;
 
   return (
     <>
@@ -343,10 +352,25 @@ export function BorrowScreen() {
                 label={WHITE_LABEL_CONFIG.tokens.mainToken.symbol}
               />
             }
-            drawer={debt.isFocused || !isBelowMinDebt ? null : {
-              mode: "error",
-              message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}.`,
-            }}
+            drawer={debt.isFocused
+              ? null
+              : wouldViolateCcr
+              ? {
+                  mode: "error",
+                  message: collateralRatios.data
+                    ? `Collateral ratio too low. With this collateral, you can borrow at most ${fmtnum(
+                        deposit.parsed && collPrice.data
+                          ? dn.div(dn.mul(deposit.parsed, collPrice.data), collateralRatios.data.ccr)
+                          : 0
+                      )} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} (${fmtnum(dn.mul(collateralRatios.data.ccr, 100), 0)}% minimum ratio required).`
+                    : "Collateral ratio too low.",
+                }
+              : isBelowMinDebt
+              ? {
+                  mode: "error",
+                  message: `You must borrow at least ${fmtnum(MIN_DEBT, 2)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}.`,
+                }
+              : null}
             label={content.borrowScreen.borrowField.label}
             placeholder="0.00"
             secondary={{

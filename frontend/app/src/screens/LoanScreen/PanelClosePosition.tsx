@@ -83,7 +83,17 @@ export function PanelClosePosition({
   })();
 
   if (!collPriceUsd.data || !boldPriceUsd.data || !amountToRepay || !collToReclaim) {
-    return null;
+    return (
+      <div
+        className={css({
+          padding: 24,
+          textAlign: "center",
+          color: "content",
+        })}
+      >
+        Loading close position data...
+      </div>
+    );
   }
 
   // happens in case the loan got redeemed
@@ -248,8 +258,8 @@ export function PanelClosePosition({
           textAlign: "center",
           textWrap: "balance",
           color: "content",
-          background: "infoSurface",
-          border: "1px solid token(colors.infoSurfaceBorder)",
+          background: "#212121",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
           borderRadius: 8,
         })}
       >

@@ -67,8 +67,19 @@ html, body {
   background-repeat: no-repeat;
 }
 
+.loan-heading-background {
+  background-image: url('/heading-borrow.png');
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+}
+
 @media (max-width: 1023px) {
   .borrow-heading-background {
+    background-image: url('/heading-earn-mobile.png');
+  }
+  
+  .loan-heading-background {
     background-image: url('/heading-earn-mobile.png');
   }
 }

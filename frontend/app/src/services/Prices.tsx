@@ -44,6 +44,11 @@ export function usePrice(symbol: string | null): UseQueryResult<Dnum | null> {
         return null;
       }
 
+      // MUST stablecoin = $1
+      if (symbol === "MUST") {
+        return dnum18(BigInt(10 ** 18)); // $1.00
+      }
+
       // Collateral token = PriceFeed price
       if (isCollateralSymbol(symbol)) {
         return fetchCollateralPrice(symbol, config);

@@ -211,7 +211,7 @@ function Tab({
 }) {
   const tabColor = compact
     ? (selected ? token("colors.accentContent") : token("colors.interactive"))
-    : (selected ? token("colors.selected") : token("colors.interactive"));
+    : (selected ? token("colors.content") : token("colors.content"));
   return (
     <button
       aria-controls={panelId}

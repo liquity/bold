@@ -169,35 +169,56 @@ export function LoanScreen() {
   });
 
   return (
-    <Screen
-      ready={loadingState === "success"}
-      back={{
-        href: "/",
-        label: "Back",
-      }}
-      heading={
-        <LoanScreenCard
-          collateral={collToken}
-          collPriceUsd={collPriceUsd.data ?? null}
-          loadingState={loadingState}
-          loan={loan.data ?? null}
-          mode={loanMode}
-          onLeverageModeChange={() => {
-            storedState.setState(({ loanModes }) => {
-              return {
-                loanModes: {
-                  ...loanModes,
-                  [paramPrefixedId]: loanMode === "borrow" ? "multiply" : "borrow",
-                },
-              };
-            });
-          }}
-          onRetry={() => {
-            loan.refetch();
-          }}
-          troveId={troveId}
-        />
-      }
+    <>
+      <div
+        className={`loan-heading-background ${css({
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "500px",
+          zIndex: -1,
+          backgroundPosition: "center top",
+          _after: {
+            content: '""',
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: "250px",
+            background: "linear-gradient(to bottom, transparent, black)",
+          },
+        })}`}
+      />
+      <Screen
+        ready={loadingState === "success"}
+        back={{
+          href: "/",
+          label: "Back",
+        }}
+        heading={
+          <LoanScreenCard
+            collateral={collToken}
+            collPriceUsd={collPriceUsd.data ?? null}
+            loadingState={loadingState}
+            loan={loan.data ?? null}
+            mode={loanMode}
+            onLeverageModeChange={() => {
+              storedState.setState(({ loanModes }) => {
+                return {
+                  loanModes: {
+                    ...loanModes,
+                    [paramPrefixedId]: loanMode === "borrow" ? "multiply" : "borrow",
+                  },
+                };
+              });
+            }}
+            onRetry={() => {
+              loan.refetch();
+            }}
+            troveId={troveId}
+          />
+        }
     >
       {contentTransition((style, contentStatus) =>
         contentStatus === "success" && (
@@ -357,6 +378,7 @@ export function LoanScreen() {
         )
       )}
     </Screen>
+    </>
   );
 }
 
