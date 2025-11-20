@@ -119,5 +119,4 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     function liquidityStrategy() external view returns (address);
 
     function P_PRECISION() external view returns (uint256);
-    function MIN_BOLD_AFTER_REBALANCE() external view returns (uint256);
 }

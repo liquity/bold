@@ -266,8 +266,11 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
             redemptionBeta: 1
         });
 
-        ISystemParams.StabilityPoolParams memory poolParams =
-            ISystemParams.StabilityPoolParams({spYieldSplit: 75 * (1e18 / 100), minBoldInSP: 1e18});
+        ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
+            spYieldSplit: 75 * (1e18 / 100),
+            minBoldInSP: 1e18,
+            minBoldAfterRebalance: 1_000e18
+        });
 
         r.systemParamsImpl = address(
             new SystemParams{salt: SALT}(
