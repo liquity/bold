@@ -94,21 +94,6 @@ contract SystemParamsTest is DevTestSetup {
         );
     }
 
-    function testConstructorRevertsWhenMinDebtTooHigh() public {
-        ISystemParams.DebtParams memory debtParams = ISystemParams.DebtParams({minDebt: 10001e18});
-
-        vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
-        new SystemParams(false, 
-            debtParams,
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            _getValidInterestParams(),
-            _getValidRedemptionParams(),
-            _getValidPoolParams()
-        );
-    }
-
     // ========== LIQUIDATION VALIDATION TESTS ==========
 
     function testConstructorRevertsWhenSPPenaltyTooLow() public {
@@ -159,6 +144,87 @@ contract SystemParamsTest is DevTestSetup {
             liquidationParams,
             _getValidGasCompParams(),
             _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
+
+    function testConstructorRevertsWhenRedistPenaltyExceedsMCRBuffer() public {
+        // MCR = 110%, so buffer = 10%. Set redistribution penalty to 11% (exceeds buffer)
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16,
+            liquidationPenaltyRedistribution: 11 * _1pct // 11% > (110% - 100%)
+        });
+
+        vm.expectRevert(ISystemParams.RedistPenaltyTooHigh.selector);
+        new SystemParams(false, 
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+    }
+
+    function testConstructorAllowsRedistPenaltyEqualToMCRBuffer() public {
+        // MCR = 110%, so buffer = 10%. Set redistribution penalty to exactly 10%
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16,
+            liquidationPenaltyRedistribution: 10 * _1pct // 10% == (110% - 100%)
+        });
+
+        // Should not revert
+        SystemParams params = new SystemParams(false, 
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            _getValidCollateralParams(),
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+
+        assertEq(params.LIQUIDATION_PENALTY_REDISTRIBUTION(), 10 * _1pct);
+    }
+
+    function testConstructorRevertsWhenRedistPenaltyExceedsMCRBufferWithDifferentMCR() public {
+        // MCR = 115%, so buffer = 15%. Set redistribution penalty to 16% (exceeds buffer)
+        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
+            ccr: 150 * _1pct,
+            scr: 115 * _1pct,
+            mcr: 115 * _1pct,
+            bcr: 10 * _1pct
+        });
+
+        ISystemParams.LiquidationParams memory liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16,
+            liquidationPenaltyRedistribution: 16 * _1pct // 16% > (115% - 100%)
+        });
+
+        vm.expectRevert(ISystemParams.RedistPenaltyTooHigh.selector);
+        new SystemParams(false, 
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            collateralParams,
+            _getValidInterestParams(),
+            _getValidRedemptionParams(),
+            _getValidPoolParams()
+        );
+
+        liquidationParams = ISystemParams.LiquidationParams({
+            liquidationPenaltySP: 5e16,
+            liquidationPenaltyRedistribution: 15 * _1pct // 15%
+        });
+
+        new SystemParams(false, 
+            _getValidDebtParams(),
+            liquidationParams,
+            _getValidGasCompParams(),
+            collateralParams,
             _getValidInterestParams(),
             _getValidRedemptionParams(),
             _getValidPoolParams()
@@ -526,33 +592,13 @@ contract SystemParamsTest is DevTestSetup {
         );
     }
 
-    function testConstructorRevertsWhenMinBoldInSPZero() public {
+    function testConstructorRevertsWhenMinBoldInSPLessThan1e18() public {
         ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
             spYieldSplit: 75 * _1pct,
-            minBoldInSP: 0,
-            minBoldAfterRebalance: 1_000e18
+            minBoldInSP: 1e18 - 1 // < 1e18
         });
 
-        vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
-        new SystemParams(false, 
-            _getValidDebtParams(),
-            _getValidLiquidationParams(),
-            _getValidGasCompParams(),
-            _getValidCollateralParams(),
-            _getValidInterestParams(),
-            _getValidRedemptionParams(),
-            poolParams
-        );
-    }
-
-    function testConstructorRevertsWhenMinBoldAfterRebalanceIsLessThanMinBoldInSP() public {
-        ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
-            spYieldSplit: 75 * _1pct,
-            minBoldInSP: 1e18,
-            minBoldAfterRebalance: 1e18 - 1 // < 1e18
-        });
-
-        vm.expectRevert(ISystemParams.InvalidMinDebt.selector);
+        vm.expectRevert(ISystemParams.InvalidMinBoldInSP.selector);
         new SystemParams(false, 
             _getValidDebtParams(),
             _getValidLiquidationParams(),

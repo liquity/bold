@@ -191,6 +191,33 @@ contract FXPriceFeedTest is Test {
         );
     }
 
+    function test_setRateFeedID_whenCalledByNonOwner_shouldRevert() initialized public {
+        address notOwner = makeAddr("notOwner");
+        address newRateFeedID = makeAddr("newRateFeedID");
+
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        fxPriceFeed.setRateFeedID(newRateFeedID);
+        vm.stopPrank();
+    }
+
+    function test_setRateFeedID_whenNewAddressIsZero_shouldRevert() initialized public {
+        vm.prank(owner);
+        vm.expectRevert(FXPriceFeed.ZeroAddress.selector);
+        fxPriceFeed.setRateFeedID(address(0));
+        vm.stopPrank();
+    }
+
+    function test_setRateFeedID_whenCalledByOwner_shouldSucceed() initialized public {
+        address newRateFeedID = makeAddr("newRateFeedID");
+
+        vm.prank(owner);
+        fxPriceFeed.setRateFeedID(newRateFeedID);
+        vm.stopPrank();
+
+        assertEq(fxPriceFeed.rateFeedID(), newRateFeedID);
+    }
+
     function test_setWatchdogAddress_whenCalledByNonOwner_shouldRevert() initialized public {
         address notOwner = makeAddr("notOwner");
         address newWatchdog = makeAddr("newWatchdog");

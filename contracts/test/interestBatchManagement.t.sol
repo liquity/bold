@@ -1513,4 +1513,109 @@ contract InterestBatchManagementTest is DevTestSetup {
         borrowerOperations.adjustTrove(troveId, 1 ether, true, 100e18, false, 1000e18);
         vm.stopPrank();
     }
+
+    function testRemoveFromBatchDeletesInterestBatchManagerOf() public {
+        uint256 troveId = openTroveAndJoinBatchManager();
+        
+        // Verify trove is in batch
+        address batchManagerAddress = borrowerOperations.interestBatchManagerOf(troveId);
+        assertEq(batchManagerAddress, B, "Trove should be in batch B");
+        
+        // Remove from batch
+        vm.startPrank(A);
+        borrowerOperations.removeFromBatch(troveId, 4e16, 0, 0, 1e24);
+        vm.stopPrank();
+        
+        // Verify mapping is deleted
+        assertEq(borrowerOperations.interestBatchManagerOf(troveId), address(0), "interestBatchManagerOf should be deleted");
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(troveId);
+        assertEq(tmBatchManagerAddress, address(0), "TM batch manager should be address(0)");
+    }
+
+    function testKickFromBatchDeletesInterestBatchManagerOf() public {
+        registerBatchManager({
+            _account: B,
+            _minInterestRate: uint128(MIN_ANNUAL_INTEREST_RATE),
+            _maxInterestRate: uint128(MAX_ANNUAL_INTEREST_RATE),
+            _currentInterestRate: uint128(MAX_ANNUAL_INTEREST_RATE),
+            _fee: MAX_ANNUAL_BATCH_MANAGEMENT_FEE,
+            _minInterestRateChangePeriod: MIN_INTEREST_RATE_CHANGE_PERIOD
+        });
+
+        // Placeholder Trove so that the batch isn't wiped out fully when we redeem the target Trove later
+        uint256 placeholderTrove = openTroveAndJoinBatchManager({
+            _troveOwner: C,
+            _coll: 1_000_000 ether,
+            _debt: MIN_DEBT,
+            _batchAddress: B,
+            _annualInterestRate: 0 // ignored
+        });
+
+        // Open the target Trove, the one we will make irredeemable
+        uint256 targetTrove = openTroveAndJoinBatchManager({
+            _troveOwner: A,
+            _coll: 1_000_000 ether,
+            _debt: MIN_DEBT,
+            _batchAddress: B,
+            _annualInterestRate: 0 // ignored
+        });
+
+        // Verify trove is in batch
+        address batchManagerAddress = borrowerOperations.interestBatchManagerOf(targetTrove);
+        assertEq(batchManagerAddress, B, "Trove should be in batch B");
+
+        // Another Trove to provide funds and keep the average interest rate high,
+        // which speeds up our manipulation of the batch:shares ratio
+        openTroveHelper({
+            _account: A,
+            _index: 1,
+            _coll: 1_000_000 ether,
+            _boldAmount: 10_000_000 ether,
+            _annualInterestRate: MAX_ANNUAL_INTEREST_RATE
+        });
+
+        // Increase the batch:shares ratio past the limit
+        for (uint256 i = 1;; ++i) {
+            skip(MIN_INTEREST_RATE_CHANGE_PERIOD);
+            setBatchInterestRate(B, MAX_ANNUAL_INTEREST_RATE - i % 2);
+
+            (uint256 debt,,,,,,, uint256 shares) = troveManager.getBatch(B);
+            if (shares * MAX_BATCH_SHARES_RATIO < debt) break;
+
+            // Keep debt low to minimize interest and maintain healthy TCR
+            repayBold(A, targetTrove, troveManager.getTroveEntireDebt(targetTrove) - MIN_DEBT);
+            repayBold(A, placeholderTrove, troveManager.getTroveEntireDebt(placeholderTrove) - MIN_DEBT);
+        }
+
+        // Make a zombie out of the target Trove
+        skip(MIN_INTEREST_RATE_CHANGE_PERIOD);
+        setBatchInterestRate(B, MIN_ANNUAL_INTEREST_RATE);
+        redeem(A, troveManager.getTroveEntireDebt(targetTrove));
+        assertTrue(troveManager.checkTroveIsZombie(targetTrove), "not a zombie");
+
+        // Open a Trove to be liquidated
+        (uint256 liquidatedTrove,) = openTroveWithExactICRAndDebt({
+            _account: D,
+            _index: 0,
+            _ICR: MCR,
+            _debt: 100_000 ether,
+            _interestRate: MIN_ANNUAL_INTEREST_RATE
+        });
+
+        // Liquidate by redistribution
+        priceFeed.setPrice(priceFeed.getPrice() * 99 / 100);
+        liquidate(A, liquidatedTrove);
+
+        // Verify trove is still in batch before kicking
+        batchManagerAddress = borrowerOperations.interestBatchManagerOf(targetTrove);
+        assertEq(batchManagerAddress, B, "Trove should still be in batch B before kick");
+
+        // Kick the trove from batch
+        borrowerOperations.kickFromBatch(targetTrove, 0, 0);
+
+        // Verify mapping is deleted after kick
+        assertEq(borrowerOperations.interestBatchManagerOf(targetTrove), address(0), "interestBatchManagerOf should be deleted after kick");
+        (,,,,,,,, address tmBatchManagerAddress,) = troveManager.Troves(targetTrove);
+        assertEq(tmBatchManagerAddress, address(0), "TM batch manager should be address(0) after kick");
+    }
 }

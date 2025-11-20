@@ -24,7 +24,6 @@ import {ERC20Faucet} from "test/TestContracts/ERC20Faucet.sol";
 import {WETHTester} from "test/TestContracts/WETHTester.sol";
 import "src/AddressesRegistry.sol";
 import "src/ActivePool.sol";
-import "src/BoldToken.sol";
 import "src/BorrowerOperations.sol";
 import "src/TroveManager.sol";
 import "src/TroveNFT.sol";
@@ -37,8 +36,7 @@ import "src/SortedTroves.sol";
 import "src/StabilityPool.sol";
 
 import "src/CollateralRegistry.sol";
-import "src/tokens/StableTokenV3.sol";
-import "src/Interfaces/IStableTokenV3.sol";
+import "test/TestContracts/StableTokenV3.sol";
 import "test/TestContracts/MockFXPriceFeed.sol";
 import "test/TestContracts/MetadataDeployment.sol";
 import "test/Utils/Logging.sol";
@@ -363,6 +361,7 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         r.stableToken.initialize(
             CONFIG.stableTokenName,
             CONFIG.stableTokenSymbol,
+            deployer,
             new address[](0),
             new uint256[](0),
             minters,

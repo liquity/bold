@@ -61,7 +61,7 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
     * Removed stable tokens will be factored out from LPs' positions.
     * Added collateral will be added to LPs collateral gain which can be later claimed by the depositor.
     */
-    function swapCollateralForStable(uint256 amountStableOut, uint256 amountCollIn) external;
+    function swapCollateralForStable(uint256 amountCollIn, uint256 amountStableOut) external;
 
     /*
      * Initial checks:

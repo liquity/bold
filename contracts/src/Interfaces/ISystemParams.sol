@@ -59,6 +59,7 @@ interface ISystemParams {
     error SPPenaltyTooLow();
     error SPPenaltyGtRedist();
     error RedistPenaltyTooHigh();
+    error InvalidMinBoldInSP();
 
     /* ========== DEBT PARAMETERS ========== */
 

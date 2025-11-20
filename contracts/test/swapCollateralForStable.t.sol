@@ -48,6 +48,20 @@ contract SwapCollateralForStableTest is DevTestSetup {
         stabilityPool.swapCollateralForStable(1e18, 1e18);
     }
 
+    function testSwapCollateralForStableRevertsWhenSystemIsShutDown() public {
+        vm.mockCall(
+            address(troveManager),
+            abi.encodeWithSelector(ITroveManager.shutdownTime.selector),
+            abi.encode(block.timestamp - 1)
+        );
+
+
+        vm.expectRevert("StabilityPool: System is shut down");
+        vm.startPrank(liquidityStrategy);
+        stabilityPool.swapCollateralForStable(1e18, 1e18);
+        vm.stopPrank();
+    }
+
     function testSwapCollateralForStableRevertsWithInsufficientStableLiquidity() public {
         uint256 stableAmount = 1000e18;
         
@@ -460,5 +474,56 @@ contract SwapCollateralForStableTest is DevTestSetup {
         // Should still work and leave at least MIN_BOLD_IN_SP
         assertEq(stabilityPool.getTotalBoldDeposits(), 1_000e18);
         assertEq(stabilityPool.getCollBalance(), collSwapAmount);
+    }
+
+    function testSwapCollateralForStableWithYieldGains() public {
+        uint256 stableAmount = 2000e18;
+        uint256 yieldAmount = 100e18;
+        uint256 collSwapAmount = 1e18;
+        uint256 stableSwapAmount = 1000e18;
+
+        // Setup initial deposits
+        deal(address(boldToken), A, stableAmount);
+        makeSPDepositAndClaim(A, stableAmount);
+
+        deal(address(boldToken), B, stableAmount);
+        makeSPDepositAndClaim(B, stableAmount);
+
+        // Generate some yield gains
+        vm.prank(address(activePool));
+        stabilityPool.triggerBoldRewards(yieldAmount);
+
+        uint256 initialYieldGainA = stabilityPool.getDepositorYieldGain(A);
+        assertEq(initialYieldGainA, yieldAmount / 2);
+
+        uint256 initialYieldGainB = stabilityPool.getDepositorYieldGain(B);
+        assertEq(initialYieldGainB, yieldAmount / 2);
+
+        // Perform rebalance
+        vm.prank(liquidityStrategy);
+        stabilityPool.swapCollateralForStable(collSwapAmount, stableSwapAmount);
+
+        // Verify yield gain is preserved after swap
+        uint256 finalYieldGainA = stabilityPool.getDepositorYieldGain(A);
+        assertEq(finalYieldGainA, initialYieldGainA);
+
+        uint256 finalYieldGainB = stabilityPool.getDepositorYieldGain(B);
+        assertEq(finalYieldGainB, initialYieldGainB);
+
+        // Verify depositors can still claim yield gains
+        uint256 preBoldBalance = boldToken.balanceOf(A);
+        vm.prank(A);
+        stabilityPool.withdrawFromSP(0, true);
+        
+        uint256 postBoldBalance = boldToken.balanceOf(A);
+        assertEq(postBoldBalance - preBoldBalance, initialYieldGainA);
+
+
+        preBoldBalance = boldToken.balanceOf(B);
+        vm.prank(B);
+        stabilityPool.withdrawFromSP(0, true);
+        postBoldBalance = boldToken.balanceOf(B);
+        
+        assertEq(postBoldBalance - preBoldBalance, initialYieldGainB);
     }
 }

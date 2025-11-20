@@ -407,6 +407,10 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     */
     function swapCollateralForStable(uint256 amountCollIn, uint256 amountStableOut) external {
         _requireCallerIsLiquidityStrategy();
+        _requireNoShutdown();
+        
+
+        activePool.mintAggInterest();
 
         _updateTrackingVariables(amountStableOut, amountCollIn);
 
@@ -662,5 +666,9 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
 
     function _requireNonZeroAmount(uint256 _amount) internal pure {
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
+    }
+
+    function _requireNoShutdown() internal view {
+        require(troveManager.shutdownTime() == 0, "StabilityPool: System is shut down");
     }
 }
