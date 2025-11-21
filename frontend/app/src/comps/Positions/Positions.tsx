@@ -74,7 +74,7 @@ export function Positions({
       .map((loan) => getPrefixedTroveId(loan.branchId, loan.troveId));
 
     addPrefixedTroveIdsToStoredState(storedState, prefixedTroveIds);
-  }, []);
+  }, [loans.data]);
 
   const collSurplusMap = useMemo(() => {
     if (!collSurplusQueries.data) return null;
