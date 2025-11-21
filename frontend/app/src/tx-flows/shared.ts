@@ -1,5 +1,6 @@
 import type { Config as WagmiConfig } from "wagmi";
 
+import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { waitForSafeTransaction } from "@/src/safe-utils";
 import { getIndexedBlockNumber } from "@/src/subgraph";
 import { sleep } from "@/src/utils";
@@ -47,8 +48,8 @@ export async function verifyTransaction(
       })
   );
 
-  // wait for the block number to be indexed by the subgraph
-  if (waitForSubgraphIndexation) {
+  // wait for the block number to be indexed by the subgraph, unless the subgraph is down
+  if (waitForSubgraphIndexation && !subgraphIndicator.hasError()) {
     await verifyBlockNumberIndexation(tx.blockNumber);
   }
 
