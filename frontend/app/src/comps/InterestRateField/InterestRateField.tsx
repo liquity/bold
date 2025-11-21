@@ -30,6 +30,7 @@ import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "
 import { match } from "ts-pattern";
 import { DelegateModal } from "./DelegateModal";
 import { MiniChart } from "./MiniChart";
+import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 
 const DELEGATE_MODES = [
   "manual",
@@ -499,7 +500,7 @@ function ManualInterestRateSlider({
     ];
   }, [interestChartData.data, rateToSliderPosition]);
 
-  const transition = useAppear(value !== -1);
+  const transition = useAppear(value !== -1 && !subgraphIndicator.hasError());
 
   const breakpoint = useBreakpointName();
 
