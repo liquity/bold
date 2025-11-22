@@ -75,7 +75,7 @@ export function BorrowScreen() {
     throw new Error(`No max collateral deposit configured for ${collSymbol}`);
   }
 
-  const deposit = useInputFieldValue(fmtnum, {
+  const deposit = useInputFieldValue((value) => fmtnum(value, getTokenDisplayDecimals(collateral.symbol)), {
     validate: (parsed, value): { parsed: Dnum | null; value: string } => {
       const isAboveMax = parsed && dn.gt(parsed, maxCollDeposit);
       return {
