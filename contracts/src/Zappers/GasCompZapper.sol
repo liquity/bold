@@ -39,6 +39,9 @@ contract GasCompZapper is BaseZapper {
         // Pull coll
         collToken.safeTransferFrom(msg.sender, address(this), _params.collAmount);
 
+        // Approve coll to BorrowerOperations
+        collToken.approve(address(borrowerOperations), _params.collAmount);
+
         uint256 troveId;
         // Include sender in index
         uint256 index = _getTroveIndex(_params.ownerIndex);
@@ -98,6 +101,9 @@ contract GasCompZapper is BaseZapper {
         // Pull coll
         collToken.safeTransferFrom(msg.sender, address(this), _amount);
 
+        // Approve coll to BorrowerOperations
+        collToken.approve(address(borrowerOperations), _amount);
+
         borrowerOperationsCached.addColl(_troveId, _amount);
     }
 
@@ -105,6 +111,9 @@ contract GasCompZapper is BaseZapper {
         address owner = troveNFT.ownerOf(_troveId);
         address receiver = _requireSenderIsOwnerOrRemoveManagerAndGetReceiver(_troveId, owner);
         _requireZapperIsReceiver(_troveId);
+
+        // Approve coll to BorrowerOperations
+        collToken.approve(address(borrowerOperations), _amount);
 
         borrowerOperations.withdrawColl(_troveId, _amount);
 
@@ -192,6 +201,8 @@ contract GasCompZapper is BaseZapper {
         // Pull coll
         if (_isCollIncrease) {
             collToken.safeTransferFrom(msg.sender, address(this), _collChange);
+            // Approve coll to BorrowerOperations
+            collToken.approve(address(borrowerOperations), _collChange);
         }
 
         // Pull Bold

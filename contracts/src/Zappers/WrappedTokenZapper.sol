@@ -66,6 +66,9 @@ contract WrappedTokenZapper is BaseZapper {
         
         uint256 wrappedCollAmount = convertUnderlyingToWrapped(_params.collAmount);
 
+        // Approve coll to BorrowerOperations
+        wrappedToken.approve(address(borrowerOperations), wrappedCollAmount);
+
         uint256 troveId;
         // Include sender in index
         uint256 index = _getTroveIndex(_params.ownerIndex);
@@ -133,6 +136,9 @@ contract WrappedTokenZapper is BaseZapper {
         wrappedToken.depositFor(address(this), _amount);
 
         uint256 wrappedCollAmount = convertUnderlyingToWrapped(_amount);
+
+        // Approve coll to BorrowerOperations
+        wrappedToken.approve(address(borrowerOperations), wrappedCollAmount);
 
         borrowerOperations.addColl(_troveId, wrappedCollAmount);
     }
@@ -241,6 +247,9 @@ contract WrappedTokenZapper is BaseZapper {
             // Wrap underlying token to wrapped token
             _underlyingToken.approve(address(wrappedToken), _collChange);
             wrappedToken.depositFor(address(this), _collChange);
+
+            // Approve coll to BorrowerOperations
+            wrappedToken.approve(address(borrowerOperations), wrappedCollChange);
         }
 
         // Pull Bold

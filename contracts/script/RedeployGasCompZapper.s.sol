@@ -17,7 +17,7 @@ contract RedeployGasCompZapper is Script {
     using Strings for uint256;
     using StringEquality for string;
 
-    address constant COLLATERAL_REGISTRY = 0x04870Daa52b05981974732bA0aC464BD2067De12;
+    address constant COLLATERAL_REGISTRY = 0xF39bdCfB55374dDb0948a28af00b6474A566Ac22;
 
     struct DeploymentInfo {
         uint256 branchIndex;
