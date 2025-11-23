@@ -167,15 +167,16 @@ export type BoldYield = {
   protocol: string;
 };
 
-// export function useBoldYieldSources() {
-//   const { data, isLoading, error } = useLiquityStats();
+export function useBoldYieldSources() {
+  const { data, isLoading, error } = useLiquityStats();
 
-//   return {
-//     data: data?.boldYield as BoldYield[],
-//     isLoading,
-//     error,
-//   };
-// }
+  return {
+    // data: data?.boldYield as BoldYield[],
+    data: (data as any).boldYield as BoldYield[],
+    isLoading,
+    error,
+  };
+}
 
 type EarnPool = {
   apr: Dnum | null;
