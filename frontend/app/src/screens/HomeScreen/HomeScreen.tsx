@@ -104,8 +104,8 @@ export function HomeScreen() {
           zIndex: 5,
         })}
       >
-        <Positions 
-          address={account.address ?? null} 
+        <Positions
+          address={account.address ?? null}
           title={(mode) => mode === "positions" ? content.home.myPositionsTitle : null}
         />
       </div>

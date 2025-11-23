@@ -541,7 +541,7 @@ function StepDisc({
         "--base-border-color": "token(colors.border)",
 
         "--active-color": "token(colors.strongSurfaceContent)",
-        "--active-background": "token(colors.strongSurface)",
+        "--active-background": "rgba(255, 255, 255, 0.1)",
         "--active-border-color": "var(--active-color)",
 
         "--error-color": "token(colors.negativeContent)",
@@ -569,7 +569,7 @@ function StepDisc({
             ...match(mode)
               .with("upcoming", () => ({
                 color: "var(--base-color)",
-                background: "var(--base-background)",
+                background: "transparent",
                 borderColor: "var(--base-border-color)",
               }))
               .with("error", () => ({
