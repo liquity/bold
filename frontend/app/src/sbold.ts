@@ -183,8 +183,8 @@ export function useSboldStats() {
           const branch = getBranch(index);
           const statsBranch = liquityStats.data?.branch[branch.symbol];
           return {
-            apr: statsBranch?.spApyAvg1d ?? null,
-            apr7d: statsBranch?.spApyAvg7d ?? null,
+            apr: statsBranch?.sp_apy_avg_1d ? dnum18(parseInt(statsBranch.sp_apy_avg_1d)) : null,
+            apr7d: statsBranch?.sp_apy_avg_7d ? dnum18(parseInt(statsBranch.sp_apy_avg_7d)) : null,
             weight: dn.div(dn.from(weight, 18), 100_00), // from basis points
           };
         });
