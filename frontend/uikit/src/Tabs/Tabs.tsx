@@ -210,8 +210,8 @@ function Tab({
   tabItem: TabItem;
 }) {
   const tabColor = compact
-    ? (selected ? token("colors.accentContent") : token("colors.interactive"))
-    : (selected ? token("colors.content") : token("colors.content"));
+    ? (selected ? "white" : "rgba(255, 255, 255, 0.8)")
+    : (selected ? "white" : "rgba(255, 255, 255, 0.8)");
   return (
     <button
       aria-controls={panelId}
@@ -258,12 +258,13 @@ function Tab({
         className={css({
           overflow: "hidden",
           textOverflow: "ellipsis",
+          color: "inherit!",
         })}
         style={{
           translate: compact ? "0 -0.5px" : "0 0",
         }}
       >
-        <span>{label}</span>
+        {label}
       </div>
     </button>
   );

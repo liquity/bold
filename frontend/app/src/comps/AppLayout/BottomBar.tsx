@@ -124,7 +124,7 @@ export function BottomBar() {
               <Image src={XIcon} alt="X" width={16} height={16} style={{ filter: 'brightness(0) invert(1)' }} />
             </Link>
             <Link
-              href="https://docs.must.finance/"
+              href="https://must.finance/"
               target="_blank"
               rel="noopener noreferrer"
               className={css({
@@ -156,7 +156,7 @@ export function BottomBar() {
                 <polyline points="15 3 21 3 21 9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <line x1="10" y1="14" x2="21" y2="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span className={css({ hideBelow: "medium" })}>Docs</span>
+              <span className={css({ hideBelow: "medium" })}>Website</span>
             </Link>
           </div>
           <div
@@ -193,7 +193,7 @@ export function BottomBar() {
               })}
             >
               <Link
-                href="https://docs.must.finance/privacy-policy"
+                href="https://must.finance/terms"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={css({
@@ -211,6 +211,27 @@ export function BottomBar() {
                 })}
               >
                 Privacy Policy
+              </Link>
+              <span>•</span>
+              <Link
+                href="https://must.finance/terms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={css({
+                  color: "rgba(255, 255, 255, 0.7)",
+                  _hover: { 
+                    color: "white",
+                    textDecoration: "underline",
+                  },
+                  _focusVisible: {
+                    outline: "2px solid rgba(255, 255, 255, 0.5)",
+                  },
+                  _active: {
+                    translate: "0 1px",
+                  },
+                })}
+              >
+                Terms of Use
               </Link>
               <span>© Saga Stablecoin 2025</span>
             </div>

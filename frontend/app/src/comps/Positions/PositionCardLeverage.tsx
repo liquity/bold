@@ -80,7 +80,7 @@ export function PositionCardLeverage({
       main={{
         value: (
           <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-            {deposit ? fmtnum(deposit, 2) : "−"}
+            {deposit ? fmtnum(deposit, 5) : "−"}
             <TokenIcon size={24} symbol={token.symbol} />
           </HFlex>
         ),

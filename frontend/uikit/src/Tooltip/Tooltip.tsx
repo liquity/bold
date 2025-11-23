@@ -177,7 +177,8 @@ function TooltipPopup({
       className={css({
         padding: "12px 12px 16px",
         background: "background",
-        border: "1px solid token(colors.border)",
+        color: "content",
+        border: "1px solid rgba(255, 255, 255, 0.2)",
         borderRadius: 4,
         boxShadow: `
           0 15px 35px rgba(60, 66, 87, 0.12),

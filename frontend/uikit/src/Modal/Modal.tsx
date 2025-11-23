@@ -140,6 +140,7 @@ export function Modal({
                       padding: 24,
                       outline: "2px solid accent",
                       background: "background",
+                      color: "content",
                       borderRadius: {
                         base: 0,
                         medium: 8,

@@ -88,7 +88,7 @@ export function PanelUpdateDeposit({
             drawer={insufficientBalance
               ? {
                 mode: "error",
-                message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}.`,
+                message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0, 5)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}.`,
               }
               : withdrawAboveDeposit
               ? {
@@ -153,7 +153,7 @@ export function PanelUpdateDeposit({
                 ? boldBalance.data && (
                   <TextButton
                     label={dn.gt(boldBalance.data, 0)
-                      ? `Max ${fmtnum(boldBalance.data, 2)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`
+                      ? `Max ${fmtnum(boldBalance.data, 5)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`
                       : null}
                     onClick={() => {
                       if (boldBalance.data) {
@@ -164,7 +164,7 @@ export function PanelUpdateDeposit({
                 )
                 : position?.deposit && dn.gt(position.deposit, 0) && (
                   <TextButton
-                    label={`Max ${fmtnum(position.deposit, 2)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
+                    label={`Max ${fmtnum(position.deposit, 5)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
                     onClick={() => {
                       setValue(dn.toString(position.deposit));
                       setClaimRewards(true);

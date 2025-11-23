@@ -183,7 +183,7 @@ function Balance({
           gap: 4,
         })}
       >
-        {fmtnum(balance.data, 2) || "−"}
+        {fmtnum(balance.data, 5) || "−"}
         <TokenIcon symbol={tokenSymbol} size="mini" />
       </div>
       {tapButton && (

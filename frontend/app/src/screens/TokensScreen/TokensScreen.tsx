@@ -248,7 +248,7 @@ function TokenCard({
                 title={balance.data ? `${fmtnum(balance.data, "full")} ${tokenSymbol}` : "0"}
                 className={css({ fontSize: 18, fontWeight: 600 })}
               >
-                {balance.data ? fmtnum(balance.data, 2) : "0"}
+                {balance.data ? fmtnum(balance.data, 5) : "0"}
               </div>
               {balance.data && price && balance.data[0] > 0n && (
                 <div className={css({ fontSize: 13, color: "positionContentAlt", marginTop: 2 })}>
@@ -557,7 +557,7 @@ function SendTokenModal({
                   },
                 })}
               >
-                Max: {balance ? fmtnum(balance, 2) : "0"}
+                Max: {balance ? fmtnum(balance, 5) : "0"}
               </button>
             </HFlex>
             <input

@@ -69,8 +69,7 @@ export function ActionCard({
       <a.div
         className={css({
           background: "rgba(0, 0, 0, 0.95)",
-          backdropFilter: "blur(20px)",
-          border: "1px solid token(colors.fieldBorder)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
           borderRadius: 16,
           padding: "28px 24px",
           color: "white",
