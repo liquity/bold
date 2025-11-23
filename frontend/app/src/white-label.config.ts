@@ -103,7 +103,7 @@ export const WHITE_LABEL_CONFIG = {
             metadataNFT: "0x72fa15d8f87c81acc03304899867f90363f42164",
             priceFeed: "0x080612f74f3c823b0c7f1649136ab8a096d2576f",
             gasPool: "0xcb65e9498d9d2eed03a83c49d918b3084795ac81",
-            leverageZapper: "0xe68eeeb004ee98b57a50af279950cf4d98fb0aa6",
+            leverageZapper: "0x31a2552006b47a77c10b18fde3ac35ba2b1c09a0",
           },
           1: {
             collToken: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
@@ -163,7 +163,7 @@ export const WHITE_LABEL_CONFIG = {
             metadataNFT: "0x42673e96954006f7b71989aea5d0566274d616c8",
             priceFeed: "0x5329e02140e328397b65428be28776e025d08edc",
             gasPool: "0x837ac0a8a523c416bf43843205372c45966bb66f",
-            leverageZapper: "0xb8825197bcb1cdf5937a9a2dc1c568dc8870d824",
+            leverageZapper: "0x2e0128f8d160455d1bd90dd7160251f2c4aeec2d",
           },
           1: {
             collToken: "0x8464f6ecae1ea58ec816c13f964030eab8ec123a", // Ethereum yETH address from spreadsheet
@@ -224,7 +224,7 @@ export const WHITE_LABEL_CONFIG = {
             metadataNFT: "0x4e3c8df114b556b3df982c9c49ce9a585d6e36ab",
             priceFeed: "0x2737550dd3d1ae3f3b0461947d413497f1712240",
             gasPool: "0xcb32df9b0bf6cba75893c6fdcff0856eb10007cb",
-            leverageZapper: "0x072fc09f063a95b0efae9054203df7a1cc9ed1a6",
+            leverageZapper: "0xcc17aaa404d76358b84a414735f0d7eda59f6ad8",
           },
           1: {
             collToken: "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
@@ -404,7 +404,7 @@ export const WHITE_LABEL_CONFIG = {
             metadataNFT: "0xebafae7620de2385ccc81111a73f59a0eccf818a",
             priceFeed: "0x8e7f799324d888aa94aaa0179370294a496f31fc",
             gasPool: "0x49381b9b5f219beace8287c5d3a57aa07eac8ca2",
-            leverageZapper: "0x5c5f1b16f6363460ae95834880f4149071020b30",
+            leverageZapper: "0x1b2443df05c8aca7301825d4a1fbcd0d7ac09b14",
           },
           1: {
             collToken: "0x8f08b70456eb22f6109f57b8fafe862ed28e6040", // Ethereum KING address from spreadsheet
@@ -464,7 +464,7 @@ export const WHITE_LABEL_CONFIG = {
             metadataNFT: "0x6182f3bfb6e1b0e326c72f87f95c65aa4fe8ecbf",
             priceFeed: "0x224b80725fff00fbf06336a93ba94de7b5f88022",
             gasPool: "0x36f12d021b6334848c466e77b14bac7dc1f51aa3",
-            leverageZapper: "0x9544a342bbd0970e89315ab0b202c7ede6f7e0db",
+            leverageZapper: "0xb9cecd6801cfcabe477a9968d0dd389b42a957af",
           },
           1: {
             collToken: "0x8464f6ecae1ea58ec816c13f964030eab8ec123a", // Ethereum yETH address from spreadsheet
