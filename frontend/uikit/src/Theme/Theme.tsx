@@ -98,9 +98,9 @@ export const colors = {
   "white": "#FFFFFF",
 
   // Brand colors
-  "brand:blue": "#405AE5",
+  "brand:blue": "#1A1A1A",
   "brand:lightBlue": "#6D8AED",
-  "brand:darkBlue": "#121B44",
+  "brand:darkBlue": "#0A0A0A",
   "brand:green": "#81C784",
   "brand:golden": "#F5D93A",
   "brand:cyan": "#95CBF3",

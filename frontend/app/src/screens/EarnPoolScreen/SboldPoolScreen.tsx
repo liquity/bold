@@ -297,7 +297,7 @@ export function PanelUpdate({
                   ? (
                     dn.gt(boldBalance, 0) && (
                       <TextButton
-                        label={`Max ${fmtnum(boldBalance, 2)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
+                        label={`Max ${fmtnum(boldBalance, 5)} ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
                         onClick={() => {
                           setValue(dn.toString(boldBalance));
                         }}
@@ -306,7 +306,7 @@ export function PanelUpdate({
                   )
                   : sboldPosition?.sbold && dn.gt(sboldPosition.sbold, 0) && (
                     <TextButton
-                      label={`Max ${fmtnum(sboldPosition.sbold, 2)} ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}`}
+                      label={`Max ${fmtnum(sboldPosition.sbold, 5)} ${WHITE_LABEL_CONFIG.tokens.otherTokens.sbold.symbol}`}
                       onClick={() => {
                         setValue(dn.toString(sboldPosition.sbold));
                       }}
