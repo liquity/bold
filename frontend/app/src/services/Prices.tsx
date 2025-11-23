@@ -57,7 +57,7 @@ export function usePrice(symbol: string | null): UseQueryResult<Dnum | null> {
       // Stats API prices (CoinGecko)
       const priceFromStats = statsPrices?.[symbol] ?? null;
       if (priceFromStats !== null) {
-        return priceFromStats;
+        return priceFromStats as Dnum;
       }
 
       throw new Error(`The price for ${symbol} could not be found.`);
