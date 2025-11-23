@@ -1,3 +1,5 @@
+"use client";
+
 import { useIndicator } from "@/src/services/IndicatorManager";
 import { useEffect, useRef } from "react";
 import { useBlockNumber } from "wagmi";

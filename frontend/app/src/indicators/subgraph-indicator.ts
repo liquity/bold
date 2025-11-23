@@ -1,3 +1,5 @@
+"use client";
+
 import { useIndicator } from "@/src/services/IndicatorManager";
 import { useEffect } from "react";
 

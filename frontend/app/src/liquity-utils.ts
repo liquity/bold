@@ -167,15 +167,15 @@ export type BoldYield = {
   protocol: string;
 };
 
-export function useBoldYieldSources() {
-  const { data, isLoading, error } = useLiquityStats();
+// export function useBoldYieldSources() {
+//   const { data, isLoading, error } = useLiquityStats();
 
-  return {
-    data: data?.boldYield as BoldYield[],
-    isLoading,
-    error,
-  };
-}
+//   return {
+//     data: data?.boldYield as BoldYield[],
+//     isLoading,
+//     error,
+//   };
+// }
 
 type EarnPool = {
   apr: Dnum | null;
@@ -190,7 +190,7 @@ export function useEarnPool(branchId: BranchId | null) {
   const wagmiConfig = useWagmiConfig();
   const stats = useLiquityStats();
   const collateral = getCollToken(branchId);
-  const { spApyAvg1d = null, spApyAvg7d = null } = (
+  const { sp_apy_avg_1d = null, sp_apy_avg_7d = null } = (
     collateral && stats.data?.branch[collateral?.symbol]
   ) ?? {};
 
@@ -198,8 +198,8 @@ export function useEarnPool(branchId: BranchId | null) {
     queryKey: [
       "earnPool",
       branchId,
-      jsonStringifyWithDnum(spApyAvg1d),
-      jsonStringifyWithDnum(spApyAvg7d),
+      jsonStringifyWithDnum(sp_apy_avg_1d),
+      jsonStringifyWithDnum(sp_apy_avg_7d),
     ],
     queryFn: async () => {
       if (branchId === null) {
@@ -210,8 +210,8 @@ export function useEarnPool(branchId: BranchId | null) {
         functionName: "getTotalBoldDeposits",
       });
       return {
-        apr: spApyAvg1d,
-        apr7d: spApyAvg7d,
+        apr: sp_apy_avg_1d ? dnum18(parseInt(sp_apy_avg_1d)) : null,
+        apr7d: sp_apy_avg_7d ? dnum18(parseInt(sp_apy_avg_7d)) : null,
         collateral,
         totalDeposited: dnum18(totalBoldDeposits),
       };
@@ -615,6 +615,27 @@ const BoldYieldItem = v.object({
   protocol: v.string(),
 });
 
+export const StatsV2Schema = v.pipe(
+  v.object({
+    branch: v.record(
+      v.string(), // key e.g. "WETH", "rETH", ...
+      v.object({
+        branch_id: v.string(),
+        branch_name: v.string(),
+        sp_deposits: v.string(),
+        sp_apy: v.string(),
+        apy_avg: v.string(),
+        sp_apy_avg_1d: v.string(),
+        sp_apy_avg_7d: v.string(),
+      })
+    ),
+    prices: v.record(
+      v.string(),
+      v.unknown()
+    ),
+  })
+)
+
 export const StatsSchema = v.pipe(
   v.object({
     total_bold_supply: v.string(),
@@ -766,8 +787,10 @@ export function useLiquityStats() {
       if (!LIQUITY_STATS_URL) {
         throw new Error("LIQUITY_STATS_URL is not defined");
       }
-      const response = await fetch(LIQUITY_STATS_URL);
-      return v.parse(StatsSchema, await response.json());
+      // const response = await fetch(LIQUITY_STATS_URL);
+      // return v.parse(StatsSchema, await response.json());
+      const response = await fetch("/api/stats");
+      return v.parse(StatsV2Schema, await response.json());
     },
     enabled: Boolean(LIQUITY_STATS_URL),
   });
