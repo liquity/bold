@@ -139,13 +139,14 @@ export function HomeScreen() {
             <h2
               className={`font-audiowide ${css({
                 color: "white",
-                fontSize: { base: "18px", medium: "20px" },
+                fontSize: { base: "14px", medium: "16px" },
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 marginBottom: 8,
+                lineHeight: "1.2",
               })}`}
             >
-              Borrow {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} against multiple collaterals
+              Borrow {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} Against Multiple Collaterals
             </h2>
             <p
               className={css({
@@ -172,9 +173,9 @@ export function HomeScreen() {
                     textAlign: "left",
                     padding: "4px 8px",
                     color: "rgba(255, 255, 255, 0.5)",
-                    fontSize: "12px",
+                    fontSize: "10px",
                     fontWeight: 500,
-                    width: "100px",
+                    width: "150px",
                   })}
                 >
                   Collateral
@@ -184,19 +185,21 @@ export function HomeScreen() {
                     textAlign: "center",
                     padding: "4px 8px",
                     color: "rgba(255, 255, 255, 0.5)",
-                    fontSize: "12px",
+                    fontSize: "10px",
                     fontWeight: 500,
+                    width: "65px",
                   })}
                 >
-                  AVG Rate, P.A.
+                  Avg Rate PA
                 </th>
                 <th
                   className={css({
                     textAlign: "center",
                     padding: "4px 8px",
                     color: "rgba(255, 255, 255, 0.5)",
-                    fontSize: "12px",
+                    fontSize: "10px",
                     fontWeight: 500,
+                    width: "55px",
                   })}
                 >
                   Max LTV
@@ -206,9 +209,9 @@ export function HomeScreen() {
                     textAlign: "center",
                     padding: "4px 8px",
                     color: "rgba(255, 255, 255, 0.5)",
-                    fontSize: "12px",
+                    fontSize: "10px",
                     fontWeight: 500,
-                    width: "140px",
+                    width: "105px",
                     display: { base: "none", medium: "table-cell" },
                   })}
                 >
@@ -218,6 +221,7 @@ export function HomeScreen() {
                   className={css({
                     padding: "4px 8px",
                     textAlign: "right",
+                    width: "85px",
                   })}
                 ></th>
               </tr>
@@ -254,13 +258,14 @@ export function HomeScreen() {
             <h2
               className={`font-audiowide ${css({
                 color: "white",
-                fontSize: { base: "18px", medium: "20px" },
+                fontSize: { base: "13px", medium: "15px" },
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
                 marginBottom: 8,
+                lineHeight: "1.2",
               })}`}
             >
-              Earn rewards with {WHITE_LABEL_CONFIG.tokens.mainToken.name}
+              Earn Rewards With {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} Stablecoin
             </h2>
             <p
               className={css({
@@ -287,9 +292,9 @@ export function HomeScreen() {
                     textAlign: "left",
                     padding: "4px 8px",
                     color: "rgba(255, 255, 255, 0.5)",
-                    fontSize: "12px",
+                    fontSize: "10px",
                     fontWeight: 500,
-                    width: "100px",
+                    width: "140px",
                   })}
                 >
                   Pool
@@ -299,8 +304,9 @@ export function HomeScreen() {
                     textAlign: "center",
                     padding: "4px 8px",
                     color: "rgba(255, 255, 255, 0.5)",
-                    fontSize: "12px",
+                    fontSize: "10px",
                     fontWeight: 500,
+                    width: "60px",
                   })}
                 >
                   APR
@@ -310,8 +316,9 @@ export function HomeScreen() {
                     textAlign: "center",
                     padding: "4px 8px",
                     color: "rgba(255, 255, 255, 0.5)",
-                    fontSize: "12px",
+                    fontSize: "10px",
                     fontWeight: 500,
+                    width: "60px",
                   })}
                 >
                   7d APR
@@ -321,8 +328,9 @@ export function HomeScreen() {
                     textAlign: "center",
                     padding: "4px 8px",
                     color: "rgba(255, 255, 255, 0.5)",
-                    fontSize: "12px",
+                    fontSize: "10px",
                     fontWeight: 500,
+                    width: "70px",
                   })}
                 >
                   Pool Size
@@ -331,6 +339,7 @@ export function HomeScreen() {
                   className={css({
                     padding: "4px 8px",
                     textAlign: "right",
+                    width: "100px",
                   })}
                 ></th>
               </tr>
@@ -400,16 +409,16 @@ function BorrowRow({
           <div className={css({ flexShrink: 0 })}>
             <TokenIcon symbol={symbol} size="small" />
           </div>
-          <span 
+          <span
             className="font-audiowide"
-            style={{ 
-              color: "white", 
-              fontWeight: 500, 
-              fontSize: "14px",
+            style={{
+              color: "white",
+              fontWeight: 500,
+              fontSize: "11px",
+              display: "block",
+              whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              display: "block",
             }}
           >
             {collateral?.name}
@@ -421,6 +430,7 @@ function BorrowRow({
         className={css({
           padding: "6px 8px",
           textAlign: "center",
+          fontSize: "11px",
         })}
       >
         <Amount
@@ -434,6 +444,7 @@ function BorrowRow({
         className={css({
           padding: "6px 8px",
           textAlign: "center",
+          fontSize: "11px",
         })}
       >
         <Amount
@@ -446,6 +457,7 @@ function BorrowRow({
         className={css({
           padding: "6px 8px",
           textAlign: "center",
+          fontSize: "10px",
           display: { base: "none", medium: "table-cell" },
         })}
       >
@@ -573,17 +585,16 @@ function EarnRow({
           <div className={css({ flexShrink: 0 })}>
             <TokenIcon symbol={symbol} size="small" />
           </div>
-          <span 
+          <span
             className="font-audiowide"
-            style={{ 
-              color: "white", 
-              fontWeight: 500, 
-              fontSize: "14px",
-              maxWidth: "120px",
+            style={{
+              color: "white",
+              fontWeight: 500,
+              fontSize: "11px",
+              display: "block",
+              whiteSpace: "nowrap",
               overflow: "hidden",
               textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              display: "block",
             }}
           >
             {token?.name}
@@ -595,6 +606,7 @@ function EarnRow({
         className={css({
           padding: "6px 8px",
           textAlign: "center",
+          fontSize: "11px",
         })}
       >
         <Amount
@@ -608,6 +620,7 @@ function EarnRow({
         className={css({
           padding: "6px 8px",
           textAlign: "center",
+          fontSize: "11px",
         })}
       >
         <Amount
@@ -621,6 +634,7 @@ function EarnRow({
         className={css({
           padding: "6px 8px",
           textAlign: "center",
+          fontSize: "11px",
         })}
       >
         <Amount
