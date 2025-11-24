@@ -60,10 +60,10 @@ export default {
       "Liquidation price",
       <>The collateral price at which a loan can be liquidated.</>,
     ],
-    ethPrice: [
-      "ETH Price",
+    collPrice: (collName: string) => [
+      `${collName} Price`,
       <>
-        The current price of ETH, as reported by the oracle. The ETH price is used to calculate the Loan-To-Value (LTV)
+        The current price of {collName}, as reported by the oracle. The {collName} price is used to calculate the Loan-To-Value (LTV)
         ratio of a loan.
       </>,
     ],
