@@ -4,13 +4,14 @@ import type { FlowStepStatus } from "@/src/services/TransactionFlow";
 import type { ComponentProps, ReactNode } from "react";
 
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
+import { PurpleButton } from "@/src/comps/FlowButton/FlowButton";
 import { LinkButton } from "@/src/comps/LinkButton/LinkButton";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { css } from "@/styled-system/css";
-import { Button, IconCross } from "@liquity2/uikit";
+import { IconCross } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import { Fragment, useEffect, useState } from "react";
 import { match, P } from "ts-pattern";
@@ -255,21 +256,13 @@ export function TransactionsScreen() {
               />
             )
             : (
-              <Button
+              <PurpleButton
                 className={`flow-commit-step flow-commit-step-${step.id}`}
                 disabled={step.status === "awaiting-verify" || step.status === "awaiting-commit"}
-                label={(
-                  step.status === "error" ? "Retry: " : ""
-                ) + (
-                  flowParams
-                    ? stepDeclaration.name(flowParams)
-                    : ""
-                )}
-                mode="primary"
                 onClick={commit}
-                size="large"
-                wide
-              />
+              >
+                {(step.status === "error" ? "Retry: " : "") + (flowParams ? stepDeclaration.name(flowParams) : "")}
+              </PurpleButton>
             )}
           <div
             className={css({
