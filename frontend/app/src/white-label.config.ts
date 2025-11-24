@@ -539,23 +539,23 @@ export const WHITE_LABEL_CONFIG = {
     brandName: "MUSTANG",              // Core brand name for protocol/version references
     appTagline: "Multi-chain stablecoin protocol",
     appDescription: "Borrow MUST against multiple collateral types",
-    appUrl: "https://saga.finance/",
+    appUrl: "https://must.finance/",
     
     // External links
     links: {
       docs: {
-        base: "https://docs.saga.finance/",
-        redemptions: "https://docs.saga.finance/redemptions",
-        liquidations: "https://docs.saga.finance/liquidations",
-        delegation: "https://docs.saga.finance/delegation",
-        interestRates: "https://docs.saga.finance/interest-rates",
-        earn: "https://docs.saga.finance/earn",
+        base: "https://docs.must.finance/",
+        redemptions: "https://docs.must.finance/docs/user-docs/redemption-and-delegation#what-are-redemptions",
+        liquidations: "https://docs.must.finance/docs/user-docs/borrowing-and-liquidations",
+        delegation: "https://docs.must.finance/docs/user-docs/redemption-and-delegation#what-is-delegation",
+        interestRates: "https://docs.must.finance/docs/user-docs/borrowing-and-liquidations",
+        earn: "https://docs.must.finance/docs/user-docs/must-and-earn",
       },
       dune: "https://dune.com/saga/saga-protocol",
       discord: "https://discord.gg/saga",
       github: "https://github.com/NeriteOrg/saga",
       x: "https://x.com/sagaprotocol",
-      friendlyForkProgram: "https://saga.finance/ecosystem",
+      friendlyForkProgram: "https://docs.must.finance/docs/technical-documentation/friendly-fork-program",
     },
     
     // Feature flags and descriptions
