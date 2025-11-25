@@ -156,7 +156,7 @@ export const CONTRACTS: Contracts = {
       CollToken: { address: branch.COLL_TOKEN, abi: abis.CollToken },
       DefaultPool: { address: branch.DEFAULT_POOL, abi: abis.DefaultPool },
       LeverageLSTZapper: {
-        address: branch.symbol === "STATOM" || branch.symbol === "SAGA" ? zeroAddress : branch.LEVERAGE_ZAPPER,
+        address: branch.LEVERAGE_ZAPPER,
         abi: abis.LeverageLSTZapper,
       },
       LeverageWETHZapper: {
@@ -164,7 +164,7 @@ export const CONTRACTS: Contracts = {
         abi: abis.LeverageWETHZapper,
       },
       LeverageWrappedTokenZapper: {
-        address: branch.symbol === "STATOM" || branch.symbol === "SAGA" ? branch.LEVERAGE_ZAPPER : zeroAddress,
+        address: branch.LEVERAGE_ZAPPER,
         abi: abis.LeverageWrappedTokenZapper,
       },
       PriceFeed: { address: branch.PRICE_FEED, abi: abis.PriceFeed },
