@@ -12,7 +12,6 @@ import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/Transact
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
 import { vDnum, vPositionLoanCommited } from "@/src/valibot-utils";
-import { ADDRESS_ZERO } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { match, P } from "ts-pattern";
 import * as v from "valibot";
@@ -192,7 +191,9 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
         }
 
         const branch = getBranch(ctx.request.loan.branchId);
-        const Zapper = branch.contracts.LeverageLSTZapper;
+        const Zapper = branch.decimals < 18
+          ? branch.contracts.LeverageWrappedTokenZapper
+          : branch.contracts.LeverageLSTZapper;
 
         return ctx.writeContract({
           ...branch.contracts.CollToken,
@@ -388,12 +389,14 @@ export const updateLeveragePosition: FlowDeclaration<UpdateLeveragePositionReque
 
     // only check approval for non-ETH collaterals
     if (branch.symbol !== "ETH" && depositChange && dn.gt(depositChange, 0)) {
-      const { LeverageLSTZapper, CollToken } = branch.contracts;
+      const Zapper = branch.decimals < 18
+        ? branch.contracts.LeverageWrappedTokenZapper
+        : branch.contracts.LeverageLSTZapper;
       const allowance = dnum18(
         await ctx.readContract({
-          ...CollToken,
+          ...branch.contracts.CollToken,
           functionName: "allowance",
-          args: [ctx.account ?? ADDRESS_ZERO, LeverageLSTZapper.address],
+          args: [ctx.account, Zapper.address],
         }),
       );
 
