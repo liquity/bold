@@ -267,7 +267,7 @@ export const WHITE_LABEL_CONFIG = {
         branchId: 3,
         decimals: 6,
         collateralRatio: 1.5, // 150% MCR (higher volatility)
-        maxDeposit: "1000000", // $1M initial debt limit
+        maxDeposit: "1000000000", // $1B debt limit - effectively unlimited
         maxLTV: 0.6667, // 66.67% max LTV
         deployments: {
           5464: { // Saga EVM
@@ -327,7 +327,7 @@ export const WHITE_LABEL_CONFIG = {
         branchId: 4,
         decimals: 6,
         collateralRatio: 1.25, // 125% MCR
-        maxDeposit: "1000000", // $1M initial debt limit
+        maxDeposit: "1000000000", // $1B debt limit - effectively unlimited
         maxLTV: 0.8, // 80.00% max LTV
         deployments: {
           5464: { // Saga EVM - will be deployed in upcoming PR

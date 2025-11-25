@@ -81,8 +81,8 @@ export const MAX_DEBT_LIMITS: Record<CollateralSymbol, dn.Dnum> = {
   TBTC: dn.from(100_000_000n, 18),
   YETH: dn.from(5_000_000n, 18),
   YUSD: dn.from(5_000_000n, 18),
-  SAGA: dn.from(1_000_000n, 18),
-  STATOM: dn.from(1_000_000n, 18),
+  SAGA: dn.from(1_000_000_000n, 18), // 1 billion - effectively unlimited
+  STATOM: dn.from(1_000_000_000n, 18), // 1 billion - effectively unlimited
   KING: dn.from(500_000n, 18),
 };
 
