@@ -54,6 +54,7 @@ contract SystemParams is ISystemParams, Initializable {
 
     uint256 public immutable SP_YIELD_SPLIT;
     uint256 public immutable MIN_BOLD_IN_SP;
+    uint256 public immutable MIN_BOLD_AFTER_REBALANCE;
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -71,8 +72,8 @@ contract SystemParams is ISystemParams, Initializable {
             _disableInitializers();
         }
 
-        // Validate debt parameters
-        if (_debtParams.minDebt == 0 || _debtParams.minDebt > 10000e18) revert InvalidMinDebt();
+        // minDebt should be choosen depending on the debt currency
+        if (_debtParams.minDebt == 0) revert InvalidMinDebt();
 
         // Validate liquidation parameters
         // Hardcoded validation bounds: MIN_LIQUIDATION_PENALTY_SP = 5%
@@ -81,9 +82,6 @@ contract SystemParams is ISystemParams, Initializable {
         }
         if (_liquidationParams.liquidationPenaltySP > _liquidationParams.liquidationPenaltyRedistribution) {
             revert SPPenaltyGtRedist();
-        }
-        if (_liquidationParams.liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION) {
-            revert RedistPenaltyTooHigh();
         }
 
         // Validate gas compensation parameters
@@ -103,6 +101,14 @@ contract SystemParams is ISystemParams, Initializable {
         if (_collateralParams.bcr < 5 * _1pct || _collateralParams.bcr >= 50 * _1pct) revert InvalidBCR();
         if (_collateralParams.scr <= _100pct || _collateralParams.scr >= 2 * _100pct) revert InvalidSCR();
 
+        // The redistribution penalty must not exceed the overcollateralization buffer (MCR - 100%)
+        if (
+            _liquidationParams.liquidationPenaltyRedistribution > MAX_LIQUIDATION_PENALTY_REDISTRIBUTION
+                || _liquidationParams.liquidationPenaltyRedistribution > _collateralParams.mcr - _100pct
+        ) {
+            revert RedistPenaltyTooHigh();
+        }
+
         // Validate interest parameters
         if (_interestParams.minAnnualInterestRate > MAX_ANNUAL_INTEREST_RATE) {
             revert MinInterestRateGtMax();
@@ -114,7 +120,8 @@ contract SystemParams is ISystemParams, Initializable {
 
         // Validate stability pool parameters
         if (_poolParams.spYieldSplit > _100pct) revert InvalidFeeValue();
-        if (_poolParams.minBoldInSP == 0) revert InvalidMinDebt();
+        if (_poolParams.minBoldAfterRebalance < _poolParams.minBoldInSP) revert InvalidMinBoldInSP();
+        if (_poolParams.minBoldInSP < 1e18) revert InvalidMinBoldInSP();
 
         // Set debt parameters
         MIN_DEBT = _debtParams.minDebt;
@@ -146,6 +153,7 @@ contract SystemParams is ISystemParams, Initializable {
         // Set stability pool parameters
         SP_YIELD_SPLIT = _poolParams.spYieldSplit;
         MIN_BOLD_IN_SP = _poolParams.minBoldInSP;
+        MIN_BOLD_AFTER_REBALANCE = _poolParams.minBoldAfterRebalance;
     }
 
     /*

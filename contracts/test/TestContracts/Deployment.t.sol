@@ -4,7 +4,7 @@ pragma solidity 0.8.24;
 
 import "src/AddressesRegistry.sol";
 import "src/ActivePool.sol";
-import "src/BoldToken.sol";
+import "./StableTokenV3.sol";
 import "src/BorrowerOperations.sol";
 import "src/CollSurplusPool.sol";
 import "src/DefaultPool.sol";
@@ -128,7 +128,11 @@ contract TestDeployer is MetadataDeployment {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry));
     }
 
-    function getBytecode(bytes memory _creationCode, address _addressesRegistry, address _systemParams) public pure returns (bytes memory) {
+    function getBytecode(bytes memory _creationCode, address _addressesRegistry, address _systemParams)
+        public
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(_creationCode, abi.encode(_addressesRegistry, _systemParams));
     }
 
@@ -136,7 +140,11 @@ contract TestDeployer is MetadataDeployment {
         return abi.encodePacked(_creationCode, abi.encode(_disable));
     }
 
-    function getBytecode(bytes memory _creationCode, bool _disable, address _systemParams) public pure returns (bytes memory) {
+    function getBytecode(bytes memory _creationCode, bool _disable, address _systemParams)
+        public
+        pure
+        returns (bytes memory)
+    {
         return abi.encodePacked(_creationCode, abi.encode(_disable, _systemParams));
     }
 
@@ -226,11 +234,12 @@ contract TestDeployer is MetadataDeployment {
     {
         DeploymentVarsDev memory vars;
         vars.numCollaterals = troveManagerParamsArray.length;
-        
-        // Deploy Bold
-        vars.bytecode = abi.encodePacked(type(BoldToken).creationCode, abi.encode(address(this)));
+
+        // Deploy Bold (StableTokenV3)
+        vars.bytecode = abi.encodePacked(type(StableTokenV3).creationCode, abi.encode(false));
         vars.boldTokenAddress = getAddress(address(this), vars.bytecode, SALT);
-        boldToken = new BoldToken{salt: SALT}(address(this));
+        StableTokenV3 stableTokenV3 = new StableTokenV3{salt: SALT}(false);
+        boldToken = IBoldToken(address(stableTokenV3));
         assert(address(boldToken) == vars.boldTokenAddress);
 
         contractsArray = new LiquityContractsDev[](vars.numCollaterals);
@@ -239,7 +248,7 @@ contract TestDeployer is MetadataDeployment {
         vars.troveManagers = new ITroveManager[](vars.numCollaterals);
 
         ISystemParams[] memory systemParamsArray = new ISystemParams[](vars.numCollaterals);
-        
+
         for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
             systemParamsArray[vars.i] = deploySystemParamsDev(troveManagerParamsArray[vars.i], vars.i);
         }
@@ -264,7 +273,8 @@ contract TestDeployer is MetadataDeployment {
             vars.troveManagers[vars.i] = ITroveManager(troveManagerAddress);
         }
 
-        collateralRegistry = new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, systemParamsArray[0]);
+        collateralRegistry =
+            new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, systemParamsArray[0]);
         hintHelpers = new HintHelpers(collateralRegistry, systemParamsArray[0]);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 
@@ -295,16 +305,33 @@ contract TestDeployer is MetadataDeployment {
             );
         }
 
-        boldToken.setCollateralRegistry(address(collateralRegistry));
+        // Initialize StableTokenV3 with all minters, burners, and operators
+        // This should handle both cases with multiple collaterals and single collateral
+        address[] memory minters = new address[](vars.numCollaterals * 2);
+        address[] memory burners = new address[](vars.numCollaterals * 3 + 1);
+        address[] memory operators = new address[](vars.numCollaterals);
+
+        for (vars.i = 0; vars.i < vars.numCollaterals; vars.i++) {
+            minters[vars.i * 2] = address(contractsArray[vars.i].borrowerOperations);
+            minters[vars.i * 2 + 1] = address(contractsArray[vars.i].activePool);
+
+            burners[vars.i * 3] = address(contractsArray[vars.i].troveManager);
+            burners[vars.i * 3 + 1] = address(contractsArray[vars.i].borrowerOperations);
+            burners[vars.i * 3 + 2] = address(contractsArray[vars.i].stabilityPool);
+
+            operators[vars.i] = address(contractsArray[vars.i].stabilityPool);
+        }
+        burners[vars.numCollaterals * 3] = address(collateralRegistry);
+
+        stableTokenV3.initialize("Bold Token", "BOLD", address(this), new address[](0), new uint256[](0), minters, burners, operators);
     }
 
-    function _deployAddressesRegistryDev(ISystemParams _systemParams)
-        internal
-        returns (IAddressesRegistry, address)
-    {
+    function _deployAddressesRegistryDev(ISystemParams _systemParams) internal returns (IAddressesRegistry, address) {
         IAddressesRegistry addressesRegistry = new AddressesRegistry(address(this));
         address troveManagerAddress = getAddress(
-            address(this), getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry), address(_systemParams)), SALT
+            address(this),
+            getBytecode(type(TroveManagerTester).creationCode, address(addressesRegistry), address(_systemParams)),
+            SALT
         );
 
         return (addressesRegistry, troveManagerAddress);
@@ -329,12 +356,8 @@ contract TestDeployer is MetadataDeployment {
             ethGasCompensation: 0.0375 ether // ETH_GAS_COMPENSATION
         });
 
-        ISystemParams.CollateralParams memory collateralParams = ISystemParams.CollateralParams({
-            ccr: params.CCR,
-            scr: params.SCR,
-            mcr: params.MCR,
-            bcr: params.BCR
-        });
+        ISystemParams.CollateralParams memory collateralParams =
+            ISystemParams.CollateralParams({ccr: params.CCR, scr: params.SCR, mcr: params.MCR, bcr: params.BCR});
 
         ISystemParams.InterestParams memory interestParams = ISystemParams.InterestParams({
             minAnnualInterestRate: DECIMAL_PRECISION / 200 // MIN_ANNUAL_INTEREST_RATE (0.5%)
@@ -349,7 +372,8 @@ contract TestDeployer is MetadataDeployment {
 
         ISystemParams.StabilityPoolParams memory poolParams = ISystemParams.StabilityPoolParams({
             spYieldSplit: 75 * (DECIMAL_PRECISION / 100), // SP_YIELD_SPLIT (75%)
-            minBoldInSP: 1e18 // MIN_BOLD_IN_SP
+            minBoldInSP: 1e18, // MIN_BOLD_IN_SP
+            minBoldAfterRebalance: 1_000e18 // MIN_BOLD_AFTER_REBALANCE
         });
 
         SystemParams systemParams = new SystemParams{salt: uniqueSalt}(
@@ -398,7 +422,11 @@ contract TestDeployer is MetadataDeployment {
         // Pre-calc addresses
         addresses.borrowerOperations = getAddress(
             address(this),
-            getBytecode(type(BorrowerOperationsTester).creationCode, address(contracts.addressesRegistry), address(_systemParams)),
+            getBytecode(
+                type(BorrowerOperationsTester).creationCode,
+                address(contracts.addressesRegistry),
+                address(_systemParams)
+            ),
             SALT
         );
         addresses.troveManager = _troveManagerAddress;
@@ -406,10 +434,15 @@ contract TestDeployer is MetadataDeployment {
             address(this), getBytecode(type(TroveNFT).creationCode, address(contracts.addressesRegistry)), SALT
         );
         bytes32 stabilityPoolSalt = keccak256(abi.encodePacked(address(contracts.addressesRegistry)));
-        addresses.stabilityPool =
-            getAddress(address(this), getBytecode(type(StabilityPool).creationCode, bool(false), address(_systemParams)), stabilityPoolSalt);
+        addresses.stabilityPool = getAddress(
+            address(this),
+            getBytecode(type(StabilityPool).creationCode, bool(false), address(_systemParams)),
+            stabilityPoolSalt
+        );
         addresses.activePool = getAddress(
-            address(this), getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry), address(_systemParams)), SALT
+            address(this),
+            getBytecode(type(ActivePool).creationCode, address(contracts.addressesRegistry), address(_systemParams)),
+            SALT
         );
         addresses.defaultPool = getAddress(
             address(this), getBytecode(type(DefaultPool).creationCode, address(contracts.addressesRegistry)), SALT
@@ -449,7 +482,8 @@ contract TestDeployer is MetadataDeployment {
         });
         contracts.addressesRegistry.setAddresses(addressVars);
 
-        contracts.borrowerOperations = new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry, _systemParams);
+        contracts.borrowerOperations =
+            new BorrowerOperationsTester{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.troveManager = new TroveManagerTester{salt: SALT}(contracts.addressesRegistry, _systemParams);
         contracts.troveNFT = new TroveNFT{salt: SALT}(contracts.addressesRegistry);
         contracts.stabilityPool = new StabilityPool{salt: stabilityPoolSalt}(false, _systemParams);
@@ -471,12 +505,7 @@ contract TestDeployer is MetadataDeployment {
 
         contracts.stabilityPool.initialize(contracts.addressesRegistry);
 
-        // Connect contracts
-        _boldToken.setBranchAddresses(
-            address(contracts.troveManager),
-            address(contracts.stabilityPool),
-            address(contracts.borrowerOperations),
-            address(contracts.activePool)
-        );
+        // Note: StableTokenV3 initialization is done after all branches are deployed
+        // in the deployAndConnectContracts function
     }
 }

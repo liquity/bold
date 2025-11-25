@@ -173,10 +173,6 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     // The number of scale changes after which an untouched deposit stops receiving yield / coll gains
     uint256 public constant SCALE_SPAN = 2;
 
-    // The minimum amount of Bold in the SP after a rebalance
-    // Introduced to avoid higher rate of scale changes
-    uint256 public constant MIN_BOLD_AFTER_REBALANCE = 1_000e18;
-
     // Each time the scale of P shifts by SCALE_FACTOR, the scale is incremented by 1
     uint256 public currentScale;
 
@@ -197,6 +193,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
 
     event TroveManagerAddressChanged(address _newTroveManagerAddress);
     event BoldTokenAddressChanged(address _newBoldTokenAddress);
+    event RebalanceExecuted(uint256 amountCollIn, uint256 amountStableOut);
 
     /**
      * @dev Should be called with disable=true in deployments when it's accessed through a Proxy.
@@ -411,14 +408,20 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
     */
     function swapCollateralForStable(uint256 amountCollIn, uint256 amountStableOut) external {
         _requireCallerIsLiquidityStrategy();
+        _requireNoShutdown();
+        
+
+        activePool.mintAggInterest();
 
         _updateTrackingVariables(amountStableOut, amountCollIn);
 
         _swapCollateralForStable(amountCollIn, amountStableOut);
 
         require(
-            totalBoldDeposits >= MIN_BOLD_AFTER_REBALANCE, "Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE"
+            totalBoldDeposits >= systemParams.MIN_BOLD_AFTER_REBALANCE(),
+            "Total Bold deposits must be >= MIN_BOLD_AFTER_REBALANCE"
         );
+        emit RebalanceExecuted(amountCollIn, amountStableOut);
     }
 
     // --- Liquidation functions ---
@@ -665,5 +668,9 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
 
     function _requireNonZeroAmount(uint256 _amount) internal pure {
         require(_amount > 0, "StabilityPool: Amount must be non-zero");
+    }
+
+    function _requireNoShutdown() internal view {
+        require(troveManager.shutdownTime() == 0, "StabilityPool: System is shut down");
     }
 }

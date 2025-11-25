@@ -36,7 +36,6 @@ contract RebasingBatchShares is DevTestSetup {
 
         // TODO: Open A, Mint 1 extra (forgiven to A)
         _addOneDebtAndEnsureItDoesntMintShares(ATroveId, A);
-        /// @audit MED impact
 
         LatestBatchData memory afterBatch = troveManager.getLatestBatchData(address(B));
 
