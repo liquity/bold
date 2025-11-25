@@ -50,8 +50,8 @@ uint256 constant BCR_ALL = 10 * _1pct;
 uint256 constant WETH_DEBT_LIMIT = 100_000_000e18;
 uint256 constant YETH_DEBT_LIMIT = 5_000_000e18;
 uint256 constant TBTC_DEBT_LIMIT = 100_000_000e18;
-uint256 constant SAGA_DEBT_LIMIT = 1_000_000_000e18; // 1 billion - effectively unlimited
-uint256 constant STATOM_DEBT_LIMIT = 1_000_000_000e18; // 1 billion - effectively unlimited
+uint256 constant SAGA_DEBT_LIMIT = 1_000_000e18;
+uint256 constant STATOM_DEBT_LIMIT = 1_000_000e18;
 uint256 constant KING_DEBT_LIMIT = 500_000e18;
 uint256 constant YUSD_DEBT_LIMIT = 5_000_000e18;
 
