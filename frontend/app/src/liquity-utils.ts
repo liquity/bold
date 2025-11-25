@@ -1272,3 +1272,37 @@ export function useRedemptionRisk(
     enabled: debtPositioning.debtInFront !== null && debtPositioning.totalDebt !== null,
   });
 }
+
+// ============================================
+// All Open Positions Hook
+// ============================================
+
+import {
+  getAllOpenPositions,
+  getLiquidatedPositions,
+  type OpenPosition,
+} from "@/src/subgraph";
+
+export type EnrichedPosition = OpenPosition & {
+  collToken: CollateralToken;
+  collPrice: Dnum | null;
+  ltv: Dnum | null;
+  liquidationPrice: Dnum | null;
+  riskLevel: RiskLevel | null;
+};
+
+export function useAllOpenPositions() {
+  return useQuery({
+    queryKey: ["allOpenPositions"],
+    queryFn: getAllOpenPositions,
+    refetchInterval: 30000, // Refresh every 30 seconds
+  });
+}
+
+export function useLiquidatedPositions() {
+  return useQuery({
+    queryKey: ["liquidatedPositions"],
+    queryFn: getLiquidatedPositions,
+    refetchInterval: 60000, // Refresh every minute
+  });
+}

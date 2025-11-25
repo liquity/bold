@@ -355,3 +355,155 @@ export async function getTotalAllocationHistoryFromSubgraph(initiative: Address)
     vetoOffset: BigInt(allocation.vetoOffset),
   }));
 }
+
+// ============================================
+// All Open Positions Query
+// ============================================
+
+export type OpenPosition = {
+  id: string;
+  borrower: Address;
+  troveId: string;
+  branchId: BranchId;
+  status: TroveStatus;
+  debt: Dnum;
+  deposit: Dnum;
+  interestRate: Dnum;
+  stake: Dnum;
+  createdAt: number;
+  updatedAt: number;
+  mightBeLeveraged: boolean;
+  minCollRatio: Dnum;
+};
+
+export async function getAllOpenPositions(): Promise<OpenPosition[]> {
+  // Use direct fetch since we need a custom query not in codegen
+  const response = await tryFetch(SUBGRAPH_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/graphql-response+json",
+    },
+    body: JSON.stringify({
+      query: `{
+        troves(
+          first: 1000
+          where: { status: active }
+          orderBy: debt
+          orderDirection: desc
+        ) {
+          id
+          borrower
+          troveId
+          status
+          debt
+          deposit
+          interestRate
+          stake
+          createdAt
+          updatedAt
+          mightBeLeveraged
+          collateral {
+            collIndex
+            minCollRatio
+          }
+        }
+      }`,
+    }),
+  });
+
+  if (response === null || !response.ok) {
+    subgraphIndicator.setError("Subgraph error: unable to fetch open positions.");
+    throw new Error("Error while fetching open positions from the subgraph");
+  }
+
+  const result = await response.json();
+
+  if (!result.data?.troves) {
+    console.error(result);
+    subgraphIndicator.setError("Subgraph error: invalid response for open positions.");
+    throw new Error("Invalid response from the subgraph for open positions");
+  }
+
+  subgraphIndicator.clearError();
+
+  return result.data.troves.map((trove: any) => ({
+    id: trove.id,
+    borrower: trove.borrower as Address,
+    troveId: trove.troveId,
+    branchId: trove.collateral.collIndex as BranchId,
+    status: trove.status as TroveStatus,
+    debt: dnum18(trove.debt),
+    deposit: dnum18(trove.deposit),
+    interestRate: dnum18(trove.interestRate),
+    stake: dnum18(trove.stake),
+    createdAt: Number(trove.createdAt) * 1000,
+    updatedAt: Number(trove.updatedAt) * 1000,
+    mightBeLeveraged: trove.mightBeLeveraged,
+    minCollRatio: dnum18(trove.collateral.minCollRatio),
+  }));
+}
+
+export async function getLiquidatedPositions(): Promise<OpenPosition[]> {
+  const response = await tryFetch(SUBGRAPH_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/graphql-response+json",
+    },
+    body: JSON.stringify({
+      query: `{
+        troves(
+          first: 100
+          where: { status: liquidated }
+          orderBy: closedAt
+          orderDirection: desc
+        ) {
+          id
+          borrower
+          previousOwner
+          troveId
+          status
+          debt
+          deposit
+          interestRate
+          stake
+          createdAt
+          updatedAt
+          closedAt
+          mightBeLeveraged
+          collateral {
+            collIndex
+            minCollRatio
+          }
+        }
+      }`,
+    }),
+  });
+
+  if (response === null || !response.ok) {
+    return [];
+  }
+
+  const result = await response.json();
+
+  if (!result.data?.troves) {
+    return [];
+  }
+
+  return result.data.troves.map((trove: any) => ({
+    id: trove.id,
+    borrower: (trove.previousOwner || trove.borrower) as Address,
+    troveId: trove.troveId,
+    branchId: trove.collateral.collIndex as BranchId,
+    status: trove.status as TroveStatus,
+    debt: dnum18(trove.debt),
+    deposit: dnum18(trove.deposit),
+    interestRate: dnum18(trove.interestRate),
+    stake: dnum18(trove.stake),
+    createdAt: Number(trove.createdAt) * 1000,
+    updatedAt: Number(trove.updatedAt) * 1000,
+    mightBeLeveraged: trove.mightBeLeveraged,
+    minCollRatio: dnum18(trove.collateral.minCollRatio),
+  }));
+}
