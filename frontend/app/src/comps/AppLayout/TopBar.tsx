@@ -23,6 +23,7 @@ export function TopBar() {
     ...(headerConfig.navigation.showBorrow ? [[headerConfig.navigation.items.borrow, "/borrow", IconBorrow] as MenuItem] : []),
     ...(headerConfig.navigation.showEarn ? [[headerConfig.navigation.items.earn, "/earn", IconEarn] as MenuItem] : []),
     // ...(headerConfig.navigation.showStake ? [[headerConfig.navigation.items.stake, "/stake", IconStake] as MenuItem] : []),
+    ["Positions", "/positions", IconBorrow],
     ["Tokens", "/tokens", IconAccount],
   ];
 
