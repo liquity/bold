@@ -81,7 +81,8 @@ export const WHITE_LABEL_CONFIG = {
       {
         symbol: "WETH" as const,
         name: "Wrapped Ether",
-        icon: "eth",
+        ticker: "WETH",
+        icon: "weth",
         branchId: 0,
         decimals: 18,
         collateralRatio: 1.1, // 110% MCR
@@ -142,6 +143,7 @@ export const WHITE_LABEL_CONFIG = {
       {
         symbol: "YETH" as const,
         name: "YieldFi yETH",
+        ticker: "yETH",
         icon: "yeth",
         branchId: 1,
         decimals: 18,
@@ -203,6 +205,7 @@ export const WHITE_LABEL_CONFIG = {
       {
         symbol: "TBTC" as const,
         name: "tBTC",
+        ticker: "tBTC",
         icon: "tbtc",
         branchId: 2,
         decimals: 18,
@@ -263,6 +266,7 @@ export const WHITE_LABEL_CONFIG = {
       {
         symbol: "SAGA" as const,
         name: "SAGA",
+        ticker: "SAGA",
         icon: "saga",
         branchId: 3,
         decimals: 6,
@@ -323,6 +327,7 @@ export const WHITE_LABEL_CONFIG = {
       {
         symbol: "STATOM" as const,
         name: "Stride Staked Atom",
+        ticker: "stATOM",
         icon: "statom",
         branchId: 4,
         decimals: 6,
@@ -383,6 +388,7 @@ export const WHITE_LABEL_CONFIG = {
       {
         symbol: "KING" as const,
         name: "King Protocol",
+        ticker: "KING",
         icon: "king",
         branchId: 5,
         decimals: 18,
@@ -443,6 +449,7 @@ export const WHITE_LABEL_CONFIG = {
       {
         symbol: "YUSD" as const,
         name: "YieldFi yUSD",
+        ticker: "yUSD",
         icon: "yusd",
         branchId: 6,
         decimals: 18,

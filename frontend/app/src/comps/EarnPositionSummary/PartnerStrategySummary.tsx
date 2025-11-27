@@ -4,7 +4,7 @@ import { css } from "@/styled-system/css";
 import { IconExternal, TokenIcon } from "@liquity2/uikit";
 import Link from "next/link";
 
-type PartnerId = "steer" | "saga" | "oku" | "tellor" | "yield" | "statom";
+type PartnerId = "steer" | "saga" | "oku" | "tellor" | "yield" | "colt";
 
 const PARTNER_DATA: Record<PartnerId, {
   name: string;
@@ -20,7 +20,7 @@ const PARTNER_DATA: Record<PartnerId, {
   },
   saga: {
     name: "Saga",
-    description: "Layer 1 protocol enabling gasless transactions",
+    description: "Layer 1 protocol built for infinite horizontal scalability.",
     url: "https://www.saga.xyz",
     logo: "/images/partners/saga.png",
   },
@@ -42,11 +42,11 @@ const PARTNER_DATA: Record<PartnerId, {
     url: "https://yield.fi/yeth",
     logo: "/images/partners/yieldfi.svg",
   },
-  statom: {
-    name: "stATOM",
-    description: "Staked ATOM via Stride",
-    url: "https://app.stride.zone/",
-    logo: "statom",
+  colt: {
+    name: "Colt",
+    description: "Colt stablecoin",
+    url: "https://coltstable.com",
+    logo: "/images/partners/colt.svg",
   },
 };
 
@@ -265,12 +265,6 @@ function PartnerIcon({
   logo: string;
   size?: number;
 }) {
-  const isTokenIcon = ["statom"].includes(id);
-  
-  if (isTokenIcon) {
-    return <TokenIcon symbol={logo.toUpperCase() as any} size={size} />;
-  }
-  
   return (
     <div
       className={css({

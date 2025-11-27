@@ -175,7 +175,7 @@ export function HomeScreen() {
                     color: "rgba(255, 255, 255, 0.5)",
                     fontSize: "10px",
                     fontWeight: 500,
-                    width: "150px",
+                    width: "100px",
                   })}
                 >
                   Collateral
@@ -294,7 +294,7 @@ export function HomeScreen() {
                     color: "rgba(255, 255, 255, 0.5)",
                     fontSize: "10px",
                     fontWeight: 500,
-                    width: "140px",
+                    width: "100px",
                   })}
                 >
                   Pool
@@ -421,7 +421,7 @@ function BorrowRow({
               textOverflow: "ellipsis",
             }}
           >
-            {collateral?.name}
+            {collateral?.ticker}
           </span>
         </div>
       </td>
@@ -597,7 +597,7 @@ function EarnRow({
               textOverflow: "ellipsis",
             }}
           >
-            {token?.name}
+            {token?.ticker}
           </span>
         </div>
       </td>
