@@ -17,7 +17,7 @@ import { TokenIcon } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 
 type PoolId = BranchId | "sbold";
-type EcosystemId = "steer" | "saga" | "oku" | "tellor" | "yield" | "statom";
+type EcosystemId = "steer" | "saga" | "oku" | "tellor" | "yield" | "colt";
 
 export function EarnPoolsListScreen() {
   const branches = getBranches()
@@ -44,7 +44,7 @@ export function EarnPoolsListScreen() {
     },
   });
 
-  const ecosystemPartners: EcosystemId[] = ["steer", "saga", "oku", "tellor", "yield", "statom"];
+  const ecosystemPartners: EcosystemId[] = ["steer", "saga", "oku", "tellor", "yield", "colt"];
 
   const ecosystemTransition = useTransition(ecosystemPartners, {
     from: { opacity: 0, transform: "scale(1.1) translateY(64px)" },
@@ -298,7 +298,7 @@ function EcosystemPartner({ partnerId }: { partnerId: EcosystemId }) {
 }
 
 function PartnerIconGroup() {
-  const partners: EcosystemId[] = ["steer", "saga", "oku", "tellor", "yield", "statom"];
+  const partners: EcosystemId[] = ["steer", "saga", "oku", "tellor", "yield", "colt"];
   
   return (
     <div
@@ -312,25 +312,6 @@ function PartnerIconGroup() {
     >
       {partners.map((partnerId) => {
         const logoPath = getPartnerLogoPath(partnerId);
-        const isTokenIcon = ["statom"].includes(partnerId);
-        
-        if (isTokenIcon) {
-          return (
-            <div
-              key={partnerId}
-              className={css({
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-              })}
-            >
-              <TokenIcon symbol={logoPath.toUpperCase() as any} size={20} />
-            </div>
-          );
-        }
         
         return (
           <div
@@ -367,7 +348,7 @@ function getPartnerLogoPath(partnerId: EcosystemId): string {
     saga: "/images/partners/saga.png",
     oku: "/images/partners/oku.svg",
     yield: "/images/partners/yieldfi.svg",
-    statom: "statom",
+    colt: "/images/partners/colt.svg",
     tellor: "/images/partners/tellor.svg",
   };
   return logos[partnerId];

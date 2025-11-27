@@ -6,6 +6,7 @@ import { WHITE_LABEL_CONFIG } from "../../app/src/white-label.config";
 
 // Import all available collateral icons
 import tokenEth from "./token-icons/eth.svg";
+import tokenWeth from "./token-icons/weth.png";
 import tokenWsteth from "./token-icons/wsteth.svg";
 import tokenBtc from "./token-icons/btc.svg";
 import tokentBtc from "./token-icons/tbtc.svg";
@@ -22,6 +23,7 @@ const tokenIconMap: Record<string, string> = {
   "legacy-stablecoin": tokenLusd,
   "staked-main-token": tokenSbold,
   "eth": tokenEth,
+  "weth": tokenWeth,
   "wsteth": tokenWsteth,
   "btc": tokenBtc,
   "tbtc": tokentBtc,
@@ -77,6 +79,7 @@ export function isCollateralSymbol(symbol: string): symbol is CollateralSymbol {
 export type CollateralToken = Token & {
   collateralRatio: number;
   symbol: CollateralSymbol;
+  ticker: string;
 };
 
 // Generate all tokens from unified config
@@ -122,6 +125,7 @@ export const COLLATERALS: CollateralToken[] = WHITE_LABEL_CONFIG.tokens.collater
     icon: iconUrl || tokenIconMap["main-token"], // fallback to main token icon
     name: collateral.name,
     symbol: collateral.symbol,
+    ticker: collateral.ticker,
   };
 });
 
