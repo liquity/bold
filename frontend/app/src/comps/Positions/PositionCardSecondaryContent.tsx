@@ -208,7 +208,7 @@ export function PositionCardSecondaryContent({
             )}
           </div>
         }
-        end={
+        end={redemptionRisk.status !== "error" && (
           <div
             className={css({
               display: "grid",
@@ -235,7 +235,7 @@ export function PositionCardSecondaryContent({
               size={8}
             />
           </div>
-        }
+        )}
       />
     </CardRows>
   );

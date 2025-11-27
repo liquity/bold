@@ -949,6 +949,40 @@ export function useInterestBatchDelegate(
   return { ...result, data: result.data?.[0] ?? null };
 }
 
+async function fetchInterestBatches(
+  wagmiConfig: WagmiConfig,
+  branchId: BranchId,
+  batchAddresses: Address[],
+) {
+  if (!subgraphIndicator.hasError()) {
+    return getInterestBatches(branchId, batchAddresses);
+  }
+
+  const batchesData = await readContracts(wagmiConfig, {
+    allowFailure: false,
+    contracts: batchAddresses.map((address) => ({
+      ...getBranchContract(branchId, "TroveManager"),
+      functionName: "getLatestBatchData" as const,
+      args: [address],
+    })),
+  });
+
+  return batchAddresses.map((batchAddress, index) => {
+    const batchData = batchesData[index];
+    if (!batchData) {
+      throw new Error(`Failed to fetch batch data for ${batchAddress}`);
+    }
+
+    return {
+      batchManager: batchAddress,
+      debt: dnum18(batchData.recordedDebt),
+      coll: dnum18(batchData.entireCollWithoutRedistribution),
+      interestRate: dnum18(batchData.annualInterestRate),
+      fee: dnum18(batchData.annualManagementFee),
+    };
+  });
+}
+
 export function useInterestBatchDelegates(
   branchId: BranchId,
   batchAddresses: Address[],
@@ -963,7 +997,7 @@ export function useInterestBatchDelegates(
       }
 
       const [batches, batchesFromChain] = await Promise.all([
-        getInterestBatches(branchId, batchAddresses),
+        fetchInterestBatches(wagmiConfig, branchId, batchAddresses),
         readContracts(wagmiConfig, {
           allowFailure: false,
           contracts: batchAddresses.map((address) => ({
@@ -1481,6 +1515,10 @@ function useDebtInFrontOfBracket(branchId: BranchId, bracketRate: Dnum) {
   const { status, data } = useInterestRateBrackets(branchId);
 
   return useMemo(() => {
+    if (subgraphIndicator.hasError()) {
+      return { status: "error" as const, data: undefined };
+    }
+
     if (!data) return { status, data };
 
     return {

@@ -15,7 +15,6 @@ export const subgraphIndicator = {
     listeners.forEach((listener) => listener(errorMessage));
   },
   hasError: () => errorMessage !== null,
-  getError: () => errorMessage,
 };
 
 export function useSubgraphIndicator() {

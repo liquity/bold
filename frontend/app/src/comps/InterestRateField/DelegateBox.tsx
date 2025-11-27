@@ -117,16 +117,18 @@ export function DelegateBox({
                 suffix=" BOLD"
               />
             </div>
-            <div
-              className={css({
-                display: "flex",
-                gap: 8,
-                alignItems: "center",
-              })}
-            >
-              <StatusDot mode={riskLevelToStatusMode(delegationRisk.data)} />
-              {formatRedemptionRisk(delegationRisk.data ?? null)}
-            </div>
+            {delegationRisk.status !== "error" && (
+              <div
+                className={css({
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                })}
+              >
+                <StatusDot mode={riskLevelToStatusMode(delegationRisk.data)} />
+                {formatRedemptionRisk(delegationRisk.data ?? null)}
+              </div>
+            )}
           </div>
         </div>
         <div
