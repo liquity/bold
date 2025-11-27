@@ -23,6 +23,7 @@ import { erc20Abi, parseAbi } from "viem";
 import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 import { combineStatus } from "./query-utils";
+import { useSubgraphIsDown } from "@/src/liquity-utils";
 
 export type InitiativeStatus =
   | "nonexistent"
@@ -148,10 +149,29 @@ function useKnownInitiatives(): UseQueryResult<KnownInitiatives | null> {
   });
 }
 
+async function fetchGovernanceGlobalData() {
+  const subgraphIsDown = useSubgraphIsDown();
+  if (!subgraphIsDown) {
+    return getGovernanceGlobalData();
+  }
+
+  const registeredInitiatives = await getRegisteredInitiatives();
+
+  return {
+    registeredInitiatives,
+    totalVotingPower: {
+      allocatedLQTY: 0n,
+      allocatedOffset: 0n,
+      unallocatedLQTY: 0n,
+      unallocatedOffset: 0n,
+    },
+  };
+}
+
 function useGovernanceGlobalData() {
   return useQuery({
     queryKey: ["governanceGlobalData"],
-    queryFn: getGovernanceGlobalData,
+    queryFn: fetchGovernanceGlobalData,
   });
 }
 

@@ -1,5 +1,6 @@
 import type { PositionStake } from "@/src/types";
 
+import { useSubgraphIsDown } from "@/src/liquity-utils"
 import { Amount } from "@/src/comps/Amount/Amount";
 import { fmtnum } from "@/src/formatting";
 import { useVotingPower } from "@/src/liquity-governance";
@@ -19,6 +20,7 @@ export function PositionCardStake({
   | "owner"
   | "rewards"
 >) {
+  const subgraphIsDown = useSubgraphIsDown();
   const votingPowerRef = useRef<HTMLDivElement>(null);
   useVotingPower(owner, (share) => {
     if (!votingPowerRef.current) {
@@ -76,32 +78,34 @@ export function PositionCardStake({
       }}
       secondary={
         <CardRows>
-          <CardRow
-            start={
-              <div
-                className={css({
-                  display: "flex",
-                  gap: 8,
-                  fontSize: 14,
-                })}
-              >
+          {!subgraphIsDown && (
+            <CardRow
+              start={
                 <div
                   className={css({
-                    color: "positionContentAlt",
+                    display: "flex",
+                    gap: 8,
+                    fontSize: 14,
                   })}
                 >
-                  Voting power
+                  <div
+                    className={css({
+                      color: "positionContentAlt",
+                    })}
+                  >
+                    Voting power
+                  </div>
+                  <div
+                    className={css({
+                      color: "positionContent",
+                    })}
+                  >
+                    <div ref={votingPowerRef} />
+                  </div>
                 </div>
-                <div
-                  className={css({
-                    color: "positionContent",
-                  })}
-                >
-                  <div ref={votingPowerRef} />
-                </div>
-              </div>
-            }
-          />
+              }
+            />
+          )}
           <CardRow
             start={
               <div

@@ -7,7 +7,7 @@ import { dnum18, DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { useGovernanceStats, useGovernanceUser } from "@/src/liquity-governance";
-import { useStakePosition } from "@/src/liquity-utils";
+import { useStakePosition, useSubgraphIsDown } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
@@ -26,6 +26,7 @@ export function PanelStaking() {
 
   const govStats = useGovernanceStats();
   const govUser = useGovernanceUser(account.address ?? null);
+  const subgraphIsDown = useSubgraphIsDown();
 
   const stakedLqty = dnum18(govUser.data?.stakedLQTY);
   const totalStakedLqty = dnum18(govStats.data?.totalLQTYStaked);
@@ -177,7 +178,7 @@ export function PanelStaking() {
             }}
           />
         }
-        footer={{
+        footer={!subgraphIsDown ? {
           start: (
             <Field.FooterInfo
               label="New voting share"
@@ -193,7 +194,7 @@ export function PanelStaking() {
               }
             />
           ),
-        }}
+        } : undefined}
       />
       <div
         className={css({

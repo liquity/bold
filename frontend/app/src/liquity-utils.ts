@@ -954,7 +954,8 @@ async function fetchInterestBatches(
   branchId: BranchId,
   batchAddresses: Address[],
 ) {
-  if (!subgraphIndicator.hasError()) {
+  const subgraphIsDown = useSubgraphIsDown();
+  if (!subgraphIsDown) {
     return getInterestBatches(branchId, batchAddresses);
   }
 
@@ -1158,7 +1159,8 @@ export async function fetchLoanById(
 ): Promise<PositionLoanCommitted | null> {
   if (!isPrefixedtroveId(fullId)) return null;
 
-  if (!subgraphIndicator.hasError()) {
+  const subgraphIsDown = useSubgraphIsDown();
+  if (!subgraphIsDown) {
     const { branchId, troveId } = parsePrefixedTroveId(fullId);
     const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
     const TroveManager = getBranchContract(branchId, "TroveManager");
@@ -1246,7 +1248,8 @@ export async function fetchLoansByAccount(
 ): Promise<PositionLoanCommitted[] | null> {
   if (!account) return null;
 
-  if (!subgraphIndicator.hasError()) {
+  const subgraphIsDown = useSubgraphIsDown();
+  if (!subgraphIsDown) {
     const troves = await getIndexedTrovesByAccount(account);
 
     const results = await Promise.all(troves.map((trove) => {
@@ -1515,7 +1518,8 @@ function useDebtInFrontOfBracket(branchId: BranchId, bracketRate: Dnum) {
   const { status, data } = useInterestRateBrackets(branchId);
 
   return useMemo(() => {
-    if (subgraphIndicator.hasError()) {
+    const subgraphIsDown = useSubgraphIsDown();
+    if (subgraphIsDown) {
       return { status: "error" as const, data: undefined };
     }
 
@@ -1785,4 +1789,8 @@ export function useRedemptionSimulation(params: RedemptionSimulationParams) {
       }),
     },
   });
+}
+
+export function useSubgraphIsDown(): boolean {
+  return subgraphIndicator.hasError();
 }

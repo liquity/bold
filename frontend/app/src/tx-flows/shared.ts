@@ -1,6 +1,6 @@
 import type { Config as WagmiConfig } from "wagmi";
 
-import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
+import { useSubgraphIsDown } from "@/src/liquity-utils";
 import { waitForSafeTransaction } from "@/src/safe-utils";
 import { getIndexedBlockNumber } from "@/src/subgraph";
 import { sleep } from "@/src/utils";
@@ -35,6 +35,7 @@ export async function verifyTransaction(
   isSafe: boolean,
   waitForSubgraphIndexation: boolean = true,
 ) {
+  const subgraphIsDown = useSubgraphIsDown();
   const tx = await (
     isSafe
       // safe tx
@@ -49,7 +50,7 @@ export async function verifyTransaction(
   );
 
   // wait for the block number to be indexed by the subgraph, unless the subgraph is down
-  if (waitForSubgraphIndexation && !subgraphIndicator.hasError()) {
+  if (waitForSubgraphIndexation && !subgraphIsDown) {
     await verifyBlockNumberIndexation(tx.blockNumber);
   }
 

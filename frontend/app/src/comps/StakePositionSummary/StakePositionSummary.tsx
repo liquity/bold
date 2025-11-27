@@ -15,6 +15,7 @@ import { HFlex, IconStake, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import { a } from "@react-spring/web";
 import * as dn from "dnum";
 import { useRef } from "react";
+import { useSubgraphIsDown } from "@/src/liquity-utils"
 
 export function StakePositionSummary({
   loadingState = "success",
@@ -31,6 +32,7 @@ export function StakePositionSummary({
 
   const govStats = useGovernanceStats();
   const govUser = useGovernanceUser(stakePosition?.owner ?? null);
+  const subgraphIsDown = useSubgraphIsDown();
 
   const stakedLqty = dnum18(govUser.data?.stakedLQTY);
   const allocatedLqty = dnum18(govUser.data?.allocatedLQTY);
@@ -285,7 +287,7 @@ export function StakePositionSummary({
               </HFlex>
             </HFlex>
           </div>
-          {!txPreviewMode && (
+          {!txPreviewMode && !subgraphIsDown && (
             <div>
               <div
                 className={css({
@@ -382,7 +384,7 @@ export function StakePositionSummary({
               ))}
             </div>
           )}
-          {!txPreviewMode && (
+          {!txPreviewMode && !subgraphIsDown && (
             <div>
               <div
                 className={css({

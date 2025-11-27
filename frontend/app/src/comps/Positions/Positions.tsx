@@ -6,12 +6,12 @@ import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import { ManualLoanIdInput } from "@/src/comps/ManualLoanIdInput";
 import content from "@/src/content";
-import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import {
   getBranches,
   getPrefixedTroveId,
   useCollateralSurplusByBranches,
   useEarnPositionsByAccount,
+  useSubgraphIsDown,
   useLoansByAccount,
   useStakePosition,
 } from "@/src/liquity-utils";
@@ -159,6 +159,7 @@ function PositionsGroup({
   showNewPositionCard: boolean;
   collSurplusMap: Map<BranchId, Dnum> | null;
 }) {
+  const subgraphIsDown = useSubgraphIsDown();
   columns ??= mode === "actions" ? actionCards.length : 3;
 
   const title_ = title(mode);
@@ -363,7 +364,7 @@ function PositionsGroup({
           {title_}
         </h1>
       )}
-      {subgraphIndicator.hasError() && <ManualLoanIdInput />}
+      {subgraphIsDown && <ManualLoanIdInput />}
 
       <a.div
         className={css({
