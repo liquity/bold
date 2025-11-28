@@ -1,9 +1,9 @@
 import type { PositionStake } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
+import { SubgraphDependent } from "@/src/comps/SubgraphDependent/SubgraphDependent";
 import { fmtnum } from "@/src/formatting";
 import { useVotingPower } from "@/src/liquity-governance";
-import { useSubgraphIsDown } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, TokenIcon } from "@liquity2/uikit";
 import { useRef } from "react";
@@ -20,7 +20,6 @@ export function PositionCardStake({
   | "owner"
   | "rewards"
 >) {
-  const subgraphIsDown = useSubgraphIsDown();
   const votingPowerRef = useRef<HTMLDivElement>(null);
   useVotingPower(owner, (share) => {
     if (!votingPowerRef.current) {
@@ -78,7 +77,7 @@ export function PositionCardStake({
       }}
       secondary={
         <CardRows>
-          {!subgraphIsDown && (
+          <SubgraphDependent>
             <CardRow
               start={
                 <div
@@ -105,7 +104,7 @@ export function PositionCardStake({
                 </div>
               }
             />
-          )}
+          </SubgraphDependent>
           <CardRow
             start={
               <div

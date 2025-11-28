@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useBreakpointName } from "@/src/breakpoints";
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
 import { ManualLoanIdInput } from "@/src/comps/ManualLoanIdInput";
+import { SubgraphDependent } from "@/src/comps/SubgraphDependent/SubgraphDependent";
 import content from "@/src/content";
 import {
   getBranches,
@@ -13,7 +14,6 @@ import {
   useEarnPositionsByAccount,
   useLoansByAccount,
   useStakePosition,
-  useSubgraphIsDown,
 } from "@/src/liquity-utils";
 import { useSboldPosition } from "@/src/sbold";
 import { addPrefixedTroveIdsToStoredState, useStoredState } from "@/src/services/StoredState";
@@ -159,7 +159,6 @@ function PositionsGroup({
   showNewPositionCard: boolean;
   collSurplusMap: Map<BranchId, Dnum> | null;
 }) {
-  const subgraphIsDown = useSubgraphIsDown();
   columns ??= mode === "actions" ? actionCards.length : 3;
 
   const title_ = title(mode);
@@ -364,7 +363,7 @@ function PositionsGroup({
           {title_}
         </h1>
       )}
-      {subgraphIsDown && <ManualLoanIdInput />}
+      <SubgraphDependent fallback={<ManualLoanIdInput />} />
 
       <a.div
         className={css({

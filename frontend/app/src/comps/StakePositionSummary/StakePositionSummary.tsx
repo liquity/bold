@@ -3,13 +3,13 @@ import type { ReactNode } from "react";
 
 import { useAppear } from "@/src/anim-utils";
 import { Amount } from "@/src/comps/Amount/Amount";
+import { SubgraphDependent } from "@/src/comps/SubgraphDependent/SubgraphDependent";
 import { Tag } from "@/src/comps/Tag/Tag";
 import { TagPreview } from "@/src/comps/TagPreview/TagPreview";
 import content from "@/src/content";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { useGovernanceStats, useGovernanceUser, useVotingPower } from "@/src/liquity-governance";
-import { useSubgraphIsDown } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, InfoTooltip, TokenIcon } from "@liquity2/uikit";
@@ -32,7 +32,6 @@ export function StakePositionSummary({
 
   const govStats = useGovernanceStats();
   const govUser = useGovernanceUser(stakePosition?.owner ?? null);
-  const subgraphIsDown = useSubgraphIsDown();
 
   const stakedLqty = dnum18(govUser.data?.stakedLQTY);
   const allocatedLqty = dnum18(govUser.data?.allocatedLQTY);
@@ -287,172 +286,176 @@ export function StakePositionSummary({
               </HFlex>
             </HFlex>
           </div>
-          {!txPreviewMode && !subgraphIsDown && (
-            <div>
-              <div
-                className={css({
-                  color: "token(colors.strongSurfaceContentAlt)",
-                  whiteSpace: "nowrap",
-                })}
-              >
-                Voting share
-              </div>
-              {appear((style, show) => (
-                show && (
-                  <a.div
-                    className={css({
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    })}
-                    style={style}
-                  >
-                    <Amount
-                      percentage
-                      value={stakedShare}
-                      fallback="−"
-                      suffix="%"
-                    />
-                    {!txPreviewMode && (
-                      <InfoTooltip
-                        content={{
-                          heading: null,
-                          body: (
-                            <div
-                              className={css({
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 16,
-                              })}
-                            >
-                              <p>
-                                {content.stakeScreen.infoTooltips.votingShare}
-                              </p>
-                              {account.address && stakedLqty && (
-                                <div
-                                  className={css({
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 8,
-                                  })}
-                                >
-                                  <TooltipRow
-                                    label="Your stake"
-                                    value={
-                                      <Amount
-                                        format="2z"
-                                        fixed
-                                        value={stakedLqty}
-                                        fallback="−"
-                                        suffix=" LQTY"
-                                        title={fmtnum(stakedLqty, {
-                                          preset: "full",
-                                          suffix: " LQTY",
-                                        })}
-                                      />
-                                    }
-                                  />
-                                  <TooltipRow
-                                    label="Total staked"
-                                    value={
-                                      <Amount
-                                        fallback="−"
-                                        fixed
-                                        format="2z"
-                                        suffix=" LQTY"
-                                        title={fmtnum(totalStakedLqty, {
-                                          preset: "full",
-                                          suffix: " LQTY",
-                                        })}
-                                        value={totalStakedLqty}
-                                      />
-                                    }
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          ),
-                          footerLink: {
-                            href: content.stakeScreen.learnMore[0],
-                            label: content.stakeScreen.learnMore[1],
-                          },
-                        }}
-                      />
-                    )}
-                  </a.div>
-                )
-              ))}
-            </div>
-          )}
-          {!txPreviewMode && !subgraphIsDown && (
-            <div>
-              <div
-                className={css({
-                  color: "token(colors.strongSurfaceContentAlt)",
-                  whiteSpace: "nowrap",
-                })}
-              >
-                Voting power
-              </div>
-              {appear((style, show) => (
-                show && (
-                  <a.div
-                    className={css({
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    })}
-                    style={style}
-                  >
-                    <div
-                      ref={votingPowerRef}
+          {!txPreviewMode && (
+            <SubgraphDependent>
+              <div>
+                <div
+                  className={css({
+                    color: "token(colors.strongSurfaceContentAlt)",
+                    whiteSpace: "nowrap",
+                  })}
+                >
+                  Voting share
+                </div>
+                {appear((style, show) => (
+                  show && (
+                    <a.div
                       className={css({
-                        fontVariantNumeric: "tabular-nums",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
                       })}
+                      style={style}
                     >
-                    </div>
-                    {!txPreviewMode && (
-                      <InfoTooltip
-                        content={{
-                          heading: null,
-                          body: (
-                            <div
-                              className={css({
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 16,
-                              })}
-                            >
-                              <p>
-                                {content.stakeScreen.infoTooltips.votingPower}
-                              </p>
-                              {account.address && (govUser.data?.stakedLQTY ?? 0n) > 0n && (
-                                <div
-                                  className={css({
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 8,
-                                  })}
-                                >
-                                  <TooltipRow
-                                    label="Your voting power"
-                                    value={<div ref={votingPowerTooltipRef} />}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          ),
-                          footerLink: {
-                            href: content.stakeScreen.learnMore[0],
-                            label: content.stakeScreen.learnMore[1],
-                          },
-                        }}
+                      <Amount
+                        percentage
+                        value={stakedShare}
+                        fallback="−"
+                        suffix="%"
                       />
-                    )}
-                  </a.div>
-                )
-              ))}
-            </div>
+                      {!txPreviewMode && (
+                        <InfoTooltip
+                          content={{
+                            heading: null,
+                            body: (
+                              <div
+                                className={css({
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 16,
+                                })}
+                              >
+                                <p>
+                                  {content.stakeScreen.infoTooltips.votingShare}
+                                </p>
+                                {account.address && stakedLqty && (
+                                  <div
+                                    className={css({
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 8,
+                                    })}
+                                  >
+                                    <TooltipRow
+                                      label="Your stake"
+                                      value={
+                                        <Amount
+                                          format="2z"
+                                          fixed
+                                          value={stakedLqty}
+                                          fallback="−"
+                                          suffix=" LQTY"
+                                          title={fmtnum(stakedLqty, {
+                                            preset: "full",
+                                            suffix: " LQTY",
+                                          })}
+                                        />
+                                      }
+                                    />
+                                    <TooltipRow
+                                      label="Total staked"
+                                      value={
+                                        <Amount
+                                          fallback="−"
+                                          fixed
+                                          format="2z"
+                                          suffix=" LQTY"
+                                          title={fmtnum(totalStakedLqty, {
+                                            preset: "full",
+                                            suffix: " LQTY",
+                                          })}
+                                          value={totalStakedLqty}
+                                        />
+                                      }
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            ),
+                            footerLink: {
+                              href: content.stakeScreen.learnMore[0],
+                              label: content.stakeScreen.learnMore[1],
+                            },
+                          }}
+                        />
+                      )}
+                    </a.div>
+                  )
+                ))}
+              </div>
+            </SubgraphDependent>
+          )}
+          {!txPreviewMode && (
+            <SubgraphDependent>
+              <div>
+                <div
+                  className={css({
+                    color: "token(colors.strongSurfaceContentAlt)",
+                    whiteSpace: "nowrap",
+                  })}
+                >
+                  Voting power
+                </div>
+                {appear((style, show) => (
+                  show && (
+                    <a.div
+                      className={css({
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      })}
+                      style={style}
+                    >
+                      <div
+                        ref={votingPowerRef}
+                        className={css({
+                          fontVariantNumeric: "tabular-nums",
+                        })}
+                      >
+                      </div>
+                      {!txPreviewMode && (
+                        <InfoTooltip
+                          content={{
+                            heading: null,
+                            body: (
+                              <div
+                                className={css({
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 16,
+                                })}
+                              >
+                                <p>
+                                  {content.stakeScreen.infoTooltips.votingPower}
+                                </p>
+                                {account.address && (govUser.data?.stakedLQTY ?? 0n) > 0n && (
+                                  <div
+                                    className={css({
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 8,
+                                    })}
+                                  >
+                                    <TooltipRow
+                                      label="Your voting power"
+                                      value={<div ref={votingPowerTooltipRef} />}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            ),
+                            footerLink: {
+                              href: content.stakeScreen.learnMore[0],
+                              label: content.stakeScreen.learnMore[1],
+                            },
+                          }}
+                        />
+                      )}
+                    </a.div>
+                  )
+                ))}
+              </div>
+            </SubgraphDependent>
           )}
           {!txPreviewMode && (
             <div
