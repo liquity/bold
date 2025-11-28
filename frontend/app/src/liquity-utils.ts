@@ -1520,9 +1520,9 @@ const interestRateFloor = (rate: Dnum) =>
 
 function useDebtInFrontOfBracket(branchId: BranchId, bracketRate: Dnum) {
   const { status, data } = useInterestRateBrackets(branchId);
+  const subgraphIsDown = useSubgraphIsDown();
 
   return useMemo(() => {
-    const subgraphIsDown = useSubgraphIsDown();
     if (subgraphIsDown) {
       return { status: "error" as const, data: undefined };
     }
@@ -1550,7 +1550,7 @@ function useDebtInFrontOfBracket(branchId: BranchId, bracketRate: Dnum) {
         };
       }),
     };
-  }, [status, data, bracketRate]);
+  }, [status, data, bracketRate, subgraphIsDown]);
 }
 
 export type UseDebtInFrontOfLoanParams = Readonly<
