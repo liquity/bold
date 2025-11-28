@@ -933,10 +933,11 @@ export function useLatestTroveData(branchId: BranchId, troveId: TroveId) {
 export function useLoan(branchId: BranchId, troveId: TroveId): UseQueryResult<PositionLoanCommitted | null> {
   const id = getPrefixedTroveId(branchId, troveId);
   const wagmiConfig = useWagmiConfig();
+  const subgraphIsDown = useSubgraphIsDown();
 
   return useQuery<PositionLoanCommitted | null>({
-    queryKey: ["TroveById", id],
-    queryFn: () => id ? fetchLoanById(wagmiConfig, id) : null,
+    queryKey: ["TroveById", id, subgraphIsDown],
+    queryFn: () => id ? fetchLoanById(wagmiConfig, id, subgraphIsDown) : null,
     refetchInterval: 60_000,
   });
 }
@@ -953,8 +954,8 @@ async function fetchInterestBatches(
   wagmiConfig: WagmiConfig,
   branchId: BranchId,
   batchAddresses: Address[],
+  subgraphIsDown: boolean,
 ) {
-  const subgraphIsDown = useSubgraphIsDown();
   if (!subgraphIsDown) {
     return getInterestBatches(branchId, batchAddresses);
   }
@@ -989,16 +990,17 @@ export function useInterestBatchDelegates(
   batchAddresses: Address[],
 ): UseQueryResult<Delegate[]> {
   const wagmiConfig = useWagmiConfig();
+  const subgraphIsDown = useSubgraphIsDown();
 
   return useQuery<Delegate[]>({
-    queryKey: ["InterestBatches", branchId, batchAddresses],
+    queryKey: ["InterestBatches", branchId, batchAddresses, subgraphIsDown],
     queryFn: async () => {
       if (batchAddresses.length === 0) {
         return [];
       }
 
       const [batches, batchesFromChain] = await Promise.all([
-        fetchInterestBatches(wagmiConfig, branchId, batchAddresses),
+        fetchInterestBatches(wagmiConfig, branchId, batchAddresses, subgraphIsDown),
         readContracts(wagmiConfig, {
           allowFailure: false,
           contracts: batchAddresses.map((address) => ({
@@ -1155,11 +1157,11 @@ export async function fetchLoanByIdRpcOnly(
 export async function fetchLoanById(
   wagmiConfig: WagmiConfig,
   fullId: null | PrefixedTroveId,
+  subgraphIsDown: boolean,
   maybeIndexedTrove?: IndexedTrove,
 ): Promise<PositionLoanCommitted | null> {
   if (!isPrefixedtroveId(fullId)) return null;
 
-  const subgraphIsDown = useSubgraphIsDown();
   if (!subgraphIsDown) {
     const { branchId, troveId } = parsePrefixedTroveId(fullId);
     const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
@@ -1243,12 +1245,12 @@ export async function fetchLoansByStoredTroveIds(
 
 export async function fetchLoansByAccount(
   wagmiConfig: WagmiConfig,
-  account?: Address | null,
-  storedTroveIds?: string[],
+  account: Address | null | undefined,
+  storedTroveIds: string[] | undefined,
+  subgraphIsDown: boolean,
 ): Promise<PositionLoanCommitted[] | null> {
   if (!account) return null;
 
-  const subgraphIsDown = useSubgraphIsDown();
   if (!subgraphIsDown) {
     const troves = await getIndexedTrovesByAccount(account);
 
@@ -1256,7 +1258,7 @@ export async function fetchLoansByAccount(
       if (!isPrefixedtroveId(trove.id)) {
         throw new Error(`Invalid prefixed trove ID: ${trove.id}`);
       }
-      return fetchLoanById(wagmiConfig, trove.id, trove);
+      return fetchLoanById(wagmiConfig, trove.id, subgraphIsDown, trove);
     }));
 
     return results.filter((result) => result !== null);
@@ -1271,9 +1273,11 @@ export async function fetchLoansByAccount(
 
 export function useLoansByAccount(account?: Address | null, storedTroveIds?: string[]) {
   const wagmiConfig = useWagmiConfig();
+  const subgraphIsDown = useSubgraphIsDown();
+
   return useQuery<PositionLoanCommitted[] | null>({
-    queryKey: ["TrovesByAccount", account, storedTroveIds],
-    queryFn: () => fetchLoansByAccount(wagmiConfig, account, storedTroveIds),
+    queryKey: ["TrovesByAccount", account, storedTroveIds, subgraphIsDown],
+    queryFn: () => fetchLoansByAccount(wagmiConfig, account, storedTroveIds, subgraphIsDown),
   });
 }
 

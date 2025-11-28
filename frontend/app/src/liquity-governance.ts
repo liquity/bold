@@ -149,8 +149,7 @@ function useKnownInitiatives(): UseQueryResult<KnownInitiatives | null> {
   });
 }
 
-async function fetchGovernanceGlobalData() {
-  const subgraphIsDown = useSubgraphIsDown();
+async function fetchGovernanceGlobalData(subgraphIsDown: boolean) {
   if (!subgraphIsDown) {
     return getGovernanceGlobalData();
   }
@@ -169,9 +168,11 @@ async function fetchGovernanceGlobalData() {
 }
 
 function useGovernanceGlobalData() {
+  const subgraphIsDown = useSubgraphIsDown();
+
   return useQuery({
-    queryKey: ["governanceGlobalData"],
-    queryFn: fetchGovernanceGlobalData,
+    queryKey: ["governanceGlobalData", subgraphIsDown],
+    queryFn: () => fetchGovernanceGlobalData(subgraphIsDown),
   });
 }
 
