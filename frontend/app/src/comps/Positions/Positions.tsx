@@ -11,9 +11,9 @@ import {
   getPrefixedTroveId,
   useCollateralSurplusByBranches,
   useEarnPositionsByAccount,
-  useSubgraphIsDown,
   useLoansByAccount,
   useStakePosition,
+  useSubgraphIsDown,
 } from "@/src/liquity-utils";
 import { useSboldPosition } from "@/src/sbold";
 import { addPrefixedTroveIdsToStoredState, useStoredState } from "@/src/services/StoredState";

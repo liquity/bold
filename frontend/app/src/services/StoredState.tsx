@@ -115,9 +115,7 @@ export function useStoredState() {
 }
 
 export function addPrefixedTroveIdsToStoredState(
-  storedState: {
-    setState: (update: (state: { prefixedTroveIds?: string[] }) => Partial<{ prefixedTroveIds?: string[] }>) => void;
-  },
+  storedState: StoredStateContext,
   prefixedTroveIds: string[],
 ) {
   if (prefixedTroveIds.length === 0) return;

@@ -178,23 +178,25 @@ export function PanelStaking() {
             }}
           />
         }
-        footer={!subgraphIsDown ? {
-          start: (
-            <Field.FooterInfo
-              label="New voting share"
-              value={
-                <HFlex>
-                  <div>
-                    <Amount value={updatedShare} percentage suffix="%" />
-                  </div>
-                  <InfoTooltip>
-                    {content.stakeScreen.infoTooltips.votingShare}
-                  </InfoTooltip>
-                </HFlex>
-              }
-            />
-          ),
-        } : undefined}
+        footer={!subgraphIsDown
+          ? {
+            start: (
+              <Field.FooterInfo
+                label="New voting share"
+                value={
+                  <HFlex>
+                    <div>
+                      <Amount value={updatedShare} percentage suffix="%" />
+                    </div>
+                    <InfoTooltip>
+                      {content.stakeScreen.infoTooltips.votingShare}
+                    </InfoTooltip>
+                  </HFlex>
+                }
+              />
+            ),
+          }
+          : undefined}
       />
       <div
         className={css({

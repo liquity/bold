@@ -6,6 +6,7 @@ import { BribeInitiative } from "@/src/abi/BribeInitiative";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_CONTRACT_MULTICALL, KNOWN_INITIATIVES_URL, LIQUITY_GOVERNANCE_URL } from "@/src/env";
+import { useSubgraphIsDown } from "@/src/liquity-utils";
 import {
   getGovernanceGlobalData,
   getTotalAllocationHistoryFromSubgraph,
@@ -23,7 +24,6 @@ import { erc20Abi, parseAbi } from "viem";
 import { useConfig as useWagmiConfig, useReadContract, useReadContracts } from "wagmi";
 import { readContract, readContracts } from "wagmi/actions";
 import { combineStatus } from "./query-utils";
-import { useSubgraphIsDown } from "@/src/liquity-utils";
 
 export type InitiativeStatus =
   | "nonexistent"

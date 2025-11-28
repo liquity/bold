@@ -9,13 +9,13 @@ import content from "@/src/content";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
 import { useGovernanceStats, useGovernanceUser, useVotingPower } from "@/src/liquity-governance";
+import { useSubgraphIsDown } from "@/src/liquity-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, InfoTooltip, TokenIcon } from "@liquity2/uikit";
 import { a } from "@react-spring/web";
 import * as dn from "dnum";
 import { useRef } from "react";
-import { useSubgraphIsDown } from "@/src/liquity-utils"
 
 export function StakePositionSummary({
   loadingState = "success",

@@ -1,9 +1,9 @@
 import type { PositionStake } from "@/src/types";
 
-import { useSubgraphIsDown } from "@/src/liquity-utils"
 import { Amount } from "@/src/comps/Amount/Amount";
 import { fmtnum } from "@/src/formatting";
 import { useVotingPower } from "@/src/liquity-governance";
+import { useSubgraphIsDown } from "@/src/liquity-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconStake, TokenIcon } from "@liquity2/uikit";
 import { useRef } from "react";
