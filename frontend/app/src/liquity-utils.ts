@@ -1218,7 +1218,7 @@ export async function fetchLoanById(
   }
 }
 
-export async function fetchLoansByStoredTroveIds(
+async function fetchLoansByStoredTroveIdsRpcOnly(
   wagmiConfig: WagmiConfig,
   account: Address,
   storedTroveIds: string[],
@@ -1265,7 +1265,7 @@ export async function fetchLoansByAccount(
   }
 
   if (storedTroveIds && storedTroveIds.length > 0) {
-    return fetchLoansByStoredTroveIds(wagmiConfig, account, storedTroveIds);
+    return fetchLoansByStoredTroveIdsRpcOnly(wagmiConfig, account, storedTroveIds);
   }
 
   return [];
