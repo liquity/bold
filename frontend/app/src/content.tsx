@@ -599,9 +599,9 @@ export default {
     ),
   },
   manualLoanIdInput: {
-    title: "Subgraph Error Detected",
+    title: "Data API error",
     description:
-      "The list of loans below could be incomplete. If one of your loans doesn't appear, please enter your Loan ID manually below to view it.",
+      "The list of loans below could be incomplete. If one of your loans doesn't appear, please enter your Loan ID manually to view it.",
     inputPlaceholder: "Loan ID (0x...)",
     branchDetected: (branchId: number) => `(Branch ${branchId} detected)`,
     buttonLabel: "View Loan",

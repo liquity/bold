@@ -38,7 +38,7 @@ export function useIndicator() {
 }
 
 function AllIndicators() {
-  useSubgraphIndicator();
+  // useSubgraphIndicator(); When subgraph, we now display a banner
   useRpcIndicator();
   return null;
 }
@@ -91,12 +91,12 @@ export function IndicatorManager({
       const errorState = prevErrors.get(id);
       const update = new Map(prevErrors);
       update.delete(id);
-      
+
       // if this is the last error, show the success message
       if (errorState?.successMessage && prevErrors.size === 1) {
         showSuccess(errorState.successMessage);
       }
-      
+
       return update;
     });
   }, [showSuccess]);
