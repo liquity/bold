@@ -158,12 +158,7 @@ async function fetchGovernanceGlobalData(subgraphIsDown: boolean) {
 
   return {
     registeredInitiatives,
-    totalVotingPower: {
-      allocatedLQTY: 0n,
-      allocatedOffset: 0n,
-      unallocatedLQTY: 0n,
-      unallocatedOffset: 0n,
-    },
+    totalVotingPower: null,
   };
 }
 
@@ -449,11 +444,13 @@ export function votingPower(
 }
 
 function votingPowerMs(
-  stakedLQTY: bigint,
-  offset: bigint,
-  timestampInMilliseconds: bigint,
+  stakedLQTY?: bigint,
+  offset?: bigint,
+  timestampInMilliseconds?: bigint,
 ) {
-  return (stakedLQTY * timestampInMilliseconds - offset * 1000n) / 1000n;
+  return stakedLQTY && offset && timestampInMilliseconds
+    ? (stakedLQTY * timestampInMilliseconds - offset * 1000n) / 1000n
+    : null;
 }
 
 export function useVotingPower(
@@ -479,15 +476,14 @@ export function useVotingPower(
     const timeElapsed = BigInt(Date.now()) - startTime;
     const correctedStartTime = startTime > blockTimestamp.data ? startTime : blockTimestamp.data;
     const timestamp = correctedStartTime + timeElapsed;
-    const userVp = votingPowerMs(userLQTYStaked, userOffset, timestamp);
-    const totalVP = votingPowerMs(totalLQTYStaked, totalOffset, timestamp);
+    const userVotingPower = votingPowerMs(userLQTYStaked, userOffset, timestamp);
+    const totalVotingPower = votingPowerMs(totalLQTYStaked, totalOffset, timestamp);
 
     // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
     callback(
-      totalVP === 0n ? DNUM_0 : dn.div(
-        dnum18(userVp),
-        dnum18(totalVP),
-      ),
+      !userVotingPower || !totalVotingPower
+        ? null
+        : dn.div(dnum18(userVotingPower), dnum18(totalVotingPower)),
     );
   }, updatesPerSecond);
 }
@@ -504,12 +500,16 @@ export function useGovernanceStats() {
 
       return {
         totalLQTYStaked: (
-          governanceGlobal.data.totalVotingPower.allocatedLQTY
-          + governanceGlobal.data.totalVotingPower.unallocatedLQTY
+          governanceGlobal.data.totalVotingPower
+            ? governanceGlobal.data.totalVotingPower.allocatedLQTY
+              + governanceGlobal.data.totalVotingPower.unallocatedLQTY
+            : undefined
         ),
         totalOffset: (
-          governanceGlobal.data.totalVotingPower.allocatedOffset
-          + governanceGlobal.data.totalVotingPower.unallocatedOffset
+          governanceGlobal.data.totalVotingPower
+            ? governanceGlobal.data.totalVotingPower.allocatedOffset
+              + governanceGlobal.data.totalVotingPower.unallocatedOffset
+            : undefined
         ),
       };
     },
@@ -839,13 +839,13 @@ export function useBribingClaim(
               + epochDuration;
 
             // voting power at the end of the epoch
-            const userVP = votingPower(userAllocation.voteLQTY, userAllocation.voteOffset, epochEnd);
-            const totalVP = votingPower(totalAllocation.voteLQTY, totalAllocation.voteOffset, epochEnd);
-            const remainingVP = totalVP - claimedVotes;
+            const userVotingPower = votingPower(userAllocation.voteLQTY, userAllocation.voteOffset, epochEnd);
+            const totalVotingPower = votingPower(totalAllocation.voteLQTY, totalAllocation.voteOffset, epochEnd);
+            const remainingVotingPower = totalVotingPower - claimedVotes;
 
-            if (remainingVP > 0n && userVP > 0n) {
-              const userShare = userVP <= remainingVP ? userVP : remainingVP;
-              const shareRatio = dn.div(dnum18(userShare), dnum18(remainingVP));
+            if (remainingVotingPower > 0n && userVotingPower > 0n) {
+              const userShare = userVotingPower <= remainingVotingPower ? userVotingPower : remainingVotingPower;
+              const shareRatio = dn.div(dnum18(userShare), dnum18(remainingVotingPower));
 
               const boldClaim = dn.mul(dnum18(remainingBold), shareRatio);
               const bribeTokenClaim = dn.mul(dnum18(remainingBribeToken), shareRatio);

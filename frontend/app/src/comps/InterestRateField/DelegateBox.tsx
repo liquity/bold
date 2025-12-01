@@ -2,7 +2,6 @@ import type { BranchId, Delegate } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
-import { SubgraphDependent } from "@/src/comps/SubgraphDependent/SubgraphDependent";
 import { fmtnum, formatDuration, formatRedemptionRisk } from "@/src/formatting";
 import { useRedemptionRiskOfInterestRate } from "@/src/liquity-utils";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
@@ -118,18 +117,16 @@ export function DelegateBox({
                 suffix=" BOLD"
               />
             </div>
-            <SubgraphDependent>
-              <div
-                className={css({
-                  display: "flex",
-                  gap: 8,
-                  alignItems: "center",
-                })}
-              >
-                <StatusDot mode={riskLevelToStatusMode(delegationRisk.data)} />
-                {formatRedemptionRisk(delegationRisk.data ?? null)}
-              </div>
-            </SubgraphDependent>
+            <div
+              className={css({
+                display: "flex",
+                gap: 8,
+                alignItems: "center",
+              })}
+            >
+              <StatusDot mode={riskLevelToStatusMode(delegationRisk.data)} />
+              {formatRedemptionRisk(delegationRisk.data ?? null)}
+            </div>
           </div>
         </div>
         <div

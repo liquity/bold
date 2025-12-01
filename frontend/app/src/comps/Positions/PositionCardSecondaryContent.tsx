@@ -3,7 +3,6 @@ import type { CollateralToken } from "@liquity2/uikit";
 import type { ReactNode } from "react";
 
 import { LoanStatusTag } from "@/src/comps/Tag/LoanStatusTag";
-import { SubgraphDependent } from "@/src/comps/SubgraphDependent/SubgraphDependent";
 import { fmtnum, formatLiquidationRisk, formatRedemptionRisk } from "@/src/formatting";
 import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { css } from "@/styled-system/css";
@@ -210,34 +209,32 @@ export function PositionCardSecondaryContent({
           </div>
         }
         end={
-          <SubgraphDependent>
-            <div
-              className={css({
-                display: "grid",
-                gridAutoFlow: "column",
-                alignItems: "center",
-                gap: 8,
-                fontSize: 14,
-              })}
-            >
-              {
-                <div
-                  className={css({
-                    flexShrink: 1,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    color: "positionContent",
-                  })}
-                >
-                  {formatRedemptionRisk(redemptionRisk.data ?? null)}
-                </div>
-              }
-              <StatusDot
-                mode={riskLevelToStatusMode(redemptionRisk.data)}
-                size={8}
-              />
-            </div>
-          </SubgraphDependent>
+          <div
+            className={css({
+              display: "grid",
+              gridAutoFlow: "column",
+              alignItems: "center",
+              gap: 8,
+              fontSize: 14,
+            })}
+          >
+            {
+              <div
+                className={css({
+                  flexShrink: 1,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  color: "positionContent",
+                })}
+              >
+                {formatRedemptionRisk(redemptionRisk.data ?? null)}
+              </div>
+            }
+            <StatusDot
+              mode={riskLevelToStatusMode(redemptionRisk.data)}
+              size={8}
+            />
+          </div>
         }
       />
     </CardRows>

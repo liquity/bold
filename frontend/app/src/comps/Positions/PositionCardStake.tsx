@@ -1,7 +1,6 @@
 import type { PositionStake } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { SubgraphDependent } from "@/src/comps/SubgraphDependent/SubgraphDependent";
 import { fmtnum } from "@/src/formatting";
 import { useVotingPower } from "@/src/liquity-governance";
 import { css } from "@/styled-system/css";
@@ -77,34 +76,32 @@ export function PositionCardStake({
       }}
       secondary={
         <CardRows>
-          <SubgraphDependent>
-            <CardRow
-              start={
+          <CardRow
+            start={
+              <div
+                className={css({
+                  display: "flex",
+                  gap: 8,
+                  fontSize: 14,
+                })}
+              >
                 <div
                   className={css({
-                    display: "flex",
-                    gap: 8,
-                    fontSize: 14,
+                    color: "positionContentAlt",
                   })}
                 >
-                  <div
-                    className={css({
-                      color: "positionContentAlt",
-                    })}
-                  >
-                    Voting power
-                  </div>
-                  <div
-                    className={css({
-                      color: "positionContent",
-                    })}
-                  >
-                    <div ref={votingPowerRef} />
-                  </div>
+                  Voting power
                 </div>
-              }
-            />
-          </SubgraphDependent>
+                <div
+                  className={css({
+                    color: "positionContent",
+                  })}
+                >
+                  <div ref={votingPowerRef} />
+                </div>
+              </div>
+            }
+          />
           <CardRow
             start={
               <div
