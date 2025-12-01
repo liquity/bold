@@ -17,8 +17,8 @@ import {
   useDebtInFrontOfInterestRate,
   useDebtInFrontOfLoan,
   useInterestRateChartData,
-  useSubgraphIsDown,
 } from "@/src/liquity-utils";
+import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { useSubgraphIsDown } from "@/src/liquity-utils";
+import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 
 export function SubgraphDependent({
   children = null,

@@ -37,7 +37,7 @@ import {
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
-import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
+import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { combineStatus } from "@/src/query-utils";
 import { useDebounced } from "@/src/react-utils";
@@ -1795,6 +1795,3 @@ export function useRedemptionSimulation(params: RedemptionSimulationParams) {
   });
 }
 
-export function useSubgraphIsDown(): boolean {
-  return subgraphIndicator.hasError();
-}

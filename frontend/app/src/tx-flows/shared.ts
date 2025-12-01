@@ -1,6 +1,6 @@
 import type { Config as WagmiConfig } from "wagmi";
 
-import { useSubgraphIsDown } from "@/src/liquity-utils";
+import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 import { waitForSafeTransaction } from "@/src/safe-utils";
 import { getIndexedBlockNumber } from "@/src/subgraph";
 import { sleep } from "@/src/utils";

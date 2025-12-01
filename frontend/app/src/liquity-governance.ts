@@ -6,7 +6,7 @@ import { BribeInitiative } from "@/src/abi/BribeInitiative";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_CONTRACT_MULTICALL, KNOWN_INITIATIVES_URL, LIQUITY_GOVERNANCE_URL } from "@/src/env";
-import { useSubgraphIsDown } from "@/src/liquity-utils";
+import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 import {
   getGovernanceGlobalData,
   getTotalAllocationHistoryFromSubgraph,
