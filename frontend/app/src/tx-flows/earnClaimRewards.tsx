@@ -12,6 +12,8 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
+import { isAddressEqual, parseAbi, zeroAddress } from "viem";
+import { readContract } from "wagmi/actions";
 
 const RequestSchema = createRequestSchema(
   "earnClaimRewards",
@@ -132,10 +134,56 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
         await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
+
+    // Unwrap wrapped collateral
+    unwrapColl: {
+      name: (ctx) => {
+        const branch = getBranch(ctx.request.earnPosition.branchId);
+        return `Unwrap ${branch.symbol} rewards`;
+      },
+      Status: TransactionStatus,
+      async commit(ctx) {
+        const branch = getBranch(ctx.request.earnPosition.branchId);
+        const { LeverageWrappedTokenZapper } = branch.contracts;
+
+        if (isAddressEqual(LeverageWrappedTokenZapper.address, zeroAddress)) {
+          throw new Error("This branch does not support wrapped tokens");
+        }
+
+        const wrappedTokenAddress = await readContract(ctx.wagmiConfig, {
+          ...LeverageWrappedTokenZapper,
+          functionName: "wrappedToken",
+        });
+
+        return ctx.writeContract({
+          address: wrappedTokenAddress,
+          abi: parseAbi([
+            "function withdrawTo(address account, uint256 amount) public returns (bool)"
+          ]),
+          functionName: "withdrawTo",
+          args: [
+            ctx.request.earnPosition.owner,
+            ctx.request.earnPosition.rewards.coll[0]
+          ],
+        });
+      },
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
+      },
+    },
   },
 
-  async getSteps() {
-    return ["claimRewards"];
+  async getSteps(ctx) {
+    const branch = getBranch(ctx.request.earnPosition.branchId);
+
+    const steps: string[] = ["claimRewards"];
+    if (
+      dn.gt(ctx.request.earnPosition.rewards.coll, 0)
+      && !isAddressEqual(branch.contracts.LeverageWrappedTokenZapper.address, zeroAddress)
+    ) {
+      steps.push("unwrapColl");
+    }
+    return steps;
   },
 
   parseRequest(request) {
