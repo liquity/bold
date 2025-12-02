@@ -273,7 +273,7 @@ export function HomeScreen() {
                 fontSize: "14px",
               })}
             >
-              Earn {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} & (staked) ETH rewards by depositing your {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} in a stability pool
+              Earn {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} & Collateral token rewards by depositing your {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} in a stability pool
             </p>
           </div>
 
