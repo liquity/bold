@@ -12,7 +12,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
-import { isAddressEqual, parseAbi, zeroAddress } from "viem";
+import { erc20Abi, isAddressEqual, parseAbi, zeroAddress } from "viem";
 import { readContract } from "wagmi/actions";
 
 const RequestSchema = createRequestSchema(
@@ -155,6 +155,13 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
           functionName: "wrappedToken",
         });
 
+        const wrappedBalance = await readContract(ctx.wagmiConfig, {
+          address: wrappedTokenAddress,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [ctx.request.earnPosition.owner],
+        });
+
         return ctx.writeContract({
           address: wrappedTokenAddress,
           abi: parseAbi([
@@ -163,7 +170,7 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
           functionName: "withdrawTo",
           args: [
             ctx.request.earnPosition.owner,
-            ctx.request.earnPosition.rewards.coll[0]
+            ctx.request.earnPosition.rewards.coll[0] > wrappedBalance ? wrappedBalance : ctx.request.earnPosition.rewards.coll[0]
           ],
         });
       },
