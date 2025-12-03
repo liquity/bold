@@ -97,7 +97,7 @@ export function PanelClosePosition({
     return null;
   })();
 
-  const allowSubmit = error === null && collToRepay.data;
+  const allowSubmit = error === null && (!repayWithCollateral || collToRepay.data);
 
   return (
     <>
