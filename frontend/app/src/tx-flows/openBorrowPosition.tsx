@@ -27,6 +27,7 @@ import * as v from "valibot";
 import { maxUint256, parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
+import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 
 const RequestSchema = createRequestSchema(
   "openBorrowPosition",
@@ -312,16 +313,19 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
           throw new Error("Failed to extract trove ID from transaction");
         }
 
+        const subgraphIsDown = subgraphIndicator.hasError();
+        if (!subgraphIsDown) {
         // wait for the trove to appear in the subgraph
-        while (true) {
-          const trove = await getIndexedTroveById(
-            branch.branchId,
-            `0x${troveOperation.args._troveId.toString(16)}`,
-          );
-          if (trove !== null) {
-            break;
+          while (true) {
+            const trove = await getIndexedTroveById(
+              branch.branchId,
+              `0x${troveOperation.args._troveId.toString(16)}`,
+            );
+            if (trove !== null) {
+              break;
+            }
+            await sleep(1000);
           }
-          await sleep(1000);
         }
       },
     },

@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 
 import { Indicator } from "@/src/comps/Indicator/Indicator";
 import { useRpcIndicator } from "@/src/indicators/rpc-indicator";
-import { useSubgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 type ErrorState = {
@@ -38,7 +37,7 @@ export function useIndicator() {
 }
 
 function AllIndicators() {
-  // useSubgraphIndicator(); When subgraph, we now display a banner
+  // useSubgraphIndicator(); When subgraph is down, we now display a banner
   useRpcIndicator();
   return null;
 }

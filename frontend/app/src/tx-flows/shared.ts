@@ -1,6 +1,6 @@
 import type { Config as WagmiConfig } from "wagmi";
 
-import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
+import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { waitForSafeTransaction } from "@/src/safe-utils";
 import { getIndexedBlockNumber } from "@/src/subgraph";
 import { sleep } from "@/src/utils";
@@ -35,7 +35,7 @@ export async function verifyTransaction(
   isSafe: boolean,
   waitForSubgraphIndexation: boolean = true,
 ) {
-  const subgraphIsDown = useSubgraphIsDown();
+  const subgraphIsDown = subgraphIndicator.hasError();
   const tx = await (
     isSafe
       // safe tx

@@ -4,7 +4,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
 import { getBranch, getCollToken } from "@/src/liquity-utils";
-import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
+import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -220,9 +220,9 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
       async verify(ctx, hash) {
         await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
 
-        const subgraphIsDown = useSubgraphIsDown();
-        // wait for the trove to be seen as closed in the subgraph
+        const subgraphIsDown = subgraphIndicator.hasError();
         if (!subgraphIsDown) {
+          // wait for the trove to be seen as closed in the subgraph
           while (true) {
             const trove = await getIndexedTroveById(
               ctx.request.loan.branchId,
