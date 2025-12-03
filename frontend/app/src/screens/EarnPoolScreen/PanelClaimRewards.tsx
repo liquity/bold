@@ -179,7 +179,7 @@ export function PanelClaimRewards({
                   body: (
                     <>
                       When enabled, your {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} rewards will be automatically added back to your stability pool deposit,
-                      earning you more rewards over time. Collateral rewards will still be claimed normally.
+                      earning you more rewards over time. Collateral rewards will not be claimed when enabled.
                     </>
                   ),
                 }}

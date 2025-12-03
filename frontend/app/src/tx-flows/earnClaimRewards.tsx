@@ -187,6 +187,7 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
     if (
       dn.gt(ctx.request.earnPosition.rewards.coll, 0)
       && !isAddressEqual(branch.contracts.LeverageWrappedTokenZapper.address, zeroAddress)
+      && !ctx.request.compound
     ) {
       steps.push("unwrapColl");
     }
