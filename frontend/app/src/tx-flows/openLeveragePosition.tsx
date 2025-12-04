@@ -29,7 +29,7 @@ import * as v from "valibot";
 import { maxUint256, parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
 import { useSlippageRefund } from "../liquity-leverage";
-import { createRequestSchema, verifyTransaction } from "./shared";
+import { createRequestSchema, verifyTransaction, withOwnerIndexRetry } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "openLeveragePosition",
@@ -240,38 +240,40 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
           interestRate: loan.interestRate[0],
         });
 
-        const txParams = {
-          owner: loan.borrower,
-          ownerIndex: BigInt(ctx.request.ownerIndex),
-          collAmount: dn.from(ctx.request.initialDeposit, 18)[0],
-          flashLoanAmount: dn.from(ctx.request.flashloanAmount, 18)[0],
-          boldAmount: dn.from(ctx.request.boldAmount, 18)[0],
-          upperHint,
-          lowerHint,
-          annualInterestRate: loan.batchManager ? 0n : loan.interestRate[0],
-          batchManager: loan.batchManager ?? ADDRESS_ZERO,
-          maxUpfrontFee: MAX_UPFRONT_FEE,
-          addManager: ADDRESS_ZERO,
-          removeManager: ADDRESS_ZERO,
-          receiver: ADDRESS_ZERO,
-        };
+        return withOwnerIndexRetry(ctx.request.ownerIndex, (ownerIndex) => {
+          const txParams = {
+            owner: loan.borrower,
+            ownerIndex: BigInt(ownerIndex),
+            collAmount: dn.from(ctx.request.initialDeposit, 18)[0],
+            flashLoanAmount: dn.from(ctx.request.flashloanAmount, 18)[0],
+            boldAmount: dn.from(ctx.request.boldAmount, 18)[0],
+            upperHint,
+            lowerHint,
+            annualInterestRate: loan.batchManager ? 0n : loan.interestRate[0],
+            batchManager: loan.batchManager ?? ADDRESS_ZERO,
+            maxUpfrontFee: MAX_UPFRONT_FEE,
+            addManager: ADDRESS_ZERO,
+            removeManager: ADDRESS_ZERO,
+            receiver: ADDRESS_ZERO,
+          };
 
-        // ETH collateral case
-        if (branch.symbol === "ETH") {
+          // ETH collateral case
+          if (branch.symbol === "ETH") {
+            return ctx.writeContract({
+              ...LeverageWETHZapper,
+              functionName: "openLeveragedTroveWithRawETH",
+              args: [txParams],
+              value: dn.from(ctx.request.initialDeposit, 18)[0] + ETH_GAS_COMPENSATION[0],
+            });
+          }
+
+          // LST collateral case
           return ctx.writeContract({
-            ...LeverageWETHZapper,
+            ...LeverageLSTZapper,
             functionName: "openLeveragedTroveWithRawETH",
             args: [txParams],
-            value: dn.from(ctx.request.initialDeposit, 18)[0] + ETH_GAS_COMPENSATION[0],
+            value: ETH_GAS_COMPENSATION[0],
           });
-        }
-
-        // LST collateral case
-        return ctx.writeContract({
-          ...LeverageLSTZapper,
-          functionName: "openLeveragedTroveWithRawETH",
-          args: [txParams],
-          value: ETH_GAS_COMPENSATION[0],
         });
       },
 

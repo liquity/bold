@@ -66,3 +66,30 @@ export async function verifyBlockNumberIndexation(blockNumber: bigint) {
     await sleep((2 ** Math.min(i, 4)) * 1000);
   }
 }
+
+export function isTroveExistsError(error: unknown): boolean {
+  const errorStr = String(error);
+  return errorStr.includes("0xed58d81a") || errorStr.includes("TroveExists");
+}
+
+export async function withOwnerIndexRetry<T>(
+  initialOwnerIndex: number,
+  fn: (ownerIndex: number) => Promise<T>,
+  maxRetries: number = 10,
+): Promise<T> {
+  let ownerIndex = initialOwnerIndex;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn(ownerIndex);
+    } catch (error) {
+      if (isTroveExistsError(error) && attempt < maxRetries - 1) {
+        ownerIndex++;
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw new Error("Failed to open trove after maximum retries");
+}

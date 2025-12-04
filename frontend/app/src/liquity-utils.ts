@@ -42,6 +42,7 @@ import { getRedemptionRisk } from "@/src/liquity-math";
 import { combineStatus } from "@/src/query-utils";
 import { useDebounced } from "@/src/react-utils";
 import { usePrice } from "@/src/services/Prices";
+import { useStoredState } from "@/src/services/StoredState";
 import {
   getAllInterestRateBrackets,
   getIndexedTroveById,
@@ -1496,13 +1497,50 @@ export function useNextOwnerIndex(
   borrower: null | Address,
   branchId: null | BranchId,
 ) {
+  const wagmiConfig = useWagmiConfig();
+  const subgraphIsDown = useSubgraphIsDown();
+  const storedState = useStoredState();
+
   return useQuery({
-    queryKey: ["NextTroveId", borrower, branchId],
-    queryFn: () => (
-      borrower && branchId !== null
-        ? getNextOwnerIndex(branchId, borrower)
-        : null
-    ),
+    queryKey: ["NextTroveId", borrower, branchId, subgraphIsDown, storedState.prefixedTroveIds],
+    queryFn: async () => {
+      if (!borrower || branchId === null) return null;
+
+      if (!subgraphIsDown) {
+        return getNextOwnerIndex(branchId, borrower);
+      }
+
+      const trovesForBranch = storedState.prefixedTroveIds.flatMap((prefixedId) => {
+        try {
+          const parsed = parsePrefixedTroveId(prefixedId as PrefixedTroveId);
+          return parsed.branchId === branchId ? [parsed.troveId] : [];
+        } catch {
+          return [];
+        }
+      });
+
+      const branch = getBranch(branchId);
+
+      const trovesResults = await readContracts(wagmiConfig, {
+        contracts: trovesForBranch.map((troveId) => ({
+          ...branch.contracts.TroveManager,
+          functionName: "Troves",
+          args: [troveId],
+        })),
+      });
+
+      let maxIndex = -1;
+      for (const result of trovesResults) {
+        if (result.status === "success" && result.result && Array.isArray(result.result)) {
+          const arrayIndex = Number(result.result[4]);
+          if (arrayIndex > maxIndex) {
+            maxIndex = arrayIndex;
+          }
+        }
+      }
+
+      return maxIndex + 1;
+    },
     enabled: borrower !== null && branchId !== null,
   });
 }

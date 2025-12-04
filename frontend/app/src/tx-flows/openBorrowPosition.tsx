@@ -26,7 +26,7 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { maxUint256, parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
-import { createRequestSchema, verifyTransaction } from "./shared";
+import { createRequestSchema, verifyTransaction, withOwnerIndexRetry } from "./shared";
 import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { addPrefixedTroveIdsToStoredState } from "@/src/services/StoredState";
 import { getPrefixedTroveId } from "@/src/liquity-utils";
@@ -276,29 +276,31 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
         });
 
         const branch = getBranch(ctx.request.branchId);
-        return ctx.writeContract({
-          ...branch.contracts.LeverageLSTZapper,
-          functionName: "openTroveWithRawETH" as const,
-          args: [{
-            owner: ctx.request.owner,
-            ownerIndex: BigInt(ctx.request.ownerIndex),
-            collAmount: ctx.request.collAmount[0],
-            boldAmount: ctx.request.boldAmount[0],
-            upperHint,
-            lowerHint,
-            annualInterestRate: ctx.request.interestRateDelegate
-              ? 0n
-              : ctx.request.annualInterestRate[0],
-            batchManager: ctx.request.interestRateDelegate
-              ? ctx.request.interestRateDelegate
-              : ADDRESS_ZERO,
-            maxUpfrontFee: ctx.request.maxUpfrontFee[0],
-            addManager: ADDRESS_ZERO,
-            removeManager: ADDRESS_ZERO,
-            receiver: ADDRESS_ZERO,
-          }],
-          value: ETH_GAS_COMPENSATION[0],
-        });
+        return withOwnerIndexRetry(ctx.request.ownerIndex, (ownerIndex) =>
+          ctx.writeContract({
+            ...branch.contracts.LeverageLSTZapper,
+            functionName: "openTroveWithRawETH" as const,
+            args: [{
+              owner: ctx.request.owner,
+              ownerIndex: BigInt(ownerIndex),
+              collAmount: ctx.request.collAmount[0],
+              boldAmount: ctx.request.boldAmount[0],
+              upperHint,
+              lowerHint,
+              annualInterestRate: ctx.request.interestRateDelegate
+                ? 0n
+                : ctx.request.annualInterestRate[0],
+              batchManager: ctx.request.interestRateDelegate
+                ? ctx.request.interestRateDelegate
+                : ADDRESS_ZERO,
+              maxUpfrontFee: ctx.request.maxUpfrontFee[0],
+              addManager: ADDRESS_ZERO,
+              removeManager: ADDRESS_ZERO,
+              receiver: ADDRESS_ZERO,
+            }],
+            value: ETH_GAS_COMPENSATION[0],
+          }),
+        );
       },
 
       async verify(ctx, hash) {
@@ -351,29 +353,31 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
         });
 
         const branch = getBranch(ctx.request.branchId);
-        return ctx.writeContract({
-          ...branch.contracts.LeverageWETHZapper,
-          functionName: "openTroveWithRawETH",
-          args: [{
-            owner: ctx.request.owner,
-            ownerIndex: BigInt(ctx.request.ownerIndex),
-            collAmount: 0n,
-            boldAmount: ctx.request.boldAmount[0],
-            upperHint,
-            lowerHint,
-            annualInterestRate: ctx.request.interestRateDelegate
-              ? 0n
-              : ctx.request.annualInterestRate[0],
-            batchManager: ctx.request.interestRateDelegate
-              ? ctx.request.interestRateDelegate
-              : ADDRESS_ZERO,
-            maxUpfrontFee: ctx.request.maxUpfrontFee[0],
-            addManager: ADDRESS_ZERO,
-            removeManager: ADDRESS_ZERO,
-            receiver: ADDRESS_ZERO,
-          }],
-          value: ctx.request.collAmount[0] + ETH_GAS_COMPENSATION[0],
-        });
+        return withOwnerIndexRetry(ctx.request.ownerIndex, (ownerIndex) =>
+          ctx.writeContract({
+            ...branch.contracts.LeverageWETHZapper,
+            functionName: "openTroveWithRawETH",
+            args: [{
+              owner: ctx.request.owner,
+              ownerIndex: BigInt(ownerIndex),
+              collAmount: 0n,
+              boldAmount: ctx.request.boldAmount[0],
+              upperHint,
+              lowerHint,
+              annualInterestRate: ctx.request.interestRateDelegate
+                ? 0n
+                : ctx.request.annualInterestRate[0],
+              batchManager: ctx.request.interestRateDelegate
+                ? ctx.request.interestRateDelegate
+                : ADDRESS_ZERO,
+              maxUpfrontFee: ctx.request.maxUpfrontFee[0],
+              addManager: ADDRESS_ZERO,
+              removeManager: ADDRESS_ZERO,
+              receiver: ADDRESS_ZERO,
+            }],
+            value: ctx.request.collAmount[0] + ETH_GAS_COMPENSATION[0],
+          }),
+        );
       },
 
       async verify(...args) {
