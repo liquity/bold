@@ -12,6 +12,8 @@ import * as dn from "dnum";
 import * as v from "valibot";
 import { createRequestSchema, verifyTransaction } from "./shared";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
+import { erc20Abi, isAddressEqual, parseAbi, zeroAddress } from "viem";
+import { readContract } from "wagmi/actions";
 
 const RequestSchema = createRequestSchema(
   "earnUpdate",
@@ -167,12 +169,62 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
         await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
       },
     },
+
+    // Unwrap wrapped collateral
+    unwrapCollReward: {
+      name: (ctx) => {
+        const branch = getBranch(ctx.request.earnPosition.branchId);
+        return `Unwrap ${branch.symbol} rewards`;
+      },
+      Status: TransactionStatus,
+      async commit(ctx) {
+        const branch = getBranch(ctx.request.earnPosition.branchId);
+        const { LeverageWrappedTokenZapper } = branch.contracts;
+  
+        if (isAddressEqual(LeverageWrappedTokenZapper.address, zeroAddress)) {
+          throw new Error("This branch does not support wrapped tokens");
+        }
+  
+        const wrappedTokenAddress = await readContract(ctx.wagmiConfig, {
+          ...LeverageWrappedTokenZapper,
+          functionName: "wrappedToken",
+        });
+
+        const wrappedBalance = await readContract(ctx.wagmiConfig, {
+          address: wrappedTokenAddress,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [ctx.request.earnPosition.owner],
+        });
+  
+        return ctx.writeContract({
+          address: wrappedTokenAddress,
+          abi: parseAbi([
+            "function withdrawTo(address account, uint256 amount) public returns (bool)"
+          ]),
+          functionName: "withdrawTo",
+          args: [
+            ctx.request.earnPosition.owner,
+            ctx.request.earnPosition.rewards.coll[0] > wrappedBalance ? wrappedBalance : ctx.request.earnPosition.rewards.coll[0]
+          ],
+        });
+      },
+      async verify(ctx, hash) {
+        await verifyTransaction(ctx.wagmiConfig, hash, ctx.isSafe);
+      },
+    },
   },
 
-  async getSteps({ request: { earnPosition, prevEarnPosition } }) {
-    return dn.gt(earnPosition.deposit, prevEarnPosition.deposit)
+  async getSteps({ request: { earnPosition, prevEarnPosition, claimRewards } }) {
+    const steps = dn.gt(earnPosition.deposit, prevEarnPosition.deposit)
       ? ["provideToStabilityPool"]
       : ["withdrawFromStabilityPool"];
+
+    if (claimRewards && dn.gt(earnPosition.rewards.coll, 0)) {
+      steps.push("unwrapCollReward");
+    }
+
+    return steps;
   },
 
   parseRequest(request) {

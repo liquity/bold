@@ -20,8 +20,9 @@ import {
   VFlex,
 } from "@liquity2/uikit";
 import { useState } from "react";
-import { erc20Abi, parseUnits } from "viem";
-import { useWriteContract } from "wagmi";
+import { erc20Abi, isAddressEqual, parseAbi, parseUnits, zeroAddress } from "viem";
+import { useReadContract, useWriteContract } from "wagmi";
+import { dnum18 } from "@/src/dnum-utils";
 
 export function TokensScreen() {
   const account = useAccount();
@@ -178,13 +179,35 @@ function TokenCard({
   const balance = useBalance(address, tokenSymbol);
   const [showSendModal, setShowSendModal] = useState(false);
 
-  const tokenContract = isCollateralSymbol(tokenSymbol)
+  const isCollateral = isCollateralSymbol(tokenSymbol);
+
+  const tokenContract = isCollateral
     ? getBranchContract(tokenSymbol, "CollToken")
     : tokenSymbol === WHITE_LABEL_CONFIG.tokens.mainToken.symbol
     ? getProtocolContract("BoldToken")
     : null;
 
   const contractAddress = tokenContract?.address || "0x0000000000000000000000000000000000000000";
+
+  const LeverageWrappedTokenZapper = isCollateral ? getBranchContract(tokenSymbol, "LeverageWrappedTokenZapper") : null;
+
+  const { data: wrappedTokenAddress } = useReadContract({
+    ...LeverageWrappedTokenZapper,
+    functionName: "wrappedToken",
+    query: {
+      enabled: Boolean(LeverageWrappedTokenZapper && !isAddressEqual(LeverageWrappedTokenZapper.address, zeroAddress)),
+    }
+  });
+
+  const wrappedBalance = useReadContract({
+    address: wrappedTokenAddress as Address,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: [address],
+    query: {
+      enabled: Boolean(wrappedTokenAddress && address),
+    }
+  });
 
   const explorerUrl = CHAIN_BLOCK_EXPLORER
     ? `${CHAIN_BLOCK_EXPLORER.url}address/${contractAddress}`
@@ -249,6 +272,7 @@ function TokenCard({
                 className={css({ fontSize: 18, fontWeight: 600 })}
               >
                 {balance.data ? fmtnum(balance.data, 5) : "0"}
+                <p className={css({ fontSize: 13, color: "positionContentAlt", marginTop: 2 })}>{LeverageWrappedTokenZapper && !isAddressEqual(LeverageWrappedTokenZapper.address, zeroAddress) && wrappedBalance.data && wrappedBalance.data > 0n ? ` (${fmtnum(dnum18(wrappedBalance.data), 5)} wrapped)` : ""}</p>
               </div>
               {balance.data && price && balance.data[0] > 0n && (
                 <div className={css({ fontSize: 13, color: "positionContentAlt", marginTop: 2 })}>
@@ -304,43 +328,53 @@ function TokenCard({
             </button>
             {(!balance.data || balance.data[0] === 0n) && (
               <AddToWalletButton
-                tokenAddress={contractAddress}
-                tokenSymbol={tokenSymbol}
-                tokenDecimals={isCollateralSymbol(tokenSymbol) ? WHITE_LABEL_CONFIG.tokens.collaterals.find(c => c.symbol === tokenSymbol)?.decimals ?? 18 : 18}
+              tokenAddress={contractAddress}
+              tokenSymbol={tokenSymbol}
+              tokenDecimals={isCollateralSymbol(tokenSymbol) ? WHITE_LABEL_CONFIG.tokens.collaterals.find(c => c.symbol === tokenSymbol)?.decimals ?? 18 : 18}
               />
             )}
           </div>
 
-          {explorerUrl && (
-            <a
-              href={explorerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={css({
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-                fontSize: 13,
-                fontWeight: 500,
-                color: "rgba(255, 255, 255, 0.7)",
-                textDecoration: "none",
-                padding: "8px 12px",
-                borderRadius: 6,
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                background: "rgba(255, 255, 255, 0.03)",
-                transition: "all 0.2s",
-                "&:hover": {
-                  color: "white",
-                  borderColor: "rgba(255, 255, 255, 0.2)",
-                  background: "rgba(255, 255, 255, 0.08)",
-                  transform: "translateY(-1px)",
-                },
-              })}
-            >
-              <span>{shortenAddress(contractAddress, 4)}</span>
-              <IconExternal size={14} />
-            </a>
-          )}
+          <div className={css({ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" })}>
+            {LeverageWrappedTokenZapper !== null && !isAddressEqual(LeverageWrappedTokenZapper.address, zeroAddress) && wrappedBalance.data !== undefined && (
+              <UnwrapTokenButton
+                account={address}
+                wrappedToken={wrappedTokenAddress as Address}
+                tokenSymbol={tokenSymbol}
+                amount={wrappedBalance.data}
+              />
+            )}
+            {explorerUrl && (
+              <a
+                href={explorerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "rgba(255, 255, 255, 0.7)",
+                  textDecoration: "none",
+                  padding: "8px 12px",
+                  borderRadius: 6,
+                  border: "1px solid rgba(255, 255, 255, 0.1)",
+                  background: "rgba(255, 255, 255, 0.03)",
+                  transition: "all 0.2s",
+                  "&:hover": {
+                    color: "white",
+                    borderColor: "rgba(255, 255, 255, 0.2)",
+                    background: "rgba(255, 255, 255, 0.08)",
+                    transform: "translateY(-1px)",
+                  },
+                })}
+              >
+                <span>{shortenAddress(contractAddress, 4)}</span>
+                <IconExternal size={14} />
+              </a>
+            )}
+          </div>
         </div>
       </div>
 
@@ -355,6 +389,78 @@ function TokenCard({
       )}
     </>
   );
+}
+
+function UnwrapTokenButton({
+  account,
+  wrappedToken,
+  tokenSymbol,
+  amount,
+}: {
+  account: Address;
+  wrappedToken: Address;
+  tokenSymbol: string;
+  amount: bigint;
+}) {
+  const { writeContract } = useWriteContract();
+  const { showSuccess, setError } = useIndicator();
+
+  const handleUnwrap = () => {
+    try {
+      writeContract({
+        address: wrappedToken,
+        abi: parseAbi([
+          "function withdrawTo(address account, uint256 amount) public returns (bool)"
+        ]),
+        functionName: "withdrawTo",
+        args: [account, amount],
+      }, {
+        onSuccess: () => {
+          showSuccess(`Transaction submitted! Unwrapping ${amount} ${tokenSymbol}`);
+        },
+        onError: (error) => {
+          setError("unwrap-token", `Transaction failed: ${error.message}`);
+        },
+      });
+    } catch (error) {
+      setError("unwrap-token", `Invalid amount: ${error}`);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleUnwrap}
+      disabled={amount === 0n}
+      className={css({
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "8px 16px",
+        fontSize: 14,
+        fontWeight: 500,
+        color: "white",
+        background: "#A189AB",
+        border: "none",
+        borderRadius: 6,
+        cursor: "pointer",
+        transition: "all 0.2s",
+        "&:hover:not(:disabled)": {
+          transform: "translateY(-1px)",
+          boxShadow: "0 4px 12px rgba(161, 137, 171, 0.4)",
+          background: "#B199BB",
+        },
+        "&:active:not(:disabled)": {
+          transform: "translateY(0)",
+        },
+        "&:disabled": {
+          opacity: 0.4,
+          cursor: "not-allowed",
+        },
+      })}
+    >
+      Unwrap
+    </button>
+  )
 }
 
 function AddToWalletButton({
