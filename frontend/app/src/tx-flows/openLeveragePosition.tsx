@@ -18,6 +18,7 @@ import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
+import { addPrefixedTroveIdsToStoredState } from "@/src/services/StoredState";
 import { getIndexedTroveById } from "@/src/subgraph";
 import { noop, sleep } from "@/src/utils";
 import { vDnum, vPositionLoanUncommited } from "@/src/valibot-utils";
@@ -294,6 +295,8 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
 
         const troveId: TroveId = `0x${troveOperation.args._troveId.toString(16)}`;
         const prefixedTroveId = getPrefixedTroveId(branch.branchId, troveId);
+
+        addPrefixedTroveIdsToStoredState(ctx.storedState, [prefixedTroveId]);
 
         // Workaround for https://github.com/liquity/bold/issues/1134:
         // Explicitly save this as a Multiply position so it doesn't turn

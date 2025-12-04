@@ -28,6 +28,9 @@ import { maxUint256, parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
 import { createRequestSchema, verifyTransaction } from "./shared";
 import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
+import { addPrefixedTroveIdsToStoredState } from "@/src/services/StoredState";
+import { getPrefixedTroveId } from "@/src/liquity-utils";
+import { TroveId } from "@/src/types";
 
 const RequestSchema = createRequestSchema(
   "openBorrowPosition",
@@ -312,6 +315,10 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
         if (!troveOperation?.args?._troveId) {
           throw new Error("Failed to extract trove ID from transaction");
         }
+        const troveId: TroveId = `0x${troveOperation.args._troveId.toString(16)}`;
+        const prefixedTroveId = getPrefixedTroveId(branch.branchId, troveId);
+        
+        addPrefixedTroveIdsToStoredState(ctx.storedState, [prefixedTroveId]);
 
         const subgraphIsDown = subgraphIndicator.hasError();
         if (!subgraphIsDown) {
@@ -319,7 +326,7 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
           while (true) {
             const trove = await getIndexedTroveById(
               branch.branchId,
-              `0x${troveOperation.args._troveId.toString(16)}`,
+              troveId,
             );
             if (trove !== null) {
               break;
