@@ -18,6 +18,7 @@ import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { usePrice } from "@/src/services/Prices";
+import { addPrefixedTroveIdsToStoredState } from "@/src/services/StoredState";
 import { getIndexedTroveById } from "@/src/subgraph";
 import { noop, sleep } from "@/src/utils";
 import { vDnum, vPositionLoanUncommited } from "@/src/valibot-utils";
@@ -28,7 +29,7 @@ import * as v from "valibot";
 import { maxUint256, parseEventLogs } from "viem";
 import { readContract } from "wagmi/actions";
 import { useSlippageRefund } from "../liquity-leverage";
-import { createRequestSchema, verifyTransaction } from "./shared";
+import { createRequestSchema, verifyTransaction, withOwnerIndexRetry } from "./shared";
 
 const RequestSchema = createRequestSchema(
   "openLeveragePosition",
@@ -239,38 +240,40 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
           interestRate: loan.interestRate[0],
         });
 
-        const txParams = {
-          owner: loan.borrower,
-          ownerIndex: BigInt(ctx.request.ownerIndex),
-          collAmount: dn.from(ctx.request.initialDeposit, 18)[0],
-          flashLoanAmount: dn.from(ctx.request.flashloanAmount, 18)[0],
-          boldAmount: dn.from(ctx.request.boldAmount, 18)[0],
-          upperHint,
-          lowerHint,
-          annualInterestRate: loan.batchManager ? 0n : loan.interestRate[0],
-          batchManager: loan.batchManager ?? ADDRESS_ZERO,
-          maxUpfrontFee: MAX_UPFRONT_FEE,
-          addManager: ADDRESS_ZERO,
-          removeManager: ADDRESS_ZERO,
-          receiver: ADDRESS_ZERO,
-        };
+        return withOwnerIndexRetry(ctx.request.ownerIndex, (ownerIndex) => {
+          const txParams = {
+            owner: loan.borrower,
+            ownerIndex: BigInt(ownerIndex),
+            collAmount: dn.from(ctx.request.initialDeposit, 18)[0],
+            flashLoanAmount: dn.from(ctx.request.flashloanAmount, 18)[0],
+            boldAmount: dn.from(ctx.request.boldAmount, 18)[0],
+            upperHint,
+            lowerHint,
+            annualInterestRate: loan.batchManager ? 0n : loan.interestRate[0],
+            batchManager: loan.batchManager ?? ADDRESS_ZERO,
+            maxUpfrontFee: MAX_UPFRONT_FEE,
+            addManager: ADDRESS_ZERO,
+            removeManager: ADDRESS_ZERO,
+            receiver: ADDRESS_ZERO,
+          };
 
-        // ETH collateral case
-        if (branch.symbol === "ETH") {
+          // ETH collateral case
+          if (branch.symbol === "ETH") {
+            return ctx.writeContract({
+              ...LeverageWETHZapper,
+              functionName: "openLeveragedTroveWithRawETH",
+              args: [txParams],
+              value: dn.from(ctx.request.initialDeposit, 18)[0] + ETH_GAS_COMPENSATION[0],
+            });
+          }
+
+          // LST collateral case
           return ctx.writeContract({
-            ...LeverageWETHZapper,
+            ...LeverageLSTZapper,
             functionName: "openLeveragedTroveWithRawETH",
             args: [txParams],
-            value: dn.from(ctx.request.initialDeposit, 18)[0] + ETH_GAS_COMPENSATION[0],
+            value: ETH_GAS_COMPENSATION[0],
           });
-        }
-
-        // LST collateral case
-        return ctx.writeContract({
-          ...LeverageLSTZapper,
-          functionName: "openLeveragedTroveWithRawETH",
-          args: [txParams],
-          value: ETH_GAS_COMPENSATION[0],
         });
       },
 
@@ -294,6 +297,8 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
 
         const troveId: TroveId = `0x${troveOperation.args._troveId.toString(16)}`;
         const prefixedTroveId = getPrefixedTroveId(branch.branchId, troveId);
+
+        addPrefixedTroveIdsToStoredState(ctx.storedState, [prefixedTroveId]);
 
         // Workaround for https://github.com/liquity/bold/issues/1134:
         // Explicitly save this as a Multiply position so it doesn't turn

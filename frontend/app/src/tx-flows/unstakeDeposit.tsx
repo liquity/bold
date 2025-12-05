@@ -197,10 +197,22 @@ export const unstakeDeposit: FlowDeclaration<UnstakeDepositRequest> = {
         const { Governance } = ctx.contracts;
         const unstakeAmount = ctx.request.lqtyAmount[0];
 
-        const [userState, userAllocations] = await Promise.all([
+        let [userState, userAllocations] = await Promise.all([
           getUserStates(ctx.wagmiConfig, ctx.account),
           getUserAllocations(ctx.wagmiConfig, ctx.account),
         ]);
+
+        // Degraded mode check: user has allocations but we couldn't fetch them (both the graph & api are down)
+        // In this mode, we can only unstake what has not been allocated.
+        const votingAllocationsFetchError = userState.allocatedLQTY > 0n && userAllocations.length === 0;
+        if (votingAllocationsFetchError) {
+          if (userState.unallocatedLQTY < unstakeAmount) {
+            throw new Error(
+              "API error: your voting allocations could not be fetched. "
+                + "Please try again later or manually reset your voting allocations first.",
+            );
+          }
+        }
 
         const inputs = generateUnstakeTransactions(
           userState,

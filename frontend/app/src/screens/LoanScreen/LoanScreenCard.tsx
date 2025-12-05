@@ -825,14 +825,12 @@ function LoanCard(props: {
                           {formatRisk(liquidationRisk)}
                         </HFlex>
                       </GridItem>
-                      {redemptionRisk && (
-                        <GridItem label="Redemption risk">
-                          <HFlex gap={8} alignItems="center" justifyContent="flex-start">
-                            <StatusDot mode={riskLevelToStatusMode(redemptionRisk)} size={8} />
-                            {formatRisk(redemptionRisk)}
-                          </HFlex>
-                        </GridItem>
-                      )}
+                      <GridItem label="Redemption risk">
+                        <HFlex gap={8} alignItems="center" justifyContent="flex-start">
+                          <StatusDot mode={riskLevelToStatusMode(redemptionRisk)} size={8} />
+                          {formatRisk(redemptionRisk)}
+                        </HFlex>
+                      </GridItem>
                     </>
                   )}
               </div>

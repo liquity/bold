@@ -16,11 +16,12 @@ type InfoBannerProps = {
   show: boolean;
   icon: ReactNode;
   messageDesktop: ReactNode;
-  linkLabel: string;
+  linkLabel?: string;
   linkLabelMobile?: string;
-  linkHref: string;
+  linkHref?: string;
   linkExternal?: boolean;
   backgroundColor?: string;
+  foregroundColor?: string;
 };
 
 export function InfoBanner({
@@ -32,6 +33,7 @@ export function InfoBanner({
   linkHref,
   linkExternal = false,
   backgroundColor = token("colors.brandDarkBlue"),
+  foregroundColor = "#fff",
 }: InfoBannerProps) {
   const [compact, setCompact] = useState(false);
   useBreakpoint(({ medium }) => {
@@ -62,7 +64,7 @@ export function InfoBanner({
             height: 41,
             padding: "0 16px",
             textAlign: "center",
-            color: "#fff",
+            color: foregroundColor,
             borderBottom: `1px solid #fff`,
           })}
           style={{ background: backgroundColor }}
@@ -80,36 +82,37 @@ export function InfoBanner({
           >
             {icon}
             <div>
-              {!compact && messageDesktop}{" "}
-              <LinkTextButton
-                href={linkHref}
-                external={linkExternal}
-                label={
-                  <div
-                    className={css({
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                    })}
-                  >
-                    <div>
-                      {compact && linkLabelMobile ? linkLabelMobile : linkLabel}
-                    </div>
+              {!compact && messageDesktop} {linkHref && (
+                <LinkTextButton
+                  href={linkHref}
+                  external={linkExternal}
+                  label={
                     <div
                       className={css({
-                        transformOrigin: "50% 50%",
-                        transform: "translateY(1px) rotate(90deg)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
                       })}
                     >
-                      <IconChevronSmallUp size={12} />
+                      <div>
+                        {compact && linkLabelMobile ? linkLabelMobile : linkLabel}
+                      </div>
+                      <div
+                        className={css({
+                          transformOrigin: "50% 50%",
+                          transform: "translateY(1px) rotate(90deg)",
+                        })}
+                      >
+                        <IconChevronSmallUp size={12} />
+                      </div>
                     </div>
-                  </div>
-                }
-                className={css({
-                  color: "inherit!",
-                  textDecoration: "underline",
-                })}
-              />
+                  }
+                  className={css({
+                    color: "inherit!",
+                    textDecoration: "underline",
+                  })}
+                />
+              )}
             </div>
           </div>
         </div>
