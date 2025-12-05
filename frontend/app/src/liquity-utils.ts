@@ -42,7 +42,6 @@ import { getRedemptionRisk } from "@/src/liquity-math";
 import { combineStatus } from "@/src/query-utils";
 import { useDebounced } from "@/src/react-utils";
 import { usePrice } from "@/src/services/Prices";
-import { useStoredState } from "@/src/services/StoredState";
 import {
   getAllInterestRateBrackets,
   getIndexedTroveById,
@@ -1077,7 +1076,7 @@ export async function fetchLoanByIdRpcOnly(
 
   try {
     const [batchManager, troveData, troveStatus, borrower] = await readContracts(wagmiConfig, {
-      allowFailure: false,
+      allowFailure: true,
       contracts: [{
         ...BorrowerOperations,
         functionName: "interestBatchManagerOf",
@@ -1097,16 +1096,20 @@ export async function fetchLoanByIdRpcOnly(
       }],
     });
 
-    if (troveStatus === TROVE_STATUS_NONEXISTENT) {
+    if (troveStatus.status === "failure" || troveData.status === "failure") {
+      return null;
+    }
+
+    if (troveStatus.result === TROVE_STATUS_NONEXISTENT) {
       return null;
     }
 
     let status: TroveStatus;
-    if (troveStatus === TROVE_STATUS_ACTIVE || troveStatus === TROVE_STATUS_ZOMBIE) {
+    if (troveStatus.result === TROVE_STATUS_ACTIVE || troveStatus.result === TROVE_STATUS_ZOMBIE) {
       status = "active";
-    } else if (troveStatus === TROVE_STATUS_CLOSED_BY_OWNER) {
+    } else if (troveStatus.result === TROVE_STATUS_CLOSED_BY_OWNER) {
       status = "closed";
-    } else if (troveStatus === TROVE_STATUS_CLOSED_BY_LIQUIDATION) {
+    } else if (troveStatus.result === TROVE_STATUS_CLOSED_BY_LIQUIDATION) {
       status = "liquidated";
     } else {
       status = "closed";
@@ -1114,21 +1117,24 @@ export async function fetchLoanByIdRpcOnly(
 
     const now = Date.now();
 
+    const borrowerAddress = borrower.status === "success" ? borrower.result : zeroAddress;
+    const batchManagerAddress = batchManager.status === "success" ? batchManager.result : zeroAddress;
+
     return {
       type: "borrow",
-      batchManager: isAddressEqual(batchManager, zeroAddress) ? null : batchManager,
-      borrowed: dnum18(troveData.entireDebt),
-      borrower,
+      batchManager: isAddressEqual(batchManagerAddress, zeroAddress) ? null : batchManagerAddress,
+      borrowed: dnum18(troveData.result.entireDebt),
+      borrower: borrowerAddress,
       branchId,
       createdAt: now,
       lastUserActionAt: now,
       updatedAt: now,
-      recordedDebt: dnum18(troveData.recordedDebt),
-      deposit: dnum18(troveData.entireColl),
-      interestRate: dnum18(troveData.annualInterestRate),
+      recordedDebt: dnum18(troveData.result.recordedDebt),
+      deposit: dnum18(troveData.result.entireColl),
+      interestRate: dnum18(troveData.result.annualInterestRate),
       status,
       troveId,
-      isZombie: troveStatus === TROVE_STATUS_ZOMBIE,
+      isZombie: troveStatus.result === TROVE_STATUS_ZOMBIE,
       redemptionCount: 0,
       redeemedColl: dnum18(0n),
       redeemedDebt: dnum18(0n),
