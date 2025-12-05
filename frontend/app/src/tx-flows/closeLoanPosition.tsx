@@ -3,8 +3,8 @@ import type { FlowDeclaration } from "@/src/services/TransactionFlow";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION } from "@/src/constants";
 import { fmtnum } from "@/src/formatting";
-import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
+import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { LoanCard } from "@/src/screens/TransactionsScreen/LoanCard";
 import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
@@ -228,9 +228,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
               ctx.request.loan.branchId,
               ctx.request.loan.troveId,
             );
-            if (trove?.status === "closed") {
-              break;
-            }
+            if (trove?.status === "closed") break;
             await sleep(1000);
           }
         }

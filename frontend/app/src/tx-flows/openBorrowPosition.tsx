@@ -319,20 +319,15 @@ export const openBorrowPosition: FlowDeclaration<OpenBorrowPositionRequest> = {
         }
         const troveId: TroveId = `0x${troveOperation.args._troveId.toString(16)}`;
         const prefixedTroveId = getPrefixedTroveId(branch.branchId, troveId);
-        
+
         addPrefixedTroveIdsToStoredState(ctx.storedState, [prefixedTroveId]);
 
         const subgraphIsDown = subgraphIndicator.hasError();
         if (!subgraphIsDown) {
         // wait for the trove to appear in the subgraph
           while (true) {
-            const trove = await getIndexedTroveById(
-              branch.branchId,
-              troveId,
-            );
-            if (trove !== null) {
-              break;
-            }
+            const trove = await getIndexedTroveById(branch.branchId, troveId);
+            if (trove !== null) break;
             await sleep(1000);
           }
         }

@@ -168,14 +168,10 @@ export async function detectTroveBranches(
           functionName: "ownerOf",
           args: [BigInt(troveId)],
         });
-
-        if (owner) {
-          return branch.branchId;
-        }
-      } catch (error) {
-        // Trove doesn't exist on this branch
+        return owner ? branch.branchId : null;
+      } catch {
+        return null;
       }
-      return null;
     }),
   );
 
@@ -1068,14 +1064,6 @@ export function useTroveRateUpdateCooldown(branchId: BranchId, troveId: TroveId)
   });
 }
 
-/**
- * Fetches loan data using only RPC calls.
- * This is a fallback for when the subgraph is unavailable or returns errors
- *
- * Missing data (not available via RPC): createdAt, lastUserActionAt, updatedAt,
- * redemptionCount, redeemedColl, redeemedDebt, type, status, liquidatedColl,
- * liquidatedDebt, collSurplus, priceAtLiquidation
- */
 export async function fetchLoanByIdRpcOnly(
   wagmiConfig: WagmiConfig,
   fullId: null | PrefixedTroveId,
@@ -1132,22 +1120,22 @@ export async function fetchLoanByIdRpcOnly(
       borrowed: dnum18(troveData.entireDebt),
       borrower,
       branchId,
-      createdAt: now, // Missing
-      lastUserActionAt: now, // Missing
-      updatedAt: now, // Missing
+      createdAt: now,
+      lastUserActionAt: now,
+      updatedAt: now,
       recordedDebt: dnum18(troveData.recordedDebt),
       deposit: dnum18(troveData.entireColl),
       interestRate: dnum18(troveData.annualInterestRate),
       status,
       troveId,
       isZombie: troveStatus === TROVE_STATUS_ZOMBIE,
-      redemptionCount: 0, // Missing
-      redeemedColl: dnum18(0n), // Missing
-      redeemedDebt: dnum18(0n), // Missing
-      liquidatedColl: dnum18(0n), // Missing
-      liquidatedDebt: dnum18(0n), // Missing
-      collSurplus: dnum18(0n), // Missing
-      priceAtLiquidation: dnum18(0n), // Missing
+      redemptionCount: 0,
+      redeemedColl: dnum18(0n),
+      redeemedDebt: dnum18(0n),
+      liquidatedColl: dnum18(0n),
+      liquidatedDebt: dnum18(0n),
+      collSurplus: dnum18(0n),
+      priceAtLiquidation: dnum18(0n),
     };
   } catch (error) {
     console.error("Error fetching loan via RPC:", error);
@@ -1497,49 +1485,14 @@ export function useNextOwnerIndex(
   borrower: null | Address,
   branchId: null | BranchId,
 ) {
-  const wagmiConfig = useWagmiConfig();
   const subgraphIsDown = useSubgraphIsDown();
-  const storedState = useStoredState();
 
   return useQuery({
-    queryKey: ["NextTroveId", borrower, branchId, subgraphIsDown, storedState.prefixedTroveIds],
+    queryKey: ["NextTroveId", borrower, branchId, subgraphIsDown],
     queryFn: async () => {
       if (!borrower || branchId === null) return null;
-
-      if (!subgraphIsDown) {
-        return getNextOwnerIndex(branchId, borrower);
-      }
-
-      const trovesForBranch = storedState.prefixedTroveIds.flatMap((prefixedId) => {
-        try {
-          const parsed = parsePrefixedTroveId(prefixedId as PrefixedTroveId);
-          return parsed.branchId === branchId ? [parsed.troveId] : [];
-        } catch {
-          return [];
-        }
-      });
-
-      const branch = getBranch(branchId);
-
-      const trovesResults = await readContracts(wagmiConfig, {
-        contracts: trovesForBranch.map((troveId) => ({
-          ...branch.contracts.TroveManager,
-          functionName: "Troves",
-          args: [troveId],
-        })),
-      });
-
-      let maxIndex = -1;
-      for (const result of trovesResults) {
-        if (result.status === "success" && result.result && Array.isArray(result.result)) {
-          const arrayIndex = Number(result.result[4]);
-          if (arrayIndex > maxIndex) {
-            maxIndex = arrayIndex;
-          }
-        }
-      }
-
-      return maxIndex + 1;
+      if (subgraphIsDown) return 0;
+      return getNextOwnerIndex(branchId, borrower);
     },
     enabled: borrower !== null && branchId !== null,
   });
@@ -1832,4 +1785,3 @@ export function useRedemptionSimulation(params: RedemptionSimulationParams) {
     },
   });
 }
-

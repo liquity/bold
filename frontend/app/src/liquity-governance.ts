@@ -476,14 +476,12 @@ export function useVotingPower(
     const timeElapsed = BigInt(Date.now()) - startTime;
     const correctedStartTime = startTime > blockTimestamp.data ? startTime : blockTimestamp.data;
     const timestamp = correctedStartTime + timeElapsed;
-    const userVotingPower = votingPowerMs(userLQTYStaked, userOffset, timestamp);
-    const totalVotingPower = votingPowerMs(totalLQTYStaked, totalOffset, timestamp);
+    const userVp = votingPowerMs(userLQTYStaked, userOffset, timestamp);
+    const totalVp = votingPowerMs(totalLQTYStaked, totalOffset, timestamp);
 
     // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
     callback(
-      !userVotingPower || !totalVotingPower
-        ? null
-        : dn.div(dnum18(userVotingPower), dnum18(totalVotingPower)),
+      !userVp || !totalVp ? null : dn.div(dnum18(userVp), dnum18(totalVp)),
     );
   }, updatesPerSecond);
 }
@@ -839,13 +837,13 @@ export function useBribingClaim(
               + epochDuration;
 
             // voting power at the end of the epoch
-            const userVotingPower = votingPower(userAllocation.voteLQTY, userAllocation.voteOffset, epochEnd);
-            const totalVotingPower = votingPower(totalAllocation.voteLQTY, totalAllocation.voteOffset, epochEnd);
-            const remainingVotingPower = totalVotingPower - claimedVotes;
+            const userVp = votingPower(userAllocation.voteLQTY, userAllocation.voteOffset, epochEnd);
+            const totalVp = votingPower(totalAllocation.voteLQTY, totalAllocation.voteOffset, epochEnd);
+            const remainingVp = totalVp - claimedVotes;
 
-            if (remainingVotingPower > 0n && userVotingPower > 0n) {
-              const userShare = userVotingPower <= remainingVotingPower ? userVotingPower : remainingVotingPower;
-              const shareRatio = dn.div(dnum18(userShare), dnum18(remainingVotingPower));
+            if (remainingVp > 0n && userVp > 0n) {
+              const userShare = userVp <= remainingVp ? userVp : remainingVp;
+              const shareRatio = dn.div(dnum18(userShare), dnum18(remainingVp));
 
               const boldClaim = dn.mul(dnum18(remainingBold), shareRatio);
               const bribeTokenClaim = dn.mul(dnum18(remainingBribeToken), shareRatio);
