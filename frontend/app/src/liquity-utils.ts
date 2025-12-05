@@ -1115,8 +1115,6 @@ export async function fetchLoanByIdRpcOnly(
       status = "closed";
     }
 
-    const now = Date.now();
-
     const borrowerAddress = borrower.status === "success" ? borrower.result : zeroAddress;
     const batchManagerAddress = batchManager.status === "success" ? batchManager.result : zeroAddress;
 
@@ -1126,9 +1124,9 @@ export async function fetchLoanByIdRpcOnly(
       borrowed: dnum18(troveData.result.entireDebt),
       borrower: borrowerAddress,
       branchId,
-      createdAt: now,
-      lastUserActionAt: now,
-      updatedAt: now,
+      createdAt: 0,
+      lastUserActionAt: 0,
+      updatedAt: 0,
       recordedDebt: dnum18(troveData.result.recordedDebt),
       deposit: dnum18(troveData.result.entireColl),
       interestRate: dnum18(troveData.result.annualInterestRate),
