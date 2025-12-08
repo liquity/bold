@@ -5,6 +5,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { ETH_GAS_COMPENSATION, MAX_UPFRONT_FEE } from "@/src/constants";
 import { dnum18 } from "@/src/dnum-utils";
 import { fmtnum } from "@/src/formatting";
+import { subgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { useDelegateDisplayName } from "@/src/liquity-delegate";
 import {
   getBranch,
@@ -313,12 +314,15 @@ export const openLeveragePosition: FlowDeclaration<OpenLeveragePositionRequest> 
         // Wait for trove to appear in subgraph
         // TODO: is this still needed? In `verifyTransaction` we wait for the
         // subgraph to index up to the block in which the TX was included.
-        while (true) {
-          const trove = await getIndexedTroveById(branch.branchId, troveId);
-          if (trove !== null) {
-            break;
+        const subgraphIsDown = subgraphIndicator.hasError();
+        if (!subgraphIsDown) {
+          while (true) {
+            const trove = await getIndexedTroveById(branch.branchId, troveId);
+            if (trove !== null) {
+              break;
+            }
+            await sleep(1000);
           }
-          await sleep(1000);
         }
       },
     },

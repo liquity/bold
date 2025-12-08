@@ -72,10 +72,16 @@ export function isTroveExistsError(error: unknown): boolean {
   return errorStr.includes("0xed58d81a") || errorStr.includes("TroveExists");
 }
 
+export function isGasEstimationRevertError(error: unknown): boolean {
+  const errorStr = String(error);
+  return errorStr.includes("EstimateGasExecutionError")
+    || (errorStr.includes("execution reverted") && errorStr.includes("Estimate Gas"));
+}
+
 export async function withOwnerIndexRetry<T>(
   initialOwnerIndex: number,
   fn: (ownerIndex: number) => Promise<T>,
-  maxRetries: number = 10,
+  maxRetries: number = 20,
 ): Promise<T> {
   let ownerIndex = initialOwnerIndex;
 
@@ -83,7 +89,7 @@ export async function withOwnerIndexRetry<T>(
     try {
       return await fn(ownerIndex);
     } catch (error) {
-      if (isTroveExistsError(error) && attempt < maxRetries - 1) {
+      if ((isTroveExistsError(error) || isGasEstimationRevertError(error)) && attempt < maxRetries - 1) {
         ownerIndex++;
         continue;
       }
