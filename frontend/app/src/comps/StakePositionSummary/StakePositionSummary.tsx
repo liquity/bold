@@ -354,7 +354,7 @@ export function StakePositionSummary({
                                     label="Total staked"
                                     value={
                                       <Amount
-                                        fallback="-"
+                                        fallback="−"
                                         fixed
                                         format="2z"
                                         suffix=" LQTY"

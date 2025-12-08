@@ -82,7 +82,7 @@ export function InfoBanner({
           >
             {icon}
             <div>
-              {!compact && messageDesktop} {linkHref && (
+              {!compact && messageDesktop} {linkHref && linkLabel && (
                 <LinkTextButton
                   href={linkHref}
                   external={linkExternal}
