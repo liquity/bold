@@ -10,17 +10,13 @@ import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { Value } from "@/src/comps/Value/Value";
-import {
-  REDEMPTION_FEE_HIGH,
-  REDEMPTION_MAX_ITERATIONS_PER_COLL,
-  REDEMPTION_SLIPPAGE_TOLERANCE,
-} from "@/src/constants";
+import { REDEMPTION_MAX_ITERATIONS_PER_COLL, REDEMPTION_SLIPPAGE_TOLERANCE } from "@/src/constants";
 import content from "@/src/content";
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getBranches, getCollToken, useRedemptionSimulation } from "@/src/liquity-utils";
-import { useCollateralPrices, usePrice } from "@/src/services/Prices";
+import { useCollateralRedemptionPrices, usePrice } from "@/src/services/Prices";
 import { zipWith } from "@/src/utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -50,8 +46,9 @@ export function RedeemScreen() {
   const account = useAccount();
   const boldBalance = useBalance(account.address, "BOLD");
   const boldPrice = usePrice("BOLD");
-  const collPrices = useCollateralPrices(branches.map((b) => b.symbol));
+  const collPrices = useCollateralRedemptionPrices(branches.map((b) => b.symbol));
   const boldRedeemed = useInputFieldValue(fmtnum);
+  console.log("boldRedeemed", boldRedeemed);
 
   const simulation = useRedemptionSimulation({
     boldAmount: boldRedeemed.parsed ?? DNUM_0,
@@ -83,7 +80,7 @@ export function RedeemScreen() {
   const balanceSufficient = amount && boldBalance.data && dn.lte(amount, boldBalance.data);
   const allowSubmit = account.isConnected && amountNonZero && balanceSufficient;
 
-  const drawer = boldRedeemed.isFocused
+  const drawer = boldRedeemed.isFocused || !account.isConnected
     ? null
     : !balanceSufficient
     ? {
@@ -109,6 +106,10 @@ export function RedeemScreen() {
     }
     : null;
 
+  const redemptionFee = simulation.data?.feePct && simulation.data.truncatedBold
+    ? dn.mul(simulation.data.feePct, simulation.data.truncatedBold)
+    : null;
+
   return (
     <Screen
       heading={{
@@ -125,7 +126,7 @@ export function RedeemScreen() {
         ),
       }}
     >
-      <VFlex gap={48}>
+      <VFlex gap={24}>
         <Field
           field={
             <InputField
@@ -137,7 +138,7 @@ export function RedeemScreen() {
                 />
               }
               drawer={drawer}
-              label="You pay"
+              label="You redeem"
               placeholder="0.00"
               secondary={{
                 start: fmtnum(boldRedeemedUsd, { prefix: "$", preset: "2z" }) || " ",
@@ -161,57 +162,116 @@ export function RedeemScreen() {
                 : boldRedeemed.inputFieldProps.value}
             />
           }
-          footer={{
-            end: (
-              <Field.FooterInfo
-                label="Redemption fee"
-                value={
-                  <HFlex gap={4}>
-                    <Value negative={simulation.data?.feePct && dn.gte(simulation.data.feePct, REDEMPTION_FEE_HIGH)}>
-                      <Amount value={simulation.data?.feePct} percentage />
-                    </Value>
-
-                    <InfoTooltip
-                      content={{
-                        heading: "Redemption fee",
-                        body: (
-                          <>
-                            You will be charged a dynamic redemption fee — the more redemptions, the higher the fee.
-                            During periods of no redemption activity, the fee slowly decreases towards a minimum of
-                            0.5%. If you see a fee significantly higher than this, it might make sense to try redeeming
-                            at a later time, or to break up your redemption into several smaller ones.
-                          </>
-                        ),
-                        footerLink: {
-                          label: "Learn more about the fee",
-                          href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation#is-there-a-redemption-fee",
-                        },
-                      }}
-                    />
-                  </HFlex>
-                }
-              />
-            ),
-          }}
         />
 
         <VFlex gap={24}>
-          <div>
-            <div className={css({ color: "contentAlt" })}>You receive</div>
+          <VFlex gap={12}>
+            <HFlex
+              justifyContent="space-between"
+              alignItems="center"
+              className={css({
+                paddingY: 12,
+                borderBottom: "1px solid token(colors.separator)",
+              })}
+            >
+              <HFlex gap={4} alignItems="center" className={css({ fontSize: 16 })}>
+                Redemption Fee
+                {simulation.data?.feePct && (
+                  <div className={css({ color: "contentAlt" })}>
+                    (<Amount value={simulation.data.feePct} percentage />)
+                  </div>
+                )}
+                <InfoTooltip
+                  content={{
+                    heading: "Redemption fee",
+                    body: (
+                      <>
+                        You will be charged a dynamic redemption fee — the more redemptions, the higher the fee. During
+                        periods of no redemption activity, the fee slowly decreases towards a minimum of 0.5%. If you
+                        see a fee significantly higher than this, it might make sense to try redeeming at a later time,
+                        or to break up your redemption into several smaller ones.
+                      </>
+                    ),
+                    footerLink: {
+                      label: "Learn more about the fee",
+                      href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation#is-there-a-redemption-fee",
+                    },
+                  }}
+                />
+              </HFlex>
+              <HFlex gap={8} alignItems="center">
+                <div className={css({ fontSize: 20 })}>
+                  <Amount
+                    format="2z"
+                    prefix=""
+                    value={redemptionFee}
+                    fallback="−"
+                  />
+                </div>
+                <TokenIcon symbol="BOLD" size={24} />
+              </HFlex>
+            </HFlex>
 
-            {branches.map((b) => (
-              <RedemptionOutput
-                key={b.symbol}
-                branchId={b.branchId}
-                amount={simulation.data?.collRedeemed[b.branchId]}
-                amountUsd={collRedeemedUsd?.[b.branchId]}
-              />
-            ))}
-          </div>
+            <HFlex
+              justifyContent="space-between"
+              alignItems="center"
+              className={css({
+                paddingY: 12,
+                borderBottom: "1px solid token(colors.separator)",
+              })}
+            >
+              <HFlex gap={8} alignItems="center">
+                <div className={css({ fontSize: 16 })}>Redeemed as</div>
+                {branches.map((b) => <TokenIcon key={b.symbol} symbol={b.symbol} size={16} />)}
+              </HFlex>
+              <VFlex alignItems="flex-end">
+                <HFlex gap={8} alignItems="center">
+                  <div className={css({ fontSize: 20 })}>
+                    <Amount
+                      format="2z"
+                      prefix=""
+                      value={simulation.data?.truncatedBold && redemptionFee
+                        ? dn.sub(simulation.data.truncatedBold, redemptionFee)
+                        : null}
+                      fallback="−"
+                    />
+                  </div>
+                  <TokenIcon symbol="BOLD" size={24} />
+                </HFlex>
+                <div className={css({ color: "contentAlt", fontSize: 14 })}>
+                  <Amount
+                    format="2z"
+                    prefix="$"
+                    value={simulation.data?.truncatedBold && redemptionFee
+                      ? dn.sub(simulation.data.truncatedBold, redemptionFee)
+                      : null}
+                    fallback="−"
+                  />{" "}
+                  worth of collateral
+                </div>
+              </VFlex>
+            </HFlex>
+          </VFlex>
 
-          <VFlex gap={8}>
+          <VFlex gap={8} className={css({ paddingTop: 12 })}>
             <HFlex justifyContent="space-between" gap={24}>
-              <div className={css({ color: "contentAlt" })}>Total in USD</div>
+              <HFlex gap={8} alignItems="center" className={css({ color: "contentAlt" })}>
+                You pay
+                <TokenIcon symbol="BOLD" size={16} />
+              </HFlex>
+              <HFlex gap={4} alignItems="baseline">
+                <Amount format="2z" prefix="" value={simulation.data?.truncatedBold} fallback="−" />
+                <div className={css({ color: "contentAlt" })}>
+                  (<Amount format="2z" prefix="$" value={boldRedeemedUsd} fallback="−" />)
+                </div>
+              </HFlex>
+            </HFlex>
+
+            <HFlex justifyContent="space-between" gap={24}>
+              <HFlex gap={8} alignItems="center" className={css({ color: "contentAlt" })}>
+                You receive
+                {branches.map((b) => <TokenIcon key={b.symbol} symbol={b.symbol} size={16} />)}
+              </HFlex>
               <Amount format="2z" prefix="$" value={totalCollRedeemedUsd} fallback="−" />
             </HFlex>
 
