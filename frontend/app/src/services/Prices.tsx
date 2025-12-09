@@ -57,13 +57,13 @@ export function usePrice(symbol: string | null): UseQueryResult<Dnum | null> {
   });
 }
 
-export function useCollateralPrices(symbols: CollateralSymbol[]) {
+export function useCollateralRedemptionPrices(symbols: CollateralSymbol[]) {
   return useReadContracts({
     allowFailure: false,
 
     contracts: symbols.map((symbol) => ({
       ...getBranchContract(symbol, "PriceFeed"),
-      functionName: "fetchPrice",
+      functionName: "fetchRedemptionPrice",
     } as const)),
 
     query: {

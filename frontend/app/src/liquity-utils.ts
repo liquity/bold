@@ -1571,10 +1571,12 @@ export function useRedemptionSimulation(params: RedemptionSimulationParams) {
   // We'd love to use `useReadContract()` for this, but wagmi/viem won't let us
   // do that for mutating functions, even though it's a perfectly valid use case.
   // We could hack the ABI, but that's yucky.
+  // We pass a dummy account (zeroAddress) so simulations work without a connected wallet.
   return useSimulateContract({
     ...RedemptionHelper,
     functionName: "truncateRedemption",
     args: [debounced.boldAmount, debounced.maxIterationsPerCollateral],
+    account: zeroAddress,
 
     query: {
       refetchInterval: 12_000,
