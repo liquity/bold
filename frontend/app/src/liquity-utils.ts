@@ -8,6 +8,7 @@ import type {
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
+  SafetyModeData,
   Token,
   TokenSymbol,
   TroveId,
@@ -1587,5 +1588,43 @@ export function useRedemptionSimulation(params: RedemptionSimulationParams) {
         collRedeemed: output.map(({ coll }) => dnum18(coll)),
       }),
     },
+  });
+}
+
+export function useSafetyMode(): UseQueryResult<SafetyModeData> {
+  const branches = getBranches();
+
+  const allRatios = branches.map((branch) => useBranchCollateralRatios(branch.id));
+
+  const allLoaded = allRatios.every((r) => r.data !== undefined);
+
+  return useQuery({
+    queryKey: [
+      "safetyMode",
+      ...allRatios.map((r) => jsonStringifyWithDnum(r.data?.tcr)),
+    ],
+    queryFn: () => {
+      const branchesInSafetyMode: SafetyModeData["branchesInSafetyMode"] = [];
+
+      for (let i = 0; i < branches.length; i++) {
+        const branch = branches[i];
+        const ratios = allRatios[i];
+
+        if (branch && ratios?.data?.isBelowCcr) {
+          branchesInSafetyMode.push({
+            branchId: branch.id,
+            symbol: branch.symbol,
+            tcr: ratios.data.tcr,
+            ccr: ratios.data.ccr,
+          });
+        }
+      }
+
+      return {
+        isAnySafetyMode: branchesInSafetyMode.length > 0,
+        branchesInSafetyMode,
+      };
+    },
+    enabled: allLoaded,
   });
 }
