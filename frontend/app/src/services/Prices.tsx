@@ -57,22 +57,6 @@ export function usePrice(symbol: string | null): UseQueryResult<Dnum | null> {
   });
 }
 
-export function useCollateralPrices(symbols: CollateralSymbol[]) {
-  return useReadContracts({
-    allowFailure: false,
-
-    contracts: symbols.map((symbol) => ({
-      ...getBranchContract(symbol, "PriceFeed"),
-      functionName: "fetchPrice",
-    } as const)),
-
-    query: {
-      select: (data) => data.map(([price]) => dnum18(price)),
-      refetchInterval: 12_000,
-    },
-  });
-}
-
 export function useCollateralRedemptionPrices(symbols: CollateralSymbol[]) {
   return useReadContracts({
     allowFailure: false,

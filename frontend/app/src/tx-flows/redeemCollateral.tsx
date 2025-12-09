@@ -4,9 +4,8 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_1 } from "@/src/dnum-utils";
 import { getBranches, getCollToken } from "@/src/liquity-utils";
-import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { useCollateralPrices, usePrice } from "@/src/services/Prices";
+import { useCollateralRedemptionPrices, usePrice } from "@/src/services/Prices";
 import { vDnum } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, InfoTooltip, TokenIcon, VFlex } from "@liquity2/uikit";
@@ -36,9 +35,7 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
     const { amount, feePct, collRedeemed } = ctx.request;
     const branches = getBranches();
     const boldPrice = usePrice("BOLD");
-    const collPrices = useCollateralPrices(branches.map((b) => b.symbol));
-
-    const redemptionFee = dn.mul(feePct, amount);
+    const collPrices = useCollateralRedemptionPrices(branches.map((b) => b.symbol));
 
     return (
       <VFlex gap={12}>
@@ -59,7 +56,8 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
             <InfoTooltip>
               This is the estimated amount of BOLD you will pay, including a{" "}
               <Amount value={feePct} percentage format="full" /> redemption fee. The actual fee may be up to{" "}
-              <Amount value={REDEMPTION_SLIPPAGE_TOLERANCE} percentage format="full" /> higher than this due to slippage.
+              <Amount value={REDEMPTION_SLIPPAGE_TOLERANCE} percentage format="full" />{" "}
+              higher than this due to slippage.
             </InfoTooltip>
           </HFlex>
           <VFlex alignItems="flex-end">

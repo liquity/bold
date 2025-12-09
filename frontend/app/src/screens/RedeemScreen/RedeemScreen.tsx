@@ -1,7 +1,5 @@
 "use client";
 
-import type { BranchId } from "@/src/types";
-import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -48,7 +46,6 @@ export function RedeemScreen() {
   const boldPrice = usePrice("BOLD");
   const collPrices = useCollateralRedemptionPrices(branches.map((b) => b.symbol));
   const boldRedeemed = useInputFieldValue(fmtnum);
-  console.log("boldRedeemed", boldRedeemed);
 
   const simulation = useRedemptionSimulation({
     boldAmount: boldRedeemed.parsed ?? DNUM_0,
@@ -165,16 +162,14 @@ export function RedeemScreen() {
         />
 
         <VFlex gap={24}>
-          <VFlex gap={12}>
-            <HFlex
-              justifyContent="space-between"
-              alignItems="center"
-              className={css({
-                paddingY: 12,
-                borderBottom: "1px solid token(colors.separator)",
-              })}
-            >
-              <HFlex gap={4} alignItems="center" className={css({ fontSize: 16 })}>
+          <VFlex
+            className={css({
+              paddingBottom: 24,
+              borderBottom: "1px solid token(colors.separator)",
+            })}
+          >
+            <HFlex justifyContent="space-between" alignItems="center">
+              <HFlex gap={4} alignItems="center">
                 Redemption Fee
                 {simulation.data?.feePct && (
                   <div className={css({ color: "contentAlt" })}>
@@ -200,100 +195,105 @@ export function RedeemScreen() {
                 />
               </HFlex>
               <HFlex gap={8} alignItems="center">
-                <div className={css({ fontSize: 20 })}>
-                  <Amount
-                    format="2z"
-                    prefix=""
-                    value={redemptionFee}
-                    fallback="−"
-                  />
-                </div>
+                <Value
+                  negative={redemptionFee !== null && dn.gt(redemptionFee, DNUM_0)}
+                  className={css({ fontSize: 20 })}
+                >
+                  {redemptionFee !== null && dn.gt(redemptionFee, DNUM_0) ? "-" : ""}
+                  <Amount format="2z" value={redemptionFee} fallback="−" />
+                </Value>
                 <TokenIcon symbol="BOLD" size={24} />
               </HFlex>
             </HFlex>
+          </VFlex>
 
-            <HFlex
-              justifyContent="space-between"
-              alignItems="center"
-              className={css({
-                paddingY: 12,
-                borderBottom: "1px solid token(colors.separator)",
-              })}
-            >
-              <HFlex gap={8} alignItems="center">
-                <div className={css({ fontSize: 16 })}>Redeemed as</div>
-                {branches.map((b) => <TokenIcon key={b.symbol} symbol={b.symbol} size={16} />)}
-              </HFlex>
-              <VFlex alignItems="flex-end">
+          <VFlex>
+            <VFlex gap={12}>
+              <HFlex justifyContent="space-between" alignItems="center">
                 <HFlex gap={8} alignItems="center">
+                  You receive
+                </HFlex>
+                <VFlex alignItems="flex-end" gap={4}>
                   <div className={css({ fontSize: 20 })}>
                     <Amount
                       format="2z"
-                      prefix=""
+                      prefix="$"
+                      value={totalCollRedeemedUsd}
+                      fallback="−"
+                    />
+                  </div>
+                  <div className={css({ color: "contentAlt", fontSize: 14 })}>
+                    <Amount
+                      format="2z"
                       value={simulation.data?.truncatedBold && redemptionFee
                         ? dn.sub(simulation.data.truncatedBold, redemptionFee)
                         : null}
                       fallback="−"
-                    />
+                    />{" "}
+                    BOLD worth of collateral
                   </div>
-                  <TokenIcon symbol="BOLD" size={24} />
-                </HFlex>
-                <div className={css({ color: "contentAlt", fontSize: 14 })}>
-                  <Amount
-                    format="2z"
-                    prefix="$"
-                    value={simulation.data?.truncatedBold && redemptionFee
-                      ? dn.sub(simulation.data.truncatedBold, redemptionFee)
-                      : null}
-                    fallback="−"
-                  />{" "}
-                  worth of collateral
-                </div>
+                </VFlex>
+              </HFlex>
+
+              <VFlex
+                gap={8}
+                className={css({
+                  paddingTop: 8,
+                })}
+              >
+                {branches.map((branch) => {
+                  const collAmount = simulation.data?.collRedeemed[branch.branchId];
+                  const collUsd = collRedeemedUsd?.[branch.branchId];
+                  const collToken = getCollToken(branch.branchId);
+                  const tokenName = collToken.symbol === "ETH" ? "WETH" : collToken.name;
+
+                  if (!collAmount || dn.eq(collAmount, DNUM_0)) {
+                    return null;
+                  }
+
+                  return (
+                    <HFlex key={branch.symbol} justifyContent="space-between" alignItems="center">
+                      <HFlex gap={8} alignItems="center" className={css({ color: "contentAlt" })}>
+                        <TokenIcon symbol={branch.symbol} size={20} />
+                        {tokenName}
+                      </HFlex>
+                      <HFlex gap={4} alignItems="baseline">
+                        <Amount format="4z" value={collAmount} fallback="−" />
+                        <span className={css({ color: "contentAlt", fontSize: 14 })}>
+                          (<Amount format="2z" prefix="$" value={collUsd} fallback="−" />)
+                        </span>
+                      </HFlex>
+                    </HFlex>
+                  );
+                })}
               </VFlex>
-            </HFlex>
+            </VFlex>
           </VFlex>
 
-          <VFlex gap={8} className={css({ paddingTop: 12 })}>
-            <HFlex justifyContent="space-between" gap={24}>
-              <HFlex gap={8} alignItems="center" className={css({ color: "contentAlt" })}>
-                You pay
-                <TokenIcon symbol="BOLD" size={16} />
-              </HFlex>
-              <HFlex gap={4} alignItems="baseline">
-                <Amount format="2z" prefix="" value={simulation.data?.truncatedBold} fallback="−" />
-                <div className={css({ color: "contentAlt" })}>
-                  (<Amount format="2z" prefix="$" value={boldRedeemedUsd} fallback="−" />)
-                </div>
-              </HFlex>
+          <HFlex
+            justifyContent="space-between"
+            alignItems="center"
+            className={css({
+              paddingTop: 16,
+              borderTop: "1px solid token(colors.separator)",
+            })}
+          >
+            <HFlex gap={4} className={css({ color: "contentAlt" })}>
+              Profit/loss
+              <InfoTooltip>
+                This is the estimated USD value of all the tokens you will receive minus the value of the BOLD you are
+                paying.
+              </InfoTooltip>
             </HFlex>
-
-            <HFlex justifyContent="space-between" gap={24}>
-              <HFlex gap={8} alignItems="center" className={css({ color: "contentAlt" })}>
-                You receive
-                {branches.map((b) => <TokenIcon key={b.symbol} symbol={b.symbol} size={16} />)}
-              </HFlex>
-              <Amount format="2z" prefix="$" value={totalCollRedeemedUsd} fallback="−" />
-            </HFlex>
-
-            <HFlex justifyContent="space-between" gap={24}>
-              <HFlex gap={4} className={css({ color: "contentAlt" })}>
-                Profit/loss
-                <InfoTooltip>
-                  This is the estimated USD value of all the tokens you will receive minus the value of the BOLD you are
-                  paying.
-                </InfoTooltip>
-              </HFlex>
-
-              <Value negative={isLoss}>
-                <Amount
-                  format="2z"
-                  prefix={isLoss ? "-$" : "$"}
-                  value={profitLoss && dn.abs(profitLoss)}
-                  fallback="−"
-                />
-              </Value>
-            </HFlex>
-          </VFlex>
+            <Value negative={isLoss} className={css({ fontSize: 20 })}>
+              <Amount
+                format="2z"
+                prefix={isLoss ? "-$" : "+$"}
+                value={profitLoss && dn.abs(profitLoss)}
+                fallback="−"
+              />
+            </Value>
+          </HFlex>
         </VFlex>
 
         <InfoBox title="Important note">
@@ -331,49 +331,6 @@ export function RedeemScreen() {
         />
       </VFlex>
     </Screen>
-  );
-}
-
-function RedemptionOutput(props: {
-  branchId: BranchId;
-  amount: Dnum | null | undefined;
-  amountUsd: Dnum | null | undefined;
-}) {
-  const collateralToken = getCollToken(props.branchId);
-  const collateralTokenName = collateralToken.symbol === "ETH" ? "WETH" : collateralToken.name;
-
-  return (
-    <HFlex
-      gap={24}
-      alignItems="start"
-      justifyContent="space-between"
-      className={css({
-        paddingY: 18,
-        borderBottom: "1px solid token(colors.separator)",
-      })}
-    >
-      <HFlex gap={4} className={css({ paddingTop: 8, fontSize: 20 })}>
-        {collateralTokenName}
-        {collateralTokenName === "WETH" && (
-          <InfoTooltip heading="Wrapped Ether">
-            You will receive{" "}
-            <abbr title="Wrapped Ether">WETH</abbr>, which is an ERC-20 tokenized version of ETH that is equivalent in
-            value.
-          </InfoTooltip>
-        )}
-      </HFlex>
-
-      <VFlex>
-        <HFlex gap={8} alignItems="center" className={css({ fontSize: 28 })}>
-          <Amount format="4z" value={props.amount} fallback="−" title={{ suffix: ` ${collateralTokenName}` }} />
-          <TokenIcon symbol={collateralToken.symbol} size={24} />
-        </HFlex>
-
-        <div className={css({ color: "contentAlt", textAlign: "right", paddingRight: 34 })}>
-          <Amount prefix="$" value={props.amountUsd} fallback="−" />
-        </div>
-      </VFlex>
-    </HFlex>
   );
 }
 
