@@ -16,9 +16,9 @@ type InfoBannerProps = {
   show: boolean;
   icon: ReactNode;
   messageDesktop: ReactNode;
-  linkLabel?: string;
+  linkLabel: string;
   linkLabelMobile?: string;
-  linkHref?: string;
+  linkHref: string;
   linkExternal?: boolean;
   backgroundColor?: string;
   foregroundColor?: string;
@@ -82,37 +82,36 @@ export function InfoBanner({
           >
             {icon}
             <div>
-              {!compact && messageDesktop} {linkHref && linkLabel && (
-                <LinkTextButton
-                  href={linkHref}
-                  external={linkExternal}
-                  label={
+              {!compact && messageDesktop}{" "}
+              <LinkTextButton
+                href={linkHref}
+                external={linkExternal}
+                label={
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                    })}
+                  >
+                    <div>
+                      {compact && linkLabelMobile ? linkLabelMobile : linkLabel}
+                    </div>
                     <div
                       className={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
+                        transformOrigin: "50% 50%",
+                        transform: "translateY(1px) rotate(90deg)",
                       })}
                     >
-                      <div>
-                        {compact && linkLabelMobile ? linkLabelMobile : linkLabel}
-                      </div>
-                      <div
-                        className={css({
-                          transformOrigin: "50% 50%",
-                          transform: "translateY(1px) rotate(90deg)",
-                        })}
-                      >
-                        <IconChevronSmallUp size={12} />
-                      </div>
+                      <IconChevronSmallUp size={12} />
                     </div>
-                  }
-                  className={css({
-                    color: "inherit!",
-                    textDecoration: "underline",
-                  })}
-                />
-              )}
+                  </div>
+                }
+                className={css({
+                  color: "inherit!",
+                  textDecoration: "underline",
+                })}
+              />
             </div>
           </div>
         </div>
