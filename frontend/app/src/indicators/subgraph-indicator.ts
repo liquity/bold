@@ -1,5 +1,5 @@
 import { useIndicator } from "@/src/services/IndicatorManager";
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 let errorMessage: string | null = null;
 const listeners = new Set<(error: string | null) => void>();
@@ -14,6 +14,7 @@ export const subgraphIndicator = {
     errorMessage = null;
     listeners.forEach((listener) => listener(errorMessage));
   },
+  hasError: () => errorMessage !== null,
 };
 
 export function useSubgraphIndicator() {
@@ -35,4 +36,15 @@ export function useSubgraphIndicator() {
       listeners.delete(update);
     };
   }, [indicator]);
+}
+
+export function useSubgraphIsDown(): boolean {
+  return useSyncExternalStore(
+    (callback) => {
+      listeners.add(callback);
+      return () => listeners.delete(callback);
+    },
+    () => errorMessage !== null,
+    () => false,
+  );
 }

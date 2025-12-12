@@ -18,6 +18,7 @@ import {
   useDebtInFrontOfLoan,
   useInterestRateChartData,
 } from "@/src/liquity-utils";
+import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
@@ -441,6 +442,8 @@ function ManualInterestRateSlider({
     return findClosestRateIndex(chartRates, rate) / chartRates.length;
   }, []);
 
+  const subgraphIsDown = useSubgraphIsDown();
+
   const value = useMemo(() => {
     const rate = interestRate?.[0] ?? 0n;
     const chartRates = interestChartData.data?.map(({ rate }) => rate[0]);
@@ -499,7 +502,7 @@ function ManualInterestRateSlider({
     ];
   }, [interestChartData.data, rateToSliderPosition]);
 
-  const transition = useAppear(value !== -1);
+  const transition = useAppear(value !== -1 && !subgraphIsDown);
 
   const breakpoint = useBreakpointName();
 

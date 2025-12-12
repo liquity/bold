@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 
 import { Indicator } from "@/src/comps/Indicator/Indicator";
 import { useRpcIndicator } from "@/src/indicators/rpc-indicator";
-import { useSubgraphIndicator } from "@/src/indicators/subgraph-indicator";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 type ErrorState = {
@@ -38,7 +37,7 @@ export function useIndicator() {
 }
 
 function AllIndicators() {
-  useSubgraphIndicator();
+  // useSubgraphIndicator(); When subgraph is down, we now display a banner
   useRpcIndicator();
   return null;
 }
@@ -91,12 +90,12 @@ export function IndicatorManager({
       const errorState = prevErrors.get(id);
       const update = new Map(prevErrors);
       update.delete(id);
-      
+
       // if this is the last error, show the success message
       if (errorState?.successMessage && prevErrors.size === 1) {
         showSuccess(errorState.successMessage);
       }
-      
+
       return update;
     });
   }, [showSuccess]);

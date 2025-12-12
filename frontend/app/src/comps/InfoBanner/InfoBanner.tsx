@@ -21,6 +21,7 @@ type InfoBannerProps = {
   linkHref: string;
   linkExternal?: boolean;
   backgroundColor?: string;
+  foregroundColor?: string;
 };
 
 export function InfoBanner({
@@ -32,6 +33,7 @@ export function InfoBanner({
   linkHref,
   linkExternal = false,
   backgroundColor = token("colors.brandDarkBlue"),
+  foregroundColor = "#fff",
 }: InfoBannerProps) {
   const [compact, setCompact] = useState(false);
   useBreakpoint(({ medium }) => {
@@ -62,7 +64,7 @@ export function InfoBanner({
             height: 41,
             padding: "0 16px",
             textAlign: "center",
-            color: "#fff",
+            color: foregroundColor,
             borderBottom: `1px solid #fff`,
           })}
           style={{ background: backgroundColor }}

@@ -8,6 +8,7 @@ import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { useGovernanceStats, useGovernanceUser } from "@/src/liquity-governance";
 import { useStakePosition } from "@/src/liquity-utils";
+import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
@@ -26,6 +27,7 @@ export function PanelStaking() {
 
   const govStats = useGovernanceStats();
   const govUser = useGovernanceUser(account.address ?? null);
+  const subgraphIsDown = useSubgraphIsDown();
 
   const stakedLqty = dnum18(govUser.data?.stakedLQTY);
   const totalStakedLqty = dnum18(govStats.data?.totalLQTYStaked);
@@ -177,23 +179,25 @@ export function PanelStaking() {
             }}
           />
         }
-        footer={{
-          start: (
-            <Field.FooterInfo
-              label="New voting share"
-              value={
-                <HFlex>
-                  <div>
-                    <Amount value={updatedShare} percentage suffix="%" />
-                  </div>
-                  <InfoTooltip>
-                    {content.stakeScreen.infoTooltips.votingShare}
-                  </InfoTooltip>
-                </HFlex>
-              }
-            />
-          ),
-        }}
+        footer={!subgraphIsDown
+          ? {
+            start: (
+              <Field.FooterInfo
+                label="New voting share"
+                value={
+                  <HFlex>
+                    <div>
+                      <Amount value={updatedShare} percentage suffix="%" />
+                    </div>
+                    <InfoTooltip>
+                      {content.stakeScreen.infoTooltips.votingShare}
+                    </InfoTooltip>
+                  </HFlex>
+                }
+              />
+            ),
+          }
+          : undefined}
       />
       <div
         className={css({
