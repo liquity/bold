@@ -21,7 +21,7 @@ import {
   useEarnPool,
   useLiquityStats,
 } from "@/src/liquity-utils";
-import { isSboldEnabled, useSboldStats } from "@/src/sbold";
+import { isSboldEnabled } from "@/src/sbold";
 import { useAccount } from "@/src/wagmi-utils";
 import { isYboldEnabled } from "@/src/ybold";
 import { css } from "@/styled-system/css";
@@ -393,7 +393,6 @@ function EarnRewardsRow({
   const token = getToken(symbol);
   const earnPool = useEarnPool(branch?.id ?? null);
 
-  const sboldStats = useSboldStats();
   const liquityStats = useLiquityStats();
 
   /**
@@ -410,14 +409,17 @@ function EarnRewardsRow({
     | null
     | undefined = useMemo(() => {
       if (symbol === "SBOLD") {
-        if (!sboldStats.data) {
+        const sbold = liquityStats.data?.sBOLD;
+
+        if (!sbold) {
           return null;
         }
 
         return {
-          apr: sboldStats.data?.apr,
-          apr7d: sboldStats.data?.apr7d,
-          totalDeposited: sboldStats.data?.totalBold,
+          apr: "N/A",
+          apr7d: sbold.weeklyApr,
+          totalDeposited: sbold.tvl,
+          link: sbold.link,
         };
       }
       if (symbol === "YBOLD") {
@@ -435,7 +437,7 @@ function EarnRewardsRow({
         };
       }
       return earnPool.data;
-    }, [symbol, sboldStats.data, liquityStats.data, earnPool.data]);
+    }, [symbol, liquityStats.data, earnPool.data]);
 
   return (
     <tr>
