@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 const COINGECKO_IDS: Record<string, string> = {
   WETH: "ethereum",
   TBTC: "tbtc",
-  SAGA: "saga",
+  SAGA: "saga-2",
   STATOM: "stride-staked-atom",
   YUSD: "yusd-stablecoin",
   MUST: "must-stablecoin",
