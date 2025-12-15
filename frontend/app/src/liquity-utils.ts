@@ -31,7 +31,14 @@ import {
 } from "@/src/constants";
 import { CONTRACTS, getBranchContract, getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
-import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } from "@/src/env";
+import {
+  AIRDROP_VAULTS,
+  AIRDROP_VAULTS_URL,
+  CHAIN_BLOCK_EXPLORER,
+  ENV_BRANCHES,
+  LEGACY_CHECK,
+  LIQUITY_STATS_URL,
+} from "@/src/env";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { combineStatus } from "@/src/query-utils";
 import { useDebounced } from "@/src/react-utils";
@@ -1653,6 +1660,37 @@ export function useRedemptionSimulation(params: RedemptionSimulationParams) {
         feePct: dnum18(feePct),
         collRedeemed: output.map(({ coll }) => dnum18(coll)),
       }),
+    },
+  });
+}
+
+const AirdropVaultsSchema = v.array(
+  v.object({
+    name: v.string(),
+    link: v.string(),
+    icon: v.string(),
+  }),
+);
+
+export type AirdropVaults = v.InferOutput<typeof AirdropVaultsSchema>;
+
+export function useAirdropVaults(): UseQueryResult<AirdropVaults | null> {
+  return useQuery({
+    queryKey: ["airdropVaults"],
+    queryFn: async () => {
+      if (!AIRDROP_VAULTS || !AIRDROP_VAULTS_URL) return null;
+
+      const response = await fetch(AIRDROP_VAULTS_URL);
+      const data = await response.json();
+      const vaults = v.parse(AirdropVaultsSchema, data);
+
+      const baseUrl = new URL(AIRDROP_VAULTS_URL).origin;
+      return vaults.map((vault) => ({
+        ...vault,
+        icon: vault.icon.startsWith("http")
+          ? vault.icon
+          : `${baseUrl}${vault.icon}`,
+      }));
     },
   });
 }
