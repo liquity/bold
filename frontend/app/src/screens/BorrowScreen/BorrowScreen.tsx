@@ -25,6 +25,7 @@ import {
   useBranchCollateralRatios,
   useBranchDebt,
   useNextOwnerIndex,
+  usePredictOpenTroveUpfrontFee,
   useRedemptionRiskOfInterestRate,
 } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
@@ -37,6 +38,7 @@ import {
   Dropdown,
   HFlex,
   IconExternal,
+  IconPlus,
   IconSuggestion,
   InfoTooltip,
   InputField,
@@ -107,9 +109,19 @@ export function BorrowScreen() {
   const nextOwnerIndex = useNextOwnerIndex(account.address ?? null, branch.id);
   const redemptionRisk = useRedemptionRiskOfInterestRate(branch.id, interestRate ?? DNUM_0);
 
+  const upfrontFee = usePredictOpenTroveUpfrontFee(
+    branch.id,
+    debt.parsed ?? DNUM_0,
+    interestRateDelegate ?? interestRate ?? DNUM_0,
+  );
+
+  const debtWithFee = debt.parsed && upfrontFee.data
+    ? dn.add(debt.parsed, upfrontFee.data)
+    : debt.parsed;
+
   const loanDetails = getLoanDetails(
     deposit.isEmpty ? null : deposit.parsed,
-    debt.isEmpty ? null : debt.parsed,
+    debtWithFee ?? (debt.isEmpty ? null : debt.parsed),
     interestRate,
     collateral.collateralRatio,
     collPrice.data ?? null,
@@ -398,9 +410,23 @@ export function BorrowScreen() {
         footer={[
           {
             start: (
-              <Field.FooterInfoLiquidationRisk
-                riskLevel={loanDetails.liquidationRisk}
-              />
+              <HFlex gap={8} className={css({ color: "contentAlt", fontSize: 14 })}>
+                <div className={css({ margin: -1 })}>
+                  <IconPlus size={14} />
+                </div>
+                <HFlex gap={4}>
+                  <Amount
+                    key="end"
+                    fallback="…"
+                    value={upfrontFee.data}
+                    suffix=" BOLD creation fee"
+                  />
+                  <InfoTooltip heading="BOLD creation fee">
+                    This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of
+                    average interest for the respective collateral asset.
+                  </InfoTooltip>
+                </HFlex>
+              </HFlex>
             ),
             end: (
               <Field.FooterInfoLiquidationPrice
@@ -409,6 +435,12 @@ export function BorrowScreen() {
             ),
           },
           {
+            start: (
+              <Field.FooterInfoLiquidationRisk
+                riskLevel={loanDetails.liquidationRisk}
+              />
+            ),
+
             end: (
               <Field.FooterInfoLoanToValue
                 ltvRatio={loanDetails.ltv}
