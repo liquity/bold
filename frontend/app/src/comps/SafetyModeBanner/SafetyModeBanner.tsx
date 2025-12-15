@@ -2,6 +2,7 @@
 
 import { InfoBanner } from "@/src/comps/InfoBanner/InfoBanner";
 import { useSafetyMode } from "@/src/liquity-utils";
+import { token } from "@/styled-system/tokens";
 import { IconWarning } from "@liquity2/uikit";
 
 export function SafetyModeBanner() {
@@ -24,6 +25,7 @@ export function SafetyModeBanner() {
       linkLabelMobile="Safety Mode active"
       linkHref="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#docs-internal-guid-fee4cc44-7fff-c866-9ccf-bac2da1b5222"
       linkExternal
+      backgroundColor={token("colors.negativeStrong")}
     />
   );
 }
