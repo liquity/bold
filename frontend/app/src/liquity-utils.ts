@@ -35,7 +35,7 @@ import { CHAIN_BLOCK_EXPLORER, ENV_BRANCHES, LEGACY_CHECK, LIQUITY_STATS_URL } f
 import { getRedemptionRisk } from "@/src/liquity-math";
 import { combineStatus } from "@/src/query-utils";
 import { useDebounced } from "@/src/react-utils";
-import { usePrice } from "@/src/services/Prices";
+import { useCollateralPrices, usePrice } from "@/src/services/Prices";
 import {
   getAllInterestRateBrackets,
   getIndexedTroveById,
@@ -838,6 +838,41 @@ export function useBranchDebt(branchId: BranchId) {
   });
 }
 
+function calcCollateralRatios(
+  totalColl: bigint,
+  totalDebt: bigint,
+  ccr_: bigint,
+  collPrice: Dnum | null,
+): { ccr: Dnum; isBelowCcr: boolean; tcr: Dnum | null } {
+  const ccr = dnum18(ccr_);
+
+  if (!collPrice || dn.eq(totalDebt, 0)) {
+    return { ccr, isBelowCcr: false, tcr: null };
+  }
+
+  // TCR = (totalCollateral * collTokenPrice) / totalDebt
+  const tcr = dn.div(
+    dn.mul(dnum18(totalColl), collPrice),
+    dnum18(totalDebt),
+  );
+
+  return { ccr, isBelowCcr: dn.lt(tcr, ccr), tcr };
+}
+
+function getCollateralRatioContractCalls(branchId: BranchId) {
+  const TroveManager = getBranchContract(branchId, "TroveManager");
+  return [{
+    ...TroveManager,
+    functionName: "getEntireBranchColl",
+  }, {
+    ...TroveManager,
+    functionName: "getEntireBranchDebt",
+  }, {
+    ...TroveManager,
+    functionName: "CCR",
+  }] as const;
+}
+
 export function useBranchCollateralRatios(branchId: BranchId) {
   const wagmiConfig = useWagmiConfig();
   const collToken = getCollToken(branchId);
@@ -850,39 +885,55 @@ export function useBranchCollateralRatios(branchId: BranchId) {
       jsonStringifyWithDnum(collTokenPrice.data),
     ],
     queryFn: async () => {
-      const TroveManager = getBranchContract(branchId, "TroveManager");
-
       const [totalColl, totalDebt, ccr_] = await readContracts(wagmiConfig, {
-        contracts: [{
-          ...TroveManager,
-          functionName: "getEntireBranchColl",
-        }, {
-          ...TroveManager,
-          functionName: "getEntireBranchDebt",
-        }, {
-          ...TroveManager,
-          functionName: "CCR",
-        }],
+        contracts: getCollateralRatioContractCalls(branchId),
         allowFailure: false,
       });
 
-      const ccr = dnum18(ccr_);
-
-      if (!collTokenPrice.data || dn.eq(totalDebt, 0)) {
-        return { ccr, isBelowCcr: false, tcr: null };
-      }
-
-      // TCR = (totalCollateral * collTokenPrice) / totalDebt
-      const tcr = dn.div(
-        dn.mul(dnum18(totalColl), collTokenPrice.data),
-        dnum18(totalDebt),
-      );
-
-      const isBelowCcr = dn.lt(tcr, ccr);
-
-      return { ccr, isBelowCcr, tcr };
+      return calcCollateralRatios(totalColl, totalDebt, ccr_, collTokenPrice.data ?? null);
     },
     enabled: Boolean(collTokenPrice.data),
+  });
+}
+
+export function useBranchesCollateralRatios() {
+  const wagmiConfig = useWagmiConfig();
+  const branches = getBranches();
+  const symbols = branches.map((b) => b.symbol);
+  const collPrices = useCollateralPrices(symbols);
+  const contractCallsPerBranch = branches.map((branch) => getCollateralRatioContractCalls(branch.id));
+  const COLLATERAL_RATIO_CALLS_COUNT = 3;
+
+  return useQuery({
+    queryKey: [
+      "branchesCollateralRatios",
+      branches.map((b) => b.id),
+      jsonStringifyWithDnum(collPrices.data),
+    ],
+    queryFn: async () => {
+      const results = await readContracts(wagmiConfig, {
+        contracts: contractCallsPerBranch.flat(),
+        allowFailure: false,
+      });
+
+      return branches.map((branch, index) => {
+        const base = index * COLLATERAL_RATIO_CALLS_COUNT;
+        const branchResults = results.slice(base, base + COLLATERAL_RATIO_CALLS_COUNT);
+        if (branchResults.length !== COLLATERAL_RATIO_CALLS_COUNT) {
+          throw new Error(
+            `Expected ${COLLATERAL_RATIO_CALLS_COUNT} collateral ratio results, got ${branchResults.length}`,
+          );
+        }
+        const [totalColl, totalDebt, ccr_] = branchResults as [bigint, bigint, bigint];
+
+        return {
+          branchId: branch.id,
+          symbol: branch.symbol,
+          ...calcCollateralRatios(totalColl, totalDebt, ccr_, collPrices.data?.[index] ?? null),
+        };
+      });
+    },
+    enabled: Boolean(collPrices.data),
   });
 }
 
@@ -1603,5 +1654,29 @@ export function useRedemptionSimulation(params: RedemptionSimulationParams) {
         collRedeemed: output.map(({ coll }) => dnum18(coll)),
       }),
     },
+  });
+}
+
+export function useSafetyMode() {
+  const allRatios = useBranchesCollateralRatios();
+
+  return useQuery({
+    queryKey: [
+      "safetyMode",
+      jsonStringifyWithDnum(allRatios.data),
+    ],
+    queryFn: () => {
+      if (!allRatios.data) {
+        throw new Error("should not happen"); // see enabled
+      }
+
+      const branchesInSafetyMode = allRatios.data.filter((branch) => branch.isBelowCcr);
+
+      return {
+        isAnySafetyMode: branchesInSafetyMode.length > 0,
+        branchesInSafetyMode,
+      };
+    },
+    enabled: Boolean(allRatios.data),
   });
 }
