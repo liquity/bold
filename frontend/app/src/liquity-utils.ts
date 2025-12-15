@@ -8,7 +8,6 @@ import type {
   PositionLoanCommitted,
   PositionStake,
   PrefixedTroveId,
-  SafetyModeData,
   Token,
   TokenSymbol,
   TroveId,
@@ -911,13 +910,11 @@ export function useBranchesCollateralRatios() {
         }
         const [totalColl, totalDebt, ccr_] = branchResults as [bigint, bigint, bigint];
 
-        const { ccr, isBelowCcr, tcr } = calcCollateralRatios(
-          totalColl,
-          totalDebt,
-          ccr_,
-          collPrices.data?.[index] ?? null,
-        );
-        return { branchId: branch.id, ccr, isBelowCcr, tcr };
+        return {
+          branchId: branch.id,
+          symbol: branch.symbol,
+          ...calcCollateralRatios(totalColl, totalDebt, ccr_, collPrices.data?.[index] ?? null),
+        };
       });
     },
     enabled: Boolean(collPrices.data),
@@ -1644,8 +1641,7 @@ export function useRedemptionSimulation(params: RedemptionSimulationParams) {
   });
 }
 
-export function useSafetyMode(): UseQueryResult<SafetyModeData> {
-  const branches = getBranches();
+export function useSafetyMode() {
   const allRatios = useBranchesCollateralRatios();
 
   return useQuery({
@@ -1654,21 +1650,11 @@ export function useSafetyMode(): UseQueryResult<SafetyModeData> {
       jsonStringifyWithDnum(allRatios.data),
     ],
     queryFn: () => {
-      const branchesInSafetyMode: SafetyModeData["branchesInSafetyMode"] = [];
-
-      for (const ratios of allRatios.data ?? []) {
-        if (ratios.isBelowCcr) {
-          const branch = branches.find((b) => b.id === ratios.branchId);
-          if (branch) {
-            branchesInSafetyMode.push({
-              branchId: ratios.branchId,
-              symbol: branch.symbol,
-              tcr: ratios.tcr,
-              ccr: ratios.ccr,
-            });
-          }
-        }
+      if (!allRatios.data) {
+        throw new Error("should not happen"); // see enabled
       }
+
+      const branchesInSafetyMode = allRatios.data.filter((branch) => branch.isBelowCcr);
 
       return {
         isAnySafetyMode: branchesInSafetyMode.length > 0,

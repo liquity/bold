@@ -208,13 +208,3 @@ export type IcStrategy = {
   address: Address;
   name: string;
 };
-
-export type SafetyModeData = {
-  isAnySafetyMode: boolean;
-  branchesInSafetyMode: Array<{
-    branchId: BranchId;
-    symbol: CollateralSymbol;
-    tcr: Dnum | null;
-    ccr: Dnum;
-  }>;
-};
