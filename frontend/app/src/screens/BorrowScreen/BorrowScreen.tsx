@@ -38,6 +38,7 @@ import {
   Dropdown,
   HFlex,
   IconExternal,
+  IconPlus,
   IconSuggestion,
   InfoTooltip,
   InputField,
@@ -409,9 +410,23 @@ export function BorrowScreen() {
         footer={[
           {
             start: (
-              <Field.FooterInfoLiquidationRisk
-                riskLevel={loanDetails.liquidationRisk}
-              />
+              <HFlex gap={8} className={css({ color: "contentAlt", fontSize: 14 })}>
+                <div className={css({ margin: -1 })}>
+                  <IconPlus size={14} />
+                </div>
+                <HFlex gap={4}>
+                  <Amount
+                    key="end"
+                    fallback="…"
+                    value={upfrontFee.data}
+                    suffix=" BOLD creation fee"
+                  />
+                  <InfoTooltip heading="BOLD creation fee">
+                    This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of
+                    average interest for the respective collateral asset.
+                  </InfoTooltip>
+                </HFlex>
+              </HFlex>
             ),
             end: (
               <Field.FooterInfoLiquidationPrice
@@ -420,29 +435,12 @@ export function BorrowScreen() {
             ),
           },
           {
-            start: upfrontFee.data && dn.gt(upfrontFee.data, 0) && (
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  color: "contentAlt",
-                  fontSize: 14,
-                })}
-              >
-                <Amount
-                  key="end"
-                  fallback="…"
-                  prefix="+ "
-                  value={upfrontFee.data}
-                  suffix=" BOLD creation fee"
-                />
-                <InfoTooltip heading="BOLD creation fee">
-                  This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of
-                  average interest for the respective collateral asset.
-                </InfoTooltip>
-              </div>
+            start: (
+              <Field.FooterInfoLiquidationRisk
+                riskLevel={loanDetails.liquidationRisk}
+              />
             ),
+
             end: (
               <Field.FooterInfoLoanToValue
                 ltvRatio={loanDetails.ltv}
