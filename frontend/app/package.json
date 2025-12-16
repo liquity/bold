@@ -3,7 +3,7 @@
   "private": true,
   "author": "Liquity AG",
   "license": "MIT",
-  "version": "1.9.1",
+  "version": "1.10.0",
   "type": "module",
   "scripts": {
     "build": "pnpm build-deps && pnpm clean && next build",
