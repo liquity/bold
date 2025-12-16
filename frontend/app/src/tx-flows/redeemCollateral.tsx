@@ -4,11 +4,11 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_1 } from "@/src/dnum-utils";
 import { getBranches, getCollToken } from "@/src/liquity-utils";
-import { TransactionDetailsRow } from "@/src/screens/TransactionsScreen/TransactionsScreen";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { useCollateralPrices, usePrice } from "@/src/services/Prices";
+import { useCollateralRedemptionPrices, usePrice } from "@/src/services/Prices";
 import { vDnum } from "@/src/valibot-utils";
-import { HFlex, InfoTooltip } from "@liquity2/uikit";
+import { css } from "@/styled-system/css";
+import { HFlex, InfoTooltip, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
 import { REDEMPTION_SLIPPAGE_TOLERANCE } from "../constants";
@@ -32,66 +32,71 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
   Summary: () => null,
 
   Details(ctx) {
-    const { amount, collRedeemed } = ctx.request;
+    const { amount, feePct, collRedeemed } = ctx.request;
     const branches = getBranches();
     const boldPrice = usePrice("BOLD");
-    const collPrices = useCollateralPrices(branches.map((b) => b.symbol));
+    const collPrices = useCollateralRedemptionPrices(branches.map((b) => b.symbol));
 
     return (
-      <>
-        <TransactionDetailsRow
-          label="Redemption fee"
-          value={[
-            <HFlex gap={4}>
-              <Amount key="start" value={ctx.request.feePct} percentage />
-              <InfoTooltip>
-                This is the estimated fee you will pay. The actual fee may be up to{" "}
-                <Amount value={REDEMPTION_SLIPPAGE_TOLERANCE} percentage format="full" />{" "}
-                higher than this due to slippage.
-              </InfoTooltip>
-            </HFlex>,
-          ]}
-        />
+      <VFlex gap={32}>
+        <HFlex justifyContent="space-between" alignItems="start">
+          <HFlex gap={4}>
+            <div>
+              You redeem BOLD{" "}
+              <span className={css({ color: "contentAlt" })}>
+                (incl. <Amount value={feePct} percentage /> fee)
+              </span>
+            </div>
+            <InfoTooltip>
+              This is the estimated amount of BOLD you will pay, including a <Amount value={feePct} percentage />{" "}
+              redemption fee. The actual fee may be up to{" "}
+              <Amount value={REDEMPTION_SLIPPAGE_TOLERANCE} percentage format="full" />{" "}
+              higher than this due to slippage.
+            </InfoTooltip>
+          </HFlex>
+          <VFlex gap={4} alignItems="flex-end">
+            <HFlex gap={6} className={css({ fontSize: 18 })}>
+              <Amount format="2z" value={amount} title={{ suffix: " BOLD" }} />
+              <TokenIcon symbol="BOLD" size={20} />
+            </HFlex>
+            {boldPrice.data && (
+              <div className={css({ paddingRight: 26, color: "contentAlt", fontSize: 14 })}>
+                <Amount prefix="$" value={dn.mul(amount, boldPrice.data)} />
+              </div>
+            )}
+          </VFlex>
+        </HFlex>
 
-        <TransactionDetailsRow
-          label="Redeeming"
-          value={[
-            <HFlex gap={4}>
-              <Amount key="start" value={amount} suffix=" BOLD" />
-              <InfoTooltip>
-                This is the estimated amount of BOLD you will pay. The actual amount may be slightly lower than this.
-              </InfoTooltip>
-            </HFlex>,
-            boldPrice.data && <Amount key="end" prefix="$" value={dn.mul(amount, boldPrice.data)} />,
-          ]}
-        />
-
-        {branches.map(({ branchId }, i) => {
+        {branches.map(({ branchId }) => {
           const collateralToken = getCollToken(branchId);
           const collateralTokenName = collateralToken.symbol === "ETH" ? "WETH" : collateralToken.name;
 
           return (
-            <TransactionDetailsRow
-              key={collateralToken.symbol}
-              label={"Receiving" + (branches.length > 1 ? ` #${i + 1}` : "")}
-              value={[
-                <HFlex gap={4}>
-                  <Amount key="start" value={collRedeemed[branchId]} suffix={` ${collateralTokenName}`} format="4z" />
-                  <InfoTooltip>
-                    This is the estimated amount of {collateralTokenName}{" "}
-                    you will receive. The actual amount may be up to{" "}
-                    <Amount value={REDEMPTION_SLIPPAGE_TOLERANCE} percentage format="full" />{" "}
-                    lower than this due to slippage.
-                  </InfoTooltip>
-                </HFlex>,
-                collRedeemed[branchId] && collPrices.data?.[branchId] && (
-                  <Amount key="end" prefix="$" value={dn.mul(collRedeemed[branchId], collPrices.data[branchId])} />
-                ),
-              ]}
-            />
+            <HFlex key={collateralToken.symbol} justifyContent="space-between" alignItems="start">
+              <HFlex gap={4} className={css({ fontSize: 16 })}>
+                You receive {collateralTokenName}
+                <InfoTooltip>
+                  This is the estimated amount of {collateralTokenName} you will receive. The actual amount may be up to
+                  {" "}
+                  <Amount value={REDEMPTION_SLIPPAGE_TOLERANCE} percentage format="full" />{" "}
+                  lower than this due to slippage.
+                </InfoTooltip>
+              </HFlex>
+              <VFlex gap={4} alignItems="flex-end">
+                <HFlex gap={6} className={css({ fontSize: 18 })}>
+                  <Amount format="4z" value={collRedeemed[branchId]} title={{ suffix: ` ${collateralTokenName}` }} />
+                  <TokenIcon symbol={collateralToken.symbol} size={20} />
+                </HFlex>
+                {collRedeemed[branchId] && collPrices.data?.[branchId] && (
+                  <div className={css({ paddingRight: 26, color: "contentAlt", fontSize: 14 })}>
+                    <Amount prefix="$" value={dn.mul(collRedeemed[branchId], collPrices.data[branchId])} />
+                  </div>
+                )}
+              </VFlex>
+            </HFlex>
           );
         })}
-      </>
+      </VFlex>
     );
   },
 
