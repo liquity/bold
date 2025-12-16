@@ -4,10 +4,11 @@ import type { ReactNode } from "react";
 
 import { Banner } from "@/Banner";
 import { LegacyPositionsBanner } from "@/src/comps/LegacyPositionsBanner/LegacyPositionsBanner";
+import { SafetyModeBanner } from "@/src/comps/SafetyModeBanner/SafetyModeBanner";
 import { SubgraphDownBanner } from "@/src/comps/SubgraphDownBanner/SubgraphDownBanner";
 import { V1StabilityPoolBanner } from "@/src/comps/V1StabilityPoolBanner/V1StabilityPoolBanner";
 import { V1StakingBanner } from "@/src/comps/V1StakingBanner/V1StakingBanner";
-import { LEGACY_CHECK, SUBGRAPH_CHECK, V1_STABILITY_POOL_CHECK, V1_STAKING_CHECK } from "@/src/env";
+import { LEGACY_CHECK, SAFETY_MODE_CHECK, SUBGRAPH_CHECK, V1_STABILITY_POOL_CHECK, V1_STAKING_CHECK } from "@/src/env";
 import { css } from "@/styled-system/css";
 import { BottomBar } from "./BottomBar";
 import { TopBar } from "./TopBar";
@@ -43,6 +44,7 @@ export function AppLayout({
         {V1_STABILITY_POOL_CHECK && <V1StabilityPoolBanner />}
         {LEGACY_CHECK && <LegacyPositionsBanner />}
         {SUBGRAPH_CHECK && <SubgraphDownBanner />}
+        {SAFETY_MODE_CHECK && <SafetyModeBanner />}
         <div
           className={css({
             display: "flex",

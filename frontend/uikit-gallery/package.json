@@ -20,7 +20,7 @@
     "@react-spring/web": "^10.0.1",
     "dnum": "^2.15.0",
     "geist": "^1.4.2",
-    "next": "^15.3.4",
+    "next": "^15.3.6",
     "react": "19.1.0",
     "react-cosmos-core": "7.0.0",
     "react-cosmos-plugin-boolean-input": "7.0.0",

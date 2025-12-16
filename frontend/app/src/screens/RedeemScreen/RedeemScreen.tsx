@@ -1,7 +1,5 @@
 "use client";
 
-import type { BranchId } from "@/src/types";
-import type { Dnum } from "dnum";
 import type { ReactNode } from "react";
 
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -10,17 +8,13 @@ import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { Value } from "@/src/comps/Value/Value";
-import {
-  REDEMPTION_FEE_HIGH,
-  REDEMPTION_MAX_ITERATIONS_PER_COLL,
-  REDEMPTION_SLIPPAGE_TOLERANCE,
-} from "@/src/constants";
+import { REDEMPTION_MAX_ITERATIONS_PER_COLL, REDEMPTION_SLIPPAGE_TOLERANCE } from "@/src/constants";
 import content from "@/src/content";
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getBranches, getCollToken, useRedemptionSimulation } from "@/src/liquity-utils";
-import { useCollateralPrices, usePrice } from "@/src/services/Prices";
+import { useCollateralRedemptionPrices, usePrice } from "@/src/services/Prices";
 import { zipWith } from "@/src/utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -50,7 +44,7 @@ export function RedeemScreen() {
   const account = useAccount();
   const boldBalance = useBalance(account.address, "BOLD");
   const boldPrice = usePrice("BOLD");
-  const collPrices = useCollateralPrices(branches.map((b) => b.symbol));
+  const collPrices = useCollateralRedemptionPrices(branches.map((b) => b.symbol));
   const boldRedeemed = useInputFieldValue(fmtnum);
 
   const simulation = useRedemptionSimulation({
@@ -83,7 +77,7 @@ export function RedeemScreen() {
   const balanceSufficient = amount && boldBalance.data && dn.lte(amount, boldBalance.data);
   const allowSubmit = account.isConnected && amountNonZero && balanceSufficient;
 
-  const drawer = boldRedeemed.isFocused
+  const drawer = boldRedeemed.isFocused || !account.isConnected
     ? null
     : !balanceSufficient
     ? {
@@ -109,6 +103,10 @@ export function RedeemScreen() {
     }
     : null;
 
+  const redemptionFee = simulation.data?.feePct && simulation.data.truncatedBold
+    ? dn.mul(simulation.data.feePct, simulation.data.truncatedBold)
+    : null;
+
   return (
     <Screen
       heading={{
@@ -126,114 +124,165 @@ export function RedeemScreen() {
       }}
     >
       <VFlex gap={48}>
-        <Field
-          field={
-            <InputField
-              id="input-redeem-amount"
-              contextual={
-                <InputField.Badge
-                  icon={<TokenIcon symbol="BOLD" />}
-                  label="BOLD"
-                />
-              }
-              drawer={drawer}
-              label="You pay"
-              placeholder="0.00"
-              secondary={{
-                start: fmtnum(boldRedeemedUsd, { prefix: "$", preset: "2z" }) || " ",
-                end: (
-                  boldBalance.data && dn.gt(boldBalance.data, 0) && (
-                    <TextButton
-                      label={`Max ${fmtnum(boldBalance.data)} BOLD`}
-                      onClick={() => {
-                        if (boldBalance.data) {
-                          boldRedeemed.setValue(dn.toString(boldBalance.data));
-                        }
-                      }}
-                    />
-                  )
-                ),
-              }}
-              {...boldRedeemed.inputFieldProps}
-              // Show trucated amount when input field is not focused
-              value={!boldRedeemed.isFocused && truncatedAmount
-                ? fmtnum(truncatedAmount)
-                : boldRedeemed.inputFieldProps.value}
-            />
-          }
-          footer={{
-            end: (
-              <Field.FooterInfo
-                label="Redemption fee"
-                value={
-                  <HFlex gap={4}>
-                    <Value negative={simulation.data?.feePct && dn.gte(simulation.data.feePct, REDEMPTION_FEE_HIGH)}>
-                      <Amount value={simulation.data?.feePct} percentage />
-                    </Value>
-
-                    <InfoTooltip
-                      content={{
-                        heading: "Redemption fee",
-                        body: (
-                          <>
-                            You will be charged a dynamic redemption fee — the more redemptions, the higher the fee.
-                            During periods of no redemption activity, the fee slowly decreases towards a minimum of
-                            0.5%. If you see a fee significantly higher than this, it might make sense to try redeeming
-                            at a later time, or to break up your redemption into several smaller ones.
-                          </>
-                        ),
-                        footerLink: {
-                          label: "Learn more about the fee",
-                          href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation#is-there-a-redemption-fee",
-                        },
-                      }}
-                    />
-                  </HFlex>
-                }
-              />
-            ),
-          }}
-        />
-
         <VFlex gap={24}>
-          <div>
-            <div className={css({ color: "contentAlt" })}>You receive</div>
-
-            {branches.map((b) => (
-              <RedemptionOutput
-                key={b.symbol}
-                branchId={b.branchId}
-                amount={simulation.data?.collRedeemed[b.branchId]}
-                amountUsd={collRedeemedUsd?.[b.branchId]}
+          <Field
+            field={
+              <InputField
+                id="input-redeem-amount"
+                contextual={
+                  <InputField.Badge
+                    icon={<TokenIcon symbol="BOLD" />}
+                    label="BOLD"
+                  />
+                }
+                drawer={drawer}
+                label="You redeem"
+                placeholder="0.00"
+                secondary={{
+                  start: fmtnum(boldRedeemedUsd, { prefix: "$", preset: "2z" }) || " ",
+                  end: (
+                    boldBalance.data && dn.gt(boldBalance.data, 0) && (
+                      <TextButton
+                        label={`Max ${fmtnum(boldBalance.data)} BOLD`}
+                        onClick={() => {
+                          if (boldBalance.data) {
+                            boldRedeemed.setValue(dn.toString(boldBalance.data));
+                          }
+                        }}
+                      />
+                    )
+                  ),
+                }}
+                {...boldRedeemed.inputFieldProps}
+                // Show trucated amount when input field is not focused
+                value={!boldRedeemed.isFocused && truncatedAmount
+                  ? fmtnum(truncatedAmount)
+                  : boldRedeemed.inputFieldProps.value}
               />
-            ))}
-          </div>
+            }
+          />
 
-          <VFlex gap={8}>
-            <HFlex justifyContent="space-between" gap={24}>
-              <div className={css({ color: "contentAlt" })}>Total in USD</div>
-              <Amount format="2z" prefix="$" value={totalCollRedeemedUsd} fallback="−" />
-            </HFlex>
-
-            <HFlex justifyContent="space-between" gap={24}>
-              <HFlex gap={4} className={css({ color: "contentAlt" })}>
-                Profit/loss
-                <InfoTooltip>
-                  This is the estimated USD value of all the tokens you will receive minus the value of the BOLD you are
-                  paying.
-                </InfoTooltip>
-              </HFlex>
-
-              <Value negative={isLoss}>
-                <Amount
-                  format="2z"
-                  prefix={isLoss ? "-$" : "$"}
-                  value={profitLoss && dn.abs(profitLoss)}
-                  fallback="−"
+          <VFlex>
+            <HFlex justifyContent="space-between" alignItems="center">
+              <HFlex gap={4} alignItems="center">
+                Redemption Fee
+                {simulation.data?.feePct && (
+                  <div className={css({ color: "contentAlt" })}>
+                    (<Amount value={simulation.data.feePct} percentage />)
+                  </div>
+                )}
+                <InfoTooltip
+                  content={{
+                    heading: "Redemption fee",
+                    body: (
+                      <>
+                        You will be charged a dynamic redemption fee — the more redemptions, the higher the fee. During
+                        periods of no redemption activity, the fee slowly decreases towards a minimum of 0.5%. If you
+                        see a fee significantly higher than this, it might make sense to try redeeming at a later time,
+                        or to break up your redemption into several smaller ones.
+                      </>
+                    ),
+                    footerLink: {
+                      label: "Learn more about the fee",
+                      href: "https://docs.liquity.org/v2-faq/redemptions-and-delegation#is-there-a-redemption-fee",
+                    },
+                  }}
                 />
-              </Value>
+              </HFlex>
+              <HFlex gap={8}>
+                <Value
+                  negative={redemptionFee !== null && dn.gt(redemptionFee, DNUM_0)}
+                  className={css({ fontSize: 20 })}
+                >
+                  <Amount
+                    format="2z"
+                    prefix="-"
+                    value={redemptionFee}
+                    fallback="−"
+                    title={{ prefix: "-", suffix: " BOLD" }}
+                  />
+                </Value>
+                <TokenIcon symbol="BOLD" size={24} />
+              </HFlex>
             </HFlex>
           </VFlex>
+
+          <VFlex gap={24}>
+            <HFlex justifyContent="space-between" alignItems="center">
+              <HFlex gap={8} alignItems="center">
+                You receive
+              </HFlex>
+              <VFlex alignItems="flex-end" gap={0}>
+                <div className={css({ fontSize: 20 })}>
+                  <Amount
+                    format="2z"
+                    prefix="$"
+                    value={totalCollRedeemedUsd}
+                    fallback="−"
+                  />
+                </div>
+                <div className={css({ color: "contentAlt", fontSize: 14 })}>
+                  worth of collateral
+                </div>
+              </VFlex>
+            </HFlex>
+
+            {branches.map((branch) => {
+              const collAmount = simulation.data?.collRedeemed[branch.branchId];
+              const collUsd = collRedeemedUsd?.[branch.branchId];
+              const collToken = getCollToken(branch.branchId);
+              const tokenName = collToken.symbol === "ETH" ? "WETH" : collToken.name;
+
+              return (
+                <HFlex
+                  key={branch.symbol}
+                  alignItems="start"
+                  justifyContent="space-between"
+                  className={css({ paddingLeft: 24 })}
+                >
+                  <HFlex gap={4} className={css({ color: "contentAlt" })}>
+                    {tokenName}
+                    {tokenName === "WETH" && (
+                      <InfoTooltip heading="Wrapped Ether">
+                        You will receive{" "}
+                        <abbr title="Wrapped Ether">WETH</abbr>: an ERC-20 tokenized version of ETH that is equivalent
+                        in value.
+                      </InfoTooltip>
+                    )}
+                  </HFlex>
+
+                  <VFlex gap={0} alignItems="end">
+                    <HFlex gap={6} className={css({ fontSize: 18 })}>
+                      <Amount format="4z" value={collAmount} fallback="−" title={{ suffix: ` ${tokenName}` }} />
+                      <TokenIcon symbol={branch.symbol} size={20} />
+                    </HFlex>
+
+                    <div className={css({ paddingRight: 26, color: "contentAlt", fontSize: 14 })}>
+                      <Amount format="2z" prefix="$" value={collUsd} fallback="−" />
+                    </div>
+                  </VFlex>
+                </HFlex>
+              );
+            })}
+          </VFlex>
+
+          <HFlex justifyContent="space-between" alignItems="center">
+            <HFlex gap={4}>
+              Profit/loss
+              <InfoTooltip>
+                This is the estimated USD value of all the tokens you will receive minus the value of the BOLD you are
+                paying.
+              </InfoTooltip>
+            </HFlex>
+            <Value negative={isLoss} className={css({ fontSize: 20 })}>
+              <Amount
+                format="2z"
+                prefix={isLoss ? "-$" : "+$"}
+                value={profitLoss && dn.abs(profitLoss)}
+                fallback="−"
+              />
+            </Value>
+          </HFlex>
         </VFlex>
 
         <InfoBox title="Important note">
@@ -271,49 +320,6 @@ export function RedeemScreen() {
         />
       </VFlex>
     </Screen>
-  );
-}
-
-function RedemptionOutput(props: {
-  branchId: BranchId;
-  amount: Dnum | null | undefined;
-  amountUsd: Dnum | null | undefined;
-}) {
-  const collateralToken = getCollToken(props.branchId);
-  const collateralTokenName = collateralToken.symbol === "ETH" ? "WETH" : collateralToken.name;
-
-  return (
-    <HFlex
-      gap={24}
-      alignItems="start"
-      justifyContent="space-between"
-      className={css({
-        paddingY: 18,
-        borderBottom: "1px solid token(colors.separator)",
-      })}
-    >
-      <HFlex gap={4} className={css({ paddingTop: 8, fontSize: 20 })}>
-        {collateralTokenName}
-        {collateralTokenName === "WETH" && (
-          <InfoTooltip heading="Wrapped Ether">
-            You will receive{" "}
-            <abbr title="Wrapped Ether">WETH</abbr>, which is an ERC-20 tokenized version of ETH that is equivalent in
-            value.
-          </InfoTooltip>
-        )}
-      </HFlex>
-
-      <VFlex>
-        <HFlex gap={8} alignItems="center" className={css({ fontSize: 28 })}>
-          <Amount format="4z" value={props.amount} fallback="−" title={{ suffix: ` ${collateralTokenName}` }} />
-          <TokenIcon symbol={collateralToken.symbol} size={24} />
-        </HFlex>
-
-        <div className={css({ color: "contentAlt", textAlign: "right", paddingRight: 34 })}>
-          <Amount prefix="$" value={props.amountUsd} fallback="−" />
-        </div>
-      </VFlex>
-    </HFlex>
   );
 }
 

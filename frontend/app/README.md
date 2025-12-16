@@ -74,6 +74,24 @@ Enable or disable the account screen (meant for testing purposes).
 NEXT_PUBLIC_ACCOUNT_SCREEN=false
 ```
 
+### `NEXT_PUBLIC_AIRDROP_VAULTS`
+
+Enable a banner displaying Liquity Airdrop Vault links to users. The links appear on the homepage under the "Earn rewards with BOLD" card. Optional. Defaults to true.
+
+```dosini
+# Example
+NEXT_PUBLIC_AIRDROP_VAULTS=false
+```
+
+### `NEXT_PUBLIC_AIRDROP_VAULTS_URL`
+
+URL to fetch Liquity Airdrop Vaults information from (optional).
+
+```dosini
+# Default
+NEXT_PUBLIC_AIRDROP_VAULTS_URL=https://api.liquity.org/v2/airdrop-vaults/ethereum.json
+```
+
 ### `NEXT_PUBLIC_APP_COMMIT_URL`
 
 The URL template for linking to specific app commits in the repository. Set to `false` to disable.
@@ -254,6 +272,15 @@ URL for fetching known initiatives data (optional).
 NEXT_PUBLIC_KNOWN_INITIATIVES_URL=https://api.liquity.org/v2/known-initiatives/ethereum.json
 ```
 
+### `NEXT_PUBLIC_LEGACY_CHECK`
+
+Enable a banner warning users of remaining positions in Liquity V2 Legacy. Optional. Defaults to true.
+
+```dosini
+# Example
+NEXT_PUBLIC_LEGACY_CHECK=false
+```
+
 ### `NEXT_PUBLIC_LIQUITY_STATS_URL`
 
 URL for fetching Liquity protocol statistics.
@@ -281,6 +308,15 @@ URL for the Safe transaction service API (optional). Can be disabled by passing 
 NEXT_PUBLIC_SAFE_API_URL=https://safe-transaction-mainnet.safe.global/api
 ```
 
+### `NEXT_PUBLIC_SAFETY_MODE_CHECK`
+
+Enable a banner warning users when one or more branches are in Safety Mode. Optional. Defaults to true.
+
+```dosini
+# Example
+NEXT_PUBLIC_SAFETY_MODE_CHECK=false
+```
+
 ### `NEXT_PUBLIC_SUBGRAPH_URL`
 
 URL for The Graph protocol subgraph queries.
@@ -297,6 +333,24 @@ When using a subgraph URL that's restricted to set of domains which are allowed 
 ```dosini
 # Example
 NEXT_PUBLIC_SUBGRAPH_ORIGIN=https://example.com
+```
+
+### `NEXT_PUBLIC_V1_STAKING_CHECK`
+
+Enable a banner warning users about any LQTY remaining staked in v1. Optional. Defaults to true.
+
+```dosini
+# Example
+NEXT_PUBLIC_V1_STAKING_CHECK=false
+```
+
+### `NEXT_PUBLIC_V1_STABILITY_POOL_CHECK`
+
+Enable a banner warning users about unclaimed LQTY in the V1 Stability Pool. Optional. Defaults to true.
+
+```dosini
+# Example
+NEXT_PUBLIC_V1_STABILITY_POOL_CHECK=false
 ```
 
 ### `NEXT_PUBLIC_VERCEL_ANALYTICS`

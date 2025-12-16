@@ -16,12 +16,13 @@ import {
   getCollToken,
   getToken,
   getTokenDisplayName,
+  useAirdropVaults,
   useAverageInterestRate,
   useBranchDebt,
   useEarnPool,
   useLiquityStats,
 } from "@/src/liquity-utils";
-import { isSboldEnabled, useSboldStats } from "@/src/sbold";
+import { isSboldEnabled } from "@/src/sbold";
 import { useAccount } from "@/src/wagmi-utils";
 import { isYboldEnabled } from "@/src/ybold";
 import { css } from "@/styled-system/css";
@@ -200,18 +201,15 @@ function EarnTable({
 
 function ForksInfoDrawer() {
   const pickedForkIcons = useMemo(() => pickRandomForks(2), []);
+  const airdropVaults = useAirdropVaults();
   return (
     <div
       className={css({
         width: "100%",
         display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        gap: 16,
+        flexDirection: "column",
         marginTop: -20,
-        height: 44 + 20,
-        padding: "20px 16px 0",
-        whiteSpace: "nowrap",
+        paddingTop: 20,
         background: "#F7F7FF",
         borderRadius: 8,
         userSelect: "none",
@@ -220,80 +218,155 @@ function ForksInfoDrawer() {
       <div
         className={css({
           display: "flex",
-          gap: 12,
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 16,
+          height: 44,
+          padding: "0 16px",
+          whiteSpace: "nowrap",
         })}
       >
         <div
           className={css({
-            flexShrink: 0,
             display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: 0,
+            gap: 12,
           })}
         >
-          {pickedForkIcons.map(([name, icon], index) => (
-            <div
-              key={name}
-              className={css({
-                display: "grid",
-                placeItems: "center",
-                background: "white",
-                borderRadius: "50%",
-                width: 18,
-                height: 18,
-              })}
-              style={{
-                marginLeft: index > 0 ? -4 : 0,
-              }}
-            >
-              <Image
-                loading="eager"
-                unoptimized
-                alt={name}
-                title={name}
-                height={18}
-                src={icon}
-                width={18}
-              />
-            </div>
-          ))}
-        </div>
-        <div
-          className={css({
-            display: "grid",
-            fontSize: 14,
-          })}
-        >
-          <span
-            title={content.home.earnTable.forksInfo.titleAttr}
+          <div
             className={css({
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              flexShrink: 0,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 0,
             })}
           >
-            {content.home.earnTable.forksInfo.text}
-          </span>
+            {pickedForkIcons.map(([name, icon], index) => (
+              <div
+                key={name}
+                className={css({
+                  display: "grid",
+                  placeItems: "center",
+                  background: "white",
+                  borderRadius: "50%",
+                  width: 18,
+                  height: 18,
+                })}
+                style={{
+                  marginLeft: index > 0 ? -4 : 0,
+                }}
+              >
+                <Image
+                  loading="eager"
+                  unoptimized
+                  alt={name}
+                  title={name}
+                  height={18}
+                  src={icon}
+                  width={18}
+                />
+              </div>
+            ))}
+          </div>
+          <div
+            className={css({
+              display: "grid",
+              fontSize: 14,
+            })}
+          >
+            <span
+              title={content.home.earnTable.forksInfo.titleAttr}
+              className={css({
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              })}
+            >
+              {content.home.earnTable.forksInfo.text}
+            </span>
+          </div>
         </div>
-      </div>
-      <div
-        className={css({
-          display: "flex",
-          alignItems: "center",
-        })}
-      >
-        <LinkTextButton
-          external
-          href={content.home.earnTable.forksInfo.learnMore.url}
-          label={content.home.earnTable.forksInfo.learnMore.label}
-          title={content.home.earnTable.forksInfo.learnMore.title}
+        <div
           className={css({
-            fontSize: 14,
+            display: "flex",
+            alignItems: "center",
           })}
         >
-          Learn more
-        </LinkTextButton>
+          <LinkTextButton
+            external
+            href={content.home.earnTable.forksInfo.learnMore.url}
+            label={content.home.earnTable.forksInfo.learnMore.label}
+            title={content.home.earnTable.forksInfo.learnMore.title}
+            className={css({
+              fontSize: 14,
+            })}
+          >
+            Learn more
+          </LinkTextButton>
+        </div>
       </div>
+      {airdropVaults.data?.map((vault) => (
+        <div
+          key={vault.name}
+          className={css({
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 16,
+            height: 44,
+            padding: "0 16px",
+            whiteSpace: "nowrap",
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              fontSize: 14,
+            })}
+          >
+            {vault.icon && (
+              <div
+                className={css({
+                  display: "grid",
+                  placeItems: "center",
+                  width: 18,
+                  height: 18,
+                })}
+              >
+                <Image
+                  loading="eager"
+                  unoptimized
+                  alt={vault.name}
+                  title={vault.name}
+                  height={18}
+                  src={vault.icon}
+                  width={18}
+                />
+              </div>
+            )}
+            <span>{vault.name}</span>
+          </div>
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+            })}
+          >
+            <LinkTextButton
+              external
+              href={vault.link}
+              label="Earn"
+              title={`Earn on ${vault.name}`}
+              className={css({
+                fontSize: 14,
+              })}
+            >
+              Earn
+            </LinkTextButton>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -373,7 +446,7 @@ function BorrowingRow({
                   <TokenIcon symbol="BOLD" size="mini" />
                 </div>
               }
-              title={`Borrow ${collateral?.name} from ${symbol}`}
+              title={`Borrow BOLD from ${symbol}`}
             />
           </div>
         </td>
@@ -393,7 +466,6 @@ function EarnRewardsRow({
   const token = getToken(symbol);
   const earnPool = useEarnPool(branch?.id ?? null);
 
-  const sboldStats = useSboldStats();
   const liquityStats = useLiquityStats();
 
   /**
@@ -410,14 +482,17 @@ function EarnRewardsRow({
     | null
     | undefined = useMemo(() => {
       if (symbol === "SBOLD") {
-        if (!sboldStats.data) {
+        const sbold = liquityStats.data?.sBOLD;
+
+        if (!sbold) {
           return null;
         }
 
         return {
-          apr: sboldStats.data?.apr,
-          apr7d: sboldStats.data?.apr7d,
-          totalDeposited: sboldStats.data?.totalBold,
+          apr: "N/A",
+          apr7d: sbold.weeklyApr,
+          totalDeposited: sbold.tvl,
+          link: sbold.link,
         };
       }
       if (symbol === "YBOLD") {
@@ -435,7 +510,7 @@ function EarnRewardsRow({
         };
       }
       return earnPool.data;
-    }, [symbol, sboldStats.data, liquityStats.data, earnPool.data]);
+    }, [symbol, liquityStats.data, earnPool.data]);
 
   return (
     <tr>
