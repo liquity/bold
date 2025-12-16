@@ -38,37 +38,29 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
     const collPrices = useCollateralRedemptionPrices(branches.map((b) => b.symbol));
 
     return (
-      <VFlex gap={12}>
-        <HFlex
-          justifyContent="space-between"
-          alignItems="center"
-          className={css({
-            paddingY: 12,
-            borderBottom: "1px solid token(colors.separator)",
-          })}
-        >
-          <HFlex gap={8} alignItems="center" className={css({ fontSize: 16 })}>
-            You pay
-            <TokenIcon symbol="BOLD" size={16} />
-            <div className={css({ color: "contentAlt" })}>
-              (incl. <Amount value={feePct} percentage /> fee)
+      <VFlex gap={32}>
+        <HFlex justifyContent="space-between" alignItems="start">
+          <HFlex gap={4}>
+            <div>
+              You redeem BOLD{" "}
+              <span className={css({ color: "contentAlt" })}>
+                (incl. <Amount value={feePct} percentage /> fee)
+              </span>
             </div>
             <InfoTooltip>
-              This is the estimated amount of BOLD you will pay, including a{" "}
-              <Amount value={feePct} percentage format="full" /> redemption fee. The actual fee may be up to{" "}
+              This is the estimated amount of BOLD you will pay, including a <Amount value={feePct} percentage />{" "}
+              redemption fee. The actual fee may be up to{" "}
               <Amount value={REDEMPTION_SLIPPAGE_TOLERANCE} percentage format="full" />{" "}
               higher than this due to slippage.
             </InfoTooltip>
           </HFlex>
-          <VFlex alignItems="flex-end">
-            <HFlex gap={8} alignItems="center">
-              <div className={css({ fontSize: 20 })}>
-                <Amount format="2z" value={amount} />
-              </div>
-              <TokenIcon symbol="BOLD" size={24} />
+          <VFlex gap={4} alignItems="flex-end">
+            <HFlex gap={6} className={css({ fontSize: 18 })}>
+              <Amount format="2z" value={amount} title={{ suffix: " BOLD" }} />
+              <TokenIcon symbol="BOLD" size={20} />
             </HFlex>
             {boldPrice.data && (
-              <div className={css({ color: "contentAlt", fontSize: 14 })}>
+              <div className={css({ paddingRight: 26, color: "contentAlt", fontSize: 14 })}>
                 <Amount prefix="$" value={dn.mul(amount, boldPrice.data)} />
               </div>
             )}
@@ -80,24 +72,9 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
           const collateralTokenName = collateralToken.symbol === "ETH" ? "WETH" : collateralToken.name;
 
           return (
-            <HFlex
-              key={collateralToken.symbol}
-              justifyContent="space-between"
-              alignItems="center"
-              className={css({
-                paddingY: 12,
-                borderBottom: "1px solid token(colors.separator)",
-              })}
-            >
-              <HFlex gap={8} alignItems="center" className={css({ fontSize: 16 })}>
+            <HFlex key={collateralToken.symbol} justifyContent="space-between" alignItems="start">
+              <HFlex gap={4} className={css({ fontSize: 16 })}>
                 You receive {collateralTokenName}
-                {collateralTokenName === "WETH" && (
-                  <InfoTooltip heading="Wrapped Ether">
-                    You will receive{" "}
-                    <abbr title="Wrapped Ether">WETH</abbr>, which is an ERC-20 tokenized version of ETH that is
-                    equivalent in value.
-                  </InfoTooltip>
-                )}
                 <InfoTooltip>
                   This is the estimated amount of {collateralTokenName} you will receive. The actual amount may be up to
                   {" "}
@@ -105,15 +82,13 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
                   lower than this due to slippage.
                 </InfoTooltip>
               </HFlex>
-              <VFlex alignItems="flex-end">
-                <HFlex gap={8} alignItems="center">
-                  <div className={css({ fontSize: 20 })}>
-                    <Amount format="4z" value={collRedeemed[branchId]} />
-                  </div>
-                  <TokenIcon symbol={collateralToken.symbol} size={24} />
+              <VFlex gap={4} alignItems="flex-end">
+                <HFlex gap={6} className={css({ fontSize: 18 })}>
+                  <Amount format="4z" value={collRedeemed[branchId]} title={{ suffix: ` ${collateralTokenName}` }} />
+                  <TokenIcon symbol={collateralToken.symbol} size={20} />
                 </HFlex>
                 {collRedeemed[branchId] && collPrices.data?.[branchId] && (
-                  <div className={css({ color: "contentAlt", fontSize: 14 })}>
+                  <div className={css({ paddingRight: 26, color: "contentAlt", fontSize: 14 })}>
                     <Amount prefix="$" value={dn.mul(collRedeemed[branchId], collPrices.data[branchId])} />
                   </div>
                 )}
