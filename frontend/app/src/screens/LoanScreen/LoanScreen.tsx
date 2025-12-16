@@ -19,7 +19,7 @@ import {
   useLoan,
 } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { useStoredState } from "@/src/services/StoredState";
+import { addPrefixedTroveIdsToStoredState, useStoredState } from "@/src/services/StoredState";
 import { isPrefixedtroveId } from "@/src/types";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -27,7 +27,7 @@ import { addressesEqual, IconExternal, InfoTooltip, Tabs, TokenIcon } from "@liq
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
 import { notFound, useRouter, useSearchParams, useSelectedLayoutSegment } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { match, P } from "ts-pattern";
 import { LoanScreenCard } from "./LoanScreenCard";
 import { PanelClosePosition } from "./PanelClosePosition";
@@ -170,6 +170,12 @@ export function LoanScreen() {
 
   const loan = useLoan(branchId, troveId);
   const loanMode = storedState.loanModes[paramPrefixedId] ?? loan.data?.type ?? "borrow";
+
+  useEffect(() => {
+    if (loan.data?.troveId && loan.data?.branchId !== undefined) {
+      addPrefixedTroveIdsToStoredState(storedState, [paramPrefixedId]);
+    }
+  }, [loan.data?.troveId, loan.data?.branchId, paramPrefixedId]);
 
   const collToken = getCollToken(loan.data?.branchId ?? null);
   const collPriceUsd = usePrice(collToken?.symbol ?? null);

@@ -132,7 +132,7 @@ export function formatRedemptionRisk(redemptionRisk: RiskLevel | null) {
 
 export function formatRisk(risk: RiskLevel | null) {
   return match(risk)
-    .with(P.nullish, () => null)
+    .with(P.nullish, () => "N/A")
     .with("low", () => "Low")
     .with("medium", () => "Medium")
     .with("high", () => "High")

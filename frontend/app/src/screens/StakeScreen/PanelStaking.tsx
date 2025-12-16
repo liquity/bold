@@ -6,6 +6,7 @@ import content from "@/src/content";
 import { dnum18, DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
+import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 import { useGovernanceStats, useGovernanceUser } from "@/src/liquity-governance";
 import { useStakePosition } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
@@ -26,6 +27,7 @@ export function PanelStaking() {
 
   const govStats = useGovernanceStats();
   const govUser = useGovernanceUser(account.address ?? null);
+  const subgraphIsDown = useSubgraphIsDown();
 
   const stakedLqty = dnum18(govUser.data?.stakedLQTY);
   const totalStakedLqty = dnum18(govStats.data?.totalLQTYStaked);
@@ -183,9 +185,7 @@ export function PanelStaking() {
               label="New voting share"
               value={
                 <HFlex>
-                  <div>
-                    <Amount value={updatedShare} percentage suffix="%" />
-                  </div>
+                  {subgraphIsDown ? "−" : <Amount value={updatedShare} percentage suffix="%" />}
                   <InfoTooltip>
                     {content.stakeScreen.infoTooltips.votingShare}
                   </InfoTooltip>

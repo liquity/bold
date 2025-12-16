@@ -6,6 +6,7 @@ import { BribeInitiative } from "@/src/abi/BribeInitiative";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18, DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_CONTRACT_MULTICALL, KNOWN_INITIATIVES_URL, LIQUITY_GOVERNANCE_URL } from "@/src/env";
+import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 import {
   getGovernanceGlobalData,
   getTotalAllocationHistoryFromSubgraph,
@@ -148,10 +149,25 @@ function useKnownInitiatives(): UseQueryResult<KnownInitiatives | null> {
   });
 }
 
+async function fetchGovernanceGlobalData(subgraphIsDown: boolean) {
+  if (!subgraphIsDown) {
+    return getGovernanceGlobalData();
+  }
+
+  const registeredInitiatives = await getRegisteredInitiatives();
+
+  return {
+    registeredInitiatives,
+    totalVotingPower: null,
+  };
+}
+
 function useGovernanceGlobalData() {
+  const subgraphIsDown = useSubgraphIsDown();
+
   return useQuery({
-    queryKey: ["governanceGlobalData"],
-    queryFn: getGovernanceGlobalData,
+    queryKey: ["governanceGlobalData", subgraphIsDown],
+    queryFn: () => fetchGovernanceGlobalData(subgraphIsDown),
   });
 }
 
@@ -288,13 +304,24 @@ export interface UserAllocation {
   initiative: Address;
 }
 
+async function getRegisteredInitiatives(): Promise<Address[]> {
+  if (LIQUITY_GOVERNANCE_URL) {
+    const response = await fetch(`${LIQUITY_GOVERNANCE_URL}/initiatives.json`);
+    const parsed = v.parse(InitiativeInfoSchema, await response.json());
+    return Object.keys(parsed) as Address[];
+  }
+
+  const data = await getGovernanceGlobalData();
+  return data.registeredInitiatives;
+}
+
 export async function getUserAllocations(
   wagmiConfig: WagmiConfig,
   account: Address,
   initiatives?: Address[],
 ): Promise<UserAllocation[]> {
   if (!initiatives) {
-    initiatives = (await getGovernanceGlobalData()).registeredInitiatives;
+    initiatives = await getRegisteredInitiatives();
   }
 
   const Governance = getProtocolContract("Governance");
@@ -321,7 +348,7 @@ export async function getUserAllocatedInitiatives(
   wagmiConfig: WagmiConfig,
   account: Address,
   initiatives?: Address[],
-) {
+): Promise<Address[]> {
   const allocations = await getUserAllocations(wagmiConfig, account, initiatives);
   return allocations
     .filter(({ voteLQTY, vetoLQTY }) => (voteLQTY + vetoLQTY) > 0n)
@@ -374,16 +401,16 @@ export function useGovernanceUser(account: Address | null): UseQueryResult<Gover
   const wagmiConfig = useWagmiConfig();
 
   let queryFn = async () => {
-    if (!account || !initiatives.data) return null;
+    if (!account) return null;
 
-    const [userState, allocations] = await Promise.all([
-      getUserStates(wagmiConfig, account),
-      getUserAllocations(
+    const userState = await getUserStates(wagmiConfig, account);
+    const allocations = initiatives.data
+      ? await getUserAllocations(
         wagmiConfig,
         account,
         initiatives.data.map((i) => i.address),
-      ),
-    ]);
+      )
+      : [];
 
     return { ...userState, allocations };
   };
@@ -417,11 +444,13 @@ export function votingPower(
 }
 
 function votingPowerMs(
-  stakedLQTY: bigint,
-  offset: bigint,
-  timestampInMilliseconds: bigint,
+  stakedLQTY?: bigint,
+  offset?: bigint,
+  timestampInMilliseconds?: bigint,
 ) {
-  return (stakedLQTY * timestampInMilliseconds - offset * 1000n) / 1000n;
+  return stakedLQTY && offset && timestampInMilliseconds
+    ? (stakedLQTY * timestampInMilliseconds - offset * 1000n) / 1000n
+    : null;
 }
 
 export function useVotingPower(
@@ -448,14 +477,11 @@ export function useVotingPower(
     const correctedStartTime = startTime > blockTimestamp.data ? startTime : blockTimestamp.data;
     const timestamp = correctedStartTime + timeElapsed;
     const userVp = votingPowerMs(userLQTYStaked, userOffset, timestamp);
-    const totalVP = votingPowerMs(totalLQTYStaked, totalOffset, timestamp);
+    const totalVp = votingPowerMs(totalLQTYStaked, totalOffset, timestamp);
 
     // pctShare(t) = userVotingPower(t) / totalVotingPower(t)
     callback(
-      totalVP === 0n ? DNUM_0 : dn.div(
-        dnum18(userVp),
-        dnum18(totalVP),
-      ),
+      !userVp || !totalVp ? null : dn.div(dnum18(userVp), dnum18(totalVp)),
     );
   }, updatesPerSecond);
 }
@@ -472,12 +498,16 @@ export function useGovernanceStats() {
 
       return {
         totalLQTYStaked: (
-          governanceGlobal.data.totalVotingPower.allocatedLQTY
-          + governanceGlobal.data.totalVotingPower.unallocatedLQTY
+          governanceGlobal.data.totalVotingPower
+            ? governanceGlobal.data.totalVotingPower.allocatedLQTY
+              + governanceGlobal.data.totalVotingPower.unallocatedLQTY
+            : undefined
         ),
         totalOffset: (
-          governanceGlobal.data.totalVotingPower.allocatedOffset
-          + governanceGlobal.data.totalVotingPower.unallocatedOffset
+          governanceGlobal.data.totalVotingPower
+            ? governanceGlobal.data.totalVotingPower.allocatedOffset
+              + governanceGlobal.data.totalVotingPower.unallocatedOffset
+            : undefined
         ),
       };
     },
@@ -807,13 +837,13 @@ export function useBribingClaim(
               + epochDuration;
 
             // voting power at the end of the epoch
-            const userVP = votingPower(userAllocation.voteLQTY, userAllocation.voteOffset, epochEnd);
-            const totalVP = votingPower(totalAllocation.voteLQTY, totalAllocation.voteOffset, epochEnd);
-            const remainingVP = totalVP - claimedVotes;
+            const userVp = votingPower(userAllocation.voteLQTY, userAllocation.voteOffset, epochEnd);
+            const totalVp = votingPower(totalAllocation.voteLQTY, totalAllocation.voteOffset, epochEnd);
+            const remainingVp = totalVp - claimedVotes;
 
-            if (remainingVP > 0n && userVP > 0n) {
-              const userShare = userVP <= remainingVP ? userVP : remainingVP;
-              const shareRatio = dn.div(dnum18(userShare), dnum18(remainingVP));
+            if (remainingVp > 0n && userVp > 0n) {
+              const userShare = userVp <= remainingVp ? userVp : remainingVp;
+              const shareRatio = dn.div(dnum18(userShare), dnum18(remainingVp));
 
               const boldClaim = dn.mul(dnum18(remainingBold), shareRatio);
               const bribeTokenClaim = dn.mul(dnum18(remainingBribeToken), shareRatio);

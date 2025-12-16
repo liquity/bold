@@ -598,6 +598,46 @@ export default {
       </>
     ),
   },
+  manualLoanIdInput: {
+    title: "Data API error",
+    description:
+      "The list of loans below could be incomplete. If one of your loans doesn't appear, please enter your Loan ID manually to view it.",
+    inputPlaceholder: "Loan ID (0x...)",
+    branchDetected: (branchId: number) => `(Branch ${branchId} detected)`,
+    buttonLabel: "View Loan",
+    buttonDetecting: "Detecting...",
+    errorInvalidFormat: "Invalid Loan ID format. Please enter a valid hexadecimal address starting with 0x.",
+    errorNotFound: "Loan ID not found. Please check the ID and try again.",
+    foundMultipleBranches: "Found on multiple collaterals. Select one to view:",
+    tooltip: {
+      heading: "How to get your Loan IDs",
+      body: (address: string) => (
+        <>
+          Checkout{" "}
+          <a
+            href={`https://liquityv2.defiexplore.com/owner/${address.toLowerCase()}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            DefiExplore
+          </a>{" "}
+          or{" "}
+          <a
+            href={`https://rails.finance/troves?ownerAddress=${address.toLowerCase()}`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Rails
+          </a>{" "}
+          to get your Loan IDs.
+        </>
+      ),
+      footerLink: {
+        label: "Check the docs for more details",
+        href: "https://docs.liquity.org/",
+      },
+    },
+  },
 } as const;
 
 // function Link({
