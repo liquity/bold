@@ -230,18 +230,22 @@ export function PanelInterestRate({
           updates={[
             {
               label: "Redemption risk",
-              before: currentRedemptionRisk.data && (
-                <>
-                  <StatusDot mode={riskLevelToStatusMode(currentRedemptionRisk.data)} />
-                  {formatRisk(currentRedemptionRisk.data)}
-                </>
-              ),
-              after: newRedemptionRisk.data && (
-                <>
-                  <StatusDot mode={riskLevelToStatusMode(newRedemptionRisk.data)} />
-                  {formatRisk(newRedemptionRisk.data)}
-                </>
-              ),
+              before: currentRedemptionRisk.data
+                ? (
+                  <>
+                    <StatusDot mode={riskLevelToStatusMode(currentRedemptionRisk.data)} />
+                    {formatRisk(currentRedemptionRisk.data)}
+                  </>
+                )
+                : "N/A",
+              after: newRedemptionRisk.data
+                ? (
+                  <>
+                    <StatusDot mode={riskLevelToStatusMode(newRedemptionRisk.data)} />
+                    {formatRisk(newRedemptionRisk.data)}
+                  </>
+                )
+                : "N/A",
             },
             {
               label: (

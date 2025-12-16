@@ -6,9 +6,9 @@ import content from "@/src/content";
 import { dnum18, DNUM_0, dnumMax } from "@/src/dnum-utils";
 import { parseInputFloat } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
+import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 import { useGovernanceStats, useGovernanceUser } from "@/src/liquity-governance";
 import { useStakePosition } from "@/src/liquity-utils";
-import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
 import { usePrice } from "@/src/services/Prices";
 import { infoTooltipProps } from "@/src/uikit-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
@@ -179,25 +179,21 @@ export function PanelStaking() {
             }}
           />
         }
-        footer={!subgraphIsDown
-          ? {
-            start: (
-              <Field.FooterInfo
-                label="New voting share"
-                value={
-                  <HFlex>
-                    <div>
-                      <Amount value={updatedShare} percentage suffix="%" />
-                    </div>
-                    <InfoTooltip>
-                      {content.stakeScreen.infoTooltips.votingShare}
-                    </InfoTooltip>
-                  </HFlex>
-                }
-              />
-            ),
-          }
-          : undefined}
+        footer={{
+          start: (
+            <Field.FooterInfo
+              label="New voting share"
+              value={
+                <HFlex>
+                  {subgraphIsDown ? "−" : <Amount value={updatedShare} percentage suffix="%" />}
+                  <InfoTooltip>
+                    {content.stakeScreen.infoTooltips.votingShare}
+                  </InfoTooltip>
+                </HFlex>
+              }
+            />
+          ),
+        }}
       />
       <div
         className={css({
