@@ -615,7 +615,7 @@ export default {
         <>
           Checkout{" "}
           <a
-            href={`https://liquityv2.defiexplore.com/owner/${address}`}
+            href={`https://liquityv2.defiexplore.com/owner/${address.toLowerCase()}`}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -623,7 +623,7 @@ export default {
           </a>{" "}
           or{" "}
           <a
-            href={`https://rails.finance/troves?ownerAddress=${address}`}
+            href={`https://rails.finance/troves?ownerAddress=${address.toLowerCase()}`}
             target="_blank"
             rel="noopener noreferrer"
           >
