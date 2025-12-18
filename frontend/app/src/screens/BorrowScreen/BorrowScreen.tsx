@@ -177,6 +177,8 @@ export function BorrowScreen() {
     && !isBelowMinDebt
     && !wouldViolateCcr;
 
+  const depositAmountInUsd = deposit.parsed && collPrice.data && dn.mul(collPrice.data, deposit.parsed);
+
   return (
     <>
       <div
@@ -310,8 +312,8 @@ export function BorrowScreen() {
             placeholder="0.00"
             secondary={{
               start: `$${
-                deposit.parsed && collPrice.data
-                  ? fmtnum(dn.mul(collPrice.data, deposit.parsed), "2z")
+                depositAmountInUsd
+                  ? dn.gt(depositAmountInUsd, 0) && dn.lt(depositAmountInUsd, 0.01) ? "<0.01" : fmtnum(depositAmountInUsd, "2z")
                   : "0.00"
               }`,
               end: maxAmount && dn.gt(maxAmount, 0) && (
