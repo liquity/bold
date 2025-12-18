@@ -311,14 +311,21 @@ export const FooterInfoLiquidationPrice = memo(
   }: {
     liquidationPrice: Dnum | null;
   }) {
+    const formatted = liquidationPrice
+      ? new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+          minimumSignificantDigits: 2,
+          maximumSignificantDigits: 4,
+        }).format(dn.toNumber(liquidationPrice))
+      : "−";
+    
     return (
       <Field.FooterInfo
         label="Liquidation price"
         value={
           <HFlex gap={4}>
-            {liquidationPrice
-              ? fmtnum(liquidationPrice, { prefix: "$", preset: "2z" })
-              : "−"}
+            {formatted}
             <InfoTooltip
               {...infoTooltipProps(content.generalInfotooltips.loanLiquidationPrice)}
             />
@@ -355,6 +362,14 @@ export const FooterInfoCollPrice = memo(
     collName: string;
     collPriceUsd: Dnum;
   }) {
+    const price = dn.toNumber(collPriceUsd);
+    const formatted = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumSignificantDigits: 2,
+      maximumSignificantDigits: 4,
+    }).format(price);
+    
     return (
       <Field.FooterInfo
         label={`${collName} Price`}
@@ -365,7 +380,7 @@ export const FooterInfoCollPrice = memo(
                 fontVariantNumeric: "tabular-nums",
               })}
             >
-              {fmtnum(collPriceUsd, { prefix: "$", preset: "2z" })}
+              {formatted}
             </span>
             <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.collPrice(collName))} />
           </HFlex>
