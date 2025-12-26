@@ -8,9 +8,9 @@ const subgraphUrl = process.env.NEXT_PUBLIC_SUBGRAPH_URL;
 const subgraphOrigin = process.env.NEXT_PUBLIC_SUBGRAPH_ORIGIN;
 
 if (!subgraphUrl) {
-  throw new Error(
-    "Subgraph URL not found in .env or .env.local. Please set NEXT_PUBLIC_SUBGRAPH_URL.",
-  );
+  console.log("NEXT_PUBLIC_SUBGRAPH_URL not set, skipping GraphQL codegen.");
+  console.log("Using existing generated files in src/graphql/");
+  process.exit(0);
 }
 
 console.log("Using subgraph URL:", subgraphUrl);

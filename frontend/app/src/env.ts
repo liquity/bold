@@ -189,7 +189,7 @@ export const EnvSchema = v.pipe(
     SAFE_API_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
     SBOLD: v.optional(v.union([vAddress(), v.literal("")])),
     YBOLD: v.optional(vEnvFlag(), "false"),
-    SUBGRAPH_URL: v.pipe(v.string(), v.url()),
+    SUBGRAPH_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
     WALLET_CONNECT_PROJECT_ID: v.pipe(
       v.string(),

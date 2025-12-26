@@ -41,6 +41,11 @@ async function graphQuery<TResult, TVariables>(
   query: TypedDocumentString<TResult, TVariables>,
   ...[variables]: TVariables extends Record<string, never> ? [] : [TVariables]
 ) {
+  if (!SUBGRAPH_URL) {
+    subgraphIndicator.setError("Subgraph not configured.");
+    throw new Error("Subgraph URL not configured");
+  }
+
   const response = await tryFetch(SUBGRAPH_URL, {
     method: "POST",
     headers: {
