@@ -194,6 +194,8 @@ export function useEarnPool(branchId: BranchId | null) {
   const { sp_apy = null, sp_apy_avg_7d = null } = (
     collateral && stats.data?.branch[collateral?.symbol]
   ) ?? {};
+  const {data: avgInterestRate} = branchId != null ? useAverageInterestRate(branchId) : { data: null };
+  const {data: branchDebt} = branchId != null ? useBranchDebt(branchId) : { data: null };
 
   return useQuery({
     queryKey: [
@@ -201,6 +203,8 @@ export function useEarnPool(branchId: BranchId | null) {
       branchId,
       jsonStringifyWithDnum(sp_apy),
       jsonStringifyWithDnum(sp_apy_avg_7d),
+      jsonStringifyWithDnum(avgInterestRate),
+      jsonStringifyWithDnum(branchDebt),
     ],
     queryFn: async () => {
       if (branchId === null) {
@@ -210,9 +214,16 @@ export function useEarnPool(branchId: BranchId | null) {
         ...getBranchContract(branchId, "StabilityPool"),
         functionName: "getTotalBoldDeposits",
       });
+
+      const totalInterest = avgInterestRate && branchDebt ? avgInterestRate[0] * branchDebt[0] : null;
+      const interestRewards = totalInterest ? totalInterest * 75n / 100n : null;
+      const apr = interestRewards ? interestRewards / totalBoldDeposits : null;
+
       return {
-        apr: sp_apy ? dnum18(parseInt(sp_apy)) : null,
-        apr7d: sp_apy_avg_7d ? dnum18(parseInt(sp_apy_avg_7d)) : null,
+        // apr: sp_apy ? dnum18(parseInt(sp_apy)) : null,
+        // apr7d: sp_apy_avg_7d ? dnum18(parseInt(sp_apy_avg_7d)) : null,
+        apr: dnum18(apr),
+        apr7d: dnum18(apr),
         collateral,
         totalDeposited: dnum18(totalBoldDeposits),
       };
