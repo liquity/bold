@@ -191,7 +191,7 @@ export function useEarnPool(branchId: BranchId | null) {
   const wagmiConfig = useWagmiConfig();
   const stats = useLiquityStats();
   const collateral = getCollToken(branchId);
-  const { sp_apy_avg_1d = null, sp_apy_avg_7d = null } = (
+  const { sp_apy = null, sp_apy_avg_7d = null } = (
     collateral && stats.data?.branch[collateral?.symbol]
   ) ?? {};
 
@@ -199,7 +199,7 @@ export function useEarnPool(branchId: BranchId | null) {
     queryKey: [
       "earnPool",
       branchId,
-      jsonStringifyWithDnum(sp_apy_avg_1d),
+      jsonStringifyWithDnum(sp_apy),
       jsonStringifyWithDnum(sp_apy_avg_7d),
     ],
     queryFn: async () => {
@@ -211,7 +211,7 @@ export function useEarnPool(branchId: BranchId | null) {
         functionName: "getTotalBoldDeposits",
       });
       return {
-        apr: sp_apy_avg_1d ? dnum18(parseInt(sp_apy_avg_1d)) : null,
+        apr: sp_apy ? dnum18(parseInt(sp_apy)) : null,
         apr7d: sp_apy_avg_7d ? dnum18(parseInt(sp_apy_avg_7d)) : null,
         collateral,
         totalDeposited: dnum18(totalBoldDeposits),
