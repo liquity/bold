@@ -21,7 +21,7 @@ import {
 import { getAvailableEarnPools } from "@/src/white-label.config";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { TokenIcon, Button, IconExternal } from "@liquity2/uikit";
+import { TokenIcon, Button, IconExternal, InfoTooltip } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 
@@ -306,11 +306,16 @@ export function HomeScreen() {
                     color: "rgba(255, 255, 255, 0.5)",
                     fontSize: "10px",
                     fontWeight: 500,
-                    width: "60px",
+                    width: "120px",
                   })}
-                >
-                  APR
+                  >
+                  Est. Projected APR{" "}
+                  <InfoTooltip content={{
+                    heading: "Est. Projected APR",
+                    body: "Estimated APR is a projection based on the current average price borrowers are paying, the total borrowed MUST, and the currently total deposited in the Stability Pool. It does not include extra yield from liquidations that the Stability Pools will earn.",
+                  }} />
                 </th>
+                
                 <th
                   className={css({
                     textAlign: "center",
