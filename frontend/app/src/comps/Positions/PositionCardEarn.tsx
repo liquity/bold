@@ -99,7 +99,7 @@ export function PositionCardEarn({
                     />
                   </div>
                 </div>
-                {/* <div
+                <div
                   className={css({
                     display: "flex",
                     gap: 8,
@@ -123,7 +123,7 @@ export function PositionCardEarn({
                       value={earnPool.data?.apr7d}
                     />
                   </div>
-                </div> */}
+                </div>
               </div>
             }
           />

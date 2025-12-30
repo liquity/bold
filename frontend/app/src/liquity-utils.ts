@@ -221,9 +221,9 @@ export function useEarnPool(branchId: BranchId | null) {
 
       return {
         // apr: sp_apy ? dnum18(parseInt(sp_apy)) : null,
-        // apr7d: sp_apy_avg_7d ? dnum18(parseInt(sp_apy_avg_7d)) : null,
+        apr7d: sp_apy_avg_7d ? dnum18(parseInt(sp_apy_avg_7d)) : null,
         apr: dnum18(apr),
-        apr7d: dnum18(apr),
+        // apr7d: dnum18(apr),
         collateral,
         totalDeposited: dnum18(totalBoldDeposits),
       };

@@ -316,7 +316,7 @@ export function HomeScreen() {
                   }} />
                 </th>
                 
-                {/* <th
+                <th
                   className={css({
                     textAlign: "center",
                     padding: "4px 8px",
@@ -327,7 +327,7 @@ export function HomeScreen() {
                   })}
                 >
                   7d APR
-                </th> */}
+                </th>
                 <th
                   className={css({
                     textAlign: "center",
@@ -621,7 +621,7 @@ function EarnRow({
         />
       </td>
       
-      {/* <td
+      <td
         className={css({
           padding: "6px 8px",
           textAlign: "center",
@@ -633,7 +633,7 @@ function EarnRow({
           percentage
           value={earnPool.data?.apr7d}
         />
-      </td> */}
+      </td>
       
       <td
         className={css({
