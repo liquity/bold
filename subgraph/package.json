@@ -10,7 +10,7 @@
     "@graphprotocol/graph-cli": "^0.97.0"
   },
   "dependencies": {
-    "@graphprotocol/graph-ts": "^0.38.0",
+    "@graphprotocol/graph-ts": "^0.38.2",
     "tsx": "^4.19.4",
     "zx": "^8.5.3"
   }
