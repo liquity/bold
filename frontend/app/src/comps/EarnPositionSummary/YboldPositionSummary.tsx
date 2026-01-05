@@ -65,12 +65,12 @@ export function YboldPositionSummary() {
             />
           </div>
           <InfoTooltip heading="Total Value Locked (TVL)">
-            Total amount of BOLD deposited in the yBOLD pool.
+            Total amount of JPYDF deposited in the yBOLD pool.
           </InfoTooltip>
         </>
       }
       infoItems={[{
-        label: "BOLD deposit",
+        label: "JPYDF deposit",
         content: (
           <div
             className={css({

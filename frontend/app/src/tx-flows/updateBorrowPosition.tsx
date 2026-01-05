@@ -111,7 +111,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
                 key="start"
                 fallback="…"
                 value={debtChangeWithFee && dn.abs(debtChangeWithFee)}
-                suffix=" BOLD"
+                suffix=" JPYDF"
               />,
               upfrontFeeData.data?.upfrontFee && dn.gt(upfrontFeeData.data.upfrontFee, 0n) && (
                 <div
@@ -126,9 +126,9 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
                     fallback="…"
                     prefix="Incl. "
                     value={upfrontFeeData.data.upfrontFee}
-                    suffix=" BOLD creation fee"
+                    suffix=" JPYDF creation fee"
                   />
-                  <InfoTooltip heading="BOLD creation fee">
+                  <InfoTooltip heading="JPYDF creation fee">
                     This fee is charged when you open a new loan or increase your debt. It corresponds to 7 days of
                     average interest for the respective collateral asset.
                   </InfoTooltip>
@@ -143,7 +143,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
 
   steps: {
     approveBold: {
-      name: () => "Approve BOLD",
+      name: () => "Approve JPYDF",
       Status: (props) => (
         <TransactionStatus
           {...props}
@@ -265,8 +265,8 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
         if (!dn.eq(collChange, 0) && !dn.eq(debtChange, 0)) return "Update Position";
         if (dn.gt(collChange, 0)) return "Deposit Collateral";
         if (dn.lt(collChange, 0)) return "Withdraw Collateral";
-        if (dn.gt(debtChange, 0)) return "Borrow BOLD";
-        if (dn.lt(debtChange, 0)) return "Repay BOLD";
+        if (dn.gt(debtChange, 0)) return "Borrow JPYDF";
+        if (dn.lt(debtChange, 0)) return "Repay JPYDF";
 
         throw new Error("Invalid request");
       },
@@ -327,7 +327,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     },
 
     depositBold: {
-      name: () => "Repay BOLD",
+      name: () => "Repay JPYDF",
       Status: TransactionStatus,
 
       async commit(ctx) {
@@ -388,7 +388,7 @@ export const updateBorrowPosition: FlowDeclaration<UpdateBorrowPositionRequest> 
     },
 
     withdrawBold: {
-      name: () => "Borrow BOLD",
+      name: () => "Borrow JPYDF",
       Status: TransactionStatus,
 
       async commit(ctx) {

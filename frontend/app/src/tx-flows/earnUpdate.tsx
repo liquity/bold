@@ -82,7 +82,7 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
           value={[
             <Amount
               key="start"
-              suffix=" BOLD"
+              suffix=" JPYDF"
               value={dn.abs(depositChange)}
             />,
             <Amount
@@ -94,12 +94,12 @@ export const earnUpdate: FlowDeclaration<EarnUpdateRequest> = {
         />
         {dn.gt(rewards.bold, 0) && (
           <TransactionDetailsRow
-            label={claimRewards ? "Claim BOLD rewards" : "Compound BOLD rewards"}
+            label={claimRewards ? "Claim JPYDF rewards" : "Compound JPYDF rewards"}
             value={[
               <Amount
                 key="start"
                 value={rewards.bold}
-                suffix=" BOLD"
+                suffix=" JPYDF"
               />,
               <Amount
                 key="end"

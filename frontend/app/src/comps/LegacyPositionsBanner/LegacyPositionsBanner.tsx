@@ -13,9 +13,9 @@ export function LegacyPositionsBanner() {
     <InfoBanner
       show={Boolean(account.address && legacyPositions.data?.hasAnyPosition)}
       icon={<IconWarning size={16} />}
-      messageDesktop={<>You still have open positions on Liquity V2-Legacy.</>}
+      messageDesktop={<>You still have open positions on Jpydf Legacy.</>}
       linkLabel="Check legacy positions"
-      linkLabelMobile="Your Liquity V2-Legacy positions"
+      linkLabelMobile="Your Jpydf Legacy positions"
       linkHref="/legacy"
     />
   );

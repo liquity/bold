@@ -449,10 +449,10 @@ export const FooterInfoSlippageRefundClose = memo(
         label="Slippage refund"
         value={
           <HFlex gap={4}>
-            <Amount prefix="~" value={props.slippageProtection} suffix=" BOLD" />
+            <Amount prefix="~" value={props.slippageProtection} suffix=" JPYDF" />
             <InfoTooltip heading="Slippage refund">
               To allow for slippage, slightly more of your {props.collateralName}{" "}
-              will be converted to BOLD than needed for the repayment. The remaining BOLD will be refunded to your
+              will be converted to JPYDF than needed for the repayment. The remaining JPYDF will be refunded to your
               wallet. The actual amount may be higher or lower than indicated here, according to the execution price of
               your trade.
             </InfoTooltip>
@@ -479,7 +479,7 @@ export const FooterInfoSlippageRefundLeverUp = memo(
           <HFlex gap={4}>
             <Amount prefix="~" value={props.slippageProtection} format="4z" suffix={` ${collateralName}`} />
             <InfoTooltip heading="Slippage refund">
-              To allow for slippage, slightly more BOLD will be converted to {collateralName}{" "}
+              To allow for slippage, slightly more JPYDF will be converted to {collateralName}{" "}
               than needed to reach your chosen exposure. The remaining {collateralName}{" "}
               will be refunded to your wallet. The actual amount may be higher or lower than indicated here, according
               to the execution price of your trade.

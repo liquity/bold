@@ -78,12 +78,12 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
     return (
       <>
         <TransactionDetailsRow
-          label={compound ? "Compounded BOLD" : "Claimed BOLD"}
+          label={compound ? "Compounded JPYDF" : "Claimed JPYDF"}
           value={[
             <Amount
               key="start"
               value={rewardsBold}
-              suffix=" BOLD"
+              suffix=" JPYDF"
             />,
             <Amount
               key="end"
@@ -115,7 +115,7 @@ export const earnClaimRewards: FlowDeclaration<EarnClaimRewardsRequest> = {
 
   steps: {
     claimRewards: {
-      name: (ctx) => ctx.request.compound ? "Compound BOLD rewards" : "Claim rewards",
+      name: (ctx) => ctx.request.compound ? "Compound JPYDF rewards" : "Claim rewards",
       Status: TransactionStatus,
 
       async commit(ctx) {

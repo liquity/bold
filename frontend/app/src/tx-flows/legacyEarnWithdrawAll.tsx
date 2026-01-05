@@ -48,7 +48,7 @@ export const legacyEarnWithdrawAll: FlowDeclaration<LegacyEarnWithdrawAllRequest
               value={[
                 <Amount
                   key="start"
-                  suffix=" BOLD"
+                  suffix=" JPYDF"
                   value={pool.deposit}
                 />,
                 pool.rewards.coll[0] > 0n
@@ -65,7 +65,7 @@ export const legacyEarnWithdrawAll: FlowDeclaration<LegacyEarnWithdrawAllRequest
                     <Amount
                       key="end"
                       value={pool.rewards.bold}
-                      suffix=" BOLD"
+                      suffix=" JPYDF"
                     />
                   )
                   : null,

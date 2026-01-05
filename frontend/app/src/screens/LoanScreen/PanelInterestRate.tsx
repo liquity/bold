@@ -45,7 +45,7 @@ export function PanelInterestRate({
   const deposit = useInputFieldValue((value) => `${fmtnum(value, "full")} ${collToken.symbol}`, {
     defaultValue: dn.toString(loan.deposit),
   });
-  const debt = useInputFieldValue((value) => `${fmtnum(value, "full")} BOLD`, {
+  const debt = useInputFieldValue((value) => `${fmtnum(value, "full")} JPYDF`, {
     defaultValue: dn.toString(loan.borrowed),
   });
 
@@ -250,12 +250,12 @@ export function PanelInterestRate({
             {
               label: (
                 <>
-                  <div>BOLD interest per year</div>
+                  <div>JPYDF interest per year</div>
                   <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
                 </>
               ),
-              before: <Amount value={boldInterestPerYearPrev} suffix=" BOLD" />,
-              after: <Amount value={boldInterestPerYear} suffix=" BOLD" />,
+              before: <Amount value={boldInterestPerYearPrev} suffix=" JPYDF" />,
+              after: <Amount value={boldInterestPerYear} suffix=" JPYDF" />,
             },
           ]}
         />
@@ -343,7 +343,7 @@ export function PanelInterestRate({
       {isZombieTrove && (
         <WarningBox>
           <div>
-            Interest rate can't be adjusted on loans with debt below 2,000 BOLD. Please adjust your debt first.
+            Interest rate can't be adjusted on loans with debt below 2,000 JPYDF. Please adjust your debt first.
           </div>
         </WarningBox>
       )}

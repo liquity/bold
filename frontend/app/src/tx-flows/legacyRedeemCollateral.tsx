@@ -47,16 +47,16 @@ export const legacyRedeemCollateral: FlowDeclaration<LegacyRedeemCollateralReque
           ]}
         />
         <TransactionDetailsRow
-          label="Reedeming BOLD"
+          label="Reedeming JPYDF"
           value={[
             <Amount
               key="start"
               value={boldChange}
               fallback={estimatedGains.isError ? "loading error." : "fetching…"}
-              suffix=" BOLD"
+              suffix=" JPYDF"
             />,
             <Fragment key="end">
-              Estimated BOLD that will be redeemed.
+              Estimated JPYDF that will be redeemed.
             </Fragment>,
           ]}
         />
@@ -86,7 +86,7 @@ export const legacyRedeemCollateral: FlowDeclaration<LegacyRedeemCollateralReque
   },
   steps: {
     approve: {
-      name: () => "Approve BOLD",
+      name: () => "Approve JPYDF",
       Status: TransactionStatus,
       async commit({ request, writeContract }) {
         if (!LEGACY_CHECK) {
@@ -104,7 +104,7 @@ export const legacyRedeemCollateral: FlowDeclaration<LegacyRedeemCollateralReque
       },
     },
     redeemCollateral: {
-      name: () => "Redeem BOLD",
+      name: () => "Redeem JPYDF",
       Status: TransactionStatus,
       async commit({ request, writeContract }) {
         if (!LEGACY_CHECK) {

@@ -1,4 +1,4 @@
-# Liquity V2 App
+# Jpydf App
 
 ## Preview
 
@@ -274,7 +274,7 @@ NEXT_PUBLIC_KNOWN_INITIATIVES_URL=https://api.liquity.org/v2/known-initiatives/e
 
 ### `NEXT_PUBLIC_LEGACY_CHECK`
 
-Enable a banner warning users of remaining positions in Liquity V2 Legacy. Optional. Defaults to true.
+Enable a banner warning users of remaining positions in Jpydf Legacy. Optional. Defaults to true.
 
 ```dosini
 # Example

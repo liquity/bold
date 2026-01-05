@@ -93,21 +93,21 @@ export function PanelUpdateDeposit({
             drawer={insufficientBalance
               ? {
                 mode: "error",
-                message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0)} BOLD.`,
+                message: `Insufficient balance. You have ${fmtnum(boldBalance.data ?? 0)} JPYDF.`,
               }
               : withdrawAboveDeposit
               ? {
                 mode: "error",
                 message: hasDeposit
                   ? `You can’t withdraw more than you have deposited.`
-                  : `No BOLD deposited.`,
+                  : `No JPYDF deposited.`,
               }
               : null}
             contextual={
               <InputTokenBadge
                 background={false}
                 icon={<TokenIcon symbol="BOLD" />}
-                label="BOLD"
+                label="JPYDF"
               />
             }
             id="input-deposit-change"
@@ -158,7 +158,7 @@ export function PanelUpdateDeposit({
                 ? boldBalance.data && (
                   <TextButton
                     label={dn.gt(boldBalance.data, 0)
-                      ? `Max ${fmtnum(boldBalance.data, 2)} BOLD`
+                      ? `Max ${fmtnum(boldBalance.data, 2)} JPYDF`
                       : null}
                     onClick={() => {
                       if (boldBalance.data) {
@@ -169,7 +169,7 @@ export function PanelUpdateDeposit({
                 )
                 : position?.deposit && dn.gt(position.deposit, 0) && (
                   <TextButton
-                    label={`Max ${fmtnum(position.deposit, 2)} BOLD`}
+                    label={`Max ${fmtnum(position.deposit, 2)} JPYDF`}
                     onClick={() => {
                       setValue(dn.toString(position.deposit));
                     }}
@@ -237,7 +237,7 @@ export function PanelUpdateDeposit({
                       color: "contentAlt",
                     })}
                   >
-                    BOLD
+                    JPYDF
                   </span>
                 </div>
                 <div>

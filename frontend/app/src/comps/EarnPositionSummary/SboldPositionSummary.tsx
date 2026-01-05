@@ -115,7 +115,7 @@ export function SboldPositionSummary({
             <Amount
               fallback="-"
               format="compact"
-              suffix=" BOLD"
+              suffix=" JPYDF"
               value={tvl_}
             />
           </div>
@@ -127,7 +127,7 @@ export function SboldPositionSummary({
                 gap: 8,
               })}
             >
-              <div>Total amount of BOLD deposited in the sBOLD pool.</div>
+              <div>Total amount of JPYDF deposited in the sBOLD pool.</div>
               <div
                 className={css({
                   display: "flex",
@@ -208,12 +208,12 @@ export function SboldPositionSummary({
           ),
         },
         {
-          label: "BOLD Deposit",
+          label: "JPYDF Deposit",
           content: (
             <>
               <div
                 title={active
-                  ? `${fmtnum(sboldPosition?.bold, "full")} BOLD`
+                  ? `${fmtnum(sboldPosition?.bold, "full")} JPYDF`
                   : undefined}
                 className={css({
                   display: "flex",
@@ -228,7 +228,7 @@ export function SboldPositionSummary({
               </div>
               {prevSboldPosition && (
                 <div
-                  title={`${fmtnum(prevSboldPosition.bold, "full")} BOLD`}
+                  title={`${fmtnum(prevSboldPosition.bold, "full")} JPYDF`}
                   className={css({
                     display: "flex",
                     justifyContent: "flex-start",

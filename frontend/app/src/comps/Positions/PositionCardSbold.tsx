@@ -53,7 +53,7 @@ export function PositionCardSbold({
         ),
         label: (
           <HFlex gap={4} justifyContent="flex-start">
-            BOLD deposited
+            JPYDF deposited
           </HFlex>
         ),
       }}

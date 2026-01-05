@@ -11,7 +11,7 @@ export function AboutButton({
   return (
     <TextButton
       label={about.fullVersion}
-      title={`About Liquity V2 App ${about.fullVersion}`}
+      title={`About Jpydf App ${about.fullVersion}`}
       onClick={() => {
         about.openModal();
         onClick?.();

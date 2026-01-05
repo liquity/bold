@@ -87,10 +87,10 @@ export function PanelClosePosition({
     } else {
       if (boldBalance.data && dn.lt(boldBalance.data, loan.borrowed)) {
         return {
-          name: "Insufficient BOLD balance",
+          name: "Insufficient JPYDF balance",
           message: `The balance held by the account (${
             fmtnum(boldBalance.data)
-          } BOLD) is insufficient to repay the loan.`,
+          } JPYDF) is insufficient to repay the loan.`,
         };
       }
     }
@@ -142,7 +142,7 @@ export function PanelClosePosition({
                   items={[
                     {
                       icon: <TokenIcon symbol="BOLD" />,
-                      label: <div className={css({ whiteSpace: "nowrap" })}>BOLD (account)</div>,
+                      label: <div className={css({ whiteSpace: "nowrap" })}>JPYDF (account)</div>,
                       value: fmtnum(boldBalance.data),
                     },
                     {

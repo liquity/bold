@@ -60,7 +60,7 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
           value={[
             <Amount
               key="start"
-              suffix=" BOLD"
+              suffix=" JPYDF"
               value={depositChange}
             />,
             dn.gt(depositFee, 0) && (
@@ -77,13 +77,13 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
                   fallback="…"
                   title={{
                     prefix: "Accounting for ",
-                    suffix: " BOLD (Entry Fee)",
+                    suffix: " JPYDF (Entry Fee)",
                   }}
                   value={depositFee}
-                  suffix=" BOLD Entry Fee"
+                  suffix=" JPYDF Entry Fee"
                 />
                 <InfoTooltip heading="sBOLD Entry Fee">
-                  This fee is charged when you deposit BOLD for sBOLD shares, and has been deducted from the deposit
+                  This fee is charged when you deposit JPYDF for sBOLD shares, and has been deducted from the deposit
                   amount.
                 </InfoTooltip>
               </div>
@@ -122,7 +122,7 @@ export const sboldDeposit: FlowDeclaration<SboldDepositRequest> = {
 
   steps: {
     approveBold: {
-      name: () => "Approve BOLD",
+      name: () => "Approve JPYDF",
       Status: (props) => (
         <TransactionStatus
           {...props}

@@ -114,7 +114,7 @@ export function DelegateBox({
               <Amount
                 value={delegate.boldAmount}
                 format="compact"
-                suffix=" BOLD"
+                suffix=" JPYDF"
               />
             </div>
             <div

@@ -22,26 +22,26 @@ export type Token = ExternalToken & {
 };
 
 export type TokenSymbol =
-  | "BOLD"
+  | "JPYDF"
   | "ETH"
   | "LQTY"
   | "LUSD"
   | "RETH"
-  | "SBOLD"
-  | "YBOLD"
+  | "SJPYDF"
+  | "YJPYDF"
   | "WSTETH";
 
 export type CollateralSymbol = TokenSymbol & ("ETH" | "RETH" | "WSTETH");
 
 export function isTokenSymbol(symbolOrUrl: string): symbolOrUrl is TokenSymbol {
   return (
-    symbolOrUrl === "BOLD"
+    symbolOrUrl === "JPYDF"
     || symbolOrUrl === "ETH"
     || symbolOrUrl === "LQTY"
     || symbolOrUrl === "LUSD"
     || symbolOrUrl === "RETH"
-    || symbolOrUrl === "SBOLD"
-    || symbolOrUrl === "YBOLD"
+    || symbolOrUrl === "SJPYDF"
+    || symbolOrUrl === "YJPYDF"
     || symbolOrUrl === "WSTETH"
   );
 }
@@ -63,8 +63,8 @@ export const LUSD: Token = {
 
 export const BOLD: Token = {
   icon: tokenBold,
-  name: "BOLD",
-  symbol: "BOLD" as const,
+  name: "JPYDF",
+  symbol: "JPYDF" as const,
 } as const;
 
 export const LQTY: Token = {
@@ -75,14 +75,14 @@ export const LQTY: Token = {
 
 export const SBOLD: Token = {
   icon: tokenSbold,
-  name: "sBOLD",
-  symbol: "SBOLD" as const,
+  name: "sJPYDF",
+  symbol: "SJPYDF" as const,
 } as const;
 
 export const YBOLD: Token = {
   icon: tokenYbold,
-  name: "yBOLD",
-  symbol: "YBOLD" as const,
+  name: "yJPYDF",
+  symbol: "YJPYDF" as const,
 } as const;
 
 export const ETH: CollateralToken = {

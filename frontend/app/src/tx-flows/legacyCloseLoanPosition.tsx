@@ -59,7 +59,7 @@ export const legacyCloseLoanPosition: FlowDeclaration<LegacyCloseLoanPositionReq
               <Amount
                 key="start"
                 value={trove.borrowed}
-                suffix=" BOLD"
+                suffix=" JPYDF"
               />,
             ]}
           />
@@ -91,7 +91,7 @@ export const legacyCloseLoanPosition: FlowDeclaration<LegacyCloseLoanPositionReq
 
   steps: {
     approveBold: {
-      name: () => "Approve BOLD",
+      name: () => "Approve JPYDF",
       Status: (props) => (
         <TransactionStatus
           {...props}

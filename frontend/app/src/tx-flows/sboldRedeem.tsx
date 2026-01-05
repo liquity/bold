@@ -55,7 +55,7 @@ export const sboldRedeem: FlowDeclaration<SboldRedeemRequest> = {
           value={[
             <Amount
               key="end"
-              suffix=" BOLD"
+              suffix=" JPYDF"
               value={dn.abs(boldAmount)}
             />,
           ]}

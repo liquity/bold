@@ -388,14 +388,14 @@ export function PanelUpdateLeveragePosition({
                 label: "Debt",
                 before: (
                   <Amount
-                    title={`${fmtnum(initialLoanDetails.debt, "full")} BOLD`}
+                    title={`${fmtnum(initialLoanDetails.debt, "full")} JPYDF`}
                     value={initialLoanDetails.debt}
                   />
                 ),
                 after: (
                   <Amount
                     value={newLoanDetails.debt}
-                    suffix=" BOLD"
+                    suffix=" JPYDF"
                   />
                 ),
               },

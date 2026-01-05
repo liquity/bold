@@ -269,7 +269,7 @@ export function useLeverageField({
   }), [sliderValue, sliderGradient, onSliderChange, keyboardStep]);
 
   const drawer: Drawer | null = deposit && dn.gt(deposit, DNUM_0) && debt && dn.lt(debt, MIN_DEBT)
-    ? { mode: "error", message: `Debt must be at least ${fmtnum(MIN_DEBT, 2)} BOLD.` }
+    ? { mode: "error", message: `Debt must be at least ${fmtnum(MIN_DEBT, 2)} JPYDF.` }
     : quoteAmount === null
     ? { mode: "error", message: `Not enough ${collToken.name} liquidity to reach your chosen exposure.` }
     : null;

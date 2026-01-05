@@ -73,8 +73,8 @@ export function SboldInfo({
       symbol="BOLD"
       animate={false}
       value={conversion.boldAmount}
-      fallback={loading ? "… BOLD" : "− BOLD"}
-      suffix=" BOLD"
+      fallback={loading ? "… JPYDF" : "− JPYDF"}
+      suffix=" JPYDF"
     />
   );
 

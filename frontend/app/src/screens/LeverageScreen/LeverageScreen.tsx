@@ -295,7 +295,7 @@ export function LeverageScreen() {
           {
             start: (
               <Field.FooterInfoPriceImpact
-                inputTokenName="BOLD"
+                inputTokenName="JPYDF"
                 outputTokenName={collateral.name}
                 priceImpact={leverageField.priceImpact}
               />

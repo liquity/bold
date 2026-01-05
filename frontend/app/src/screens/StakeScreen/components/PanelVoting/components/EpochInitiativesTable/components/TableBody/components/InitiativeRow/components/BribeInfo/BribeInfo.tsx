@@ -45,7 +45,7 @@ export const BribeInfo: FC<BribeInfoProps> = ({ initiativeAddress }) => {
       >
         {dn.gt(bribe.boldAmount, 0) && (
           <div
-            title={`${fmtnum(bribe.boldAmount)} BOLD`}
+            title={`${fmtnum(bribe.boldAmount)} JPYDF`}
             className={css({
               display: "flex",
               alignItems: "center",

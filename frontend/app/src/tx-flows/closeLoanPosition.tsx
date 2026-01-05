@@ -73,7 +73,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
               <Amount
                 key="start"
                 value={amountToRepay}
-                suffix={` ${repayWithCollateral ? collateral.name : "BOLD"}`}
+                suffix={` ${repayWithCollateral ? collateral.name : "JPYDF"}`}
               />,
             ]}
           />
@@ -111,7 +111,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
               >
                 Slippage refund
                 <InfoTooltip heading="Slippage refund">
-                  Excess BOLD was acquired to repay your debt and accommodate for slippage. This is the left over amount
+                  Excess JPYDF was acquired to repay your debt and accommodate for slippage. This is the left over amount
                   that has been refunded to your wallet.
                 </InfoTooltip>
               </div>
@@ -120,7 +120,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
               <Amount
                 key="start"
                 value={slippageRefund.data}
-                suffix=" BOLD"
+                suffix=" JPYDF"
                 format="2z"
               />,
             ]}
@@ -132,7 +132,7 @@ export const closeLoanPosition: FlowDeclaration<CloseLoanPositionRequest> = {
 
   steps: {
     approveBold: {
-      name: () => "Approve BOLD",
+      name: () => "Approve JPYDF",
       Status: (props) => (
         <TransactionStatus
           {...props}

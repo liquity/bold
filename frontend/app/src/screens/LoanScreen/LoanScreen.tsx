@@ -350,7 +350,7 @@ export function LoanScreen() {
                                 <InlineTokenAmount
                                   symbol="BOLD"
                                   value={loan.data.redeemedDebt}
-                                  suffix=" BOLD"
+                                  suffix=" JPYDF"
                                 />{" "}
                                 repaid in exchange for{" "}
                                 <InlineTokenAmount

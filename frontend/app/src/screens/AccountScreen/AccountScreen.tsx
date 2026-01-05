@@ -106,7 +106,7 @@ export function AccountScreen({
               gridTemplateColumns: `repeat(3, 1fr)`,
             }}
           >
-            <GridItem label="BOLD balance">
+            <GridItem label="JPYDF balance">
               <Balance
                 address={address}
                 tokenSymbol="BOLD"

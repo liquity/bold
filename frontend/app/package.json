@@ -1,7 +1,7 @@
 {
-  "name": "@liquity2/app",
+  "name": "@jpydf/app",
   "private": true,
-  "author": "Liquity AG",
+  "author": "Jpydf",
   "license": "MIT",
   "version": "1.10.0",
   "type": "module",

@@ -31,7 +31,7 @@ export const TotalDebt: FC<TotalDebtProps> = ({ positive, loan, prevLoan }) => (
       })}
     >
       <div
-        title={`${fmtnum(loan.borrowed, "full")} BOLD`}
+        title={`${fmtnum(loan.borrowed, "full")} JPYDF`}
         className={css({
           display: "flex",
           alignItems: "center",
@@ -47,7 +47,7 @@ export const TotalDebt: FC<TotalDebtProps> = ({ positive, loan, prevLoan }) => (
         </div>
         <TokenIcon symbol="BOLD" size={32} />
         {prevLoan && !dn.eq(prevLoan.borrowed, loan.borrowed) && (
-          <CrossedText title={`${fmtnum(prevLoan.borrowed, "full")} BOLD`}>
+          <CrossedText title={`${fmtnum(prevLoan.borrowed, "full")} JPYDF`}>
             {fmtnum(prevLoan.borrowed)}
           </CrossedText>
         )}

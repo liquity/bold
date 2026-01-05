@@ -42,13 +42,13 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
         <HFlex justifyContent="space-between" alignItems="start">
           <HFlex gap={4}>
             <div>
-              You redeem BOLD{" "}
+              You redeem JPYDF{" "}
               <span className={css({ color: "contentAlt" })}>
                 (incl. <Amount value={feePct} percentage /> fee)
               </span>
             </div>
             <InfoTooltip>
-              This is the estimated amount of BOLD you will pay, including a <Amount value={feePct} percentage />{" "}
+              This is the estimated amount of JPYDF you will pay, including a <Amount value={feePct} percentage />{" "}
               redemption fee. The actual fee may be up to{" "}
               <Amount value={REDEMPTION_SLIPPAGE_TOLERANCE} percentage format="full" />{" "}
               higher than this due to slippage.
@@ -56,7 +56,7 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
           </HFlex>
           <VFlex gap={4} alignItems="flex-end">
             <HFlex gap={6} className={css({ fontSize: 18 })}>
-              <Amount format="2z" value={amount} title={{ suffix: " BOLD" }} />
+              <Amount format="2z" value={amount} title={{ suffix: " JPYDF" }} />
               <TokenIcon symbol="BOLD" size={20} />
             </HFlex>
             {boldPrice.data && (
@@ -102,7 +102,7 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
 
   steps: {
     approve: {
-      name: () => "Approve BOLD",
+      name: () => "Approve JPYDF",
       Status: TransactionStatus,
 
       async commit({ request, writeContract }) {
@@ -121,7 +121,7 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
     },
 
     redeemCollateral: {
-      name: () => "Redeem BOLD",
+      name: () => "Redeem JPYDF",
       Status: TransactionStatus,
 
       async commit({ request, writeContract }) {

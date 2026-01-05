@@ -103,7 +103,7 @@ export function BottomBar() {
             <div
               title={`Total supply: ${
                 fmtnum(boldSupply, {
-                  suffix: " BOLD",
+                  suffix: " JPYDF",
                   preset: "2z",
                 })
               }`}
@@ -132,7 +132,7 @@ export function BottomBar() {
                     fallback="…"
                     format="compact"
                     value={boldSupply}
-                    suffix=" BOLD"
+                    suffix=" JPYDF"
                   />
                 )}
               </span>
@@ -150,7 +150,7 @@ export function BottomBar() {
                       whiteSpace: "nowrap",
                     })}
                   >
-                    Redeem BOLD
+                    Redeem JPYDF
                   </div>
                 }
                 className={css({

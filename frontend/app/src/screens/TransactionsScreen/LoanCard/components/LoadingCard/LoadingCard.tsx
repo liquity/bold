@@ -28,7 +28,7 @@ export const LoadingCard: FC<LoadingCardProps> = ({
   children,
   isSuccess,
 }) => {
-  const title = leverage ? "Multiply" : "BOLD loan";
+  const title = leverage ? "Multiply" : "JPYDF loan";
 
   const spring = useSpring({
     to: match(loadingState)

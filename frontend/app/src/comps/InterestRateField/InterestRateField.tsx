@@ -319,7 +319,7 @@ export const InterestRateField = memo(
                 >
                   {boldInterestPerYear && (mode === "manual" || delegate !== null)
                     ? fmtnum(boldInterestPerYear, breakpoint === "small" ? "compact" : "2z")
-                    : "−"} BOLD / year
+                    : "−"} JPYDF / year
                 </div>
                 <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
               </div>
@@ -331,7 +331,7 @@ export const InterestRateField = memo(
                     (mode === "manual" || delegate !== null)
                       ? fmtnum(debtInFront?.debtInFront, "compact")
                       : "−"
-                  } BOLD`}
+                  } JPYDF`}
                   className={css({
                     overflow: "hidden",
                     whiteSpace: "nowrap",

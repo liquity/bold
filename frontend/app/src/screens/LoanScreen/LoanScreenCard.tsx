@@ -89,7 +89,7 @@ export function LoanScreenCard({
   );
 
   const nftUrl = useTroveNftUrl(loan?.branchId ?? null, troveId);
-  const title = mode === "multiply" ? "Multiply" : "BOLD loan";
+  const title = mode === "multiply" ? "Multiply" : "JPYDF loan";
 
   return (
     <ScreenCard
@@ -399,7 +399,7 @@ function LoanCard(props: {
         nftUrl,
         collSurplusOnChain,
       }) => {
-        const title = mode === "multiply" ? "Multiply" : "BOLD loan";
+        const title = mode === "multiply" ? "Multiply" : "JPYDF loan";
 
         const collSurplusFromSubgraph = loan.collSurplus;
         const collSurplusCurrently = collSurplusOnChain;
@@ -530,7 +530,7 @@ function LoanCard(props: {
                           ),
 
                           label: mode === "multiply"
-                            ? "Convert to BOLD loan"
+                            ? "Convert to JPYDF loan"
                             : "Convert to Multiply position",
                         },
                         {
@@ -664,7 +664,7 @@ function LoanCard(props: {
                       )
                       : (
                         <div
-                          title={`${fmtnum(liquidated ? (loan.liquidatedDebt ?? loan.borrowed) : loan.borrowed)} BOLD`}
+                          title={`${fmtnum(liquidated ? (loan.liquidatedDebt ?? loan.borrowed) : loan.borrowed)} JPYDF`}
                           className={css({
                             display: "flex",
                             alignItems: "center",
@@ -718,7 +718,7 @@ function LoanCard(props: {
                                 body:
                                   "This is the amount of collateral remaining in the loan after the liquidation event.",
                                 footerLink: {
-                                  label: "Liquity v2 Liquidation docs",
+                                  label: "Jpydf Liquidation docs",
                                   href:
                                     "https://docs.liquity.org/v2-faq/borrowing-and-liquidations#how-do-liquidations-work-in-liquity-v2",
                                 },
