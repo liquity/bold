@@ -138,7 +138,9 @@ export default {
       },
       delegate: {
         label: "Delegated",
-        secondary: <>The interest rate is set and updated by a third party of your choice. They may charge a fee.</>,
+        secondary: (
+          <>The interest rate is automatically managed by a third party of your choice. They may charge a fee.</>
+        ),
       },
     },
 
@@ -146,7 +148,7 @@ export default {
       title: "Set a delegate",
       intro: (
         <>
-          The interest rate is set and updated by a third party of your choice. They may charge a fee.
+          The interest rate is automatically managed by a third party of your choice. They may charge a fee.
         </>
       ),
     },
