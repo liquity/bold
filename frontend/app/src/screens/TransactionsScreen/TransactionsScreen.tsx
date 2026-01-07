@@ -5,8 +5,8 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { ErrorBox } from "@/src/comps/ErrorBox/ErrorBox";
 import { PurpleButton } from "@/src/comps/FlowButton/FlowButton";
-import { LinkButton } from "@/src/comps/LinkButton/LinkButton";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
+import Link from "next/link";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
 import { useTransactionFlow } from "@/src/services/TransactionFlow";
@@ -196,28 +196,27 @@ export function TransactionsScreen() {
             paddingBottom: 32,
           })}
         >
-          <div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: 56,
-              whiteSpace: "nowrap",
-              textAlign: "center",
-              color: "positive",
-            })}
-            style={{
-              marginBottom: flow.steps.length === 1 ? -24 : 0,
-            }}
-          >
-            {successMessageTransition((style, show) => (
-              show && (
-                <a.div style={style}>
-                  {flow.request.successMessage}
-                </a.div>
-              )
-            ))}
-          </div>
+          {successMessageTransition((style, show) => (
+            show && (
+              <a.div
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: 56,
+                  whiteSpace: "nowrap",
+                  textAlign: "center",
+                  color: "positive",
+                })}
+                style={{
+                  ...style,
+                  marginBottom: flow.steps?.length === 1 ? -24 : 0,
+                }}
+              >
+                {flow.request.successMessage}
+              </a.div>
+            )
+          ))}
 
           <FlowSteps
             currentStep={currentStepIndex}
@@ -246,20 +245,18 @@ export function TransactionsScreen() {
         >
           {step.status === "confirmed"
             ? (
-              <LinkButton
-                id="flow-success-link"
-                href={flow.request.successLink[0]}
-                label={flow.request.successLink[1]}
-                mode="positive"
-                size="large"
-                wide
-              />
+              <Link href={flow.request.successLink[0]}>
+                <PurpleButton size="large">
+                  {flow.request.successLink[1]}
+                </PurpleButton>
+              </Link>
             )
             : (
               <PurpleButton
                 className={`flow-commit-step flow-commit-step-${step.id}`}
                 disabled={step.status === "awaiting-verify" || step.status === "awaiting-commit"}
                 onClick={commit}
+                size="large"
               >
                 {(step.status === "error" ? "Retry: " : "") + (flowParams ? stepDeclaration.name(flowParams) : "")}
               </PurpleButton>

@@ -34,8 +34,11 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
   Details(ctx) {
     const estimatedGains = useSimulatedBalancesChange(ctx);
     const branches = getBranches();
+    const isLoading = estimatedGains.isLoading;
+
     const boldChange = estimatedGains.data?.find(({ symbol }) => symbol === WHITE_LABEL_CONFIG.tokens.mainToken.symbol)?.change;
     const collChanges = estimatedGains.data?.filter(({ symbol }) => symbol !== WHITE_LABEL_CONFIG.tokens.mainToken.symbol);
+
     return (
       <>
         <TransactionDetailsRow
@@ -55,17 +58,21 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
             <Amount
               key="start"
               value={boldChange}
-              fallback="fetching…"
+              fallback={isLoading ? "estimating…" : "−"}
               suffix={` ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol}`}
             />,
             <Fragment key="end">
-              Estimated ${WHITE_LABEL_CONFIG.tokens.mainToken.symbol} that will be redeemed.
+              {WHITE_LABEL_CONFIG.tokens.mainToken.symbol} to redeem for collateral.
             </Fragment>,
           ]}
         />
         {branches.map(({ symbol }) => {
           const collChange = collChanges?.find((change) => symbol === change.symbol)?.change;
           const symbol_ = symbol === "ETH" ? "WETH" : symbol;
+          // Don't show branches with 0 collateral
+          if (collChange && dn.eq(collChange, 0)) {
+            return null;
+          }
           return (
             <TransactionDetailsRow
               key={symbol}
@@ -74,7 +81,7 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
                 <Amount
                   key="start"
                   value={collChange}
-                  fallback="fetching…"
+                  fallback={isLoading ? "estimating…" : "−"}
                   suffix={` ${symbol_}`}
                 />,
                 <Fragment key="end">
@@ -170,6 +177,7 @@ export function useSimulatedBalancesChange({
   const wagmiConfig = useWagmiConfig();
   return useQuery({
     queryKey: ["simulatedBalancesChange", account, jsonStringifyWithDnum(request)],
+    retry: false,
     queryFn: async () => {
       const CollateralRegistry = getProtocolContract("CollateralRegistry");
       const BoldToken = getProtocolContract("BoldToken");
@@ -195,79 +203,151 @@ export function useSimulatedBalancesChange({
       const [chain] = wagmiConfig.chains;
       const [rpcUrl] = chain.rpcUrls.default.http;
       const client = createPublicClient({ chain, transport: http(rpcUrl) });
-
       const branches = getBranches();
-      const branchesBalanceCalls = branches.map((branch) => ({
-        to: branch.contracts.CollToken.address,
-        abi: branch.contracts.CollToken.abi,
-        functionName: "balanceOf" as const,
-        args: [account],
-      } as const));
 
-      const boldBalanceCall = {
-        to: BoldToken.address,
-        abi: BoldToken.abi,
-        functionName: "balanceOf" as const,
-        args: [account],
-      } as const;
+      // Try simulation first, fall back to manual calculation
+      try {
+        const branchesBalanceCalls = branches.map((branch) => ({
+          to: branch.contracts.CollToken.address,
+          abi: branch.contracts.CollToken.abi,
+          functionName: "balanceOf" as const,
+          args: [account],
+        } as const));
 
-      const simulation = await client.simulateCalls({
-        account,
-        calls: [
-          // 1. get balances before
-          boldBalanceCall,
-          ...branchesBalanceCalls,
+        const boldBalanceCall = {
+          to: BoldToken.address,
+          abi: BoldToken.abi,
+          functionName: "balanceOf" as const,
+          args: [account],
+        } as const;
 
-          // 2. redeem
-          {
-            to: CollateralRegistry.address,
-            abi: CollateralRegistry.abi,
-            functionName: "redeemCollateral",
-            args: [request.amount[0], 0n, request.maxFee[0]],
-          },
+        const simulation = await client.simulateCalls({
+          account,
+          calls: [
+            boldBalanceCall,
+            ...branchesBalanceCalls,
+            {
+              to: CollateralRegistry.address,
+              abi: CollateralRegistry.abi,
+              functionName: "redeemCollateral",
+              args: [request.amount[0], 0n, request.maxFee[0]],
+            },
+            boldBalanceCall,
+            ...branchesBalanceCalls,
+          ],
+          stateOverrides: [{ address: account, nonce: 0 }],
+        });
 
-          // 3. get balances after
-          boldBalanceCall,
-          ...branchesBalanceCalls,
-        ],
-
-        // This is needed to avoid a “nonce too low” error with certain RPCs
-        stateOverrides: [{ address: account, nonce: 0 }],
-      });
-
-      const getBalancesFromSimulated = (position: number) => {
-        return simulation.results
-          .slice(position, position + branches.length + 1)
-          .map((result, index) => {
-            const symbol = index === 0 ? WHITE_LABEL_CONFIG.tokens.mainToken.symbol : branches[index - 1]?.symbol;
-            return {
-              symbol,
-              balance: dnum18(result.data ?? 0n),
-            };
-          });
-      };
-
-      const balancesBefore = getBalancesFromSimulated(0);
-      const balancesAfter = getBalancesFromSimulated(branches.length + 2);
-
-      const balanceChanges = balancesBefore.map((balanceBefore, index) => {
-        const balanceAfter = balancesAfter[index];
-        if (!balanceAfter) throw new Error();
-        return {
-          symbol: balanceBefore.symbol,
-          change: dn.sub(balanceAfter.balance, balanceBefore.balance),
+        const getBalancesFromSimulated = (position: number) => {
+          return simulation.results
+            .slice(position, position + branches.length + 1)
+            .map((result, index) => {
+              const symbol = index === 0 ? WHITE_LABEL_CONFIG.tokens.mainToken.symbol : branches[index - 1]?.symbol;
+              return {
+                symbol,
+                balance: dnum18(result.data ?? 0n),
+              };
+            });
         };
-      });
 
-      localStorage.setItem(
-        `${LOCAL_STORAGE_PREFIX}:simulatedBalancesChange`,
-        jsonStringifyWithDnum({
-          stringifiedRequest: jsonStringifyWithDnum(request),
-          balanceChanges,
-        }),
-      );
+        const balancesBefore = getBalancesFromSimulated(0);
+        const balancesAfter = getBalancesFromSimulated(branches.length + 2);
 
-      return balanceChanges;
+        const balanceChanges = balancesBefore.map((balanceBefore, index) => {
+          const balanceAfter = balancesAfter[index];
+          if (!balanceAfter) throw new Error();
+          return {
+            symbol: balanceBefore.symbol,
+            change: dn.sub(balanceAfter.balance, balanceBefore.balance),
+          };
+        });
+
+        localStorage.setItem(
+          `${LOCAL_STORAGE_PREFIX}:simulatedBalancesChange`,
+          jsonStringifyWithDnum({
+            stringifiedRequest: jsonStringifyWithDnum(request),
+            balanceChanges,
+          }),
+        );
+
+        return balanceChanges;
+      } catch {
+        // Simulation failed (RPC doesn't support simulateCalls), calculate manually
+        const redemptionRate = await client.readContract({
+          ...CollateralRegistry,
+          functionName: "getRedemptionRateForRedeemedAmount",
+          args: [request.amount[0]],
+        });
+
+        // Get unbacked portions and prices for each branch
+        const unbackedPortionAbi = [{
+          type: "function",
+          name: "getUnbackedPortionPriceAndRedeemability",
+          inputs: [],
+          outputs: [
+            { name: "", type: "uint256" },
+            { name: "", type: "uint256" },
+            { name: "", type: "bool" },
+          ],
+          stateMutability: "view",
+        }] as const;
+
+        const branchData = await Promise.all(
+          branches.map(async (branch) => {
+            const result = await client.readContract({
+              address: branch.contracts.TroveManager.address,
+              abi: unbackedPortionAbi,
+              functionName: "getUnbackedPortionPriceAndRedeemability",
+            });
+            return {
+              symbol: branch.symbol,
+              unbackedPortion: dnum18(result[0]),
+              price: dnum18(result[1]),
+              redeemable: result[2],
+            };
+          })
+        );
+
+        // Calculate total unbacked
+        const zeroDnum: dn.Dnum = [0n, 18];
+        const totalUnbacked = branchData.reduce(
+          (sum, b) => b.redeemable ? dn.add(sum, b.unbackedPortion) : sum,
+          zeroDnum
+        );
+
+        // Calculate collateral received for each branch
+        // Formula: collAmount = (boldAmount * unbackedPortion / totalUnbacked) * (1 - redemptionRate) / price
+        const redemptionRateDnum = dnum18(redemptionRate);
+        const oneDnum: dn.Dnum = [1n * 10n ** 18n, 18];
+        const oneMinusFee = dn.sub(oneDnum, redemptionRateDnum);
+
+        const balanceChanges: Array<{ symbol: string; change: dn.Dnum }> = [
+          {
+            symbol: WHITE_LABEL_CONFIG.tokens.mainToken.symbol,
+            change: dn.mul(request.amount, -1), // MUST spent (negative)
+          },
+          ...branchData.map((branch) => {
+            if (!branch.redeemable || dn.eq(totalUnbacked, zeroDnum) || dn.eq(branch.price, zeroDnum)) {
+              return { symbol: branch.symbol, change: zeroDnum };
+            }
+            // boldForBranch = boldAmount * unbackedPortion / totalUnbacked
+            const boldForBranch = dn.div(dn.mul(request.amount, branch.unbackedPortion), totalUnbacked);
+            // collReceived = boldForBranch * (1 - fee) / price
+            const collReceived = dn.div(dn.mul(boldForBranch, oneMinusFee), branch.price);
+            return { symbol: branch.symbol, change: collReceived };
+          }),
+        ];
+
+        localStorage.setItem(
+          `${LOCAL_STORAGE_PREFIX}:simulatedBalancesChange`,
+          jsonStringifyWithDnum({
+            stringifiedRequest: jsonStringifyWithDnum(request),
+            balanceChanges,
+          }),
+        );
+
+        return balanceChanges;
+      }
     },
   });
 }

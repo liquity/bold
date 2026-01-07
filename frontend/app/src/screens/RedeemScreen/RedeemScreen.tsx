@@ -1,20 +1,18 @@
 "use client";
 
 import { Amount } from "@/src/comps/Amount/Amount";
-import { ConnectWarningBox } from "@/src/comps/ConnectWarningBox/ConnectWarningBox";
 import { Field } from "@/src/comps/Field/Field";
+import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { Screen } from "@/src/comps/Screen/Screen";
-import content from "@/src/content";
 import { getProtocolContract } from "@/src/contracts";
 import { dnum18 } from "@/src/dnum-utils";
 import { parseInputPercentage, useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getBranches, getCollToken } from "@/src/liquity-utils";
-import { useTransactionFlow } from "@/src/services/TransactionFlow";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { WHITE_LABEL_CONFIG } from "@/src/white-label.config";
 import { css } from "@/styled-system/css";
-import { Button, HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
+import { HFlex, InfoTooltip, InputField, TextButton, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Link from "next/link";
 import { useRef } from "react";
@@ -22,7 +20,6 @@ import { useReadContract } from "wagmi";
 
 export function RedeemScreen() {
   const account = useAccount();
-  const txFlow = useTransactionFlow();
 
   const boldBalance = useBalance(account.address, WHITE_LABEL_CONFIG.tokens.mainToken.symbol);
 
@@ -238,40 +235,20 @@ export function RedeemScreen() {
           </p>
         </section>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            gap: 32,
-            width: "100%",
-          }}
-        >
-          <ConnectWarningBox />
-          <Button
-            disabled={!allowSubmit}
-            label={content.borrowScreen.action}
-            mode="primary"
-            size="large"
-            wide
-            onClick={() => {
-              if (
-                amount.parsed
-                && maxFee.parsed
-              ) {
-                txFlow.start({
-                  flowId: "redeemCollateral",
-                  backLink: ["/redeem", "Back"],
-                  successLink: ["/", "Go to the Dashboard"],
-                  successMessage: "The redemption was successful.",
+        <FlowButton
+          disabled={!allowSubmit}
+          request={amount.parsed && maxFee.parsed
+            ? {
+                flowId: "redeemCollateral",
+                backLink: ["/redeem", "Back"],
+                successLink: ["/", "Go to the Dashboard"],
+                successMessage: "The redemption was successful.",
 
-                  amount: amount.parsed,
-                  maxFee: maxFee.parsed,
-                });
+                amount: amount.parsed,
+                maxFee: maxFee.parsed,
               }
-            }}
-          />
-        </div>
+            : undefined}
+        />
       </div>
     </Screen>
   );
