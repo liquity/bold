@@ -233,6 +233,27 @@ export function BottomBar() {
               >
                 Terms of Use
               </Link>
+              <span>•</span>
+              <Link
+                href="https://app.must.finance/redeem"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={css({
+                  color: "rgba(255, 255, 255, 0.7)",
+                  _hover: { 
+                    color: "white",
+                    textDecoration: "underline",
+                  },
+                  _focusVisible: {
+                    outline: "2px solid rgba(255, 255, 255, 0.5)",
+                  },
+                  _active: {
+                    translate: "0 1px",
+                  },
+                })}
+              >
+                Redemptions
+              </Link>
               <span>© Saga Stablecoin 2025</span>
             </div>
           </div>
