@@ -43,17 +43,21 @@ contract CollateralRegistry is ICollateralRegistry {
 
     uint256 public baseRate;
 
+    address public immutable liquidityStrategy;
+
     // The timestamp of the latest fee operation (redemption or new Bold issuance)
     uint256 public lastFeeOperationTime = block.timestamp;
 
     event BaseRateUpdated(uint256 _baseRate);
     event LastFeeOpTimeUpdated(uint256 _lastFeeOpTime);
+    event LiquidityStrategyUpdated(address indexed _liquidityStrategy);
 
     constructor(
         IBoldToken _boldToken,
         IERC20Metadata[] memory _tokens,
         ITroveManager[] memory _troveManagers,
-        ISystemParams _systemParams
+        ISystemParams _systemParams,
+        address _liquidityStrategy
     ) {
         uint256 numTokens = _tokens.length;
         require(numTokens > 0, "Collateral list cannot be empty");
@@ -88,6 +92,10 @@ contract CollateralRegistry is ICollateralRegistry {
         // Initialize the baseRate state variable
         baseRate = _systemParams.INITIAL_BASE_RATE();
         emit BaseRateUpdated(baseRate);
+
+        // Initialize the liquidityStrategy state variable
+        liquidityStrategy = _liquidityStrategy;
+        emit LiquidityStrategyUpdated(liquidityStrategy);
     }
 
     struct RedemptionTotals {
@@ -95,6 +103,34 @@ contract CollateralRegistry is ICollateralRegistry {
         uint256 boldSupplyAtStart;
         uint256 unbacked;
         uint256 redeemedAmount;
+    }
+
+    /**
+     * @notice Redeems debt tokens with a fixed fee for the trove owner
+     * @dev This function is used during the rebalancing of a CDP pool and can only be called by the liquidity strategy
+     * @param _boldAmount The amount of bold to redeem
+     * @param _maxIterationsPerCollateral The maximum number of iterations per collateral
+     * @param _troveOwnerFee The fee to pay to the trove owner
+     */
+    function redeemCollateralRebalancing(uint256 _boldAmount, uint256 _maxIterationsPerCollateral, uint256 _troveOwnerFee) external {
+        _requireCallerIsLiquidityStrategy();
+        _requireAmountGreaterThanZero(_boldAmount);
+        _requireValidTroveOwnerFee(_troveOwnerFee);
+        require(totalCollaterals == 1, "CollateralRegistry: Only one collateral supported for rebalancing");
+
+        ITroveManager troveManager = getTroveManager(0);
+        (, uint256 price, bool redeemable) =
+            troveManager.getUnbackedPortionPriceAndRedeemability();
+        require(redeemable, "CollateralRegistry: Collateral is not redeemable");
+        uint256 redeemedAmount = troveManager.redeemCollateral(
+            msg.sender,
+            _boldAmount,
+            price,
+            _troveOwnerFee,
+            _maxIterationsPerCollateral
+        );
+        require(redeemedAmount == _boldAmount, "CollateralRegistry: Redeemed amount does not match requested amount");
+        boldToken.burn(msg.sender, redeemedAmount);
     }
 
     function redeemCollateral(uint256 _boldAmount, uint256 _maxIterationsPerCollateral, uint256 _maxFeePercentage)
@@ -320,5 +356,13 @@ contract CollateralRegistry is ICollateralRegistry {
 
     function _requireAmountGreaterThanZero(uint256 _amount) internal pure {
         require(_amount > 0, "CollateralRegistry: Amount must be greater than zero");
+    }
+
+    function _requireCallerIsLiquidityStrategy() internal view {
+        require(msg.sender == address(liquidityStrategy), "CollateralRegistry: Caller is not LiquidityStrategy");
+    }
+
+    function _requireValidTroveOwnerFee(uint256 _troveOwnerFee) internal pure {
+        require(_troveOwnerFee <= DECIMAL_PRECISION, "CollateralRegistry: Trove owner fee must be between 0% and 100%");
     }
 }

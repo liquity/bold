@@ -9,7 +9,8 @@ import "./ITroveManager.sol";
 interface ICollateralRegistry {
     function baseRate() external view returns (uint256);
     function lastFeeOperationTime() external view returns (uint256);
-
+    function liquidityStrategy() external view returns (address);
+    function redeemCollateralRebalancing(uint256 _boldamount, uint256 _maxIterationsPerCollateral, uint256 _troveOwnerFee) external;
     function redeemCollateral(uint256 _boldamount, uint256 _maxIterations, uint256 _maxFeePercentage) external;
     // getters
     function totalCollaterals() external view returns (uint256);

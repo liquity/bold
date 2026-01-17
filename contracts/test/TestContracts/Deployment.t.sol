@@ -274,7 +274,7 @@ contract TestDeployer is MetadataDeployment {
         }
 
         collateralRegistry =
-            new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, systemParamsArray[0]);
+            new CollateralRegistry(boldToken, vars.collaterals, vars.troveManagers, systemParamsArray[0], makeAddr("liquidityStrategy"));
         hintHelpers = new HintHelpers(collateralRegistry, systemParamsArray[0]);
         multiTroveGetter = new MultiTroveGetter(collateralRegistry);
 

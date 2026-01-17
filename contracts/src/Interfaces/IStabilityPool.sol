@@ -35,7 +35,8 @@ interface IStabilityPool is ILiquityBase, IBoldRewardsReceiver {
 
     function boldToken() external view returns (IBoldToken);
     function troveManager() external view returns (ITroveManager);
-
+    function systemParams() external view returns (ISystemParams);
+    
     /*  provideToSP():
     * - Calculates depositor's Coll gain
     * - Calculates the compounded deposit

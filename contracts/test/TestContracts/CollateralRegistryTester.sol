@@ -9,8 +9,8 @@ import "src/Interfaces/ISystemParams.sol";
 for testing the parent's internal functions. */
 
 contract CollateralRegistryTester is CollateralRegistry {
-    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers, ISystemParams _systemParams)
-        CollateralRegistry(_boldToken, _tokens, _troveManagers, _systemParams)
+    constructor(IBoldToken _boldToken, IERC20Metadata[] memory _tokens, ITroveManager[] memory _troveManagers, ISystemParams _systemParams, address _liquidityStrategy)
+        CollateralRegistry(_boldToken, _tokens, _troveManagers, _systemParams, _liquidityStrategy)
     {}
 
     function unprotectedDecayBaseRateFromBorrowing() external returns (uint256) {

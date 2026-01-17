@@ -197,7 +197,7 @@ contract DeployLiquity2Script is StdCheats, MetadataDeployment, Logging {
         troveManagers[0] = ITroveManager(troveManagerAddress);
 
         r.collateralRegistry =
-            new CollateralRegistry(IBoldToken(address(r.stableToken)), collaterals, troveManagers, r.systemParams);
+            new CollateralRegistry(IBoldToken(address(r.stableToken)), collaterals, troveManagers, r.systemParams, makeAddr("liquidityStrategy"));
         r.hintHelpers = new HintHelpers(r.collateralRegistry, r.systemParams);
         r.multiTroveGetter = new MultiTroveGetter(r.collateralRegistry);
 
