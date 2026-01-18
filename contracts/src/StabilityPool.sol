@@ -215,6 +215,7 @@ contract StabilityPool is Initializable, LiquityBaseInit, IStabilityPool, IStabi
         troveManager = _addressesRegistry.troveManager();
         boldToken = _addressesRegistry.boldToken();
         liquidityStrategy = _addressesRegistry.liquidityStrategy();
+        P = P_PRECISION;
 
         emit TroveManagerAddressChanged(address(troveManager));
         emit BoldTokenAddressChanged(address(boldToken));
