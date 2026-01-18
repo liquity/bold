@@ -13,6 +13,7 @@ contract MockFXPriceFeed is IMockFXPriceFeed {
     string private _revertMsg = "MockFXPriceFeed: no valid price";
     uint256 private _price = 200 * 1e18;
     bool private _hasValidPrice = true;
+    bool private _isL2SequencerUp = true;
 
     function getPrice() external view override returns (uint256) {
         return _price;
@@ -26,10 +27,18 @@ contract MockFXPriceFeed is IMockFXPriceFeed {
         _price = price;
     }
 
+    function setL2SequencerUp(bool up) external {
+        _isL2SequencerUp = up;
+    }
+
     function fetchPrice() external view override returns (uint256) {
         require(_hasValidPrice, _revertMsg);
 
         return _price;
+    }
+
+    function isL2SequencerUp() external view override returns (bool) {
+        return _isL2SequencerUp;
     }
 
     function REVERT_MSG() external view override returns (string memory) {

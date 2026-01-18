@@ -163,6 +163,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
     error NotEnoughBoldBalance();
     error MinCollNotReached(uint256 _coll);
     error BatchSharesRatioTooHigh();
+    error L2SequencerDown();
 
     // --- Events ---
 
@@ -402,6 +403,7 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
      * Attempt to liquidate a custom list of troves provided by the caller.
      */
     function batchLiquidateTroves(uint256[] memory _troveArray) public override {
+        _requireL2SequencerIsUp();
         if (_troveArray.length == 0) {
             revert EmptyData();
         }
@@ -1195,6 +1197,12 @@ contract TroveManager is LiquityBase, ITroveManager, ITroveEvents {
         uint256 boldBalance = _boldToken.balanceOf(_redeemer);
         if (boldBalance < _amount) {
             revert NotEnoughBoldBalance();
+        }
+    }
+
+    function _requireL2SequencerIsUp() internal view {
+        if (!priceFeed.isL2SequencerUp()) {
+            revert L2SequencerDown();
         }
     }
 

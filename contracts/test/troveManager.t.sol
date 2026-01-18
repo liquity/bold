@@ -217,4 +217,19 @@ contract TroveManagerTest is DevTestSetup {
         liquidatedTroves[1] = troveIDs.B;
         troveManager.batchLiquidateTroves(liquidatedTroves);
     }
+
+    function testLiquidationRevertsWhenL2SequencerIsDown() public {
+        priceFeed.setPrice(2000e18);
+        uint256 ATroveId = openTroveNoHints100pct(A, 100 ether, 100_000e18, 1e17);
+        uint256 BTroveId = openTroveNoHints100pct(B, 100 ether, 100_000e18, 1e17);
+
+
+        priceFeed.setPrice(1_000e18);
+        priceFeed.setL2SequencerUp(false);
+
+        vm.startPrank(A);
+        vm.expectRevert(TroveManager.L2SequencerDown.selector);
+        troveManager.liquidate(ATroveId);
+        vm.stopPrank();
+    }
 }

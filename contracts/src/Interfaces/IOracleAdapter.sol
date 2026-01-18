@@ -16,4 +16,11 @@ interface IOracleAdapter {
      * @return denominator The denominator of the rate
      */
     function getFXRateIfValid(address rateFeedID) external view returns (uint256 numerator, uint256 denominator);
+
+    /**
+     * @notice Returns true if the L2 sequencer has been up and operational for at least the specified duration.
+     * @param since The minimum number of seconds the L2 sequencer must have been up (e.g., 1 hours = 3600).
+     * @return up True if the sequencer has been up for at least `since` seconds, false otherwise
+     */
+    function isL2SequencerUp(uint256 since) external view returns (bool up);
 }
