@@ -36,6 +36,7 @@ contract MockOracleAdapter {
 contract FXPriceFeedTest is Test {
 
     event WatchdogAddressUpdated(address indexed _oldWatchdogAddress, address indexed _newWatchdogAddress);
+    event InvertRateFeedUpdated(bool _oldInvertRateFeed, bool _newInvertRateFeed);
     event FXPriceFeedShutdown();
 
     FXPriceFeed public fxPriceFeed;
@@ -54,6 +55,7 @@ contract FXPriceFeedTest is Test {
         fxPriceFeed.initialize(
             address(mockOracleAdapter),
             rateFeedID,
+            false,
             address(mockBorrowerOperations),
             watchdog,
             owner
@@ -78,6 +80,7 @@ contract FXPriceFeedTest is Test {
         newFeed.initialize(
             address(mockOracleAdapter),
             rateFeedID,
+            false,
             address(mockBorrowerOperations),
             watchdog,
             owner
@@ -91,6 +94,7 @@ contract FXPriceFeedTest is Test {
         newFeed.initialize(
             address(0),
             rateFeedID,
+            false,
             address(mockBorrowerOperations),
             watchdog,
             owner
@@ -104,6 +108,7 @@ contract FXPriceFeedTest is Test {
         newFeed.initialize(
             address(mockOracleAdapter),
             address(0),
+            false,
             address(mockBorrowerOperations),
             watchdog,
             owner
@@ -117,6 +122,7 @@ contract FXPriceFeedTest is Test {
         newFeed.initialize(
             address(mockOracleAdapter),
             rateFeedID,
+            false,
             address(0),
             watchdog,
             owner
@@ -130,6 +136,7 @@ contract FXPriceFeedTest is Test {
         newFeed.initialize(
             address(mockOracleAdapter),
             rateFeedID,
+            false,
             address(mockBorrowerOperations),
             address(0),
             owner
@@ -143,6 +150,7 @@ contract FXPriceFeedTest is Test {
         newFeed.initialize(
             address(mockOracleAdapter),
             rateFeedID,
+            false,
             address(mockBorrowerOperations),
             watchdog,
             address(0)
@@ -157,6 +165,7 @@ contract FXPriceFeedTest is Test {
         newFeed.initialize(
             address(mockOracleAdapter),
             rateFeedID,
+            false,
             address(mockBorrowerOperations),
             watchdog,
             owner
@@ -176,6 +185,7 @@ contract FXPriceFeedTest is Test {
         newFeed.initialize(
             address(mockOracleAdapter),
             rateFeedID,
+            false,
             address(mockBorrowerOperations),
             watchdog,
             owner
@@ -185,6 +195,7 @@ contract FXPriceFeedTest is Test {
         newFeed.initialize(
             address(mockOracleAdapter),
             rateFeedID,
+            false,
             address(mockBorrowerOperations),
             watchdog,
             owner
@@ -216,6 +227,34 @@ contract FXPriceFeedTest is Test {
         vm.stopPrank();
 
         assertEq(fxPriceFeed.rateFeedID(), newRateFeedID);
+    }
+
+    function test_setInvertRateFeed_whenCalledByNonOwner_shouldRevert() initialized public {
+        address notOwner = makeAddr("notOwner");
+        bool newInvertRateFeed = true;
+
+        vm.prank(notOwner);
+        vm.expectRevert("Ownable: caller is not the owner");
+        fxPriceFeed.setInvertRateFeed(newInvertRateFeed);
+        vm.stopPrank();
+    }
+
+    function test_setInvertRateFeed_whenCalledByOwner_shouldSucceed() initialized public {
+        vm.startPrank(owner);
+        vm.expectEmit();
+        emit InvertRateFeedUpdated(false, true);
+        fxPriceFeed.setInvertRateFeed(true);
+        vm.stopPrank();
+
+        assertEq(fxPriceFeed.invertRateFeed(), true);
+
+        vm.startPrank(owner);
+        vm.expectEmit();
+        emit InvertRateFeedUpdated(true, false);
+        fxPriceFeed.setInvertRateFeed(false);
+        vm.stopPrank();
+
+        assertEq(fxPriceFeed.invertRateFeed(), false);
     }
 
     function test_setWatchdogAddress_whenCalledByNonOwner_shouldRevert() initialized public {
@@ -268,6 +307,23 @@ contract FXPriceFeedTest is Test {
 
         assertEq(priceAfterShutdown, initialPrice);
         assertEq(fxPriceFeed.lastValidPrice(), initialPrice);
+    }
+
+    function test_fetchPrice_whenInvertRateFeedIsTrue_shouldReturnInvertedPrice() initialized public {
+        vm.startPrank(owner);
+        fxPriceFeed.setInvertRateFeed(true);
+        vm.stopPrank();
+
+        uint256 price = fxPriceFeed.fetchPrice();
+
+        assertEq(price, (mockRateDenominator * 1e18) / mockRateNumerator);
+        assertEq(fxPriceFeed.lastValidPrice(), (mockRateDenominator * 1e18) / mockRateNumerator);
+
+        uint256 XOFUSDRateNumerator = 1771165426850867; // 0.001771 USD = ~1 XOF
+        mockOracleAdapter.setFXRate(XOFUSDRateNumerator, 1e18);
+
+        assertEq(fxPriceFeed.fetchPrice(), 564600000000000277670); // 1 USD = ~564 XOF
+        assertEq(fxPriceFeed.lastValidPrice(), 564600000000000277670);
     }
 
     function test_shutdown_whenCalledByNonWatchdog_shouldRevert() initialized public {

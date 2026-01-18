@@ -35,6 +35,9 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
     /// @notice Whether the contract has been shutdown due to an oracle failure
     bool public isShutdown;
 
+    // @notice Whether the rate from the OracleAdapter should be inverted
+    bool public invertRateFeed;
+
     /// @notice Thrown when the attempting to shutdown the contract when it is already shutdown
     error IsShutDown();
     /// @notice Thrown when a non-watchdog address attempts to shutdown the contract
@@ -46,6 +49,11 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
     /// @param _oldRateFeedID The previous rate feed ID
     /// @param _newRateFeedID The new rate feed ID
     event RateFeedIDUpdated(address indexed _oldRateFeedID, address indexed _newRateFeedID);
+
+    /// @notice Emitted when the invert rate feed flag is updated
+    /// @param _oldInvertRateFeed The previous invert rate feed flag
+    /// @param _newInvertRateFeed The new invert rate feed flag
+    event InvertRateFeedUpdated(bool _oldInvertRateFeed, bool _newInvertRateFeed);
 
     /// @notice Emitted when the watchdog address is updated
     /// @param _oldWatchdogAddress The previous watchdog address
@@ -69,6 +77,7 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
      * @notice Initializes the FXPriceFeed contract
      * @param _oracleAdapterAddress The address of the OracleAdapter contract
      * @param _rateFeedID The address of the rate feed ID
+     * @param _invertRateFeed Whether the rate from the OracleAdapter should be inverted
      * @param _borrowerOperationsAddress The address of the BorrowerOperations contract
      * @param _watchdogAddress The address of the watchdog contract
      * @param _initialOwner The address of the initial owner
@@ -76,6 +85,7 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
     function initialize(
         address _oracleAdapterAddress,
         address _rateFeedID,
+        bool _invertRateFeed,
         address _borrowerOperationsAddress,
         address _watchdogAddress,
         address _initialOwner
@@ -88,6 +98,7 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
 
         oracleAdapter = IOracleAdapter(_oracleAdapterAddress);
         rateFeedID = _rateFeedID;
+        invertRateFeed = _invertRateFeed;
         borrowerOperations = IBorrowerOperations(_borrowerOperationsAddress);
         watchdogAddress = _watchdogAddress;
 
@@ -106,6 +117,17 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
     }
 
     /**
+     * @notice Sets the invert rate feed flag
+     * @param _invertRateFeed Whether the rate from the OracleAdapter should be inverted
+     */
+    function setInvertRateFeed(bool _invertRateFeed) external onlyOwner {
+        bool oldInvertRateFeed = invertRateFeed;
+        invertRateFeed = _invertRateFeed;
+
+        emit InvertRateFeedUpdated(oldInvertRateFeed, _invertRateFeed);
+    }
+
+    /**
      * @notice Sets the watchdog address
      * @param _newWatchdogAddress The address of the new watchdog contract
      */
@@ -121,15 +143,23 @@ contract FXPriceFeed is IPriceFeed, OwnableUpgradeable {
     /**
      * @notice Fetches the price of the FX rate, if valid
      * @dev If the contract is shutdown due to oracle failure, the last valid price is returned
-     * @return The price of the FX rate
+     * @return price The price of the FX rate
      */
-    function fetchPrice() public returns (uint256) {
+    function fetchPrice() public returns (uint256 price) {
         if (isShutdown) {
             return lastValidPrice;
         }
 
-        // Denominator is always 1e18, so we only use the numerator as the price
-        (uint256 price,) = oracleAdapter.getFXRateIfValid(rateFeedID);
+        (uint256 numerator, uint256 denominator) = oracleAdapter.getFXRateIfValid(rateFeedID);
+
+        if (invertRateFeed) {
+            // Multiply by 1e18 to get the price in 18 decimals
+            price = (denominator * 1e18) / numerator;
+        } else {
+            // Denominator is always 1e18, so we only use the numerator as the price
+            assert(denominator == 1e18);
+            price = numerator;
+        }
 
         lastValidPrice = price;
 
