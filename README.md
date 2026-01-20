@@ -2,6 +2,56 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/liquity/bold/badge.svg?branch=main&t=yZSfc8)](https://coveralls.io/github/liquity/bold?branch=main)
 
+---
+
+# ⚠️ MENTO V3 FORK NOTICE
+
+**This is a fork of Liquity v2 adapted for Mento Protocol's multi-currency stablecoin system.**
+
+## Key Differences from Liquity v2
+
+| Aspect | Liquity v2 | Mento v3 |
+|--------|-----------|----------|
+| **Collateral** | WETH and LSTs (rETH, wstETH) | **USDm** (Mento's overcollateralized USD stablecoin) |
+| **Stablecoins** | BOLD (USD-pegged) | **FX-pegged tokens** (mGBP, mJPY, mEUR, etc.) |
+| **Oracles** | Chainlink LST/ETH price feeds | **FX rate feeds** (GBP/USD, JPY/USD, etc.) via OracleAdapter |
+| **Deployment Model** | Single system with multiple collateral branches | **Multiple independent instances**, one per FX currency |
+| **Risk Model** | Crypto collateral volatility | **Stablecoin-backed-stablecoin** with FX exposure |
+
+## Multi-Instance Architecture
+
+Mento v3 deploys **separate, independent instances** of this protocol for each FX-pegged stablecoin:
+- **mGBP Instance**: Accepts USDm as collateral, issues mGBP (pegged to British Pound)
+- **mJPY Instance**: Accepts USDm as collateral, issues mJPY (pegged to Japanese Yen)
+- **mEUR Instance**: Accepts USDm as collateral, issues mEUR (pegged to Euro)
+- ... (additional FX currencies as needed)
+
+Each instance operates independently with its own:
+- CollateralRegistry (managing USDm as the single collateral)
+- FXPriceFeed (fetching the relevant FX rate)
+- TroveManager, StabilityPool, and all core contracts
+
+## Critical Risk Considerations
+
+1. **USDm Depeg Risk**: Since all instances use USDm as collateral, a USDm depeg would cause correlated failure across all FX instances
+2. **FX Exposure**: Unlike USD-pegged stablecoins, borrowers and SP depositors face foreign exchange rate risk
+3. **Stability Pool FX Loss**: SP depositors may incur losses on liquidations due to FX rate dynamics (see Economics section)
+4. **Double Liquidation Risk**: Troves face liquidation risk from both FX rate movements AND USDm depeg
+
+## Documentation Notes
+
+Throughout this README:
+- "BOLD" refers to the stablecoin token (in Mento v3, this would be mGBP, mJPY, etc.)
+- "Collateral" or "LST" references should be understood as **USDm**
+- "LST/ETH price" should be understood as the **FX rate** (e.g., GBP/USD)
+- Examples using ETH amounts should be understood as USDm amounts at appropriate FX rates
+
+For Mento-specific implementation details, see:
+- [FXPriceFeed Contract](src/PriceFeeds/FXPriceFeed.sol)
+- [Mento-Specific Risks and Economics](#mento-specific-considerations)
+
+---
+
 ## Table of Contents
 
 - [Significant changes in Liquity v2](#significant-changes-in-liquity-v2)
@@ -130,7 +180,7 @@
 
 - **Multi-collateral system.** The system now consists of a CollateralRegistry and multiple collateral branches. Each collateral branch is parameterized separately with its own Minimum Collateral Ratio (MCR), Critical Collateral Ratio (CCR) and Shutdown Collateral Ratio (SCR). Each collateral branch contains its own TroveManager and StabilityPool. Troves in a given branch only accept a single collateral (never mixed collateral). Liquidations of Troves in a given branch via SP offset are offset purely against the SP for that branch, and liquidation gains for SP depositors are always paid in a single collateral. Similarly, liquidations via redistribution split the collateral and debt across purely active Troves in that branch.
  
-- **Collateral choices.** The system will contain collateral branches for WETH and two LSTs: rETH and wstETH. It does not accept native ETH as collateral.
+- **Collateral choices (Mento v3).** Each Mento v3 instance uses **USDm** (Mento's overcollateralized USD stablecoin) as the single collateral type. Unlike Liquity v2 which uses multiple crypto collaterals (WETH, rETH, wstETH), Mento v3 implements a stablecoin-backed-stablecoin model.
 
 - **User-set interest rates.** When a borrower opens a Trove, they choose their own annual interest rate. They may change their annual interest rate at any point. Simple (non-compounding) interest accrues on their debt continuously, and gets compounded discretely every time the Trove is touched. Aggregate accrued Trove debt is periodically minted as BOLD. 
 
@@ -180,27 +230,44 @@
 
 ## Liquity v2 Overview
 
-Liquity v2 is a collateralized debt platform. Users can lock up WETH and/or select LSTs, and issue stablecoin tokens (BOLD) to their own Ethereum address. The individual collateralized debt positions are called Troves.
+Liquity v2 is a collateralized debt platform. **In Mento v3**: Users can lock up **USDm** (Mento's USD stablecoin) and issue FX-pegged stablecoin tokens (such as mGBP, mJPY, mEUR) to their own address. The individual collateralized debt positions are called Troves.
+
+**Original Liquity v2**: Users can lock up WETH and/or select LSTs, and issue stablecoin tokens (BOLD) to their own Ethereum address.
 
 
-The stablecoin tokens are economically geared towards maintaining value of 1 BOLD = $1 USD, due to the following properties:
+The stablecoin tokens are economically geared towards maintaining their FX peg value (e.g., 1 mGBP = 1 GBP, 1 mJPY = 1 JPY, etc.), due to the following properties:
+
+**Note for Mento v3**: The peg mechanism works against the FX rate rather than USD. For example, mGBP maintains 1:1 with GBP, which itself floats against USD.
 
 
 1. The system is designed to always be over-collateralized - the dollar value of the locked collateral exceeds the dollar value of the issued stablecoins.
 
 
-2. The stablecoins are fully redeemable - users can always swap x BOLD for $x worth of a mix of WETH and LSTs (minus fees), directly with the system.
+2. The stablecoins are fully redeemable - users can always swap their stablecoins for the underlying collateral value (minus fees), directly with the system.
+   - **Liquity v2**: Swap x BOLD for $x worth of WETH/LSTs
+   - **Mento v3**: Swap x mFX for the equivalent USDm amount at the current FX rate (e.g., 1 mGBP at GBP/USD=1.25 redeems for 1.25 USDm)
    
 3. The system incorporates an adaptive interest rate mechanism, managing the attractiveness and thus the demand for holding and borrowing the stablecoin in a market-driven way.  
 
 
-Upon  opening a Trove by depositing a viable collateral ERC20, users may issue ("borrow") BOLD tokens such that the collateralization ratio of their Trove remains above the minimum collateral ratio (MCR) for their collateral branch. For example, for an MCR of 110%, a user with $10000 worth of WETH in a Trove can issue up to 9090.90 BOLD against it.
+Upon opening a Trove by depositing collateral, users may issue ("borrow") stablecoin tokens such that the collateralization ratio of their Trove remains above the minimum collateral ratio (MCR) for their branch.
+
+**Mento v3 Example**: For an MCR of 110% and GBP/USD rate of 1.25:
+- User deposits 10,000 USDm collateral
+- Maximum mGBP to borrow: 10,000 ÷ 1.25 ÷ 1.10 = 7,272.73 mGBP
+- This maintains exactly 110% collateralization in GBP terms
+
+**Liquity v2 Example**: For an MCR of 110%, a user with $10,000 worth of WETH in a Trove can issue up to 9,090.90 BOLD against it.
 
 
 The BOLD tokens are freely exchangeable - any Ethereum address can send or receive BOLD tokens, whether it has an open Trove or not. The BOLD tokens are burned upon repayment of a Trove's debt.
 
 
-The Liquity v2 system prices collateral via Chainlink oracles. When a Trove falls below the MCR, it is considered under-collateralized, and is vulnerable to liquidation.
+The system prices collateral via oracles:
+- **Liquity v2**: Uses Chainlink oracles to price WETH and LSTs in USD
+- **Mento v3**: Uses FX rate feeds via OracleAdapter to fetch FX rates (GBP/USD, JPY/USD, EUR/USD, etc.)
+
+When a Trove falls below the MCR, it is considered under-collateralized, and is vulnerable to liquidation.
 
 
 ## Multicollateral Architecture Overview
@@ -212,7 +279,11 @@ The core Liquity contracts are organized in this manner:
 - A single `CollateralRegistry` maps external collateral ERC20 tokens to a `TroveManager` address. The `CollateralRegistry` also routes redemptions across the different collateral branches.
 
 
--An entire collateral branch is deployed for each LST collateral. A collateral branch contains all the logic necessary for opening and managing Troves, liquidating Troves, Stability Pool deposits, and redemptions (from that branch).
+**Liquity v2**: An entire collateral branch is deployed for each LST collateral.
+
+**Mento v3**: An entire independent instance is deployed for each FX stablecoin (mGBP, mJPY, mEUR, etc.), with USDm as the single collateral type.
+
+A branch/instance contains all the logic necessary for opening and managing Troves, liquidating Troves, Stability Pool deposits, and redemptions.
 
 <img width="731" alt="image" src="https://github.com/user-attachments/assets/b7fd9a4f-353b-4b1a-b32f-0abf0b8c0405">
 
@@ -259,20 +330,25 @@ The three main branch-level contracts - `BorrowerOperations`, `TroveManager` and
 
 - `MultiTroveGetter` - Helper contract containing read-only functionality for fetching arrays of Trove data structs which contain the complete recorded state of a Trove.
 
-### Mainnet PriceFeed contracts
+### PriceFeed contracts
 
-Different PriceFeed contracts are needed for pricing collaterals on different branches, since the price calculation methods differ across LSTs see the [Oracle section](#oracles-in-liquity-v2). However, much of the functionality is common to a couple of parent contracts.
+Different PriceFeed implementations exist for Liquity v2 (LST pricing) and Mento v3 (FX rate pricing).
+
+#### Liquity v2 PriceFeed Contracts (Original)
 
 - `MainnetPriceFeedBase` - Base contract that contains functionality for fetching prices from external Chainlink (and possibly Redstone) push oracles, verifying the responses, and triggering collateral branch shutdown in case of an oracle failure.
 
+- `CompositePriceFeed` - Base contract that inherits `MainnetPriceFeedBase` and contains functionality for fetching prices from two market oracles: LST-ETH and ETH-USD, and calculating a composite LST-USD `market_price`. It also fetches the LST contract's LST-ETH exchange rate, calculates a composite LST-USD `exchange_rate_price` and the final LST-USD price returned is `min(market_price, exchange_rate_price)`.
 
-- `CompositePriceFeed` - Base contract that inherits `MainnetPriceFeedBase` and contains functionality for fetching prices from two market oracles: LST-ETH and ETH-USD, and calculating a composite LST- USD `market_price`. It also fetches the LST contract’s LST-ETH exchange rate, calculates a composite LST-USD `exchange_rate_price` and the final LST-USD price returned is `min(market_price, exchange_rate_price)`.
+- `WETHPriceFeed` - Inherits `MainnetPriceFeedBase`. Fetches the ETH-USD price from a Chainlink push oracle. Used to price collateral on the WETH branch.
 
-- `WETHPriceFeed` Inherits `MainnetPriceFeedBase`. Fetches the ETH-USD price from a Chainlink push oracle. Used to price collateral on the WETH branch.
+- `WSTETHPriceFeed` - Inherits `MainnetPriceFeedBase`. Fetches the STETH-USD price from a Chainlink push oracle, and computes WSTETH-USD price from the STETH-USD price and the WSTETH-STETH exchange rate from the LST contract. Used to price collateral on a WSTETH branch.
 
-- `WSTETHPriceFeed` - Inherits `MainnetPriceFeedBase`. Fetches the STETH-USD price from a Chainlink push oracle, and computes WSTETH-USD price from the STETH-USD price the WSTETH-STETH exchange rate from the LST contract. Used to price collateral on a WSTETH branch.
+- `RETHPriceFeed` - Inherits `CompositePriceFeed` and fetches the specific RETH-ETH exchange rate from RocketPool's RETHToken. Used to price collateral on a RETH branch.
 
-- `RETHPriceFeed` - Inherits `CompositePriceFeed` and fetches the specific RETH-ETH exchange rate from RocketPool’s RETHToken. Used to price collateral on a RETH branch.
+#### Mento v3 PriceFeed Contract
+
+- `FXPriceFeed` - Fetches FX exchange rates (e.g., GBP/USD, JPY/USD, EUR/USD) from the Mento `OracleAdapter` contract. Each instance has its own FXPriceFeed configured for the relevant FX rate feed. Implements emergency shutdown functionality via a watchdog contract that can freeze the feed and trigger branch shutdown if oracle failure is detected. Returns the last valid price when shut down.
 
 ## Public state-changing functions
 
@@ -1211,7 +1287,9 @@ Urgent redemptions:
 
 - Are performed directly via the shut down branch’s `TroveManager`, and they only affect that branch. They are not routed across branches.
 - Charge no redemption fee
-- Pay a slight collateral bonus of 2% to the redeemer. That is, in exchange for every 1 BOLD redeemed, the redeemer receives $1.02 worth of the LST collateral.
+- Pay a slight collateral bonus of 2% to the redeemer.
+  - **Liquity v2**: For every 1 BOLD redeemed, the redeemer receives $1.02 worth of the LST collateral
+  - **Mento v3**: For every 1 mFX redeemed, the redeemer receives 1.02x the FX rate worth of USDm (e.g., 1 mGBP at GBP/USD=1.25 redeems for 1.25 × 1.02 = 1.275 USDm)
 - Do not redeem Troves in order of interest rate. Instead, the redeemer passes a list of Troves to redeem from.
 - Do not create Zombie Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
 
@@ -1233,14 +1311,21 @@ Redemption bot creators should understand the competitive nature of redemptions,
 
 ## Collateral choices in Liquity v2
 
-Provisionally, v2 has been developed with the following collateral assets in mind:
-
+**Original Liquity v2**: The system was developed with the following collateral assets in mind:
 
 - WETH
 - WSTETH
 - RETH
 
+**Mento v3**: Uses a single collateral type across all instances:
+
+- **USDm** - Mento's overcollateralized USD stablecoin, backed by crypto assets (ETH, BTC, etc.) in Mento's Reserve contract
+
+Each FX stablecoin instance (mGBP, mJPY, mEUR, etc.) accepts only USDm as collateral. This creates a **stablecoin-backed-stablecoin** architecture with different risk characteristics than crypto-collateralized systems.
+
 ## Oracles in Liquity v2
+
+**Note**: This section primarily describes the original Liquity v2 oracle architecture for pricing LSTs in USD. For Mento v3 oracle implementation (FX rate feeds), see [Mento v3 Oracle Architecture](#mento-v3-oracle-architecture).
 
 Liquity v2 requires accurate pricing in USD for the above collateral assets. 
 
@@ -2160,4 +2245,338 @@ It is advisable to perform one or more security audits for any changes made to t
 
 ## Code diff with Liquity v2
 
-It’s advisable to publicly showcase the diff between your code and the original Liquity v2 code in your repo, so that all code changes to original smart contracts are surfaced and readily visible. 
+It's advisable to publicly showcase the diff between your code and the original Liquity v2 code in your repo, so that all code changes to original smart contracts are surfaced and readily visible.
+
+---
+
+# MENTO-SPECIFIC CONSIDERATIONS
+
+This section covers architecture, risks, and economics specific to the Mento v3 fork.
+
+## Mento v3 Oracle Architecture
+
+### FXPriceFeed Implementation
+
+Mento v3 uses a fundamentally different oracle architecture than Liquity v2:
+
+**Liquity v2 Oracles:**
+- Price crypto assets (WETH, rETH, wstETH) in USD
+- Use Chainlink market price feeds
+- Composite calculations for LST-USD pricing
+- Protection against LST market manipulation via exchange rate checks
+
+**Mento v3 Oracles:**
+- Price FX exchange rates (GBP/USD, JPY/USD, EUR/USD, etc.)
+- Use Mento's `OracleAdapter` contract
+- Each instance has a dedicated `FXPriceFeed` contract
+- Watchdog-based emergency shutdown mechanism
+
+### FXPriceFeed Contract Details
+
+```solidity
+contract FXPriceFeed is IPriceFeed {
+    IOracleAdapter public oracleAdapter;   // Mento's oracle adapter
+    address public rateFeedID;             // Specific FX rate feed ID
+    address public watchdogAddress;        // Authorized shutdown trigger
+    uint256 public lastValidPrice;         // Frozen price on shutdown
+    bool public isShutdown;                // Shutdown status
+}
+```
+
+**Key Functions:**
+- `fetchPrice()` - Returns current FX rate from OracleAdapter, or lastValidPrice if shutdown
+- `shutdown()` - Called by watchdog to freeze price feed and trigger branch shutdown
+- `setRateFeedID()` - Owner can update the rate feed ID (upgradeable aspect)
+- `setWatchdogAddress()` - Owner can update watchdog address
+
+### Oracle Failure Handling
+
+Unlike Liquity v2's automatic shutdown on oracle failure, Mento v3 uses an **external watchdog pattern**:
+
+1. Watchdog monitors FX rate feed health off-chain
+2. On oracle failure detection, watchdog calls `FXPriceFeed.shutdown()`
+3. FXPriceFeed freezes at `lastValidPrice`
+4. FXPriceFeed calls `BorrowerOperations.shutdown()` to trigger branch shutdown
+5. All subsequent operations use frozen `lastValidPrice`
+
+**Risks:**
+- Watchdog failure or delay means oracle failures may not trigger timely shutdowns
+- `lastValidPrice` may diverge significantly from real market FX rate
+- Urgent redemptions during shutdown use stale FX rates
+
+### FX Rate Oracle Risks
+
+**Compared to Liquity v2's LST oracles, FX oracles have:**
+
+✅ **Lower Manipulation Risk**
+- FX markets are extremely deep and liquid ($7+ trillion daily volume)
+- Impossible to manipulate GBP/USD, JPY/USD, EUR/USD market rates
+- No equivalent to LST-specific manipulation vectors
+
+⚠️ **Different Staleness Risks**
+- FX rates are relatively stable compared to crypto (typically <1% daily moves)
+- Stale FX rate less impactful than stale crypto price
+- However, during FX crises (e.g., currency crashes), rapid moves possible
+
+⚠️ **Dependency on OracleAdapter**
+- Centralized dependency on Mento's oracle infrastructure
+- OracleAdapter upgrade/failure affects all instances
+- Less decentralized than Chainlink feeds
+
+## Economic Model and Incentives
+
+### Borrower Economics
+
+**Why Borrow FX-Pegged Stables Against USDm?**
+
+Potential use cases:
+1. **FX Speculation**: Borrow mGBP if expecting GBP appreciation vs USD
+2. **FX Hedging**: Hedge real-world GBP expenses by borrowing mGBP
+3. **Yield Farming**: Deploy mFX in FX-denominated DeFi strategies
+4. **International Commerce**: Businesses needing FX-denominated working capital
+
+**Borrower Risks:**
+
+**1. Double Liquidation Risk**
+```
+Risk Layer 1: USDm Depeg
+- If Mento Reserve becomes undercollateralized
+- USDm loses peg to USD
+- Your collateral value drops
+
+Risk Layer 2: FX Rate Movement
+- GBP appreciates 10% (GBP/USD 1.25 → 1.375)
+- Your mGBP debt increases 10% in USD terms
+- Even if USDm is stable, you may get liquidated
+
+Combined Example:
+- Start: 10,000 USDm, borrow 6,000 mGBP at GBP/USD=1.25
+- ICR: 133% (safe)
+- GBP appreciates to 1.40 (+12%)
+- USDm depegs to $0.95 (-5%)
+- New debt in USD: 6,000 × 1.40 = $8,400
+- New collateral in USD: 10,000 × 0.95 = $9,500
+- New ICR: 113% (approaching liquidation at 110%!)
+```
+
+**2. Limited Upside for Safe Borrowing**
+- Conservative borrowing (high CR) pays interest with limited leverage benefit
+- Redemptions target low interest rates first
+- Unclear demand for "safe" FX debt positions
+
+**3. Interest Rate Competition**
+- Must balance borrowing cost vs redemption protection
+- Lower rate = cheaper borrowing but high redemption risk
+- Higher rate = expensive borrowing but protected from redemptions
+
+### Stability Pool Economics
+
+**SP Depositor Value Proposition:**
+
+✅ **Yield from Interest Payments**
+```
+Revenue Model:
+- Borrowers pay aggregate interest
+- SP receives SP_YIELD_SPLIT % (e.g., 75%)
+- Distributed pro-rata to depositors
+
+Example APY:
+- 10M mGBP total debt
+- 3% average interest rate
+- 300k mGBP annual interest
+- 225k mGBP to SP (75% split)
+- 2M mGBP in SP
+- APY = 225k / 2M = 11.25%
+```
+
+❌ **CRITICAL ISSUE: FX Loss on Liquidations**
+
+This is a **major economic problem** with the Mento v3 model:
+
+```
+Liquidation Scenario:
+- SP depositor holds 1,000 mGBP
+- Liquidation: 1,000 mGBP debt, 1,100 USDm collateral (ICR 110%)
+- SP deposits 1,000 mGBP (burned)
+- SP receives 1,100 USDm × 1.05 = 1,155 USDm (with 5% penalty bonus)
+
+At GBP/USD = 1.25:
+- Lost: 1,000 mGBP = $1,250 value
+- Gained: 1,155 USDm = $1,155 value
+- NET LOSS: -$95 or -7.6% ❌
+
+SP depositors LOSE MONEY if:
+  FX_rate > (1 + LIQUIDATION_PENALTY_SP)
+
+At current parameters:
+- 5% liquidation penalty
+- Breaks even only if GBP/USD < 1.05
+- Current GBP/USD ≈ 1.25
+- Every liquidation causes ~16% loss to SP!
+```
+
+**This breaks the incentive model.** SP depositors will:
+- Avoid depositing if liquidations are likely
+- Race to withdraw during system stress
+- Demand much higher interest yield to compensate
+
+**Potential Solutions:**
+
+1. **Significantly Higher Liquidation Penalty**
+   ```solidity
+   // Dynamic penalty based on FX rate
+   LIQUIDATION_PENALTY = (FX_rate - 1.00) + BASE_PENALTY
+
+   For mGBP at GBP/USD = 1.25:
+   Required penalty = 25% + 5% = 30%
+   ```
+   Trade-off: Much riskier for borrowers
+
+2. **Dual-Token SP Deposits**
+   ```solidity
+   // Allow depositing USDm instead of mFX
+   function provideToSP_USDm(uint256 _amount) {
+       // Offset mFX debt with equivalent USDm value
+       // SP gets USDm back + penalty bonus
+       // No FX loss!
+   }
+   ```
+
+3. **Interest Rate Floors**
+   - Minimum 5-8% interest rates
+   - Ensures SP yield compensates for FX risk
+   - Trade-off: Less competitive for borrowers
+
+### Systemic Risks
+
+**1. Correlated USDm Failure**
+
+🚨 **CRITICAL**: All instances depend on USDm as collateral
+
+If USDm depegs:
+```
+Cascade Failure Scenario:
+1. Mento Reserve loses value (e.g., ETH crash)
+2. USDm loses peg: $1.00 → $0.85
+3. ALL FX instances become undercollateralized:
+   - mGBP debt: still pegged to GBP/USD
+   - USDm collateral: -15% value
+   - TCR drops across ALL instances simultaneously
+4. Mass liquidations across all instances
+5. Redemption pressure if profitable
+6. USDm selling pressure increases
+7. Further depeg → death spiral
+```
+
+**Mitigation:**
+- USDm must maintain rock-solid peg
+- Mento Reserve must be very conservative
+- Consider circuit breakers for extreme USDm depeg
+- Monitor USDm peg health constantly
+
+**2. Redemption Arbitrage May Not Work**
+
+Unlike Liquity v2, redemption arbitrage requires specific conditions:
+
+```
+Liquity v2 Redemption Arbitrage:
+- LUSD trading at $1.01
+- Redeem LUSD, get $1.00 of ETH
+- Sell ETH for $1.00
+- Profit: $0.01 per LUSD ✅
+
+Mento v3 Redemption Arbitrage:
+- mGBP trading at £1.01 (in GBP terms)
+- GBP/USD = 1.25
+- mGBP trading at $1.2625 (1.01 × 1.25)
+- Redeem 1 mGBP, get 1.25 USDm
+- USDm worth $1.25
+- No profit unless mGBP was trading at premium to FX rate! ❌
+
+Redemptions only restore peg if:
+1. mGBP trades at premium to GBP (rare)
+2. USDm trades at premium to USD (helps but unlikely)
+3. Both trade at peg but market mispricing exists
+```
+
+**Impact:** Peg maintenance mechanism may be weaker than in Liquity v2
+
+**3. Limited Product-Market Fit**
+
+**Who wants to borrow FX stables?**
+- ❌ Crypto degens: Prefer crypto volatility
+- ❌ Forex traders: Use traditional platforms
+- ❌ DeFi yield farmers: Limited FX-denominated protocols
+- ✅ International businesses: Possible niche
+- ✅ Emerging market users: Local currency hedging
+- ✅ Cross-border payments: Potential use case
+
+**Market size may be limited.**
+
+### Mento v3 Risk Summary
+
+| Risk Category | Severity | Mitigation |
+|--------------|----------|------------|
+| USDm Depeg (Systemic) | 🔴 CRITICAL | Robust Reserve, conservative collateralization |
+| SP Depositor FX Loss | 🔴 CRITICAL | Adjust penalties OR dual-token deposits |
+| Double Liquidation Risk | 🟡 HIGH | Clear user communication, conservative CRs |
+| Limited PMF | 🟡 HIGH | Target specific niches (B2B, emerging markets) |
+| Redemption Arbitrage Weak | 🟡 MEDIUM | Monitor peg closely, adjust fees if needed |
+| FX Oracle Manipulation | 🟢 LOW | FX markets too deep to manipulate |
+| Watchdog Failure | 🟡 MEDIUM | Redundant monitoring, fast response |
+
+### Recommendations for Mento v3 Deployment
+
+1. **Start Small**
+   - Deploy 1-2 instances initially (e.g., mEUR, mGBP)
+   - Prove product-market fit before scaling
+   - Monitor USDm peg obsessively
+
+2. **Fix SP Incentives FIRST**
+   - **Option A**: Implement dynamic liquidation penalties (25-30% for GBP)
+   - **Option B**: Allow USDm deposits to SP instead of mFX
+   - **Option C**: Set high minimum interest rates (5-8%) for SP yield
+
+3. **Target Specific Use Cases**
+   - B2B partnerships with international businesses
+   - Emerging market FX hedging
+   - Cross-border payment corridors
+   - Don't try to be everything to everyone
+
+4. **Conservative Risk Parameters**
+   - Higher MCR (120-125% instead of 110%)
+   - Higher CCR (175-200% instead of 150%)
+   - Higher interest rate minimums
+   - Lower maximum borrowing (to limit exposure)
+
+5. **USDm Peg Monitoring**
+   - Real-time USDm/USD price tracking
+   - Circuit breakers if USDm < $0.95
+   - Consider emergency shutdown across all instances if USDm fails
+   - Ensure Mento Reserve is overcollateralized
+
+6. **Transparent Risk Communication**
+   - Clearly explain double liquidation risk to borrowers
+   - Warn SP depositors about FX loss on liquidations
+   - Publish SP expected APY vs risk analysis
+   - Show real-time USDm peg health
+
+7. **Deploy on L2**
+   - Gas costs make small FX operations uneconomical on mainnet
+   - L2 enables smaller positions
+   - But adds bridge risk
+
+8. **Consider Hybrid Collateral**
+   - Allow 80% USDm + 20% ETH/BTC as collateral mix
+   - Reduces correlated USDm risk
+   - Adds complexity but improves resilience
+
+---
+
+**Conclusion:** Mento v3 is an innovative but risky adaptation of Liquity v2. The stablecoin-backed-stablecoin with FX exposure model is unproven. Success requires:
+1. Rock-solid USDm peg maintenance
+2. Fixing SP depositor incentives
+3. Finding real product-market fit
+4. Very conservative risk management
+
+The technical implementation is sound, but the economic viability is uncertain. 
