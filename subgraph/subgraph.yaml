@@ -61,6 +61,8 @@ dataSources:
           handler: handleAllocateLQTY
         - event: RegisterInitiative(address,address,uint256,uint8)
           handler: handleRegisterInitiative
+        - event: UnregisterInitiative(address,uint256,uint8)
+          handler: handleUnregisterInitiative
       file: ./src/Governance.mapping.ts
     network: mainnet
 templates:

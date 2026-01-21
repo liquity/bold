@@ -150,7 +150,7 @@ export const allocateVotingPower: FlowDeclaration<AllocateVotingPowerRequest> = 
   },
 
   Details({ request, account }) {
-    const initiatives = useNamedInitiatives();
+    const initiatives = useNamedInitiatives(account);
     const governanceUser = useGovernanceUser(account);
     const stakedLQTY = governanceUser.data?.stakedLQTY ?? 0n;
     const allocations = Object.entries(request.voteAllocations);

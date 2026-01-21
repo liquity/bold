@@ -157,7 +157,7 @@ async function fetchGovernanceGlobalData(subgraphIsDown: boolean) {
   const registeredInitiatives = await getRegisteredInitiatives();
 
   return {
-    registeredInitiatives,
+    initiatives: registeredInitiatives.map((address) => ({ address, registered: true })),
     totalVotingPower: null,
   };
 }
@@ -171,17 +171,66 @@ function useGovernanceGlobalData() {
   });
 }
 
-export function useNamedInitiatives() {
+function useUserVotedInitiatives(userAddress: Address | null) {
+  return useQuery({
+    enabled: !!userAddress,
+    queryKey: ["userVotedInitiatives", userAddress],
+    queryFn: async () => {
+      const history = await getUserAllocationHistory(userAddress!);
+      const uniqueInitiatives = [...new Set(history.map((a) => a.initiative))];
+      return uniqueInitiatives;
+    },
+  });
+}
+
+function useVisibleInitiatives(userAddress: Address | null) {
+  const globalData = useGovernanceGlobalData();
+  const userVoted = useUserVotedInitiatives(userAddress);
+  const status = [globalData.status, userVoted.status].reduce(combineStatus);
+  const isLoading = globalData.isLoading || (!!userAddress && userVoted.isLoading);
+
+  return useMemo(() => {
+    if (!globalData.data) {
+      return {
+        status,
+        isLoading,
+        data: undefined,
+        totalVotingPower: undefined,
+      };
+    }
+
+    const userVotedSet = new Set(userVoted.data ?? []);
+
+    const filteredInitiatives = globalData.data.initiatives.filter(
+      (i) => i.registered || userVotedSet.has(i.address.toLowerCase() as Address),
+    );
+
+    return {
+      status,
+      isLoading,
+      data: filteredInitiatives,
+      totalVotingPower: globalData.data.totalVotingPower,
+    };
+  }, [status, isLoading, globalData.data, userVoted.data]);
+}
+
+export type InitiativeWithRegistration = Initiative & { registered: boolean };
+
+export function useNamedInitiatives(userAddress: Address | null) {
   const knownInitiatives = useKnownInitiatives();
-  const governanceGlobal = useGovernanceGlobalData();
-  const initiativeInfo = useInitiativeInfo(governanceGlobal.data?.registeredInitiatives ?? []);
-  const status = [knownInitiatives.status, governanceGlobal.status, initiativeInfo.status].reduce(combineStatus);
-  const isLoading = [knownInitiatives, governanceGlobal, initiativeInfo].some((x) => x.isLoading);
+  const visibleInitiatives = useVisibleInitiatives(userAddress);
+  const allAddresses = useMemo(
+    () => visibleInitiatives.data?.map((i) => i.address) ?? [],
+    [visibleInitiatives.data],
+  );
+  const initiativeInfo = useInitiativeInfo(allAddresses);
+  const status = [knownInitiatives.status, visibleInitiatives.status, initiativeInfo.status].reduce(combineStatus);
+  const isLoading = [knownInitiatives, visibleInitiatives, initiativeInfo].some((x) => x.isLoading);
 
   return useMemo(() => {
     if (
       knownInitiatives.data === undefined
-      || governanceGlobal.data === undefined
+      || visibleInitiatives.data === undefined
       || initiativeInfo.data === undefined
     ) {
       return {
@@ -195,18 +244,25 @@ export function useNamedInitiatives() {
       status,
       isLoading,
 
-      data: governanceGlobal.data.registeredInitiatives.map((address): Initiative => {
+      data: visibleInitiatives.data.map(({ address, registered }): InitiativeWithRegistration => {
         const ki = knownInitiatives.data?.[address];
         const ii = initiativeInfo.data[address];
 
         return {
           address,
+          registered,
           ...(ki ?? { name: null, group: null, url: null }),
           ...(ii ?? { isBribeInitiative: false, bribeToken: null }),
         };
       }),
     };
-  }, [status, isLoading, governanceGlobal.data, knownInitiatives.data, initiativeInfo.data]);
+  }, [
+    status,
+    isLoading,
+    visibleInitiatives.data,
+    knownInitiatives.data,
+    initiativeInfo.data,
+  ]);
 }
 
 export type InitiativeState = Record<Address, {
@@ -312,7 +368,7 @@ async function getRegisteredInitiatives(): Promise<Address[]> {
   }
 
   const data = await getGovernanceGlobalData();
-  return data.registeredInitiatives;
+  return data.initiatives.filter((i) => i.registered).map((i) => i.address);
 }
 
 export async function getUserAllocations(
@@ -397,7 +453,7 @@ export interface GovernanceUserState extends UserState {
 }
 
 export function useGovernanceUser(account: Address | null): UseQueryResult<GovernanceUserState | null> {
-  const initiatives = useNamedInitiatives();
+  const initiatives = useNamedInitiatives(account);
   const wagmiConfig = useWagmiConfig();
 
   let queryFn = async () => {
@@ -624,7 +680,7 @@ const TotalAllocationHistorySchema = v.array(AllocationSchema);
 
 const UserAllocationSchema = v.object({
   ...AllocationSchema.entries,
-  initiative: v.string(),
+  initiative: v.pipe(vAddress(), v.transform((address) => address.toLowerCase() as Address)),
 });
 
 const UserAllocationHistorySchema = v.array(UserAllocationSchema);
@@ -723,7 +779,7 @@ export function useBribingClaim(
   const wagmiConfig = useWagmiConfig();
   const govState = useGovernanceState();
   const govUser = useGovernanceUser(account);
-  const initiatives = useNamedInitiatives();
+  const initiatives = useNamedInitiatives(account);
 
   return useQuery({
     queryKey: [
