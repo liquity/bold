@@ -702,7 +702,7 @@ const InitiativeInfoSchema = v.record(
 type InitiativeInfo = InferOutput<typeof InitiativeInfoSchema>;
 
 // A user's allocation history ordered by descending epoch
-async function getUserAllocationHistory(user: Address) {
+export async function getUserAllocationHistory(user: Address) {
   if (LIQUITY_GOVERNANCE_URL) {
     const response = await fetch(`${LIQUITY_GOVERNANCE_URL}/allocation/user/${user.toLowerCase()}.json`);
     return v.parse(UserAllocationHistorySchema, await response.json()).sort((a, b) => b.epoch - a.epoch);
