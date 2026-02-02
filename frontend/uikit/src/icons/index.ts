@@ -27,5 +27,6 @@ export { IconSearch } from "./IconSearch";
 export { IconSettings } from "./IconSettings";
 export { IconStake } from "./IconStake";
 export { IconSuggestion } from "./IconSuggestion";
+export { IconUndo } from "./IconUndo";
 export { IconUpvote } from "./IconUpvote";
 export { IconWarning } from "./IconWarning";

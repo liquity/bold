@@ -600,6 +600,21 @@ export default {
       </>
     ),
   },
+  dataSources: {
+    title: "Data Sources",
+    description:
+      "The app uses public endpoints by default. If you experience connection issues or prefer to use your own infrastructure, you can specify custom URLs below.",
+    rpcUrlLabel: "RPC URL",
+    subgraphUrlLabel: "Subgraph URL",
+    resetToDefault: "Reset to default",
+    validationError: "Please enter a valid URL (http:// or https://)",
+    usingCustom: (type: string, defaultUrl: string) => `Using custom ${type}. Default: ${defaultUrl}`,
+    usingDefault: (type: string) => `Using default ${type}. Enter a URL to override.`,
+    cancelButton: "Cancel",
+    saveButton: "Save & Reload",
+    resetButton: "Reset & Reload",
+  },
+
   manualLoanIdInput: {
     title: "Data API error",
     description:
