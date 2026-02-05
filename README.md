@@ -55,7 +55,7 @@
 - [Redistributions](#redistributions)
   - [Redistributions and Corrected Stakes](#redistributions-and-corrected-stakes)
   - [Corrected Stake Solution](#corrected-stake-solution)
-- [Safety Mode: Critical collateral ratio (CCR) restrictions](#safety-mode:-critical-collateral-ratio-ccr-restrictions)
+- [Safety Mode - Critical collateral ratio (CCR) restrictions](#safety-mode---critical-collateral-ratio-ccr-restrictions)
   - [Rationale](#rationale)
 - [Delegation](#delegation)
   - [Add and Remove managers](#add-and-remove-managers)
@@ -1020,7 +1020,7 @@ The Trove then earns redistribution gains based on this corrected stake. A newly
 
 Whenever a borrower adjusts their Trove’s collateral, their pending rewards are applied, and a fresh corrected stake is computed.
 
-## Safety Mode: Critical collateral ratio (CCR) restrictions
+## Safety Mode - Critical collateral ratio (CCR) restrictions
 
 When the TCR of a branch falls below its Critical Collateral Ratio (CCR), the system enters "Safety Mode".  This imposes extra restrictions on borrowing in order to maintain system health and branch overcollateralization.
 
