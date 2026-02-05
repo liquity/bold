@@ -88,3 +88,28 @@ export function useCollateralRedemptionPrices(symbols: CollateralSymbol[]) {
     },
   });
 }
+
+export function useLastGoodPrice(symbol: CollateralSymbol): UseQueryResult<Dnum>;
+export function useLastGoodPrice(symbol: null): UseQueryResult<null>;
+export function useLastGoodPrice(symbol: CollateralSymbol | null): UseQueryResult<Dnum | null>;
+export function useLastGoodPrice(symbol: CollateralSymbol | null): UseQueryResult<Dnum | null> {
+  const config = useWagmiConfig();
+
+  return useQuery({
+    queryKey: ["useLastGoodPrice", symbol],
+    queryFn: async () => {
+      if (symbol === null) {
+        return null;
+      }
+
+      const price = await readContract(config, {
+        ...getBranchContract(symbol, "PriceFeed"),
+        functionName: "lastGoodPrice",
+      });
+
+      return dnum18(price);
+    },
+    enabled: symbol !== null,
+    refetchInterval: PRICE_REFRESH_INTERVAL,
+  });
+}

@@ -600,6 +600,102 @@ export default {
       </>
     ),
   },
+  urgentRedeemScreen: {
+    headingTitle: "Urgent Redemptions",
+    headingTitleActive: "Urgent Redemption",
+    selectBranchLabel: "Select branch",
+    redeemFieldLabel: "You redeem",
+    insufficientBalance: (balance: string) =>
+      `Insufficient BOLD balance. You have ${balance} BOLD.`,
+    amountCapped: (amount: string) =>
+      `Capped to ${amount} BOLD (max amount redeemable).`,
+    youReceive: "You receive",
+    bonusLabel: "Including 2% bonus",
+    bonusCappedLabel: "Including bonus (reduced)",
+    bonusTooltip: "Urgent redemptions include a 2% bonus on the collateral received.",
+    bonusCappedTooltip:
+      "The bonus is reduced because some selected troves don't have enough collateral to cover the full 2%.",
+    redemptionFeeLabel: "Redemption fee",
+    redemptionFeeValue: "0% (no fee)",
+    slippageTolerance: "Slippage tolerance",
+    customSlippagePlaceholder: "Custom %",
+    competitionWarning: (
+      <>
+        Urgent redemptions are competitive. Other users may redeem from your selected troves
+        before your transaction confirms.
+      </>
+    ),
+    manualTrovesLabel: "Manually selected troves",
+    autoTrovesLabel: "Auto-selected troves",
+    useAutoSelection: "Use auto-selection",
+    manuallySelectTroves: "Manually select troves",
+    trovesCount: (count: number) =>
+      `${count} ${count === 1 ? "trove" : "troves"} will be used for this redemption.`,
+    action: "Redeem",
+    backLink: "Back",
+    successLink: "Go to the Dashboard",
+    successMessage: "The urgent redemption was successful.",
+    noShutdown: {
+      title: "No Branches in Shutdown Mode",
+      body: (
+        <>
+          Urgent redemptions are only available when a branch is in shutdown mode.
+          Currently, all branches are operating normally.
+        </>
+      ),
+      link: "Go to standard redemptions",
+    },
+    noTroves: {
+      title: "No Urgent Redemptions Available",
+      body: "No troves are currently available for urgent redemption in this branch.",
+    },
+    troveTable: {
+      trovesSelected: (count: number) => `${count} ${count === 1 ? "trove" : "troves"} selected`,
+      totalDebt: "Total debt:",
+      totalDebtUnit: "BOLD",
+      totalColl: "Total coll:",
+      deselectPage: "Clear all",
+      selectAllOnPage: "Select all on page",
+      clearSelection: "Clear selection",
+      columnTroveId: "Trove ID",
+      columnCollateral: "Collateral",
+      columnDebt: "Debt",
+      columnIcr: "ICR",
+      icrFullBonus: "ICR >= 102%: Guaranteed full bonus",
+      icrPartialBonus: "ICR < 102%: Partial bonus possible",
+      noTrovesAvailable: "No troves available",
+      page: (current: number, total: number) => `Page ${current} of ${total}`,
+      previous: "Previous",
+      next: "Next",
+    },
+    txFlow: {
+      title: "Review & Send Transaction",
+      youRedeemBold: "You redeem BOLD",
+      redeemTooltip: "Urgent redemptions have 0% fee and include a 2% collateral bonus.",
+      youReceiveToken: (tokenName: string) => `You receive ${tokenName}`,
+      receiveTooltip: (tokenName: string) =>
+        `This is the estimated amount of ${tokenName} you will receive, including`
+        + " the 2% bonus. The actual amount may vary based on the selected troves.",
+      trovesLabel: "Troves to redeem from",
+      trovesTooltip: (
+        <>
+          The number of troves that will be used for this redemption.
+          Urgent redemptions are competitive - other users may redeem
+          from these troves before your transaction confirms.
+        </>
+      ),
+      trovesValue: (count: number) => `${count} ${count === 1 ? "trove" : "troves"}`,
+      slippageTooltip: (threshold: N) => (
+        <>
+          If the actual collateral received is less than {threshold}{" "}
+          of the expected amount, the transaction will revert.
+        </>
+      ),
+      approveStep: "Approve BOLD",
+      redeemStep: "Execute Urgent Redemption",
+    },
+  },
+
   manualLoanIdInput: {
     title: "Data API error",
     description:

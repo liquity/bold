@@ -1920,3 +1920,89 @@ export function useSafetyMode() {
     enabled: Boolean(allRatios.data),
   });
 }
+
+export type ShutdownStatus = {
+  branchId: BranchId;
+  isShutdown: boolean;
+};
+
+export function useShutdownStatus() {
+  const branches = getBranches();
+
+  return useReadContracts({
+    contracts: branches.map((branch) => ({
+      ...branch.contracts.TroveManager,
+      functionName: "shutdownTime" as const,
+    })),
+    allowFailure: false,
+    query: {
+      refetchInterval: 12_000,
+      select: (results): ShutdownStatus[] => {
+        return results.map((shutdownTime, index) => {
+          const branch = branches[index];
+          if (!branch) {
+            throw new Error(`Branch at index ${index} not found`);
+          }
+          return {
+            branchId: branch.branchId,
+            isShutdown: Number(shutdownTime) > 0,
+          };
+        });
+      },
+    },
+  });
+}
+
+export type RedeemableTrove = {
+  id: string;
+  troveId: TroveId;
+  debt: Dnum;
+  coll: Dnum;
+  stake: Dnum;
+  interestRate: Dnum;
+};
+
+async function fetchRedeemableTroves(
+  wagmiConfig: WagmiConfig,
+  branchId: BranchId,
+  maxTroves: number = 200,
+): Promise<RedeemableTrove[]> {
+  const MultiTroveGetter = getProtocolContract("MultiTroveGetter");
+
+  const troves = await readContract(wagmiConfig, {
+    ...MultiTroveGetter,
+    functionName: "getMultipleSortedTroves",
+    args: [BigInt(branchId), -1n, BigInt(maxTroves)],
+  });
+
+  return troves
+    .filter((trove) => trove.entireDebt > 0n)
+    .map((trove) => ({
+      id: getPrefixedTroveId(branchId, `0x${trove.id.toString(16)}` as TroveId),
+      troveId: `0x${trove.id.toString(16)}` as TroveId,
+      debt: dnum18(trove.entireDebt),
+      coll: dnum18(trove.entireColl),
+      stake: dnum18(trove.stake),
+      interestRate: dnum18(trove.annualInterestRate),
+    }));
+}
+
+export function useRedeemableTroves(
+  branchId: BranchId | null,
+  options?: { first?: number },
+) {
+  const wagmiConfig = useWagmiConfig();
+  const maxTroves = options?.first ?? 100;
+
+  return useQuery<RedeemableTrove[]>({
+    queryKey: ["redeemableTroves", branchId, maxTroves],
+    queryFn: async () => {
+      if (branchId === null) {
+        return [];
+      }
+      return fetchRedeemableTroves(wagmiConfig, branchId, maxTroves);
+    },
+    enabled: branchId !== null,
+    refetchInterval: 12_000,
+  });
+}

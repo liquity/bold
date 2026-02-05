@@ -1,10 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
-
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
+import { InfoBox } from "@/src/comps/InfoBox/InfoBox";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import { Value } from "@/src/comps/Value/Value";
@@ -13,13 +12,14 @@ import content from "@/src/content";
 import { dnum18, DNUM_0 } from "@/src/dnum-utils";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { getBranches, getCollToken, useRedemptionSimulation } from "@/src/liquity-utils";
+import { getBranch, getBranches, getCollToken, useRedemptionSimulation, useShutdownStatus } from "@/src/liquity-utils";
 import { useCollateralRedemptionPrices, usePrice } from "@/src/services/Prices";
 import { zipWith } from "@/src/utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconExternal, InfoTooltip, InputField, TextButton, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
+import Link from "next/link";
 
 const TRUNCATED_THRESHOLD = dnum18(100); // wei
 const maxIterationsPerCollateral = REDEMPTION_MAX_ITERATIONS_PER_COLL;
@@ -46,6 +46,11 @@ export function RedeemScreen() {
   const boldPrice = usePrice("BOLD");
   const collPrices = useCollateralRedemptionPrices(branches.map((b) => b.symbol));
   const boldRedeemed = useInputFieldValue(fmtnum);
+  const shutdownStatus = useShutdownStatus();
+
+  const shutdownBranches = shutdownStatus.data?.filter((b) => b.isShutdown) ?? [];
+  const activeBranches = shutdownStatus.data?.filter((b) => !b.isShutdown) ?? [];
+  const hasShutdownBranches = shutdownBranches.length > 0;
 
   const simulation = useRedemptionSimulation({
     boldAmount: boldRedeemed.parsed ?? DNUM_0,
@@ -124,6 +129,12 @@ export function RedeemScreen() {
       }}
     >
       <VFlex gap={48}>
+        {hasShutdownBranches && (
+          <ShutdownWarningBanner
+            shutdownBranches={shutdownBranches.map((b) => getBranch(b.branchId).symbol)}
+            activeBranches={activeBranches.map((b) => getBranch(b.branchId).symbol)}
+          />
+        )}
         <VFlex gap={24}>
           <Field
             field={
@@ -323,30 +334,40 @@ export function RedeemScreen() {
   );
 }
 
-function InfoBox(props: {
-  title?: ReactNode;
-  children?: ReactNode;
-}) {
-  return (
-    <section
-      className={css({
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        padding: 16,
-        color: "infoSurfaceContent",
-        background: "infoSurface",
-        border: "1px solid token(colors.infoSurfaceBorder)",
-        borderRadius: 8,
-      })}
-    >
-      {props.title && (
-        <header className={css({ display: "flex", flexDirection: "column", fontSize: 16 })}>
-          <h1 className={css({ fontWeight: 600 })}>{props.title}</h1>
-        </header>
-      )}
 
-      {props.children}
-    </section>
+function ShutdownWarningBanner(props: {
+  shutdownBranches: string[];
+  activeBranches: string[];
+}) {
+  const shutdownNames = props.shutdownBranches.join(", ");
+  const activeNames = props.activeBranches.length > 0
+    ? props.activeBranches.join(", ")
+    : "none";
+
+  return (
+    <InfoBox>
+      <div className={css({ fontWeight: 600 })}>
+        Branch Shutdown Detected
+      </div>
+      <div>
+        The following branches are in shutdown mode: {shutdownNames}.
+        {props.activeBranches.length > 0
+          ? ` Standard redemptions will only use active branches (${activeNames}).`
+          : " No active branches available for standard redemptions."}
+      </div>
+      <div>
+        Use{" "}
+        <Link
+          href="/redeem/urgent"
+          className={css({
+            textDecoration: "underline",
+            _hover: { textDecoration: "none" },
+          })}
+        >
+          urgent redemptions
+        </Link>
+        {" "}to redeem from shutdown branches with a 2% bonus and a 0% fee.
+      </div>
+    </InfoBox>
   );
 }

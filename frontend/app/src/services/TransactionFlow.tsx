@@ -45,6 +45,7 @@ import { unstakeDeposit, type UnstakeDepositRequest } from "@/src/tx-flows/unsta
 import { updateBorrowPosition, type UpdateBorrowPositionRequest } from "@/src/tx-flows/updateBorrowPosition";
 import { updateLeveragePosition, type UpdateLeveragePositionRequest } from "@/src/tx-flows/updateLeveragePosition";
 import { updateLoanInterestRate, type UpdateLoanInterestRateRequest } from "@/src/tx-flows/updateLoanInterestRate";
+import { urgentRedemption, type UrgentRedemptionRequest } from "@/src/tx-flows/urgentRedemption";
 
 export type FlowRequestMap = {
   "allocateVotingPower": AllocateVotingPowerRequest;
@@ -68,6 +69,7 @@ export type FlowRequestMap = {
   "updateBorrowPosition": UpdateBorrowPositionRequest;
   "updateLeveragePosition": UpdateLeveragePositionRequest;
   "updateLoanInterestRate": UpdateLoanInterestRateRequest;
+  "urgentRedemption": UrgentRedemptionRequest;
 };
 
 const FlowIdSchema = v.union([
@@ -92,6 +94,7 @@ const FlowIdSchema = v.union([
   v.literal("updateBorrowPosition"),
   v.literal("updateLeveragePosition"),
   v.literal("updateLoanInterestRate"),
+  v.literal("urgentRedemption"),
 ]);
 
 export const flows: FlowsMap = {
@@ -116,6 +119,7 @@ export const flows: FlowsMap = {
   updateBorrowPosition,
   updateLeveragePosition,
   updateLoanInterestRate,
+  urgentRedemption,
 };
 
 /* end of flows registration */
