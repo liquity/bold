@@ -4,7 +4,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { shortenTroveId } from "@/src/liquity-utils";
-import { MIN_GUARANTEED_ICR, TROVES_PER_PAGE } from "@/src/urgent-redemption-utils";
+import { TROVES_PER_PAGE } from "@/src/urgent-redemption-utils";
 import { css } from "@/styled-system/css";
 import { Button, Checkbox, HFlex, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -94,12 +94,11 @@ export function TroveSelectionTable({
 
       <HFlex gap={8}>
         <Button
-          label={allOnPageSelected
-            ? content.urgentRedeemScreen.troveTable.deselectPage
-            : content.urgentRedeemScreen.troveTable.selectAllOnPage}
+          label={content.urgentRedeemScreen.troveTable.selectAllOnPage}
           mode="secondary"
           size="small"
-          onClick={allOnPageSelected ? clearSelection : selectAllOnPage}
+          onClick={selectAllOnPage}
+          disabled={allOnPageSelected}
         />
         <Button
           label={content.urgentRedeemScreen.troveTable.clearSelection}
@@ -112,102 +111,105 @@ export function TroveSelectionTable({
 
       <div
         className={css({
-          border: "1px solid token(colors.border)",
+          border: "1px solid token(colors.tableBorder)",
           borderRadius: 8,
           overflow: "hidden",
         })}
       >
-        <div
+        <table
           className={css({
-            display: "grid",
-            gridTemplateColumns: "40px 1fr 1fr 1fr 1fr",
-            gap: 8,
-            padding: "12px 16px",
-            background: "fieldSurface",
-            fontWeight: 600,
+            width: "100%",
+            borderCollapse: "collapse",
             fontSize: 14,
-            borderBottom: "1px solid token(colors.border)",
+            "& th, & td": {
+              padding: "12px 16px",
+              textAlign: "right",
+            },
+            "& th:first-of-type, & td:first-of-type": {
+              width: 40,
+            },
+            "& th:nth-of-type(2), & td:nth-of-type(2)": {
+              textAlign: "left",
+            },
           })}
         >
-          <div />
-          <div>{content.urgentRedeemScreen.troveTable.columnTroveId}</div>
-          <div className={css({ textAlign: "right" })}>{content.urgentRedeemScreen.troveTable.columnCollateral}</div>
-          <div className={css({ textAlign: "right" })}>{content.urgentRedeemScreen.troveTable.columnDebt}</div>
-          <div className={css({ textAlign: "right" })}>{content.urgentRedeemScreen.troveTable.columnIcr}</div>
-        </div>
-
-        {paginatedTroves.map((trove) => {
-          const isSelected = selectedTroveIds.has(trove.troveId);
-          const hasFullBonus = dn.gte(trove.icr, MIN_GUARANTEED_ICR);
-
-          return (
-            <div
-              key={trove.troveId}
+          <thead>
+            <tr
               className={css({
-                display: "grid",
-                gridTemplateColumns: "40px 1fr 1fr 1fr 1fr",
-                gap: 8,
-                padding: "12px 16px",
-                fontSize: 14,
-                borderBottom: "1px solid token(colors.border)",
-                background: isSelected ? "fieldSurface" : "transparent",
-                cursor: "pointer",
-                _hover: {
-                  background: "fieldSurface",
-                },
-                _last: {
-                  borderBottom: "none",
-                },
+                background: "fieldSurface",
+                fontWeight: 600,
+                borderBottom: "1px solid token(colors.tableBorder)",
               })}
-              onClick={() => toggleTrove(trove.troveId)}
             >
-              <div className={css({ display: "flex", alignItems: "center" })}>
-                <Checkbox
-                  checked={isSelected}
-                  onChange={() => toggleTrove(trove.troveId)}
-                />
-              </div>
-              <div
-                className={css({
-                  fontFamily: "monospace",
-                  color: "contentAlt",
-                })}
-                title={trove.troveId}
-              >
-                {shortenTroveId(trove.troveId)}
-              </div>
-              <div className={css({ textAlign: "right" })}>
-                <Amount format="4z" value={trove.coll} />
-              </div>
-              <div className={css({ textAlign: "right" })}>
-                <Amount format="2z" value={trove.debt} />
-              </div>
-              <div
-                className={css({
-                  textAlign: "right",
-                  color: hasFullBonus ? "positive" : "contentAlt",
-                })}
-                title={hasFullBonus
-                  ? content.urgentRedeemScreen.troveTable.icrFullBonus
-                  : content.urgentRedeemScreen.troveTable.icrPartialBonus}
-              >
-                <Amount value={trove.icr} percentage />
-              </div>
-            </div>
-          );
-        })}
-
-        {paginatedTroves.length === 0 && (
-          <div
-            className={css({
-              padding: 24,
-              textAlign: "center",
-              color: "contentAlt",
+              <th />
+              <th>{content.urgentRedeemScreen.troveTable.columnTroveId}</th>
+              <th>{content.urgentRedeemScreen.troveTable.columnCollateral}</th>
+              <th>{content.urgentRedeemScreen.troveTable.columnDebt}</th>
+              <th>{content.urgentRedeemScreen.troveTable.columnIcr}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginatedTroves.map((trove) => {
+              const isSelected = selectedTroveIds.has(trove.troveId);
+              return (
+                <tr
+                  key={trove.troveId}
+                  className={css({
+                    borderBottom: "1px solid token(colors.tableBorder)",
+                    background: isSelected ? "fieldSurface" : "transparent",
+                    cursor: "pointer",
+                    _hover: {
+                      background: "fieldSurface",
+                    },
+                    _last: {
+                      borderBottom: "none",
+                    },
+                  })}
+                  onClick={() => toggleTrove(trove.troveId)}
+                >
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isSelected}
+                      onChange={() => toggleTrove(trove.troveId)}
+                    />
+                  </td>
+                  <td
+                    className={css({
+                      fontFamily: "monospace",
+                      color: "contentAlt",
+                    })}
+                    title={trove.troveId}
+                  >
+                    {shortenTroveId(trove.troveId)}
+                  </td>
+                  <td>
+                    <Amount format="4z" value={trove.coll} />
+                  </td>
+                  <td>
+                    <Amount format="2z" value={trove.debt} />
+                  </td>
+                  <td>
+                    <Amount value={trove.icr} percentage format="2z" />
+                  </td>
+                </tr>
+              );
             })}
-          >
-            {content.urgentRedeemScreen.troveTable.noTrovesAvailable}
-          </div>
-        )}
+            {paginatedTroves.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className={css({
+                    padding: 24,
+                    textAlign: "center",
+                    color: "contentAlt",
+                  })}
+                >
+                  {content.urgentRedeemScreen.troveTable.noTrovesAvailable}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
 
       {totalPages > 1 && (

@@ -6,7 +6,6 @@ import * as dn from "dnum";
 
 export const URGENT_REDEMPTION_BONUS = dnum18(2n * 10n ** 16n); // 2%
 export const DEFAULT_SLIPPAGE = dnum18(10n ** 16n); // 1%
-export const MIN_GUARANTEED_ICR = dnum18(102n * 10n ** 16n); // 102%
 export const TROVES_PER_PAGE = 20;
 
 export type TroveWithICR = RedeemableTrove & {
@@ -108,6 +107,8 @@ export function calculateRedemptionOutput(
   let totalCollateral = DNUM_0;
   let remainingBold = boldAmount;
 
+  const multiplier = dn.add(DNUM_1, URGENT_REDEMPTION_BONUS);
+
   for (const trove of selectedTroves) {
     if (dn.lte(remainingBold, DNUM_0)) break;
 
@@ -115,7 +116,6 @@ export function calculateRedemptionOutput(
       ? trove.debt
       : remainingBold;
 
-    const multiplier = dn.add(DNUM_1, URGENT_REDEMPTION_BONUS);
     const collFromTrove = dn.div(dn.mul(boldFromTrove, multiplier), price);
 
     const actualColl = dn.lt(collFromTrove, trove.coll)

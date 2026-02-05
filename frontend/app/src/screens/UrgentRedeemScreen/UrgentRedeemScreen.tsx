@@ -355,40 +355,45 @@ export function UrgentRedeemScreen() {
               {content.urgentRedeemScreen.competitionWarning}
             </InfoBox>
 
-            <VFlex gap={16}>
-              <HFlex justifyContent="space-between" alignItems="center">
-                <div className={css({ fontWeight: 600 })}>
-                  {isManualMode
-                    ? content.urgentRedeemScreen.manualTrovesLabel
-                    : content.urgentRedeemScreen.autoTrovesLabel}
-                </div>
-                <TextButton
-                  label={isManualMode
-                    ? content.urgentRedeemScreen.useAutoSelection
-                    : content.urgentRedeemScreen.manuallySelectTroves}
-                  onClick={() => {
-                    setIsManualMode(!isManualMode);
-                    if (!isManualMode) {
-                      setSelectedTroveIds(new Set(selection?.selectedTroves.map((t) => t.troveId) ?? []));
-                    }
-                  }}
-                />
-              </HFlex>
-
-              {isManualMode && (
-                <TroveSelectionTable
-                  troves={trovesWithICR}
-                  selectedTroveIds={selectedTroveIds}
-                  onSelectionChange={setSelectedTroveIds}
-                />
-              )}
-
-              {!isManualMode && selection && (
-                <div className={css({ color: "contentAlt", fontSize: 14 })}>
-                  {content.urgentRedeemScreen.trovesCount(selection.selectedTroves.length)}
-                </div>
-              )}
-            </VFlex>
+            <Field
+              label={
+                <HFlex justifyContent="space-between" alignItems="center">
+                  <div>
+                    {isManualMode
+                      ? content.urgentRedeemScreen.manualTrovesLabel
+                      : content.urgentRedeemScreen.autoTrovesLabel}
+                  </div>
+                  <TextButton
+                    label={isManualMode
+                      ? content.urgentRedeemScreen.useAutoSelection
+                      : content.urgentRedeemScreen.manuallySelectTroves}
+                    onClick={() => {
+                      setIsManualMode(!isManualMode);
+                      if (!isManualMode) {
+                        setSelectedTroveIds(new Set(selection?.selectedTroves.map((t) => t.troveId) ?? []));
+                      }
+                    }}
+                  />
+                </HFlex>
+              }
+              field={
+                isManualMode
+                  ? (
+                    <TroveSelectionTable
+                      troves={trovesWithICR}
+                      selectedTroveIds={selectedTroveIds}
+                      onSelectionChange={setSelectedTroveIds}
+                    />
+                  )
+                  : selection
+                  ? (
+                    <div className={css({ color: "contentAlt", fontSize: 14 })}>
+                      {content.urgentRedeemScreen.trovesCount(selection.selectedTroves.length)}
+                    </div>
+                  )
+                  : null
+              }
+            />
 
             <FlowButton
               disabled={!allowSubmit}
