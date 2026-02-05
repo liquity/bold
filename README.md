@@ -55,7 +55,7 @@
 - [Redistributions](#redistributions)
   - [Redistributions and Corrected Stakes](#redistributions-and-corrected-stakes)
   - [Corrected Stake Solution](#corrected-stake-solution)
-- [Critical collateral ratio (CCR) restrictions](#critical-collateral-ratio-ccr-restrictions)
+- [Safety Mode: Critical collateral ratio (CCR) restrictions](#safety-mode:-critical-collateral-ratio-ccr-restrictions)
   - [Rationale](#rationale)
 - [Delegation](#delegation)
   - [Add and Remove managers](#add-and-remove-managers)
@@ -1020,11 +1020,11 @@ The Trove then earns redistribution gains based on this corrected stake. A newly
 
 Whenever a borrower adjusts their Trove’s collateral, their pending rewards are applied, and a fresh corrected stake is computed.
 
-## Critical collateral ratio (CCR) restrictions
+## Safety Mode: Critical collateral ratio (CCR) restrictions
 
-When the TCR of a branch falls below its Critical Collateral Ratio (CCR), the system imposes extra restrictions on borrowing in order to maintain system health and branch overcollateralization.
+When the TCR of a branch falls below its Critical Collateral Ratio (CCR), the system enters "Safety Mode".  This imposes extra restrictions on borrowing in order to maintain system health and branch overcollateralization.
 
-Here is the full CCR-based logic:
+Here is the full Safety Mode logic:
 
 <img width="668" alt="image" src="https://github.com/user-attachments/assets/03dcfd5c-9ffc-40fd-be60-392af5cb8baa" />
 
@@ -1036,7 +1036,7 @@ As a result, when `TCR < CCR`, the following restrictions apply:
 
 ### Rationale
 
-The CCR logic has the following purposes:
+The Safety Mode logic has the following purposes:
 
 
 - Ensure that when `TCR >= CCR` borrower operations can not reduce system health too much by bringing the `TCR < CCR`
