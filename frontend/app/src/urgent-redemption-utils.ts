@@ -13,9 +13,6 @@ export type TroveWithICR = RedeemableTrove & {
 };
 
 export function calculateICR(coll: Dnum, debt: Dnum, price: Dnum): Dnum {
-  if (dn.eq(debt, DNUM_0)) {
-    return dnum18(BigInt(Number.MAX_SAFE_INTEGER));
-  }
   return dn.div(dn.mul(coll, price), debt);
 }
 
