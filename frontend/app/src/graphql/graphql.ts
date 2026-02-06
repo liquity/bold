@@ -1433,7 +1433,7 @@ export type AllInterestRateBracketsQuery = { __typename?: 'Query', interestRateB
 export type GovernanceGlobalDataQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GovernanceGlobalDataQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string }>, governanceVotingPower?: { __typename?: 'GovernanceVotingPower', allocatedLQTY: string, allocatedOffset: string, unallocatedLQTY: string, unallocatedOffset: string } | null };
+export type GovernanceGlobalDataQuery = { __typename?: 'Query', governanceInitiatives: Array<{ __typename?: 'GovernanceInitiative', id: string, registered: boolean }>, governanceVotingPower?: { __typename?: 'GovernanceVotingPower', allocatedLQTY: string, allocatedOffset: string, unallocatedLQTY: string, unallocatedOffset: string } | null };
 
 export type UserAllocationHistoryQueryVariables = Exact<{
   user?: InputMaybe<Scalars['String']['input']>;
@@ -1564,6 +1564,7 @@ export const GovernanceGlobalDataDocument = new TypedDocumentString(`
     query GovernanceGlobalData {
   governanceInitiatives {
     id
+    registered
   }
   governanceVotingPower(id: "total") {
     allocatedLQTY

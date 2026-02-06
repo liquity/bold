@@ -314,6 +314,7 @@ const GovernanceGlobalDataQuery = graphql(`
   query GovernanceGlobalData {
     governanceInitiatives {
       id
+      registered
     }
 
     governanceVotingPower(id: "total") {
@@ -325,8 +326,13 @@ const GovernanceGlobalDataQuery = graphql(`
   }
 `);
 
+export interface GovernanceInitiativeData {
+  address: Address;
+  registered: boolean;
+}
+
 export interface GovernanceGlobalData {
-  registeredInitiatives: Address[];
+  initiatives: GovernanceInitiativeData[];
   totalVotingPower: {
     allocatedLQTY: bigint;
     allocatedOffset: bigint;
@@ -335,11 +341,14 @@ export interface GovernanceGlobalData {
   };
 }
 
-// get all the registered initiatives and total voting power
+// get all initiatives and total voting power
 export async function getGovernanceGlobalData(): Promise<GovernanceGlobalData> {
   const { governanceInitiatives, governanceVotingPower } = await graphQuery(GovernanceGlobalDataQuery);
   return {
-    registeredInitiatives: governanceInitiatives.map((initiative) => initiative.id as Address),
+    initiatives: governanceInitiatives.map((initiative) => ({
+      address: initiative.id as Address,
+      registered: initiative.registered,
+    })),
 
     totalVotingPower: {
       allocatedLQTY: BigInt(governanceVotingPower?.allocatedLQTY ?? 0),
