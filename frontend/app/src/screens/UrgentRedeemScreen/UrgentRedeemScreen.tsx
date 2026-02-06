@@ -20,6 +20,7 @@ import {
   calculateRedemptionOutput,
   DEFAULT_SLIPPAGE,
   selectOptimalTroves,
+  URGENT_REDEMPTION_BONUS_PCT,
 } from "@/src/urgent-redemption-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -266,11 +267,11 @@ export function UrgentRedeemScreen() {
                 <HFlex gap={4} className={css({ color: "contentAlt" })}>
                   {redemptionOutput?.isBonusCapped
                     ? content.urgentRedeemScreen.bonusCappedLabel
-                    : content.urgentRedeemScreen.bonusLabel}
+                    : content.urgentRedeemScreen.bonusLabel(URGENT_REDEMPTION_BONUS_PCT)}
                   <InfoTooltip>
                     {redemptionOutput?.isBonusCapped
-                      ? content.urgentRedeemScreen.bonusCappedTooltip
-                      : content.urgentRedeemScreen.bonusTooltip}
+                      ? content.urgentRedeemScreen.bonusCappedTooltip(URGENT_REDEMPTION_BONUS_PCT)
+                      : content.urgentRedeemScreen.bonusTooltip(URGENT_REDEMPTION_BONUS_PCT)}
                   </InfoTooltip>
                 </HFlex>
                 <VFlex alignItems="flex-end" gap={0}>

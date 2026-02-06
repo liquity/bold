@@ -608,11 +608,11 @@ export default {
     insufficientBalance: (balance: string) => `Insufficient BOLD balance. You have ${balance} BOLD.`,
     amountCapped: (amount: string) => `Capped to ${amount} BOLD (max amount redeemable).`,
     youReceive: "You receive",
-    bonusLabel: "Including 2% bonus",
+    bonusLabel: (bonusPct: string) => `Including ${bonusPct} bonus`,
     bonusCappedLabel: "Including bonus (reduced)",
-    bonusTooltip: "Urgent redemptions include a 2% bonus on the collateral received.",
-    bonusCappedTooltip:
-      "The bonus is reduced because some selected troves don't have enough collateral to cover the full 2%.",
+    bonusTooltip: (bonusPct: string) => `Urgent redemptions include a ${bonusPct} bonus on the collateral received.`,
+    bonusCappedTooltip: (bonusPct: string) =>
+      `The bonus is reduced because some selected troves don't have enough collateral to cover the full ${bonusPct}.`,
     slippageTolerance: "Slippage tolerance",
     customSlippagePlaceholder: "Custom %",
     competitionWarning: (
@@ -664,11 +664,11 @@ export default {
     txFlow: {
       title: "Review & Send Transaction",
       youRedeemBold: "You redeem BOLD",
-      redeemTooltip: "Urgent redemptions have 0% fee and include a 2% collateral bonus.",
+      redeemTooltip: (bonusPct: string) => `Urgent redemptions have 0% fee and include a ${bonusPct} collateral bonus.`,
       youReceiveToken: (tokenName: string) => `You receive ${tokenName}`,
-      receiveTooltip: (tokenName: string) =>
+      receiveTooltip: (tokenName: string, bonusPct: string) =>
         `This is the estimated amount of ${tokenName} you will receive, including`
-        + " the 2% bonus. The actual amount may vary based on the selected troves.",
+        + ` the ${bonusPct} bonus. The actual amount may vary based on the selected troves.`,
       trovesLabel: "Troves to redeem from",
       trovesTooltip: (
         <>

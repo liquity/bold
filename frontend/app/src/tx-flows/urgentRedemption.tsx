@@ -5,6 +5,7 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { getBranchContract, getProtocolContract } from "@/src/contracts";
 import content from "@/src/content";
 import { dnum18 } from "@/src/dnum-utils";
+import { URGENT_REDEMPTION_BONUS_PCT } from "@/src/urgent-redemption-utils";
 import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
 import { useLastGoodPrice } from "@/src/services/Prices";
@@ -54,7 +55,7 @@ export const urgentRedemption: FlowDeclaration<UrgentRedemptionRequest> = {
           <HFlex gap={4}>
             <div>{content.urgentRedeemScreen.txFlow.youRedeemBold}</div>
             <InfoTooltip>
-              {content.urgentRedeemScreen.txFlow.redeemTooltip}
+              {content.urgentRedeemScreen.txFlow.redeemTooltip(URGENT_REDEMPTION_BONUS_PCT)}
             </InfoTooltip>
           </HFlex>
           <VFlex gap={4} alignItems="flex-end">
@@ -69,7 +70,7 @@ export const urgentRedemption: FlowDeclaration<UrgentRedemptionRequest> = {
           <HFlex gap={4}>
             <div>{content.urgentRedeemScreen.txFlow.youReceiveToken(tokenName)}</div>
             <InfoTooltip>
-              {content.urgentRedeemScreen.txFlow.receiveTooltip(tokenName)}
+              {content.urgentRedeemScreen.txFlow.receiveTooltip(tokenName, URGENT_REDEMPTION_BONUS_PCT)}
             </InfoTooltip>
           </HFlex>
           <VFlex gap={4} alignItems="flex-end">
@@ -87,7 +88,7 @@ export const urgentRedemption: FlowDeclaration<UrgentRedemptionRequest> = {
 
         <HFlex justifyContent="space-between" alignItems="start">
           <HFlex gap={4}>
-            <div className={css({ color: "contentAlt" })}>{content.urgentRedeemScreen.bonusLabel}</div>
+            <div className={css({ color: "contentAlt" })}>{content.urgentRedeemScreen.bonusLabel(URGENT_REDEMPTION_BONUS_PCT)}</div>
           </HFlex>
           <VFlex gap={4} alignItems="flex-end">
             <HFlex gap={6} className={css({ fontSize: 18, color: "contentAlt" })}>

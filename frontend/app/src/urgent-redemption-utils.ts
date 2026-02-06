@@ -5,6 +5,7 @@ import { dnum18, DNUM_0, DNUM_1 } from "@/src/dnum-utils";
 import * as dn from "dnum";
 
 export const URGENT_REDEMPTION_BONUS = dnum18(2n * 10n ** 16n); // 2%
+export const URGENT_REDEMPTION_BONUS_PCT = `${dn.toNumber(dn.multiply(URGENT_REDEMPTION_BONUS, 100))}%`;
 export const DEFAULT_SLIPPAGE = dnum18(10n ** 16n); // 1%
 export const TROVES_PER_PAGE = 20;
 
