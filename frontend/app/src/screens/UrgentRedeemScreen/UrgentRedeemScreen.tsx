@@ -356,6 +356,7 @@ export function UrgentRedeemScreen() {
                 ? (
                   <TroveSelectionTable
                     troves={trovesWithICR}
+                    price={price.data!}
                     selectedTroveIds={selectedTroveIds}
                     onSelectionChange={setSelectedTroveIds}
                   />

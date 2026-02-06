@@ -1,5 +1,5 @@
-import type { Dnum } from "@/src/types";
 import type { RedeemableTrove } from "@/src/liquity-utils";
+import type { Dnum } from "@/src/types";
 
 import { dnum18, DNUM_0, DNUM_1 } from "@/src/dnum-utils";
 import * as dn from "dnum";
@@ -35,6 +35,20 @@ export type TroveSelectionResult = {
   isAmountCapped: boolean;
 };
 
+export function sortByRedeemableValue<T extends { coll: Dnum; debt: Dnum }>(
+  troves: T[],
+  price: Dnum,
+): T[] {
+  const multiplier = dn.add(DNUM_1, URGENT_REDEMPTION_BONUS);
+  return [...troves].sort((a, b) => {
+    const aCollBold = dn.div(dn.mul(a.coll, price), multiplier);
+    const aEffective = dn.lt(a.debt, aCollBold) ? a.debt : aCollBold;
+    const bCollBold = dn.div(dn.mul(b.coll, price), multiplier);
+    const bEffective = dn.lt(b.debt, bCollBold) ? b.debt : bCollBold;
+    return dn.cmp(bEffective, aEffective);
+  });
+}
+
 export function selectOptimalTroves(
   troves: TroveWithICR[],
   boldAmount: Dnum,
@@ -42,15 +56,7 @@ export function selectOptimalTroves(
 ): TroveSelectionResult {
   const validTroves = troves.filter((trove) => dn.gt(trove.debt, DNUM_0));
 
-  const multiplier = dn.add(DNUM_1, URGENT_REDEMPTION_BONUS);
-
-  const sortedTroves = [...validTroves].sort((a, b) => {
-    const aCollBold = dn.div(dn.mul(a.coll, price), multiplier);
-    const aEffective = dn.lt(a.debt, aCollBold) ? a.debt : aCollBold;
-    const bCollBold = dn.div(dn.mul(b.coll, price), multiplier);
-    const bEffective = dn.lt(b.debt, bCollBold) ? b.debt : bCollBold;
-    return dn.cmp(bEffective, aEffective);
-  });
+  const sortedTroves = sortByRedeemableValue(validTroves, price);
 
   const selectedTroves: TroveWithICR[] = [];
   let totalDebt = DNUM_0;

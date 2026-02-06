@@ -1,10 +1,11 @@
+import type { Dnum } from "@/src/types";
 import type { TroveWithICR } from "@/src/urgent-redemption-utils";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { shortenTroveId } from "@/src/liquity-utils";
-import { TROVES_PER_PAGE } from "@/src/urgent-redemption-utils";
+import { sortByRedeemableValue, TROVES_PER_PAGE } from "@/src/urgent-redemption-utils";
 import { css } from "@/styled-system/css";
 import { Button, Checkbox, HFlex, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
@@ -12,19 +13,22 @@ import { useMemo, useState } from "react";
 
 type TroveSelectionTableProps = {
   troves: TroveWithICR[];
+  price: Dnum;
   selectedTroveIds: Set<string>;
   onSelectionChange: (selected: Set<string>) => void;
 };
 
 export function TroveSelectionTable({
   troves,
+  price,
   selectedTroveIds,
   onSelectionChange,
 }: TroveSelectionTableProps) {
   const [currentPage, setCurrentPage] = useState(0);
-  const sortedTroves = useMemo(() => {
-    return [...troves].sort((a, b) => dn.cmp(b.icr, a.icr));
-  }, [troves]);
+  const sortedTroves = useMemo(
+    () => sortByRedeemableValue(troves, price),
+    [troves, price],
+  );
   const totalPages = Math.ceil(sortedTroves.length / TROVES_PER_PAGE);
   const paginatedTroves = useMemo(() => {
     const start = currentPage * TROVES_PER_PAGE;
