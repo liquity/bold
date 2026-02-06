@@ -615,12 +615,6 @@ export default {
       `The bonus is reduced because some selected troves don't have enough collateral to cover the full ${bonusPct}.`,
     slippageTolerance: "Slippage tolerance",
     customSlippagePlaceholder: "Custom %",
-    competitionWarning: (
-      <>
-        Urgent redemptions are competitive. Other users may redeem from your selected troves before your transaction
-        confirms.
-      </>
-    ),
     manualTrovesLabel: "Manually selected troves",
     autoTrovesLabel: "Auto-selected troves",
     useAutoSelection: "Use auto-selection",

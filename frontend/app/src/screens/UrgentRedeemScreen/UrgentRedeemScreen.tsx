@@ -327,10 +327,6 @@ export function UrgentRedeemScreen() {
               </HFlex>
             </VFlex>
 
-            <InfoBox>
-              {content.urgentRedeemScreen.competitionWarning}
-            </InfoBox>
-
             <Field
               label={
                 <HFlex justifyContent="space-between" alignItems="center">
