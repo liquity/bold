@@ -1,6 +1,6 @@
 "use client";
 
-import type { CollateralSymbol, Dnum } from "@/src/types";
+import type { CollateralSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
@@ -25,7 +25,7 @@ import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { TroveSelectionTable } from "./TroveSelectionTable";
 
 export function UrgentRedeemScreen() {
@@ -113,21 +113,9 @@ export function UrgentRedeemScreen() {
   const boldRedeemedUsd = selection && boldPrice.data
     && dn.mul(selection.actualBoldToRedeem, boldPrice.data);
 
-  const [autoCappedTo, setAutoCappedTo] = useState<Dnum | null>(null);
-  const setBoldAmount = boldAmount.setValue;
-
-  useEffect(() => {
-    if (selection?.isAmountCapped && dn.gt(selection.actualBoldToRedeem, DNUM_0)) {
-      setBoldAmount(dn.toString(selection.actualBoldToRedeem));
-      setAutoCappedTo(selection.actualBoldToRedeem);
-    }
-  }, [selection?.isAmountCapped, selection?.actualBoldToRedeem, setBoldAmount]);
-
-  useEffect(() => {
-    if (autoCappedTo && boldAmount.parsed && !dn.eq(boldAmount.parsed, autoCappedTo)) {
-      setAutoCappedTo(null);
-    }
-  }, [boldAmount.parsed, autoCappedTo]);
+  const cappedAmount = selection?.isAmountCapped && dn.gt(selection.actualBoldToRedeem, DNUM_0)
+    ? selection.actualBoldToRedeem
+    : null;
 
   const amountNonZero = boldAmount.parsed && dn.gt(boldAmount.parsed, DNUM_0);
   const balanceSufficient = boldAmount.parsed && boldBalance.data && dn.lte(boldAmount.parsed, boldBalance.data);
@@ -215,10 +203,10 @@ export function UrgentRedeemScreen() {
                       mode: "error",
                       message: content.urgentRedeemScreen.insufficientBalance(fmtnum(boldBalance.data)),
                     }
-                    : autoCappedTo
+                    : cappedAmount
                     ? {
                       mode: "warning",
-                      message: content.urgentRedeemScreen.amountCapped(fmtnum(autoCappedTo)),
+                      message: content.urgentRedeemScreen.amountCapped(fmtnum(cappedAmount)),
                     }
                     : null}
                   placeholder="0.00"
@@ -238,6 +226,9 @@ export function UrgentRedeemScreen() {
                     ),
                   }}
                   {...boldAmount.inputFieldProps}
+                  value={!boldAmount.isFocused && cappedAmount
+                    ? fmtnum(cappedAmount)
+                    : boldAmount.inputFieldProps.value}
                 />
               }
             />
