@@ -175,7 +175,7 @@ export function TroveSelectionTable({
                   </td>
                   <td
                     className={css({
-                      fontFamily: "monospace",
+                      fontFamily: "body",
                       color: "contentAlt",
                     })}
                     title={trove.troveId}

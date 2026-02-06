@@ -19,7 +19,6 @@ import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, IconExternal, InfoTooltip, InputField, TextButton, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import Link from "next/link";
 
 const TRUNCATED_THRESHOLD = dnum18(100); // wei
 const maxIterationsPerCollateral = REDEMPTION_MAX_ITERATIONS_PER_COLL;
@@ -334,7 +333,6 @@ export function RedeemScreen() {
   );
 }
 
-
 function ShutdownWarningBanner(props: {
   shutdownBranches: string[];
   activeBranches: string[];
@@ -357,16 +355,11 @@ function ShutdownWarningBanner(props: {
       </div>
       <div>
         Use{" "}
-        <Link
+        <LinkTextButton
           href="/redeem/urgent"
-          className={css({
-            textDecoration: "underline",
-            _hover: { textDecoration: "none" },
-          })}
-        >
-          urgent redemptions
-        </Link>
-        {" "}to redeem from shutdown branches with a 2% bonus and a 0% fee.
+          label="urgent redemptions"
+        />{" "}
+        to redeem from shutdown branches with a 2% bonus and a 0% fee.
       </div>
     </InfoBox>
   );

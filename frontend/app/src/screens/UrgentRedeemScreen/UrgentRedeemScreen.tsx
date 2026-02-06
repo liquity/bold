@@ -6,38 +6,25 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InfoBox } from "@/src/comps/InfoBox/InfoBox";
+import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
 import { DNUM_0 } from "@/src/dnum-utils";
 import { parseInputPercentage, useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import {
-  getBranch,
-  getCollToken,
-  useRedeemableTroves,
-  useShutdownStatus,
-} from "@/src/liquity-utils";
+import { getBranch, getCollToken, useRedeemableTroves, useShutdownStatus } from "@/src/liquity-utils";
 import { useLastGoodPrice, usePrice } from "@/src/services/Prices";
 import {
   addICRToTroves,
-  calculateRedemptionOutput,
   calculateMinCollateral,
+  calculateRedemptionOutput,
   DEFAULT_SLIPPAGE,
   selectOptimalTroves,
 } from "@/src/urgent-redemption-utils";
 import { useAccount, useBalance } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import {
-  HFlex,
-  InfoTooltip,
-  InputField,
-  Tabs,
-  TextButton,
-  TokenIcon,
-  VFlex,
-} from "@liquity2/uikit";
+import { HFlex, InfoTooltip, InputField, Tabs, TextButton, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { TroveSelectionTable } from "./TroveSelectionTable";
 
@@ -200,6 +187,7 @@ export function UrgentRedeemScreen() {
                   if (branch) {
                     setSelectedBranchSymbol(getBranch(branch.branchId)?.symbol ?? null);
                     setSelectedTroveIds(new Set());
+                    setIsManualMode(false);
                   }
                 }}
               />
@@ -207,9 +195,7 @@ export function UrgentRedeemScreen() {
           />
         )}
 
-        {noRedeemableTroves ? (
-          <NoTrovesMessage />
-        ) : (
+        {noRedeemableTroves ? <NoTrovesMessage /> : (
           <>
             <Field
               field={
@@ -222,21 +208,19 @@ export function UrgentRedeemScreen() {
                       label="BOLD"
                     />
                   }
-                  drawer={
-                    boldAmount.isFocused || !account.isConnected
-                      ? null
-                      : !balanceSufficient && boldAmount.parsed
-                      ? {
-                        mode: "error",
-                        message: content.urgentRedeemScreen.insufficientBalance(fmtnum(boldBalance.data)),
-                      }
-                      : autoCappedTo
-                      ? {
-                        mode: "warning",
-                        message: content.urgentRedeemScreen.amountCapped(fmtnum(autoCappedTo)),
-                      }
-                      : null
-                  }
+                  drawer={boldAmount.isFocused || !account.isConnected
+                    ? null
+                    : !balanceSufficient && boldAmount.parsed
+                    ? {
+                      mode: "error",
+                      message: content.urgentRedeemScreen.insufficientBalance(fmtnum(boldBalance.data)),
+                    }
+                    : autoCappedTo
+                    ? {
+                      mode: "warning",
+                      message: content.urgentRedeemScreen.amountCapped(fmtnum(autoCappedTo)),
+                    }
+                    : null}
                   placeholder="0.00"
                   secondary={{
                     start: fmtnum(boldRedeemedUsd, { prefix: "$", preset: "2z" }) || " ",
@@ -376,23 +360,21 @@ export function UrgentRedeemScreen() {
                   />
                 </HFlex>
               }
-              field={
-                isManualMode
-                  ? (
-                    <TroveSelectionTable
-                      troves={trovesWithICR}
-                      selectedTroveIds={selectedTroveIds}
-                      onSelectionChange={setSelectedTroveIds}
-                    />
-                  )
-                  : selection
-                  ? (
-                    <div className={css({ color: "contentAlt", fontSize: 14 })}>
-                      {content.urgentRedeemScreen.trovesCount(selection.selectedTroves.length)}
-                    </div>
-                  )
-                  : null
-              }
+              field={isManualMode
+                ? (
+                  <TroveSelectionTable
+                    troves={trovesWithICR}
+                    selectedTroveIds={selectedTroveIds}
+                    onSelectionChange={setSelectedTroveIds}
+                  />
+                )
+                : selection
+                ? (
+                  <div className={css({ color: "contentAlt", fontSize: 14 })}>
+                    {content.urgentRedeemScreen.trovesCount(selection.selectedTroves.length)}
+                  </div>
+                )
+                : null}
             />
 
             <FlowButton
@@ -423,16 +405,10 @@ function NoShutdownMessage() {
   return (
     <InfoBox title={content.urgentRedeemScreen.noShutdown.title}>
       {content.urgentRedeemScreen.noShutdown.body}
-      <Link
+      <LinkTextButton
         href="/redeem"
-        className={css({
-          color: "accent",
-          textDecoration: "underline",
-          _hover: { textDecoration: "none" },
-        })}
-      >
-        {content.urgentRedeemScreen.noShutdown.link}
-      </Link>
+        label={content.urgentRedeemScreen.noShutdown.link}
+      />
     </InfoBox>
   );
 }
