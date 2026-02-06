@@ -1,6 +1,6 @@
 "use client";
 
-import type { CollateralSymbol } from "@/src/types";
+import type { CollateralSymbol, TroveId } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
@@ -42,7 +42,7 @@ export function UrgentRedeemScreen() {
 
   const [selectedBranchSymbol, setSelectedBranchSymbol] = useState<CollateralSymbol | null>(null);
   const activeBranchSymbol = selectedBranchSymbol
-    ?? (shutdownBranches[0] ? getBranch(shutdownBranches[0].branchId)?.symbol ?? null : null);
+    ?? (shutdownBranches[0] ? getBranch(shutdownBranches[0].branchId).symbol : null);
   const activeBranch = activeBranchSymbol ? getBranch(activeBranchSymbol) : null;
   const collToken = activeBranch ? getCollToken(activeBranch.branchId) : null;
 
@@ -64,7 +64,7 @@ export function UrgentRedeemScreen() {
   );
 
   const [isManualMode, setIsManualMode] = useState(false);
-  const [selectedTroveIds, setSelectedTroveIds] = useState<Set<string>>(new Set());
+  const [selectedTroveIds, setSelectedTroveIds] = useState<Set<TroveId>>(new Set());
 
   const trovesWithICR = useMemo(() => {
     if (!trovesQuery.data || !price.data) return [];
@@ -170,11 +170,11 @@ export function UrgentRedeemScreen() {
                     tabId: `tab-${symbol}`,
                   };
                 })}
-                selected={shutdownBranches.findIndex((b) => getBranch(b.branchId)?.symbol === activeBranchSymbol)}
+                selected={shutdownBranches.findIndex((b) => getBranch(b.branchId).symbol === activeBranchSymbol)}
                 onSelect={(index) => {
                   const branch = shutdownBranches[index];
                   if (branch) {
-                    setSelectedBranchSymbol(getBranch(branch.branchId)?.symbol ?? null);
+                    setSelectedBranchSymbol(getBranch(branch.branchId).symbol);
                     setSelectedTroveIds(new Set());
                     setIsManualMode(false);
                   }

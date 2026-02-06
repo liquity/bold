@@ -1,4 +1,4 @@
-import type { Dnum } from "@/src/types";
+import type { Dnum, TroveId } from "@/src/types";
 import type { TroveWithICR } from "@/src/urgent-redemption-utils";
 
 import { Amount } from "@/src/comps/Amount/Amount";
@@ -14,8 +14,8 @@ import { useMemo, useState } from "react";
 type TroveSelectionTableProps = {
   troves: TroveWithICR[];
   price: Dnum;
-  selectedTroveIds: Set<string>;
-  onSelectionChange: (selected: Set<string>) => void;
+  selectedTroveIds: Set<TroveId>;
+  onSelectionChange: (selected: Set<TroveId>) => void;
 };
 
 export function TroveSelectionTable({
@@ -44,8 +44,8 @@ export function TroveSelectionTable({
     };
   }, [troves, selectedTroveIds]);
 
-  const toggleTrove = (troveId: string) => {
-    const newSelected = new Set(selectedTroveIds);
+  const toggleTrove = (troveId: TroveId) => {
+    const newSelected = new Set<TroveId>(selectedTroveIds);
     if (newSelected.has(troveId)) {
       newSelected.delete(troveId);
     } else {
@@ -55,7 +55,7 @@ export function TroveSelectionTable({
   };
 
   const selectAllOnPage = () => {
-    const newSelected = new Set(selectedTroveIds);
+    const newSelected = new Set<TroveId>(selectedTroveIds);
     for (const trove of paginatedTroves) {
       newSelected.add(trove.troveId);
     }
@@ -63,7 +63,7 @@ export function TroveSelectionTable({
   };
 
   const clearSelection = () => {
-    onSelectionChange(new Set());
+    onSelectionChange(new Set<TroveId>());
   };
 
   const allOnPageSelected = paginatedTroves.every((t) => selectedTroveIds.has(t.troveId));
