@@ -600,6 +600,19 @@ export default {
       </>
     ),
   },
+  shutdownWarning: {
+    title: "Branch Shutdown",
+    borrowMessage: (collName: string) => (
+      <>
+        The {collName} branch is in shutdown mode. New loans cannot be opened on this branch.
+      </>
+    ),
+    loanMessage: (collName: string) => (
+      <>
+        The {collName} branch is in shutdown mode. Loan adjustments are not available. You can only close your loan.
+      </>
+    ),
+  },
   urgentRedeemScreen: {
     headingTitle: "Urgent Redemptions",
     headingTitleActive: "Urgent Redemption",

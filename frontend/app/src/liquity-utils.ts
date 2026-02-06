@@ -1953,6 +1953,14 @@ export function useShutdownStatus() {
   });
 }
 
+export function useIsBranchShutdown(branchId: BranchId) {
+  const shutdownStatus = useShutdownStatus();
+  return {
+    ...shutdownStatus,
+    data: shutdownStatus.data?.find((s) => s.branchId === branchId)?.isShutdown ?? false,
+  };
+}
+
 export type RedeemableTrove = {
   id: string;
   troveId: TroveId;
