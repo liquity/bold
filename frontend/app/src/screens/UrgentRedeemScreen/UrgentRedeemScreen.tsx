@@ -19,6 +19,7 @@ import {
   calculateMinCollateral,
   calculateRedemptionOutput,
   DEFAULT_SLIPPAGE,
+  effectiveRedeemable,
   selectOptimalTroves,
   URGENT_REDEMPTION_BONUS_PCT,
 } from "@/src/urgent-redemption-utils";
@@ -75,18 +76,23 @@ export function UrgentRedeemScreen() {
     if (!price.data) return null;
 
     if (isManualMode) {
+      const priceData = price.data;
       const manuallySelected = trovesWithICR.filter((t) => selectedTroveIds.has(t.troveId));
       const totalDebt = manuallySelected.reduce((sum, t) => dn.add(sum, t.debt), DNUM_0);
       const totalColl = manuallySelected.reduce((sum, t) => dn.add(sum, t.coll), DNUM_0);
+      const totalRedeemable = manuallySelected.reduce(
+        (sum, t) => dn.add(sum, effectiveRedeemable(t, priceData)),
+        DNUM_0,
+      );
       const requestedAmount = boldAmount.parsed ?? DNUM_0;
-      const actualBoldToRedeem = dn.lt(totalDebt, requestedAmount) ? totalDebt : requestedAmount;
+      const actualBoldToRedeem = dn.lt(totalRedeemable, requestedAmount) ? totalRedeemable : requestedAmount;
 
       return {
         selectedTroves: manuallySelected,
         totalDebt,
         totalColl,
         actualBoldToRedeem,
-        isAmountCapped: dn.lt(totalDebt, requestedAmount),
+        isAmountCapped: dn.lt(totalRedeemable, requestedAmount),
       };
     }
 
@@ -265,13 +271,9 @@ export function UrgentRedeemScreen() {
 
               <HFlex justifyContent="space-between" alignItems="center">
                 <HFlex gap={4} className={css({ color: "contentAlt" })}>
-                  {redemptionOutput?.isBonusCapped
-                    ? content.urgentRedeemScreen.bonusCappedLabel
-                    : content.urgentRedeemScreen.bonusLabel(URGENT_REDEMPTION_BONUS_PCT)}
+                  {content.urgentRedeemScreen.bonusLabel(URGENT_REDEMPTION_BONUS_PCT)}
                   <InfoTooltip>
-                    {redemptionOutput?.isBonusCapped
-                      ? content.urgentRedeemScreen.bonusCappedTooltip(URGENT_REDEMPTION_BONUS_PCT)
-                      : content.urgentRedeemScreen.bonusTooltip(URGENT_REDEMPTION_BONUS_PCT)}
+                    {content.urgentRedeemScreen.bonusTooltip(URGENT_REDEMPTION_BONUS_PCT)}
                   </InfoTooltip>
                 </HFlex>
                 <VFlex alignItems="flex-end" gap={0}>

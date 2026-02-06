@@ -5,6 +5,7 @@ import { dnum18, DNUM_0, DNUM_1 } from "@/src/dnum-utils";
 import * as dn from "dnum";
 
 export const URGENT_REDEMPTION_BONUS = dnum18(2n * 10n ** 16n); // 2%
+export const URGENT_REDEMPTION_BONUS_MULTIPLIER = dn.add(DNUM_1, URGENT_REDEMPTION_BONUS); // 1.02
 export const URGENT_REDEMPTION_BONUS_PCT = `${dn.toNumber(dn.multiply(URGENT_REDEMPTION_BONUS, 100))}%`;
 export const DEFAULT_SLIPPAGE = dnum18(10n ** 16n); // 1%
 export const TROVES_PER_PAGE = 20;
@@ -39,14 +40,17 @@ export function sortByRedeemableValue<T extends { coll: Dnum; debt: Dnum }>(
   troves: T[],
   price: Dnum,
 ): T[] {
-  const multiplier = dn.add(DNUM_1, URGENT_REDEMPTION_BONUS);
   return [...troves].sort((a, b) => {
-    const aCollBold = dn.div(dn.mul(a.coll, price), multiplier);
-    const aEffective = dn.lt(a.debt, aCollBold) ? a.debt : aCollBold;
-    const bCollBold = dn.div(dn.mul(b.coll, price), multiplier);
-    const bEffective = dn.lt(b.debt, bCollBold) ? b.debt : bCollBold;
-    return dn.cmp(bEffective, aEffective);
+    return dn.cmp(
+      effectiveRedeemable(b, price),
+      effectiveRedeemable(a, price),
+    );
   });
+}
+
+export function effectiveRedeemable(trove: { coll: Dnum; debt: Dnum }, price: Dnum): Dnum {
+  const collBold = dn.div(dn.mul(trove.coll, price), URGENT_REDEMPTION_BONUS_MULTIPLIER);
+  return dn.lt(trove.debt, collBold) ? trove.debt : collBold;
 }
 
 export function selectOptimalTroves(
@@ -61,18 +65,20 @@ export function selectOptimalTroves(
   const selectedTroves: TroveWithICR[] = [];
   let totalDebt = DNUM_0;
   let totalColl = DNUM_0;
+  let totalRedeemable = DNUM_0;
 
   for (const trove of sortedTroves) {
-    if (dn.gte(totalDebt, boldAmount)) {
+    if (dn.gte(totalRedeemable, boldAmount)) {
       break;
     }
     selectedTroves.push(trove);
     totalDebt = dn.add(totalDebt, trove.debt);
     totalColl = dn.add(totalColl, trove.coll);
+    totalRedeemable = dn.add(totalRedeemable, effectiveRedeemable(trove, price));
   }
 
-  const actualBoldToRedeem = dn.lt(totalDebt, boldAmount) ? totalDebt : boldAmount;
-  const isAmountCapped = dn.lt(totalDebt, boldAmount);
+  const actualBoldToRedeem = dn.lt(totalRedeemable, boldAmount) ? totalRedeemable : boldAmount;
+  const isAmountCapped = dn.lt(totalRedeemable, boldAmount);
 
   return {
     selectedTroves,
@@ -89,7 +95,6 @@ export type RedemptionOutput = {
   bonus: Dnum;
   collateralUsd: Dnum;
   bonusUsd: Dnum;
-  isBonusCapped: boolean;
 };
 
 export function calculateRedemptionOutput(
@@ -104,14 +109,11 @@ export function calculateRedemptionOutput(
       bonus: DNUM_0,
       collateralUsd: DNUM_0,
       bonusUsd: DNUM_0,
-      isBonusCapped: false,
     };
   }
 
   let totalCollateral = DNUM_0;
   let remainingBold = boldAmount;
-
-  const multiplier = dn.add(DNUM_1, URGENT_REDEMPTION_BONUS);
 
   for (const trove of selectedTroves) {
     if (dn.lte(remainingBold, DNUM_0)) break;
@@ -120,20 +122,19 @@ export function calculateRedemptionOutput(
       ? trove.debt
       : remainingBold;
 
-    const collFromTrove = dn.div(dn.mul(boldFromTrove, multiplier), price);
+    const collFromTrove = dn.div(dn.mul(boldFromTrove, URGENT_REDEMPTION_BONUS_MULTIPLIER), price);
 
-    const actualColl = dn.lt(collFromTrove, trove.coll)
-      ? collFromTrove
-      : trove.coll;
-
-    totalCollateral = dn.add(totalCollateral, actualColl);
-    remainingBold = dn.sub(remainingBold, boldFromTrove);
+    if (dn.lt(collFromTrove, trove.coll)) {
+      totalCollateral = dn.add(totalCollateral, collFromTrove);
+      remainingBold = dn.sub(remainingBold, boldFromTrove);
+    } else {
+      totalCollateral = dn.add(totalCollateral, trove.coll);
+      remainingBold = dn.sub(remainingBold, dn.div(dn.mul(trove.coll, price), URGENT_REDEMPTION_BONUS_MULTIPLIER));
+    }
   }
 
   const collateralWithoutBonus = dn.div(dn.sub(boldAmount, remainingBold), price);
-  const rawBonus = dn.sub(totalCollateral, collateralWithoutBonus);
-  const isBonusCapped = dn.lt(rawBonus, dn.mul(collateralWithoutBonus, URGENT_REDEMPTION_BONUS));
-  const bonus = dn.gt(rawBonus, DNUM_0) ? rawBonus : DNUM_0;
+  const bonus = dn.sub(totalCollateral, collateralWithoutBonus);
 
   const collateralUsd = dn.mul(totalCollateral, price);
   const bonusUsd = dn.mul(bonus, price);
@@ -144,7 +145,6 @@ export function calculateRedemptionOutput(
     bonus,
     collateralUsd,
     bonusUsd,
-    isBonusCapped,
   };
 }
 

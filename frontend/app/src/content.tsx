@@ -609,10 +609,7 @@ export default {
     amountCapped: (amount: string) => `Capped to ${amount} BOLD (max amount redeemable).`,
     youReceive: "You receive",
     bonusLabel: (bonusPct: string) => `Including ${bonusPct} bonus`,
-    bonusCappedLabel: "Including bonus (reduced)",
     bonusTooltip: (bonusPct: string) => `Urgent redemptions include a ${bonusPct} bonus on the collateral received.`,
-    bonusCappedTooltip: (bonusPct: string) =>
-      `The bonus is reduced because some selected troves don't have enough collateral to cover the full ${bonusPct}.`,
     slippageTolerance: "Slippage tolerance",
     customSlippagePlaceholder: "Custom %",
     manualTrovesLabel: "Manually selected troves",
