@@ -1973,7 +1973,7 @@ export type RedeemableTrove = {
 async function fetchRedeemableTroves(
   wagmiConfig: WagmiConfig,
   branchId: BranchId,
-  maxTroves: number = 200,
+  maxTroves: number,
 ): Promise<RedeemableTrove[]> {
   const MultiTroveGetter = getProtocolContract("MultiTroveGetter");
 
@@ -2000,7 +2000,7 @@ export function useRedeemableTroves(
   options?: { first?: number },
 ) {
   const wagmiConfig = useWagmiConfig();
-  const maxTroves = options?.first ?? 100;
+  const maxTroves = options?.first ?? 200;
 
   return useQuery<RedeemableTrove[]>({
     queryKey: ["redeemableTroves", branchId, maxTroves],
