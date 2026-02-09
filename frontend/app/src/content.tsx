@@ -614,17 +614,16 @@ export default {
     ),
   },
   urgentRedeemScreen: {
-    headingTitle: "Urgent Redemptions",
-    headingTitleActive: "Urgent Redemption",
+    headingTitle: "Shutdown Redemptions",
+    headingTitleActive: "Shutdown Redemption",
     selectBranchLabel: "Select branch",
     redeemFieldLabel: "You redeem",
     insufficientBalance: (balance: string) => `Insufficient BOLD balance. You have ${balance} BOLD.`,
     amountCapped: (amount: string) => `Capped to ${amount} BOLD (max amount redeemable).`,
     youReceive: "You receive",
     bonusLabel: (bonusPct: string) => `Including ${bonusPct} bonus`,
-    bonusTooltip: (bonusPct: string) => `Urgent redemptions include a ${bonusPct} bonus on the collateral received.`,
+    bonusTooltip: (bonusPct: string) => `Shutdown redemptions include a ${bonusPct} bonus on the collateral received.`,
     slippageTolerance: "Slippage tolerance",
-    customSlippagePlaceholder: "Custom %",
     manualTrovesLabel: "Manually selected troves",
     autoTrovesLabel: "Auto-selected troves",
     useAutoSelection: "Use auto-selection",
@@ -633,20 +632,20 @@ export default {
     action: "Redeem",
     backLink: "Back",
     successLink: "Go to the Dashboard",
-    successMessage: "The urgent redemption was successful.",
+    successMessage: "The shutdown redemption was successful.",
     noShutdown: {
       title: "No Branches in Shutdown Mode",
       body: (
         <>
-          Urgent redemptions are only available when a branch is in shutdown mode. Currently, all branches are operating
-          normally.
+          Shutdown redemptions are only available when a branch is in shutdown mode. Currently, all branches are
+          operating normally.
         </>
       ),
       link: "Go to standard redemptions",
     },
     noTroves: {
-      title: "No Urgent Redemptions Available",
-      body: "No troves are currently available for urgent redemption in this branch.",
+      title: "No Shutdown Redemptions Available",
+      body: "No troves are currently available for shutdown redemption in this branch.",
     },
     troveTable: {
       trovesSelected: (count: number) => `${count} ${count === 1 ? "trove" : "troves"} selected`,
@@ -668,7 +667,8 @@ export default {
     txFlow: {
       title: "Review & Send Transaction",
       youRedeemBold: "You redeem BOLD",
-      redeemTooltip: (bonusPct: string) => `Urgent redemptions have 0% fee and include a ${bonusPct} collateral bonus.`,
+      redeemTooltip: (bonusPct: string) =>
+        `Shutdown redemptions have 0% fee and include a ${bonusPct} collateral bonus.`,
       youReceiveToken: (tokenName: string) => `You receive ${tokenName}`,
       receiveTooltip: (tokenName: string, bonusPct: string) =>
         `This is the estimated amount of ${tokenName} you will receive, including`
@@ -676,7 +676,7 @@ export default {
       trovesLabel: "Troves to redeem from",
       trovesTooltip: (
         <>
-          The number of troves that will be used for this redemption. Urgent redemptions are competitive - other users
+          The number of troves that will be used for this redemption. Shutdown redemptions are competitive - other users
           may redeem from these troves before your transaction confirms.
         </>
       ),
@@ -688,7 +688,7 @@ export default {
         </>
       ),
       approveStep: "Approve BOLD",
-      redeemStep: "Execute Urgent Redemption",
+      redeemStep: "Execute Shutdown Redemption",
     },
   },
 

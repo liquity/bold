@@ -356,8 +356,8 @@ function ShutdownWarningBanner(props: {
       <div>
         Use{" "}
         <LinkTextButton
-          href="/redeem/urgent"
-          label="urgent redemptions"
+          href="/redeem/shutdown"
+          label="shutdown redemptions"
         />{" "}
         to redeem from shutdown branches with a 2% bonus and a 0% fee.
       </div>

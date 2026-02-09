@@ -18,7 +18,7 @@ export function ShutdownModeBanner() {
       messageDesktop={
         <>
           The {branchNames} branch{branchesInShutdown.length > 1 ? "es are" : " is"} in Shutdown Mode.
-          Borrowing is no longer available.
+          You can only close positions or redeem BOLD.
         </>
       }
       linkLabel="Learn more"

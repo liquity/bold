@@ -373,7 +373,7 @@ export function UrgentRedeemScreen() {
               label={content.urgentRedeemScreen.action}
               request={{
                 flowId: "urgentRedemption",
-                backLink: ["/redeem/urgent", content.urgentRedeemScreen.backLink],
+                backLink: ["/redeem/shutdown", content.urgentRedeemScreen.backLink],
                 successLink: ["/", content.urgentRedeemScreen.successLink],
                 successMessage: content.urgentRedeemScreen.successMessage,
 
