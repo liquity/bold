@@ -178,7 +178,7 @@ export function LoanScreen() {
     if (loan.data?.troveId && loan.data?.branchId !== undefined) {
       addPrefixedTroveIdsToStoredState(storedState, [paramPrefixedId]);
     }
-  }, [loan.data?.troveId, loan.data?.branchId, paramPrefixedId, storedState]);
+  }, [loan.data?.troveId, loan.data?.branchId, paramPrefixedId]);
 
   useEffect(() => {
     if (isShutdown.data && action !== "close") {
