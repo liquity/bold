@@ -60,7 +60,7 @@ export const urgentRedemption: FlowDeclaration<UrgentRedemptionRequest> = {
           </HFlex>
           <VFlex gap={4} alignItems="flex-end">
             <HFlex gap={6} className={css({ fontSize: 18 })}>
-              <Amount format="2z" value={boldAmount} title={{ suffix: " BOLD" }} />
+              <Amount format="2z" value={boldAmount} fallback="−" title={{ suffix: " BOLD" }} />
               <TokenIcon symbol="BOLD" size={20} />
             </HFlex>
           </VFlex>
@@ -75,12 +75,12 @@ export const urgentRedemption: FlowDeclaration<UrgentRedemptionRequest> = {
           </HFlex>
           <VFlex gap={4} alignItems="flex-end">
             <HFlex gap={6} className={css({ fontSize: 18 })}>
-              <Amount format="4z" value={expectedCollateral} title={{ suffix: ` ${tokenName}` }} />
+              <Amount format="4z" value={expectedCollateral} fallback="−" title={{ suffix: ` ${tokenName}` }} />
               <TokenIcon symbol={collToken.symbol} size={20} />
             </HFlex>
             {price.data && (
               <div className={css({ paddingRight: 26, color: "contentAlt", fontSize: 14 })}>
-                <Amount prefix="$" value={dn.mul(expectedCollateral, price.data)} />
+                <Amount prefix="$" value={dn.mul(expectedCollateral, price.data)} fallback="−" />
               </div>
             )}
           </VFlex>
@@ -92,12 +92,12 @@ export const urgentRedemption: FlowDeclaration<UrgentRedemptionRequest> = {
           </HFlex>
           <VFlex gap={4} alignItems="flex-end">
             <HFlex gap={6} className={css({ fontSize: 18, color: "contentAlt" })}>
-              <Amount format="4z" value={bonus} title={{ suffix: ` ${tokenName}` }} />
+              <Amount format="4z" value={bonus} fallback="−" title={{ suffix: ` ${tokenName}` }} />
               <TokenIcon symbol={collToken.symbol} size={20} />
             </HFlex>
             {price.data && bonus && (
               <div className={css({ paddingRight: 26, color: "contentAlt", fontSize: 14 })}>
-                <Amount prefix="$" value={dn.mul(bonus, price.data)} />
+                <Amount prefix="$" value={dn.mul(bonus, price.data)} fallback="−" />
               </div>
             )}
           </VFlex>
