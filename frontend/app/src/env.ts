@@ -1,6 +1,7 @@
 "use client";
 
 import type { Address, Branch, BranchId, IcStrategy } from "@/src/types";
+import { getRpcOverride, getSubgraphOverride } from "@/src/data-sources-override";
 
 import { DEFAULT_COMMIT_URL, DEFAULT_LEGACY_CHECKS, DEFAULT_STRATEGIES, DEFAULT_VERSION_URL } from "@/src/constants";
 import { isBranchId } from "@/src/types";
@@ -188,6 +189,7 @@ export const EnvSchema = v.pipe(
     LIQUITY_GOVERNANCE_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
     SAFE_API_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
     SBOLD: v.optional(v.union([vAddress(), v.literal("")])),
+    SHOW_DATA_SOURCES: v.optional(vEnvFlag(), "false"),
     YBOLD: v.optional(vEnvFlag(), "false"),
     SUBGRAPH_URL: v.pipe(v.string(), v.url()),
     VERCEL_ANALYTICS: v.optional(vEnvFlag(), "false"),
@@ -363,6 +365,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   LIQUITY_GOVERNANCE_URL: process.env.NEXT_PUBLIC_LIQUITY_GOVERNANCE_URL,
   SAFE_API_URL: process.env.NEXT_PUBLIC_SAFE_API_URL,
   SBOLD: process.env.NEXT_PUBLIC_SBOLD,
+  SHOW_DATA_SOURCES: process.env.NEXT_PUBLIC_SHOW_DATA_SOURCES,
   YBOLD: process.env.NEXT_PUBLIC_YBOLD,
   SUBGRAPH_URL: process.env.NEXT_PUBLIC_SUBGRAPH_URL,
   VERCEL_ANALYTICS: process.env.NEXT_PUBLIC_VERCEL_ANALYTICS,
@@ -459,7 +462,7 @@ export const {
   CHAIN_CURRENCY,
   CHAIN_ID,
   CHAIN_NAME,
-  CHAIN_RPC_URL,
+  CHAIN_RPC_URL: DEFAULT_CHAIN_RPC_URL,
   ENV_BRANCHES,
   CONTRACTS_COMMIT_HASH,
   CONTRACTS_COMMIT_URL,
@@ -491,10 +494,14 @@ export const {
   LIQUITY_GOVERNANCE_URL,
   SAFE_API_URL,
   SBOLD,
+  SHOW_DATA_SOURCES,
   YBOLD,
-  SUBGRAPH_URL,
+  SUBGRAPH_URL: DEFAULT_SUBGRAPH_URL,
   VERCEL_ANALYTICS,
   WALLET_CONNECT_PROJECT_ID,
   TROVE_EXPLORER_0,
   TROVE_EXPLORER_1,
 } = parsedEnv.output;
+
+export const CHAIN_RPC_URL = getRpcOverride() ?? DEFAULT_CHAIN_RPC_URL;
+export const SUBGRAPH_URL = getSubgraphOverride() ?? DEFAULT_SUBGRAPH_URL;
