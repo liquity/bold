@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 
 import content from "@/src/content";
-import { CHAIN_RPC_URL, DEFAULT_CHAIN_RPC_URL, DEFAULT_SUBGRAPH_URL, SUBGRAPH_URL } from "@/src/env";
 import {
   getRpcOverride,
   getSubgraphOverride,
@@ -11,6 +10,7 @@ import {
   setRpcOverride,
   setSubgraphOverride,
 } from "@/src/data-sources-override";
+import { DEFAULT_CHAIN_RPC_URL, DEFAULT_SUBGRAPH_URL } from "@/src/env";
 import { css } from "@/styled-system/css";
 import { Button, IconUndo, Modal, TextInput } from "@liquity2/uikit";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
@@ -19,16 +19,12 @@ type DataSourcesContext = {
   openModal: () => void;
   isUsingCustomRpc: boolean;
   isUsingCustomSubgraph: boolean;
-  currentRpcUrl: string;
-  currentSubgraphUrl: string;
 };
 
 const DataSourcesContext = createContext<DataSourcesContext>({
   openModal: () => {},
   isUsingCustomRpc: false,
   isUsingCustomSubgraph: false,
-  currentRpcUrl: "",
-  currentSubgraphUrl: "",
 });
 
 export function useDataSources() {
@@ -44,8 +40,6 @@ export function DataSources({ children }: { children: ReactNode }) {
     openModal: () => setVisible(true),
     isUsingCustomRpc,
     isUsingCustomSubgraph,
-    currentRpcUrl: CHAIN_RPC_URL,
-    currentSubgraphUrl: SUBGRAPH_URL,
   }), [isUsingCustomRpc, isUsingCustomSubgraph]);
 
   return (
@@ -84,10 +78,89 @@ function ResetButton({ onClick }: { onClick: () => void }) {
           color: "accent",
           borderColor: "fieldBorderFocused",
         },
+        _focusVisible: {
+          outline: "2px solid token(colors.focused)",
+        },
       })}
     >
       <IconUndo size={16} />
     </button>
+  );
+}
+
+function DataSourceField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  hasOverride,
+  onReset,
+  error,
+  sourceName,
+  defaultUrl,
+}: {
+  label: ReactNode;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  hasOverride: boolean;
+  onReset: () => void;
+  error: string | null;
+  sourceName: string;
+  defaultUrl: string;
+}) {
+  return (
+    <div
+      className={css({
+        display: "flex",
+        flexDirection: "column",
+        gap: 8,
+      })}
+    >
+      <div
+        className={css({
+          fontSize: 14,
+          fontWeight: 500,
+          color: "contentAlt",
+        })}
+      >
+        {label}
+      </div>
+      <div
+        className={css({
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        })}
+      >
+        <TextInput
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+        />
+        {hasOverride && <ResetButton onClick={onReset} />}
+      </div>
+      {error && (
+        <div
+          className={css({
+            color: "negative",
+            fontSize: 14,
+          })}
+        >
+          {error}
+        </div>
+      )}
+      <div
+        className={css({
+          fontSize: 12,
+          color: "contentAlt2",
+        })}
+      >
+        {hasOverride
+          ? content.dataSources.usingCustom(sourceName, defaultUrl)
+          : content.dataSources.usingDefault(sourceName)}
+      </div>
+    </div>
   );
 }
 
@@ -194,119 +267,35 @@ function DataSourcesModal({
           {content.dataSources.description}
         </p>
 
-        <div
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-          })}
-        >
-          <label
-            className={css({
-              fontSize: 14,
-              fontWeight: 500,
-              color: "contentAlt",
-            })}
-          >
-            {content.dataSources.rpcUrlLabel}
-          </label>
-          <div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            })}
-          >
-            <TextInput
-              value={rpcUrl}
-              onChange={(value) => {
-                setRpcUrl(value);
-                setRpcError(null);
-              }}
-              placeholder={DEFAULT_CHAIN_RPC_URL}
-            />
-            {hasRpcOverride && (
-              <ResetButton onClick={() => setRpcUrl("")} />
-            )}
-          </div>
-          {rpcError && (
-            <div
-              className={css({
-                color: "negative",
-                fontSize: 14,
-              })}
-            >
-              {rpcError}
-            </div>
-          )}
-          <div
-            className={css({
-              fontSize: 12,
-              color: "contentAlt2",
-            })}
-          >
-            {hasRpcOverride
-              ? content.dataSources.usingCustom("RPC", DEFAULT_CHAIN_RPC_URL)
-              : content.dataSources.usingDefault("RPC")}
-          </div>
-        </div>
+        <DataSourceField
+          label={content.dataSources.rpcUrlLabel}
+          value={rpcUrl}
+          onChange={(value) => {
+            setRpcUrl(value);
+            setRpcError(null);
+          }}
+          placeholder={DEFAULT_CHAIN_RPC_URL}
+          hasOverride={hasRpcOverride}
+          onReset={() => setRpcUrl("")}
+          error={rpcError}
+          sourceName="RPC"
+          defaultUrl={DEFAULT_CHAIN_RPC_URL}
+        />
 
-        <div
-          className={css({
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-          })}
-        >
-          <label
-            className={css({
-              fontSize: 14,
-              fontWeight: 500,
-              color: "contentAlt",
-            })}
-          >
-            {content.dataSources.subgraphUrlLabel}
-          </label>
-          <div
-            className={css({
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            })}
-          >
-            <TextInput
-              value={subgraphUrl}
-              onChange={(value) => {
-                setSubgraphUrl(value);
-                setSubgraphError(null);
-              }}
-              placeholder={DEFAULT_SUBGRAPH_URL}
-            />
-            {hasSubgraphOverride && (
-              <ResetButton onClick={() => setSubgraphUrl("")} />
-            )}
-          </div>
-          {subgraphError && (
-            <div
-              className={css({
-                color: "negative",
-                fontSize: 14,
-              })}
-            >
-              {subgraphError}
-            </div>
-          )}
-          <div
-            className={css({
-              fontSize: 12,
-              color: "contentAlt2",
-            })}
-          >
-            {hasSubgraphOverride
-              ? content.dataSources.usingCustom("subgraph", DEFAULT_SUBGRAPH_URL)
-              : content.dataSources.usingDefault("subgraph")}
-          </div>
-        </div>
+        <DataSourceField
+          label={content.dataSources.subgraphUrlLabel}
+          value={subgraphUrl}
+          onChange={(value) => {
+            setSubgraphUrl(value);
+            setSubgraphError(null);
+          }}
+          placeholder={DEFAULT_SUBGRAPH_URL}
+          hasOverride={hasSubgraphOverride}
+          onReset={() => setSubgraphUrl("")}
+          error={subgraphError}
+          sourceName="subgraph"
+          defaultUrl={DEFAULT_SUBGRAPH_URL}
+        />
 
         <div
           className={css({

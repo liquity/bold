@@ -2,7 +2,7 @@ import { css } from "@/styled-system/css";
 import { useDataSources } from "@/src/comps/DataSources/DataSources";
 import { SHOW_DATA_SOURCES } from "@/src/env";
 import { useIndicator } from "@/src/services/IndicatorManager";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useBlockNumber } from "wagmi";
 
 const REFETCH_INTERVAL = 10_000;
@@ -17,10 +17,6 @@ export function useRpcIndicator() {
     watch: true,
   });
 
-  const openDataSources = useCallback(() => {
-    dataSources.openModal();
-  }, [dataSources]);
-
   useEffect(() => {
     if (isError) {
       if (!hasError.current) {
@@ -28,7 +24,7 @@ export function useRpcIndicator() {
         indicator.setError(
           "rpc-error",
           SHOW_DATA_SOURCES
-            ? <RpcErrorMessage onClickSettings={openDataSources} />
+            ? <RpcErrorMessage onClickSettings={dataSources.openModal} />
             : "RPC connection error: unable to fetch data.",
           "RPC connected.",
         );
@@ -39,7 +35,7 @@ export function useRpcIndicator() {
         indicator.clearError("rpc-error");
       }
     }
-  }, [isError, indicator, openDataSources]);
+  }, [isError, indicator, dataSources.openModal]);
 }
 
 function RpcErrorMessage({ onClickSettings }: { onClickSettings: () => void }) {
