@@ -600,6 +600,98 @@ export default {
       </>
     ),
   },
+  shutdownWarning: {
+    title: "Branch Shutdown",
+    borrowMessage: (collName: string) => (
+      <>
+        The {collName} branch is in shutdown mode. New loans cannot be opened on this branch.
+      </>
+    ),
+    loanMessage: (collName: string) => (
+      <>
+        The {collName} branch is in shutdown mode. Loan adjustments are not available. You can only close your loan.
+      </>
+    ),
+  },
+  urgentRedeemScreen: {
+    headingTitle: "Shutdown Redemptions",
+    headingTitleActive: "Shutdown Redemption",
+    selectBranchLabel: "Select branch",
+    redeemFieldLabel: "You redeem",
+    insufficientBalance: (balance: string) => `Insufficient BOLD balance. You have ${balance} BOLD.`,
+    amountCapped: (amount: string) => `Capped to ${amount} BOLD (max amount redeemable).`,
+    youReceive: "You receive",
+    bonusLabel: (bonusPct: string) => `Including ${bonusPct} bonus`,
+    bonusTooltip: (bonusPct: string) => `Shutdown redemptions include a ${bonusPct} bonus on the collateral received.`,
+    slippageTolerance: "Slippage tolerance",
+    manualTrovesLabel: "Manually selected troves",
+    autoTrovesLabel: "Auto-selected troves",
+    useAutoSelection: "Use auto-selection",
+    manuallySelectTroves: "Manually select troves",
+    trovesCount: (count: number) => `${count} ${count === 1 ? "trove" : "troves"} will be used for this redemption.`,
+    action: "Redeem",
+    backLink: "Back",
+    successLink: "Go to the Dashboard",
+    successMessage: "The shutdown redemption was successful.",
+    noShutdown: {
+      title: "No Branches in Shutdown Mode",
+      body: (
+        <>
+          Shutdown redemptions are only available when a branch is in shutdown mode. Currently, all branches are
+          operating normally.
+        </>
+      ),
+      link: "Go to standard redemptions",
+    },
+    noTroves: {
+      title: "No Shutdown Redemptions Available",
+      body: "No troves are currently available for shutdown redemption in this branch.",
+    },
+    troveTable: {
+      trovesSelected: (count: number) => `${count} ${count === 1 ? "trove" : "troves"} selected`,
+      totalDebt: "Total debt:",
+      totalDebtUnit: "BOLD",
+      totalColl: "Total coll:",
+      deselectAll: "Clear all",
+      selectAllOnPage: "Select all on page",
+      clearSelection: "Clear selection",
+      columnTroveId: "Trove ID",
+      columnCollateral: "Collateral",
+      columnDebt: "Debt",
+      columnIcr: "ICR",
+      noTrovesAvailable: "No troves available",
+      page: (current: number, total: number) => `Page ${current} of ${total}`,
+      previous: "Previous",
+      next: "Next",
+    },
+    txFlow: {
+      title: "Review & Send Transaction",
+      youRedeemBold: "You redeem BOLD",
+      redeemTooltip: (bonusPct: string) =>
+        `Shutdown redemptions have 0% fee and include a ${bonusPct} collateral bonus.`,
+      youReceiveToken: (tokenName: string) => `You receive ${tokenName}`,
+      receiveTooltip: (tokenName: string, bonusPct: string) =>
+        `This is the estimated amount of ${tokenName} you will receive, including`
+        + ` the ${bonusPct} bonus. The actual amount may vary based on the selected troves.`,
+      trovesLabel: "Troves to redeem from",
+      trovesTooltip: (
+        <>
+          The number of troves that will be used for this redemption. Shutdown redemptions are competitive - other users
+          may redeem from these troves before your transaction confirms.
+        </>
+      ),
+      trovesValue: (count: number) => `${count} ${count === 1 ? "trove" : "troves"}`,
+      slippageTooltip: (threshold: N) => (
+        <>
+          If the actual collateral received is less than {threshold}{" "}
+          of the expected amount, the transaction will revert.
+        </>
+      ),
+      approveStep: "Approve BOLD",
+      redeemStep: "Execute Shutdown Redemption",
+    },
+  },
+
   manualLoanIdInput: {
     title: "Data API error",
     description:
