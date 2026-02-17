@@ -72,7 +72,7 @@
   - [Interest rates and shutdown](#interest-rates-and-shutdown)
   - [Shutdown logic](#shutdown-logic)
   - [Closing the last Trove in the system](#closing-the-last-trove-in-the-system)
-  - [Urgent redemptions](#urgent-redemptions)
+  - [Shutdown redemptions](#shutdown-redemptions)
     - [Urgent redemption best practice](#urgent-redemption-best-practice)
 - [Collateral choices in Liquity v2](#collateral-choices-in-liquity-v2)
 - [Oracles in Liquity v2](#oracles-in-liquity-v2)
@@ -87,7 +87,7 @@
   - [1 - Oracle price frontrunning](#1---oracle-price-frontrunning)
   - [2 - Bypassing redemption routing logic via temporary SP deposits](#2---bypassing-redemption-routing-logic-via-temporary-sp-deposits)
   - [3 - Path-dependent redemptions: lower fee when chunking](#3---path-dependent-redemptions-lower-fee-when-chunking)
-  - [4 - Oracle failure and urgent redemptions with the frozen last good price](#4---oracle-failure-and-urgent-redemptions-with-the-frozen-last-good-price)
+  - [4 - Oracle failure and shutdown redemptions with the frozen last good price](#4---oracle-failure-and-shutdown-redemptions-with-the-frozen-last-good-price)
   - [5 - Stale oracle price before shutdown triggered](#5---stale-oracle-price-before-shutdown-triggered)
   - [6 - Discrepancy between aggregate and sum of individual debts](#6---discrepancy-between-aggregate-and-sum-of-individual-debts)
   - [7 - Rounding errors in the SP favor the system](#7---rounding-errors-in-the-sp-favor-the-system)
@@ -97,11 +97,11 @@
   - [11 - TroveManager can make troves liquidatable by changing the batch interest rate](#11---trovemanager-can-make-troves-liquidatable-by-changing-the-batch-interest-rate)
   - [12 - Trove Adjustments may be griefed by sandwich raising the average interest rate](#12---trove-adjustments-may-be-griefed-by-sandwich-raising-the-average-interest-rate)
   - [13 - Stability Pool claiming and compounding Yield can be used to gain a slightly higher rate of rewards](#13---stability-pool-claiming-and-compounding-yield-can-be-used-to-gain-a-slightly-higher-rate-of-rewards)
-  - [14 - Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1](#14---urgent-redemptions-premium-can-worsen-the-icr-when-trove-coll-value--debt-value--1)
+  - [14 - Shutdown Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1](#14---shutdown-redemptions-premium-can-worsen-the-icr-when-trove-coll-value--debt-value--1)
   - [15 - Overflow threshold in SP calculations](#15---Overflow-threshold-in-sp-calculations)
   - [16 - Just in time StabilityPool deposits](#16---just-in-time-stabilitypool-deposits)
   - [17 - Batch vs sequential redistributions](#17---batch-vs-sequential-redistributions)
-  - [18 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price](#18---lastGoodPrice-used-in-urgent-redemptions-may-not-represent-a-previous-redemption-price)
+  - [18 - `lastGoodPrice` used in shutdown redemptions may not represent a previous redemption price](#18---lastGoodPrice-used-in-shutdown-redemptions-may-not-represent-a-previous-redemption-price)
   - [19 - Users Can Game Upfront Fees by Chunking Debt](#19---users-can-game-upfront-fees-by-chunking-debt)
   - [20 - Users can game upfront fees by joining an empty batch](#20---Users-can-game-upfront-fees-by-joining-an-empty-batch)
   - [21 - Deployment backrunning](#21---deployment-backrunning)
@@ -1195,7 +1195,7 @@ The following operations are still allowed after shut down:
 - Closing a Trove
 - Liquidating Troves
 - Depositing to and withdrawing from the SP
-- Urgent redemptions (see below)
+- Shutdown redemptions (see below)
 
 ### Closing the last Trove in the system
 
@@ -1203,21 +1203,21 @@ Ordinarily, on active branches, the last Trove in the system can not be closed. 
 
 On shutdown branches, the last Trove _can_ be closed by its owner - since the priority on a shutdown branch is to clear all debt and remove collateral ASAP.
 
- ### Urgent redemptions 
+ ### Shutodnw redemptions 
 
-During shutdown the redemption logic is modified to incentivize swift reduction of the branch’s debt, and even do so when BOLD is trading at peg ($1 USD). Redemptions in shutdown are known as “urgent” redemptions.
+During shutdown the redemption logic is modified to incentivize swift reduction of the branch’s debt, and even do so when BOLD is trading at peg ($1 USD). 
 
-Urgent redemptions:
+Shutdown redemptions:
 
 - Are performed directly via the shut down branch’s `TroveManager`, and they only affect that branch. They are not routed across branches.
 - Charge no redemption fee
 - Pay a slight collateral bonus of 2% to the redeemer. That is, in exchange for every 1 BOLD redeemed, the redeemer receives $1.02 worth of the LST collateral.
 - Do not redeem Troves in order of interest rate. Instead, the redeemer passes a list of Troves to redeem from.
-- Do not create Zombie Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future urgent redemptions with tiny Troves.
+- Do not create Zombie Troves, even if the Trove is left with tiny or zero debt - since, due to the preceding point there is no risk of clogging up future shutdown redemptions with tiny Troves.
 
-#### Urgent redemption best practice
+#### Shutdown redemption best practice
 
-The `urgentRedeemCollateral` params are as such:
+Shutdown redemptions are performed via `urgentRedeemCollateral`. The params are as such:
 
 - `_boldAmount` specifying the intended amount to redeem
 - `_troveIds` specifying the target Troves to redeem from 
@@ -1225,7 +1225,7 @@ The `urgentRedeemCollateral` params are as such:
 
 It’s expected that `_minCollateral` be calculated off-chain by the redeemer.
 
-Consider two redeemers Alice and Bob. Since there will be competition for urgent redemptions when they are profitable, if Alice’s redemption lands first, it may redeem from Bob’s target Troves in `_troveIds` before his redemption lands. The redemption logic skips Troves in the list that are unredeemable, and thus the actual BOLD amount redeemed by Bob could be significantly lower than `_boldAmount`. This in turn may result in the returned collateral being significantly lower than `_minCollateral`.
+Consider two redeemers Alice and Bob. Since there will be competition for shutdown redemptions when they are profitable, if Alice’s redemption lands first, it may redeem from Bob’s target Troves in `_troveIds` before his redemption lands. The redemption logic skips Troves in the list that are unredeemable, and thus the actual BOLD amount redeemed by Bob could be significantly lower than `_boldAmount`. This in turn may result in the returned collateral being significantly lower than `_minCollateral`.
 
 Redemption bot creators should understand the competitive nature of redemptions, and take this dynamic into account when programming them. Mitigating frontrunning via transactions sent to private pools e.g. Flashbots may be preferable.
 
@@ -1387,7 +1387,7 @@ Similarly, if the ETH-USD price fails, all branches are eligible to be shut down
 | WSTETH     | lastGoodPrice                            | ETH-USD is necessary for the primary redemption calculation. Also, ETH-USD Chainlink oracle failing would wreck much of DeFi and necessarily shut down both WETH and RETH branches, so it seems safest to also shut down the WSTETH branch too. |
 | RETH       | lastGoodPrice                            | ETH-USD is necessary for all primary calculations.                                                                                                                                                                            |
 
-Using an out-of-date price obviously has undesirable consequences, but it’s the best that can be done in this extreme scenario. The impacts are addressed in [Known Issue 4](https://github.com/liquity/bold/blob/main/README.md#4---oracle-failure-and-urgent-redemptions-with-the-frozen-last-good-price).
+Using an out-of-date price obviously has undesirable consequences, but it’s the best that can be done in this extreme scenario. The impacts are addressed in [Known Issue 4](https://github.com/liquity/bold/blob/main/README.md#4---oracle-failure-and-shutdown-redemptions-with-the-frozen-last-good-price).
 
 #### LST market oracle failure
 
@@ -1499,24 +1499,24 @@ No fix is deemed necessary, since:
 - Redemptions in Liquity v1 (with the same fee formula) have broadly functioned well, and proven effective in restoring the BOLD peg.
 - The redemption fee spike gain and decay half-life are “best-guess” parameters anyway - there’s little reason to believe that even the intended fee scheme is absolutely optimal.
 
-### 4 - Oracle failure and urgent redemptions with the frozen last good price
+### 4 - Oracle failure and shutdown redemptions with the frozen last good price
 
 An ETH-USD market oracle failure and/or a canonical LST exchange rate failure trigger branch shutdowns which then and thereafter use the `lastGoodPrice` to price the branch's collateral.
 
-During shutdown, the only operation that uses the LST price is urgent redemptions.   
+During shutdown, the only operation that uses the LST price is shutdown redemptions.   
 
 When `lastGoodPrice` is used to price the LST, the _real_ market price may be higher or lower. This leads the following distortions:
 
 | Scenario                     | Consequence                                                                                                                                       |
 |------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| lastGoodPrice > market price | Urgent redemptions return too little LST collateral, and may be unprofitable even when BOLD trades at $1 or below                                   |
-| lastGoodPrice < market price | Urgent redemptions return too much LST collateral. They may be too profitable, compared to the market price.              |
+| lastGoodPrice > market price | Shutdown redemptions return too little LST collateral, and may be unprofitable even when BOLD trades at $1 or below                                   |
+| lastGoodPrice < market price | Shutdown redemptions return too much LST collateral. They may be too profitable, compared to the market price.              |
 
 #### Solution
 
 No fix is implemented for this, for the following reasons:
 
-- In the second case, although urgent redemptions return too much value to the redeemer, they can still clear all debt from the branch.
+- In the second case, although shutdown redemptions return too much value to the redeemer, they can still clear all debt from the branch.
 - In the first case, the final result is that some uncleared BOLD debt remains on the shut down branch, and the system carries this unbacked debt burden going forward.  This is an inherent risk of a multicollateral system anyway, which relies on the economic health of the LST assets it integrates.
 - Also an Oracle failure, if it occurs, will much more likely be due to a disabled Chainlink feed rather than hack or technical failure. A disabled LST oracle implies an LST with low liquidity/volume, which in turn probably implies that the LST constitutes a small fraction of total Liquity v2 collateral.
 
@@ -1616,7 +1616,7 @@ The best solution on paper seems to be 3) i.e. taking the minimum with an additi
 
 ### 9 - Branch shutdown and bad debt
 
-In the case of a collateral price collapse or oracle failure, a branch will shut down and urgent redemptions will be enabled. The collapsed branch may be left with 0 collateral (or collateral with 0 value), and some remaining bad debt.
+In the case of a collateral price collapse or oracle failure, a branch will shut down and shutdown redemptions will be enabled. The collapsed branch may be left with 0 collateral (or collateral with 0 value), and some remaining bad debt.
 
 This could in the worst case lead to bank runs: a portion of the system debt can not be cleared, and hence a portion of the BOLD supply can never be redeemed.
 
@@ -1648,7 +1648,7 @@ And some additional solutions that may help reduce the chance of bad debt occurr
 
 6. **Restrict SP withdrawals when TCR < 100%**. This ensure that SP depositors can’t flee when their branch is insolvent, and would be forced to eat the loss. This could lead to less bad debt than otherwise. On the other hand, when TCR > 100%, the expectation of this restriction kicking in could force pre-empting SP fleeing, which may limit liquidations and make bad debt _more_ likely.  An alternative would be to restrict SP withdrawals only when the LST-ETH price falls significantly below 1, indicating an adverse LST depeg event.
 
-7. **Pro-rata redemptions at TCR < 100% (branch specific, not routed)**. Urgent redemptions are helpful for shrinking the debt of a shut down branch when it is at `TCR > 100%`. However, at `TCR < 100%`, urgent redemptions do not help clear the bad debt. They simply remove all collateral and push it into its final state faster (and in fact, make it slightly worse since they pay a slight collateral bonus).  At `TCR < 100%`, we could offer special pro-rata redemptions only on the shut down branch - e.g. at `TCR = 80%`, users may redeem 1 BOLD for $0.80 worth of collateral. This would (in principle) allow someone to completely clear the bad debt via redemption. At first glance it seems unprofitable, but if the redeemer has reason to believe the collateral is underpriced and the price may rebound at some point in future, they may believe it to be profitable to redeem pro-rata.
+7. **Pro-rata redemptions at TCR < 100% (branch specific, not routed)**. Shutdown redemptions are helpful for shrinking the debt of a shut down branch when it is at `TCR > 100%`. However, at `TCR < 100%`, shutdown redemptions do not help clear the bad debt. They simply remove all collateral and push it into its final state faster (and in fact, make it slightly worse since they pay a slight collateral bonus).  At `TCR < 100%`, we could offer special pro-rata redemptions only on the shut down branch - e.g. at `TCR = 80%`, users may redeem 1 BOLD for $0.80 worth of collateral. This would (in principle) allow someone to completely clear the bad debt via redemption. At first glance it seems unprofitable, but if the redeemer has reason to believe the collateral is underpriced and the price may rebound at some point in future, they may believe it to be profitable to redeem pro-rata.
 
 **Conclusion**
 
@@ -1738,8 +1738,8 @@ Thus, if we compare a deposit that never claims gainst one that frequently "comp
 
 This simply means that frequently claiming and adding BOLD yield gains to one's deposit is the preferred strategy.
 
-### 14 - Urgent Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1
-If ICR is less than 102% , urgent redemptions with 2% premium reduce the ICR of a Trove.
+### 14 - Shutdown Redemptions Premium can worsen the ICR when Trove Coll Value < Debt Value * .1
+If ICR is less than 102% , shutdown redemptions with 2% premium reduce the ICR of a Trove.
 
 This may be used to lock in a bit more bad debt.
 
@@ -1809,15 +1809,15 @@ batchLiquidateTroves(C)
 
 In Liquity v2 the resulting collateral and debt of active Troves D and E is exactly the same in both scenarios, since the same total coll and debt is redistributed proportionally. This is not the case in Liquity v1 where redistributions pay gas compensation, and rolling vs not rolling liquidations results in slightly different gas compensation payout and thus slightly end states for active Troves.
 
-### 18 - `lastGoodPrice` used in urgent redemptions may not represent a previous redemption price
+### 18 - `lastGoodPrice` used in shutdown redemptions may not represent a previous redemption price
 
-`lastGoodPrice` is set by the last price fetch of the system, which may be a redemption or another operation. In case of redemption, the `lastGoodPrice` will be a result of a previous call to `fetchRedemptionPrice`, and otherwise, a call to `fetchPrice`. Thus, it’s possible that the `lastGoodPrice` used in urgent redemptions after shutdown was not actually a _redemption_ price when the branch was previously active.
+`lastGoodPrice` is set by the last price fetch of the system, which may be a redemption or another operation. In case of redemption, the `lastGoodPrice` will be a result of a previous call to `fetchRedemptionPrice`, and otherwise, a call to `fetchPrice`. Thus, it’s possible that the `lastGoodPrice` used in shutdown redemptions after shutdown was not actually a _redemption_ price when the branch was previously active.
 
 However, this is not considered an issue for the following reasons:
 
-The `lastGoodPrice` is potentially out of date anyway when urgent redemptions occur, simply due to the passing of time. 
+The `lastGoodPrice` is potentially out of date anyway when shutdown redemptions occur, simply due to the passing of time. 
 
-Urgent redemptions could be immediately unprofitable after oracle failure if `lastGoodPrice` is set by a normal price fetch that is greater than the redemption price would have been, _and_ the real price has not increased significantly since `lastGoodPrice` was recorded. However even then, urgent redemptions can still become profitable later if the real price increases.
+Shutdown redemptions could be immediately unprofitable after oracle failure if `lastGoodPrice` is set by a normal price fetch that is greater than the redemption price would have been, _and_ the real price has not increased significantly since `lastGoodPrice` was recorded. However even then, shutdown redemptions can still become profitable later if the real price increases.
 
 
 Overall, the bigger factor in urgent redemption unprofitability is likely to be a market price decrease post oracle-failure, rather than a `lastGoodPrice` that is slightly too high. As mentioned in [Known Issue 4](https://github.com/liquity/bold?tab=readme-ov-file#3---path-dependent-redemptions-lower-fee-when-chunking), `lastGoodPrice` can become out of date simply due to market price movements.
@@ -2056,7 +2056,7 @@ The more risky the collateral - i.e. the greater the chance of a large, sudden p
 Ideally:
 
 - Most liquidations should occur at CR > 100%, to ensure profitability for SP depositors.  
-- Branch shutdown should clear most branch debt (via liquidations, urgent redemptions and borrowers closing Troves) before the branch becomes undercollateralized, i.e. before the TCR drops below 100%
+- Branch shutdown should clear most branch debt (via liquidations, shutdown redemptions and borrowers closing Troves) before the branch becomes undercollateralized, i.e. before the TCR drops below 100%
 - Economic modelling should be performed based on your assumptions about collateral volatility to select these risk parameters.
  
 ## Redemption floor fee
