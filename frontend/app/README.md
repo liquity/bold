@@ -317,6 +317,15 @@ Enable a banner warning users when one or more branches are in Safety Mode. Opti
 NEXT_PUBLIC_SAFETY_MODE_CHECK=false
 ```
 
+### `NEXT_PUBLIC_SHOW_DATA_SOURCES`
+
+Let the user override RPC and subgraph URLs. When enabled, a "Data Sources" link is shown in the app's footer that, when clicked, opens a configuration dialog box. Optional. Defaults to false.
+
+```dosini
+# Example
+NEXT_PUBLIC_SHOW_DATA_SOURCES=true
+```
+
 ### `NEXT_PUBLIC_SUBGRAPH_URL`
 
 URL for The Graph protocol subgraph queries.
