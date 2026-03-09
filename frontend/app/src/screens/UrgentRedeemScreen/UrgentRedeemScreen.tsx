@@ -13,7 +13,7 @@ import { DNUM_0 } from "@/src/dnum-utils";
 import { parseInputPercentage, useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import { getBranch, getCollToken, useRedeemableTroves, useShutdownStatus } from "@/src/liquity-utils";
-import { useLastGoodPrice, usePrice } from "@/src/services/Prices";
+import { usePrice } from "@/src/services/Prices";
 import {
   addICRToTroves,
   calculateMinCollateral,
@@ -47,7 +47,7 @@ export function UrgentRedeemScreen() {
   const activeBranch = activeBranchSymbol ? getBranch(activeBranchSymbol) : null;
   const collToken = activeBranch ? getCollToken(activeBranch.branchId) : null;
 
-  const price = useLastGoodPrice(activeBranchSymbol);
+  const price = usePrice(activeBranchSymbol);
   const trovesQuery = useRedeemableTroves(activeBranch?.branchId ?? null, { first: 200 });
 
   const boldAmount = useInputFieldValue(fmtnum);

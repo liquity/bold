@@ -8,7 +8,7 @@ import { dnum18 } from "@/src/dnum-utils";
 import { URGENT_REDEMPTION_BONUS_PCT } from "@/src/urgent-redemption-utils";
 import { getBranch, getCollToken } from "@/src/liquity-utils";
 import { TransactionStatus } from "@/src/screens/TransactionsScreen/TransactionStatus";
-import { useLastGoodPrice } from "@/src/services/Prices";
+import { usePrice } from "@/src/services/Prices";
 import { vDnum } from "@/src/valibot-utils";
 import { css } from "@/styled-system/css";
 import { HFlex, InfoTooltip, TokenIcon, VFlex } from "@liquity2/uikit";
@@ -40,7 +40,7 @@ export const urgentRedemption: FlowDeclaration<UrgentRedemptionRequest> = {
     const branch = getBranch(branchId);
     const collToken = getCollToken(branchId);
     const tokenName = collToken.symbol === "ETH" ? "WETH" : collToken.name;
-    const price = useLastGoodPrice(branch.symbol);
+    const price = usePrice(branch.symbol);
 
     const collWithoutBonus = price.data
       ? dn.div(boldAmount, price.data)
