@@ -13,6 +13,7 @@ export function SubgraphDownBanner() {
       icon={<IconInfo size={16} />}
       messageDesktop={<>Some data is currently unavailable (The Graph), functionality might be limited.</>}
       linkLabel="Learn more"
+      linkLabelMobile="Some data temporarily unavailable"
       linkHref="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#what-happens-when-the-graph-is-down"
       linkExternal
       backgroundColor={token("colors.brandGolden")}
