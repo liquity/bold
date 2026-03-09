@@ -1203,7 +1203,7 @@ Ordinarily, on active branches, the last Trove in the system can not be closed. 
 
 On shutdown branches, the last Trove _can_ be closed by its owner - since the priority on a shutdown branch is to clear all debt and remove collateral ASAP.
 
- ### Shutodnw redemptions 
+ ### Shutdown redemptions 
 
 During shutdown the redemption logic is modified to incentivize swift reduction of the branch’s debt, and even do so when BOLD is trading at peg ($1 USD). 
 
