@@ -25,7 +25,8 @@ export function SafetyModeBanner() {
       linkLabelMobile="Safety Mode active"
       linkHref="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#what-is-safety-mode"
       linkExternal
-      backgroundColor={token("colors.negativeStrong")}
+      backgroundColor={token("colors.brandGolden")}
+      foregroundColor={token("colors.brandGoldenContent")}
     />
   );
 }
