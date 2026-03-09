@@ -25,7 +25,8 @@ export function ShutdownModeBanner() {
       linkLabelMobile="Shutdown Mode active"
       linkHref="https://docs.liquity.org/v2-faq/borrowing-and-liquidations#what-is-shutdown-mode"
       linkExternal
-      backgroundColor={token("colors.negativeStrong")}
+      backgroundColor={token("colors.brandGolden")}
+      foregroundColor={token("colors.brandGoldenContent")}
     />
   );
 }
