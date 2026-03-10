@@ -11,6 +11,7 @@ import { css } from "@/styled-system/css";
 import { HFlex, InfoTooltip, TokenIcon, VFlex } from "@liquity2/uikit";
 import * as dn from "dnum";
 import * as v from "valibot";
+import { maxUint256 } from "viem";
 import { REDEMPTION_SLIPPAGE_TOLERANCE } from "../constants";
 import { createRequestSchema, verifyTransaction } from "./shared";
 
@@ -103,16 +104,21 @@ export const redeemCollateral: FlowDeclaration<RedeemCollateralRequest> = {
   steps: {
     approve: {
       name: () => "Approve BOLD",
-      Status: TransactionStatus,
+      Status: (props) => <TransactionStatus {...props} approval="approve-only" />,
 
-      async commit({ request, writeContract }) {
+      async commit({ request, writeContract, preferredApproveMethod }) {
         const RedemptionHelper = getProtocolContract("RedemptionHelper");
         const BoldToken = getProtocolContract("BoldToken");
 
         return writeContract({
           ...BoldToken,
           functionName: "approve",
-          args: [RedemptionHelper.address, request.amount[0]],
+          args: [
+            RedemptionHelper.address,
+            preferredApproveMethod === "approve-infinite"
+              ? maxUint256
+              : request.amount[0],
+          ],
         });
       },
       async verify(ctx, hash) {

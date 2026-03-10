@@ -24,6 +24,7 @@ import {
   getCollToken,
   useBranchCollateralRatios,
   useBranchDebt,
+  useIsBranchShutdown,
   useNextOwnerIndex,
   usePredictOpenTroveUpfrontFee,
   useRedemptionRiskOfInterestRate,
@@ -100,6 +101,7 @@ export function BorrowScreen() {
 
   const balances = useBalances(account.address, KNOWN_COLLATERAL_SYMBOLS);
   const collateralRatios = useBranchCollateralRatios(branch.id);
+  const isShutdown = useIsBranchShutdown(branch.id);
 
   const collBalance = balances[collateral.symbol];
   if (!collBalance) {
@@ -219,6 +221,7 @@ export function BorrowScreen() {
 
   const isDelegated = interestRateMode === "delegate" && interestRateDelegate;
   const allowSubmit = account.isConnected
+    && !isShutdown.data
     && deposit.parsed
     && dn.gt(deposit.parsed, 0)
     && debt.parsed
@@ -520,7 +523,30 @@ export function BorrowScreen() {
 
       <RedemptionInfo />
 
-      {isCcrConditionsNotMet && collateralRatios.data
+      {isShutdown.data
+        ? (
+          <WarningBox>
+            <div>
+              <div
+                className={css({
+                  fontSize: 16,
+                  fontWeight: 600,
+                  marginBottom: 12,
+                })}
+              >
+                {content.shutdownWarning.title}
+              </div>
+              <div
+                className={css({
+                  fontSize: 15,
+                })}
+              >
+                {content.shutdownWarning.borrowMessage(collateral.name)}
+              </div>
+            </div>
+          </WarningBox>
+        )
+        : isCcrConditionsNotMet && collateralRatios.data
         ? (
           <WarningBox>
             <div>

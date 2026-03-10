@@ -39,6 +39,7 @@ const ZDeploymentManifest = z.object({
   debtInFrontHelper: ZAddress,
   exchangeHelpers: ZAddress,
   exchangeHelpersV2: ZAddress,
+  redemptionHelper: ZAddress,
 
   governance: z.object({
     LUSDToken: ZAddress,
@@ -189,6 +190,8 @@ function contractNameToAppEnvVariable(contractName: string, prefix: string = "")
       return `${prefix}_EXCHANGE_HELPERS`;
     case "exchangeHelpersV2":
       return `${prefix}_EXCHANGE_HELPERS_V2`;
+    case "redemptionHelper":
+      return `${prefix}_REDEMPTION_HELPER`;
 
     // collateral contracts
     case "activePool":

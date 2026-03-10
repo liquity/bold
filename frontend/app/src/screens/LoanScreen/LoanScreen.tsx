@@ -8,6 +8,7 @@ import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Screen } from "@/src/comps/Screen/Screen";
+import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
 import content from "@/src/content";
 import { TROVE_EXPLORER_0, TROVE_EXPLORER_1 } from "@/src/env";
 import { fmtnum, formatDate } from "@/src/formatting";
@@ -16,6 +17,7 @@ import {
   getPrefixedTroveId,
   parsePrefixedTroveId,
   useCollateralSurplus,
+  useIsBranchShutdown,
   useLoan,
 } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
@@ -169,6 +171,7 @@ export function LoanScreen() {
   const { troveId, branchId } = parsePrefixedTroveId(paramPrefixedId);
 
   const loan = useLoan(branchId, troveId);
+  const isShutdown = useIsBranchShutdown(branchId);
   const loanMode = storedState.loanModes[paramPrefixedId] ?? loan.data?.type ?? "borrow";
 
   useEffect(() => {
@@ -176,6 +179,12 @@ export function LoanScreen() {
       addPrefixedTroveIdsToStoredState(storedState, [paramPrefixedId]);
     }
   }, [loan.data?.troveId, loan.data?.branchId, paramPrefixedId]);
+
+  useEffect(() => {
+    if (isShutdown.data && action !== "close") {
+      router.push(`/loan/close?id=${paramPrefixedId}`, { scroll: false });
+    }
+  }, [isShutdown.data, action, paramPrefixedId, router]);
 
   const collToken = getCollToken(loan.data?.branchId ?? null);
   const collPriceUsd = usePrice(collToken?.symbol ?? null);
@@ -391,39 +400,68 @@ export function LoanScreen() {
                               )}
                             </div>
                           )}
-                          <Tabs
-                            items={TABS.map(({ label, labelCompact, id }) => ({
-                              label: compactMode ? labelCompact : label,
-                              panelId: `p-${id}`,
-                              tabId: `t-${id}`,
-                            }))}
-                            selected={TABS.findIndex(({ id }) => id === action)}
-                            onSelect={(index) => {
-                              if (!loan.data) {
-                                return;
-                              }
-                              const tab = TABS[index];
-                              if (!tab) {
-                                throw new Error("Invalid tab index");
-                              }
-                              const id = getPrefixedTroveId(
-                                loan.data.branchId,
-                                loan.data.troveId,
-                              );
-                              router.push(
-                                `/loan/${tab.id}?id=${id}`,
-                                { scroll: false },
-                              );
-                            }}
-                          />
+                          {isShutdown.data && collToken && (
+                            <WarningBox>
+                              <div>
+                                <div
+                                  className={css({
+                                    fontSize: 16,
+                                    fontWeight: 600,
+                                    marginBottom: 12,
+                                  })}
+                                >
+                                  {content.shutdownWarning.title}
+                                </div>
+                                <div
+                                  className={css({
+                                    fontSize: 15,
+                                  })}
+                                >
+                                  {content.shutdownWarning.loanMessage(collToken.name)}
+                                </div>
+                              </div>
+                            </WarningBox>
+                          )}
 
-                          {action === "colldebt" && (
+                          {!isShutdown.data && (
+                            <Tabs
+                              items={TABS.map(({ label, labelCompact, id }) => ({
+                                label: compactMode ? labelCompact : label,
+                                panelId: `p-${id}`,
+                                tabId: `t-${id}`,
+                              }))}
+                              selected={TABS.findIndex(({ id }) => id === action)}
+                              onSelect={(index) => {
+                                if (!loan.data) {
+                                  return;
+                                }
+                                const tab = TABS[index];
+                                if (!tab) {
+                                  throw new Error("Invalid tab index");
+                                }
+                                const id = getPrefixedTroveId(
+                                  loan.data.branchId,
+                                  loan.data.troveId,
+                                );
+                                router.push(
+                                  `/loan/${tab.id}?id=${id}`,
+                                  { scroll: false },
+                                );
+                              }}
+                            />
+                          )}
+
+                          {!isShutdown.data && action === "colldebt" && (
                             loanMode === "multiply"
                               ? <PanelUpdateLeveragePosition loan={loan.data} />
                               : <PanelUpdateBorrowPosition loan={loan.data} />
                           )}
-                          {action === "rate" && <PanelInterestRate loan={loan.data} loanMode={loanMode} />}
-                          {action === "close" && <PanelClosePosition loan={loan.data} loanMode={loanMode} />}
+                          {!isShutdown.data && action === "rate" && (
+                            <PanelInterestRate loan={loan.data} loanMode={loanMode} />
+                          )}
+                          {(isShutdown.data || action === "close") && (
+                            <PanelClosePosition loan={loan.data} loanMode={loanMode} />
+                          )}
                         </>
                       )}
                   </a.div>

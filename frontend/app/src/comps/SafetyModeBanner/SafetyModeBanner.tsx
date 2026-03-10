@@ -1,19 +1,26 @@
 "use client";
 
 import { InfoBanner } from "@/src/comps/InfoBanner/InfoBanner";
-import { useSafetyMode } from "@/src/liquity-utils";
+import { useSafetyMode, useShutdownStatus } from "@/src/liquity-utils";
 import { token } from "@/styled-system/tokens";
 import { IconWarning } from "@liquity2/uikit";
 
 export function SafetyModeBanner() {
   const safetyMode = useSafetyMode();
+  const shutdownStatus = useShutdownStatus();
 
-  const branchesInSafetyMode = safetyMode.data?.branchesInSafetyMode ?? [];
+  const shutdownBranchIds = new Set(
+    shutdownStatus.data?.filter((b) => b.isShutdown).map((b) => b.branchId) ?? [],
+  );
+
+  const branchesInSafetyMode = (safetyMode.data?.branchesInSafetyMode ?? [])
+    .filter((b) => !shutdownBranchIds.has(b.branchId));
+
   const branchNames = branchesInSafetyMode.map((b) => b.symbol).join(", ");
 
   return (
     <InfoBanner
-      show={Boolean(safetyMode.data?.isAnySafetyMode)}
+      show={branchesInSafetyMode.length > 0}
       icon={<IconWarning size={16} />}
       messageDesktop={
         <>
