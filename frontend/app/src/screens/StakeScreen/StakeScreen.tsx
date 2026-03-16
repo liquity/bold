@@ -34,7 +34,7 @@ export function StakeScreen() {
   const account = useAccount();
   const stakePosition = useStakePosition(account.address ?? null);
   const bribingClaim = useBribingClaim(account.address ?? null);
-  const initiatives = useNamedInitiatives();
+  const initiatives = useNamedInitiatives(account.address ?? null);
 
   return (
     <Screen

@@ -4,10 +4,12 @@ import {
   useInitiativesVoteTotals,
   useNamedInitiatives,
 } from "@/src/liquity-governance.ts";
+import { useAccount } from "@/src/wagmi-utils";
 import { useMemo } from "react";
 
 export const useGetInitiativesSummary = () => {
-  const { data: initiativesData, isLoading: isLoadingInitiatives } = useNamedInitiatives();
+  const account = useAccount();
+  const { data: initiativesData, isLoading: isLoadingInitiatives } = useNamedInitiatives(account.address ?? null);
 
   const initiativesAddresses = useMemo(() => {
     if (isLoadingInitiatives || !initiativesData) {
