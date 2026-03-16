@@ -8,6 +8,7 @@ import { BreakpointName } from "@/src/breakpoints";
 import { About } from "@/src/comps/About/About";
 import { AppLayout } from "@/src/comps/AppLayout/AppLayout";
 import { Blocking } from "@/src/comps/Blocking/Blocking";
+import { DataSources } from "@/src/comps/DataSources/DataSources";
 import content from "@/src/content";
 import { VERCEL_ANALYTICS } from "@/src/env";
 import { Ethereum } from "@/src/services/Ethereum";
@@ -42,21 +43,23 @@ export default function Layout({
         <ReactQuery>
           <UiKit>
             <StoredState>
-              <BreakpointName>
-                <Ethereum>
-                  <IndicatorManager>
-                    <Blocking>
-                      <TransactionFlow>
-                        <About>
-                          <AppLayout>
-                            {children}
-                          </AppLayout>
-                        </About>
-                      </TransactionFlow>
-                    </Blocking>
-                  </IndicatorManager>
-                </Ethereum>
-              </BreakpointName>
+              <DataSources>
+                <BreakpointName>
+                  <Ethereum>
+                    <IndicatorManager>
+                      <Blocking>
+                        <TransactionFlow>
+                          <About>
+                            <AppLayout>
+                              {children}
+                            </AppLayout>
+                          </About>
+                        </TransactionFlow>
+                      </Blocking>
+                    </IndicatorManager>
+                  </Ethereum>
+                </BreakpointName>
+              </DataSources>
             </StoredState>
           </UiKit>
         </ReactQuery>

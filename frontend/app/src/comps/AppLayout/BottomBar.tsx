@@ -3,13 +3,14 @@ import type { Address, TokenSymbol } from "@/src/types";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Logo } from "@/src/comps/Logo/Logo";
-import { ACCOUNT_SCREEN, CHAIN_BLOCK_EXPLORER, CONTRACT_BOLD_TOKEN, CONTRACT_LQTY_TOKEN } from "@/src/env";
+import { useDataSources } from "@/src/comps/DataSources/DataSources";
+import { ACCOUNT_SCREEN, CHAIN_BLOCK_EXPLORER, CONTRACT_BOLD_TOKEN, CONTRACT_LQTY_TOKEN, SHOW_DATA_SOURCES } from "@/src/env";
 import { fmtnum } from "@/src/formatting";
 import { useLiquityStats } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
-import { shortenAddress, TokenIcon } from "@liquity2/uikit";
+import { shortenAddress, TextButton, TokenIcon } from "@liquity2/uikit";
 import { blo } from "blo";
 import Image from "next/image";
 import { AboutButton } from "./AboutButton";
@@ -20,9 +21,11 @@ const ENABLE_REDEEM = true;
 export function BottomBar() {
   const account = useAccount();
   const stats = useLiquityStats();
+  const dataSources = useDataSources();
 
   const tvl = stats.data?.totalValueLocked;
   const boldSupply = stats.data?.totalBoldSupply;
+  const isUsingCustomDataSources = dataSources.isUsingCustomRpc || dataSources.isUsingCustomSubgraph;
 
   return (
     <div
@@ -155,6 +158,30 @@ export function BottomBar() {
                 }
                 className={css({
                   color: "content",
+                  borderRadius: 4,
+                  _focusVisible: { outline: "2px solid token(colors.focused)" },
+                  _active: { translate: "0 1px" },
+                })}
+              />
+            )}
+            {SHOW_DATA_SOURCES && (
+              <TextButton
+                label={
+                  <div
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      whiteSpace: "nowrap",
+                    })}
+                  >
+                    {isUsingCustomDataSources ? "Custom Data Sources" : "Data Sources"}
+                  </div>
+                }
+                onClick={() => dataSources.openModal()}
+                style={{ fontSize: 12 }}
+                className={css({
+                  color: isUsingCustomDataSources ? "positive" : "content",
                   borderRadius: 4,
                   _focusVisible: { outline: "2px solid token(colors.focused)" },
                   _active: { translate: "0 1px" },
