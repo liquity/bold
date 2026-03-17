@@ -1,5 +1,5 @@
-import type { Address } from "@/src/types";
-import { DELEGATE_AUTO, KNOWN_DELEGATES_URL } from "@/src/env";
+import type { Address, BranchId } from "@/src/types";
+import { DEFAULT_DELEGATES, KNOWN_DELEGATES_URL } from "@/src/env";
 import { useQuery } from "@tanstack/react-query";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -74,13 +74,16 @@ export function useDelegateStrategyName(delegateAddress: string | null) {
 
 export type DelegateMode = "manual" | "delegate";
 
-export function getDefaultDelegateMode(batchManager?: Address | null): DelegateMode {
+export const HAS_DEFAULT_DELEGATE = Object.keys(DEFAULT_DELEGATES).length > 0;
+
+
+export function getDefaultDelegateMode(branchId: BranchId, batchManager?: Address | null): DelegateMode {
   if (!batchManager) {
-    return DELEGATE_AUTO ? "delegate" : "manual";
+    return DEFAULT_DELEGATES[branchId] ? "delegate" : "manual";
   }
   return "delegate";
 }
 
-export function getDefaultDelegate(batchManager?: Address | null): Address | null {
-  return batchManager ?? (DELEGATE_AUTO || null);
+export function getDefaultDelegate(branchId: BranchId, batchManager?: Address | null): Address | null {
+  return batchManager ?? DEFAULT_DELEGATES[branchId] ?? null;
 }

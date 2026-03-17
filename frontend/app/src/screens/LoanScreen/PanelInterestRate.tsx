@@ -53,10 +53,10 @@ export function PanelInterestRate({
 
   const [interestRate, setInterestRate] = useState(loan.interestRate);
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>(
-    getDefaultDelegateMode(loan.batchManager),
+    getDefaultDelegateMode(loan.branchId, loan.batchManager),
   );
   const [interestRateDelegate, setInterestRateDelegate] = useState(
-    getDefaultDelegate(loan.batchManager),
+    getDefaultDelegate(loan.branchId, loan.batchManager),
   );
 
   const [agreeToLiquidationRisk, setAgreeToLiquidationRisk] = useState(false);

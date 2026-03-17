@@ -71,6 +71,7 @@ function vBranchEnvVars(branchId: BranchId) {
     [`${prefix}_CONTRACT_STABILITY_POOL`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_TROVE_MANAGER`]: v.optional(vAddress()),
     [`${prefix}_CONTRACT_TROVE_NFT`]: v.optional(vAddress()),
+    [`${prefix}_DEFAULT_DELEGATE`]: v.optional(v.union([vAddress(), v.literal("")])),
     [`${prefix}_IC_STRATEGIES`]: v.optional(vIcStrategy(), "true"),
     [`${prefix}_TOKEN_ID`]: v.optional(CollateralSymbolSchema),
   });
@@ -226,6 +227,7 @@ export const EnvSchema = v.pipe(
     const env = { ...data };
 
     const envBranches: BranchEnv[] = [];
+    const defaultDelegates: Partial<Record<BranchId, Address>> = {};
 
     const defaultIcStrategiesForChain = DEFAULT_STRATEGIES.find(
       ([chainId]) => chainId === env.CHAIN_ID,
@@ -234,6 +236,12 @@ export const EnvSchema = v.pipe(
     for (const index of Array(10).keys()) {
       const collEnvName = `COLL_${index as BranchId}` as const;
       const contracts: Partial<Record<ContractEnvName, Address>> = {};
+
+      const defaultDelegateKey = `${collEnvName}_DEFAULT_DELEGATE` as keyof typeof env;
+      const defaultDelegateValue = env[defaultDelegateKey];
+      if (typeof defaultDelegateValue === "string" && defaultDelegateValue !== "") {
+        defaultDelegates[index as BranchId] = defaultDelegateValue as Address;
+      }
 
       const icStrategiesKey = `${collEnvName}_IC_STRATEGIES` as keyof typeof env;
       const icStrategies = env[icStrategiesKey] === true
@@ -290,6 +298,9 @@ export const EnvSchema = v.pipe(
       };
 
       // delete COLL_${index} env vars
+      if (defaultDelegateKey in env) {
+        delete env[defaultDelegateKey];
+      }
       if (icStrategiesKey in env) {
         delete env[icStrategiesKey];
       }
@@ -306,6 +317,7 @@ export const EnvSchema = v.pipe(
 
     return {
       ...env,
+      DEFAULT_DELEGATES: defaultDelegates,
       ENV_BRANCHES: envBranches,
       LEGACY_CHECK: legacyCheck,
     };
@@ -390,6 +402,10 @@ const parsedEnv = v.safeParse(EnvSchema, {
   COLL_0_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_0_TOKEN_ID,
   COLL_1_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_1_TOKEN_ID,
   COLL_2_TOKEN_ID: process.env.NEXT_PUBLIC_COLL_2_TOKEN_ID,
+
+  COLL_0_DEFAULT_DELEGATE: process.env.NEXT_PUBLIC_COLL_0_DEFAULT_DELEGATE,
+  COLL_1_DEFAULT_DELEGATE: process.env.NEXT_PUBLIC_COLL_1_DEFAULT_DELEGATE,
+  COLL_2_DEFAULT_DELEGATE: process.env.NEXT_PUBLIC_COLL_2_DEFAULT_DELEGATE,
 
   COLL_0_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_0_IC_STRATEGIES,
   COLL_1_IC_STRATEGIES: process.env.NEXT_PUBLIC_COLL_1_IC_STRATEGIES,
@@ -479,6 +495,7 @@ export const {
   CONTRACT_REDEMPTION_HELPER,
   CONTRACT_V1_STABILITY_POOL,
   CONTRACT_WETH,
+  DEFAULT_DELEGATES,
   DELEGATE_AUTO,
   DEPLOYMENT_FLAVOR,
   KNOWN_DELEGATES_URL,

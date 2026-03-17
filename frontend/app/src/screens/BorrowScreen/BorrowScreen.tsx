@@ -86,8 +86,8 @@ export function BorrowScreen() {
   const debt = useInputFieldValue(fmtnum);
 
   const [interestRate, setInterestRate] = useState<null | Dnum>(null);
-  const [interestRateMode, setInterestRateMode] = useState<DelegateMode>(getDefaultDelegateMode());
-  const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(getDefaultDelegate());
+  const [interestRateMode, setInterestRateMode] = useState<DelegateMode>(getDefaultDelegateMode(branch.id));
+  const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(getDefaultDelegate(branch.id));
   const [agreeToLiquidationRisk, setAgreeToLiquidationRisk] = useState(false);
 
   const agreeCheckboxId = useId();

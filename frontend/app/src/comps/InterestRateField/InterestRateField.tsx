@@ -6,11 +6,10 @@ import { useBreakpointName } from "@/src/breakpoints";
 import { INTEREST_RATE_MAX, INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
 import { DNUM_0, jsonStringifyWithDnum, roundTo4Decimals } from "@/src/dnum-utils";
-import { DELEGATE_AUTO } from "@/src/env";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
 import type { DelegateMode } from "@/src/liquity-delegate";
-import { useDelegateDisplayName, useDelegateGroupName, useDelegateStrategyName, useKnownDelegates } from "@/src/liquity-delegate";
+import { getDefaultDelegate, HAS_DEFAULT_DELEGATE, useDelegateDisplayName, useDelegateGroupName, useDelegateStrategyName, useKnownDelegates } from "@/src/liquity-delegate";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import {
   EMPTY_LOAN,
@@ -92,7 +91,7 @@ export const InterestRateField = memo(
 
     useEffect(() => {
       setDelegatePickerOpen(false);
-      onDelegateChange(DELEGATE_AUTO || null);
+      onDelegateChange(getDefaultDelegate(branchId));
     }, [
       branchId,
       onDelegateChange,
@@ -253,7 +252,7 @@ export const InterestRateField = memo(
           </div>
 
           <Tabs
-            items={DELEGATE_AUTO
+            items={HAS_DEFAULT_DELEGATE
               ? [
                 {
                   label: content.interestRateField.delegateModes.automatic.label,
@@ -278,11 +277,11 @@ export const InterestRateField = memo(
                   panelId: "interest-rate-panel-delegate",
                 },
               ]}
-            selected={DELEGATE_AUTO
+            selected={HAS_DEFAULT_DELEGATE
               ? (mode === "manual" ? 1 : 0)
               : (mode === "delegate" ? 1 : 0)}
             onSelect={(index) => {
-              const selectedMode = DELEGATE_AUTO
+              const selectedMode = HAS_DEFAULT_DELEGATE
                 ? (index === 0 ? "delegate" : "manual")
                 : (index === 0 ? "manual" : "delegate");
               onModeChange(selectedMode);
