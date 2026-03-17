@@ -1,4 +1,5 @@
-import { KNOWN_DELEGATES_URL } from "@/src/env";
+import type { Address } from "@/src/types";
+import { DELEGATE_AUTO, KNOWN_DELEGATES_URL } from "@/src/env";
 import { useQuery } from "@tanstack/react-query";
 import type { UseQueryResult } from "@tanstack/react-query";
 import { useMemo } from "react";
@@ -35,21 +36,51 @@ export function useKnownDelegates(): UseQueryResult<KnownDelegates | null> {
   });
 }
 
-export function useDelegateDisplayName(delegateAddress: string | null) {
+// branchId could be used for filtering delegates by collateral in the future
+function useDelegateGroup(delegateAddress: string | null) {
   const knownDelegatesQuery = useKnownDelegates();
 
   return useMemo(() => {
     if (!delegateAddress || !knownDelegatesQuery.data) return undefined;
 
-    // branchId could be used for filtering delegates by collateral in the future
     for (const group of knownDelegatesQuery.data) {
       const strategy = group.strategies.find(
         (s) => s.address.toLowerCase() === delegateAddress.toLowerCase(),
       );
       if (strategy) {
-        return strategy.name ? `${group.name} - ${strategy.name}` : group.name;
+        return { group, strategy };
       }
     }
     return undefined;
   }, [delegateAddress, knownDelegatesQuery.data]);
+}
+
+export function useDelegateDisplayName(delegateAddress: string | null) {
+  const result = useDelegateGroup(delegateAddress);
+  return result
+    ? result.strategy.name
+      ? `${result.group.name} - ${result.strategy.name}`
+      : result.group.name
+    : undefined;
+}
+
+export function useDelegateGroupName(delegateAddress: string | null) {
+  return useDelegateGroup(delegateAddress)?.group.name;
+}
+
+export function useDelegateStrategyName(delegateAddress: string | null) {
+  return useDelegateGroup(delegateAddress)?.strategy.name || undefined;
+}
+
+export type DelegateMode = "manual" | "delegate";
+
+export function getDefaultDelegateMode(batchManager?: Address | null): DelegateMode {
+  if (!batchManager) {
+    return DELEGATE_AUTO ? "delegate" : "manual";
+  }
+  return "delegate";
+}
+
+export function getDefaultDelegate(batchManager?: Address | null): Address | null {
+  return batchManager ?? (DELEGATE_AUTO || null);
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
 import type { Address, Dnum, PositionLoanUncommitted } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
+import type { DelegateMode } from "@/src/liquity-delegate";
+import { getDefaultDelegate, getDefaultDelegateMode } from "@/src/liquity-delegate";
 import { LeverageField, useLeverageField } from "@/src/comps/LeverageField/LeverageField";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { RedemptionInfo } from "@/src/comps/RedemptionInfo/RedemptionInfo";
@@ -46,7 +47,7 @@ import {
 } from "@liquity2/uikit";
 import * as dn from "dnum";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 export function LeverageScreen() {
   const branches = getBranches();
@@ -82,16 +83,11 @@ export function LeverageScreen() {
   });
 
   const [interestRate, setInterestRate] = useState<null | Dnum>(null);
-  const [interestRateMode, setInterestRateMode] = useState<DelegateMode>("manual");
-  const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(null);
+  const [interestRateMode, setInterestRateMode] = useState<DelegateMode>(getDefaultDelegateMode());
+  const [interestRateDelegate, setInterestRateDelegate] = useState<Address | null>(getDefaultDelegate());
   const [agreeToLiquidationRisk, setAgreeToLiquidationRisk] = useState(false);
 
   const agreeCheckboxId = useId();
-
-  const setInterestRateRounded = useCallback((averageInterestRate: Dnum, setValue: (value: string) => void) => {
-    const rounded = dn.div(dn.round(dn.mul(averageInterestRate, 1e4)), 1e4);
-    setValue(dn.toString(dn.mul(rounded, 100)));
-  }, []);
 
   const leverageField = useLeverageField({
     positionDeposit: depositPreLeverage.parsed,
@@ -343,12 +339,10 @@ export function LeverageScreen() {
         field={
           <InterestRateField
             branchId={branch.id}
-            debt={leverageField.debt}
             delegate={interestRateDelegate}
             inputId="input-interest-rate"
             interestRate={interestRate}
             mode={interestRateMode}
-            onAverageInterestRateLoad={setInterestRateRounded}
             onChange={setInterestRate}
             onDelegateChange={setInterestRateDelegate}
             onModeChange={setInterestRateMode}
@@ -360,48 +354,50 @@ export function LeverageScreen() {
               riskLevel={redemptionRisk.data ?? null}
             />
           ),
-          end: (
-            <div
-              className={css({
-                overflow: "hidden",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                color: "contentAlt",
-                fontSize: 14,
-              })}
-            >
+          end: interestRateMode === "manual"
+            ? (
               <div
                 className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  flexShrink: 0,
-                })}
-              >
-                <IconSuggestion size={16} />
-              </div>
-              <div
-                className={css({
-                  flexShrink: 1,
-                  display: "inline",
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                })}
-              >
-                You can adjust this rate at any time
-              </div>
-              <div
-                className={css({
-                  flexShrink: 0,
                   display: "flex",
                   alignItems: "center",
+                  gap: 4,
+                  color: "contentAlt",
+                  fontSize: 14,
                 })}
               >
-                <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateAdjustment)} />
+                <div
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    flexShrink: 0,
+                  })}
+                >
+                  <IconSuggestion size={16} />
+                </div>
+                <div
+                  className={css({
+                    flexShrink: 1,
+                    display: "inline",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  })}
+                >
+                  You can adjust this rate at any time
+                </div>
+                <div
+                  className={css({
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                  })}
+                >
+                  <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateAdjustment)} />
+                </div>
               </div>
-            </div>
-          ),
+            )
+            : undefined,
         }}
       />
 

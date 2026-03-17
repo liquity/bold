@@ -175,6 +175,7 @@ export const EnvSchema = v.pipe(
       v.optional(v.string(), ""),
       v.transform((value) => value.trim() || null),
     ),
+    DELEGATE_AUTO: v.optional(v.union([vAddress(), v.literal("")])),
     KNOWN_DELEGATES_URL: v.optional(v.union([v.pipe(v.string(), v.url()), v.literal("")])),
     KNOWN_INITIATIVES_URL: v.optional(v.pipe(v.string(), v.url())),
     AIRDROP_VAULTS: v.optional(vEnvFlag(), "true"),
@@ -349,6 +350,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
       ?? process.env.CONTRACTS_COMMIT_HASH_FROM_BUILD
   ),
   CONTRACTS_COMMIT_URL: process.env.NEXT_PUBLIC_CONTRACTS_COMMIT_URL,
+  DELEGATE_AUTO: process.env.NEXT_PUBLIC_DELEGATE_AUTO,
   DEPLOYMENT_FLAVOR: process.env.NEXT_PUBLIC_DEPLOYMENT_FLAVOR,
   KNOWN_DELEGATES_URL: process.env.NEXT_PUBLIC_KNOWN_DELEGATES_URL,
   KNOWN_INITIATIVES_URL: process.env.NEXT_PUBLIC_KNOWN_INITIATIVES_URL,
@@ -477,6 +479,7 @@ export const {
   CONTRACT_REDEMPTION_HELPER,
   CONTRACT_V1_STABILITY_POOL,
   CONTRACT_WETH,
+  DELEGATE_AUTO,
   DEPLOYMENT_FLAVOR,
   KNOWN_DELEGATES_URL,
   KNOWN_INITIATIVES_URL,

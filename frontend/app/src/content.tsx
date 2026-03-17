@@ -136,12 +136,26 @@ export default {
         label: "Manual",
         secondary: <>The interest rate is set manually and can be updated at any time.</>,
       },
-      delegate: {
-        label: "Delegated",
+      automatic: {
+        label: "Automatic",
         secondary: (
-          <>The interest rate is automatically managed by a third party of your choice. They may charge a fee.</>
+          <>
+            Your interest rate is managed by a third party who adjusts it over time to help protect your position from
+            redemption. No action needed. Fees apply.{" "}
+            <a
+              href="https://docs.liquity.org/v2-faq/redemptions-and-delegation#what-is-delegation-of-interest-rates"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Learn more.
+            </a>
+          </>
         ),
       },
+    },
+
+    setInterestRate: {
+      label: "Set interest rate",
     },
 
     delegatesModal: {

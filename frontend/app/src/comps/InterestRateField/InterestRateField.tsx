@@ -5,10 +5,12 @@ import { useAppear } from "@/src/anim-utils";
 import { useBreakpointName } from "@/src/breakpoints";
 import { INTEREST_RATE_MAX, INTEREST_RATE_START, REDEMPTION_RISK } from "@/src/constants";
 import content from "@/src/content";
-import { DNUM_0, jsonStringifyWithDnum } from "@/src/dnum-utils";
+import { DNUM_0, jsonStringifyWithDnum, roundTo4Decimals } from "@/src/dnum-utils";
+import { DELEGATE_AUTO } from "@/src/env";
 import { useInputFieldValue } from "@/src/form-utils";
 import { fmtnum } from "@/src/formatting";
-import { useDelegateDisplayName } from "@/src/liquity-delegate";
+import type { DelegateMode } from "@/src/liquity-delegate";
+import { useDelegateDisplayName, useDelegateGroupName, useDelegateStrategyName, useKnownDelegates } from "@/src/liquity-delegate";
 import { getRedemptionRisk } from "@/src/liquity-math";
 import {
   EMPTY_LOAN,
@@ -16,129 +18,142 @@ import {
   useAverageInterestRate,
   useDebtInFrontOfInterestRate,
   useDebtInFrontOfLoan,
+  useInterestBatchDelegate,
   useInterestRateChartData,
 } from "@/src/liquity-utils";
 import { useSubgraphIsDown } from "@/src/indicators/subgraph-indicator";
-import { infoTooltipProps } from "@/src/uikit-utils";
 import { noop } from "@/src/utils";
 import { css } from "@/styled-system/css";
-import { Dropdown, InfoTooltip, InputField, shortenAddress, Slider, TextButton } from "@liquity2/uikit";
+import {
+  InfoTooltip,
+  InputField,
+  Modal,
+  shortenAddress,
+  Slider,
+  Tabs,
+  TextButton,
+} from "@liquity2/uikit";
 import { a } from "@react-spring/web";
 import { blo } from "blo";
 import * as dn from "dnum";
 import Image from "next/image";
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { match } from "ts-pattern";
+import { DelegateBox } from "./DelegateBox";
 import { DelegateModal } from "./DelegateModal";
 import { MiniChart } from "./MiniChart";
 
-const DELEGATE_MODES = [
-  "manual",
-  "delegate",
-] as const;
+const rateFormatter = (value: Dnum) => `${fmtnum(value)}%`;
 
-export type DelegateMode = typeof DELEGATE_MODES[number];
-
-const SHOW_AVERAGE_BUTTON_MODES: DelegateMode[] = [
-  "manual",
-] as const;
+function clampRateValue(setValue: (v: string) => void, parsed: Dnum) {
+  if (dn.lt(parsed, INTEREST_RATE_START * 100)) setValue(String(INTEREST_RATE_START * 100));
+  if (dn.gt(parsed, INTEREST_RATE_MAX * 100)) setValue(String(INTEREST_RATE_MAX * 100));
+}
 
 export const InterestRateField = memo(
   function InterestRateField({
     branchId,
-    debt,
     delegate,
     inputId: inputIdFromProps,
     interestRate,
     mode,
-    onAverageInterestRateLoad = noop,
     onChange,
     onDelegateChange,
     onModeChange = noop,
     loan,
   }: {
     branchId: BranchId;
-    debt: Dnum | null;
     delegate: Address | null;
     inputId?: string;
     interestRate: Dnum | null;
     mode: DelegateMode;
-    // XXX why is average interest rate loaded inside this component and not the parent?
-    onAverageInterestRateLoad?: (averageInterestRate: Dnum, setValue: (value: string) => void) => void;
     onChange: (interestRate: Dnum) => void;
     onDelegateChange: (delegate: Address | null) => void;
     onModeChange?: (mode: DelegateMode) => void;
     loan?: PositionLoanCommitted;
   }) {
-    const [delegatePicker, setDelegatePicker] = useState<
-      "delegate" | null
-    >(null);
+    const [isDelegatePickerOpen, setDelegatePickerOpen] = useState(false);
+    const [delegateInfoVisible, setDelegateInfoVisible] = useState(false);
 
+    const delegateStrategyName = useDelegateStrategyName(delegate);
+    const delegateGroupName = useDelegateGroupName(delegate);
     const delegateDisplayName = useDelegateDisplayName(delegate);
-
+    const knownDelegates = useKnownDelegates();
     const autoInputId = useId();
     const inputId = inputIdFromProps ?? autoInputId;
 
     const averageInterestRate = useAverageInterestRate(branchId);
 
-    const rateTouchedForBranch = useRef<
-      | null // rate not touched for this branch, average rate should be applied
-      | BranchId // rate touched for this branch, not applying the average rate
-    >(null);
+    const delegateData = useInterestBatchDelegate(
+      branchId,
+      mode === "delegate" ? delegate : null,
+    );
 
-    if (rateTouchedForBranch.current !== branchId) {
-      rateTouchedForBranch.current = null;
-    }
+    const manualFieldBranchRef = useRef<BranchId | null>(null);
 
     useEffect(() => {
-      let cancelled = false;
-      if (rateTouchedForBranch.current === null && averageInterestRate.data) {
-        rateTouchedForBranch.current = branchId;
-        setTimeout(() => {
-          if (averageInterestRate.data && !cancelled) {
-            onAverageInterestRateLoad(averageInterestRate.data, fieldValue.setValue);
-          }
-        }, 0);
-        return () => {
-          cancelled = true;
-        };
+      setDelegatePickerOpen(false);
+      onDelegateChange(DELEGATE_AUTO || null);
+    }, [
+      branchId,
+      onDelegateChange,
+    ]);
+
+    const handleFieldChange = useCallback(({ parsed }: { parsed: Dnum | null }) => {
+      if (parsed) onChange(dn.div(parsed, 100));
+    }, [onChange]);
+
+    const fieldValue = useInputFieldValue(rateFormatter, {
+      defaultValue: interestRate ? dn.toString(dn.mul(interestRate, 100)) : undefined,
+      onFocusChange: ({ parsed, focused }) => {
+        if (!focused && parsed) clampRateValue(fieldValue.setValue, parsed);
+      },
+      onChange: handleFieldChange,
+    });
+
+    const handleManualFieldChange = useCallback(({ parsed }: { parsed: Dnum | null }) => {
+      if (parsed && mode === "manual") onChange(dn.div(parsed, 100));
+    }, [mode, onChange]);
+
+    const manualFieldValue = useInputFieldValue(rateFormatter, {
+      onFocusChange: ({ parsed, focused }) => {
+        if (!focused && parsed) clampRateValue(manualFieldValue.setValue, parsed);
+      },
+      onChange: handleManualFieldChange,
+    });
+
+    const { setValue } = fieldValue;
+    const { setValue: setManualValue } = manualFieldValue;
+
+    useEffect(() => {
+      if (averageInterestRate.data && manualFieldBranchRef.current !== branchId) {
+        manualFieldBranchRef.current = branchId;
+        const rounded = roundTo4Decimals(averageInterestRate.data);
+        setManualValue(dn.toString(dn.mul(rounded, 100)));
       }
     }, [
       averageInterestRate.data,
       branchId,
-      onAverageInterestRateLoad,
+      setManualValue,
     ]);
-
+    const delegateInterestRate = delegateData.data?.interestRate;
+    const delegateInterestRateKey = jsonStringifyWithDnum(delegateInterestRate);
     useEffect(() => {
-      setDelegatePicker(null);
-      if (!delegate) {
-        onDelegateChange(null);
-        onModeChange("manual");
+      if (mode === "delegate" && delegateInterestRate && delegate) {
+        const rounded = roundTo4Decimals(delegateInterestRate);
+        setValue(dn.toString(dn.mul(rounded, 100)));
+        onChange(rounded);
       }
-    }, [
-      branchId,
-      delegate,
-      onDelegateChange,
-      onModeChange,
-    ]);
+    }, [mode, delegateInterestRateKey, delegateInterestRate, delegate, onChange, setValue]);
 
-    const fieldValue = useInputFieldValue((value) => `${fmtnum(value)}%`, {
-      defaultValue: interestRate ? dn.toString(dn.mul(interestRate, 100)) : undefined,
-
-      onFocusChange: ({ parsed, focused }) => {
-        if (!focused && parsed) {
-          if (dn.lt(parsed, INTEREST_RATE_START * 100)) fieldValue.setValue(String(INTEREST_RATE_START * 100));
-          if (dn.gt(parsed, INTEREST_RATE_MAX * 100)) fieldValue.setValue(String(INTEREST_RATE_MAX * 100));
-        }
-      },
-
-      onChange: ({ parsed }) => {
-        if (parsed) {
-          rateTouchedForBranch.current = branchId;
-          onChange(dn.div(parsed, 100));
-        }
-      },
-    });
+    const prevModeRef = useRef(mode);
+    useEffect(() => {
+      if (mode === "manual" && prevModeRef.current !== "manual" && averageInterestRate.data) {
+        const rounded = roundTo4Decimals(averageInterestRate.data);
+        setManualValue(dn.toString(dn.mul(rounded, 100)));
+        onChange(rounded);
+      }
+      prevModeRef.current = mode;
+    }, [mode, averageInterestRate.data, onChange, setManualValue]);
 
     const interestChartData = useInterestRateChartData(branchId, loan);
     const debtInFrontOfLoan = useDebtInFrontOfLoan(loan ?? EMPTY_LOAN);
@@ -164,212 +179,156 @@ export const InterestRateField = memo(
     const redeemableTransition = useAppear(debtInFront !== undefined);
 
     const handleDelegateSelect = (delegate: Delegate) => {
-      setDelegatePicker(null);
+      setDelegatePickerOpen(false);
+      onModeChange("delegate");
       fieldValue.setValue(dn.toString(dn.mul(delegate.interestRate, 100)));
       onDelegateChange(delegate.address ?? null);
     };
-
-    const activeDelegateModes = DELEGATE_MODES;
-
-    const boldInterestPerYear = interestRate && debt && dn.mul(interestRate, debt);
 
     const breakpoint = useBreakpointName();
 
     return (
       <>
-        <InputField
-          id={inputId}
-          labelHeight={32}
-          labelSpacing={24}
-          disabled={mode !== "manual"}
-          contextual={match(mode)
-            .with("manual", () => (
-              <ManualInterestRateSlider
-                interestChartData={interestChartData}
-                interestRate={interestRate}
-                fieldValue={fieldValue}
-                handleColor={redemptionRisk && (
-                  redemptionRisk === "high"
-                    ? 0
-                    : redemptionRisk === "medium"
-                    ? 1
-                    : 2
-                )}
-              />
-            ))
-            .with("delegate", () => (
-              <TextButton
-                size="large"
-                title={delegate ?? undefined}
-                label={delegate
-                  ? (
-                    <div
-                      title={delegate}
-                      className={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        fontSize: 20,
-                      })}
-                    >
-                      <Image
-                        alt=""
-                        width={24}
-                        height={24}
-                        src={blo(delegate)}
-                        className={css({
-                          display: "block",
-                          borderRadius: 4,
-                        })}
-                      />
-                      {(() => {
-                        const displayName = delegateDisplayName || shortenAddress(delegate, 4).toLowerCase();
-                        return breakpoint === "small" && displayName.length > 16
-                          ? displayName.substring(0, 16) + "..."
-                          : displayName;
-                      })()}
-                    </div>
-                  )
-                  : "Choose delegate"}
-                onClick={() => {
-                  setDelegatePicker("delegate");
-                }}
-              />
-            ))
-            .exhaustive()}
-          label={{
-            start: (
+        <div
+          className={css({
+            display: "flex",
+            flexDirection: "column",
+          })}
+        >
+          <div
+            className={css({
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingBottom: 12,
+            })}
+          >
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+              })}
+            >
               <div
                 className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
+                  fontSize: 14,
+                  color: "contentAlt",
                 })}
               >
-                <div>Interest rate</div>
-                {averageInterestRate.data && SHOW_AVERAGE_BUTTON_MODES.includes(mode) && (
-                  <div>
-                    <TextButton
-                      size="small"
-                      title={`Set average interest rate (${
-                        fmtnum(averageInterestRate.data, {
-                          preset: "pct2z",
-                          suffix: "%",
-                        })
-                      })`}
-                      label={`(avg. ${
-                        fmtnum(averageInterestRate.data, {
-                          preset: "pct2z",
-                          suffix: "%",
-                        })
-                      })`}
-                      onClick={(event) => {
-                        if (averageInterestRate.data) {
-                          event.preventDefault();
-                          const rounded = dn.div(dn.round(dn.mul(averageInterestRate.data, 1e4)), 1e4);
-                          fieldValue.setValue(dn.toString(dn.mul(rounded, 100)));
-                        }
-                      }}
-                    />
-                  </div>
-                )}
+                {content.interestRateField.setInterestRate.label}
               </div>
-            ),
-            end: (
-              <div>
-                <Dropdown
-                  items={activeDelegateModes.map(
-                    (mode) => content.interestRateField.delegateModes[mode],
-                  )}
-                  menuWidth={300}
-                  menuPlacement="end"
-                  onSelect={(index) => {
-                    const mode = activeDelegateModes[index];
-                    if (mode) {
-                      onModeChange(mode);
-                    }
-                    onDelegateChange(null);
-                  }}
-                  selected={activeDelegateModes.findIndex((mode_) => mode_ === mode)}
-                  size="small"
-                />
-              </div>
-            ),
-          }}
-          placeholder="0.00"
-          secondary={{
-            start: (
-              <div
-                className={css({
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 4,
-                  minWidth: 120,
-                  userSelect: "none",
-                })}
-              >
+              {mode === "manual" && averageInterestRate.data && (
                 <div
                   className={css({
-                    minWidth: 0,
-                    flexShrink: 1,
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                    textOverflow: "ellipsis",
+                    fontSize: 14,
+                    color: "contentAlt",
                   })}
                 >
-                  {boldInterestPerYear && (mode === "manual" || delegate !== null)
-                    ? fmtnum(boldInterestPerYear, breakpoint === "small" ? "compact" : "2z")
-                    : "−"} BOLD / year
+                  <TextButton
+                    size="small"
+                    title={`Average interest rate: ${
+                      fmtnum(averageInterestRate.data, {
+                        preset: "pct2z",
+                        suffix: "%",
+                      })
+                    }`}
+                    label={`(avg. ${
+                      fmtnum(averageInterestRate.data, {
+                        preset: "pct2z",
+                        suffix: "%",
+                      })
+                    })`}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      if (averageInterestRate.data) {
+                        const rounded = roundTo4Decimals(averageInterestRate.data);
+                        manualFieldValue.setValue(dn.toString(dn.mul(rounded, 100)));
+                      }
+                    }}
+                  />
                 </div>
-                <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
-              </div>
-            ),
-            end: redeemableTransition((style, show) => (
-              show && (
-                <a.div
-                  title={`Redeemable before you: ${
-                    (mode === "manual" || delegate !== null)
-                      ? fmtnum(debtInFront?.debtInFront, "compact")
-                      : "−"
-                  } BOLD`}
-                  className={css({
-                    overflow: "hidden",
-                    whiteSpace: "nowrap",
-                    textOverflow: "ellipsis",
-                    userSelect: "none",
-                  })}
-                  style={style}
-                >
-                  <span>
-                    {breakpoint === "large" ? "Redeemable before you: " : "Red. before: "}
-                    <span
+              )}
+            </div>
+          </div>
+
+          <Tabs
+            items={DELEGATE_AUTO
+              ? [
+                {
+                  label: content.interestRateField.delegateModes.automatic.label,
+                  tabId: "interest-rate-tab-delegate",
+                  panelId: "interest-rate-panel-delegate",
+                },
+                {
+                  label: content.interestRateField.delegateModes.manual.label,
+                  tabId: "interest-rate-tab-manual",
+                  panelId: "interest-rate-panel-manual",
+                },
+              ]
+              : [
+                {
+                  label: content.interestRateField.delegateModes.manual.label,
+                  tabId: "interest-rate-tab-manual",
+                  panelId: "interest-rate-panel-manual",
+                },
+                {
+                  label: content.interestRateField.delegateModes.automatic.label,
+                  tabId: "interest-rate-tab-delegate",
+                  panelId: "interest-rate-panel-delegate",
+                },
+              ]}
+            selected={DELEGATE_AUTO
+              ? (mode === "manual" ? 1 : 0)
+              : (mode === "delegate" ? 1 : 0)}
+            onSelect={(index) => {
+              const selectedMode = DELEGATE_AUTO
+                ? (index === 0 ? "delegate" : "manual")
+                : (index === 0 ? "manual" : "delegate");
+              onModeChange(selectedMode);
+            }}
+          />
+
+          {(() => {
+              const sharedInputProps = {
+                id: inputId,
+                labelHeight: 32 as const,
+                labelSpacing: 24 as const,
+                placeholder: "0.00",
+              };
+
+              const debtInFrontFormatted = fmtnum(debtInFront?.debtInFront, "compact");
+              const secondaryInfo = {
+                start: null,
+                end: redeemableTransition((style, show) => (
+                  show && (
+                    <a.div
+                      title={`Redeemable before you: ${debtInFrontFormatted} BOLD`}
                       className={css({
-                        fontVariantNumeric: "tabular-nums",
+                        overflow: "hidden",
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis",
+                        userSelect: "none",
                       })}
+                      style={style}
                     >
-                      {(mode === "manual" || delegate !== null)
-                        ? fmtnum(debtInFront?.debtInFront, "compact")
-                        : "−"}
-                    </span>
-                    {breakpoint === "large" && <span>{" BOLD"}</span>}
-                  </span>
-                </a.div>
-              )
-            )),
-          }}
-          {...fieldValue.inputFieldProps}
-          value={
-            // no delegate selected yet
-            (mode !== "manual" && delegate === null)
-              ? ""
-              : fieldValue.value
-          }
-          valueUnfocused={
-            // delegate mode, but no delegate selected yet
-            (mode !== "manual" && delegate === null)
-              ? null
-              : <>{!fieldValue.isEmpty && fieldValue.parsed && interestRate}</>
-              ? (
+                      <span>
+                        {breakpoint === "large" ? "Redeemable before you: " : "Red. before: "}
+                        <span
+                          className={css({
+                            fontVariantNumeric: "tabular-nums",
+                          })}
+                        >
+                          {debtInFrontFormatted}
+                        </span>
+                        {breakpoint === "large" && <span>{" BOLD"}</span>}
+                      </span>
+                    </a.div>
+                  )
+                )),
+              };
+
+              const renderValueUnfocused = (showMiniChart: boolean, rate?: Dnum | null) => (
                 <span
                   style={{
                     display: "flex",
@@ -377,20 +336,17 @@ export const InterestRateField = memo(
                     gap: 8,
                   }}
                 >
-                  {delegate !== null && breakpoint === "large" && <MiniChart size="medium" />}
+                  {showMiniChart && breakpoint === "large" && <MiniChart size="medium" />}
                   <span
                     style={{
                       fontVariantNumeric: "tabular-nums",
                     }}
                   >
-                    {(mode === "manual" || delegate !== null) && fmtnum(
-                      interestRate,
-                      "pct2z",
-                    )}
+                    {fmtnum(rate ?? interestRate, "pct2z")}
                   </span>
                   <span
                     className={css({
-                      color: "#878AA4",
+                      color: "contentAlt",
                       fontSize: {
                         base: 20,
                         large: 24,
@@ -400,18 +356,197 @@ export const InterestRateField = memo(
                     %
                   </span>
                 </span>
-              )
-              : null
-          }
-        />
+              );
+
+              const { value: _manualValue, ...manualInputProps } = manualFieldValue.inputFieldProps;
+              const { value: _delegateValue, ...delegateInputProps } = fieldValue.inputFieldProps;
+              const delegateFee = delegateData.data?.fee ?? null;
+
+              return (
+                <div
+                  className={css({
+                    paddingTop: 16,
+                  })}
+                >
+                  {mode === "manual"
+                    ? (
+                      <InputField
+                        {...sharedInputProps}
+                        {...manualInputProps}
+                        label="Interest rate"
+                        contextual={
+                          <ManualInterestRateSlider
+                            interestChartData={interestChartData}
+                            interestRate={interestRate}
+                            fieldValue={manualFieldValue}
+                            handleColor={redemptionRisk && (
+                              redemptionRisk === "high"
+                                ? 0
+                                : redemptionRisk === "medium"
+                                ? 1
+                                : 2
+                            )}
+                          />
+                        }
+                        secondary={secondaryInfo}
+                        value={manualFieldValue.value}
+                        valueUnfocused={
+                          !manualFieldValue.isEmpty && manualFieldValue.parsed
+                            ? renderValueUnfocused(false, dn.div(manualFieldValue.parsed, 100))
+                            : null
+                        }
+                      />
+                    )
+                    : (
+                      <InputField
+                        {...sharedInputProps}
+                        {...delegateInputProps}
+                        label={
+                          <span
+                            className={css({
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 4,
+                            })}
+                          >
+                            Current interest rate
+                            <InfoTooltip
+                              content={{
+                                heading: "Interest rate delegation",
+                                body: content.interestRateField.delegateModes.automatic.secondary,
+                              }}
+                            />
+                          </span>
+                        }
+                        disabled
+                        contextual={
+                          delegate
+                            ? (
+                              <div
+                                className={css({
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "flex-end",
+                                  gap: 4,
+                                })}
+                              >
+                                <TextButton
+                                  size="large"
+                                  title={delegate}
+                                  label={
+                                    <div
+                                      className={css({
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 8,
+                                        fontSize: 20,
+                                      })}
+                                    >
+                                      <Image
+                                        alt=""
+                                        width={24}
+                                        height={24}
+                                        src={blo(delegate)}
+                                        className={css({
+                                          display: "block",
+                                          borderRadius: 4,
+                                        })}
+                                      />
+                                      {delegateStrategyName || shortenAddress(delegate, 4).toLowerCase()}
+                                    </div>
+                                  }
+                                  onClick={() => {
+                                    setDelegateInfoVisible(true);
+                                  }}
+                                />
+                                <div
+                                  className={css({
+                                    fontSize: 13,
+                                    color: "contentAlt",
+                                    whiteSpace: "nowrap",
+                                  })}
+                                >
+                                  {delegateGroupName ? `Managed by ${delegateGroupName}` : shortenAddress(delegate, 4).toLowerCase()}
+                                  {delegateFee
+                                    ? ` · Fees p.a. ${fmtnum(delegateFee, { digits: 4, scale: 100 })}%`
+                                    : null}
+                                </div>
+                              </div>
+                            )
+                            : (
+                              <TextButton
+                                size="large"
+                                label="Choose delegate"
+                                onClick={() => {
+                                  setDelegatePickerOpen(true);
+                                }}
+                              />
+                            )
+                        }
+                        secondary={{
+                          start: null,
+                          end: (
+                            <TextButton
+                              size="small"
+                              label="Choose other delegate"
+                              onClick={() => {
+                                setDelegatePickerOpen(true);
+                              }}
+                            />
+                          ),
+                        }}
+                        value={delegate === null ? "" : fieldValue.value}
+                        valueUnfocused={
+                          delegate === null
+                            ? null
+                            : !fieldValue.isEmpty && fieldValue.parsed && interestRate
+                            ? renderValueUnfocused(true)
+                            : null
+                        }
+                      />
+                    )}
+                </div>
+              );
+            })()}
+        </div>
+
         <DelegateModal
           branchId={branchId}
           onClose={() => {
-            setDelegatePicker(null);
+            setDelegatePickerOpen(false);
           }}
           onSelectDelegate={handleDelegateSelect}
-          visible={delegatePicker === "delegate"}
+          visible={isDelegatePickerOpen}
         />
+
+        {delegateData.data && (
+          <Modal
+            title="Selected delegate"
+            onClose={() => setDelegateInfoVisible(false)}
+            visible={delegateInfoVisible}
+          >
+            <div
+              className={css({
+                paddingTop: 16,
+                minWidth: {
+                  base: 0,
+                  medium: 486,
+                },
+              })}
+            >
+              <DelegateBox
+                branchId={branchId}
+                delegate={{
+                  ...delegateData.data,
+                  name: delegateDisplayName || delegateData.data.name,
+                }}
+                url={knownDelegates.data?.find(
+                  (group) => group.name === delegateGroupName,
+                )?.url}
+              />
+            </div>
+          </Modal>
+        )}
       </>
     );
   },

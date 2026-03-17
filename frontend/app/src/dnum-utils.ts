@@ -42,6 +42,10 @@ export function dnumNeg(value: Dnum): Dnum {
   return [-value[0], value[1]];
 }
 
+export function roundTo4Decimals(value: Dnum): Dnum {
+  return dn.div(dn.round(dn.mul(value, 1e4)), 1e4);
+}
+
 export const jsonStringifyWithDnum: typeof JSON.stringify = (data, replacer, space) => {
   return JSON.stringify(
     data,

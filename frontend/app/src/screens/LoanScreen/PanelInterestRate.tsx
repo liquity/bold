@@ -1,4 +1,3 @@
-import type { DelegateMode } from "@/src/comps/InterestRateField/InterestRateField";
 import type { BranchId, PositionLoanCommitted, TroveId } from "@/src/types";
 
 import { ARROW_RIGHT, NBSP } from "@/src/characters";
@@ -6,6 +5,8 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { Field } from "@/src/comps/Field/Field";
 import { FlowButton } from "@/src/comps/FlowButton/FlowButton";
 import { InterestRateField } from "@/src/comps/InterestRateField/InterestRateField";
+import type { DelegateMode } from "@/src/liquity-delegate";
+import { getDefaultDelegate, getDefaultDelegateMode } from "@/src/liquity-delegate";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { UpdateBox } from "@/src/comps/UpdateBox/UpdateBox";
 import { WarningBox } from "@/src/comps/WarningBox/WarningBox";
@@ -18,12 +19,13 @@ import { getLoanDetails } from "@/src/liquity-math";
 import {
   getCollToken,
   useBranchCollateralRatios,
+  useInterestBatchDelegate,
   useRedemptionRiskOfInterestRate,
   useRedemptionRiskOfLoan,
   useTroveRateUpdateCooldown,
 } from "@/src/liquity-utils";
 import { usePrice } from "@/src/services/Prices";
-import { infoTooltipProps, riskLevelToStatusMode } from "@/src/uikit-utils";
+import { riskLevelToStatusMode } from "@/src/uikit-utils";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
 import { addressesEqual, Checkbox, HFlex, IconExternal, IconSuggestion, InfoTooltip, StatusDot } from "@liquity2/uikit";
@@ -51,12 +53,10 @@ export function PanelInterestRate({
 
   const [interestRate, setInterestRate] = useState(loan.interestRate);
   const [interestRateMode, setInterestRateMode] = useState<DelegateMode>(
-    loan.batchManager
-      ? "delegate"
-      : "manual",
+    getDefaultDelegateMode(loan.batchManager),
   );
   const [interestRateDelegate, setInterestRateDelegate] = useState(
-    loan.batchManager,
+    getDefaultDelegate(loan.batchManager),
   );
 
   const [agreeToLiquidationRisk, setAgreeToLiquidationRisk] = useState(false);
@@ -90,13 +90,14 @@ export function PanelInterestRate({
     setAgreeToLiquidationRisk(false);
   }, [newLoanDetails.status]);
 
-  const boldInterestPerYear = interestRate
-    && debt.parsed
-    && dn.mul(debt.parsed, interestRate);
-
-  const boldInterestPerYearPrev = loan.interestRate
-    && loan.borrowed
-    && dn.mul(loan.borrowed, loan.interestRate);
+  const currentDelegateData = useInterestBatchDelegate(
+    loan.branchId,
+    loan.batchManager,
+  );
+  const newDelegateData = useInterestBatchDelegate(
+    loan.branchId,
+    interestRateMode === "delegate" ? interestRateDelegate : null,
+  );
 
   const isCcrConditionsNotMet = collateralRatios.data?.tcr
     && collateralRatios.data?.ccr
@@ -130,7 +131,6 @@ export function PanelInterestRate({
           <InterestRateField
             inputId="input-interest-rate"
             branchId={loan.branchId}
-            debt={debt.parsed}
             delegate={interestRateDelegate}
             interestRate={interestRate}
             mode={interestRateMode}
@@ -248,14 +248,13 @@ export function PanelInterestRate({
                 : "N/A",
             },
             {
-              label: (
-                <>
-                  <div>BOLD interest per year</div>
-                  <InfoTooltip {...infoTooltipProps(content.generalInfotooltips.interestRateBoldPerYear)} />
-                </>
-              ),
-              before: <Amount value={boldInterestPerYearPrev} suffix=" BOLD" />,
-              after: <Amount value={boldInterestPerYear} suffix=" BOLD" />,
+              label: <div>Fees <abbr title="per annum">p.a.</abbr></div>,
+              before: currentDelegateData.data?.fee
+                ? <Amount value={currentDelegateData.data.fee} percentage />
+                : "−",
+              after: interestRateMode === "delegate" && newDelegateData.data?.fee
+                ? <Amount value={newDelegateData.data.fee} percentage />
+                : "−",
             },
           ]}
         />

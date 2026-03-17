@@ -19,8 +19,8 @@ export function DelegateBox({
 }: {
   branchId: BranchId;
   delegate: Delegate;
-  onSelect: (delegate: Delegate) => void;
-  selectLabel: string;
+  onSelect?: (delegate: Delegate) => void;
+  selectLabel?: string;
   url?: string;
 }) {
   // TODO further improve risk calculation by getting the bottom Trove within the batch (if any)
@@ -192,7 +192,7 @@ export function DelegateBox({
         <div
           className={css({
             display: "flex",
-            justifyContent: "space-between",
+            justifyContent: onSelect ? "space-between" : "flex-start",
             width: "100%",
             paddingTop: 16,
             paddingBottom: 8,
@@ -220,16 +220,18 @@ export function DelegateBox({
               }}
             />
           </div>
-          <div>
-            <Button
-              label={selectLabel}
-              mode="primary"
-              size="small"
-              onClick={() => {
-                onSelect(delegate);
-              }}
-            />
-          </div>
+          {onSelect && (
+            <div>
+              <Button
+                label={selectLabel ?? "Select"}
+                mode="primary"
+                size="small"
+                onClick={() => {
+                  onSelect(delegate);
+                }}
+              />
+            </div>
+          )}
         </div>
       </section>
     </ShadowBox>
