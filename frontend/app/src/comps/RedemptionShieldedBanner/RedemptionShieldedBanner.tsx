@@ -58,6 +58,9 @@ export function RedemptionShieldedBanner({
           "& strong, & a": {
             color: "positive",
           },
+          "& a": {
+            textDecoration: "underline",
+          },
         })}
       >
         <strong>
