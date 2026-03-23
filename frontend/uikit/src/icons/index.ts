@@ -25,6 +25,7 @@ export { IconNft } from "./IconNft";
 export { IconPlus } from "./IconPlus";
 export { IconSearch } from "./IconSearch";
 export { IconSettings } from "./IconSettings";
+export { IconShieldCheck } from "./IconShieldCheck";
 export { IconStake } from "./IconStake";
 export { IconSuggestion } from "./IconSuggestion";
 export { IconUpvote } from "./IconUpvote";

@@ -875,6 +875,49 @@ export function useBranchDebt(branchId: BranchId) {
   });
 }
 
+function getRedemptionShieldedContractCalls(branchId: BranchId) {
+  const BorrowerOperations = getBranchContract(branchId, "BorrowerOperations");
+  const StabilityPool = getBranchContract(branchId, "StabilityPool");
+  return [{
+    ...BorrowerOperations,
+    functionName: "getEntireBranchDebt",
+  }, {
+    ...StabilityPool,
+    functionName: "getTotalBoldDeposits",
+  }] as const;
+}
+
+export function useBranchesRedemptionShielded() {
+  const wagmiConfig = useWagmiConfig();
+  const branches = getBranches();
+  const contractCallsPerBranch = branches.map((branch) => getRedemptionShieldedContractCalls(branch.id));
+  const callsPerBranch = contractCallsPerBranch[0]!.length;
+
+  return useQuery({
+    queryKey: ["branchesRedemptionShielded", branches.map((b) => b.id)],
+    queryFn: async () => {
+      const results = await readContracts(wagmiConfig, {
+        contracts: contractCallsPerBranch.flat(),
+        allowFailure: false,
+      });
+
+      return branches.map((branch, index) => {
+        const base = index * callsPerBranch;
+        const branchDebt = results[base] as bigint;
+        const spDeposits = results[base + 1] as bigint;
+        return {
+          branchId: branch.id,
+          symbol: branch.symbol,
+          branchDebt: dnum18(branchDebt),
+          spDeposits: dnum18(spDeposits),
+          isShielded: spDeposits >= branchDebt,
+        };
+      });
+    },
+    refetchInterval: 60_000,
+  });
+}
+
 function calcCollateralRatios(
   totalColl: bigint,
   totalDebt: bigint,

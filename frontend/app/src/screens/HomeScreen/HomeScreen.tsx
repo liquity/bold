@@ -7,6 +7,7 @@ import { useBreakpoint } from "@/src/breakpoints";
 import { Amount } from "@/src/comps/Amount/Amount";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Positions } from "@/src/comps/Positions/Positions";
+import { RedemptionShieldedBanner } from "@/src/comps/RedemptionShieldedBanner/RedemptionShieldedBanner";
 import { FORKS_INFO } from "@/src/constants";
 import content from "@/src/content";
 import { DNUM_1 } from "@/src/dnum-utils";
@@ -18,7 +19,7 @@ import {
   getTokenDisplayName,
   useAirdropVaults,
   useAverageInterestRate,
-  useBranchDebt,
+  useBranchesRedemptionShielded,
   useEarnPool,
   useLiquityStats,
 } from "@/src/liquity-utils";
@@ -26,7 +27,7 @@ import { isSboldEnabled } from "@/src/sbold";
 import { useAccount } from "@/src/wagmi-utils";
 import { isYboldEnabled } from "@/src/ybold";
 import { css } from "@/styled-system/css";
-import { IconBorrow, IconEarn, TokenIcon } from "@liquity2/uikit";
+import { IconBorrow, IconEarn, IconShieldCheck, TokenIcon } from "@liquity2/uikit";
 import * as dn from "dnum";
 import Image from "next/image";
 import { useMemo, useState } from "react";
@@ -92,6 +93,9 @@ function BorrowTable({
 }: {
   compact: boolean;
 }) {
+  const redemptionShielded = useBranchesRedemptionShielded();
+  const shieldedBranches = redemptionShielded.data?.filter((b) => b.isShielded) ?? [];
+
   const columns: ReactNode[] = [
     "Collateral",
     <span
@@ -125,7 +129,19 @@ function BorrowTable({
         subtitle="You can adjust your loans, including your interest rate, at any time"
         icon={<IconBorrow />}
         columns={columns}
-        rows={getBranches().map(({ symbol }) => <BorrowingRow key={symbol} compact={compact} symbol={symbol} />)}
+        banner={shieldedBranches.length > 0 && <RedemptionShieldedBanner compact={compact} shieldedBranches={shieldedBranches} />}
+        rows={getBranches().map(({ symbol }) => {
+          const branch = redemptionShielded.data?.find((b) => b.symbol === symbol);
+          return (
+            <BorrowingRow
+              key={symbol}
+              compact={compact}
+              symbol={symbol}
+              isShielded={branch?.isShielded ?? false}
+              branchDebt={branch?.branchDebt ?? null}
+            />
+          );
+        })}
       />
     </div>
   );
@@ -374,14 +390,17 @@ function ForksInfoDrawer() {
 function BorrowingRow({
   compact,
   symbol,
+  isShielded,
+  branchDebt,
 }: {
   compact: boolean;
   symbol: CollateralSymbol;
+  isShielded: boolean;
+  branchDebt: dn.Dnum | null;
 }) {
   const branch = getBranch(symbol);
   const collateral = getCollToken(branch.id);
   const avgInterestRate = useAverageInterestRate(branch.id);
-  const branchDebt = useBranchDebt(branch.id);
 
   const maxLtv = collateral?.collateralRatio && dn.gt(collateral.collateralRatio, 0)
     ? dn.div(DNUM_1, collateral.collateralRatio)
@@ -399,6 +418,22 @@ function BorrowingRow({
         >
           <TokenIcon symbol={symbol} size="mini" />
           <span>{collateral?.name}</span>
+          {isShielded && (
+            <div
+              className={css({
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                fontSize: 12,
+                fontWeight: 500,
+                lineHeight: 1,
+                color: "positive",
+              })}
+            >
+              <IconShieldCheck size={14} />
+              {content.home.redemptionShieldBanner.badgeLabel}
+            </div>
+          )}
         </div>
       </td>
       <td>
@@ -419,7 +454,7 @@ function BorrowingRow({
           format="compact"
           prefix="$"
           fallback="…"
-          value={branchDebt.data}
+          value={branchDebt}
         />
       </td>
       {!compact && (
