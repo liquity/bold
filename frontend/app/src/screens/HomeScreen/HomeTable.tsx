@@ -4,6 +4,7 @@ import { css } from "@/styled-system/css";
 import { Fragment } from "react";
 
 type HomeTableProps<Cols extends readonly ReactNode[]> = {
+  banner?: ReactNode;
   columns: Cols;
   icon?: ReactNode;
   loading?: ReactNode;
@@ -14,6 +15,7 @@ type HomeTableProps<Cols extends readonly ReactNode[]> = {
 };
 
 export function HomeTable<Cols extends readonly ReactNode[]>({
+  banner,
   columns,
   icon,
   loading,
@@ -84,6 +86,7 @@ export function HomeTable<Cols extends readonly ReactNode[]>({
           {subtitle}
         </div>}
       </header>
+      {banner}
       {loading
         ? (
           <div
