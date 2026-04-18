@@ -21,7 +21,6 @@ export function EcosystemScreen() {
     "weeth",
     "arb",
     "comp",
-    "rseth",
     "liquity",
     "summerstone",
     "octane",

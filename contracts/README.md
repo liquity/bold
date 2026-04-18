@@ -80,26 +80,6 @@ Initially, Governance is also set as the InterestRouter. This will be updated in
 | GasCompZapper | `0x9ccfad2b90672f4d80451d56e2afe5884b36354e` |
 | LeverageZapper | `0x19a9eb1f9c5ef7db9b5583b744d30a62a9da3eed` |
 
-### rsETH Branch Contracts
-
-| Contract Name | Address on Arbitrum |
-|---------------|---------------------|
-| AddressesRegistry | `0xcbf5786902487c1165a98f48ebc65fa0e62739c6` |
-| BorrowerOperations | `0xa5556bcefaa317776fa62fcc30e37502a0f95e30` |
-| TroveManager | `0x8d7b268cc6d33b460428d8e938de26573596bc85` |
-| StabilityPool | `0xafb439c47b3f518a7d8ef3b82f70df30d84e51ee` |
-| ActivePool | `0x268dc0089d71a89800f3f4aaa3f9a7f0a950c7a7` |
-| DefaultPool | `0x5c206487fd6134bf44ef7ebdf25168cb698e4fd6` |
-| CollSurplusPool | `0x957c96eeaa2f1a707e7bef738bd227a4aae6f59d` |
-| SortedTroves | `0xf139a3aff6e42b43614e039cae684ae25d05fd1e` |
-| TroveNFT | `0x2058af96a94b55db19764f564ebac27f6d17a48f` |
-| MetadataNFT | `0x078d56a64ff3c92f999792e56ed74305a90ad097` |
-| PriceFeed | `0x95e9327e6abf146570cd24402bdbcb56a9a5ba8a` |
-| GasPool | `0x7d86a1487341440e3b8d5b286c3b659232933ff4` |
-| InterestRouter | `0x108f48e558078c8ef2eb428e0774d7ecd01f6b1d` |
-| GasCompZapper | `0x5a6fbd7bb05dbec02d8cd4214ecc48ea1c91cbce` |
-| LeverageZapper | `0x01e3c5831fbd3fc00ff58c7c14daea46183f8a34` |
-
 ### weETH Branch Contracts
 
 | Contract Name | Address on Arbitrum |
@@ -187,7 +167,6 @@ Initially, Governance is also set as the InterestRouter. This will be updated in
 | Wrapped Ether | WETH | `0x82af49447d8a07e3bd95bd0d56f35241523fbab1` |
 | Wrapped Staked ETH | wstETH | `0x5979d7b546e38e414f7e9822514be443a4800529` |
 | Rocket Pool ETH | rETH | `0xec70dcb4a1efa46b8f2d97c310c9c4790ba5ffa8` |
-| Kelp DAO Restaked ETH | rsETH | `0x4186bfc76e2e237523cbc30fd220fe055156b41f` |
 | Wrapped Etherfi Staked ETH | weETH | `0x35751007a407ca6feffe80b3cb397736d2cf4dbe` |
 | Arbitrum | ARB | `0x912ce59144191c1204e64559fe8253a0e49e6548` |
 | Compound | COMP | `0x354a6da3fcde098f8389cad84b0182725c6c91de` |

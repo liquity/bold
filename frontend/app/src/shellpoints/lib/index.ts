@@ -1,5 +1,6 @@
 // import { getTokenHolders } from "./tokenholders"
 import { CONTRACT_ADDRESSES } from "@/src/contracts"
+import { isVisibleCollateralSymbol } from "@/src/collateral-visibility"
 import { Address, getAddress, isAddressEqual } from "viem"
 import { getGoSlowNftHolders } from "./go-slow-nft"
 // import { getTrovesAndOwners } from "./troves"
@@ -26,7 +27,9 @@ export async function queryShellpointsAndActivity() {
   const shellRecipients = getRecipientsFromAssetTransfers(shellTransfers)[addresses.shellPoints] ?? []
   const deposits = await getAssetTransfers({
     tokenAddresses: [addresses.usnd],
-    toAddresses: CONTRACT_ADDRESSES.collaterals.map(coll => coll.contracts.StabilityPool),
+    toAddresses: CONTRACT_ADDRESSES.collaterals
+      .filter(coll => isVisibleCollateralSymbol(coll.symbol))
+      .map(coll => coll.contracts.StabilityPool),
     fromAddresses: shellRecipients.map(recipient => recipient.to),
   })
   const depositors = getStabilityPoolDepositsFromAssetTransfers(deposits)

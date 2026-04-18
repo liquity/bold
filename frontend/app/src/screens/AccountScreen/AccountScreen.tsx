@@ -4,11 +4,11 @@ import type { Address, TokenSymbol } from "@/src/types";
 import type { ReactNode } from "react";
 
 import { ERC20Faucet } from "@/src/abi/ERC20Faucet";
+import { getVisibleContractCollaterals } from "@/src/collateral-visibility";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { Screen } from "@/src/comps/Screen/Screen";
 import {
   getCollateralContract,
-  getContracts,
   getProtocolContract,
 } from "@/src/contracts";
 import { CHAIN_ID } from "@/src/env";
@@ -30,7 +30,7 @@ import { useWriteContract } from "wagmi";
 
 export function AccountScreen({ address }: { address: Address }) {
   const account = useAccount();
-  const collSymbols = getContracts().collaterals.map((coll) => coll.symbol);
+  const collSymbols = getVisibleContractCollaterals().map((coll) => coll.symbol);
   const tapEnabled = CHAIN_ID !== 1;
   return (
     <Screen>

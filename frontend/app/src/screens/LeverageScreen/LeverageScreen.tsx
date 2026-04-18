@@ -21,6 +21,7 @@ import {
   MAX_COLLATERAL_DEPOSITS,
   MIN_DEBT,
 } from "@/src/constants";
+import { isVisibleCollateralSymbol } from "@/src/collateral-visibility";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
 import { dnum18, dnumMax } from "@/src/dnum-utils";
@@ -50,22 +51,29 @@ import {
   VFlex,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useParams, useRouter } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
+const VISIBLE_COLL_TOKENS = COLL_TOKENS.filter(({ symbol }) => (
+  isVisibleCollateralSymbol(symbol)
+));
 
 export function LeverageScreen() {
   const router = useRouter();
   const account = useAccount();
   const txFlow = useTransactionFlow();
   const contracts = getContracts();
+  const visibleContractCollaterals = contracts.collaterals.filter(({ symbol }) => (
+    isVisibleCollateralSymbol(symbol)
+  ));
 
   // useParams() can return an array but not with the current
   // routing setup, so we can safely cast it to a string
   const collSymbol = String(
-    useParams().collateral ?? contracts.collaterals[0]?.symbol ?? ""
+    useParams().collateral ?? visibleContractCollaterals[0]?.symbol ?? ""
   ).toUpperCase();
-  if (!isCollateralSymbol(collSymbol)) {
-    throw new Error(`Invalid collateral symbol: ${collSymbol}`);
+  if (!isCollateralSymbol(collSymbol) || !isVisibleCollateralSymbol(collSymbol)) {
+    notFound();
   }
 
   const collIndex = getCollIndexFromSymbol(collSymbol);
@@ -73,15 +81,19 @@ export function LeverageScreen() {
     throw new Error(`Unknown collateral symbol: ${collSymbol}`);
   }
 
-  const collateralTokens = contracts.collaterals.map(({ symbol }) => {
-    const collateral = COLL_TOKENS.find((c) => c.symbol === symbol);
+  const collateralTokens = visibleContractCollaterals.map(({ symbol }) => {
+    const collateral = VISIBLE_COLL_TOKENS.find((c) => c.symbol === symbol);
     if (!collateral) {
       throw new Error(`Unknown collateral symbol: ${symbol}`);
     }
     return collateral;
   });
+  const selectedCollateralIndex = collateralTokens.findIndex(({ symbol }) => symbol === collSymbol);
+  if (selectedCollateralIndex === -1) {
+    throw new Error(`Unknown collateral symbol: ${collSymbol}`);
+  }
 
-  const collToken = collateralTokens[collIndex];
+  const collToken = collateralTokens[selectedCollateralIndex];
   if (!collToken) {
     throw new Error(`Unknown collateral index: ${collIndex}`);
   }
@@ -202,7 +214,7 @@ export function LeverageScreen() {
           <HFlex>
             {content.leverageScreen.headline(
               <TokenIcon.Group>
-                {contracts.collaterals.map(({ symbol }) => (
+                {visibleContractCollaterals.map(({ symbol }) => (
                   <TokenIcon key={symbol} symbol={symbol} />
                 ))}
               </TokenIcon.Group>
@@ -248,7 +260,7 @@ export function LeverageScreen() {
                       scroll: false,
                     });
                   }}
-                  selected={collIndex}
+                  selected={selectedCollateralIndex}
                 />
               }
               label={content.leverageScreen.depositField.label}

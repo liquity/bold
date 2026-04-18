@@ -2,6 +2,7 @@ import type { Address, CollIndex, Position, PositionLoanUncommitted } from "@/sr
 import type { ReactNode } from "react";
 
 import { ActionCard } from "@/src/comps/ActionCard/ActionCard";
+import { isVisibleCollIndex } from "@/src/collateral-visibility";
 import content from "@/src/content";
 import { ACCOUNT_POSITIONS } from "@/src/demo-mode";
 import { DEMO_MODE } from "@/src/env";
@@ -66,10 +67,14 @@ export function Positions({
   const positions = isPositionsPending
     ? []
     : DEMO_MODE
-    ? ACCOUNT_POSITIONS
+    ? ACCOUNT_POSITIONS.filter(position => (
+        position.type !== "earn" || isVisibleCollIndex(position.collIndex)
+      ))
     : [
         ...(loans.data ?? []),
-        ...(earnPositions.data?.filter(pos => pos.collIndex !== null)
+        ...(earnPositions.data?.filter(pos => (
+          pos.collIndex !== null && isVisibleCollIndex(pos.collIndex)
+        ))
           .map(pos => ({
             ...pos,
             collIndex: pos.collIndex!

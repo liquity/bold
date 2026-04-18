@@ -1,4 +1,5 @@
 import { DATA_REFRESH_INTERVAL } from "@/src/constants";
+import { isVisibleCollateralSymbol } from "@/src/collateral-visibility";
 import { useLiquityStats } from "@/src/liquity-utils";
 import { useTroveCount } from "@/src/subgraph-hooks";
 import { DEMO_MODE, CHAIN_ID, CONTRACT_YUSND } from "@/src/env";
@@ -15,6 +16,12 @@ import { useAccount } from "@/src/services/Arbitrum";
 const ARBITRUM_CHAIN_ID = 42161;
 const GO_SLOW_NFT_CONTRACT_ADDRESS = "0x6da3c02293c96dfa5747b1739ebb492619222a8a";
 const YUSND_ADDED_KEY = 'yusnd_added_to_wallet';
+
+function getVisibleStatsBranches<T>(branches: Record<string, T>) {
+  return Object.entries(branches)
+    .filter(([symbol]) => isVisibleCollateralSymbol(symbol as CollateralSymbol))
+    .map(([, branch]) => branch);
+}
 
 // DefiLlama API schema for TVL data
 // const DefiLlamaSchema = v.object({
@@ -37,7 +44,7 @@ export function useStabilityPoolAPR() {
   let totalTvl: dn.Dnum = dn.from(0, 18);
   let weightedAprSum: dn.Dnum = dn.from(0, 18);
 
-  for (const branch of Object.values(stats.data.branch)) {
+  for (const branch of getVisibleStatsBranches(stats.data.branch)) {
     const aprValue = branch.spApyAvg7d;
     const branchTvl = branch.valueLocked;
     
@@ -66,7 +73,7 @@ export function useStabilityPoolWeights() {
     };
   }
 
-  const weights = Object.values(stats.data.branch).map((branch) => {
+  const weights = getVisibleStatsBranches(stats.data.branch).map((branch) => {
     return dn.mul(dn.div(branch.spDeposits ?? 0, branch.valueLocked ?? 0), 100_00);
   });
 
@@ -270,6 +277,12 @@ export function useLandingPageStats() {
   // const vaultCount = useVaultCount();
   const goSlowNFTCount = useGoSlowNFTCount();
   const yusndStatus = useYusndWalletStatus();
+  const visibleTvl = stats.data?.branch
+    ? getVisibleStatsBranches(stats.data.branch).reduce(
+      (total, branch) => dn.add(total, branch.valueLocked ?? 0),
+      dn.from(0, 18),
+    )
+    : stats.data?.totalValueLocked;
 
   // In demo mode, ignore certain errors since we use mock data
   const relevantError = DEMO_MODE 
@@ -283,7 +296,7 @@ export function useLandingPageStats() {
   return {
     stabilityPoolAPR: stabilityPoolAPR.data,
     // tvl: defiLlamaTVL.data?.tvl,
-    tvl: stats.data?.totalValueLocked,
+    tvl: visibleTvl,
     // vaultCount: vaultCount.data,
     goSlowNFTCount: goSlowNFTCount.data,
     isLoading: stabilityPoolAPR.isLoading || goSlowNFTCount.isLoading,

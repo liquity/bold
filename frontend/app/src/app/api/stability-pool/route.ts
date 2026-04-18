@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAssetTransfers, getStabilityPoolDepositsFromAssetTransfersStringified, getYUSNDDepositsFromAssetTransfersStringified } from '@/src/shellpoints/lib/tokenholders';
 import { CONTRACT_ADDRESSES } from '@/src/contracts';
+import { isVisibleCollateralSymbol } from '@/src/collateral-visibility';
 import { Address } from 'viem';
 
 
@@ -9,7 +10,9 @@ export async function POST(req: NextRequest) {
     const { addresses } = await req.json() as { addresses: Address[] | undefined };
     const deposits = await getAssetTransfers({
       tokenAddresses: [CONTRACT_ADDRESSES.BoldToken],
-      toAddresses: CONTRACT_ADDRESSES.collaterals.map(coll => coll.contracts.StabilityPool),
+      toAddresses: CONTRACT_ADDRESSES.collaterals
+        .filter(coll => isVisibleCollateralSymbol(coll.symbol))
+        .map(coll => coll.contracts.StabilityPool),
       fromAddresses: addresses,
     })
     const yusndDeposits = await getAssetTransfers({

@@ -15,6 +15,7 @@ import type { UseQueryResult } from "@tanstack/react-query";
 import type { Config as WagmiConfig } from "wagmi";
 
 import { DATA_REFRESH_INTERVAL, INTEREST_RATE_INCREMENT, INTEREST_RATE_MAX, INTEREST_RATE_MIN } from "@/src/constants";
+import { isVisibleCollateralSymbol } from "@/src/collateral-visibility";
 import { getCollateralContract, getCollateralContracts, getContracts, getProtocolContract } from "@/src/contracts";
 import { dnum18, dnumOrNull, jsonStringifyWithDnum } from "@/src/dnum-utils";
 import { CHAIN_BLOCK_EXPLORER, COLLATERAL_CONTRACTS, LIQUITY_STATS_URL } from "@/src/env";
@@ -331,7 +332,9 @@ export function useEarnPositionsByAccount(account: null | Address) {
         return null;
       }
 
-      const branches = COLLATERAL_CONTRACTS;
+      const branches = COLLATERAL_CONTRACTS.filter(({ symbol }) => (
+        isVisibleCollateralSymbol(symbol)
+      ));
 
       const depositsPerBranch = await Promise.all(
         branches.map(async (branch) => {

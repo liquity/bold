@@ -20,6 +20,7 @@ import {
   MIN_ANNUAL_INTEREST_RATE,
   MIN_DEBT,
 } from "@/src/constants";
+import { isVisibleCollateralSymbol } from "@/src/collateral-visibility";
 import content from "@/src/content";
 import { getContracts } from "@/src/contracts";
 import { dnum18, dnumMax } from "@/src/dnum-utils";
@@ -47,11 +48,14 @@ import {
   TokenIcon,
 } from "@liquity2/uikit";
 import * as dn from "dnum";
-import { useParams, useRouter } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { maxUint256 } from "viem";
 
-const KNOWN_COLLATERAL_SYMBOLS = KNOWN_COLLATERALS.map(({ symbol }) => symbol);
+const VISIBLE_KNOWN_COLLATERALS = KNOWN_COLLATERALS.filter(({ symbol }) => (
+  isVisibleCollateralSymbol(symbol)
+));
+const VISIBLE_KNOWN_COLLATERAL_SYMBOLS = VISIBLE_KNOWN_COLLATERALS.map(({ symbol }) => symbol);
 
 export function BorrowScreen() {
   const router = useRouter();
@@ -59,14 +63,17 @@ export function BorrowScreen() {
   const account = useAccount();
   const txFlow = useTransactionFlow();
   const contracts = getContracts();
+  const visibleContractCollaterals = contracts.collaterals.filter(({ symbol }) => (
+    isVisibleCollateralSymbol(symbol)
+  ));
 
   // useParams() can return an array but not with the current
   // routing setup, so we can safely cast it to a string
   const collSymbol = String(
-    useParams().collateral ?? contracts.collaterals[0]?.symbol ?? ""
+    useParams().collateral ?? visibleContractCollaterals[0]?.symbol ?? ""
   ).toUpperCase();
-  if (!isCollateralSymbol(collSymbol)) {
-    throw new Error(`Invalid collateral symbol: ${collSymbol}`);
+  if (!isCollateralSymbol(collSymbol) || !isVisibleCollateralSymbol(collSymbol)) {
+    notFound();
   }
 
   const collIndex = contracts.collaterals.findIndex(
@@ -76,15 +83,19 @@ export function BorrowScreen() {
     throw new Error(`Unknown collateral symbol: ${collSymbol}`);
   }
 
-  const collaterals = contracts.collaterals.map(({ symbol }) => {
+  const collaterals = visibleContractCollaterals.map(({ symbol }) => {
     const collateral = KNOWN_COLLATERALS.find((c) => c.symbol === symbol);
     if (!collateral) {
       throw new Error(`Unknown collateral symbol: ${symbol}`);
     }
     return collateral;
   });
+  const selectedCollateralIndex = collaterals.findIndex(({ symbol }) => symbol === collSymbol);
+  if (selectedCollateralIndex === -1) {
+    throw new Error(`Unknown collateral symbol: ${collSymbol}`);
+  }
 
-  const collateral = collaterals[collIndex];
+  const collateral = collaterals[selectedCollateralIndex];
   if (!collateral) {
     throw new Error(`Unknown collateral index: ${collIndex}`);
   }
@@ -129,7 +140,7 @@ export function BorrowScreen() {
   const collPrice = usePrice(collateral.symbol);
 
   const balances = Object.fromEntries(
-    KNOWN_COLLATERAL_SYMBOLS.map(
+    VISIBLE_KNOWN_COLLATERAL_SYMBOLS.map(
       (symbol) =>
         [
           symbol,
@@ -251,7 +262,7 @@ export function BorrowScreen() {
             <HFlex>
               {content.borrowScreen.headline(
               <TokenIcon.Group>
-                {contracts.collaterals.map(({ symbol }) => (
+                {visibleContractCollaterals.map(({ symbol }) => (
                   <TokenIcon key={symbol} symbol={symbol} />
                 ))}
               </TokenIcon.Group>,
@@ -296,7 +307,7 @@ export function BorrowScreen() {
                       scroll: false,
                     });
                   }}
-                  selected={collIndex}
+                  selected={selectedCollateralIndex}
                 />
               }
               label='Collateral'

@@ -25,7 +25,7 @@ cp .env.example .env.local
 
 The `.env.example` file contains all necessary environment variables pre-configured for Arbitrum mainnet, including:
 - Chain configuration (Arbitrum One)
-- Contract addresses for all 8 collateral branches (ETH, WSTETH, RETH, RSETH, WEETH, ARB, COMP, TBTC)
+- Contract addresses for collateral branches (ETH, WSTETH, RETH, WEETH, ARB, COMP, TBTC)
 - Shared protocol contracts (USND token, CollateralRegistry, etc.)
 
 **Required variables you need to add:**

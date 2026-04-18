@@ -4,9 +4,9 @@ import type { CollIndex } from "@/src/types";
 
 import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositionSummary";
 import { YusndPositionSummary } from "@/src/comps/EarnPositionSummary/YusndPositionSummary";
+import { getVisibleContractCollaterals } from "@/src/collateral-visibility";
 import { Screen } from "@/src/comps/Screen/Screen";
 import content from "@/src/content";
-import { getContracts } from "@/src/contracts";
 import { useEarnPosition } from "@/src/liquity-utils";
 import { useAccount } from "@/src/services/Arbitrum";
 import { css } from "@/styled-system/css";
@@ -21,7 +21,7 @@ import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 type PoolId = CollIndex | "yusnd";
 
 export function EarnPoolsListScreen() {
-  const { collaterals } = getContracts();
+  const collaterals = getVisibleContractCollaterals();
   const bpName = useBreakpointName();
 
   let pools: PoolId[] = collaterals.map((c) => c.collIndex);

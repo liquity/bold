@@ -3,7 +3,6 @@ export function generateStaticParams() {
     { pool: "eth" },
     { pool: "wsteth" },
     { pool: "reth" },
-    { pool: "rseth" },
     { pool: "weeth" },
     { pool: "arb" },
     { pool: "comp" },

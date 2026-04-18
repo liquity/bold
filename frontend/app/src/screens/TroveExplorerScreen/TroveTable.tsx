@@ -23,7 +23,6 @@ function useAllPrices() {
   const eth = usePrice("ETH");
   const wsteth = usePrice("WSTETH");
   const reth = usePrice("RETH");
-  const rseth = usePrice("RSETH");
   const weeth = usePrice("WEETH");
   const arb = usePrice("ARB");
   const comp = usePrice("COMP");
@@ -32,14 +31,14 @@ function useAllPrices() {
   return useMemo(() => {
     const map = new Map<string, readonly [bigint, number] | null>();
     const queries = [
-      ["ETH", eth], ["WSTETH", wsteth], ["RETH", reth], ["RSETH", rseth],
+      ["ETH", eth], ["WSTETH", wsteth], ["RETH", reth],
       ["WEETH", weeth], ["ARB", arb], ["COMP", comp], ["TBTC", tbtc],
     ] as const;
     for (const [sym, q] of queries) {
       map.set(sym, q.data ?? null);
     }
     return map;
-  }, [eth.data, wsteth.data, reth.data, rseth.data, weeth.data, arb.data, comp.data, tbtc.data]);
+  }, [eth.data, wsteth.data, reth.data, weeth.data, arb.data, comp.data, tbtc.data]);
 }
 
 export function TroveTable({

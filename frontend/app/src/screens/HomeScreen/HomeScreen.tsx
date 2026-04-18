@@ -4,7 +4,7 @@ import type { CollateralSymbol } from "@/src/types";
 
 import { Amount } from "@/src/comps/Amount/Amount";
 import { Positions } from "@/src/comps/Positions/Positions";
-import { getContracts } from "@/src/contracts";
+import { getVisibleContractCollaterals } from "@/src/collateral-visibility";
 // import { DNUM_1 } from "@/src/dnum-utils";
 import {
   getBranch,
@@ -33,7 +33,7 @@ import { useYusndStats } from "@/src/yusnd";
 export function HomeScreen() {
   const account = useAccount();
 
-  const { collaterals } = getContracts();
+  const collaterals = getVisibleContractCollaterals();
   const collSymbols = collaterals.map((coll) => coll.symbol);
 
   return (

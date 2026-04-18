@@ -2,6 +2,7 @@ import { parseAbiItem, type BlockTag } from "viem";
 import { getPublicClient } from "@/src/shellpoints/utils/client";
 import { getContracts } from "@/src/contracts";
 import { ORIGIN_BLOCK } from "@/src/shellpoints/utils/constants";
+import { isVisibleCollateralSymbol } from "@/src/collateral-visibility";
 
 export async function getAllHistoricalStabilityPoolDepositors() {
   const events = await queryStabilityPoolDepositUpdatedEvents();
@@ -20,7 +21,9 @@ export async function queryStabilityPoolDepositUpdatedEvents({
   const contracts = getContracts();
 
   const filter = await client.createEventFilter({
-    address: contracts.collaterals.map(collateral => collateral.contracts.StabilityPool.address),
+    address: contracts.collaterals
+      .filter(collateral => isVisibleCollateralSymbol(collateral.symbol))
+      .map(collateral => collateral.contracts.StabilityPool.address),
     event: parseAbiItem('event DepositUpdated(address indexed _depositor,uint256 _newDeposit,uint256 _stashedColl,uint256 _snapshotP,uint256 _snapshotS,uint256 _snapshotB,uint256 _snapshotScale)'),
     strict: true,
     fromBlock,

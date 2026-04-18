@@ -6,10 +6,11 @@ import { TokenIcon, IconExternal } from "@liquity2/uikit";
 import Link from "next/link";
 import Image from "next/image";
 
+type EcosystemCollateralSymbol = Exclude<CollateralSymbol, "RSETH">;
+
 export type EcosystemPartnerId = 
   | "wsteth"
   | "reth"
-  | "rseth"
   | "weeth"
   | "arb"
   | "comp"
@@ -26,12 +27,11 @@ export type EcosystemPartnerId =
   | "privacypools"
   | "aura";
 
-const COLLATERAL_INFO: Record<CollateralSymbol, { name: string; url: string }> = {
+const COLLATERAL_INFO: Record<EcosystemCollateralSymbol, { name: string; url: string }> = {
   "ETH": { name: "Ethereum", url: "https://ethereum.org/" },
   "WETH": { name: "Wrapped Ether", url: "https://weth.io/" },
   "WSTETH": { name: "Lido", url: "https://lido.fi/" },
   "RETH": { name: "Rocket Pool", url: "https://rocketpool.net/" },
-  "RSETH": { name: "Kelp DAO", url: "https://kelpdao.xyz/" },
   "WEETH": { name: "ether.fi", url: "https://www.ether.fi/" },
   "ARB": { name: "Arbitrum", url: "https://arbitrum.io/" },
   "COMP": { name: "Compound", url: "https://compound.finance/" },
@@ -61,12 +61,6 @@ export function EcosystemPartnerSummary({
       subtitle: "Decentralized Ethereum staking protocol",
       href: COLLATERAL_INFO.RETH.url,
       symbol: "RETH",
-    },
-    rseth: {
-      title: COLLATERAL_INFO.RSETH.name,
-      subtitle: "Liquid restaked token for DeFi",
-      href: COLLATERAL_INFO.RSETH.url,
-      symbol: "RSETH",
     },
     weeth: {
       title: COLLATERAL_INFO.WEETH.name,

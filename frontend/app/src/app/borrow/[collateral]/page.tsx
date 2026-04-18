@@ -4,7 +4,6 @@ export function generateStaticParams() {
     { collateral: "weth" },
     { collateral: "wsteth" },
     { collateral: "reth" },
-    { collateral: "rseth" },
     { collateral: "weeth" },
     { collateral: "arb" },
     { collateral: "comp" },

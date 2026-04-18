@@ -4,6 +4,7 @@ import { EarnPositionSummary } from "@/src/comps/EarnPositionSummary/EarnPositio
 import { Screen } from "@/src/comps/Screen/Screen";
 import { ScreenCard } from "@/src/comps/Screen/ScreenCard";
 import { Spinner } from "@/src/comps/Spinner/Spinner";
+import { isVisibleCollateralSymbol } from "@/src/collateral-visibility";
 import content from "@/src/content";
 import {
   getCollIndexFromSymbol,
@@ -15,7 +16,7 @@ import { css } from "@/styled-system/css";
 import { HFlex, IconEarn, isCollateralSymbol, Tabs } from "@liquity2/uikit";
 import { a, useTransition } from "@react-spring/web";
 import * as dn from "dnum";
-import { useParams, useRouter } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import { match } from "ts-pattern";
 import { PanelClaimRewards } from "./PanelClaimRewards";
 import { PanelUpdateDeposit } from "./PanelUpdateDeposit";
@@ -32,10 +33,14 @@ export function EarnPoolScreen() {
   const account = useAccount();
 
   const collateralSymbol = String(params.pool).toUpperCase();
-  const isCollSymbolOk = isCollateralSymbol(collateralSymbol);
-  const collIndex = getCollIndexFromSymbol(
-    isCollSymbolOk ? collateralSymbol : null
-  );
+  if (!isCollateralSymbol(collateralSymbol) || !isVisibleCollateralSymbol(collateralSymbol)) {
+    notFound();
+  }
+
+  const collIndex = getCollIndexFromSymbol(collateralSymbol);
+  if (collIndex === null) {
+    notFound();
+  }
 
   const earnPosition = useEarnPosition(collIndex, account.address ?? null);
   const earnPool = useEarnPool(collIndex);
@@ -58,10 +63,6 @@ export function EarnPoolScreen() {
       friction: 120,
     },
   });
-
-  if (collIndex === null || !isCollSymbolOk) {
-    return null;
-  }
 
   return (
     earnPool.data &&
