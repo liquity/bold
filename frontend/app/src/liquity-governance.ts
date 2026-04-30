@@ -215,37 +215,44 @@ export type InitiativeState = Record<Address, {
   claimableAmount: bigint;
 }>;
 
-export function useInitiativesStates(initiatives: Address[]) {
-  const wagmiConfig = useWagmiConfig();
+export async function getInitiativesStates(
+  wagmiConfig: WagmiConfig,
+  initiatives: Address[],
+): Promise<InitiativeState> {
+  if (initiatives.length === 0) return {};
 
   const Governance = getProtocolContract("Governance");
+
+  const results = await readContracts(wagmiConfig, {
+    contracts: initiatives.map((address) => ({
+      ...Governance,
+      functionName: "getInitiativeState",
+      args: [address],
+    } as const)),
+  });
+
+  const initiativesStates: InitiativeState = {};
+
+  for (const [i, { result }] of results.entries()) {
+    if (result && initiatives[i]) {
+      initiativesStates[initiatives[i]] = {
+        status: initiativeStatusFromNumber(result[0]),
+        lastEpochClaim: result[1],
+        claimableAmount: result[2],
+      };
+    }
+  }
+
+  return initiativesStates;
+}
+
+export function useInitiativesStates(initiatives: Address[]) {
+  const wagmiConfig = useWagmiConfig();
 
   return useQuery({
     enabled: initiatives.length > 0,
     queryKey: ["initiativesStates", initiatives],
-    queryFn: async () => {
-      const results = await readContracts(wagmiConfig, {
-        contracts: initiatives.map((address) => ({
-          ...Governance,
-          functionName: "getInitiativeState",
-          args: [address],
-        } as const)),
-      });
-
-      const initiativesStates: InitiativeState = {};
-
-      for (const [i, { result }] of results.entries()) {
-        if (result && initiatives[i]) {
-          initiativesStates[initiatives[i]] = {
-            status: initiativeStatusFromNumber(result[0]),
-            lastEpochClaim: result[1],
-            claimableAmount: result[2],
-          };
-        }
-      }
-
-      return initiativesStates;
-    },
+    queryFn: () => getInitiativesStates(wagmiConfig, initiatives),
   });
 }
 
