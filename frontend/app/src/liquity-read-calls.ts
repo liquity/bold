@@ -59,8 +59,13 @@ export async function getTroveById(id: PrefixedTroveId): Promise<ReturnTroveRead
         ...collaterals[collIndex]!.contracts.TroveManager,
         functionName: "Troves",
         args: [tokenId],
-      }
-    ]
+      },
+      {
+        ...collaterals[collIndex]!.contracts.TroveManager,
+        functionName: "getLatestTroveData",
+        args: [tokenId],
+      },
+    ],
   })
 
   const collateral = getCollToken(collIndex)!
@@ -76,16 +81,23 @@ export async function getTroveById(id: PrefixedTroveId): Promise<ReturnTroveRead
     interestBatchManager: output[1]?.result[8],
     batchDebtShares: output[1]?.result[9],
   } as Trove : undefined
+  const latestTroveData = output[2]?.result as {
+    annualInterestRate: bigint;
+    entireColl: bigint;
+    entireDebt: bigint;
+  } | undefined
   const owner = output[0]?.result as Address
-  if (!owner || !trove) return undefined
+  if (!owner || !trove || !latestTroveData) return undefined
 
   return {
     ...trove,
+    debt: latestTroveData.entireDebt,
+    coll: latestTroveData.entireColl,
     id,
     troveId,
     borrower: owner,
-    deposit: trove.coll,
-    interestRate: trove.annualInterestRate,
+    deposit: latestTroveData.entireColl,
+    interestRate: latestTroveData.annualInterestRate,
     collateral: {
       id: collIndex.toString(),
       token: {
@@ -96,9 +108,9 @@ export async function getTroveById(id: PrefixedTroveId): Promise<ReturnTroveRead
       collIndex,
     },
     interestBatch: {
-      annualInterestRate: trove.annualInterestRate,
+      annualInterestRate: latestTroveData.annualInterestRate,
       batchManager: trove.interestBatchManager,
-    }
+    },
   }
 }
 

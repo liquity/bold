@@ -6,8 +6,8 @@ import { css } from "@/styled-system/css";
 import { useState } from "react";
 import { TroveTable } from "./TroveTable";
 
-// Subgraph-sortable fields vs client-side computed fields
-const SUBGRAPH_SORTABLE = new Set(["debt", "deposit", "interestRate"]);
+// Amount/rate fields can be sorted after the hook overlays live on-chain data.
+const LIVE_SORTABLE = new Set(["debt", "deposit", "interestRate"]);
 
 export function TroveExplorerScreen() {
   const [orderBy, setOrderBy] = useState<string>("debt");
@@ -15,15 +15,14 @@ export function TroveExplorerScreen() {
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 500; // fetch all troves (~222 total)
 
-  // For subgraph-sortable fields, pass sort params to the query
-  // For computed fields (collateralValue, liqPrice, ltv), fetch all and sort client-side
-  const isSubgraphSort = SUBGRAPH_SORTABLE.has(orderBy);
+  // For computed fields (collateralValue, liqPrice, ltv), fetch all and sort client-side.
+  const isLiveSort = LIVE_SORTABLE.has(orderBy);
 
   const { data: troves, isLoading } = useAllActiveTroves(
-    pageSize,
-    isSubgraphSort ? currentPage * pageSize : 0,
-    isSubgraphSort ? orderBy : "debt",
-    isSubgraphSort ? orderDirection : "desc",
+    isLiveSort ? pageSize : 1_000_000_000,
+    isLiveSort ? currentPage * pageSize : 0,
+    orderBy,
+    orderDirection,
   );
 
   const handleSort = (field: string) => {
@@ -37,7 +36,7 @@ export function TroveExplorerScreen() {
   };
 
   const hasPrevPage = currentPage > 0;
-  const hasNextPage = isSubgraphSort && troves && troves.length === pageSize;
+  const hasNextPage = isLiveSort && troves && troves.length === pageSize;
 
   return (
     <Screen

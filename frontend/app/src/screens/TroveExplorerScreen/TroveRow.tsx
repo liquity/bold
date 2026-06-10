@@ -72,7 +72,7 @@ export function TroveRow({ trove }: Props) {
           })}
         >
           <TokenIcon symbol={trove.collateralSymbol} size="mini" />
-          <span>{trove.collateralSymbol}</span>
+          <Amount value={trove.deposit} suffix={` ${trove.collateralSymbol}`} />
         </div>
       </td>
       <td>
