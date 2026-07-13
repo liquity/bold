@@ -217,19 +217,6 @@ export default {
     earnTable: {
       title: "Earn rewards with BOLD",
       subtitle: "Earn BOLD & (staked) ETH rewards by depositing your BOLD in a stability pool",
-      forksInfo: {
-        text: (
-          <>
-            <abbr title="Stability Pool">SP</abbr> depositors earn additional rewards from forks.
-          </>
-        ),
-        titleAttr: "Stability Pool depositors earn additional rewards from forks.",
-        learnMore: {
-          url: "https://docs.liquity.org/v2-documentation/friendly-fork-program",
-          label: "Learn more",
-          title: "Learn more about the Liquity V2 Friendly Fork Program",
-        },
-      },
     },
     yieldTable: {
       title: "Top 3 external yield opportunities",

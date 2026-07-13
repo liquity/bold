@@ -8,7 +8,6 @@ import { Amount } from "@/src/comps/Amount/Amount";
 import { LinkTextButton } from "@/src/comps/LinkTextButton/LinkTextButton";
 import { Positions } from "@/src/comps/Positions/Positions";
 import { RedemptionShieldedBanner } from "@/src/comps/RedemptionShieldedBanner/RedemptionShieldedBanner";
-import { FORKS_INFO } from "@/src/constants";
 import content from "@/src/content";
 import { DNUM_1 } from "@/src/dnum-utils";
 import {
@@ -33,8 +32,6 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { HomeTable } from "./HomeTable";
 import { YieldSourceTable } from "./YieldSourceTable";
-
-type ForkInfo = (typeof FORKS_INFO)[number];
 
 export function HomeScreen() {
   const account = useAccount();
@@ -209,15 +206,19 @@ function EarnTable({
           zIndex: 1,
         })}
       >
-        <ForksInfoDrawer />
+        <AirdropVaultsDrawer />
       </div>
     </div>
   );
 }
 
-function ForksInfoDrawer() {
-  const pickedForkIcons = useMemo(() => pickRandomForks(2), []);
+function AirdropVaultsDrawer() {
   const airdropVaults = useAirdropVaults();
+
+  if (!airdropVaults.data || airdropVaults.data.length === 0) {
+    return null;
+  }
+
   return (
     <div
       className={css({
@@ -231,96 +232,7 @@ function ForksInfoDrawer() {
         userSelect: "none",
       })}
     >
-      <div
-        className={css({
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 16,
-          height: 44,
-          padding: "0 16px",
-          whiteSpace: "nowrap",
-        })}
-      >
-        <div
-          className={css({
-            display: "flex",
-            gap: 12,
-          })}
-        >
-          <div
-            className={css({
-              flexShrink: 0,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: 0,
-            })}
-          >
-            {pickedForkIcons.map(([name, icon], index) => (
-              <div
-                key={name}
-                className={css({
-                  display: "grid",
-                  placeItems: "center",
-                  background: "white",
-                  borderRadius: "50%",
-                  width: 18,
-                  height: 18,
-                })}
-                style={{
-                  marginLeft: index > 0 ? -4 : 0,
-                }}
-              >
-                <Image
-                  loading="eager"
-                  unoptimized
-                  alt={name}
-                  title={name}
-                  height={18}
-                  src={icon}
-                  width={18}
-                />
-              </div>
-            ))}
-          </div>
-          <div
-            className={css({
-              display: "grid",
-              fontSize: 14,
-            })}
-          >
-            <span
-              title={content.home.earnTable.forksInfo.titleAttr}
-              className={css({
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              })}
-            >
-              {content.home.earnTable.forksInfo.text}
-            </span>
-          </div>
-        </div>
-        <div
-          className={css({
-            display: "flex",
-            alignItems: "center",
-          })}
-        >
-          <LinkTextButton
-            external
-            href={content.home.earnTable.forksInfo.learnMore.url}
-            label={content.home.earnTable.forksInfo.learnMore.label}
-            title={content.home.earnTable.forksInfo.learnMore.title}
-            className={css({
-              fontSize: 14,
-            })}
-          >
-            Learn more
-          </LinkTextButton>
-        </div>
-      </div>
-      {airdropVaults.data?.map((vault) => (
+      {airdropVaults.data.map((vault) => (
         <div
           key={vault.name}
           className={css({
@@ -622,20 +534,4 @@ function EarnRewardsRow({
       )}
     </tr>
   );
-}
-
-function pickRandomForks(count: number): ForkInfo[] {
-  const forks = [...FORKS_INFO];
-  if (forks.length < count) {
-    return forks;
-  }
-  const picked: ForkInfo[] = [];
-  for (let i = 0; i < count; i++) {
-    const [info] = forks.splice(
-      Math.floor(Math.random() * forks.length),
-      1,
-    );
-    if (info) picked.push(info);
-  }
-  return picked;
 }
