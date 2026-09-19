@@ -28,6 +28,14 @@ export function isBranchId(value: unknown): value is BranchId {
   return typeof value === "number" && value >= 0 && value <= 9;
 }
 
+export const EARN_POOLS = ["eth", "reth", "wsteth", "sbold"] as const;
+
+export type EarnPoolId = (typeof EARN_POOLS)[number];
+
+export function isEarnPoolId(value: unknown): value is EarnPoolId {
+  return typeof value === "string" && (EARN_POOLS as readonly string[]).includes(value);
+}
+
 export function isTroveId(value: unknown): value is TroveId {
   return typeof value === "string" && /^0x[0-9a-f]+$/.test(value);
 }
