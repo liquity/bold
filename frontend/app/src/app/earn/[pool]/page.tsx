@@ -1,10 +1,7 @@
+import { EARN_POOLS } from "@/src/types";
+
 export function generateStaticParams() {
-  return [
-    { pool: "eth" },
-    { pool: "reth" },
-    { pool: "wsteth" },
-    { pool: "sbold" },
-  ];
+  return EARN_POOLS.map((pool) => ({ pool }));
 }
 
 export default function EarnPoolPage() {

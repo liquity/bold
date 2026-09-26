@@ -6,7 +6,7 @@ This guide will walk you through setting up, building, and deploying the Liquity
 
 Before you begin, ensure you have the following tools installed:
 
-- [Node.js](https://nodejs.org/) (v20 or later)
+- [Node.js](https://nodejs.org/) (v24 or later)
 - [pnpm](https://pnpm.io/) (v8)
 - [Foundry](https://book.getfoundry.sh/getting-started/installation) (required for contract development)
 
