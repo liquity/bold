@@ -11,7 +11,8 @@ import "forge-std/console2.sol";
 contract InitiativeUniV4Merkl is E2EHelpers {
     address constant GOVERNANCE_WHALE = 0xF30da4E4e7e20Dbf5fBE9adCD8699075D62C60A4;
     address constant NEW_LQTY_WHALE = 0xF977814e90dA44bFA03b6295A0616a897441aceC;
-    UniV4MerklRewards constant uniV4MerklRewardsInitiative = UniV4MerklRewards(0xB42448852A1BFc99d66ed53C65e2B49cF954f615);
+    //UniV4MerklRewards constant uniV4MerklRewardsInitiative = UniV4MerklRewards(0xB42448852A1BFc99d66ed53C65e2B49cF954f615); // 0.05% fee
+    UniV4MerklRewards constant uniV4MerklRewardsInitiative = UniV4MerklRewards(0x82E29308c96c2bEBDdc90b4a2e4Ee7E60D57238E); // 0.01% fee
     IDistributionCreator constant merklDistributionCreator =
         IDistributionCreator(0x8BB4C975Ff3c250e0ceEA271728547f3802B36Fd);
 
@@ -37,7 +38,7 @@ contract InitiativeUniV4Merkl is E2EHelpers {
         uint256 lqtyStake = 3_000_000 ether;
         _depositLQTY(staker, lqtyStake);
 
-        skip(28 days);
+        skip(56 days); // Add 1 day more if testing on a Wednesday, to skip veto period
 
         assertEq(governance.registeredInitiatives(address(uniV4MerklRewardsInitiative)), 0, "Initiative should not be registered");
 
@@ -69,11 +70,11 @@ contract InitiativeUniV4Merkl is E2EHelpers {
         (Governance.VoteSnapshot memory voteSnapshot, Governance.InitiativeVoteSnapshot memory initiativeVoteSnapshot) =
             governance.snapshotVotesForInitiative(address(uniV4MerklRewardsInitiative));
         console2.log(initiativeVoteSnapshot.votes, "initiative Votes");
-        (Governance.InitiativeStatus status, uint256 lastEpochClaim, uint256 claimableAmount) =
+        (Governance.InitiativeStatus status, uint256 lastEpochClaim, uint256 claimableAmount0) =
             governance.getInitiativeState(address(uniV4MerklRewardsInitiative));
         console2.log(uint256(status), "uint(status)");
         console2.log(lastEpochClaim, "lastEpochClaim");
-        console2.log(claimableAmount, "claimableAmount");
+        console2.log(claimableAmount0, "claimableAmount");
         */
 
         // Claim for initiative
