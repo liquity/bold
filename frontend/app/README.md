@@ -236,6 +236,15 @@ NEXT_PUBLIC_BLOCKING_VPNAPI=key|countryCodes
 NEXT_PUBLIC_BLOCKING_VPNAPI=1234|US,CA
 ```
 
+### `NEXT_PUBLIC_BLOCKING_VPNDETECTION`
+
+VPNDetection.io detection, no API key needed. `true` blocks VPN, Tor and relay connections; country codes block those countries too.
+
+```dosini
+# Example
+NEXT_PUBLIC_BLOCKING_VPNDETECTION=US,CA
+```
+
 ### `NEXT_PUBLIC_DELEGATE_AUTO`
 
 The default delegate address to use for the interest rate automated strategy.

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { BLOCKING_LIST, BLOCKING_VPNAPI } from "@/src/env";
+import { BLOCKING_LIST, BLOCKING_VPNAPI, BLOCKING_VPNDETECTION } from "@/src/env";
 import type { Address } from "@/src/types";
 import { useAccount } from "@/src/wagmi-utils";
 import { css } from "@/styled-system/css";
@@ -18,6 +18,9 @@ export function Blocking({
   const account = useAccount();
   const accountInBlockingList = useIsAccountInBlockingList(account.address ?? null);
   const accountVpnapi = useVpnapiBlock();
+  const accountVpndetection = useVpndetectionBlock();
+  const vpnChecks = [accountVpnapi.data, accountVpndetection.data];
+  const countryBlocked = vpnChecks.find((check) => check?.isCountryBlocked);
 
   let blocked: {
     title: string;
@@ -31,17 +34,17 @@ export function Blocking({
     };
   }
 
-  if (accountVpnapi.data?.isRouted) {
+  if (vpnChecks.some((check) => check?.isRouted)) {
     blocked = {
       title: "Routed connection detected (VPN or similar)",
       message: "This app cannot be accessed from a routed connection.",
     };
   }
 
-  if (accountVpnapi.data?.isCountryBlocked) {
+  if (countryBlocked) {
     blocked = {
       title: "Blocked country",
-      message: `This app cannot be accessed from this country (${accountVpnapi.data.country}).`,
+      message: `This app cannot be accessed from this country (${countryBlocked.country}).`,
     };
   }
 
@@ -138,6 +141,46 @@ export function useVpnapiBlock() {
       };
     },
     enabled: BLOCKING_VPNAPI !== null,
+    retry: false,
+    refetchInterval: false,
+  });
+}
+
+// vpndetection.io blocking (no API key needed)
+const VpndetectionResponseSchema = v.pipe(
+  v.object({
+    is_vpn: v.boolean(),
+    is_tor: v.boolean(),
+    is_relay: v.boolean(),
+    location: v.optional(
+      v.object({
+        country: v.optional(v.string(), ""),
+      }),
+      {},
+    ),
+  }),
+  v.transform((value) => ({
+    isRouted: value.is_vpn || value.is_tor || value.is_relay,
+    country: value.location.country,
+  })),
+);
+export function useVpndetectionBlock() {
+  return useQuery({
+    queryKey: ["vpndetection", BLOCKING_VPNDETECTION],
+    queryFn: async () => {
+      if (!BLOCKING_VPNDETECTION) {
+        return null;
+      }
+      const response = await fetch("https://api.vpndetection.io/myip");
+      const result = await response.json();
+      const { isRouted, country } = v.parse(VpndetectionResponseSchema, result);
+      return {
+        country,
+        isCountryBlocked: BLOCKING_VPNDETECTION.countries.includes(country),
+        isRouted,
+      };
+    },
+    enabled: BLOCKING_VPNDETECTION !== null,
     retry: false,
     refetchInterval: false,
   });

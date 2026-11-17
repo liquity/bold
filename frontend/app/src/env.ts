@@ -141,6 +141,19 @@ export const EnvSchema = v.pipe(
         };
       }),
     ),
+    BLOCKING_VPNDETECTION: v.pipe(
+      v.optional(v.string(), ""),
+      v.transform((value) => {
+        const setting = value.trim();
+        if (!setting) {
+          return null; // not set
+        }
+        // "true" blocks routed connections only; country codes also block those countries
+        return {
+          countries: setting === "true" ? [] : setting.split(",").map((c) => c.trim().toUpperCase()),
+        };
+      }),
+    ),
     CHAIN_ID: v.pipe(
       v.string(),
       v.transform((value) => {
@@ -336,6 +349,7 @@ const parsedEnv = v.safeParse(EnvSchema, {
   ),
   BLOCKING_LIST: process.env.NEXT_PUBLIC_BLOCKING_LIST,
   BLOCKING_VPNAPI: process.env.NEXT_PUBLIC_BLOCKING_VPNAPI,
+  BLOCKING_VPNDETECTION: process.env.NEXT_PUBLIC_BLOCKING_VPNDETECTION,
   CHAIN_BLOCK_EXPLORER: process.env.NEXT_PUBLIC_CHAIN_BLOCK_EXPLORER,
   CHAIN_CONTRACT_ENS_REGISTRY: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_ENS_REGISTRY,
   CHAIN_CONTRACT_ENS_RESOLVER: process.env.NEXT_PUBLIC_CHAIN_CONTRACT_ENS_RESOLVER,
@@ -455,6 +469,7 @@ export const {
   APP_VERSION_URL,
   BLOCKING_LIST,
   BLOCKING_VPNAPI,
+  BLOCKING_VPNDETECTION,
   CHAIN_BLOCK_EXPLORER,
   CHAIN_CONTRACT_ENS_REGISTRY,
   CHAIN_CONTRACT_ENS_RESOLVER,
